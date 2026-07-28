@@ -1,0 +1,573 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+
+Future<bool?> showWardDetailsDialog(
+  BuildContext context, {
+  required WardProfile ward,
+  String? tenantName,
+  String? facilityName,
+  String? departmentName,
+  FacilitySetupSnapshot? snapshot,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    builder: (_) => _WardDetailsDialog(
+      ward: ward,
+      tenantName: tenantName,
+      facilityName: facilityName,
+      departmentName: departmentName,
+      snapshot: snapshot,
+    ),
+  );
+}
+
+class _WardDetailsDialog extends ConsumerStatefulWidget {
+  const _WardDetailsDialog({
+    required this.ward,
+    this.tenantName,
+    this.facilityName,
+    this.departmentName,
+    this.snapshot,
+  });
+
+  final WardProfile ward;
+  final String? tenantName;
+  final String? facilityName;
+  final String? departmentName;
+  final FacilitySetupSnapshot? snapshot;
+
+  @override
+  ConsumerState<_WardDetailsDialog> createState() => _WardDetailsDialogState();
+}
+
+class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
+  static const String _emptyValue = '—';
+
+  late WardProfile _ward;
+  bool _mutated = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ward = widget.ward;
+  }
+
+  bool get _canEditStructure =>
+      ref.read(appAccessPolicyProvider).canEditFacilitySetupStructure();
+
+  bool get _canMutate => _canEditStructure && !_ward.isDeleted && !_busy;
+
+  FacilitySetupSnapshot? get _effectiveSnapshot {
+    final AsyncValue<Result<FacilitySetupSnapshot>> setup =
+        ref.read(tenantFacilitySetupControllerProvider);
+    final FacilitySetupSnapshot? fromController = setup.value?.when(
+      success: (FacilitySetupSnapshot value) => value,
+      failure: (_) => null,
+    );
+    return fromController ?? widget.snapshot;
+  }
+
+  String _statusLabel(AppLocalizations l10n) {
+    if (_ward.isDeleted) {
+      return l10n.tenantFacilityStructureDeletedStatus;
+    }
+    return _ward.isActive
+        ? l10n.tenantFacilityStatusActive
+        : l10n.tenantFacilityStatusInactive;
+  }
+
+  AppWorkspaceStatusTone _statusTone() {
+    if (_ward.isDeleted) {
+      return AppWorkspaceStatusTone.error;
+    }
+    return _ward.isActive
+        ? AppWorkspaceStatusTone.success
+        : AppWorkspaceStatusTone.neutral;
+  }
+
+  IconData _typeIcon(WardSetupType type) {
+    return switch (type) {
+      WardSetupType.general => Icons.hotel_outlined,
+      WardSetupType.icu => Icons.monitor_heart_outlined,
+      WardSetupType.maternity => Icons.pregnant_woman_outlined,
+      WardSetupType.pediatric => Icons.child_care_outlined,
+      WardSetupType.surgical => Icons.local_hospital_outlined,
+      WardSetupType.other => Icons.category_outlined,
+    };
+  }
+
+  String _resolveTenantName() {
+    final String? provided = widget.tenantName?.trim();
+    if (provided != null && provided.isNotEmpty && provided != _emptyValue) {
+      return provided;
+    }
+    final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
+    final TenantProfile? tenant = snapshot?.tenant;
+    if (tenant != null && tenant.id == _ward.tenantId) {
+      return tenant.name;
+    }
+    return _emptyValue;
+  }
+
+  String? _resolveFacilityName() {
+    final String? provided = widget.facilityName?.trim();
+    if (provided != null && provided.isNotEmpty && provided != _emptyValue) {
+      return provided;
+    }
+    final String facilityId = _ward.facilityId.trim();
+    if (facilityId.isEmpty) {
+      return null;
+    }
+    final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
+    if (snapshot == null) {
+      return null;
+    }
+    final FacilityProfile? facility = snapshot.facility;
+    if (facility != null && facility.id == facilityId) {
+      return facility.name;
+    }
+    for (final FacilityProfile item in snapshot.facilities) {
+      if (item.id == facilityId) {
+        return item.name;
+      }
+    }
+    return null;
+  }
+
+  String _resolveDepartmentName() {
+    final String? provided = widget.departmentName?.trim();
+    if (provided != null && provided.isNotEmpty && provided != _emptyValue) {
+      return provided;
+    }
+    final String? departmentId = _ward.departmentId?.trim();
+    if (departmentId == null || departmentId.isEmpty) {
+      return _emptyValue;
+    }
+    final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
+    if (snapshot == null) {
+      return departmentId;
+    }
+    for (final DepartmentProfile department in snapshot.departments) {
+      if (department.id == departmentId) {
+        return department.name;
+      }
+    }
+    return departmentId;
+  }
+
+  WardProfile? _findWardInSetup() {
+    final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
+    if (snapshot == null) {
+      return null;
+    }
+    for (final WardProfile item in snapshot.wards) {
+      if (item.id == _ward.id) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  void _refreshWardAfterMutation() {
+    final Object? saved =
+        ref.read(tenantFacilitySetupSubmissionProvider).lastSavedEntity;
+    if (saved is WardProfile && saved.id == _ward.id) {
+      setState(() {
+        _ward = saved;
+      });
+      return;
+    }
+
+    final WardProfile? updated = _findWardInSetup();
+    if (updated != null) {
+      setState(() {
+        _ward = updated;
+      });
+    }
+  }
+
+  Future<void> _editWard() async {
+    final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
+    if (snapshot == null || _busy) {
+      return;
+    }
+
+    final int versionBefore =
+        ref.read(tenantFacilitySetupSubmissionProvider).successVersion;
+
+    setState(() {
+      _busy = true;
+    });
+    try {
+      await showTenantFacilityWardFormDialog(
+        context,
+        snapshot,
+        ward: _ward,
+        openDetailsOnSave: false,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      final TenantFacilitySetupSubmissionState submission =
+          ref.read(tenantFacilitySetupSubmissionProvider);
+      if (submission.successVersion <= versionBefore) {
+        return;
+      }
+
+      _mutated = true;
+      _refreshWardAfterMutation();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _deleteWard() async {
+    if (_busy) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilitySoftDeleteStructureTitle,
+        body: l10n.tenantFacilitySoftDeleteStructureBody(_ward.name),
+        highlightedText: _ward.name,
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final bool deleted = await ref
+              .read(tenantFacilitySetupSubmissionProvider.notifier)
+              .deleteWard(_ward.id);
+          if (deleted) {
+            return null;
+          }
+          return ref.read(tenantFacilitySetupSubmissionProvider).failure ??
+              const AppFailure.unexpected();
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String statusLabel = _statusLabel(l10n);
+    final String? facilityName = _resolveFacilityName();
+    final String typeLabel = _wardTypeLabel(l10n, _ward.type);
+    final String departmentName = _resolveDepartmentName();
+
+    final List<_WardDetailFact> facts = <_WardDetailFact>[
+      _WardDetailFact(
+        label: l10n.tenantFacilityWardNameLabel,
+        value: _ward.name,
+        icon: Icons.badge_outlined,
+      ),
+      _WardDetailFact(
+        label: l10n.tenantFacilityWardTypeLabel,
+        value: typeLabel,
+        icon: _typeIcon(_ward.type),
+      ),
+      _WardDetailFact(
+        label: l10n.tenantFacilityWardDepartmentLabel,
+        value: departmentName,
+        icon: Icons.domain_outlined,
+      ),
+      _WardDetailFact(
+        label: l10n.tenantFacilityTenantStatusLabel,
+        value: statusLabel,
+        icon: Icons.toggle_on_outlined,
+      ),
+      _WardDetailFact(
+        label: l10n.profileTenantLabel,
+        value: _resolveTenantName(),
+        icon: Icons.apartment_outlined,
+      ),
+      if (facilityName != null)
+        _WardDetailFact(
+          label: l10n.profileFacilityLabel,
+          value: facilityName,
+          icon: Icons.local_hospital_outlined,
+        ),
+    ];
+
+    return AppDialog(
+      title: Text(l10n.tenantFacilityWardDetailsTitle),
+      icon: const Icon(Icons.hotel_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 720,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(theme.radius.md),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(theme.radius.sm),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(theme.spacing.sm),
+                      child: Icon(
+                        _typeIcon(_ward.type),
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          _ward.name,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            height: 1.15,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.xs),
+                        Wrap(
+                          spacing: theme.spacing.sm,
+                          runSpacing: theme.spacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: <Widget>[
+                            _WardStatusBadge(
+                              label: statusLabel,
+                              tone: _statusTone(),
+                            ),
+                            Text(
+                              typeLabel,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          if (_busy)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.md),
+              child: const Center(
+                child: AppLoadingIndicator.compact(expand: false),
+              ),
+            ),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double width = constraints.maxWidth;
+              final int columns = width >= 640
+                  ? 3
+                  : width >= 420
+                  ? 2
+                  : 1;
+              final double gap = theme.spacing.sm;
+              final double tileWidth =
+                  (width - (gap * (columns - 1))) / columns;
+
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[
+                  for (final _WardDetailFact fact in facts)
+                    SizedBox(
+                      width: tileWidth,
+                      child: _WardFactTile(fact: fact),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        if (_canEditStructure && !_ward.isDeleted)
+          AppButton.secondary(
+            label: l10n.tenantFacilityEditWardDetailsAction,
+            leadingIcon: Icons.edit_outlined,
+            enabled: _canMutate,
+            onPressed: () => unawaited(_editWard()),
+          ),
+        if (_canEditStructure && !_ward.isDeleted)
+          AppButton.primary(
+            label: l10n.tenantFacilityDeleteWardDetailsAction,
+            leadingIcon: Icons.delete_outline,
+            color: colorScheme.error,
+            enabled: _canMutate,
+            isLoading: _busy,
+            onPressed: () => unawaited(_deleteWard()),
+          ),
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          enabled: !_busy,
+          onPressed: () => Navigator.of(context).pop(_mutated ? true : null),
+        ),
+      ],
+    );
+  }
+}
+
+final class _WardDetailFact {
+  const _WardDetailFact({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+}
+
+class _WardFactTile extends StatelessWidget {
+  const _WardFactTile({required this.fact});
+
+  final _WardDetailFact fact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(
+              fact.icon,
+              size: 18,
+              color: colorScheme.primary,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    fact.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs / 2),
+                  Text(
+                    fact.value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WardStatusBadge extends StatelessWidget {
+  const _WardStatusBadge({required this.label, required this.tone});
+
+  final String label;
+  final AppWorkspaceStatusTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foreground = switch (tone) {
+      AppWorkspaceStatusTone.success => colorScheme.primary,
+      AppWorkspaceStatusTone.error => colorScheme.error,
+      AppWorkspaceStatusTone.warning => colorScheme.tertiary,
+      AppWorkspaceStatusTone.info => colorScheme.secondary,
+      AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: foreground.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: foreground.withValues(alpha: 0.24)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _wardTypeLabel(AppLocalizations l10n, WardSetupType type) {
+  return switch (type) {
+    WardSetupType.general => l10n.tenantFacilityWardTypeGeneral,
+    WardSetupType.icu => l10n.tenantFacilityWardTypeIcu,
+    WardSetupType.maternity => l10n.tenantFacilityWardTypeMaternity,
+    WardSetupType.pediatric => l10n.tenantFacilityWardTypePediatric,
+    WardSetupType.surgical => l10n.tenantFacilityWardTypeSurgical,
+    WardSetupType.other => l10n.tenantFacilityWardTypeOther,
+  };
+}

@@ -7328,6 +7328,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityEditUnitTitle => 'Edit unit';
 
   @override
+  String get tenantFacilityUnitDetailsTitle => 'Unit details';
+
+  @override
+  String get tenantFacilityEditUnitDetailsAction => 'Edit unit';
+
+  @override
+  String get tenantFacilityDeleteUnitDetailsAction => 'Delete unit';
+
+  @override
   String get tenantFacilityLocationsSectionTitle => 'Rooms, wards, and beds';
 
   @override
@@ -7386,6 +7395,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityEditWardTitle => 'Edit ward';
 
   @override
+  String get tenantFacilityWardDetailsTitle => 'Ward details';
+
+  @override
+  String get tenantFacilityEditWardDetailsAction => 'Edit ward';
+
+  @override
+  String get tenantFacilityDeleteWardDetailsAction => 'Delete ward';
+
+  @override
   String get tenantFacilityWardNameLabel => 'Ward name';
 
   @override
@@ -7422,6 +7440,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityEditRoomTitle => 'Edit room';
 
   @override
+  String get tenantFacilityRoomDetailsTitle => 'Room details';
+
+  @override
+  String get tenantFacilityEditRoomDetailsAction => 'Edit room';
+
+  @override
+  String get tenantFacilityDeleteRoomDetailsAction => 'Delete room';
+
+  @override
   String get tenantFacilityRoomNameLabel => 'Room name';
 
   @override
@@ -7438,6 +7465,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityEditBedTitle => 'Edit bed';
+
+  @override
+  String get tenantFacilityBedDetailsTitle => 'Bed details';
+
+  @override
+  String get tenantFacilityEditBedDetailsAction => 'Edit bed';
+
+  @override
+  String get tenantFacilityDeleteBedDetailsAction => 'Delete bed';
 
   @override
   String get tenantFacilityBedLabelLabel => 'Bed label';

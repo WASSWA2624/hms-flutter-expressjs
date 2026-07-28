@@ -13516,6 +13516,24 @@ abstract class AppLocalizations {
   /// **'Edit unit'**
   String get tenantFacilityEditUnitTitle;
 
+  /// Title for the focused unit details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit details'**
+  String get tenantFacilityUnitDetailsTitle;
+
+  /// Edit action label in the unit details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit unit'**
+  String get tenantFacilityEditUnitDetailsAction;
+
+  /// Soft delete action label in the unit details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete unit'**
+  String get tenantFacilityDeleteUnitDetailsAction;
+
   /// Rooms wards and beds section title.
   ///
   /// In en, this message translates to:
@@ -13618,6 +13636,24 @@ abstract class AppLocalizations {
   /// **'Edit ward'**
   String get tenantFacilityEditWardTitle;
 
+  /// Title for the focused ward details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward details'**
+  String get tenantFacilityWardDetailsTitle;
+
+  /// Edit action label in the ward details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ward'**
+  String get tenantFacilityEditWardDetailsAction;
+
+  /// Soft delete action label in the ward details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ward'**
+  String get tenantFacilityDeleteWardDetailsAction;
+
   /// Ward name field label.
   ///
   /// In en, this message translates to:
@@ -13690,6 +13726,24 @@ abstract class AppLocalizations {
   /// **'Edit room'**
   String get tenantFacilityEditRoomTitle;
 
+  /// Title for the focused room details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Room details'**
+  String get tenantFacilityRoomDetailsTitle;
+
+  /// Edit action label in the room details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit room'**
+  String get tenantFacilityEditRoomDetailsAction;
+
+  /// Soft delete action label in the room details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete room'**
+  String get tenantFacilityDeleteRoomDetailsAction;
+
   /// Room name field label.
   ///
   /// In en, this message translates to:
@@ -13725,6 +13779,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit bed'**
   String get tenantFacilityEditBedTitle;
+
+  /// Title for the bed details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed details'**
+  String get tenantFacilityBedDetailsTitle;
+
+  /// Edit action label in the bed details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit bed'**
+  String get tenantFacilityEditBedDetailsAction;
+
+  /// Soft delete action label in the bed details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete bed'**
+  String get tenantFacilityDeleteBedDetailsAction;
 
   /// Bed label field label.
   ///

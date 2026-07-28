@@ -9298,6 +9298,18 @@
   "@tenantFacilityEditUnitTitle": {
     "description": "Edit unit modal title."
   },
+  "tenantFacilityUnitDetailsTitle": "Unit details",
+  "@tenantFacilityUnitDetailsTitle": {
+    "description": "Title for the focused unit details dialog."
+  },
+  "tenantFacilityEditUnitDetailsAction": "Edit unit",
+  "@tenantFacilityEditUnitDetailsAction": {
+    "description": "Edit action label in the unit details dialog footer."
+  },
+  "tenantFacilityDeleteUnitDetailsAction": "Delete unit",
+  "@tenantFacilityDeleteUnitDetailsAction": {
+    "description": "Soft delete action label in the unit details dialog footer."
+  },
   "tenantFacilityLocationsSectionTitle": "Rooms, wards, and beds",
   "@tenantFacilityLocationsSectionTitle": {
     "description": "Rooms wards and beds section title."
@@ -9366,6 +9378,18 @@
   "@tenantFacilityEditWardTitle": {
     "description": "Edit ward modal title."
   },
+  "tenantFacilityWardDetailsTitle": "Ward details",
+  "@tenantFacilityWardDetailsTitle": {
+    "description": "Title for the focused ward details dialog."
+  },
+  "tenantFacilityEditWardDetailsAction": "Edit ward",
+  "@tenantFacilityEditWardDetailsAction": {
+    "description": "Edit action label in the ward details dialog footer."
+  },
+  "tenantFacilityDeleteWardDetailsAction": "Delete ward",
+  "@tenantFacilityDeleteWardDetailsAction": {
+    "description": "Soft delete action label in the ward details dialog footer."
+  },
   "tenantFacilityWardNameLabel": "Ward name",
   "@tenantFacilityWardNameLabel": {
     "description": "Ward name field label."
@@ -9414,6 +9438,18 @@
   "@tenantFacilityEditRoomTitle": {
     "description": "Edit room modal title."
   },
+  "tenantFacilityRoomDetailsTitle": "Room details",
+  "@tenantFacilityRoomDetailsTitle": {
+    "description": "Title for the focused room details dialog."
+  },
+  "tenantFacilityEditRoomDetailsAction": "Edit room",
+  "@tenantFacilityEditRoomDetailsAction": {
+    "description": "Edit action label in the room details dialog footer."
+  },
+  "tenantFacilityDeleteRoomDetailsAction": "Delete room",
+  "@tenantFacilityDeleteRoomDetailsAction": {
+    "description": "Soft delete action label in the room details dialog footer."
+  },
   "tenantFacilityRoomNameLabel": "Room name",
   "@tenantFacilityRoomNameLabel": {
     "description": "Room name field label."
@@ -9437,6 +9473,18 @@
   "tenantFacilityEditBedTitle": "Edit bed",
   "@tenantFacilityEditBedTitle": {
     "description": "Edit bed modal title."
+  },
+  "tenantFacilityBedDetailsTitle": "Bed details",
+  "@tenantFacilityBedDetailsTitle": {
+    "description": "Title for the bed details dialog."
+  },
+  "tenantFacilityEditBedDetailsAction": "Edit bed",
+  "@tenantFacilityEditBedDetailsAction": {
+    "description": "Edit action label in the bed details dialog footer."
+  },
+  "tenantFacilityDeleteBedDetailsAction": "Delete bed",
+  "@tenantFacilityDeleteBedDetailsAction": {
+    "description": "Soft delete action label in the bed details dialog footer."
   },
   "tenantFacilityBedLabelLabel": "Bed label",
   "@tenantFacilityBedLabelLabel": {

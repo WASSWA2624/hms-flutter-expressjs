@@ -173,6 +173,18 @@ final class TenantFacilitySetupSubmissionState {
       ? lastSavedEntity as DepartmentProfile
       : null;
 
+  RoomProfile? get lastSavedRoom =>
+      lastSavedEntity is RoomProfile ? lastSavedEntity as RoomProfile : null;
+
+  UnitProfile? get lastSavedUnit =>
+      lastSavedEntity is UnitProfile ? lastSavedEntity as UnitProfile : null;
+
+  BedProfile? get lastSavedBed =>
+      lastSavedEntity is BedProfile ? lastSavedEntity as BedProfile : null;
+
+  WardProfile? get lastSavedWard =>
+      lastSavedEntity is WardProfile ? lastSavedEntity as WardProfile : null;
+
   TenantFacilitySetupSubmissionState copyWith({
     bool? isSubmitting,
     AppFailure? failure,

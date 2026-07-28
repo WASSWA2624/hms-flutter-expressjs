@@ -171,11 +171,21 @@ void main() {
     });
 
     test('create and edit always open unit similarity dialog', () {
-      final String formSource = unitFormSource();
+      final String formSource = unitFormSource().replaceAll('\r\n', '\n');
       expect(formSource.contains('showUnitSimilarityDialog'), isTrue);
       expect(formSource.contains('checkUnitDuplicates'), isTrue);
       expect(formSource.contains('_checkingSimilarity'), isTrue);
       expect(formSource.contains('excludeUnitId'), isTrue);
+      expect(
+        formSource.contains(
+          '!exactNameConflict &&\n        reviewMatches.isEmpty',
+        ),
+        isFalse,
+      );
+      expect(
+        formSource.contains('normalizeUnitName(name) == normalizeUnitName'),
+        isFalse,
+      );
       expect(unitSimilaritySource.contains('checkUnitDuplicates'), isTrue);
       expect(
         unitSimilarityDialogSource.contains('showUnitSimilarityDialog'),
@@ -187,6 +197,32 @@ void main() {
       );
       expect(
         unitSimilarityDialogSource.contains('UnitSimilarityAction.cancel'),
+        isTrue,
+      );
+    });
+
+    test('unit form uses full-content loading overlay', () {
+      final String formSource = unitFormSource();
+      expect(formSource.contains('AbsorbPointer'), isTrue);
+      expect(formSource.contains('Positioned.fill'), isTrue);
+      expect(formSource.contains('showDialogLoadingOverlay'), isTrue);
+      expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(
+        formSource.contains('AppLoadingIndicator.compact(expand: false)'),
+        isFalse,
+      );
+    });
+
+    test('details open after create/edit and on row select', () {
+      final String sectionSource = unitSectionSource();
+      expect(sectionSource.contains('onRowSelected:'), isTrue);
+      expect(setupPageSource.contains('showUnitDetailsDialog'), isTrue);
+      expect(setupPageSource.contains('_openUnitDetails'), isTrue);
+      expect(setupPageSource.contains('lastSavedUnit'), isTrue);
+      expect(
+        File(
+          'lib/features/tenant_facility/presentation/widgets/unit_details_dialog.dart',
+        ).readAsStringSync().contains('showTenantFacilityUnitFormDialog'),
         isTrue,
       );
     });

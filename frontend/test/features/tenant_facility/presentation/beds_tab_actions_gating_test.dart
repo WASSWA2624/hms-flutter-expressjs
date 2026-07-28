@@ -10,6 +10,8 @@ void main() {
     late String repositoryInterfaceSource;
     late String bedSimilaritySource;
     late String bedSimilarityDialogSource;
+    late String bedDetailsSource;
+    late String controllerSource;
 
     setUpAll(() {
       setupPageSource = File(
@@ -29,6 +31,12 @@ void main() {
       ).readAsStringSync();
       bedSimilarityDialogSource = File(
         'lib/features/tenant_facility/presentation/widgets/bed_similarity_dialog.dart',
+      ).readAsStringSync();
+      bedDetailsSource = File(
+        'lib/features/tenant_facility/presentation/widgets/bed_details_dialog.dart',
+      ).readAsStringSync();
+      controllerSource = File(
+        'lib/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart',
       ).readAsStringSync();
     });
 
@@ -192,6 +200,40 @@ void main() {
       );
       expect(
         bedSimilarityDialogSource.contains('BedSimilarityAction.cancel'),
+        isTrue,
+      );
+    });
+
+    test('bed form uses full-content loading overlay while busy', () {
+      final String formSource = bedFormSource();
+      expect(formSource.contains('showLoadingOverlay'), isTrue);
+      expect(formSource.contains('AbsorbPointer'), isTrue);
+      expect(formSource.contains('Positioned.fill'), isTrue);
+      expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(
+        formSource.contains(
+          'if (_checkingSimilarity || _loadingOptions)\n              Padding(',
+        ),
+        isFalse,
+      );
+    });
+
+    test('details open after create/edit and on row select with edit/delete', () {
+      final String sectionSource = bedSectionSource();
+      expect(sectionSource.contains('onRowSelected:'), isTrue);
+      expect(setupPageSource.contains('showBedDetailsDialog'), isTrue);
+      expect(setupPageSource.contains('_openBedDetails'), isTrue);
+      expect(setupPageSource.contains('lastSavedBed'), isTrue);
+      expect(controllerSource.contains('lastSavedBed'), isTrue);
+      expect(bedDetailsSource.contains('showTenantFacilityBedFormDialog'), isTrue);
+      expect(bedDetailsSource.contains('deleteBed(_bed.id)'), isTrue);
+      expect(bedDetailsSource.contains('_BedFactTile'), isTrue);
+      expect(
+        bedDetailsSource.contains('tenantFacilityEditBedDetailsAction'),
+        isTrue,
+      );
+      expect(
+        bedDetailsSource.contains('tenantFacilityDeleteBedDetailsAction'),
         isTrue,
       );
     });

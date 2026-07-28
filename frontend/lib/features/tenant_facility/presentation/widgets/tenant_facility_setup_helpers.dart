@@ -487,6 +487,7 @@ abstract final class TenantFacilityRoomsFilterKeys {
   static const String tenant = 'tenant';
   static const String facility = 'facility';
   static const String ward = 'ward';
+  static const String status = 'status';
 }
 
 String tenantFacilitySetupDeskSectionLabel(
@@ -1469,16 +1470,14 @@ String tenantFacilityWizardStepBlockedHint(
                     fallback: l10n.tenantFacilityGateNeedFacility,
                   )),
     TenantFacilitySetupWizardStep.rooms =>
-      snapshot.hasDepartments || snapshot.hasWardsConfigured
-          ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
-          : (snapshot.hasFacilityIdentity
-                ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
-                : _tenantFacilityWizardMissingSummary(
-                    l10n,
-                    snapshot,
-                    TenantFacilitySetupWizardStep.facility,
-                    fallback: l10n.tenantFacilityGateNeedFacility,
-                  )),
+      snapshot.hasFacilityIdentity
+          ? l10n.tenantFacilityWizardMissingRooms
+          : _tenantFacilityWizardMissingSummary(
+              l10n,
+              snapshot,
+              TenantFacilitySetupWizardStep.facility,
+              fallback: l10n.tenantFacilityGateNeedFacilityForRooms,
+            ),
     TenantFacilitySetupWizardStep.beds =>
       snapshot.hasWardsConfigured
           ? l10n.tenantFacilityGateNeedWardsForBeds

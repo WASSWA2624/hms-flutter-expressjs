@@ -22,21 +22,27 @@ import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_fac
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/bed_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/department_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/room_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/unit_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/ward_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/bed_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/bed_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_details_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/unit_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/unit_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/ward_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/ward_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -3769,6 +3775,20 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
                 ),
               ),
             ),
+            onRowSelected: (UnitProfile unit) {
+              unawaited(
+                _afterMutation(
+                  () => _openUnitDetails(
+                    context,
+                    unit: unit,
+                    snapshot: snapshot,
+                    tenantName: _tenantLabel(unit),
+                    facilityName: _facilityLabel(unit),
+                    departmentName: _departmentLabel(unit),
+                  ),
+                ),
+              );
+            },
             columnVisibilityStorageKey:
                 'setup_structure_units_${scope.name}_v1',
             extraFilterGroups: _buildFilterGroups(l10n),
@@ -4514,6 +4534,20 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
                 ),
               ),
             ),
+            onRowSelected: (WardProfile ward) {
+              unawaited(
+                _afterMutation(
+                  () => _openWardDetails(
+                    context,
+                    ward: ward,
+                    snapshot: snapshot,
+                    tenantName: _tenantLabel(ward),
+                    facilityName: _facilityLabel(ward),
+                    departmentName: _departmentLabel(ward),
+                  ),
+                ),
+              );
+            },
             columnVisibilityStorageKey:
                 'setup_structure_wards_${scope.name}_v1',
             extraFilterGroups: _buildFilterGroups(l10n),
@@ -4640,77 +4674,733 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
   }
 }
 
-class _RoomSetupSection extends ConsumerWidget {
+class _RoomSetupSection extends ConsumerStatefulWidget {
   const _RoomSetupSection({
     required this.snapshot,
     required this.canSubmit,
+    this.framed = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
+  final bool framed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canManageRecords = canSubmit && !submission.isSubmitting;
-    final bool prerequisitesMet =
-        snapshot.departments.isNotEmpty || snapshot.wards.isNotEmpty;
-    final bool canAdd = canManageRecords && prerequisitesMet;
-    final String? blockedMessage = canManageRecords && !prerequisitesMet
-        ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
-        : null;
+  ConsumerState<_RoomSetupSection> createState() => _RoomSetupSectionState();
+}
 
-    final Widget content = _SearchableEntityGroup<RoomProfile>(
-      title: l10n.tenantFacilityRoomsLabel,
-      nameColumnLabel: l10n.tenantFacilityRoomNameLabel,
-      items: snapshot.rooms,
-      emptyLabel: l10n.tenantFacilityNoRooms,
-      noResultsLabel: l10n.tenantFacilitySearchNoResults,
-      searchLabel: l10n.tenantFacilitySearchLabel,
-      searchHint: l10n.tenantFacilityRoomSearchHint,
-      addLabel: l10n.tenantFacilityAddRoomAction,
-      canManageRecords: canManageRecords,
-      canAdd: canAdd,
-      blockedMessage: blockedMessage,
-      onAdd: () => _openRoomDialog(context, snapshot),
-      scopeLabel: l10n.tenantFacilityRoomWardLabel,
-      scopeOptions: <_SearchableEntityGroupScopeOption>[
-        for (final WardProfile ward in snapshot.wards)
-          if (!ward.isDeleted)
-            _SearchableEntityGroupScopeOption(id: ward.id, label: ward.name),
-      ],
-      itemScopeId: (RoomProfile room) => room.wardId,
-      titleBuilder: (RoomProfile room) => room.name,
-      subtitleBuilder: (RoomProfile room) => room.isDeleted
-          ? l10n.tenantFacilityStructureDeletedStatus
-          : _roomSubtitle(l10n, snapshot, room),
-      isDeletedBuilder: (RoomProfile room) => room.isDeleted,
-      onEdit: (RoomProfile room) {
-        if (room.isDeleted) {
-          return;
-        }
-        _openRoomDialog(context, snapshot, room: room);
+class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
+  static const AppPageRequest _listRequest = AppPageRequest(
+    pageSize: AppPageRequest.maxPageSize,
+  );
+
+  bool _loading = true;
+  AppFailure? _failure;
+  List<RoomProfile> _rooms = const <RoomProfile>[];
+  List<WardProfile> _wards = const <WardProfile>[];
+  List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  List<FacilityProfile> _facilityOptions = const <FacilityProfile>[];
+  Map<String, String> _tenantNamesById = const <String, String>{};
+  Map<String, String> _facilityNamesById = const <String, String>{};
+  Map<String, String> _wardNamesById = const <String, String>{};
+  String? _tenantFilterId;
+  String? _facilityFilterId;
+  String? _wardFilterId;
+  String? _busyRoomId;
+  int _reloadGeneration = 0;
+
+  FacilitySetupSnapshot get snapshot => widget.snapshot;
+
+  /// Non-deleted facilities visible under the current scope. Drives the
+  /// prerequisites gate and Create enablement.
+  List<FacilityProfile> get _accessibleFacilities {
+    final List<FacilityProfile> fromOptions = _facilityOptions
+        .where((FacilityProfile facility) => !facility.isDeleted)
+        .toList(growable: false);
+    if (fromOptions.isNotEmpty) {
+      return fromOptions;
+    }
+    final FacilityProfile? snapshotFacility = snapshot.facility;
+    if (snapshotFacility != null && !snapshotFacility.isDeleted) {
+      return <FacilityProfile>[snapshotFacility];
+    }
+    return snapshot.facilities
+        .where((FacilityProfile facility) => !facility.isDeleted)
+        .toList(growable: false);
+  }
+
+  List<WardProfile> get _accessibleWards => _wards
+      .where((WardProfile ward) => !ward.isDeleted)
+      .toList(growable: false);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_reload());
+  }
+
+  @override
+  void didUpdateWidget(covariant _RoomSetupSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String? oldFacilityId = oldWidget.snapshot.facility?.id;
+    final String? nextFacilityId = widget.snapshot.facility?.id;
+    final String? oldTenantId = oldWidget.snapshot.tenant?.id;
+    final String? nextTenantId = widget.snapshot.tenant?.id;
+    if (oldFacilityId != nextFacilityId || oldTenantId != nextTenantId) {
+      unawaited(_reload());
+    }
+  }
+
+  List<FacilityProfile> get _facilitiesForFilter {
+    final String? tenantFilterId = _tenantFilterId?.trim();
+    if (tenantFilterId == null || tenantFilterId.isEmpty) {
+      return _facilityOptions
+          .where((FacilityProfile facility) => !facility.isDeleted)
+          .toList(growable: false);
+    }
+    return _facilityOptions
+        .where(
+          (FacilityProfile facility) =>
+              !facility.isDeleted && facility.tenantId == tenantFilterId,
+        )
+        .toList(growable: false);
+  }
+
+  List<WardProfile> get _wardsForFilter {
+    final String? tenantFilterId = _tenantFilterId?.trim();
+    final String? facilityFilterId = _facilityFilterId?.trim();
+    return _accessibleWards
+        .where((WardProfile ward) {
+          if (tenantFilterId != null &&
+              tenantFilterId.isNotEmpty &&
+              ward.tenantId != tenantFilterId) {
+            return false;
+          }
+          if (facilityFilterId != null &&
+              facilityFilterId.isNotEmpty &&
+              ward.facilityId != facilityFilterId) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
+  }
+
+  void _applyServerFilters(AppSearchBarFilterValue value) {
+    final String? nextTenant = value.option(
+      TenantFacilityRoomsFilterKeys.tenant,
+    );
+    final String? nextFacility = value.option(
+      TenantFacilityRoomsFilterKeys.facility,
+    );
+    final String? nextWard = value.option(TenantFacilityRoomsFilterKeys.ward);
+
+    _tenantFilterId = nextTenant;
+    _facilityFilterId = nextFacility;
+    _wardFilterId = nextWard;
+    _syncFacilityFilterToOptions();
+    _syncWardFilterToOptions();
+  }
+
+  void _syncFacilityFilterToOptions() {
+    final String? facilityId = _facilityFilterId;
+    if (facilityId == null) {
+      return;
+    }
+    final String? tenantFilterId = _tenantFilterId?.trim();
+    final bool facilityAllowed = _facilityOptions.any((FacilityProfile facility) {
+      if (facility.id != facilityId || facility.isDeleted) {
+        return false;
+      }
+      if (tenantFilterId == null || tenantFilterId.isEmpty) {
+        return true;
+      }
+      return facility.tenantId == tenantFilterId;
+    });
+    if (!facilityAllowed) {
+      _facilityFilterId = null;
+    }
+  }
+
+  void _syncWardFilterToOptions() {
+    final String? wardId = _wardFilterId;
+    if (wardId == null) {
+      return;
+    }
+    final bool wardAllowed = _wardsForFilter.any(
+      (WardProfile ward) => ward.id == wardId,
+    );
+    if (!wardAllowed) {
+      _wardFilterId = null;
+    }
+  }
+
+  Future<void> _onFiltersChanged(AppSearchBarFilterValue value) async {
+    final String? previousTenant = _tenantFilterId;
+    final String? previousFacility = _facilityFilterId;
+    _applyServerFilters(value);
+    final bool tenantChanged = previousTenant != _tenantFilterId;
+    final bool facilityChanged = previousFacility != _facilityFilterId;
+    if (tenantChanged) {
+      await _reloadFacilityOptions();
+      _syncFacilityFilterToOptions();
+    }
+    if (tenantChanged || facilityChanged) {
+      _syncWardFilterToOptions();
+    }
+    await _reload(silent: true);
+  }
+
+  Future<void> _reloadFacilityOptions() async {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+    if (!tenantFacilityRoomsShowsFacilityFilter(scope)) {
+      return;
+    }
+
+    final String? tenantId = switch (scope) {
+      TenantFacilityRoomsListScope.platform => _tenantFilterId,
+      TenantFacilityRoomsListScope.tenant ||
+      TenantFacilityRoomsListScope.facility =>
+        policy.tenantId ?? snapshot.tenant?.id,
+    };
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final Result<AppPage<FacilityProfile>> result = await repository
+        .listFacilities(request: _listRequest, tenantId: tenantId);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<FacilityProfile> page) {
+        setState(() {
+          _facilityOptions = page.items;
+          _facilityNamesById = <String, String>{
+            for (final FacilityProfile facility in page.items)
+              facility.id: facility.name,
+          };
+          if (_facilityFilterId != null &&
+              !_facilitiesForFilter.any(
+                (FacilityProfile facility) => facility.id == _facilityFilterId,
+              )) {
+            _facilityFilterId = null;
+          }
+        });
       },
-      onDelete: (RoomProfile room) => _deleteEntity(
-        context: context,
-        ref: ref,
-        name: room.name,
-        deleteAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .deleteRoom(room.id),
-      ),
-      onRestore: (RoomProfile room) => _restoreEntity(
-        context: context,
-        ref: ref,
-        name: room.name,
-        restoreAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .restoreRoom(room.id),
-      ),
+      failure: (_) {},
+    );
+  }
+
+  Future<void> _reload({bool silent = false}) async {
+    final int generation = ++_reloadGeneration;
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+    final String? scopedTenantId = switch (scope) {
+      TenantFacilityRoomsListScope.platform => _tenantFilterId,
+      TenantFacilityRoomsListScope.tenant ||
+      TenantFacilityRoomsListScope.facility =>
+        policy.tenantId ?? snapshot.tenant?.id,
+    };
+    final String? scopedFacilityId =
+        scope == TenantFacilityRoomsListScope.facility
+        ? (policy.facilityId ?? snapshot.facility?.id)
+        : _facilityFilterId;
+    final String? scopedWardId = _wardFilterId;
+
+    if (!silent) {
+      setState(() {
+        _loading = _rooms.isEmpty;
+        _failure = null;
+      });
+    }
+
+    if (scope == TenantFacilityRoomsListScope.facility &&
+        (scopedFacilityId == null || scopedFacilityId.trim().isEmpty)) {
+      if (!mounted || generation != _reloadGeneration) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _rooms = const <RoomProfile>[];
+        _wards = const <WardProfile>[];
+        _facilityOptions = const <FacilityProfile>[];
+        _tenantOptions = const <TenantProfile>[];
+        _tenantNamesById = const <String, String>{};
+        _facilityNamesById = const <String, String>{};
+        _wardNamesById = const <String, String>{};
+      });
+      return;
+    }
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
     );
 
-    return content;
+    final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
+        tenantFacilityRoomsShowsTenantFilter(scope)
+        ? repository.listTenants(request: _listRequest)
+        : null;
+    final bool loadFacilities =
+        tenantFacilityRoomsShowsFacilityFilter(scope) ||
+        scope == TenantFacilityRoomsListScope.platform ||
+        scope == TenantFacilityRoomsListScope.tenant;
+    final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
+        loadFacilities
+        ? repository.listFacilities(
+            request: _listRequest,
+            tenantId: scope == TenantFacilityRoomsListScope.platform
+                ? _tenantFilterId
+                : scopedTenantId,
+          )
+        : null;
+    final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
+        .listWards(
+          request: _listRequest,
+          tenantId: scopedTenantId,
+          facilityId: scopedFacilityId,
+          includeDeleted: true,
+        );
+    final Future<Result<AppPage<RoomProfile>>> roomsFuture = repository
+        .listRooms(
+          request: _listRequest,
+          tenantId: scopedTenantId,
+          facilityId: scopedFacilityId,
+          wardId: scopedWardId,
+          includeDeleted: true,
+        );
+
+    final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
+        ? null
+        : await tenantsFuture;
+    final Result<AppPage<FacilityProfile>>? facilitiesResult =
+        facilitiesFuture == null ? null : await facilitiesFuture;
+    final Result<AppPage<WardProfile>> wardsResult = await wardsFuture;
+    final Result<AppPage<RoomProfile>> roomsResult = await roomsFuture;
+
+    if (!mounted || generation != _reloadGeneration) {
+      return;
+    }
+
+    roomsResult.when(
+      success: (AppPage<RoomProfile> page) {
+        final Map<String, String> tenantNames = <String, String>{
+          if (snapshot.tenant case final TenantProfile tenant)
+            tenant.id: tenant.name,
+        };
+        List<TenantProfile> tenants = const <TenantProfile>[];
+        tenantsResult?.when(
+          success: (AppPage<TenantProfile> tenantsPage) {
+            tenants = tenantsPage.items;
+            for (final TenantProfile tenant in tenantsPage.items) {
+              tenantNames[tenant.id] = tenant.name;
+            }
+          },
+          failure: (_) {},
+        );
+
+        List<FacilityProfile> facilities = <FacilityProfile>[
+          ...snapshot.facilities,
+          if (snapshot.facility != null) snapshot.facility!,
+        ];
+        facilitiesResult?.when(
+          success: (AppPage<FacilityProfile> facilitiesPage) {
+            facilities = facilitiesPage.items;
+          },
+          failure: (_) {},
+        );
+        final Map<String, String> facilityNames = <String, String>{
+          for (final FacilityProfile facility in facilities)
+            facility.id: facility.name,
+        };
+
+        List<WardProfile> wards = const <WardProfile>[];
+        wardsResult.when(
+          success: (AppPage<WardProfile> wardsPage) {
+            wards = wardsPage.items;
+          },
+          failure: (_) {},
+        );
+        final Map<String, String> wardNames = <String, String>{
+          for (final WardProfile ward in wards) ward.id: ward.name,
+        };
+
+        setState(() {
+          _loading = false;
+          _failure = null;
+          _rooms = page.items;
+          _wards = wards;
+          _tenantOptions = tenants;
+          _facilityOptions = facilities;
+          _tenantNamesById = tenantNames;
+          _facilityNamesById = facilityNames;
+          _wardNamesById = wardNames;
+          _syncWardFilterToOptions();
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _loading = false;
+          _failure = failure;
+          if (!silent) {
+            _rooms = const <RoomProfile>[];
+          }
+        });
+      },
+    );
+  }
+
+  String _facilityLabel(RoomProfile room) {
+    final String facilityId = room.facilityId.trim();
+    if (facilityId.isEmpty) {
+      return '—';
+    }
+    return _facilityNamesById[facilityId] ?? facilityId;
+  }
+
+  String _tenantLabel(RoomProfile room) {
+    final String tenantId = room.tenantId.trim();
+    if (tenantId.isEmpty) {
+      return '—';
+    }
+    return _tenantNamesById[tenantId] ?? tenantId;
+  }
+
+  String _wardLabel(RoomProfile room) {
+    final String? wardId = room.wardId?.trim();
+    if (wardId == null || wardId.isEmpty) {
+      return '—';
+    }
+    return _wardNamesById[wardId] ??
+        _wardName(snapshot, wardId) ??
+        wardId;
+  }
+
+  Future<void> _afterMutation(Future<void> Function() action) async {
+    await action();
+    if (!mounted) {
+      return;
+    }
+    await _reload(silent: true);
+  }
+
+  Future<bool> _runBusyRoomAction(
+    RoomProfile room,
+    Future<bool> Function() action,
+  ) async {
+    if (mounted) {
+      setState(() => _busyRoomId = room.id);
+    }
+    final bool succeeded = await action();
+    if (!succeeded && mounted && _busyRoomId == room.id) {
+      setState(() => _busyRoomId = null);
+    }
+    return succeeded;
+  }
+
+  List<AppSearchBarFilterGroup> _buildFilterGroups(AppLocalizations l10n) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+    final List<FacilityProfile> facilities = _facilitiesForFilter;
+    final List<WardProfile> wards = _wardsForFilter;
+
+    return <AppSearchBarFilterGroup>[
+      if (tenantFacilityRoomsShowsTenantFilter(scope) &&
+          _tenantOptions.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: TenantFacilityRoomsFilterKeys.tenant,
+          label: l10n.profileTenantLabel,
+          allLabel: l10n.commonAllLabel,
+          choices: _tenantOptions
+              .map(
+                (TenantProfile tenant) => AppSearchBarFilterChoice(
+                  value: tenant.id,
+                  label: tenant.name,
+                  icon: Icons.apartment_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (tenantFacilityRoomsShowsFacilityFilter(scope) &&
+          facilities.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: TenantFacilityRoomsFilterKeys.facility,
+          label: l10n.profileFacilityLabel,
+          allLabel: l10n.commonAllLabel,
+          choices: facilities
+              .map(
+                (FacilityProfile facility) => AppSearchBarFilterChoice(
+                  value: facility.id,
+                  label: facility.name,
+                  icon: Icons.local_hospital_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (wards.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: TenantFacilityRoomsFilterKeys.ward,
+          label: l10n.tenantFacilityRoomWardLabel,
+          allLabel: l10n.commonAllLabel,
+          choices: wards
+              .map(
+                (WardProfile ward) => AppSearchBarFilterChoice(
+                  value: ward.id,
+                  label: ward.name,
+                  icon: Icons.local_hotel_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool canManageRecords = widget.canSubmit;
+    final bool isSubmitting = submission.isSubmitting;
+    final bool prerequisitesMet = switch (scope) {
+      TenantFacilityRoomsListScope.facility =>
+        (policy.facilityId ?? snapshot.facility?.id)?.trim().isNotEmpty == true &&
+            !(snapshot.facility?.isDeleted ?? false),
+      TenantFacilityRoomsListScope.tenant ||
+      TenantFacilityRoomsListScope.platform =>
+        _accessibleFacilities.isNotEmpty,
+    };
+    final bool canAdd =
+        canManageRecords &&
+        prerequisitesMet &&
+        !isSubmitting &&
+        _busyRoomId == null;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedFacilityForRooms
+        : null;
+    final bool showTenantColumn = tenantFacilityRoomsShowsTenantColumn(scope);
+    final bool showFacilityColumn = tenantFacilityRoomsShowsFacilityColumn(
+      scope,
+    );
+
+    final List<AppListTableColumn<RoomProfile>> extraColumns =
+        <AppListTableColumn<RoomProfile>>[
+          AppListTableColumn<RoomProfile>(
+            id: 'ward',
+            label: l10n.tenantFacilityRoomWardLabel,
+            preferredWidth: 160,
+            cellBuilder: (_, RoomProfile room) => Text(_wardLabel(room)),
+          ),
+          AppListTableColumn<RoomProfile>(
+            id: 'floor',
+            label: l10n.tenantFacilityRoomFloorLabel,
+            preferredWidth: 100,
+            cellBuilder: (_, RoomProfile room) {
+              final String? floor = room.floor?.trim();
+              return Text(
+                floor == null || floor.isEmpty ? '—' : floor,
+              );
+            },
+          ),
+          if (showFacilityColumn)
+            AppListTableColumn<RoomProfile>(
+              id: 'facility',
+              label: l10n.profileFacilityLabel,
+              preferredWidth: 160,
+              cellBuilder: (_, RoomProfile room) => Text(_facilityLabel(room)),
+            ),
+          if (showTenantColumn)
+            AppListTableColumn<RoomProfile>(
+              id: 'tenant',
+              label: l10n.profileTenantLabel,
+              preferredWidth: 160,
+              cellBuilder: (_, RoomProfile room) => Text(_tenantLabel(room)),
+            ),
+        ];
+
+    final Widget content = _loading && _rooms.isEmpty
+        ? const AppLoadingIndicator.compact()
+        : _failure != null && _rooms.isEmpty
+        ? Center(
+            child: Text(
+              l10n.failureMessage(_failure!),
+              textAlign: TextAlign.center,
+            ),
+          )
+        : _SearchableEntityGroup<RoomProfile>(
+            title: l10n.tenantFacilityRoomsLabel,
+            nameColumnLabel: l10n.tenantFacilityRoomNameLabel,
+            items: _rooms,
+            emptyLabel: l10n.tenantFacilityNoRooms,
+            noResultsLabel: l10n.tenantFacilitySearchNoResults,
+            searchLabel: l10n.tenantFacilitySearchLabel,
+            searchHint: l10n.tenantFacilityRoomSearchHint,
+            addLabel: l10n.tenantFacilityAddRoomAction,
+            canManageRecords: canManageRecords,
+            canAdd: canAdd,
+            isSubmitting: isSubmitting,
+            busyItemId: _busyRoomId,
+            itemIdBuilder: (RoomProfile room) => room.id,
+            blockedMessage: blockedMessage,
+            onAdd: () => unawaited(
+              _afterMutation(
+                () => _openRoomDialog(
+                  context,
+                  snapshot,
+                  tenantOptions: _tenantOptions,
+                  facilityOptions: _accessibleFacilities,
+                  wardOptions: _accessibleWards,
+                ),
+              ),
+            ),
+            onRowSelected: (RoomProfile room) {
+              unawaited(
+                _afterMutation(
+                  () => _openRoomDetails(
+                    context,
+                    room: room,
+                    snapshot: snapshot,
+                    tenantName: _tenantLabel(room),
+                    facilityName: _facilityLabel(room),
+                    wardName: _wardLabel(room),
+                  ),
+                ),
+              );
+            },
+            columnVisibilityStorageKey:
+                'setup_structure_rooms_${scope.name}_v1',
+            extraFilterGroups: _buildFilterGroups(l10n),
+            onFiltersChanged: (AppSearchBarFilterValue value) {
+              unawaited(_onFiltersChanged(value));
+            },
+            titleBuilder: (RoomProfile room) => room.name,
+            subtitleBuilder: (RoomProfile room) {
+              final String ward = _wardLabel(room);
+              final String? floor = room.floor?.trim();
+              final String status = room.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : l10n.tenantFacilityTenantStatusActive;
+              return <String>[
+                if (ward != '—') ward,
+                if (floor != null && floor.isNotEmpty) floor,
+                status,
+                if (showFacilityColumn) _facilityLabel(room),
+                if (showTenantColumn) _tenantLabel(room),
+              ].where((String part) => part.trim().isNotEmpty).join(', ');
+            },
+            statusLabelBuilder: (RoomProfile room) {
+              if (room.isDeleted) {
+                return l10n.tenantFacilityStructureDeletedStatus;
+              }
+              return l10n.tenantFacilityTenantStatusActive;
+            },
+            extraColumns: extraColumns,
+            isDeletedBuilder: (RoomProfile room) => room.isDeleted,
+            onEdit: (RoomProfile room) {
+              if (room.isDeleted ||
+                  isSubmitting ||
+                  _busyRoomId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _openRoomDialog(
+                  context,
+                  snapshot,
+                  room: room,
+                  tenantOptions: _tenantOptions,
+                  facilityOptions: _accessibleFacilities,
+                  wardOptions: _accessibleWards,
+                );
+                if (!mounted) {
+                  return;
+                }
+                setState(() => _busyRoomId = room.id);
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted && _busyRoomId == room.id) {
+                    setState(() => _busyRoomId = null);
+                  }
+                }
+              }());
+            },
+            onDelete: (RoomProfile room) {
+              if (_busyRoomId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _deleteEntity(
+                  context: context,
+                  ref: ref,
+                  name: room.name,
+                  deleteAction: () => _runBusyRoomAction(
+                    room,
+                    () => ref
+                        .read(tenantFacilitySetupSubmissionProvider.notifier)
+                        .deleteRoom(room.id),
+                  ),
+                );
+                if (!mounted) {
+                  return;
+                }
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted && _busyRoomId == room.id) {
+                    setState(() => _busyRoomId = null);
+                  }
+                }
+              }());
+            },
+            onRestore: (RoomProfile room) {
+              if (_busyRoomId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _restoreEntity(
+                  context: context,
+                  ref: ref,
+                  name: room.name,
+                  restoreAction: () => _runBusyRoomAction(
+                    room,
+                    () => ref
+                        .read(tenantFacilitySetupSubmissionProvider.notifier)
+                        .restoreRoom(room.id),
+                  ),
+                );
+                if (!mounted) {
+                  return;
+                }
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted && _busyRoomId == room.id) {
+                    setState(() => _busyRoomId = null);
+                  }
+                }
+              }());
+            },
+          );
+
+    if (widget.framed) {
+      return content;
+    }
+
+    return _ModalSectionBody(
+      body: l10n.tenantFacilityRoomsModalBody,
+      blockedMessage: blockedMessage,
+      child: content,
+    );
   }
 }
 
@@ -5395,9 +6085,28 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
                   facilityOptions: _facilityOptions,
                   wardOptions: _accessibleWards,
                   roomOptions: _accessibleRooms,
+                  tenantNameFor: _tenantLabel,
+                  facilityNameFor: _facilityLabel,
+                  wardNameFor: _wardLabel,
+                  roomNameFor: _roomLabel,
                 ),
               ),
             ),
+            onRowSelected: (BedProfile bed) {
+              unawaited(
+                _afterMutation(
+                  () => _openBedDetails(
+                    context,
+                    bed: bed,
+                    snapshot: snapshot,
+                    tenantName: _tenantLabel(bed),
+                    facilityName: _facilityLabel(bed),
+                    wardName: _wardLabel(bed),
+                    roomName: _roomLabel(bed),
+                  ),
+                ),
+              );
+            },
             columnVisibilityStorageKey: 'setup_structure_beds_${scope.name}_v1',
             extraFilterGroups: _buildFilterGroups(l10n),
             onFiltersChanged: (AppSearchBarFilterValue value) {
@@ -5437,6 +6146,10 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
                   facilityOptions: _facilityOptions,
                   wardOptions: _accessibleWards,
                   roomOptions: _accessibleRooms,
+                  tenantNameFor: _tenantLabel,
+                  facilityNameFor: _facilityLabel,
+                  wardNameFor: _wardLabel,
+                  roomNameFor: _roomLabel,
                 );
                 if (!mounted) {
                   return;
@@ -7339,17 +8052,22 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
     );
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool isEditing = !_isCreate;
-    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
+    final bool showDialogLoadingOverlay =
+        _loadingOptions || _checkingSimilarity || submission.isSubmitting;
+    final bool canEdit = !showDialogLoadingOverlay;
     final bool showTenantPicker =
         _isCreate && tenantFacilityUnitsShowsTenantFilter(scope);
     final bool showFacilityPicker =
         _isCreate && tenantFacilityUnitsShowsFacilityFilter(scope);
     final ThemeData theme = Theme.of(context);
+    final String overlayTitle = _checkingSimilarity
+        ? l10n.tenantFacilityUnitSimilarityCheckingMessage
+        : l10n.commonLoadingTitle;
 
     final Widget? tenantField = showTenantPicker
         ? AppSelectField<String>.searchable(
             value: _selectedTenantId ?? _noneSelection,
-            enabled: canEdit && !_loadingOptions,
+            enabled: canEdit,
             labelText: l10n.profileTenantLabel,
             isRequired: true,
             options: <AppSelectOption<String>>[
@@ -7384,7 +8102,6 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
             value: _selectedFacilityId ?? _noneSelection,
             enabled:
                 canEdit &&
-                !_loadingOptions &&
                 (!showTenantPicker ||
                     (_selectedTenantId != null &&
                         _selectedTenantId!.isNotEmpty)),
@@ -7422,7 +8139,6 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
       value: _selectedDepartmentId ?? _noneSelection,
       enabled:
           canEdit &&
-          !_loadingOptions &&
           _isCreate &&
           _departmentOptions.isNotEmpty,
       labelText: l10n.tenantFacilityUnitDepartmentLabel,
@@ -7453,82 +8169,88 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
       },
     );
 
+    final Widget formBody = Form(
+      key: _formKey,
+      child: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (tenantField != null && facilityField != null)
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: tenantField,
+              right: facilityField,
+            )
+          else if (tenantField != null)
+            tenantField
+          else if (facilityField != null)
+            facilityField,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityUnitNameLabel,
+              isRequired: true,
+              textCapitalization: TextCapitalization.words,
+              errorText: _nameErrorText,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              onChanged: (_) {
+                if (_nameErrorText != null) {
+                  setState(() {
+                    _nameErrorText = null;
+                  });
+                }
+              },
+            ),
+            right: departmentField,
+          ),
+          AppSwitchField(
+            title: l10n.tenantFacilityActiveLabel,
+            value: _isActive,
+            enabled: canEdit,
+            onChanged: (bool value) {
+              setState(() {
+                _isActive = value;
+              });
+            },
+          ),
+          _SubmissionFailureBanner(),
+        ],
+      ),
+    );
+
     return AppDialog(
       title: Text(
         isEditing
             ? l10n.tenantFacilityEditUnitTitle
             : l10n.tenantFacilityAddUnitTitle,
       ),
-      scrollable: true,
+      scrollable: false,
       closeEnabled: canEdit,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_checkingSimilarity || _loadingOptions)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.sm),
-                child: Row(
-                  children: <Widget>[
-                    const AppLoadingIndicator.compact(expand: false),
-                    SizedBox(width: theme.spacing.sm),
-                    Expanded(
-                      child: Text(
-                        _checkingSimilarity
-                            ? l10n.tenantFacilityUnitSimilarityCheckingMessage
-                            : l10n.commonLoadingCompactTitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+      content: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          ExcludeSemantics(
+            excluding: showDialogLoadingOverlay,
+            child: AbsorbPointer(
+              absorbing: showDialogLoadingOverlay,
+              child: SingleChildScrollView(
+                child: formBody,
+              ),
+            ),
+          ),
+          if (showDialogLoadingOverlay)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0.94),
+                child: AppLoadingIndicator(
+                  title: overlayTitle,
+                  expand: true,
+                  semanticLabel: overlayTitle,
                 ),
               ),
-            if (tenantField != null && facilityField != null)
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: tenantField,
-                right: facilityField,
-              )
-            else if (tenantField != null)
-              tenantField
-            else if (facilityField != null)
-              facilityField,
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _nameController,
-                enabled: canEdit,
-                labelText: l10n.tenantFacilityUnitNameLabel,
-                isRequired: true,
-                textCapitalization: TextCapitalization.words,
-                errorText: _nameErrorText,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-                onChanged: (_) {
-                  if (_nameErrorText != null) {
-                    setState(() {
-                      _nameErrorText = null;
-                    });
-                  }
-                },
-              ),
-              right: departmentField,
             ),
-            AppSwitchField(
-              title: l10n.tenantFacilityActiveLabel,
-              value: _isActive,
-              enabled: canEdit,
-              onChanged: (bool value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-            ),
-            _SubmissionFailureBanner(),
-          ],
-        ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -7637,7 +8359,9 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
         );
 
     if (saved && mounted) {
-      Navigator.of(context).pop<bool>(true);
+      final UnitProfile? savedUnit =
+          ref.read(tenantFacilitySetupSubmissionProvider).lastSavedUnit;
+      Navigator.of(context).pop<Object?>(savedUnit ?? true);
       return;
     }
   }
@@ -7647,21 +8371,8 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
     required String facilityId,
     required String departmentId,
     required String name,
-    bool forceReviewMatches = false,
   }) async {
     final UnitProfile? editing = widget.unit;
-
-    if (!_isCreate &&
-        !forceReviewMatches &&
-        editing != null &&
-        normalizeUnitName(name) == normalizeUnitName(editing.name) &&
-        (editing.departmentId?.trim() ?? '') == departmentId &&
-        _isActive == editing.isActive) {
-      setState(() {
-        _nameErrorText = null;
-      });
-      return true;
-    }
 
     final List<UnitProfile> existing = await _loadExistingUnits(
       tenantId: tenantId,
@@ -7694,16 +8405,6 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
 
     if (!mounted) {
       return false;
-    }
-
-    if (!_isCreate &&
-        !forceReviewMatches &&
-        !exactNameConflict &&
-        reviewMatches.isEmpty) {
-      setState(() {
-        _nameErrorText = null;
-      });
-      return true;
     }
 
     setState(() {
@@ -8087,17 +8788,22 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
     );
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool isEditing = !_isCreate;
-    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
+    final bool showLoadingOverlay =
+        _loadingOptions || _checkingSimilarity || submission.isSubmitting;
+    final bool canEdit = !showLoadingOverlay;
     final bool showTenantPicker =
         _isCreate && tenantFacilityWardsShowsTenantFilter(scope);
     final bool showFacilityPicker =
         _isCreate && tenantFacilityWardsShowsFacilityFilter(scope);
     final ThemeData theme = Theme.of(context);
+    final String overlayTitle = _checkingSimilarity
+        ? l10n.tenantFacilityWardSimilarityCheckingMessage
+        : l10n.commonLoadingTitle;
 
     final Widget? tenantField = showTenantPicker
         ? AppSelectField<String>.searchable(
             value: _selectedTenantId ?? _noneSelection,
-            enabled: canEdit && !_loadingOptions,
+            enabled: canEdit,
             labelText: l10n.profileTenantLabel,
             isRequired: true,
             options: <AppSelectOption<String>>[
@@ -8132,7 +8838,6 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
             value: _selectedFacilityId ?? _noneSelection,
             enabled:
                 canEdit &&
-                !_loadingOptions &&
                 (!showTenantPicker ||
                     (_selectedTenantId != null &&
                         _selectedTenantId!.isNotEmpty)),
@@ -8168,7 +8873,7 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
 
     final Widget departmentField = AppSelectField<String>.searchable(
       value: _selectedDepartmentId ?? _noneSelection,
-      enabled: canEdit && !_loadingOptions,
+      enabled: canEdit,
       labelText: l10n.tenantFacilityWardDepartmentLabel,
       options: <AppSelectOption<String>>[
         AppSelectOption<String>(
@@ -8196,103 +8901,107 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
       },
     );
 
+    final Widget formBody = Form(
+      key: _formKey,
+      child: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (tenantField != null && facilityField != null)
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: tenantField,
+              right: facilityField,
+            )
+          else if (tenantField != null)
+            tenantField
+          else if (facilityField != null)
+            facilityField,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityWardNameLabel,
+              isRequired: true,
+              textCapitalization: TextCapitalization.words,
+              errorText: _nameErrorText,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              onChanged: (_) {
+                if (_nameErrorText != null) {
+                  setState(() {
+                    _nameErrorText = null;
+                  });
+                }
+              },
+            ),
+            right: AppSelectField<WardSetupType>(
+              value: _type,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityWardTypeLabel,
+              isRequired: true,
+              options: <AppSelectOption<WardSetupType>>[
+                for (final WardSetupType type in WardSetupType.values)
+                  AppSelectOption<WardSetupType>(
+                    value: type,
+                    label: _wardTypeLabel(l10n, type),
+                  ),
+              ],
+              onChanged: (WardSetupType? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _type = value;
+                });
+              },
+            ),
+          ),
+          departmentField,
+          AppSwitchField(
+            title: l10n.tenantFacilityActiveLabel,
+            value: _isActive,
+            enabled: canEdit,
+            onChanged: (bool value) {
+              setState(() {
+                _isActive = value;
+              });
+            },
+          ),
+          _SubmissionFailureBanner(),
+        ],
+      ),
+    );
+
     return AppDialog(
       title: Text(
         isEditing
             ? l10n.tenantFacilityEditWardTitle
             : l10n.tenantFacilityAddWardTitle,
       ),
-      scrollable: true,
+      scrollable: false,
       closeEnabled: canEdit,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_checkingSimilarity || _loadingOptions)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.sm),
-                child: Row(
-                  children: <Widget>[
-                    const AppLoadingIndicator.compact(expand: false),
-                    SizedBox(width: theme.spacing.sm),
-                    Expanded(
-                      child: Text(
-                        _checkingSimilarity
-                            ? l10n.tenantFacilityWardSimilarityCheckingMessage
-                            : l10n.commonLoadingCompactTitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+      content: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          ExcludeSemantics(
+            excluding: showLoadingOverlay,
+            child: AbsorbPointer(
+              absorbing: showLoadingOverlay,
+              child: SingleChildScrollView(child: formBody),
+            ),
+          ),
+          if (showLoadingOverlay)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0.94),
+                child: AppLoadingIndicator(
+                  title: overlayTitle,
+                  expand: true,
+                  semanticLabel: overlayTitle,
                 ),
               ),
-            if (tenantField != null && facilityField != null)
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: tenantField,
-                right: facilityField,
-              )
-            else if (tenantField != null)
-              tenantField
-            else if (facilityField != null)
-              facilityField,
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _nameController,
-                enabled: canEdit,
-                labelText: l10n.tenantFacilityWardNameLabel,
-                isRequired: true,
-                textCapitalization: TextCapitalization.words,
-                errorText: _nameErrorText,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-                onChanged: (_) {
-                  if (_nameErrorText != null) {
-                    setState(() {
-                      _nameErrorText = null;
-                    });
-                  }
-                },
-              ),
-              right: AppSelectField<WardSetupType>(
-                value: _type,
-                enabled: canEdit,
-                labelText: l10n.tenantFacilityWardTypeLabel,
-                isRequired: true,
-                options: <AppSelectOption<WardSetupType>>[
-                  for (final WardSetupType type in WardSetupType.values)
-                    AppSelectOption<WardSetupType>(
-                      value: type,
-                      label: _wardTypeLabel(l10n, type),
-                    ),
-                ],
-                onChanged: (WardSetupType? value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() {
-                    _type = value;
-                  });
-                },
-              ),
             ),
-            departmentField,
-            AppSwitchField(
-              title: l10n.tenantFacilityActiveLabel,
-              value: _isActive,
-              enabled: canEdit,
-              onChanged: (bool value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-            ),
-            _SubmissionFailureBanner(),
-          ],
-        ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -8396,7 +9105,10 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
         );
 
     if (saved && mounted) {
-      Navigator.of(context).pop<bool>(true);
+      final WardProfile? savedWard =
+          ref.read(tenantFacilitySetupSubmissionProvider).lastSavedWard ??
+          editing;
+      Navigator.of(context).pop<Object?>(savedWard);
       return;
     }
   }
@@ -8406,22 +9118,8 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
     required String facilityId,
     String? departmentId,
     required String name,
-    bool forceReviewMatches = false,
   }) async {
     final WardProfile? editing = widget.ward;
-
-    if (!_isCreate &&
-        !forceReviewMatches &&
-        editing != null &&
-        normalizeWardName(name) == normalizeWardName(editing.name) &&
-        editing.type == _type &&
-        (editing.departmentId?.trim() ?? '') == (departmentId ?? '') &&
-        _isActive == editing.isActive) {
-      setState(() {
-        _nameErrorText = null;
-      });
-      return true;
-    }
 
     final List<WardProfile> existing = await _loadExistingWards(
       tenantId: tenantId,
@@ -8458,16 +9156,6 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
 
     if (!mounted) {
       return false;
-    }
-
-    if (!_isCreate &&
-        !forceReviewMatches &&
-        !exactNameConflict &&
-        reviewMatches.isEmpty) {
-      setState(() {
-        _nameErrorText = null;
-      });
-      return true;
     }
 
     setState(() {
@@ -8564,31 +9252,64 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
 }
 
 class _RoomFormDialog extends ConsumerStatefulWidget {
-  const _RoomFormDialog({required this.snapshot, this.room});
+  const _RoomFormDialog({
+    required this.snapshot,
+    this.room,
+    this.tenantOptions = const <TenantProfile>[],
+    this.facilityOptions = const <FacilityProfile>[],
+    this.wardOptions = const <WardProfile>[],
+  });
 
   final FacilitySetupSnapshot snapshot;
   final RoomProfile? room;
+  final List<TenantProfile> tenantOptions;
+  final List<FacilityProfile> facilityOptions;
+  final List<WardProfile> wardOptions;
 
   @override
   ConsumerState<_RoomFormDialog> createState() => _RoomFormDialogState();
 }
 
 class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
+  static const AppPageRequest _lookupRequest = AppPageRequest(
+    pageSize: AppPageRequest.maxPageSize,
+  );
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _floorController;
   late String _wardId;
+  String? _selectedTenantId;
+  String? _selectedFacilityId;
+  List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  List<FacilityProfile> _facilityOptions = const <FacilityProfile>[];
+  List<WardProfile> _wardOptions = const <WardProfile>[];
+  bool _loadingOptions = false;
+  bool _checkingSimilarity = false;
+  String? _nameErrorText;
+
+  bool get _isCreate => widget.room == null;
+
+  bool get _showLoadingOverlay => _loadingOptions || _checkingSimilarity;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.room?.name);
-    _floorController = TextEditingController(text: widget.room?.floor);
-    _wardId =
-        widget.room?.wardId ??
-        (widget.snapshot.wards.length == 1
-            ? widget.snapshot.wards.first.id
-            : _noneSelection);
+    final RoomProfile? room = widget.room;
+    _nameController = TextEditingController(text: room?.name);
+    _floorController = TextEditingController(text: room?.floor);
+    _tenantOptions = widget.tenantOptions;
+    _facilityOptions = widget.facilityOptions;
+    _wardOptions = widget.wardOptions;
+    _selectedTenantId = room?.tenantId.trim().isNotEmpty == true
+        ? room!.tenantId.trim()
+        : widget.snapshot.tenant?.id.trim();
+    _selectedFacilityId = room?.facilityId.trim().isNotEmpty == true
+        ? room!.facilityId.trim()
+        : widget.snapshot.facility?.id.trim();
+    _wardId = room?.wardId ??
+        (_wardOptions.length == 1 ? _wardOptions.first.id : _noneSelection);
+    unawaited(_ensureScopeOptions());
   }
 
   @override
@@ -8598,12 +9319,373 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
     super.dispose();
   }
 
+  Future<void> _ensureScopeOptions() async {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+
+    setState(() {
+      _loadingOptions = true;
+    });
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+
+    if (_isCreate &&
+        scope == TenantFacilityRoomsListScope.platform &&
+        _tenantOptions.isEmpty) {
+      final Result<AppPage<TenantProfile>> tenantsResult = await repository
+          .listTenants(request: _lookupRequest);
+      if (!mounted) {
+        return;
+      }
+      tenantsResult.when(
+        success: (AppPage<TenantProfile> page) {
+          _tenantOptions = page.items
+              .where((TenantProfile tenant) => !tenant.isDeleted)
+              .toList(growable: false);
+        },
+        failure: (_) {},
+      );
+    }
+
+    final String? tenantIdForFacilities = switch (scope) {
+      TenantFacilityRoomsListScope.platform => _selectedTenantId,
+      TenantFacilityRoomsListScope.tenant =>
+        policy.tenantId ?? widget.snapshot.tenant?.id,
+      TenantFacilityRoomsListScope.facility => null,
+    };
+
+    if (_isCreate &&
+        tenantFacilityRoomsShowsFacilityFilter(scope) &&
+        (scope != TenantFacilityRoomsListScope.platform ||
+            (tenantIdForFacilities != null &&
+                tenantIdForFacilities.isNotEmpty))) {
+      final Result<AppPage<FacilityProfile>> facilitiesResult = await repository
+          .listFacilities(
+            request: _lookupRequest,
+            tenantId: tenantIdForFacilities,
+          );
+      if (!mounted) {
+        return;
+      }
+      facilitiesResult.when(
+        success: (AppPage<FacilityProfile> page) {
+          _facilityOptions = page.items
+              .where((FacilityProfile facility) => !facility.isDeleted)
+              .toList(growable: false);
+        },
+        failure: (_) {},
+      );
+    }
+
+    await _loadWardOptions(
+      tenantId: switch (scope) {
+        TenantFacilityRoomsListScope.platform => _selectedTenantId,
+        TenantFacilityRoomsListScope.tenant ||
+        TenantFacilityRoomsListScope.facility =>
+          policy.tenantId ?? widget.snapshot.tenant?.id,
+      },
+      facilityId: switch (scope) {
+        TenantFacilityRoomsListScope.platform ||
+        TenantFacilityRoomsListScope.tenant =>
+          _selectedFacilityId,
+        TenantFacilityRoomsListScope.facility =>
+          policy.facilityId ?? widget.snapshot.facility?.id,
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _loadingOptions = false;
+      _syncFacilitySelection();
+      _syncWardSelection();
+    });
+  }
+
+  Future<void> _loadWardOptions({
+    String? tenantId,
+    String? facilityId,
+  }) async {
+    final bool tenantScoped = tenantId != null && tenantId.isNotEmpty;
+    final bool facilityScoped = facilityId != null && facilityId.isNotEmpty;
+    if (!tenantScoped && !facilityScoped) {
+      _wardOptions = const <WardProfile>[];
+      return;
+    }
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final Result<AppPage<WardProfile>> result = await repository.listWards(
+      request: _lookupRequest,
+      tenantId: tenantScoped ? tenantId : null,
+      facilityId: facilityScoped ? facilityId : null,
+    );
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<WardProfile> page) {
+        _wardOptions = page.items
+            .where((WardProfile ward) => !ward.isDeleted)
+            .toList(growable: false);
+      },
+      failure: (_) {},
+    );
+  }
+
+  void _syncFacilitySelection() {
+    final String? facilityId = _selectedFacilityId;
+    if (facilityId == null) {
+      return;
+    }
+    final bool allowed = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && !facility.isDeleted,
+    );
+    if (!allowed && _isCreate) {
+      _selectedFacilityId = null;
+    }
+  }
+
+  void _syncWardSelection() {
+    final String? wardId = _optionalSelection(_wardId);
+    if (wardId == null) {
+      return;
+    }
+    final bool allowed = _wardOptions.any(
+      (WardProfile ward) => ward.id == wardId && !ward.isDeleted,
+    );
+    if (!allowed) {
+      _wardId = _noneSelection;
+    }
+  }
+
+  Future<void> _onTenantChanged(String? tenantId) async {
+    setState(() {
+      _selectedTenantId = tenantId;
+      _selectedFacilityId = null;
+      _wardId = _noneSelection;
+      _facilityOptions = const <FacilityProfile>[];
+      _wardOptions = const <WardProfile>[];
+      _loadingOptions = tenantId != null && tenantId.isNotEmpty;
+    });
+    if (tenantId == null || tenantId.isEmpty) {
+      return;
+    }
+    final Result<AppPage<FacilityProfile>> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .listFacilities(request: _lookupRequest, tenantId: tenantId);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<FacilityProfile> page) {
+        setState(() {
+          _facilityOptions = page.items
+              .where((FacilityProfile facility) => !facility.isDeleted)
+              .toList(growable: false);
+          _loadingOptions = false;
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _loadingOptions = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _onFacilityChanged(String? facilityId) async {
+    setState(() {
+      _selectedFacilityId = facilityId;
+      _wardId = _noneSelection;
+      _wardOptions = const <WardProfile>[];
+      _loadingOptions = facilityId != null && facilityId.isNotEmpty;
+    });
+    if (facilityId == null || facilityId.isEmpty) {
+      setState(() {
+        _loadingOptions = false;
+      });
+      return;
+    }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final String? tenantId = switch (tenantFacilityRoomsListScope(policy)) {
+      TenantFacilityRoomsListScope.platform => _selectedTenantId,
+      TenantFacilityRoomsListScope.tenant ||
+      TenantFacilityRoomsListScope.facility =>
+        policy.tenantId ?? widget.snapshot.tenant?.id,
+    };
+    await _loadWardOptions(tenantId: tenantId, facilityId: facilityId);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _loadingOptions = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool isEditing = widget.room != null;
-    final bool canEdit = !submission.isSubmitting;
+    final bool isEditing = !_isCreate;
+    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
+    final bool showTenantPicker =
+        _isCreate && tenantFacilityRoomsShowsTenantFilter(scope);
+    final bool showFacilityPicker =
+        _isCreate && tenantFacilityRoomsShowsFacilityFilter(scope);
+    final ThemeData theme = Theme.of(context);
+
+    final Widget? tenantField = showTenantPicker
+        ? AppSelectField<String>.searchable(
+            value: _selectedTenantId ?? _noneSelection,
+            enabled: canEdit && !_loadingOptions,
+            labelText: l10n.profileTenantLabel,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _noneSelection,
+                label: l10n.tenantFacilityNoSelectionLabel,
+              ),
+              for (final TenantProfile tenant in _tenantOptions)
+                AppSelectOption<String>(
+                  value: tenant.id,
+                  label: tenant.name,
+                  leadingIcon: const Icon(Icons.apartment_outlined),
+                ),
+            ],
+            validator: (String? value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value == _noneSelection) {
+                return l10n.validationRequired;
+              }
+              return null;
+            },
+            onChanged: (String? value) {
+              final String? next =
+                  value == null || value == _noneSelection ? null : value;
+              unawaited(_onTenantChanged(next));
+            },
+          )
+        : null;
+    final Widget? facilityField = showFacilityPicker
+        ? AppSelectField<String>.searchable(
+            value: _selectedFacilityId ?? _noneSelection,
+            enabled:
+                canEdit &&
+                !_loadingOptions &&
+                (!showTenantPicker ||
+                    (_selectedTenantId != null &&
+                        _selectedTenantId!.isNotEmpty)),
+            labelText: l10n.profileFacilityLabel,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _noneSelection,
+                label: l10n.tenantFacilityNoSelectionLabel,
+              ),
+              for (final FacilityProfile facility in _facilityOptions)
+                AppSelectOption<String>(
+                  value: facility.id,
+                  label: facility.name,
+                  leadingIcon: const Icon(Icons.local_hospital_outlined),
+                ),
+            ],
+            validator: (String? value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value == _noneSelection) {
+                return l10n.validationRequired;
+              }
+              return null;
+            },
+            onChanged: (String? value) {
+              final String? next =
+                  value == null || value == _noneSelection ? null : value;
+              unawaited(_onFacilityChanged(next));
+            },
+          )
+        : null;
+
+    final Widget form = Form(
+      key: _formKey,
+      child: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (tenantField != null && facilityField != null)
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: tenantField,
+              right: facilityField,
+            )
+          else if (tenantField != null)
+            tenantField
+          else if (facilityField != null)
+            facilityField,
+          AppTextField(
+            controller: _nameController,
+            enabled: canEdit,
+            labelText: l10n.tenantFacilityRoomNameLabel,
+            isRequired: true,
+            textCapitalization: TextCapitalization.words,
+            errorText: _nameErrorText,
+            validator: AppValidators.requiredText(l10n.validationRequired),
+            onChanged: (_) {
+              if (_nameErrorText != null) {
+                setState(() {
+                  _nameErrorText = null;
+                });
+              }
+            },
+          ),
+          AppSelectField<String>.searchable(
+            value: _wardId,
+            enabled: canEdit && !_loadingOptions,
+            labelText: l10n.tenantFacilityRoomWardLabel,
+            helperText: l10n.tenantFacilityRoomWardOptionalHint,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _noneSelection,
+                label: l10n.tenantFacilityRoomOutpatientLabel,
+              ),
+              for (final WardProfile ward in _wardOptions)
+                AppSelectOption<String>(
+                  value: ward.id,
+                  label: ward.name,
+                  leadingIcon: const Icon(Icons.local_hotel_outlined),
+                ),
+            ],
+            validator: tenantFacilityValidReferenceSelection(
+              validIds: _wardOptions
+                  .map((WardProfile ward) => ward.id)
+                  .toList(growable: false),
+              invalidMessage: l10n.tenantFacilityInvalidWardSelection,
+            ),
+            onChanged: (String? value) {
+              setState(() {
+                _wardId = value ?? _noneSelection;
+              });
+            },
+          ),
+          AppTextField(
+            controller: _floorController,
+            enabled: canEdit,
+            labelText: l10n.tenantFacilityRoomFloorLabel,
+          ),
+          _SubmissionFailureBanner(),
+        ],
+      ),
+    );
 
     return AppDialog(
       title: Text(
@@ -8612,58 +9694,36 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
             : l10n.tenantFacilityAddRoomTitle,
       ),
       scrollable: true,
-      closeEnabled: canEdit,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppTextField(
-              controller: _nameController,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityRoomNameLabel,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+      closeEnabled: canEdit && !_showLoadingOverlay,
+      content: Stack(
+        children: <Widget>[
+          ExcludeSemantics(
+            excluding: _showLoadingOverlay,
+            child: AbsorbPointer(
+              absorbing: _showLoadingOverlay,
+              child: form,
             ),
-            AppSelectField<String>.searchable(
-              value: _wardId,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityRoomWardLabel,
-              helperText: l10n.tenantFacilityRoomWardOptionalHint,
-              options: <AppSelectOption<String>>[
-                AppSelectOption<String>(
-                  value: _noneSelection,
-                  label: l10n.tenantFacilityRoomOutpatientLabel,
+          ),
+          if (_showLoadingOverlay)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0.94),
+                child: Center(
+                  child: AppLoadingIndicator(
+                    title: _checkingSimilarity
+                        ? l10n.tenantFacilityRoomSimilarityCheckingMessage
+                        : l10n.commonLoadingCompactTitle,
+                    expand: false,
+                  ),
                 ),
-                for (final WardProfile ward in widget.snapshot.wards)
-                  AppSelectOption<String>(value: ward.id, label: ward.name),
-              ],
-              validator: tenantFacilityValidReferenceSelection(
-                validIds: widget.snapshot.wards
-                    .map((WardProfile ward) => ward.id)
-                    .toList(growable: false),
-                invalidMessage: l10n.tenantFacilityInvalidWardSelection,
               ),
-              onChanged: (String? value) {
-                setState(() {
-                  _wardId = value ?? _noneSelection;
-                });
-              },
             ),
-            AppTextField(
-              controller: _floorController,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityRoomFloorLabel,
-            ),
-            _SubmissionFailureBanner(),
-          ],
-        ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          enabled: canEdit,
+          enabled: canEdit && !_showLoadingOverlay,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
@@ -8671,37 +9731,234 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               ? l10n.tenantFacilitySaveAction
               : l10n.tenantFacilityCreateAction,
           leadingIcon: Icons.save_outlined,
-          isLoading: submission.isSubmitting,
-          onPressed: _submit,
+          isLoading: submission.isSubmitting || _checkingSimilarity,
+          onPressed: _showLoadingOverlay ? null : _submit,
         ),
       ],
     );
   }
 
+  (String?, String?) _resolveScopeIds() {
+    final RoomProfile? editing = widget.room;
+    if (editing != null) {
+      final String? tenantId = editing.tenantId.trim().isNotEmpty
+          ? editing.tenantId.trim()
+          : widget.snapshot.tenant?.id.trim();
+      final String? facilityId = editing.facilityId.trim().isNotEmpty
+          ? editing.facilityId.trim()
+          : widget.snapshot.facility?.id.trim();
+      return (tenantId, facilityId);
+    }
+
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
+      policy,
+    );
+    final String? tenantId = switch (scope) {
+      TenantFacilityRoomsListScope.platform => _selectedTenantId?.trim(),
+      TenantFacilityRoomsListScope.tenant ||
+      TenantFacilityRoomsListScope.facility =>
+        policy.tenantId ?? widget.snapshot.tenant?.id.trim(),
+    };
+    final String? facilityId = switch (scope) {
+      TenantFacilityRoomsListScope.platform ||
+      TenantFacilityRoomsListScope.tenant =>
+        _selectedFacilityId?.trim(),
+      TenantFacilityRoomsListScope.facility =>
+        policy.facilityId ?? widget.snapshot.facility?.id.trim(),
+    };
+    return (tenantId, facilityId);
+  }
+
   Future<void> _submit() async {
-    if (_formKey.currentState?.validate() != true) {
+    if (_formKey.currentState?.validate() != true ||
+        _checkingSimilarity ||
+        _loadingOptions) {
       return;
     }
 
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
+    final (String? tenantId, String? facilityId) = _resolveScopeIds();
+    if (tenantId == null ||
+        tenantId.isEmpty ||
+        facilityId == null ||
+        facilityId.isEmpty) {
       return;
     }
 
+    final String? wardId = _optionalSelection(_wardId);
+    final String name = _nameController.text.trim();
+    final String floor = _floorController.text.trim();
+
+    setState(() {
+      _checkingSimilarity = true;
+    });
+    final bool canProceed;
+    try {
+      canProceed = await _guardAgainstDuplicates(
+        tenantId: tenantId,
+        facilityId: facilityId,
+        wardId: wardId,
+        name: name,
+        floor: floor,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checkingSimilarity = false;
+        });
+      }
+    }
+    if (!canProceed || !mounted) {
+      return;
+    }
+
+    final RoomProfile? editing = widget.room;
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveRoom(
-          id: widget.room?.id,
-          tenantId: tenant.id,
-          facilityId: facility.id,
-          name: _nameController.text,
-          wardId: _optionalSelection(_wardId),
-          floor: _floorController.text,
+          id: editing?.id,
+          tenantId: tenantId,
+          facilityId: facilityId,
+          name: name,
+          wardId: wardId,
+          floor: floor,
         );
+
     if (saved && mounted) {
-      Navigator.of(context).pop(true);
+      final RoomProfile? savedRoom =
+          ref.read(tenantFacilitySetupSubmissionProvider).lastSavedRoom;
+      Navigator.of(context).pop<Object?>(savedRoom ?? true);
     }
+  }
+
+  Future<bool> _guardAgainstDuplicates({
+    required String tenantId,
+    required String facilityId,
+    String? wardId,
+    required String name,
+    required String floor,
+  }) async {
+    final RoomProfile? editing = widget.room;
+
+    final List<RoomProfile> existing = await _loadExistingRooms(
+      tenantId: tenantId,
+      facilityId: facilityId,
+      wardId: wardId,
+      name: name,
+    );
+
+    final Map<String, String> wardNamesById = <String, String>{
+      for (final WardProfile ward in _wardOptions) ward.id: ward.name,
+      for (final WardProfile ward in widget.snapshot.wards)
+        ward.id: ward.name,
+    };
+    final String? wardName =
+        wardId == null || wardId.isEmpty ? null : wardNamesById[wardId];
+
+    final RoomDuplicateCheckResult result = checkRoomDuplicates(
+      name: name,
+      existing: existing,
+      wardId: wardId,
+      wardName: wardName,
+      floor: floor,
+      wardNamesById: wardNamesById,
+      excludeRoom: editing,
+      excludeRoomId: editing?.id,
+    );
+
+    final bool exactNameConflict = result.exactNameConflict;
+    final List<RoomSimilarityMatch> reviewMatches = result.similarMatches;
+
+    if (!mounted) {
+      return false;
+    }
+
+    setState(() {
+      _nameErrorText = exactNameConflict
+          ? context.l10n.tenantFacilityRoomNameAlreadyInUse
+          : null;
+    });
+
+    final RoomSimilarityDialogResult decision = await showRoomSimilarityDialog(
+      context,
+      proposed: RoomSimilarityProposedValues(
+        name: name,
+        wardName: wardName,
+        floor: floor.isEmpty ? null : floor,
+      ),
+      matches: reviewMatches,
+      allowProceed: !exactNameConflict,
+    );
+    if (!mounted) {
+      return false;
+    }
+
+    switch (decision.action) {
+      case RoomSimilarityAction.cancel:
+        return false;
+      case RoomSimilarityAction.useExisting:
+        final RoomProfile? existingRoom = decision.selectedRoom;
+        if (existingRoom != null) {
+          Navigator.of(context).pop<Object?>(existingRoom);
+        }
+        return false;
+      case RoomSimilarityAction.proceed:
+        setState(() {
+          _nameErrorText = null;
+        });
+        return true;
+    }
+  }
+
+  Future<List<RoomProfile>> _loadExistingRooms({
+    required String tenantId,
+    required String facilityId,
+    String? wardId,
+    required String name,
+  }) async {
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final Set<String> seenIds = <String>{};
+    final List<RoomProfile> rooms = <RoomProfile>[];
+
+    Future<void> appendMatches({
+      String? search,
+      String? scopedWardId,
+    }) async {
+      final Result<AppPage<RoomProfile>> result = await repository.listRooms(
+        request: _lookupRequest,
+        tenantId: tenantId,
+        facilityId: facilityId,
+        wardId: scopedWardId,
+        search: search,
+      );
+      result.when(
+        success: (AppPage<RoomProfile> page) {
+          for (final RoomProfile room in page.items) {
+            if (seenIds.add(room.id)) {
+              rooms.add(room);
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    }
+
+    // Always load the full facility peer set first.
+    await appendMatches();
+    if (wardId != null && wardId.isNotEmpty) {
+      await appendMatches(scopedWardId: wardId);
+    }
+    final String trimmedName = name.trim();
+    if (trimmedName.isNotEmpty) {
+      await appendMatches(search: trimmedName);
+      if (wardId != null && wardId.isNotEmpty) {
+        await appendMatches(search: trimmedName, scopedWardId: wardId);
+      }
+    }
+
+    return rooms;
   }
 }
 
@@ -9115,18 +10372,20 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
     );
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool isEditing = !_isCreate;
-    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
     final bool showTenantPicker =
         _isCreate && tenantFacilityBedsShowsTenantFilter(scope);
     final bool showFacilityPicker =
         _isCreate && tenantFacilityBedsShowsFacilityFilter(scope);
     final ThemeData theme = Theme.of(context);
     final List<RoomProfile> rooms = _roomsForSelectedWard;
+    final bool showLoadingOverlay =
+        _loadingOptions || _checkingSimilarity || submission.isSubmitting;
+    final bool canEdit = !showLoadingOverlay;
 
     final Widget? tenantField = showTenantPicker
         ? AppSelectField<String>.searchable(
             value: _selectedTenantId ?? _noneSelection,
-            enabled: canEdit && !_loadingOptions,
+            enabled: canEdit,
             labelText: l10n.profileTenantLabel,
             isRequired: true,
             options: <AppSelectOption<String>>[
@@ -9161,7 +10420,6 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
             value: _selectedFacilityId ?? _noneSelection,
             enabled:
                 canEdit &&
-                !_loadingOptions &&
                 (!showTenantPicker ||
                     (_selectedTenantId != null &&
                         _selectedTenantId!.isNotEmpty)),
@@ -9197,10 +10455,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
 
     final Widget wardField = AppSelectField<String>.searchable(
       value: _wardId,
-      enabled:
-          canEdit &&
-          !_loadingOptions &&
-          (_isCreate ? _wardOptions.isNotEmpty : true),
+      enabled: canEdit && (_isCreate ? _wardOptions.isNotEmpty : true),
       labelText: l10n.tenantFacilityBedWardLabel,
       isRequired: true,
       options: <AppSelectOption<String>>[
@@ -9238,7 +10493,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
 
     final Widget roomField = AppSelectField<String>.searchable(
       value: _roomId,
-      enabled: canEdit && !_loadingOptions && _optionalSelection(_wardId) != null,
+      enabled: canEdit && _optionalSelection(_wardId) != null,
       labelText: l10n.tenantFacilityBedRoomLabel,
       options: <AppSelectOption<String>>[
         AppSelectOption<String>(
@@ -9263,6 +10518,68 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
       },
     );
 
+    final Widget form = Form(
+      key: _formKey,
+      child: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (tenantField != null && facilityField != null)
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: tenantField,
+              right: facilityField,
+            )
+          else if (tenantField != null)
+            tenantField
+          else if (facilityField != null)
+            facilityField,
+          AppTextField(
+            controller: _labelController,
+            enabled: canEdit,
+            labelText: l10n.tenantFacilityBedLabelLabel,
+            isRequired: true,
+            textCapitalization: TextCapitalization.characters,
+            errorText: _labelErrorText,
+            validator: AppValidators.requiredText(l10n.validationRequired),
+            onChanged: (_) {
+              if (_labelErrorText != null) {
+                setState(() {
+                  _labelErrorText = null;
+                });
+              }
+            },
+          ),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: wardField,
+            right: roomField,
+          ),
+          AppSelectField<BedSetupStatus>(
+            value: _status,
+            enabled: canEdit,
+            labelText: l10n.tenantFacilityBedStatusLabel,
+            isRequired: true,
+            options: <AppSelectOption<BedSetupStatus>>[
+              for (final BedSetupStatus status in BedSetupStatus.values)
+                AppSelectOption<BedSetupStatus>(
+                  value: status,
+                  label: _bedStatusLabel(l10n, status),
+                ),
+            ],
+            onChanged: (BedSetupStatus? value) {
+              if (value == null) {
+                return;
+              }
+              setState(() {
+                _status = value;
+              });
+            },
+          ),
+          _SubmissionFailureBanner(),
+        ],
+      ),
+    );
+
     return AppDialog(
       title: Text(
         isEditing
@@ -9271,86 +10588,28 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
       ),
       scrollable: true,
       closeEnabled: canEdit,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_checkingSimilarity || _loadingOptions)
-              Padding(
-                padding: EdgeInsets.only(bottom: theme.spacing.sm),
-                child: Row(
-                  children: <Widget>[
-                    const AppLoadingIndicator.compact(expand: false),
-                    SizedBox(width: theme.spacing.sm),
-                    Expanded(
-                      child: Text(
-                        _checkingSimilarity
-                            ? l10n.tenantFacilityBedSimilarityCheckingMessage
-                            : l10n.commonLoadingCompactTitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+      content: Stack(
+        children: <Widget>[
+          ExcludeSemantics(
+            excluding: showLoadingOverlay,
+            child: AbsorbPointer(absorbing: showLoadingOverlay, child: form),
+          ),
+          if (showLoadingOverlay)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0.94),
+                child: AppLoadingIndicator(
+                  title: _checkingSimilarity
+                      ? l10n.tenantFacilityBedSimilarityCheckingMessage
+                      : l10n.commonLoadingCompactTitle,
+                  expand: true,
+                  semanticLabel: _checkingSimilarity
+                      ? l10n.tenantFacilityBedSimilarityCheckingMessage
+                      : l10n.commonLoadingCompactTitle,
                 ),
               ),
-            if (tenantField != null && facilityField != null)
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: tenantField,
-                right: facilityField,
-              )
-            else if (tenantField != null)
-              tenantField
-            else if (facilityField != null)
-              facilityField,
-            AppTextField(
-              controller: _labelController,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityBedLabelLabel,
-              isRequired: true,
-              textCapitalization: TextCapitalization.characters,
-              errorText: _labelErrorText,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-              onChanged: (_) {
-                if (_labelErrorText != null) {
-                  setState(() {
-                    _labelErrorText = null;
-                  });
-                }
-              },
             ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: wardField,
-              right: roomField,
-            ),
-            AppSelectField<BedSetupStatus>(
-              value: _status,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityBedStatusLabel,
-              isRequired: true,
-              options: <AppSelectOption<BedSetupStatus>>[
-                for (final BedSetupStatus status in BedSetupStatus.values)
-                  AppSelectOption<BedSetupStatus>(
-                    value: status,
-                    label: _bedStatusLabel(l10n, status),
-                  ),
-              ],
-              onChanged: (BedSetupStatus? value) {
-                if (value == null) {
-                  return;
-                }
-                setState(() {
-                  _status = value;
-                });
-              },
-            ),
-            _SubmissionFailureBanner(),
-          ],
-        ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -9460,7 +10719,9 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
         );
 
     if (saved && mounted) {
-      Navigator.of(context).pop<bool>(true);
+      final BedProfile? savedBed =
+          ref.read(tenantFacilitySetupSubmissionProvider).lastSavedBed;
+      Navigator.of(context).pop<Object?>(savedBed);
     }
   }
 
@@ -9553,7 +10814,10 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
       case BedSimilarityAction.cancel:
         return false;
       case BedSimilarityAction.useExisting:
-        Navigator.of(context).pop<bool>(true);
+        final BedProfile? existingBed = decision.selectedBed;
+        if (existingBed != null) {
+          Navigator.of(context).pop<Object?>(existingBed);
+        }
         return false;
       case BedSimilarityAction.proceed:
         setState(() {
@@ -9676,8 +10940,9 @@ Future<void> _openUnitDialog(
   List<TenantProfile> tenantOptions = const <TenantProfile>[],
   List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
   List<DepartmentProfile> departmentOptions = const <DepartmentProfile>[],
+  bool openDetailsOnSave = true,
 }) async {
-  await showAppDialog<Object?>(
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _UnitFormDialog(
@@ -9688,6 +10953,35 @@ Future<void> _openUnitDialog(
       departmentOptions: departmentOptions,
     ),
   );
+  if (!openDetailsOnSave || !context.mounted || result is! UnitProfile) {
+    return;
+  }
+  await _openUnitDetails(
+    context,
+    unit: result,
+    snapshot: snapshot,
+    tenantName: snapshot.tenant?.name,
+    facilityName: snapshot.facility?.name,
+    departmentName: _departmentName(snapshot, result.departmentId),
+  );
+}
+
+Future<void> _openUnitDetails(
+  BuildContext context, {
+  required UnitProfile unit,
+  FacilitySetupSnapshot? snapshot,
+  String? tenantName,
+  String? facilityName,
+  String? departmentName,
+}) async {
+  await showUnitDetailsDialog(
+    context,
+    unit: unit,
+    snapshot: snapshot,
+    tenantName: tenantName,
+    facilityName: facilityName == '—' ? null : facilityName,
+    departmentName: departmentName == '—' ? null : departmentName,
+  );
 }
 
 Future<void> _openWardDialog(
@@ -9697,8 +10991,9 @@ Future<void> _openWardDialog(
   List<TenantProfile> tenantOptions = const <TenantProfile>[],
   List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
   List<DepartmentProfile> departmentOptions = const <DepartmentProfile>[],
+  bool openDetailsOnSave = true,
 }) async {
-  await showAppDialog<Object?>(
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _WardFormDialog(
@@ -9709,17 +11004,83 @@ Future<void> _openWardDialog(
       departmentOptions: departmentOptions,
     ),
   );
+  if (!openDetailsOnSave || !context.mounted || result is! WardProfile) {
+    return;
+  }
+  await _openWardDetails(
+    context,
+    ward: result,
+    snapshot: snapshot,
+    tenantName: snapshot.tenant?.name,
+    facilityName: snapshot.facility?.name,
+  );
+}
+
+Future<void> _openWardDetails(
+  BuildContext context, {
+  required WardProfile ward,
+  FacilitySetupSnapshot? snapshot,
+  String? tenantName,
+  String? facilityName,
+  String? departmentName,
+}) async {
+  await showWardDetailsDialog(
+    context,
+    ward: ward,
+    snapshot: snapshot,
+    tenantName: tenantName,
+    facilityName: facilityName == '—' ? null : facilityName,
+    departmentName: departmentName == '—' ? null : departmentName,
+  );
 }
 
 Future<void> _openRoomDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
   RoomProfile? room,
+  List<TenantProfile> tenantOptions = const <TenantProfile>[],
+  List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
+  List<WardProfile> wardOptions = const <WardProfile>[],
+  bool openDetailsOnSave = true,
 }) async {
-  await showAppDialog<bool>(
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _RoomFormDialog(snapshot: snapshot, room: room),
+    builder: (_) => _RoomFormDialog(
+      snapshot: snapshot,
+      room: room,
+      tenantOptions: tenantOptions,
+      facilityOptions: facilityOptions,
+      wardOptions: wardOptions,
+    ),
+  );
+  if (!openDetailsOnSave || !context.mounted || result is! RoomProfile) {
+    return;
+  }
+  await _openRoomDetails(
+    context,
+    room: result,
+    snapshot: snapshot,
+    tenantName: snapshot.tenant?.name,
+    facilityName: snapshot.facility?.name,
+  );
+}
+
+Future<void> _openRoomDetails(
+  BuildContext context, {
+  required RoomProfile room,
+  FacilitySetupSnapshot? snapshot,
+  String? tenantName,
+  String? facilityName,
+  String? wardName,
+}) async {
+  await showRoomDetailsDialog(
+    context,
+    room: room,
+    snapshot: snapshot,
+    tenantName: tenantName,
+    facilityName: facilityName == '—' ? null : facilityName,
+    wardName: wardName == '—' ? null : wardName,
   );
 }
 
@@ -9731,8 +11092,13 @@ Future<void> _openBedDialog(
   List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
   List<WardProfile> wardOptions = const <WardProfile>[],
   List<RoomProfile> roomOptions = const <RoomProfile>[],
+  String Function(BedProfile bed)? tenantNameFor,
+  String Function(BedProfile bed)? facilityNameFor,
+  String Function(BedProfile bed)? wardNameFor,
+  String Function(BedProfile bed)? roomNameFor,
+  bool openDetailsOnSave = true,
 }) async {
-  await showAppDialog<bool>(
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _BedFormDialog(
@@ -9743,6 +11109,38 @@ Future<void> _openBedDialog(
       wardOptions: wardOptions,
       roomOptions: roomOptions,
     ),
+  );
+  if (!openDetailsOnSave || !context.mounted || result is! BedProfile) {
+    return;
+  }
+  await _openBedDetails(
+    context,
+    bed: result,
+    snapshot: snapshot,
+    tenantName: tenantNameFor?.call(result) ?? snapshot.tenant?.name,
+    facilityName: facilityNameFor?.call(result) ?? snapshot.facility?.name,
+    wardName: wardNameFor?.call(result) ?? _wardName(snapshot, result.wardId),
+    roomName: roomNameFor?.call(result) ?? _roomName(snapshot, result.roomId),
+  );
+}
+
+Future<void> _openBedDetails(
+  BuildContext context, {
+  required BedProfile bed,
+  FacilitySetupSnapshot? snapshot,
+  String? tenantName,
+  String? facilityName,
+  String? wardName,
+  String? roomName,
+}) async {
+  await showBedDetailsDialog(
+    context,
+    bed: bed,
+    snapshot: snapshot,
+    tenantName: tenantName,
+    facilityName: facilityName == '—' ? null : facilityName,
+    wardName: wardName == '—' ? null : wardName,
+    roomName: roomName == '—' ? null : roomName,
   );
 }
 
@@ -10167,8 +11565,14 @@ Future<void> showTenantFacilityUnitFormDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
   UnitProfile? unit,
+  bool openDetailsOnSave = true,
 }) {
-  return _openUnitDialog(context, snapshot, unit: unit);
+  return _openUnitDialog(
+    context,
+    snapshot,
+    unit: unit,
+    openDetailsOnSave: openDetailsOnSave,
+  );
 }
 
 /// Shared ward create/edit dialog for facility setup and management.
@@ -10176,8 +11580,14 @@ Future<void> showTenantFacilityWardFormDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
   WardProfile? ward,
+  bool openDetailsOnSave = true,
 }) {
-  return _openWardDialog(context, snapshot, ward: ward);
+  return _openWardDialog(
+    context,
+    snapshot,
+    ward: ward,
+    openDetailsOnSave: openDetailsOnSave,
+  );
 }
 
 /// Shared room create/edit dialog for facility setup and rooms & beds workspace.
@@ -10185,8 +11595,14 @@ Future<void> showTenantFacilityRoomFormDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
   RoomProfile? room,
+  bool openDetailsOnSave = true,
 }) {
-  return _openRoomDialog(context, snapshot, room: room);
+  return _openRoomDialog(
+    context,
+    snapshot,
+    room: room,
+    openDetailsOnSave: openDetailsOnSave,
+  );
 }
 
 /// Shared bed create/edit dialog for facility setup and rooms & beds workspace.
@@ -10195,5 +11611,10 @@ Future<void> showTenantFacilityBedFormDialog(
   FacilitySetupSnapshot snapshot, {
   BedProfile? bed,
 }) {
-  return _openBedDialog(context, snapshot, bed: bed);
+  return _openBedDialog(
+    context,
+    snapshot,
+    bed: bed,
+    openDetailsOnSave: false,
+  );
 }

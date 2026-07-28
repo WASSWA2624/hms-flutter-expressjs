@@ -37,7 +37,7 @@ void main() {
         'class _WardSetupSection extends ConsumerStatefulWidget',
       );
       final int nextSectionStart = setupPageSource.indexOf(
-        'class _RoomSetupSection extends ConsumerWidget',
+        'class _RoomSetupSection extends ConsumerStatefulWidget',
       );
       expect(sectionStart, greaterThanOrEqualTo(0));
       expect(nextSectionStart, greaterThan(sectionStart));
@@ -188,6 +188,14 @@ void main() {
       expect(formSource.contains('checkWardDuplicates'), isTrue);
       expect(formSource.contains('_checkingSimilarity'), isTrue);
       expect(formSource.contains('excludeWardId'), isTrue);
+      expect(
+        formSource.contains('normalizeWardName(name) == normalizeWardName(editing.name)'),
+        isFalse,
+      );
+      expect(
+        formSource.contains('reviewMatches.isEmpty)'),
+        isFalse,
+      );
       expect(wardSimilaritySource.contains('checkWardDuplicates'), isTrue);
       expect(
         wardSimilarityDialogSource.contains('showWardSimilarityDialog'),
@@ -201,6 +209,44 @@ void main() {
         wardSimilarityDialogSource.contains('WardSimilarityAction.cancel'),
         isTrue,
       );
+    });
+
+    test('ward form uses blocking loading overlay instead of inline spinner', () {
+      final String formSource = wardFormSource();
+      expect(formSource.contains('AbsorbPointer'), isTrue);
+      expect(formSource.contains('Positioned.fill'), isTrue);
+      expect(formSource.contains('showLoadingOverlay'), isTrue);
+      expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(
+        formSource.contains(
+          'const AppLoadingIndicator.compact(expand: false),\n                    SizedBox(width: theme.spacing.sm),',
+        ),
+        isFalse,
+      );
+    });
+
+    test('successful create/edit opens ward details dialog', () {
+      expect(setupPageSource.contains('showWardDetailsDialog'), isTrue);
+      expect(setupPageSource.contains('_openWardDetails'), isTrue);
+      expect(setupPageSource.contains('lastSavedWard'), isTrue);
+      expect(
+        File(
+          'lib/features/tenant_facility/presentation/widgets/ward_details_dialog.dart',
+        ).existsSync(),
+        isTrue,
+      );
+      final String detailsSource = File(
+        'lib/features/tenant_facility/presentation/widgets/ward_details_dialog.dart',
+      ).readAsStringSync();
+      expect(detailsSource.contains('showTenantFacilityWardFormDialog'), isTrue);
+      expect(detailsSource.contains('deleteWard(_ward.id)'), isTrue);
+      expect(detailsSource.contains('tenantFacilityEditWardDetailsAction'), isTrue);
+      expect(
+        detailsSource.contains('tenantFacilityDeleteWardDetailsAction'),
+        isTrue,
+      );
+      final String sectionSource = wardSectionSource();
+      expect(sectionSource.contains('onRowSelected:'), isTrue);
     });
   });
 }
