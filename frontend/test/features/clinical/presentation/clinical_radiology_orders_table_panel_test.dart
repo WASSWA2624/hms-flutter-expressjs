@@ -14,7 +14,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   testWidgets(
-    'radiology orders panel fills width, shows one action, and supports batch select',
+    'radiology orders panel fills width, shows labeled actions, and supports batch select in header',
     (WidgetTester tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(1200, 900);
@@ -96,10 +96,11 @@ void main() {
 
       expect(find.text('Abdomen ultrasound'), findsOneWidget);
       expect(find.text('Pelvis ultrasound'), findsOneWidget);
+      expect(find.text('Radiology orders'), findsOneWidget);
 
-      // Ordered rows expose cancel only; cancelled rows expose delete only.
-      expect(find.byIcon(Icons.block_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      // Ordered rows expose labeled cancel; cancelled rows expose labeled delete.
+      expect(find.widgetWithText(AppButton, 'Cancel order'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Delete order'), findsOneWidget);
 
       final double tableWidth = tester.getSize(find.byType(DataTable)).width;
       expect(tableWidth, greaterThan(900));

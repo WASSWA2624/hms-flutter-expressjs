@@ -15400,6 +15400,90 @@ abstract class AppLocalizations {
   /// **'Delete {count} radiology orders from the active patient record?'**
   String clinicalDeleteSelectedRadiologyOrdersDialogBody(int count);
 
+  /// Delete a patient diagnosis from the clinical encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get clinicalDeleteDiagnosisAction;
+
+  /// Confirmation title for deleting a diagnosis.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete diagnosis'**
+  String get clinicalDeleteDiagnosisDialogTitle;
+
+  /// Confirmation body for deleting a diagnosis.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this diagnosis from the active patient record?'**
+  String get clinicalDeleteDiagnosisDialogBody;
+
+  /// Delete multiple selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get clinicalDeleteSelectedDiagnosesAction;
+
+  /// Confirmation title for deleting selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected diagnoses'**
+  String get clinicalDeleteSelectedDiagnosesDialogTitle;
+
+  /// Confirmation body for deleting selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} diagnoses from the active patient record?'**
+  String clinicalDeleteSelectedDiagnosesDialogBody(int count);
+
+  /// Confirmation title for cancelling selected lab orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected lab orders'**
+  String get clinicalCancelSelectedLabOrdersDialogTitle;
+
+  /// Confirmation body for cancelling selected lab orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {count} lab orders and mark them as cancelled?'**
+  String clinicalCancelSelectedLabOrdersDialogBody(int count);
+
+  /// Confirmation title for deleting selected lab orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected lab orders'**
+  String get clinicalDeleteSelectedLabOrdersDialogTitle;
+
+  /// Confirmation body for deleting selected lab orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} lab orders from the active patient record?'**
+  String clinicalDeleteSelectedLabOrdersDialogBody(int count);
+
+  /// Confirmation title for cancelling selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected pharmacy orders'**
+  String get clinicalCancelSelectedPharmacyOrdersDialogTitle;
+
+  /// Confirmation body for cancelling selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {count} pharmacy orders and mark them as cancelled?'**
+  String clinicalCancelSelectedPharmacyOrdersDialogBody(int count);
+
+  /// Confirmation title for deleting selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected pharmacy orders'**
+  String get clinicalDeleteSelectedPharmacyOrdersDialogTitle;
+
+  /// Confirmation body for deleting selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} pharmacy orders from the active patient record?'**
+  String clinicalDeleteSelectedPharmacyOrdersDialogBody(int count);
+
   /// Clinical radiology order requested test count.
   ///
   /// In en, this message translates to:

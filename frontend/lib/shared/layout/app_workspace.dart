@@ -474,13 +474,15 @@ class AppWorkspaceSplitContent extends StatelessWidget {
   }
 }
 
-class AppWorkspaceDetailPanel extends StatelessWidget {
+class AppWorkspaceDetailPanel extends StatefulWidget {
   const AppWorkspaceDetailPanel({
     this.title,
     required this.child,
     this.description,
     this.actions = const <Widget>[],
     this.titleIcon,
+    this.collapsible = false,
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -489,11 +491,28 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
   final List<Widget> actions;
   final Widget child;
   final IconData? titleIcon;
+  final bool collapsible;
+  final bool initiallyExpanded;
+
+  @override
+  State<AppWorkspaceDetailPanel> createState() =>
+      _AppWorkspaceDetailPanelState();
+}
+
+class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool hasTitle =
+        widget.title != null && widget.title!.trim().isNotEmpty;
+    final bool showBody = !widget.collapsible || _expanded;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -503,57 +522,95 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (title != null && title!.trim().isNotEmpty) ...<Widget>[
+          if (hasTitle) ...<Widget>[
             Padding(
               padding: EdgeInsets.all(theme.spacing.lg),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: widget.collapsible ? _toggleExpanded : null,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            if (titleIcon != null) ...<Widget>[
-                              Icon(
-                                titleIcon,
-                                size: theme.appTokens.listIconSize,
-                                color: colorScheme.primary,
-                              ),
-                              SizedBox(width: theme.spacing.sm),
-                            ],
-                            Expanded(
-                              child: Text(
-                                title!,
-                                style: theme.textTheme.titleMedium,
-                              ),
+                            Row(
+                              children: <Widget>[
+                                if (widget.titleIcon != null) ...<Widget>[
+                                  Icon(
+                                    widget.titleIcon,
+                                    size: theme.appTokens.listIconSize,
+                                    color: colorScheme.primary,
+                                  ),
+                                  SizedBox(width: theme.spacing.sm),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    widget.title!,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (showBody &&
+                                widget.description != null &&
+                                widget.description!.isNotEmpty) ...<Widget>[
+                              SizedBox(height: theme.spacing.xs),
+                              Text(
+                                widget.description!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
-                        if (description != null &&
-                            description!.isNotEmpty) ...<Widget>[
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            description!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
-                  if (actions.isNotEmpty) ...<Widget>[
+                  if (widget.actions.isNotEmpty) ...<Widget>[
                     SizedBox(width: theme.spacing.sm),
-                    Wrap(spacing: theme.spacing.xs, children: actions),
+                    Flexible(
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: theme.spacing.xs,
+                        runSpacing: theme.spacing.xs,
+                        children: widget.actions,
+                      ),
+                    ),
+                  ],
+                  if (widget.collapsible) ...<Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    AppButton(
+                      iconOnly: true,
+                      dense: true,
+                      leadingIcon: _expanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      label: _expanded
+                          ? context.l10n.commonShowLessActionLabel
+                          : context.l10n.commonShowMoreActionLabel,
+                      semanticLabel: _expanded
+                          ? context.l10n.commonShowLessActionLabel
+                          : context.l10n.commonShowMoreActionLabel,
+                      tooltip: _expanded
+                          ? context.l10n.commonShowLessActionLabel
+                          : context.l10n.commonShowMoreActionLabel,
+                      onPressed: _toggleExpanded,
+                    ),
                   ],
                 ],
               ),
             ),
-            const Divider(height: 1),
+            if (showBody) const Divider(height: 1),
           ],
-          Padding(padding: EdgeInsets.all(theme.spacing.lg), child: child),
+          if (showBody)
+            Padding(
+              padding: EdgeInsets.all(theme.spacing.lg),
+              child: widget.child,
+            ),
         ],
       ),
     );

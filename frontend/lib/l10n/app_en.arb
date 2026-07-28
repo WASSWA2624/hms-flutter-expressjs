@@ -10652,6 +10652,87 @@
       }
     }
   },
+  "clinicalDeleteDiagnosisAction": "Delete",
+  "@clinicalDeleteDiagnosisAction": {
+    "description": "Delete a patient diagnosis from the clinical encounter."
+  },
+  "clinicalDeleteDiagnosisDialogTitle": "Delete diagnosis",
+  "@clinicalDeleteDiagnosisDialogTitle": {
+    "description": "Confirmation title for deleting a diagnosis."
+  },
+  "clinicalDeleteDiagnosisDialogBody": "Delete this diagnosis from the active patient record?",
+  "@clinicalDeleteDiagnosisDialogBody": {
+    "description": "Confirmation body for deleting a diagnosis."
+  },
+  "clinicalDeleteSelectedDiagnosesAction": "Delete selected",
+  "@clinicalDeleteSelectedDiagnosesAction": {
+    "description": "Delete multiple selected diagnoses."
+  },
+  "clinicalDeleteSelectedDiagnosesDialogTitle": "Delete selected diagnoses",
+  "@clinicalDeleteSelectedDiagnosesDialogTitle": {
+    "description": "Confirmation title for deleting selected diagnoses."
+  },
+  "clinicalDeleteSelectedDiagnosesDialogBody": "Delete {count} diagnoses from the active patient record?",
+  "@clinicalDeleteSelectedDiagnosesDialogBody": {
+    "description": "Confirmation body for deleting selected diagnoses.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalCancelSelectedLabOrdersDialogTitle": "Cancel selected lab orders",
+  "@clinicalCancelSelectedLabOrdersDialogTitle": {
+    "description": "Confirmation title for cancelling selected lab orders."
+  },
+  "clinicalCancelSelectedLabOrdersDialogBody": "Cancel {count} lab orders and mark them as cancelled?",
+  "@clinicalCancelSelectedLabOrdersDialogBody": {
+    "description": "Confirmation body for cancelling selected lab orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalDeleteSelectedLabOrdersDialogTitle": "Delete selected lab orders",
+  "@clinicalDeleteSelectedLabOrdersDialogTitle": {
+    "description": "Confirmation title for deleting selected lab orders."
+  },
+  "clinicalDeleteSelectedLabOrdersDialogBody": "Delete {count} lab orders from the active patient record?",
+  "@clinicalDeleteSelectedLabOrdersDialogBody": {
+    "description": "Confirmation body for deleting selected lab orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalCancelSelectedPharmacyOrdersDialogTitle": "Cancel selected pharmacy orders",
+  "@clinicalCancelSelectedPharmacyOrdersDialogTitle": {
+    "description": "Confirmation title for cancelling selected pharmacy orders."
+  },
+  "clinicalCancelSelectedPharmacyOrdersDialogBody": "Cancel {count} pharmacy orders and mark them as cancelled?",
+  "@clinicalCancelSelectedPharmacyOrdersDialogBody": {
+    "description": "Confirmation body for cancelling selected pharmacy orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalDeleteSelectedPharmacyOrdersDialogTitle": "Delete selected pharmacy orders",
+  "@clinicalDeleteSelectedPharmacyOrdersDialogTitle": {
+    "description": "Confirmation title for deleting selected pharmacy orders."
+  },
+  "clinicalDeleteSelectedPharmacyOrdersDialogBody": "Delete {count} pharmacy orders from the active patient record?",
+  "@clinicalDeleteSelectedPharmacyOrdersDialogBody": {
+    "description": "Confirmation body for deleting selected pharmacy orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "clinicalRadiologyOrderItemCount": "{count} tests",
   "@clinicalRadiologyOrderItemCount": {
     "description": "Clinical radiology order requested test count.",

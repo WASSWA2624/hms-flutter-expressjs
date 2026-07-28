@@ -51,6 +51,8 @@ class AppQuickActions extends ConsumerWidget {
     this.runSpacing,
     this.overflowLabel,
     this.hideWhenEmpty = true,
+    this.collapsible = false,
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -66,6 +68,8 @@ class AppQuickActions extends ConsumerWidget {
   final double? runSpacing;
   final String? overflowLabel;
   final bool hideWhenEmpty;
+  final bool collapsible;
+  final bool initiallyExpanded;
 
   List<AppPermissionActionItem> _visiblePermissionActions(
     AppAccessPolicy policy,
@@ -178,6 +182,8 @@ class AppQuickActions extends ConsumerWidget {
         title: title!,
         description: description,
         titleIcon: leadingIcon,
+        collapsible: collapsible,
+        initiallyExpanded: initiallyExpanded,
         child: content,
       ),
     };

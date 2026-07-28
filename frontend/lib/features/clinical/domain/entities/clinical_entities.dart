@@ -735,18 +735,25 @@ final class ClinicalTriageHandoff {
   final List<ClinicalWorkflowTimelineItem> timeline;
 
   bool get hasContent {
+    return hasTriageDetails || hasWorkflowProgress;
+  }
+
+  bool get hasTriageDetails {
     return _firstNonEmpty(<String?>[
               triageLevel,
               routeTo,
               chiefComplaint,
               triageNotes,
-              stage,
-              nextStep,
             ]) !=
             null ||
         emergencyIndicator ||
         vitalSigns.isNotEmpty ||
         alerts.isNotEmpty;
+  }
+
+  bool get hasWorkflowProgress {
+    return _firstNonEmpty(<String?>[stage, nextStep]) != null ||
+        timeline.isNotEmpty;
   }
 }
 

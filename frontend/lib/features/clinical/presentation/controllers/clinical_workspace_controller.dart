@@ -428,6 +428,12 @@ final class ClinicalWorkspaceController
     });
   }
 
+  Future<AppFailure?> deleteDiagnosis(String diagnosisId) {
+    return _mutateSelectedEncounter(
+      () => _repository.deleteDiagnosis(diagnosisId),
+    );
+  }
+
   Future<AppFailure?> addProcedure({
     required String description,
     String? code,

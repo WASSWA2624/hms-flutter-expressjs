@@ -8367,6 +8367,64 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get clinicalDeleteDiagnosisAction => 'Delete';
+
+  @override
+  String get clinicalDeleteDiagnosisDialogTitle => 'Delete diagnosis';
+
+  @override
+  String get clinicalDeleteDiagnosisDialogBody =>
+      'Delete this diagnosis from the active patient record?';
+
+  @override
+  String get clinicalDeleteSelectedDiagnosesAction => 'Delete selected';
+
+  @override
+  String get clinicalDeleteSelectedDiagnosesDialogTitle =>
+      'Delete selected diagnoses';
+
+  @override
+  String clinicalDeleteSelectedDiagnosesDialogBody(int count) {
+    return 'Delete $count diagnoses from the active patient record?';
+  }
+
+  @override
+  String get clinicalCancelSelectedLabOrdersDialogTitle =>
+      'Cancel selected lab orders';
+
+  @override
+  String clinicalCancelSelectedLabOrdersDialogBody(int count) {
+    return 'Cancel $count lab orders and mark them as cancelled?';
+  }
+
+  @override
+  String get clinicalDeleteSelectedLabOrdersDialogTitle =>
+      'Delete selected lab orders';
+
+  @override
+  String clinicalDeleteSelectedLabOrdersDialogBody(int count) {
+    return 'Delete $count lab orders from the active patient record?';
+  }
+
+  @override
+  String get clinicalCancelSelectedPharmacyOrdersDialogTitle =>
+      'Cancel selected pharmacy orders';
+
+  @override
+  String clinicalCancelSelectedPharmacyOrdersDialogBody(int count) {
+    return 'Cancel $count pharmacy orders and mark them as cancelled?';
+  }
+
+  @override
+  String get clinicalDeleteSelectedPharmacyOrdersDialogTitle =>
+      'Delete selected pharmacy orders';
+
+  @override
+  String clinicalDeleteSelectedPharmacyOrdersDialogBody(int count) {
+    return 'Delete $count pharmacy orders from the active patient record?';
+  }
+
+  @override
   String clinicalRadiologyOrderItemCount(int count) {
     return '$count tests';
   }
