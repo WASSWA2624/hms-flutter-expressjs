@@ -28,177 +28,202 @@ Finder _toolbarPrimary(String label) => find.descendant(
   matching: find.text(label),
 );
 
-AppAccessPolicy _writePolicy() {
+const SubscriptionItem _planItem = SubscriptionItem(
+  id: 'plan-1',
+  resource: SubscriptionResource.subscriptionPlans,
+  displayId: 'PLAN-1',
+  name: 'Starter Plan',
+  code: 'STARTER',
+  tierCode: 'BASIC',
+  status: 'ACTIVE',
+  monthlyPrice: 49,
+  annualPrice: 490,
+);
+
+const SubscriptionItem _subscriptionItem = SubscriptionItem(
+  id: 'sub-1',
+  resource: SubscriptionResource.subscriptions,
+  displayId: 'SUB-1',
+  tenantId: 'tenant-1',
+  tenantLabel: 'Acme Clinic',
+  planId: 'plan-1',
+  planLabel: 'Starter Plan',
+  status: 'ACTIVE',
+);
+
+const SubscriptionItem _invoiceItem = SubscriptionItem(
+  id: 'inv-1',
+  resource: SubscriptionResource.subscriptionInvoices,
+  displayId: 'SINV-1',
+  invoiceId: 'inv-1',
+  invoiceDisplayId: 'SINV-1',
+  tenantLabel: 'Acme Clinic',
+  status: 'PAST_DUE',
+  totalAmount: 49,
+);
+
+AppAccessPolicy _subscriptionsWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['ADMIN']),
+      user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
       permissions: <AppPermission>{
         AppPermissions.subscriptionsRead,
         AppPermissions.subscriptionsWrite,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(code: 'subscriptions', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'subscription-controls',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
     ),
   );
 }
 
-AppAccessPolicy _readOnlyPolicy() {
+AppAccessPolicy _subscriptionsReadOnlyPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['VIEWER']),
+      user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
       permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(code: 'subscriptions', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'subscription-controls',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
     ),
   );
 }
 
-const SubscriptionItem _activeSubscription = SubscriptionItem(
-  id: 'sub-1',
-  resource: SubscriptionResource.subscriptions,
-  displayId: 'SUB-001',
-  tenantId: 'tenant-1',
-  tenantLabel: 'Acme Clinic',
-  planId: 'plan-1',
-  planLabel: 'Pro',
-  status: 'ACTIVE',
-);
-
-const SubscriptionItem _trialSubscription = SubscriptionItem(
-  id: 'sub-trial',
-  resource: SubscriptionResource.subscriptions,
-  displayId: 'SUB-TRIAL',
-  tenantId: 'tenant-2',
-  tenantLabel: 'Beta Hospital',
-  planId: 'plan-1',
-  planLabel: 'Pro',
-  status: 'TRIAL',
-);
-
-const SubscriptionItem _planItem = SubscriptionItem(
-  id: 'plan-1',
-  resource: SubscriptionResource.subscriptionPlans,
-  displayId: 'PLAN-PRO',
-  name: 'Pro',
-  code: 'PRO',
-  status: 'ACTIVE',
-  monthlyPrice: 99,
-);
-
-SubscriptionsWorkspaceData _workspaceFor(SubscriptionsWorkspaceQuery query) {
-  final List<SubscriptionItem> items = switch (query.resource) {
+List<SubscriptionItem> _itemsForResource(SubscriptionResource resource) {
+  return switch (resource) {
     SubscriptionResource.subscriptionPlans => <SubscriptionItem>[_planItem],
     SubscriptionResource.subscriptions => <SubscriptionItem>[
-      _activeSubscription,
-      _trialSubscription,
+      _subscriptionItem,
+    ],
+    SubscriptionResource.subscriptionInvoices => <SubscriptionItem>[
+      _invoiceItem,
     ],
     _ => const <SubscriptionItem>[],
   };
-
-  return SubscriptionsWorkspaceData(
-    query: query,
-    summary: const <SubscriptionSummaryMetric>[
-      SubscriptionSummaryMetric(
-        id: 'pending_changes',
-        label: 'Pending changes',
-        value: 2,
-      ),
-      SubscriptionSummaryMetric(
-        id: 'past_due_invoices',
-        label: 'Past due invoices',
-        value: 1,
-      ),
-    ],
-    queueSummaries: const <SubscriptionQueueSummary>[
-      SubscriptionQueueSummary(
-        id: 'pending_changes',
-        label: 'Pending changes',
-        count: 2,
-        panel: SubscriptionPanel.operations,
-        resource: SubscriptionResource.subscriptions,
-        queue: 'pending_changes',
-      ),
-      SubscriptionQueueSummary(
-        id: 'past_due_billing',
-        label: 'Past due invoices',
-        count: 1,
-        panel: SubscriptionPanel.billing,
-        resource: SubscriptionResource.subscriptionInvoices,
-        queue: 'past_due_billing',
-      ),
-    ],
-    panelSummaries: const <SubscriptionPanelSummary>[],
-    lookups: const SubscriptionLookups(
-      tenants: <SubscriptionLookupItem>[
-        SubscriptionLookupItem(id: 'tenant-1', label: 'Acme Clinic'),
-      ],
-      plans: <SubscriptionLookupItem>[
-        SubscriptionLookupItem(id: 'plan-1', label: 'Pro'),
-      ],
-      modules: <SubscriptionLookupItem>[
-        SubscriptionLookupItem(id: 'mod-1', label: 'Billing'),
-      ],
-    ),
-    items: AppPage<SubscriptionItem>(
-      items: items,
-      request: query.pageRequest,
-      totalItemCount: items.length,
-    ),
-    overview: const SubscriptionsOverview(
-      activePlanTenants: SubscriptionTenantCohortSummary(
-        cohort: SubscriptionTenantCohort.active,
-        count: 1,
-      ),
-      notSubscribedTenants: SubscriptionTenantCohortSummary(
-        cohort: SubscriptionTenantCohort.notSubscribed,
-        count: 1,
-      ),
-      closedSubscriptionTenants: SubscriptionTenantCohortSummary(
-        cohort: SubscriptionTenantCohort.closed,
-        count: 0,
-      ),
-    ),
-    timeline: const <SubscriptionTimelineItem>[],
-  );
 }
 
-void _stubRepository(_MockSubscriptionsRepository repository) {
-  when(() => repository.getWorkspace(any())).thenAnswer((invocation) async {
+void _stubWorkspace(_MockSubscriptionsRepository repository) {
+  when(() => repository.getWorkspace(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
     final SubscriptionsWorkspaceQuery query =
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
-    return Result<SubscriptionsWorkspaceData>.success(_workspaceFor(query));
+    final List<SubscriptionItem> items = _itemsForResource(query.resource);
+    return Result<SubscriptionsWorkspaceData>.success(
+      SubscriptionsWorkspaceData(
+        query: query,
+        summary: const <SubscriptionSummaryMetric>[
+          SubscriptionSummaryMetric(
+            id: 'past_due_invoices',
+            label: 'Past due invoices',
+            value: 2,
+          ),
+          SubscriptionSummaryMetric(
+            id: 'pending_changes',
+            label: 'Pending changes',
+            value: 1,
+          ),
+        ],
+        queueSummaries: const <SubscriptionQueueSummary>[
+          SubscriptionQueueSummary(
+            id: 'past_due_billing',
+            label: 'Past due invoices',
+            count: 2,
+            panel: SubscriptionPanel.billing,
+            resource: SubscriptionResource.subscriptionInvoices,
+            queue: 'past_due',
+          ),
+          SubscriptionQueueSummary(
+            id: 'pending_changes',
+            label: 'Pending changes',
+            count: 1,
+            panel: SubscriptionPanel.operations,
+            resource: SubscriptionResource.subscriptions,
+            queue: 'pending_changes',
+          ),
+        ],
+        panelSummaries: const <SubscriptionPanelSummary>[],
+        lookups: const SubscriptionLookups(
+          tenants: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'tenant-1', label: 'Acme Clinic'),
+          ],
+          plans: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'plan-1', label: 'Starter Plan'),
+          ],
+          modules: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'mod-1', label: 'OPD'),
+          ],
+          tiers: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'BASIC', label: 'Basic'),
+          ],
+        ),
+        items: AppPage<SubscriptionItem>(
+          items: items,
+          request: query.pageRequest,
+          totalItemCount: items.length,
+        ),
+        overview: const SubscriptionsOverview(
+          activePlanTenants: SubscriptionTenantCohortSummary(
+            cohort: SubscriptionTenantCohort.active,
+            count: 3,
+          ),
+          notSubscribedTenants: SubscriptionTenantCohortSummary(
+            cohort: SubscriptionTenantCohort.notSubscribed,
+            count: 1,
+          ),
+          closedSubscriptionTenants: SubscriptionTenantCohortSummary(
+            cohort: SubscriptionTenantCohort.closed,
+            count: 0,
+          ),
+        ),
+        timeline: const <SubscriptionTimelineItem>[],
+      ),
+    );
   });
   when(
     () => repository.getReferenceData(tenantId: any(named: 'tenantId')),
   ).thenAnswer(
-    (_) async => const Result<SubscriptionLookups>.success(
-      SubscriptionLookups(
-        tenants: <SubscriptionLookupItem>[
-          SubscriptionLookupItem(id: 'tenant-1', label: 'Acme Clinic'),
-        ],
-        plans: <SubscriptionLookupItem>[
-          SubscriptionLookupItem(id: 'plan-1', label: 'Pro'),
-        ],
+    (_) async =>
+        const Result<SubscriptionLookups>.success(SubscriptionLookups()),
+  );
+  when(() => repository.getPlanDetail(any())).thenAnswer(
+    (_) async => const Result<SubscriptionPlanDetail>.success(
+      SubscriptionPlanDetail(
+        plan: _planItem,
+        stats: SubscriptionPlanStats(),
       ),
     ),
   );
 }
 
-Future<void> _pumpSubscriptionsWorkspace(
+class _Harness {
+  const _Harness({required this.repository, required this.router});
+
+  final _MockSubscriptionsRepository repository;
+  final GoRouter router;
+}
+
+Future<_Harness> _pumpSubscriptionsWorkspace(
   WidgetTester tester, {
   required _MockSubscriptionsRepository repository,
-  String initialLocation = '/subscriptions?panel=operations&resource=subscriptions',
+  SubscriptionsWorkspaceQuery? initialQuery,
+  String initialLocation = '/subscriptions?panel=catalog',
+  Size physicalSize = const Size(1440, 900),
   AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubWorkspace(repository);
 
-  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -211,7 +236,9 @@ Future<void> _pumpSubscriptionsWorkspace(
         builder: (BuildContext context, GoRouterState state) {
           return Scaffold(
             body: SubscriptionsWorkspacePage(
-              initialQuery: SubscriptionsWorkspaceQuery.fromUri(state.uri),
+              initialQuery:
+                  initialQuery ??
+                  SubscriptionsWorkspaceQuery.fromUri(state.uri),
             ),
           );
         },
@@ -228,7 +255,7 @@ Future<void> _pumpSubscriptionsWorkspace(
           const SessionState.ready(),
         ),
         appAccessPolicyProvider.overrideWithValue(
-          accessPolicy ?? _writePolicy(),
+          accessPolicy ?? _subscriptionsWritePolicy(),
         ),
       ],
       child: MaterialApp.router(
@@ -241,6 +268,7 @@ Future<void> _pumpSubscriptionsWorkspace(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return _Harness(repository: repository, router: router);
 }
 
 Future<void> _selectPanelTab(WidgetTester tester, String label) async {
@@ -250,6 +278,7 @@ Future<void> _selectPanelTab(WidgetTester tester, String label) async {
     await tester.pumpAndSettle();
     return;
   }
+
   final Finder more = find.byKey(const ValueKey<String>('tabOverflowMore'));
   expect(more, findsOneWidget);
   await tester.tap(more);
@@ -269,122 +298,177 @@ void main() {
     repository = _MockSubscriptionsRepository();
   });
 
-  testWidgets('omits Notifications tab and shows queue chips', (
+  testWidgets('panel tabs omit Notifications and show queue chips instead', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
 
+    final List<AppTabStrip> strips = tester
+        .widgetList<AppTabStrip>(find.byType(AppTabStrip))
+        .toList(growable: false);
+    expect(strips, isNotEmpty);
+    final AppTabStrip panelStrip = strips.first;
+    expect(
+      panelStrip.tabs.map((AppTabItem tab) => tab.label),
+      <String>[
+        'Overview',
+        'Plans',
+        'Subscriptions',
+        'Invoices',
+        'Licenses',
+      ],
+    );
     expect(find.text('Notifications'), findsNothing);
-    expect(find.textContaining('Pending changes (2)'), findsOneWidget);
-    expect(find.textContaining('Past due invoices (1)'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Past due invoices (2)'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Pending changes (1)'), findsOneWidget);
+    expect(find.text('Starter Plan'), findsOneWidget);
+    expect(_toolbarPrimary('Create plan'), findsOneWidget);
   });
 
-  testWidgets('New subscription is the sole create primary on Subscriptions', (
-    WidgetTester tester,
-  ) async {
-    await _pumpSubscriptionsWorkspace(tester, repository: repository);
-
-    expect(_toolbarPrimary('New subscription'), findsOneWidget);
-    expect(find.text('Activate subscription'), findsNothing);
-    expect(_toolbarPrimary('Create plan'), findsNothing);
-    expect(find.text('Acme Clinic'), findsWidgets);
-  });
-
-  testWidgets('unauthorized users see no create primaries', (
+  testWidgets('overview shows cohort metrics without worklist or past-due card', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(
       tester,
       repository: repository,
-      accessPolicy: _readOnlyPolicy(),
+      initialLocation: '/subscriptions?panel=overview',
+      initialQuery: const SubscriptionsWorkspaceQuery(
+        panel: SubscriptionPanel.overview,
+        resource: SubscriptionResource.subscriptions,
+      ),
     );
 
-    expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(find.text('New subscription'), findsNothing);
-    expect(find.text('Create plan'), findsNothing);
+    expect(find.text('Active plans'), findsOneWidget);
+    expect(find.text('Not subscribed'), findsOneWidget);
+    expect(find.text('Closed subscriptions'), findsOneWidget);
+    expect(find.text('Past due'), findsNothing);
+    expect(find.byType(AppListTable<SubscriptionItem>), findsNothing);
+    expect(_toolbarPrimary('Activate subscription'), findsNothing);
+    expect(_toolbarPrimary('Create plan'), findsNothing);
   });
 
-  testWidgets('advanced filters omit Resource group', (WidgetTester tester) async {
+  testWidgets('catalog exposes Plans/Modules nested tabs; filters omit Resource', (
+    WidgetTester tester,
+  ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
+
+    final List<AppTabStrip> strips = tester
+        .widgetList<AppTabStrip>(find.byType(AppTabStrip))
+        .toList(growable: false);
+    expect(strips.length, greaterThanOrEqualTo(2));
+    final AppTabStrip resourceStrip = strips[1];
+    expect(resourceStrip.variant, AppTabStripVariant.nested);
+    expect(
+      resourceStrip.tabs.map((AppTabItem tab) => tab.label),
+      <String>['Plans', 'Modules'],
+    );
 
     final AppListTable<SubscriptionItem> table = tester
         .widget<AppListTable<SubscriptionItem>>(
           find.byType(AppListTable<SubscriptionItem>),
         );
-    final List<AppSearchBarFilterGroup>? groups = table.search?.filterGroups;
-    expect(groups, isNotNull);
+    expect(table.search?.showAdvancedFilterButton, isTrue);
+
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
     expect(
-      groups!.any((AppSearchBarFilterGroup group) => group.label == 'Resource'),
-      isFalse,
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('Resource'),
+      ),
+      findsNothing,
     );
+    await tester.tap(find.text('Close').first);
+    await tester.pumpAndSettle();
   });
 
-  testWidgets('Overview is metrics-only without worklist', (
+  testWidgets('operations owns Activate subscription as the sole create entry', (
     WidgetTester tester,
   ) async {
-    await _pumpSubscriptionsWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/subscriptions?panel=overview&resource=subscriptions',
-    );
-
-    expect(find.text('Active plans'), findsOneWidget);
-    expect(find.text('Not subscribed'), findsOneWidget);
-    expect(find.byType(AppListTable<SubscriptionItem>), findsNothing);
-    expect(find.byType(AppTabToolbarPrimary), findsNothing);
-  });
-
-  testWidgets('Plans panel shows nested resource tabs and Create plan', (
-    WidgetTester tester,
-  ) async {
-    await _pumpSubscriptionsWorkspace(
-      tester,
-      repository: repository,
-      initialLocation:
-          '/subscriptions?panel=catalog&resource=subscription-plans',
-    );
-
-    expect(_toolbarPrimary('Create plan'), findsOneWidget);
-    expect(find.text('Modules'), findsWidgets);
-    expect(find.text('Pro'), findsWidgets);
-  });
-
-  testWidgets('detail cancel uses confirm without reason field', (
-    WidgetTester tester,
-  ) async {
-    when(() => repository.cancelSubscription(any())).thenAnswer(
-      (_) async => const Result<void>.success(null),
-    );
-
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Acme Clinic').first);
-    await tester.pumpAndSettle();
+    await _selectPanelTab(tester, 'Subscriptions');
+    expect(_toolbarPrimary('Activate subscription'), findsOneWidget);
+    expect(find.text('Acme Clinic'), findsOneWidget);
 
-    expect(find.text('Cancel subscription'), findsOneWidget);
+    final List<AppTabStrip> strips = tester
+        .widgetList<AppTabStrip>(find.byType(AppTabStrip))
+        .toList(growable: false);
+    expect(strips.length, greaterThanOrEqualTo(2));
+    expect(
+      strips[1].tabs.map((AppTabItem tab) => tab.label),
+      <String>['Subscriptions', 'Module subscriptions'],
+    );
+  });
+
+  testWidgets('unauthorized users see no create or manage actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSubscriptionsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _subscriptionsReadOnlyPolicy(),
+    );
+
+    expect(_toolbarPrimary('Create plan'), findsNothing);
+    expect(find.text('Manage modules'), findsNothing);
+
+    await tester.tap(find.text('Starter Plan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit plan'), findsNothing);
+    expect(find.text('Manage modules'), findsNothing);
     expect(find.text('Print invoice'), findsNothing);
-
-    await tester.tap(find.text('Cancel subscription'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Cancel this subscription?'), findsNothing);
-    expect(
-      find.textContaining('Cancel this subscription?'),
-      findsOneWidget,
-    );
-    expect(find.text('Reason'), findsNothing);
   });
 
-  testWidgets('detail Activate remains distinct from New subscription', (
+  testWidgets('invoice detail omits Print invoice shell action', (
     WidgetTester tester,
   ) async {
-    await _pumpSubscriptionsWorkspace(tester, repository: repository);
+    await _pumpSubscriptionsWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/subscriptions?panel=billing&resource=subscription-invoices',
+      initialQuery: const SubscriptionsWorkspaceQuery(
+        panel: SubscriptionPanel.billing,
+        resource: SubscriptionResource.subscriptionInvoices,
+      ),
+    );
 
-    await tester.tap(find.text('Beta Hospital').first);
+    expect(find.text('SINV-1'), findsOneWidget);
+    await tester.tap(find.text('SINV-1'));
     await tester.pumpAndSettle();
+    expect(find.text('Collect invoice'), findsOneWidget);
+    expect(find.text('Retry invoice'), findsOneWidget);
+    expect(find.text('Print invoice'), findsNothing);
+  });
 
-    expect(find.text('Activate'), findsOneWidget);
-    expect(find.text('Activate subscription'), findsNothing);
-    expect(find.text('New subscription'), findsNothing);
+  testWidgets('edit subscription keeps Change plan as the sole plan-change path', (
+    WidgetTester tester,
+  ) async {
+    await _pumpSubscriptionsWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/subscriptions?panel=operations&resource=subscriptions',
+      initialQuery: const SubscriptionsWorkspaceQuery(
+        panel: SubscriptionPanel.operations,
+        resource: SubscriptionResource.subscriptions,
+      ),
+    );
+
+    await tester.tap(find.text('Acme Clinic'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit subscription'), findsOneWidget);
+    expect(find.text('Change plan'), findsOneWidget);
+
+    await tester.tap(find.text('Edit subscription'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit subscription'), findsWidgets);
+    // Plan selector removed from edit form — Change plan owns that goal.
+    expect(
+      find.descendant(
+        of: find.byType(Dialog).last,
+        matching: find.text('Plan'),
+      ),
+      findsNothing,
+    );
   });
 }

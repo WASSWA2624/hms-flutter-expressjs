@@ -4762,6 +4762,7 @@ abstract final class _SubscriptionsText {
   static const String includedModulesAccessHint =
       'Modules control what appears in the app menu and what the tenant can access.';
   static const String manageModules = 'Manage modules';
+  static const String addOn = 'Add-on';
   static const String saveModules = 'Save modules';
   static const String selectAllModules = 'Select all';
   static const String clearAllModules = 'Clear all';

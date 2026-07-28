@@ -545,7 +545,7 @@ List<AppListTableColumn<SubscriptionItem>> _moduleOptionalColumns(
     ),
     AppListTableColumn<SubscriptionItem>(
       id: _SubscriptionColumnIds.isAddOn,
-      label: _SubscriptionsText.addModules,
+      label: _SubscriptionsText.addOn,
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(
           left.isAddOn?.toString(),
