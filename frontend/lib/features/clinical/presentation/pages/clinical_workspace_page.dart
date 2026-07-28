@@ -273,8 +273,6 @@ class _ClinicalWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _clinicalPrimaryAction(context, state),
-              secondaryActions: _clinicalSecondaryActions(context),
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
@@ -314,75 +312,6 @@ class _ClinicalWorkspaceContentState
     ref
         .read(clinicalWorkspaceControllerProvider.notifier)
         .applySearch(value, showLoading: false);
-  }
-
-  Widget? _clinicalPrimaryAction(
-    BuildContext context,
-    ClinicalWorkspaceState state,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    return switch (_section) {
-      ClinicalWorkspaceSection.followUps => null,
-      ClinicalWorkspaceSection.all ||
-      ClinicalWorkspaceSection.waitingReview ||
-      ClinicalWorkspaceSection.urgent ||
-      ClinicalWorkspaceSection.resultsReady ||
-      ClinicalWorkspaceSection.inConsultation ||
-      ClinicalWorkspaceSection.completed => AppTabToolbarPrimary(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        semanticLabel: l10n.commonRefreshActionLabel,
-        tooltip: l10n.commonRefreshActionLabel,
-        onPressed: state.isRefreshing
-            ? null
-            : () async {
-                final AppFailure? failure = await ref
-                    .read(clinicalWorkspaceControllerProvider.notifier)
-                    .refresh();
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              },
-      ),
-    };
-  }
-
-  List<Widget> _clinicalSecondaryActions(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return switch (_section) {
-      ClinicalWorkspaceSection.followUps => const <Widget>[],
-      ClinicalWorkspaceSection.all => const <Widget>[],
-      ClinicalWorkspaceSection.waitingReview ||
-      ClinicalWorkspaceSection.urgent ||
-      ClinicalWorkspaceSection.inConsultation => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.navigationOpdShortLabel,
-          icon: Icons.local_hospital_outlined,
-          semanticLabel: l10n.navigationOpdShortLabel,
-          tooltip: l10n.navigationOpdShortLabel,
-          onPressed: () => context.go(AppRoutes.opd.location()),
-        ),
-      ],
-      ClinicalWorkspaceSection.resultsReady => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.navigationLabShortLabel,
-          icon: Icons.science_outlined,
-          semanticLabel: l10n.navigationLabShortLabel,
-          tooltip: l10n.navigationLabShortLabel,
-          onPressed: () => context.go(AppRoutes.lab.location()),
-        ),
-      ],
-      ClinicalWorkspaceSection.completed => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.navigationDischargeShortLabel,
-          icon: Icons.logout_outlined,
-          semanticLabel: l10n.navigationDischargeShortLabel,
-          tooltip: l10n.navigationDischargeShortLabel,
-          onPressed: () => context.go(AppRoutes.discharge.location()),
-        ),
-      ],
-    };
   }
 }
 

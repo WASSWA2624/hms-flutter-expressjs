@@ -178,6 +178,32 @@ void main() {
       },
     );
 
+    test('scopes exclude inpatient and IPD source rows', () {
+      final ClinicalWorklistEntry ipd = _entry(
+        sourceQueue: 'IPD',
+        encounterType: 'IPD',
+        stage: 'WAITING_DOCTOR_REVIEW',
+        isUrgent: true,
+        resultsReady: true,
+        status: 'COMPLETED',
+        updatedAt: DateTime.now(),
+      );
+      final ClinicalWorklistEntry inpatientType = _entry(
+        encounterType: 'INPATIENT',
+        stage: 'WAITING_DOCTOR_REVIEW',
+      );
+
+      expect(clinicalWorklistEntryIsOutpatient(ipd), isFalse);
+      expect(clinicalWorklistEntryIsOutpatient(inpatientType), isFalse);
+      for (final ClinicalQueueScope scope in ClinicalQueueScope.values) {
+        expect(clinicalWorklistEntryMatchesScope(ipd, scope), isFalse);
+        expect(
+          clinicalWorklistEntryMatchesScope(inpatientType, scope),
+          isFalse,
+        );
+      }
+    });
+
     test('inConsultation scope matches consultation-like stages', () {
       final ClinicalWorklistEntry inProgress = _entry(
         status: 'IN_PROGRESS',
@@ -212,27 +238,69 @@ void main() {
       );
     });
 
-    test('completed scope matches terminal entries', () {
-      final ClinicalWorklistEntry completed = _entry(status: 'COMPLETED');
-      final ClinicalWorklistEntry discharged = _entry(status: 'DISCHARGED');
+    test('completed scope matches same-day terminal outpatient entries', () {
+      final DateTime now = DateTime.now();
+      final ClinicalWorklistEntry completedToday = _entry(
+        status: 'COMPLETED',
+        updatedAt: now,
+      );
+      final ClinicalWorklistEntry dischargedToday = _entry(
+        status: 'DISCHARGED',
+        updatedAt: now,
+      );
+      final ClinicalWorklistEntry completedYesterday = _entry(
+        status: 'COMPLETED',
+        updatedAt: now.subtract(const Duration(days: 1)),
+      );
       final ClinicalWorklistEntry open = _entry(status: 'OPEN');
 
       expect(
         clinicalWorklistEntryMatchesScope(
-          completed,
+          completedToday,
           ClinicalQueueScope.completed,
         ),
         isTrue,
       );
       expect(
         clinicalWorklistEntryMatchesScope(
-          discharged,
+          dischargedToday,
           ClinicalQueueScope.completed,
         ),
         isTrue,
       );
       expect(
+        clinicalWorklistEntryMatchesScope(
+          completedYesterday,
+          ClinicalQueueScope.completed,
+        ),
+        isFalse,
+      );
+      expect(
         clinicalWorklistEntryMatchesScope(open, ClinicalQueueScope.completed),
+        isFalse,
+      );
+    });
+
+    test('waiting review and urgent scopes exclude terminal entries', () {
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          _entry(stage: 'WAITING_DOCTOR_REVIEW', status: 'COMPLETED'),
+          ClinicalQueueScope.waitingReview,
+        ),
+        isFalse,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          _entry(isUrgent: true, status: 'CLOSED'),
+          ClinicalQueueScope.urgent,
+        ),
+        isFalse,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          _entry(resultsReady: true, status: 'DISCHARGED'),
+          ClinicalQueueScope.resultsReady,
+        ),
         isFalse,
       );
     });
@@ -253,16 +321,29 @@ void main() {
       expect(state.inConsultationCount, 2);
     });
 
-    test('completedCount counts terminal entries', () {
+    test('completedCount counts same-day terminal outpatient entries', () {
+      final DateTime now = DateTime.now();
       final ClinicalWorkspaceState state = ClinicalWorkspaceState(
         query: const ClinicalWorklistQuery(),
         worklist: AppPage<ClinicalWorklistEntry>(
           request: const AppPageRequest(),
           items: <ClinicalWorklistEntry>[
-            _entry(encounterId: 'enc-1', status: 'OPEN'),
-            _entry(encounterId: 'enc-2', status: 'COMPLETED'),
-            _entry(encounterId: 'enc-3', status: 'DISCHARGED'),
-            _entry(encounterId: 'enc-4', status: 'CANCELLED'),
+            _entry(encounterId: 'enc-1', status: 'OPEN', updatedAt: now),
+            _entry(encounterId: 'enc-2', status: 'COMPLETED', updatedAt: now),
+            _entry(encounterId: 'enc-3', status: 'DISCHARGED', updatedAt: now),
+            _entry(encounterId: 'enc-4', status: 'CANCELLED', updatedAt: now),
+            _entry(
+              encounterId: 'enc-5',
+              status: 'COMPLETED',
+              updatedAt: now.subtract(const Duration(days: 1)),
+            ),
+            _entry(
+              encounterId: 'enc-6',
+              sourceQueue: 'IPD',
+              encounterType: 'IPD',
+              status: 'DISCHARGED',
+              updatedAt: now,
+            ),
           ],
         ),
       );
@@ -436,6 +517,7 @@ ClinicalWorklistEntry _entry({
   String sourceQueue = 'OPD',
   String encounterId = 'encounter-1',
   String? encounterPublicId,
+  String? encounterType,
   String? patientDisplayName,
   String? patientGender,
   String? patientAgeSex,
@@ -453,6 +535,7 @@ ClinicalWorklistEntry _entry({
     sourceQueue: sourceQueue,
     encounterId: encounterId,
     encounterPublicId: encounterPublicId,
+    encounterType: encounterType,
     patientDisplayName: patientDisplayName,
     patientGender: patientGender,
     patientAgeSex: patientAgeSex,

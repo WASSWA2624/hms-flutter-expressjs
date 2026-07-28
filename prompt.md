@@ -1,4 +1,4 @@
-# Action Button Inventory — Target Screen: `/reception`
+# Action Button Inventory — Target Screen: `/clinical`
 
 Produce a complete inventory of every action button on the target screen, including buttons inside modal dialogs and any nested dialogs those modals open. Save the inventory under `screens/`. To reuse this prompt, change only the target screen in the title above.
 

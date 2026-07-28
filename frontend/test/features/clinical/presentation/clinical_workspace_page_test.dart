@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart'
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -268,13 +269,13 @@ void main() {
     expect(find.text('Queue scope'), findsNothing);
   });
 
-  testWidgets('All tab shows Refresh primary without navigation secondaries', (
+  testWidgets('clinical tabs omit Refresh and cross-module toolbar actions', (
     tester,
   ) async {
     await _pumpClinicalWorkspace(tester);
 
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.text('Refresh'), findsNothing);
     expect(
       find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
       findsNothing,
@@ -304,7 +305,7 @@ void main() {
   });
 
   testWidgets(
-    'Waiting review, Urgent, and In consultation show OPD secondary',
+    'Waiting review, Urgent, and In consultation omit OPD toolbar action',
     (tester) async {
       await _pumpClinicalWorkspace(tester);
 
@@ -317,13 +318,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Refresh'), findsOneWidget);
+        expect(find.text('Refresh'), findsNothing);
         expect(
           find.descendant(
             of: find.byType(AppTabStrip),
             matching: find.text('OPD'),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.descendant(
@@ -339,47 +340,53 @@ void main() {
           ),
           findsNothing,
         );
+        expect(find.text('Filters'), findsOneWidget);
+        expect(find.text('Settings'), findsOneWidget);
       }
     },
   );
 
-  testWidgets('Results ready tab shows Lab secondary', (tester) async {
+  testWidgets('Results ready tab omits Lab toolbar action', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
     await tester.tap(_tab('Results ready'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
     expect(
       find.descendant(of: find.byType(AppTabStrip), matching: find.text('Lab')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
       findsNothing,
     );
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
-  testWidgets('Completed tab shows Discharge secondary', (tester) async {
+  testWidgets('Completed tab omits Discharge toolbar action', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
     await tester.tap(_tab('Completed'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
     expect(
       find.descendant(
         of: find.byType(AppTabStrip),
         matching: find.text('Discharge'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
       findsNothing,
     );
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 }
 
@@ -466,6 +473,9 @@ Future<_Harness> _pumpClinicalWorkspace(
         clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
         opdRepositoryProvider.overrideWithValue(opdRepository),
         ipdRepositoryProvider.overrideWithValue(ipdRepository),
+        followUpTabCountProvider.overrideWith(
+          (Ref ref, FollowUpWorklistScope scope) => null,
+        ),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.unauthenticated(),

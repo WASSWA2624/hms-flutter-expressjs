@@ -1187,7 +1187,6 @@ final class ClinicalWorkspaceController
     final List<Result<AppPage<ClinicalWorklistEntry>>> results =
         await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
           _repository.listEncounters(query),
-          _ipdFlows(query),
           _opdFlows(query),
           _triageFlows(query),
         ]);
@@ -1274,64 +1273,6 @@ final class ClinicalWorkspaceController
         request: query.pageRequest,
         totalItemCount: page.totalItemCount,
       ),
-    );
-  }
-
-  Future<Result<AppPage<ClinicalWorklistEntry>>> _ipdFlows(
-    ClinicalWorklistQuery query,
-  ) async {
-    final bool wantsCompleted = query.scope == ClinicalQueueScope.completed;
-    final Result<AppPage<IpdAdmissionSummary>> result = await _ipdRepository
-        .listAdmissions(
-          IpdAdmissionQuery(
-            search: query.databaseSearch,
-            scope: wantsCompleted
-                ? IpdQueueScope.discharged
-                : IpdQueueScope.all,
-          ),
-        );
-
-    return result.map(
-      (AppPage<IpdAdmissionSummary> page) => AppPage<ClinicalWorklistEntry>(
-        items: page.items
-            .where(
-              (IpdAdmissionSummary item) => wantsCompleted || !item.isTerminal,
-            )
-            .map(_entryFromIpd)
-            .where(
-              (ClinicalWorklistEntry entry) => entry.encounterId.isNotEmpty,
-            )
-            .toList(growable: false),
-        request: query.pageRequest,
-        totalItemCount: page.totalItemCount,
-      ),
-    );
-  }
-
-  ClinicalWorklistEntry _entryFromIpd(IpdAdmissionSummary item) {
-    final String normalizedStage = (item.stage ?? '').toUpperCase();
-    final String normalizedNextStep = (item.nextStep ?? '').toUpperCase();
-    return ClinicalWorklistEntry(
-      id: 'IPD_${item.id}',
-      sourceQueue: 'IPD',
-      encounterId: item.encounterId ?? '',
-      patientId: item.patientId,
-      patientDisplayName: item.patientDisplayName,
-      encounterType: 'IPD',
-      status: item.admissionStatus ?? item.stage,
-      stage: item.stage,
-      nextStep: item.nextStep,
-      currentLocation: item.location,
-      startedAt: item.admittedAt,
-      updatedAt: item.dischargedAt ?? item.admittedAt,
-      admissionId: item.id,
-      admissionPublicId: item.displayId,
-      isUrgent:
-          item.hasCriticalAlert ||
-          (item.criticalSeverity ?? '').toUpperCase() == 'CRITICAL',
-      resultsReady:
-          normalizedStage.contains('RESULT') ||
-          normalizedNextStep.contains('RESULT'),
     );
   }
 

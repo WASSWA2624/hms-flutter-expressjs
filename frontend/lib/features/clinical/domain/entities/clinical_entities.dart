@@ -864,8 +864,10 @@ final class ClinicalWorkspaceState {
   int get waitingReviewCount {
     return worklist.items
         .where(
-          (ClinicalWorklistEntry item) =>
-              _matchesReviewState(item) && !item.isTerminal,
+          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
+            item,
+            ClinicalQueueScope.waitingReview,
+          ),
         )
         .length;
   }
@@ -873,7 +875,8 @@ final class ClinicalWorkspaceState {
   int get urgentCount {
     return worklist.items
         .where(
-          (ClinicalWorklistEntry item) => item.isUrgent && !item.isTerminal,
+          (ClinicalWorklistEntry item) =>
+              clinicalWorklistEntryMatchesScope(item, ClinicalQueueScope.urgent),
         )
         .length;
   }
@@ -881,7 +884,10 @@ final class ClinicalWorkspaceState {
   int get resultsReadyCount {
     return worklist.items
         .where(
-          (ClinicalWorklistEntry item) => item.resultsReady && !item.isTerminal,
+          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
+            item,
+            ClinicalQueueScope.resultsReady,
+          ),
         )
         .length;
   }
@@ -890,7 +896,7 @@ final class ClinicalWorkspaceState {
     final Set<String> activeWorkItems = <String>{};
 
     for (final ClinicalWorklistEntry item in worklist.items) {
-      if (item.isTerminal) {
+      if (!clinicalWorklistEntryIsOutpatient(item) || item.isTerminal) {
         continue;
       }
 
@@ -909,15 +915,22 @@ final class ClinicalWorkspaceState {
   int get inConsultationCount {
     return worklist.items
         .where(
-          (ClinicalWorklistEntry item) =>
-              _matchesConsultationState(item) && !item.isTerminal,
+          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
+            item,
+            ClinicalQueueScope.inConsultation,
+          ),
         )
         .length;
   }
 
   int get completedCount {
     return worklist.items
-        .where((ClinicalWorklistEntry item) => item.isTerminal)
+        .where(
+          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
+            item,
+            ClinicalQueueScope.completed,
+          ),
+        )
         .length;
   }
 
@@ -953,18 +966,34 @@ final class ClinicalWorkspaceState {
   }
 }
 
+/// Outpatient clinical worklist rows only — excludes IPD/inpatient admissions.
+bool clinicalWorklistEntryIsOutpatient(ClinicalWorklistEntry item) {
+  final String queue = item.sourceQueue.trim().toUpperCase();
+  if (queue == 'IPD' || queue == 'ADMISSION') {
+    return false;
+  }
+  final String type = (item.encounterType ?? '').trim().toUpperCase();
+  return type != 'IPD' && type != 'INPATIENT';
+}
+
 bool clinicalWorklistEntryMatchesScope(
   ClinicalWorklistEntry item,
   ClinicalQueueScope scope,
 ) {
+  if (!clinicalWorklistEntryIsOutpatient(item)) {
+    return false;
+  }
   return switch (scope) {
     ClinicalQueueScope.all => true,
     ClinicalQueueScope.today => _isToday(item.updatedAt ?? item.startedAt),
-    ClinicalQueueScope.urgent => item.isUrgent,
-    ClinicalQueueScope.waitingReview => _matchesReviewState(item),
-    ClinicalQueueScope.inConsultation => _matchesConsultationState(item),
-    ClinicalQueueScope.resultsReady => item.resultsReady,
-    ClinicalQueueScope.completed => item.isTerminal,
+    ClinicalQueueScope.urgent => item.isUrgent && !item.isTerminal,
+    ClinicalQueueScope.waitingReview =>
+      _matchesReviewState(item) && !item.isTerminal,
+    ClinicalQueueScope.inConsultation =>
+      _matchesConsultationState(item) && !item.isTerminal,
+    ClinicalQueueScope.resultsReady => item.resultsReady && !item.isTerminal,
+    ClinicalQueueScope.completed =>
+      item.isTerminal && _isToday(item.updatedAt ?? item.startedAt),
   };
 }
 

@@ -150,7 +150,7 @@ void main() {
         );
   }
 
-  test('maps ipd-flows admissions into the clinical worklist', () async {
+  test('excludes ipd admissions from the clinical worklist', () async {
     final _MockClinicalRepository clinical = _MockClinicalRepository();
     final _MockOpdRepository opd = _MockOpdRepository();
     final _MockIpdRepository ipd = _MockIpdRepository();
@@ -165,18 +165,15 @@ void main() {
 
     final ClinicalWorkspaceState? state = readState(container);
     expect(state, isNotNull);
-    final ClinicalWorklistEntry entry = state!.worklist.items.singleWhere(
-      (ClinicalWorklistEntry item) => item.sourceQueue == 'IPD',
+    expect(
+      state!.worklist.items.where(
+        (ClinicalWorklistEntry item) => item.sourceQueue == 'IPD',
+      ),
+      isEmpty,
     );
-    expect(entry.encounterId, 'enc-ipd-1');
-    expect(entry.admissionId, 'adm-uuid-1');
-    expect(entry.apiAdmissionId, 'ADM000001');
-    expect(entry.stage, 'ADMITTED_IN_BED');
-    expect(entry.currentLocation, 'Ward A | Bed 1');
 
-    // The legacy admissions endpoint must no longer power the worklist.
     verifyNever(() => clinical.listAdmissions(any()));
-    verify(() => ipd.listAdmissions(any())).called(greaterThanOrEqualTo(1));
+    verifyNever(() => ipd.listAdmissions(any()));
   });
 
   test('active inpatient discharge plans discharge via ipd-flows', () async {
