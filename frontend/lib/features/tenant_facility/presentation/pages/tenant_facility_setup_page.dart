@@ -2814,7 +2814,15 @@ class _DepartmentSetupSectionState
     if (facilityId == null || facilityId.isEmpty) {
       return '—';
     }
-    return _facilityNamesById[facilityId] ?? facilityId;
+    final bool isDeleted = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && facility.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _facilityNamesById[facilityId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _tenantLabel(DepartmentProfile department) {
@@ -2822,7 +2830,14 @@ class _DepartmentSetupSectionState
     if (tenantId.isEmpty) {
       return '—';
     }
-    return _tenantNamesById[tenantId] ?? tenantId;
+    final bool isDeleted = _tenantOptions.any(
+      (TenantProfile tenant) => tenant.id == tenantId && tenant.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _tenantNamesById[tenantId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   Future<void> _afterMutation(Future<void> Function() action) async {
@@ -3573,7 +3588,15 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     if (facilityId == null || facilityId.isEmpty) {
       return '—';
     }
-    return _facilityNamesById[facilityId] ?? '—';
+    final bool isDeleted = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && facility.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _facilityNamesById[facilityId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _tenantLabel(UnitProfile unit) {
@@ -3581,7 +3604,14 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     if (tenantId.isEmpty) {
       return '—';
     }
-    return _tenantNamesById[tenantId] ?? '—';
+    final bool isDeleted = _tenantOptions.any(
+      (TenantProfile tenant) => tenant.id == tenantId && tenant.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _tenantNamesById[tenantId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _departmentLabel(UnitProfile unit) {
@@ -3589,9 +3619,16 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     if (departmentId == null || departmentId.isEmpty) {
       return '—';
     }
-    return _departmentNamesById[departmentId] ??
-        _departmentName(snapshot, departmentId) ??
-        '—';
+    final bool isDeleted = _departments.any(
+      (DepartmentProfile department) =>
+          department.id == departmentId && department.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _departmentNamesById[departmentId] ??
+          _departmentName(snapshot, departmentId),
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   Future<void> _afterMutation(Future<void> Function() action) async {
@@ -4347,7 +4384,15 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     if (facilityId.isEmpty) {
       return '—';
     }
-    return _facilityNamesById[facilityId] ?? '—';
+    final bool isDeleted = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && facility.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _facilityNamesById[facilityId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _tenantLabel(WardProfile ward) {
@@ -4355,7 +4400,14 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     if (tenantId.isEmpty) {
       return '—';
     }
-    return _tenantNamesById[tenantId] ?? '—';
+    final bool isDeleted = _tenantOptions.any(
+      (TenantProfile tenant) => tenant.id == tenantId && tenant.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _tenantNamesById[tenantId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _departmentLabel(WardProfile ward) {
@@ -4363,9 +4415,16 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     if (departmentId == null || departmentId.isEmpty) {
       return '—';
     }
-    return _departmentNamesById[departmentId] ??
-        _departmentName(snapshot, departmentId) ??
-        '—';
+    final bool isDeleted = _departments.any(
+      (DepartmentProfile department) =>
+          department.id == departmentId && department.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _departmentNamesById[departmentId] ??
+          _departmentName(snapshot, departmentId),
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   Future<void> _afterMutation(Future<void> Function() action) async {
@@ -5110,7 +5169,15 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     if (facilityId.isEmpty) {
       return '—';
     }
-    return _facilityNamesById[facilityId] ?? '—';
+    final bool isDeleted = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && facility.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _facilityNamesById[facilityId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _tenantLabel(RoomProfile room) {
@@ -5118,7 +5185,14 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     if (tenantId.isEmpty) {
       return '—';
     }
-    return _tenantNamesById[tenantId] ?? '—';
+    final bool isDeleted = _tenantOptions.any(
+      (TenantProfile tenant) => tenant.id == tenantId && tenant.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _tenantNamesById[tenantId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _wardLabel(RoomProfile room) {
@@ -5126,7 +5200,14 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     if (wardId == null || wardId.isEmpty) {
       return '—';
     }
-    return _wardNamesById[wardId] ?? _wardName(snapshot, wardId) ?? '—';
+    final bool isDeleted = _wards.any(
+      (WardProfile ward) => ward.id == wardId && ward.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _wardNamesById[wardId] ?? _wardName(snapshot, wardId),
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   Future<void> _afterMutation(Future<void> Function() action) async {
@@ -5944,7 +6025,15 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     if (facilityId.isEmpty) {
       return '—';
     }
-    return _facilityNamesById[facilityId] ?? '—';
+    final bool isDeleted = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && facility.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _facilityNamesById[facilityId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _tenantLabel(BedProfile bed) {
@@ -5952,7 +6041,14 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     if (tenantId.isEmpty) {
       return '—';
     }
-    return _tenantNamesById[tenantId] ?? '—';
+    final bool isDeleted = _tenantOptions.any(
+      (TenantProfile tenant) => tenant.id == tenantId && tenant.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _tenantNamesById[tenantId],
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _wardLabel(BedProfile bed) {
@@ -5960,9 +6056,14 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     if (wardId.isEmpty) {
       return '—';
     }
-    return _wardNamesById[wardId] ??
-        _wardName(snapshot, wardId) ??
-        '—';
+    final bool isDeleted = _wards.any(
+      (WardProfile ward) => ward.id == wardId && ward.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _wardNamesById[wardId] ?? _wardName(snapshot, wardId),
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   String _roomLabel(BedProfile bed) {
@@ -5970,9 +6071,14 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     if (roomId == null || roomId.isEmpty) {
       return '—';
     }
-    return _roomNamesById[roomId] ??
-        _roomName(snapshot, roomId) ??
-        '—';
+    final bool isDeleted = _rooms.any(
+      (RoomProfile room) => room.id == roomId && room.isDeleted,
+    );
+    return tenantFacilityRelatedNameLabel(
+      _roomNamesById[roomId] ?? _roomName(snapshot, roomId),
+      isDeleted: isDeleted,
+      deletedLabel: context.l10n.tenantFacilityStructureDeletedStatus,
+    );
   }
 
   Future<void> _afterMutation(Future<void> Function() action) async {
