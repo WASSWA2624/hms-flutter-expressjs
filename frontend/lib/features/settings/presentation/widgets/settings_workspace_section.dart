@@ -25,14 +25,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
 class SettingsWorkspaceSection extends ConsumerWidget {
-  const SettingsWorkspaceSection({
-    this.initialPanel,
-    this.onPanelChanged,
-    super.key,
-  });
-
-  final String? initialPanel;
-  final ValueChanged<String>? onPanelChanged;
+  const SettingsWorkspaceSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,8 +53,6 @@ class SettingsWorkspaceSection extends ConsumerWidget {
         data: (Result<SettingsWorkspaceState> result) => result.when(
           success: (SettingsWorkspaceState state) => _SettingsWorkspaceContent(
             state: state,
-            initialPanel: initialPanel,
-            onPanelChanged: onPanelChanged,
             onRefresh: () => unawaited(
               ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
             ),
@@ -79,56 +70,18 @@ class SettingsWorkspaceSection extends ConsumerWidget {
   }
 }
 
-class _SettingsWorkspaceContent extends ConsumerStatefulWidget {
+class _SettingsWorkspaceContent extends StatelessWidget {
   const _SettingsWorkspaceContent({
     required this.state,
     required this.onRefresh,
-    this.initialPanel,
-    this.onPanelChanged,
   });
 
   final SettingsWorkspaceState state;
   final VoidCallback onRefresh;
-  final String? initialPanel;
-  final ValueChanged<String>? onPanelChanged;
-
-  @override
-  ConsumerState<_SettingsWorkspaceContent> createState() =>
-      _SettingsWorkspaceContentState();
-}
-
-class _SettingsWorkspaceContentState
-    extends ConsumerState<_SettingsWorkspaceContent> {
-  late String _activeTab;
-
-  static const Set<String> _validPanels = <String>{
-    'overview',
-    'setup',
-    'modules',
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    final String? panel = widget.initialPanel;
-    _activeTab = (panel != null && _validPanels.contains(panel))
-        ? panel
-        : 'overview';
-  }
-
-  @override
-  void didUpdateWidget(covariant _SettingsWorkspaceContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialPanel != widget.initialPanel &&
-        widget.initialPanel != null &&
-        _validPanels.contains(widget.initialPanel)) {
-      setState(() => _activeTab = widget.initialPanel!);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final SettingsWorkspace workspace = widget.state.workspace;
+    final SettingsWorkspace workspace = state.workspace;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -141,7 +94,7 @@ class _SettingsWorkspaceContentState
             body: l10n.settingsWorkspaceTenantContextRequiredBody,
           ),
           SizedBox(height: theme.spacing.md),
-          _SettingsContextSelector(state: widget.state),
+          _SettingsContextSelector(state: state),
         ],
       );
     }
@@ -154,160 +107,24 @@ class _SettingsWorkspaceContentState
         action: AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
-          onPressed: widget.onRefresh,
+          onPressed: onRefresh,
         ),
       );
     }
 
+    // One scroll surface: context → readiness → modules (Open/Create sole entries).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppTabStrip(
-          tabs: <AppTabItem>[
-            AppTabItem(
-              id: 'overview',
-              icon: Icons.dashboard_outlined,
-              label: l10n.settingsWorkspaceContextTitle,
-            ),
-            AppTabItem(
-              id: 'setup',
-              icon: Icons.playlist_add_check_outlined,
-              label: l10n.settingsWorkspaceChecklistTitle,
-            ),
-            AppTabItem(
-              id: 'modules',
-              icon: Icons.view_module_outlined,
-              label: l10n.settingsWorkspaceModuleGroupsTitle,
-            ),
-          ],
-          selectedId: _activeTab,
-          onTabTapped: (String id) {
-            setState(() => _activeTab = id);
-            widget.onPanelChanged?.call(id);
-          },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        if (_activeTab == 'overview') ...<Widget>[
-          _SettingsContextSummary(state: widget.state),
+        _SettingsContextSelector(state: state),
+        if (workspace.checklist.items.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
-          _SettingsSummaryCards(workspace: workspace),
-          SizedBox(height: theme.spacing.md),
-          _SettingsContextSelector(state: widget.state),
-        ] else if (_activeTab == 'setup') ...<Widget>[
-          _SettingsChecklistPanel(
-            workspace: workspace,
-            onRefresh: widget.onRefresh,
-          ),
-          SizedBox(height: theme.spacing.md),
-          _SettingsQuickActionsPanel(
-            actions: workspace.quickActions,
-            onRefresh: widget.onRefresh,
-          ),
-        ] else ...<Widget>[
-          _SettingsWorkspaceFilters(state: widget.state),
-          SizedBox(height: theme.spacing.md),
-          _SettingsModuleGroupsPanel(groups: workspace.moduleGroups),
+          _SettingsChecklistPanel(workspace: workspace),
         ],
-      ],
-    );
-  }
-}
-
-class _SettingsContextSummary extends StatelessWidget {
-  const _SettingsContextSummary({required this.state});
-
-  final SettingsWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final SettingsWorkspace workspace = state.workspace;
-    final SettingsWorkspaceContext ctx = workspace.context;
-    final String unknown = l10n.profileUnknownValue;
-    final String roles = ctx.roleKeys.isEmpty
-        ? unknown
-        : ctx.roleKeys.join(', ');
-
-    final TextStyle labelStyle =
-        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-          color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        );
-    final TextStyle valueStyle =
-        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-          color: colorScheme.onSurface,
-        );
-    final TextStyle separatorStyle =
-        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-          color: colorScheme.outlineVariant,
-        );
-
-    final List<(String, String)> items = <(String, String)>[
-      (
-        l10n.settingsWorkspaceTenantLabel,
-        ctx.tenantName ?? ctx.tenantId ?? unknown,
-      ),
-      (
-        l10n.settingsWorkspaceFacilityLabel,
-        ctx.facilityName ?? ctx.facilityId ?? unknown,
-      ),
-      (l10n.settingsWorkspaceFacilityTypeLabel, ctx.facilityType ?? unknown),
-      (l10n.settingsWorkspaceRolesLabel, roles),
-      (
-        l10n.settingsWorkspaceGeneratedAtLabel,
-        _dateLabel(workspace.generatedAt),
-      ),
-    ];
-
-    final List<InlineSpan> spans = <InlineSpan>[];
-    for (int i = 0; i < items.length; i++) {
-      spans.add(TextSpan(text: '${items[i].$1}: ', style: labelStyle));
-      spans.add(TextSpan(text: items[i].$2, style: valueStyle));
-      if (i < items.length - 1) {
-        spans.add(TextSpan(text: '  ;  ', style: separatorStyle));
-      }
-    }
-
-    return AppSectionPanel(
-      title: l10n.settingsWorkspaceContextTitle,
-      leadingIcon: Icons.domain_outlined,
-      density: AppContentPanelDensity.compact,
-      borderColor: Colors.transparent,
-      children: <Widget>[Text.rich(TextSpan(children: spans))],
-    );
-  }
-}
-
-class _SettingsSummaryCards extends StatelessWidget {
-  const _SettingsSummaryCards({required this.workspace});
-
-  final SettingsWorkspace workspace;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    if (workspace.summaryCards.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AppInfoTileGrid(
-      minItemWidth: 170,
-      maxColumns: 3,
-      borderedTiles: false,
-      items: <AppInfoTileData>[
-        for (final SettingsSummaryCard card in workspace.summaryCards)
-          AppInfoTileData(
-            label: _labelForKey(l10n, card.labelKey),
-            value: _summaryValue(l10n, card),
-            icon: _statusIcon(card.state),
-          ),
-        AppInfoTileData(
-          label: l10n.settingsWorkspaceTotalRecordsLabel,
-          value: '${workspace.stats.totalRecords}',
-          icon: Icons.storage_outlined,
-        ),
+        SizedBox(height: theme.spacing.md),
+        _SettingsWorkspaceFilters(state: state),
+        SizedBox(height: theme.spacing.md),
+        _SettingsModuleGroupsPanel(groups: workspace.moduleGroups),
       ],
     );
   }
@@ -480,23 +297,15 @@ class _SettingsWorkspaceFilters extends ConsumerWidget {
   }
 }
 
-class _SettingsChecklistPanel extends ConsumerWidget {
-  const _SettingsChecklistPanel({
-    required this.workspace,
-    required this.onRefresh,
-  });
+class _SettingsChecklistPanel extends StatelessWidget {
+  const _SettingsChecklistPanel({required this.workspace});
 
   final SettingsWorkspace workspace;
-  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-
-    if (workspace.checklist.items.isEmpty) {
-      return const SizedBox.shrink();
-    }
 
     return AppSectionPanel(
       title: l10n.settingsWorkspaceChecklistTitle,
@@ -510,7 +319,7 @@ class _SettingsChecklistPanel extends ConsumerWidget {
           runSpacing: theme.spacing.sm,
           children: <Widget>[
             for (final SettingsChecklistItem item in workspace.checklist.items)
-              _SettingsChecklistChip(item: item, onRefresh: onRefresh),
+              _SettingsChecklistChip(item: item),
           ],
         ),
       ],
@@ -518,124 +327,66 @@ class _SettingsChecklistPanel extends ConsumerWidget {
   }
 }
 
-class _SettingsChecklistChip extends ConsumerWidget {
-  const _SettingsChecklistChip({required this.item, required this.onRefresh});
+class _SettingsChecklistChip extends StatelessWidget {
+  const _SettingsChecklistChip({required this.item});
 
   final SettingsChecklistItem item;
-  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String entityKey = item.labelKey.split('.').last;
     final String label = _labelForKey(l10n, item.labelKey);
-    final bool canOpen =
-        _mappedSettingsRoute(item.createRoute ?? item.route) != null;
 
     return Semantics(
-      button: true,
       label:
           '$label — ${item.completed ? l10n.settingsWorkspaceConfiguredStatus : l10n.settingsWorkspaceEmptyStatus}',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(theme.radius.sm),
-          onTap: canOpen
-              ? () => unawaited(
-                  _handleChecklistOpen(context, ref, item, onRefresh),
-                )
-              : null,
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.xs,
+          border: Border.all(
+            color: item.completed
+                ? theme.statusColors.success.withValues(alpha: 0.4)
+                : colorScheme.outlineVariant,
+          ),
+          color: item.completed
+              ? theme.statusColors.success.withValues(alpha: 0.06)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              _checklistEntityIcon(entityKey),
+              size: 18,
+              color: colorScheme.onSurfaceVariant,
             ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: item.completed
-                    ? theme.statusColors.success.withValues(alpha: 0.4)
-                    : colorScheme.outlineVariant,
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onSurface,
               ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Icon(
+              item.completed
+                  ? Icons.check_circle
+                  : Icons.radio_button_unchecked,
+              size: 16,
               color: item.completed
-                  ? theme.statusColors.success.withValues(alpha: 0.06)
-                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  ? theme.statusColors.success
+                  : colorScheme.outlineVariant,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  _checklistEntityIcon(entityKey),
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                SizedBox(width: theme.spacing.xs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                SizedBox(width: theme.spacing.xs),
-                Icon(
-                  item.completed
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  size: 16,
-                  color: item.completed
-                      ? theme.statusColors.success
-                      : colorScheme.outlineVariant,
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
-    );
-  }
-}
-
-class _SettingsQuickActionsPanel extends ConsumerWidget {
-  const _SettingsQuickActionsPanel({
-    required this.actions,
-    required this.onRefresh,
-  });
-
-  final List<SettingsQuickAction> actions;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return AppQuickActions(
-      title: l10n.settingsWorkspaceQuickActionsTitle,
-      emptyState: Text(
-        l10n.settingsWorkspaceNoQuickActionsBody,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      hideWhenEmpty: false,
-      actions: <AppActionItem>[
-        for (final SettingsQuickAction action in actions)
-          AppActionItem(
-            label: _quickActionLabel(l10n, action),
-            leadingIcon: _iconFor(action.icon),
-            enabled: action.canExecute,
-            tooltip: action.canExecute
-                ? null
-                : l10n.settingsWorkspaceRouteUnavailableBody,
-            onPressed: action.canExecute
-                ? () => unawaited(
-                    _handleQuickCreateAction(context, ref, action, onRefresh),
-                  )
-                : null,
-          ),
-      ],
     );
   }
 }

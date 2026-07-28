@@ -14023,7 +14023,7 @@ abstract class AppLocalizations {
   /// Body shown while session restoration blocks a guarded route.
   ///
   /// In en, this message translates to:
-  /// **'Finish session restore first.'**
+  /// **'Restoring your session…'**
   String get routeSessionRestoringBody;
 
   /// Title shown when a route requires authentication.

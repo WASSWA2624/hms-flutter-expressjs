@@ -61,6 +61,125 @@ void main() {
       );
     });
 
+    test('keeps session-restoring while the session is still unknown', () {
+      const AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.notReady(),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri(
+              path: AppRoutes.sessionRestoring.path,
+              queryParameters: <String, String>{'from': protectedRoute.path},
+            ),
+          ),
+        ),
+        isNull,
+      );
+    });
+
+    test('resumes from after session restore when authenticated', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+      );
+      final Uri from = Uri(path: protectedRoute.path);
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri.parse(
+              AppRoutes.sessionRestoring.locationWithFrom(from),
+            ),
+          ),
+        ),
+        from.toString(),
+      );
+    });
+
+    test('resumes home from session-restoring when from is missing', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri(path: AppRoutes.sessionRestoring.path),
+          ),
+        ),
+        AppRoutes.home.path,
+      );
+    });
+
+    test('sends unsigned-in restore to login with from', () {
+      const AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.unauthenticated(),
+      );
+      final Uri from = Uri(path: protectedRoute.path);
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri.parse(
+              AppRoutes.sessionRestoring.locationWithFrom(from),
+            ),
+          ),
+        ),
+        AppRoutes.login.locationWithFrom(from),
+      );
+    });
+
+    test('sends forbidden restore to forbidden with from', () {
+      const AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.forbidden(),
+      );
+      final Uri from = Uri(path: protectedRoute.path);
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri.parse(
+              AppRoutes.sessionRestoring.locationWithFrom(from),
+            ),
+          ),
+        ),
+        AppRoutes.forbidden.locationWithFrom(from),
+      );
+    });
+
+    test('ignores absolute from and resumes home when authenticated', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri(
+              path: AppRoutes.sessionRestoring.path,
+              queryParameters: <String, String>{
+                'from': 'https://evil.example/phish',
+              },
+            ),
+          ),
+        ),
+        AppRoutes.home.path,
+      );
+    });
+
     test('redirects protected routes without an authenticated session', () {
       final Uri targetLocation = Uri(path: protectedRoute.path);
       const AppRouteGuards guards = AppRouteGuards(

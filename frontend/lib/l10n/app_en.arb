@@ -9634,7 +9634,7 @@
   "@routeSessionRestoringTitle": {
     "description": "Title shown while session restoration blocks a guarded route."
   },
-  "routeSessionRestoringBody": "Finish session restore first.",
+  "routeSessionRestoringBody": "Restoring your session…",
   "@routeSessionRestoringBody": {
     "description": "Body shown while session restoration blocks a guarded route."
   },

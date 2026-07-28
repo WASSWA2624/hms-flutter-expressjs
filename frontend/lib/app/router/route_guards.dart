@@ -29,6 +29,15 @@ final class AppRouteGuards {
       return null;
     }
 
+    // Waiting shell: stay while unknown; once ready, resume `from` (or home)
+    // so users do not need a duplicate "Go to dashboard" exit.
+    if (targetRoute.path == AppRoutes.sessionRestoring.path) {
+      if (!sessionState.isReady) {
+        return null;
+      }
+      return _resumeAfterSessionRestore(request.location);
+    }
+
     if (targetRoute.isAuthEntryRoute && sessionState.isAuthenticated) {
       return AppRoutes.home.location();
     }
@@ -60,6 +69,44 @@ final class AppRouteGuards {
     }
 
     return null;
+  }
+
+  String? _resumeAfterSessionRestore(Uri sessionRestoringLocation) {
+    final Uri resumeTarget = _resumeUri(
+      sessionRestoringLocation.queryParameters['from'],
+    );
+
+    if (sessionState.isAuthenticated) {
+      return resumeTarget.toString();
+    }
+
+    return switch (sessionState.status) {
+      SessionStatus.forbidden => AppRoutes.forbidden.locationWithFrom(
+        resumeTarget,
+      ),
+      SessionStatus.expired || SessionStatus.unauthenticated =>
+        AppRoutes.login.locationWithFrom(resumeTarget),
+      SessionStatus.unknown => null,
+      SessionStatus.authenticated => resumeTarget.toString(),
+    };
+  }
+
+  Uri _resumeUri(String? fromRaw) {
+    if (fromRaw == null || fromRaw.trim().isEmpty) {
+      return Uri(path: AppRoutes.home.path);
+    }
+
+    final Uri? parsed = Uri.tryParse(fromRaw);
+    if (parsed == null || parsed.hasScheme) {
+      return Uri(path: AppRoutes.home.path);
+    }
+
+    final String path = parsed.path;
+    if (path.isEmpty || path == AppRoutes.sessionRestoring.path) {
+      return Uri(path: AppRoutes.home.path);
+    }
+
+    return parsed;
   }
 
   AppRouteData? _matchRoute(String locationPath) {

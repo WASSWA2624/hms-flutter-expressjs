@@ -110,14 +110,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     context.go(newQuery.location());
   }
 
-  void _onWorkspacePanelChanged(String panel) {
-    final SettingsPageQuery newQuery = SettingsPageQuery(
-      tab: 'workspace',
-      panel: panel,
-    );
-    context.go(newQuery.location());
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -126,17 +118,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       appAccessibilityProvider,
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final List<_SettingsAction> adminActions = _adminActions(context, l10n)
-        .where((_SettingsAction action) {
-          return action.requirement?.isAllowed(accessPolicy) ?? true;
-        })
-        .toList(growable: false);
     final bool showSettingsWorkspace =
         _settingsWorkspaceRequirement.isAllowed(accessPolicy) ||
         _hrSettingsWorkspaceRequirement.isAllowed(accessPolicy);
     final bool showConfiguration =
         _configTenantRequirement.isAllowed(accessPolicy) ||
         _configFacilityRequirement.isAllowed(accessPolicy);
+    // When the setup workspace is visible it owns tenant/facility and access
+    // entry points; Administration only keeps destinations the workspace does
+    // not cover (subscriptions).
+    final List<_SettingsAction> adminActions =
+        (showSettingsWorkspace
+                ? _subscriptionAdminActions(context, l10n)
+                : _adminActions(context, l10n))
+            .where((_SettingsAction action) {
+              return action.requirement?.isAllowed(accessPolicy) ?? true;
+            })
+            .toList(growable: false);
 
     final List<_AccordionEntry> sections = <_AccordionEntry>[
       _AccordionEntry(
@@ -262,10 +260,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: l10n.settingsWorkspaceSectionTitle,
           body: l10n.settingsWorkspaceSectionBody,
           wrapInSection: false,
-          builder: (_) => SettingsWorkspaceSection(
-            initialPanel: widget.initialQuery.panel,
-            onPanelChanged: _onWorkspacePanelChanged,
-          ),
+          builder: (_) => const SettingsWorkspaceSection(),
         ),
     ];
 
@@ -566,6 +561,21 @@ final class _SettingsAction {
   final AccessRequirement? requirement;
 }
 
+List<_SettingsAction> _subscriptionAdminActions(
+  BuildContext context,
+  AppLocalizations l10n,
+) {
+  return <_SettingsAction>[
+    _SettingsAction(
+      icon: Icons.workspace_premium_outlined,
+      title: l10n.navigationSubscriptionsLabel,
+      body: l10n.settingsSubscriptionsActionBody,
+      requirement: _subscriptionsRequirement,
+      onTap: () => context.go(AppRoutes.subscriptions.location()),
+    ),
+  ];
+}
+
 List<_SettingsAction> _adminActions(
   BuildContext context,
   AppLocalizations l10n,
@@ -578,13 +588,7 @@ List<_SettingsAction> _adminActions(
       requirement: _tenantFacilitySetupRequirement,
       onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
     ),
-    _SettingsAction(
-      icon: Icons.workspace_premium_outlined,
-      title: l10n.navigationSubscriptionsLabel,
-      body: l10n.settingsSubscriptionsActionBody,
-      requirement: _subscriptionsRequirement,
-      onTap: () => context.go(AppRoutes.subscriptions.location()),
-    ),
+    ..._subscriptionAdminActions(context, l10n),
     _SettingsAction(
       icon: Icons.manage_accounts_outlined,
       title: l10n.settingsAccessAdminActionTitle,

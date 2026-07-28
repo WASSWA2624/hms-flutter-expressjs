@@ -51,9 +51,11 @@ void main() {
         initialLocation: AppRoutes.home.path,
       ),
     );
-    await tester.pumpAndSettle();
+    // Loading indicator animation never settles.
+    await tester.pump();
 
     expect(find.byType(SessionRestoringPage), findsOneWidget);
     expect(find.text('Checking session'), findsOneWidget);
+    expect(find.text('Go to dashboard'), findsNothing);
   });
 }

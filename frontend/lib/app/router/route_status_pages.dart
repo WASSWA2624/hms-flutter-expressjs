@@ -15,11 +15,13 @@ class SessionRestoringPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return _RouteStatusPage(
-      icon: Icons.lock_clock_outlined,
+    // Wait-only surface: session restore is automatic. A home/login action
+    // would either loop (session still unknown) or skip the restore path.
+    return AppStateScaffold(
+      variant: AppStateViewVariant.loading,
       title: l10n.routeSessionRestoringTitle,
       body: l10n.routeSessionRestoringBody,
-      actionLabel: l10n.commonGoHomeActionLabel,
+      semanticLabel: l10n.routeSessionRestoringTitle,
     );
   }
 }

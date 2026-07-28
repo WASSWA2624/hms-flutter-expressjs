@@ -173,7 +173,7 @@ RoomsBedsNextActionKind roomsBedsPrimaryNextActionKind(BedBoardItem item) {
       item.hasOpenTransfer
           ? RoomsBedsNextActionKind.completeTransfer
           : RoomsBedsNextActionKind.release,
-    BedSetupStatus.reserved => RoomsBedsNextActionKind.assign,
+    BedSetupStatus.reserved => RoomsBedsNextActionKind.markAvailable,
     BedSetupStatus.cleaning => RoomsBedsNextActionKind.markAvailable,
     BedSetupStatus.maintenance => RoomsBedsNextActionKind.openOperations,
     BedSetupStatus.blocked => RoomsBedsNextActionKind.markAvailable,
@@ -181,11 +181,45 @@ RoomsBedsNextActionKind roomsBedsPrimaryNextActionKind(BedBoardItem item) {
   };
 }
 
-String roomsBedsPrimaryNextActionLabel(
+bool roomsBedsNextActionIsAuthorized({
+  required RoomsBedsNextActionKind kind,
+  required bool canAdminBeds,
+  required bool canIpdWrite,
+}) {
+  return switch (kind) {
+    RoomsBedsNextActionKind.assign ||
+    RoomsBedsNextActionKind.release ||
+    RoomsBedsNextActionKind.completeTransfer => canIpdWrite,
+    RoomsBedsNextActionKind.markAvailable ||
+    RoomsBedsNextActionKind.openHousekeeping ||
+    RoomsBedsNextActionKind.openOperations => canAdminBeds,
+    RoomsBedsNextActionKind.viewDetail => true,
+  };
+}
+
+/// Authorized board primary; falls back to view-detail when the stage write is
+/// unauthorized so disabled lock chrome never appears for missing permissions.
+RoomsBedsNextActionKind roomsBedsResolvedNextActionKind({
+  required BedBoardItem item,
+  required bool canAdminBeds,
+  required bool canIpdWrite,
+}) {
+  final RoomsBedsNextActionKind kind = roomsBedsPrimaryNextActionKind(item);
+  if (roomsBedsNextActionIsAuthorized(
+    kind: kind,
+    canAdminBeds: canAdminBeds,
+    canIpdWrite: canIpdWrite,
+  )) {
+    return kind;
+  }
+  return RoomsBedsNextActionKind.viewDetail;
+}
+
+String roomsBedsNextActionKindLabel(
   AppLocalizations l10n,
-  BedBoardItem item,
+  RoomsBedsNextActionKind kind,
 ) {
-  return switch (roomsBedsPrimaryNextActionKind(item)) {
+  return switch (kind) {
     RoomsBedsNextActionKind.assign => l10n.roomsBedsAssignAction,
     RoomsBedsNextActionKind.release => l10n.roomsBedsReleaseAction,
     RoomsBedsNextActionKind.completeTransfer =>
@@ -197,6 +231,22 @@ String roomsBedsPrimaryNextActionLabel(
       l10n.roomsBedsOpenOperationsAction,
     RoomsBedsNextActionKind.viewDetail => l10n.roomsBedsDetailTitle,
   };
+}
+
+String roomsBedsPrimaryNextActionLabel(
+  AppLocalizations l10n,
+  BedBoardItem item, {
+  bool canAdminBeds = true,
+  bool canIpdWrite = true,
+}) {
+  return roomsBedsNextActionKindLabel(
+    l10n,
+    roomsBedsResolvedNextActionKind(
+      item: item,
+      canAdminBeds: canAdminBeds,
+      canIpdWrite: canIpdWrite,
+    ),
+  );
 }
 
 String roomsBedsLocationLabel(AppLocalizations l10n, BedBoardItem item) {

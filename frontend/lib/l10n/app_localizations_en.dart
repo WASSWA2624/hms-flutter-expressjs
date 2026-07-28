@@ -7596,7 +7596,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeSessionRestoringTitle => 'Checking session';
 
   @override
-  String get routeSessionRestoringBody => 'Finish session restore first.';
+  String get routeSessionRestoringBody => 'Restoring your session…';
 
   @override
   String get routeAuthRequiredTitle => 'Sign-in required';
