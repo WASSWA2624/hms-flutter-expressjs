@@ -24,6 +24,9 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Cancel dialog **Reason** field (discarded before API cancel) | Restate cancel intent | **Removed** — confirm-only destructive dialog; payload unchanged |
 | Toolbar **Activate subscription** label vs create goal | Create subscription | **Renamed** sole create entry to **New subscription** (detail **Activate** remains for pending rows) |
 | Unauthorized **Manage modules** / create toolbar | Mutations | **Unauthorized UI absent** — omitted without `subscriptionsWrite` |
+| Edit status **Cancelled** + **Cancel subscription** | Terminate subscription | **Merged** — Cancel confirm is sole cancel path; edit omits Cancelled (cancelled rows show date-only hint; use **Activate** to restore) |
+| Always-visible disabled **Activate** / **Cancel** / **Collect** | Same mutations when inapplicable | **Removed** — actions render only when capability flags allow |
+| Detail info tiles shared across resources (empty module / fit / dates) | Repeat N/A fields | **Scoped** — each resource shows only relevant tiles |
 
 ---
 
@@ -100,10 +103,10 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 ### Detail dialog actions (write-authorized)
 
-- Subscriptions: **Edit subscription** (status / dates), **Renew**, **Change plan**, **Activate** (pending rows), **Cancel subscription** (confirm-only).
-- Module subscriptions: **Enable / Disable module**.
+- Subscriptions: **Edit subscription** (status / dates; no Cancelled), **Renew**, **Change plan**, **Activate** (only when `canActivateSubscription`), **Cancel subscription** (confirm-only; only when `canCancelSubscription`).
+- Module subscriptions: **Enable / Disable module** (only when `canToggleModule`).
 - Licenses: **Update license**.
-- Invoices: **Collect invoice**, **Retry invoice** (no print shell).
+- Invoices: **Collect invoice** (only when `canCollectInvoice`), **Retry invoice** (no print shell).
 - Plans: footer **Edit plan** (metadata); section **Manage modules**.
 
 ### Empty / error / validation
@@ -123,5 +126,6 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Operations owns **New subscription**; nested module-subscriptions tab present.
   - Read-only users see no create / edit / manage-modules controls.
   - Invoice detail omits **Print invoice**.
-  - Edit subscription form omits **Plan**; **Change plan** remains on detail.
+  - Edit subscription form omits **Plan** and **Cancelled**; **Change plan** / **Cancel** remain on detail.
+  - Active detail omits **Activate**; pending shows **Activate**; cancelled omits **Cancel** and edit shows cancelled hint.
   - Cancel uses confirm-only dialog without a discarded reason field.

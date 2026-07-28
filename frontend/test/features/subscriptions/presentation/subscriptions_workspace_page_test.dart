@@ -111,13 +111,17 @@ List<SubscriptionItem> _itemsForResource(SubscriptionResource resource) {
   };
 }
 
-void _stubWorkspace(_MockSubscriptionsRepository repository) {
+void _stubWorkspace(
+  _MockSubscriptionsRepository repository, {
+  List<SubscriptionItem> Function(SubscriptionResource resource)? itemsForResource,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer((
     Invocation invocation,
   ) async {
     final SubscriptionsWorkspaceQuery query =
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
-    final List<SubscriptionItem> items = _itemsForResource(query.resource);
+    final List<SubscriptionItem> items =
+        (itemsForResource ?? _itemsForResource)(query.resource);
     return Result<SubscriptionsWorkspaceData>.success(
       SubscriptionsWorkspaceData(
         query: query,
@@ -216,10 +220,12 @@ Future<_Harness> _pumpSubscriptionsWorkspace(
   String initialLocation = '/subscriptions?panel=catalog',
   Size physicalSize = const Size(1440, 900),
   AppAccessPolicy? accessPolicy,
+  List<SubscriptionItem> Function(SubscriptionResource resource)?
+      itemsForResource,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(repository, itemsForResource: itemsForResource);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -437,6 +443,8 @@ void main() {
     expect(find.text('Edit subscription'), findsOneWidget);
     expect(find.text('Change plan'), findsOneWidget);
     expect(find.text('Cancel subscription'), findsOneWidget);
+    // Active rows omit Activate; Cancel owns termination.
+    expect(find.text('Activate'), findsNothing);
     expect(find.text('Print invoice'), findsNothing);
 
     await tester.tap(find.text('Edit subscription'));
@@ -447,6 +455,14 @@ void main() {
       find.descendant(
         of: find.byType(Dialog).last,
         matching: find.text('Plan'),
+      ),
+      findsNothing,
+    );
+    // Cancelled is not selectable in edit — Cancel confirm owns that goal.
+    expect(
+      find.descendant(
+        of: find.byType(Dialog).last,
+        matching: find.text('Cancelled'),
       ),
       findsNothing,
     );
@@ -472,5 +488,71 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Reason'), findsNothing);
+  });
+
+  testWidgets('pending subscription shows Activate and hides Cancel when cancelled', (
+    WidgetTester tester,
+  ) async {
+    const SubscriptionItem pending = SubscriptionItem(
+      id: 'sub-pending',
+      resource: SubscriptionResource.subscriptions,
+      displayId: 'SUB-P',
+      tenantId: 'tenant-1',
+      tenantLabel: 'Pending Clinic',
+      planId: 'plan-1',
+      planLabel: 'Starter Plan',
+      status: 'PENDING',
+    );
+    const SubscriptionItem cancelled = SubscriptionItem(
+      id: 'sub-cancelled',
+      resource: SubscriptionResource.subscriptions,
+      displayId: 'SUB-C',
+      tenantId: 'tenant-2',
+      tenantLabel: 'Closed Clinic',
+      planId: 'plan-1',
+      planLabel: 'Starter Plan',
+      status: 'CANCELLED',
+    );
+
+    await _pumpSubscriptionsWorkspace(
+      tester,
+      repository: repository,
+      itemsForResource: (SubscriptionResource resource) {
+        return switch (resource) {
+          SubscriptionResource.subscriptions => <SubscriptionItem>[
+            pending,
+            cancelled,
+          ],
+          _ => _itemsForResource(resource),
+        };
+      },
+    );
+    await _selectPanelTab(tester, 'Subscriptions');
+
+    await tester.tap(find.text('Pending Clinic'));
+    await tester.pumpAndSettle();
+    expect(find.text('Activate'), findsOneWidget);
+    expect(find.text('Cancel subscription'), findsOneWidget);
+    await tester.tap(find.text('Close').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Closed Clinic'));
+    await tester.pumpAndSettle();
+    expect(find.text('Activate'), findsOneWidget);
+    expect(find.text('Cancel subscription'), findsNothing);
+
+    await tester.tap(find.text('Edit subscription'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Status is Cancelled'),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(Dialog).last,
+        matching: find.text('Cancelled'),
+      ),
+      findsNothing,
+    );
   });
 }
