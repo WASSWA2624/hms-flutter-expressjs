@@ -2722,7 +2722,10 @@ class _DepartmentSetupSectionState
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityDepartmentsShowsTenantFilter(scope)
-        ? repository.listTenants(request: _listRequest)
+        ? repository.listTenants(
+            request: _listRequest,
+            includeDeleted: true,
+          )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityDepartmentsShowsFacilityFilter(scope)
@@ -2731,6 +2734,7 @@ class _DepartmentSetupSectionState
             tenantId: scope == TenantFacilityDepartmentsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
+            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
@@ -3473,7 +3477,10 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityUnitsShowsTenantFilter(scope)
-        ? repository.listTenants(request: _listRequest)
+        ? repository.listTenants(
+            request: _listRequest,
+            includeDeleted: true,
+          )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityUnitsShowsFacilityFilter(scope)
@@ -3482,6 +3489,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
             tenantId: scope == TenantFacilityUnitsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
+            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
@@ -4264,7 +4272,10 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityWardsShowsTenantFilter(scope)
-        ? repository.listTenants(request: _listRequest)
+        ? repository.listTenants(
+            request: _listRequest,
+            includeDeleted: true,
+          )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityWardsShowsFacilityFilter(scope)
@@ -4273,6 +4284,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
             tenantId: scope == TenantFacilityWardsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
+            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
@@ -5053,7 +5065,10 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityRoomsShowsTenantFilter(scope)
-        ? repository.listTenants(request: _listRequest)
+        ? repository.listTenants(
+            request: _listRequest,
+            includeDeleted: true,
+          )
         : null;
     final bool loadFacilities =
         tenantFacilityRoomsShowsFacilityFilter(scope) ||
@@ -5066,6 +5081,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             tenantId: scope == TenantFacilityRoomsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
+            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
@@ -5890,7 +5906,10 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityBedsShowsTenantFilter(scope)
-        ? repository.listTenants(request: _listRequest)
+        ? repository.listTenants(
+            request: _listRequest,
+            includeDeleted: true,
+          )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityBedsShowsFacilityFilter(scope)
@@ -5899,6 +5918,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
             tenantId: scope == TenantFacilityBedsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
+            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
