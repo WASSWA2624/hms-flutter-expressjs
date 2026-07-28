@@ -37,49 +37,78 @@ const AccessRequirement nursingWriteRequirement = AccessRequirement(
   activeModules: <String>['inpatient-bed-management'],
 );
 
+/// Stage-aware next-action kinds for the nursing worklist.
+enum NursingNextActionKind {
+  vitals,
+  medication,
+  handover,
+  transfer,
+  discharge,
+  escalate,
+}
+
+NursingNextActionKind nursingResolveNextActionKind(
+  NursingWorkItem item,
+  NursingQueueScope scope,
+) {
+  if (scope == NursingQueueScope.urgent && item.hasCriticalAlert) {
+    return NursingNextActionKind.escalate;
+  }
+
+  return switch (scope) {
+    NursingQueueScope.medicationDue => NursingNextActionKind.medication,
+    NursingQueueScope.handoverPending => NursingNextActionKind.handover,
+    NursingQueueScope.transferPending => NursingNextActionKind.transfer,
+    NursingQueueScope.dischargePending => NursingNextActionKind.discharge,
+    NursingQueueScope.all ||
+    NursingQueueScope.assignedWard ||
+    NursingQueueScope.urgent => switch (item.taskTypeCode) {
+      'MEDICATION_DUE' => NursingNextActionKind.medication,
+      'HANDOVER_PENDING' => NursingNextActionKind.handover,
+      'TRANSFER_PENDING' => NursingNextActionKind.transfer,
+      'DISCHARGE_PENDING' => NursingNextActionKind.discharge,
+      _ => NursingNextActionKind.vitals,
+    },
+  };
+}
+
 String nursingResolveNextActionLabel(
   AppLocalizations l10n,
   NursingWorkItem item,
   NursingQueueScope scope,
 ) {
-  if (scope == NursingQueueScope.urgent && item.hasCriticalAlert) {
-    return l10n.nursingActionEscalate;
-  }
-
-  if (scope == NursingQueueScope.all ||
-      scope == NursingQueueScope.assignedWard) {
-    return switch (item.taskTypeCode) {
-      'MEDICATION_DUE' => l10n.nursingActionAdministerMedication,
-      'HANDOVER_PENDING' => l10n.nursingActionCreateHandover,
-      'TRANSFER_PENDING' => l10n.nursingActionAcknowledgeTransfer,
-      'DISCHARGE_PENDING' => l10n.nursingActionDischargeClearance,
-      _ => l10n.nursingActionRecordVitals,
-    };
-  }
-
-  return nursingPrimaryActionLabel(l10n, scope);
+  return switch (nursingResolveNextActionKind(item, scope)) {
+    NursingNextActionKind.escalate => l10n.nursingActionEscalate,
+    NursingNextActionKind.medication => l10n.nursingActionAdministerMedication,
+    NursingNextActionKind.handover => l10n.nursingActionCreateHandover,
+    NursingNextActionKind.transfer => l10n.nursingActionAcknowledgeTransfer,
+    NursingNextActionKind.discharge => l10n.nursingActionDischargeClearance,
+    NursingNextActionKind.vitals =>
+      scope == NursingQueueScope.all ||
+          scope == NursingQueueScope.assignedWard ||
+          scope == NursingQueueScope.urgent
+      ? l10n.nursingActionRecordVitals
+      : nursingPrimaryActionLabel(l10n, scope),
+  };
 }
 
 IconData nursingResolveNextActionIcon(
   NursingWorkItem item,
   NursingQueueScope scope,
 ) {
-  if (scope == NursingQueueScope.urgent && item.hasCriticalAlert) {
-    return Icons.report_problem_outlined;
-  }
-
-  if (scope == NursingQueueScope.all ||
-      scope == NursingQueueScope.assignedWard) {
-    return switch (item.taskTypeCode) {
-      'MEDICATION_DUE' => Icons.medication_outlined,
-      'HANDOVER_PENDING' => Icons.swap_horiz_outlined,
-      'TRANSFER_PENDING' => Icons.transfer_within_a_station_outlined,
-      'DISCHARGE_PENDING' => Icons.fact_check_outlined,
-      _ => Icons.monitor_heart_outlined,
-    };
-  }
-
-  return nursingPrimaryActionIcon(scope);
+  return switch (nursingResolveNextActionKind(item, scope)) {
+    NursingNextActionKind.escalate => Icons.report_problem_outlined,
+    NursingNextActionKind.medication => Icons.medication_outlined,
+    NursingNextActionKind.handover => Icons.swap_horiz_outlined,
+    NursingNextActionKind.transfer => Icons.transfer_within_a_station_outlined,
+    NursingNextActionKind.discharge => Icons.fact_check_outlined,
+    NursingNextActionKind.vitals =>
+      scope == NursingQueueScope.all ||
+          scope == NursingQueueScope.assignedWard ||
+          scope == NursingQueueScope.urgent
+      ? Icons.monitor_heart_outlined
+      : nursingPrimaryActionIcon(scope),
+  };
 }
 
 Future<void> nursingExecuteRowAction(
@@ -100,20 +129,17 @@ Future<void> nursingExecuteRowAction(
     return;
   }
 
-  if (scope == NursingQueueScope.urgent && item.hasCriticalAlert) {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const NursingEscalationDialog(),
-      ),
-    );
-    return;
-  }
-
-  switch (_resolveRowActionKind(item, scope)) {
-    case _NursingRowActionKind.medication:
+  switch (nursingResolveNextActionKind(item, scope)) {
+    case NursingNextActionKind.escalate:
+      await nursingShowActionResult(
+        context,
+        showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const NursingEscalationDialog(),
+        ),
+      );
+    case NursingNextActionKind.medication:
       final NursingPatientDetail? detail = nursingSelectedDetailFromState(
         ref.read(nursingWorkspaceControllerProvider),
       );
@@ -128,7 +154,7 @@ Future<void> nursingExecuteRowAction(
           builder: (_) => NursingMedicationDialog(detail: detail),
         ),
       );
-    case _NursingRowActionKind.handover:
+    case NursingNextActionKind.handover:
       await nursingShowActionResult(
         context,
         showAppDialog<bool>(
@@ -137,7 +163,7 @@ Future<void> nursingExecuteRowAction(
           builder: (_) => const NursingHandoverDialog(),
         ),
       );
-    case _NursingRowActionKind.transfer:
+    case NursingNextActionKind.transfer:
       final NursingPatientDetail? detail = nursingSelectedDetailFromState(
         ref.read(nursingWorkspaceControllerProvider),
       );
@@ -152,7 +178,7 @@ Future<void> nursingExecuteRowAction(
           builder: (_) => NursingTransferDialog(detail: detail),
         ),
       );
-    case _NursingRowActionKind.discharge:
+    case NursingNextActionKind.discharge:
       final NursingPatientDetail? detail = nursingSelectedDetailFromState(
         ref.read(nursingWorkspaceControllerProvider),
       );
@@ -167,7 +193,7 @@ Future<void> nursingExecuteRowAction(
           builder: (_) => NursingDischargeClearanceDialog(detail: detail),
         ),
       );
-    case _NursingRowActionKind.vitals:
+    case NursingNextActionKind.vitals:
       await nursingShowActionResult(
         context,
         showAppDialog<bool>(
@@ -177,29 +203,6 @@ Future<void> nursingExecuteRowAction(
         ),
       );
   }
-}
-
-enum _NursingRowActionKind { vitals, medication, handover, transfer, discharge }
-
-_NursingRowActionKind _resolveRowActionKind(
-  NursingWorkItem item,
-  NursingQueueScope scope,
-) {
-  return switch (scope) {
-    NursingQueueScope.medicationDue => _NursingRowActionKind.medication,
-    NursingQueueScope.handoverPending => _NursingRowActionKind.handover,
-    NursingQueueScope.transferPending => _NursingRowActionKind.transfer,
-    NursingQueueScope.dischargePending => _NursingRowActionKind.discharge,
-    NursingQueueScope.all ||
-    NursingQueueScope.assignedWard ||
-    NursingQueueScope.urgent => switch (item.taskTypeCode) {
-      'MEDICATION_DUE' => _NursingRowActionKind.medication,
-      'HANDOVER_PENDING' => _NursingRowActionKind.handover,
-      'TRANSFER_PENDING' => _NursingRowActionKind.transfer,
-      'DISCHARGE_PENDING' => _NursingRowActionKind.discharge,
-      _ => _NursingRowActionKind.vitals,
-    },
-  };
 }
 
 class NursingNextActionCell extends ConsumerWidget {

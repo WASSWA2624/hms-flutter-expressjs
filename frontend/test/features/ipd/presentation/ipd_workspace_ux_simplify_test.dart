@@ -50,6 +50,7 @@ const IpdAdmissionSummary _transferPending = IpdAdmissionSummary(
 
 const IpdAdmissionDetail _transferDetail = IpdAdmissionDetail(
   summary: _transferPending,
+  openTransferRequest: IpdTransferRequest(id: 'tr-1', status: 'REQUESTED'),
   transferRequests: <IpdTransferRequest>[
     IpdTransferRequest(id: 'tr-1', status: 'REQUESTED'),
   ],

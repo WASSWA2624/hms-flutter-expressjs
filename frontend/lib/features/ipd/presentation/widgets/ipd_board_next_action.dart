@@ -18,8 +18,10 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_reques
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 
 /// Stage-aware next-action kinds for the IPD admission worklist.
 enum IpdBoardNextActionKind {
@@ -320,7 +322,7 @@ Future<void> runIpdBoardNextAction(
     IpdBoardNextActionKind.planOrManageDischarge =>
       _openDischargePlanningForAdmission(context, ref, detail),
     IpdBoardNextActionKind.completeTheatreHandover ||
-    IpdBoardNextActionKind.continueCare => Future<bool?>.value(null),
+    IpdBoardNextActionKind.continueCare => Future<bool?>.value(),
   };
 
   if (saved == true && context.mounted) {
@@ -351,9 +353,9 @@ Future<bool> runIpdFocusedMutation(
     return true;
   }
 
-  final IpdWorkspaceState? state = _readIpdState(ref) ?? fallbackState;
-  final IpdAdmissionDetail? detail = state?.selectedAdmission;
-  if (detail == null || state == null) {
+  final IpdWorkspaceState state = _readIpdState(ref) ?? fallbackState;
+  final IpdAdmissionDetail? detail = state.selectedAdmission;
+  if (detail == null) {
     return true;
   }
 
@@ -417,7 +419,7 @@ Future<bool> runIpdFocusedMutation(
     IpdBoardNextActionKind.planOrManageDischarge =>
       _openDischargePlanningForAdmission(context, ref, detail),
     IpdBoardNextActionKind.completeTheatreHandover ||
-    IpdBoardNextActionKind.continueCare => Future<bool?>.value(null),
+    IpdBoardNextActionKind.continueCare => Future<bool?>.value(),
   };
 
   if (saved == true && context.mounted) {

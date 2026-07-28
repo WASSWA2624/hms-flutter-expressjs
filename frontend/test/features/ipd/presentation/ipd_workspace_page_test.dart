@@ -491,22 +491,22 @@ void main() {
 
     expect(find.byTooltip('Start admission'), findsOneWidget);
     expect(find.byTooltip('Manage beds'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Bed board').first);
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Manage beds'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
-  testWidgets('queue tabs expose Refresh in the tab toolbar', (
+  testWidgets('queue tabs do not expose Refresh in the tab toolbar', (
     WidgetTester tester,
   ) async {
     await _pumpIpdWorkspace(tester, repository: repository);
 
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Start admission'), findsOneWidget);
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);

@@ -231,28 +231,6 @@ class _MortuaryWorkspaceContentState
     GoRouter.of(context).replace<void>(location);
   }
 
-  Future<void> _applyQueueShortcut(String queue) async {
-    final MortuaryWorkspaceController controller = ref.read(
-      mortuaryWorkspaceControllerProvider.notifier,
-    );
-    final AppFailure? failure = await controller.applyQueue(queue);
-    if (!mounted) {
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-    final MortuaryWorkspaceState? next = _mortuaryStateFromAsync(
-      ref.read(mortuaryWorkspaceControllerProvider),
-    );
-    final String panel = next?.query.panel ?? _currentPanel;
-    setState(() => _currentPanel = panel);
-    _updateUrl(panel: panel, queue: queue);
-  }
-
-  Future<void> _switchToStoragePanel() async {
-    _switchPanel(mortuaryPanelStorage);
-    _updateUrl(panel: mortuaryPanelStorage);
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -284,14 +262,6 @@ class _MortuaryWorkspaceContentState
                 _switchPanel(tabId);
                 _updateUrl(panel: tabId);
               },
-              primaryAction: _buildPrimaryAction(l10n, _currentPanel),
-              secondaryActions: _buildSecondaryActions(
-                context,
-                l10n,
-                state,
-                controller,
-                _currentPanel,
-              ),
             ),
             SizedBox(height: theme.spacing.sm),
             _MortuaryWorklist(
@@ -308,181 +278,6 @@ class _MortuaryWorkspaceContentState
         ),
       ),
     );
-  }
-
-  Widget _buildPrimaryAction(AppLocalizations l10n, String panel) {
-    final ({String label, IconData icon, AccessRequirement requirement})
-    action = switch (panel) {
-      mortuaryPanelStorage => (
-        label: l10n.mortuaryAssignStorageAction,
-        icon: Icons.inventory_2_outlined,
-        requirement: _storageRequirement,
-      ),
-      mortuaryPanelCustody => (
-        label: l10n.mortuaryRecordCustodyAction,
-        icon: Icons.swap_horiz_outlined,
-        requirement: _writeRequirement,
-      ),
-      mortuaryPanelRelease => (
-        label: l10n.mortuaryApproveReleaseAction,
-        icon: Icons.verified_outlined,
-        requirement: _approveRequirement,
-      ),
-      mortuaryPanelReporting => (
-        label: l10n.mortuaryPostMortemAction,
-        icon: Icons.fact_check_outlined,
-        requirement: _postMortemRequirement,
-      ),
-      _ => (
-        label: l10n.mortuaryReceiveCaseAction,
-        icon: Icons.inbox_outlined,
-        requirement: _writeRequirement,
-      ),
-    };
-
-    return AppAccessActionGate(
-      requirement: action.requirement,
-      hideWhenDenied: false,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppTabToolbarPrimary(
-          label: action.label,
-          icon: action.icon,
-          enabled: false,
-          tooltip: l10n.mortuaryActionsUnavailableTooltip,
-          onPressed: null,
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    BuildContext context,
-    AppLocalizations l10n,
-    MortuaryWorkspaceState state,
-    MortuaryWorkspaceController controller,
-    String panel,
-  ) {
-    final List<Widget> actions = <Widget>[];
-
-    void addQueueAction({
-      required String queue,
-      required String label,
-      required IconData icon,
-    }) {
-      if (state.queueCount(queue) <= 0) {
-        return;
-      }
-      actions.add(
-        AppTabToolbarAction(
-          label: label,
-          icon: icon,
-          semanticLabel: label,
-          tooltip: label,
-          onPressed: () => unawaited(_applyQueueShortcut(queue)),
-        ),
-      );
-    }
-
-    void addSummaryNavigateAction({
-      required String summaryId,
-      required String label,
-      required IconData icon,
-      required VoidCallback onPressed,
-    }) {
-      if (state.summaryValue(summaryId) <= 0) {
-        return;
-      }
-      actions.add(
-        AppTabToolbarAction(
-          label: label,
-          icon: icon,
-          semanticLabel: label,
-          tooltip: label,
-          onPressed: onPressed,
-        ),
-      );
-    }
-
-    switch (panel) {
-      case mortuaryPanelOverview:
-      case mortuaryPanelIntake:
-        addQueueAction(
-          queue: mortuaryQueueIdentificationPending,
-          label: l10n.mortuaryIdentificationPendingSummaryLabel,
-          icon: _queueIcon(mortuaryQueueIdentificationPending),
-        );
-        addSummaryNavigateAction(
-          summaryId: 'in_storage',
-          label: l10n.mortuaryInStorageSummaryLabel,
-          icon: _summaryIcon('in_storage'),
-          onPressed: () => unawaited(_switchToStoragePanel()),
-        );
-        addQueueAction(
-          queue: mortuaryQueueReleaseReady,
-          label: l10n.mortuaryReleaseReadySummaryLabel,
-          icon: _queueIcon(mortuaryQueueReleaseReady),
-        );
-        addQueueAction(
-          queue: mortuaryQueueUnsettledBilling,
-          label: l10n.mortuaryUnsettledBillingSummaryLabel,
-          icon: _queueIcon(mortuaryQueueUnsettledBilling),
-        );
-      case mortuaryPanelStorage:
-        addQueueAction(
-          queue: mortuaryQueueStorageExceptions,
-          label: l10n.mortuaryQueueStorageExceptionsLabel,
-          icon: _queueIcon(mortuaryQueueStorageExceptions),
-        );
-        addSummaryNavigateAction(
-          summaryId: 'in_storage',
-          label: l10n.mortuaryInStorageSummaryLabel,
-          icon: _summaryIcon('in_storage'),
-          onPressed: () => unawaited(_switchToStoragePanel()),
-        );
-      case mortuaryPanelCustody:
-        addQueueAction(
-          queue: mortuaryQueueIdentificationPending,
-          label: l10n.mortuaryIdentificationPendingSummaryLabel,
-          icon: _queueIcon(mortuaryQueueIdentificationPending),
-        );
-      case mortuaryPanelRelease:
-        addQueueAction(
-          queue: mortuaryQueueReleaseReady,
-          label: l10n.mortuaryReleaseReadySummaryLabel,
-          icon: _queueIcon(mortuaryQueueReleaseReady),
-        );
-        addQueueAction(
-          queue: mortuaryQueueUnsettledBilling,
-          label: l10n.mortuaryUnsettledBillingSummaryLabel,
-          icon: _queueIcon(mortuaryQueueUnsettledBilling),
-        );
-      case mortuaryPanelReporting:
-        addQueueAction(
-          queue: mortuaryQueuePostMortemPending,
-          label: l10n.mortuaryQueuePostMortemPendingLabel,
-          icon: _queueIcon(mortuaryQueuePostMortemPending),
-        );
-    }
-
-    actions.add(
-      AppTabToolbarAction(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        semanticLabel: l10n.commonRefreshActionLabel,
-        tooltip: l10n.commonRefreshActionLabel,
-        enabled: !state.isRefreshing,
-        isLoading: state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () async {
-                final AppFailure? failure = await controller.refresh();
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              },
-      ),
-    );
-    return actions;
   }
 
   Future<void> _openMortuaryDetailDialog(
@@ -735,13 +530,6 @@ DateTime? _mortuaryPanelDate(MortuaryWorkspaceItem item, String panel) {
 }
 
 
-bool _mortuaryNextActionEnabled(
-  AppLocalizations l10n,
-  MortuaryWorkspaceItem item,
-) {
-  return _nextActionLabel(l10n, item) != l10n.mortuaryNextActionReleased;
-}
-
 class _MortuaryWorklist extends StatelessWidget {
   const _MortuaryWorklist({
     required this.state,
@@ -940,10 +728,10 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
             tone: _statusTone(_mortuaryPanelStatus(item, panel)),
           ),
         ),
-        _MortuaryTableColumnId.nextAction => _MortuaryNextActionButton(
-          label: _nextActionLabel(l10n, item),
-          enabled: _mortuaryNextActionEnabled(l10n, item),
-          onPressed: () => onItemSelected(item),
+        _MortuaryTableColumnId.nextAction => Text(
+          _nextActionLabel(l10n, item),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         _MortuaryTableColumnId.date => Text(
           _formatDateTime(context, _mortuaryPanelDate(item, panel)),
@@ -1058,31 +846,6 @@ _mortuarySortComparator(String panel, _MortuaryTableColumnId column) {
   };
 }
 
-class _MortuaryNextActionButton extends StatelessWidget {
-  const _MortuaryNextActionButton({
-    required this.label,
-    required this.onPressed,
-    this.enabled = true,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: enabled ? onPressed : null,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-    );
-  }
-}
-
 class _MortuaryDetailPanel extends StatelessWidget {
   const _MortuaryDetailPanel({required this.state, required this.onPrint});
 
@@ -1160,7 +923,6 @@ class _MortuaryDetailPanel extends StatelessWidget {
           ),
         ],
       ),
-      _ActionGapPanel(item: item),
       _IdentitySection(item: item),
       _StorageSection(item: item),
       _CustodySection(item: item),
@@ -1174,94 +936,6 @@ class _MortuaryDetailPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: _withMortuaryDetailSectionSpacing(context, sections),
-    );
-  }
-}
-
-class _ActionGapPanel extends StatelessWidget {
-  const _ActionGapPanel({required this.item});
-
-  final MortuaryWorkspaceItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppMessagePanel(
-      title: l10n.mortuaryActionGapTitle,
-      message: l10n.mortuaryActionGapBody,
-      tone: AppWorkspaceStatusTone.warning,
-      children: <Widget>[
-        Wrap(
-          spacing: Theme.of(context).spacing.sm,
-          runSpacing: Theme.of(context).spacing.sm,
-          children: <Widget>[
-            _disabledAction(
-              l10n.mortuaryReceiveCaseAction,
-              Icons.inbox_outlined,
-              _writeRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryAssignStorageAction,
-              Icons.inventory_2_outlined,
-              _storageRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryRecordCustodyAction,
-              Icons.swap_horiz_outlined,
-              _writeRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryScheduleViewingAction,
-              Icons.event_available_outlined,
-              _writeRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryPostMortemAction,
-              Icons.fact_check_outlined,
-              _postMortemRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryRequestBillingAction,
-              Icons.request_quote_outlined,
-              _billingRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryApproveReleaseAction,
-              Icons.verified_outlined,
-              _approveRequirement,
-              l10n,
-            ),
-            _disabledAction(
-              l10n.mortuaryConfirmReleaseAction,
-              Icons.outbox_outlined,
-              _releaseRequirement,
-              l10n,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _disabledAction(
-    String label,
-    IconData icon,
-    AccessRequirement requirement,
-    AppLocalizations l10n,
-  ) {
-    return AppPermissionActionButton(
-      requirement: requirement,
-      label: label,
-      icon: icon,
-      enabled: false,
-      tooltip: l10n.mortuaryActionsUnavailableTooltip,
-      onPressed: null,
     );
   }
 }
