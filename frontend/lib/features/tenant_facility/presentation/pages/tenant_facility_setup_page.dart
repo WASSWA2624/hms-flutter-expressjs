@@ -4482,6 +4482,79 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
         _isCreate && tenantFacilityDepartmentsShowsFacilityFilter(scope);
     final ThemeData theme = Theme.of(context);
 
+    final Widget? tenantField = showTenantPicker
+        ? AppSelectField<String>.searchable(
+            value: _selectedTenantId ?? _noneSelection,
+            enabled: canEdit && !_loadingOptions,
+            labelText: l10n.profileTenantLabel,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _noneSelection,
+                label: l10n.tenantFacilityNoSelectionLabel,
+              ),
+              for (final TenantProfile tenant in _tenantOptions)
+                AppSelectOption<String>(
+                  value: tenant.id,
+                  label: tenant.name,
+                  leadingIcon: const Icon(Icons.apartment_outlined),
+                ),
+            ],
+            validator: (String? value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value == _noneSelection) {
+                return l10n.validationRequired;
+              }
+              return null;
+            },
+            onChanged: (String? value) {
+              final String? next =
+                  value == null || value == _noneSelection ? null : value;
+              unawaited(_onTenantChanged(next));
+            },
+          )
+        : null;
+    final Widget? facilityField = showFacilityPicker
+        ? AppSelectField<String>.searchable(
+            value: _selectedFacilityId ?? _noneSelection,
+            enabled:
+                canEdit &&
+                !_loadingOptions &&
+                (!showTenantPicker ||
+                    (_selectedTenantId != null &&
+                        _selectedTenantId!.isNotEmpty)),
+            labelText: l10n.profileFacilityLabel,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _noneSelection,
+                label: l10n.tenantFacilityNoSelectionLabel,
+              ),
+              for (final FacilityProfile facility in _facilityOptions)
+                AppSelectOption<String>(
+                  value: facility.id,
+                  label: facility.name,
+                  leadingIcon: const Icon(Icons.local_hospital_outlined),
+                ),
+            ],
+            validator: (String? value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  value == _noneSelection) {
+                return l10n.validationRequired;
+              }
+              return null;
+            },
+            onChanged: (String? value) {
+              setState(() {
+                _selectedFacilityId =
+                    value == null || value == _noneSelection ? null : value;
+              });
+            },
+          )
+        : null;
+
     return AppDialog(
       title: Text(
         isEditing
@@ -4516,128 +4589,74 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                   ],
                 ),
               ),
-            if (showTenantPicker)
-              AppSelectField<String>.searchable(
-                value: _selectedTenantId ?? _noneSelection,
-                enabled: canEdit && !_loadingOptions,
-                labelText: l10n.profileTenantLabel,
+            if (tenantField != null && facilityField != null)
+              AppResponsiveFieldRow.two(
+                gap: AppResponsiveFieldRowGap.form,
+                left: tenantField,
+                right: facilityField,
+              )
+            else if (tenantField != null)
+              tenantField
+            else if (facilityField != null)
+              facilityField,
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppTextField(
+                controller: _nameController,
+                enabled: canEdit,
+                labelText: l10n.tenantFacilityDepartmentNameLabel,
                 isRequired: true,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: _noneSelection,
-                    label: l10n.tenantFacilityNoSelectionLabel,
-                  ),
-                  for (final TenantProfile tenant in _tenantOptions)
-                    AppSelectOption<String>(
-                      value: tenant.id,
-                      label: tenant.name,
-                      leadingIcon: const Icon(Icons.apartment_outlined),
-                    ),
-                ],
-                validator: (String? value) {
-                  if (value == null ||
-                      value.isEmpty ||
-                      value == _noneSelection) {
-                    return l10n.validationRequired;
+                textCapitalization: TextCapitalization.words,
+                errorText: _nameErrorText,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+                onChanged: (_) {
+                  if (_nameErrorText != null) {
+                    setState(() {
+                      _nameErrorText = null;
+                    });
                   }
-                  return null;
-                },
-                onChanged: (String? value) {
-                  final String? next =
-                      value == null || value == _noneSelection ? null : value;
-                  unawaited(_onTenantChanged(next));
                 },
               ),
-            if (showFacilityPicker)
-              AppSelectField<String>.searchable(
-                value: _selectedFacilityId ?? _noneSelection,
-                enabled:
-                    canEdit &&
-                    !_loadingOptions &&
-                    (!showTenantPicker ||
-                        (_selectedTenantId != null &&
-                            _selectedTenantId!.isNotEmpty)),
-                labelText: l10n.profileFacilityLabel,
+              right: AppTextField(
+                controller: _shortNameController,
+                enabled: canEdit,
+                labelText: l10n.tenantFacilityDepartmentShortNameLabel,
+              ),
+            ),
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppSelectField<DepartmentSetupType>(
+                value: _type,
+                enabled: canEdit,
+                labelText: l10n.tenantFacilityDepartmentTypeLabel,
                 isRequired: true,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: _noneSelection,
-                    label: l10n.tenantFacilityNoSelectionLabel,
-                  ),
-                  for (final FacilityProfile facility in _facilityOptions)
-                    AppSelectOption<String>(
-                      value: facility.id,
-                      label: facility.name,
-                      leadingIcon: const Icon(Icons.local_hospital_outlined),
+                options: <AppSelectOption<DepartmentSetupType>>[
+                  for (final type in DepartmentSetupType.values)
+                    AppSelectOption<DepartmentSetupType>(
+                      value: type,
+                      label: _departmentTypeLabel(l10n, type),
+                      leadingIcon: Icon(_departmentTypeIcon(type)),
                     ),
                 ],
-                validator: (String? value) {
-                  if (value == null ||
-                      value.isEmpty ||
-                      value == _noneSelection) {
-                    return l10n.validationRequired;
+                onChanged: (DepartmentSetupType? value) {
+                  if (value == null) {
+                    return;
                   }
-                  return null;
-                },
-                onChanged: (String? value) {
                   setState(() {
-                    _selectedFacilityId =
-                        value == null || value == _noneSelection ? null : value;
+                    _type = value;
                   });
                 },
               ),
-            AppTextField(
-              controller: _nameController,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityDepartmentNameLabel,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              errorText: _nameErrorText,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-              onChanged: (_) {
-                if (_nameErrorText != null) {
+              right: AppSwitchField(
+                title: l10n.tenantFacilityActiveLabel,
+                value: _isActive,
+                enabled: canEdit,
+                onChanged: (bool value) {
                   setState(() {
-                    _nameErrorText = null;
+                    _isActive = value;
                   });
-                }
-              },
-            ),
-            AppTextField(
-              controller: _shortNameController,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityDepartmentShortNameLabel,
-            ),
-            AppSelectField<DepartmentSetupType>(
-              value: _type,
-              enabled: canEdit,
-              labelText: l10n.tenantFacilityDepartmentTypeLabel,
-              isRequired: true,
-              options: <AppSelectOption<DepartmentSetupType>>[
-                for (final type in DepartmentSetupType.values)
-                  AppSelectOption<DepartmentSetupType>(
-                    value: type,
-                    label: _departmentTypeLabel(l10n, type),
-                    leadingIcon: Icon(_departmentTypeIcon(type)),
-                  ),
-              ],
-              onChanged: (DepartmentSetupType? value) {
-                if (value == null) {
-                  return;
-                }
-                setState(() {
-                  _type = value;
-                });
-              },
-            ),
-            AppSwitchField(
-              title: l10n.tenantFacilityActiveLabel,
-              value: _isActive,
-              enabled: canEdit,
-              onChanged: (bool value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
+                },
+              ),
             ),
             _SubmissionFailureBanner(),
           ],
