@@ -1028,12 +1028,14 @@ class EmergencyDetailPanel extends ConsumerWidget {
     required this.state,
     required this.writeRequirement,
     this.isDialog = false,
+    this.omitNextActionKind,
     super.key,
   });
 
   final EmergencyWorkspaceState state;
   final AccessRequirement writeRequirement;
   final bool isDialog;
+  final EmergencyNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1121,6 +1123,7 @@ class EmergencyDetailPanel extends ConsumerWidget {
           detail: detail,
           referenceData: state.referenceData,
           writeRequirement: writeRequirement,
+          omitNextActionKind: omitNextActionKind,
         ),
         SizedBox(height: theme.spacing.md),
         EmergencyTimelinePanel(detail: detail),
@@ -1136,6 +1139,7 @@ class EmergencyActionPanel extends ConsumerWidget {
     required this.detail,
     required this.referenceData,
     required this.writeRequirement,
+    this.omitNextActionKind,
     super.key,
   });
 
@@ -1151,91 +1155,112 @@ class EmergencyActionPanel extends ConsumerWidget {
   final EmergencyCaseDetail detail;
   final EmergencyReferenceData referenceData;
   final AccessRequirement writeRequirement;
+  final EmergencyNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final EmergencyWorkspaceController controller = ref.read(
-      emergencyWorkspaceControllerProvider.notifier,
-    );
     final bool hasDispatch = detail.latestDispatch != null;
     final bool hasTrip = detail.activeTrip != null;
     final bool canStartTrip =
         !hasTrip &&
         (detail.latestDispatch?.ambulanceId != null ||
             referenceData.availableAmbulances.isNotEmpty);
-    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWriteEmergency = writeRequirement.isAllowed(accessPolicy);
-    final bool canHandoff = _handoffRequirement.isAllowed(accessPolicy);
+    final bool isOpen = detail.summary.isOpen;
+    final EmergencyNextActionKind? omit = omitNextActionKind;
+
+    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
+      if (isOpen)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyPriorityDialogTitle,
+          icon: AppActionIcons.priority,
+          onPressed: () => unawaited(_openPriorityDialog(context)),
+        ),
+      if (isOpen && omit != EmergencyNextActionKind.triage)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyTriageAction,
+          icon: Icons.monitor_heart_outlined,
+          onPressed: () => unawaited(_openTriageDialog(context)),
+        ),
+      if (isOpen && omit != EmergencyNextActionKind.response)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyResponseAction,
+          icon: Icons.medical_services_outlined,
+          onPressed: () => unawaited(_openResponseDialog(context)),
+        ),
+      if (isOpen &&
+          !hasDispatch &&
+          omit != EmergencyNextActionKind.dispatch)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyDispatchAction,
+          icon: Icons.airport_shuttle_outlined,
+          onPressed: () =>
+              unawaited(_openDispatchDialog(context, referenceData)),
+        ),
+      if (isOpen && hasDispatch)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyDispatchStatusLabel,
+          icon: Icons.route_outlined,
+          onPressed: () => unawaited(_openDispatchStatusDialog(context)),
+        ),
+      if (isOpen &&
+          canStartTrip &&
+          omit != EmergencyNextActionKind.startTrip)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: context.l10n.emergencyDispatchStartTripAction,
+          icon: Icons.play_arrow_outlined,
+          onPressed: () => unawaited(_startTrip(context, referenceData)),
+        ),
+      if (hasTrip && omit != EmergencyNextActionKind.completeTrip)
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: EmergencyText.completeTrip,
+          icon: Icons.flag_outlined,
+          confirmTitle: 'Complete ambulance trip',
+          confirmBody:
+              'This records ambulance arrival for the active emergency trip.',
+          confirmSubmitLabel: 'Complete trip',
+          mutate: () async {
+            final AppFailure? failure = await _controller(
+              context,
+            ).completeTrip();
+            return failure;
+          },
+          onSuccess: () {
+            if (context.mounted) {
+              showFailureIfNeeded(
+                context,
+                null,
+                successMessage: 'Complete trip done',
+              );
+            }
+          },
+        ),
+      if (isOpen && omit != EmergencyNextActionKind.handoff)
+        AppPermissionActionItem(
+          requirement: _handoffRequirement,
+          label: context.l10n.emergencyHandoffAction,
+          icon: AppActionIcons.handoff,
+          onPressed: () => unawaited(_openHandoffDialog(context)),
+        ),
+      if (isOpen && !hasTheaterHandoff(detail.summary))
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: EmergencyText.scheduleTheater,
+          icon: Icons.meeting_room_outlined,
+          onPressed: () => _openTheaterSchedule(context, detail.summary),
+        ),
+    ];
 
     return AppQuickActions(
       title: context.l10n.patientsQuickActionsTitle,
       presentation: AppQuickActionsPresentation.detailPanel,
-      actions: <AppActionItem>[
-        AppActionItem(
-          label: context.l10n.emergencyPriorityDialogTitle,
-          leadingIcon: AppActionIcons.priority,
-          enabled: canWriteEmergency && detail.summary.isOpen,
-          onPressed: () => _openPriorityDialog(context),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyTriageAction,
-          leadingIcon: Icons.monitor_heart_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen,
-          onPressed: () => _openTriageDialog(context),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyResponseAction,
-          leadingIcon: Icons.medical_services_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen,
-          onPressed: () => _openResponseDialog(context),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyDispatchAction,
-          leadingIcon: Icons.airport_shuttle_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen && !hasDispatch,
-          onPressed: () => _openDispatchDialog(context, referenceData),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyDispatchStatusLabel,
-          leadingIcon: Icons.route_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen && hasDispatch,
-          onPressed: () => _openDispatchStatusDialog(context),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyDispatchStartTripAction,
-          leadingIcon: Icons.play_arrow_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen && canStartTrip,
-          onPressed: () => _startTrip(context, referenceData),
-        ),
-        AppActionItem(
-          label: EmergencyText.completeTrip,
-          leadingIcon: Icons.flag_outlined,
-          enabled: canWriteEmergency && hasTrip,
-          onPressed: () => _confirmAction(
-            context: context,
-            title: 'Complete ambulance trip',
-            body:
-                'This records ambulance arrival for the active emergency trip.',
-            actionLabel: 'Complete trip',
-            onConfirmed: controller.completeTrip,
-          ),
-        ),
-        AppActionItem(
-          label: context.l10n.emergencyHandoffAction,
-          leadingIcon: AppActionIcons.handoff,
-          enabled: canHandoff && detail.summary.isOpen,
-          onPressed: () => _openHandoffDialog(context),
-        ),
-        AppActionItem(
-          label: EmergencyText.scheduleTheater,
-          leadingIcon: Icons.meeting_room_outlined,
-          enabled:
-              canWriteEmergency &&
-              detail.summary.isOpen &&
-              !hasTheaterHandoff(detail.summary),
-          onPressed: () => _openTheaterSchedule(context, detail.summary),
-        ),
-      ],
+      permissionActions: actions,
       extraActions: <Widget>[
         AppReportActionButton.print(
           label: EmergencyText.printSummary,
@@ -1468,36 +1493,6 @@ class EmergencyActionPanel extends ConsumerWidget {
         context,
         null,
         successMessage: context.l10n.emergencyHandoffRecordedMessage,
-      );
-    }
-  }
-
-  Future<void> _confirmAction({
-    required BuildContext context,
-    required String title,
-    required String body,
-    required String actionLabel,
-    required Future<AppFailure?> Function() onConfirmed,
-  }) async {
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AppConfirmActionDialog(
-        title: title,
-        body: body,
-        submitLabel: actionLabel,
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-
-    final AppFailure? failure = await onConfirmed();
-    if (context.mounted) {
-      showFailureIfNeeded(
-        context,
-        failure,
-        successMessage: '$actionLabel done',
       );
     }
   }
