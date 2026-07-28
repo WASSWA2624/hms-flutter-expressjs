@@ -540,6 +540,11 @@ class _PharmacyQueuePanel extends ConsumerWidget {
               icon: Icons.medication_outlined,
             ),
           ],
+          trailing: _PharmacyOrderNextActionButton(
+            order: item,
+            state: state,
+            writeRequirement: writeRequirement,
+          ),
         );
       },
     );

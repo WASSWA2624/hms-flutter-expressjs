@@ -27,36 +27,90 @@ const AccessRequirement therapyNextActionWriteRequirement = AccessRequirement(
   ],
 );
 
-String therapyNextActionLabel(AppLocalizations l10n, String status) {
+enum TherapyNextActionKind {
+  acceptReferral,
+  recordAssessment,
+  scheduleSession,
+  recordSession,
+  scheduleFollowUp,
+  markAttendance,
+  printInstructions,
+}
+
+TherapyNextActionKind therapyResolveNextActionKind(TherapyWorkItem item) {
+  return therapyResolveNextActionKindFromStatus(item.status);
+}
+
+TherapyNextActionKind therapyResolveNextActionKindFromStatus(String status) {
   return switch (status.toUpperCase()) {
-    'REFERRAL' => l10n.physiotherapyAcceptReferralAction,
-    'ACCEPTED' => l10n.physiotherapyRecordAssessmentAction,
-    'ASSESSMENT' => l10n.physiotherapyScheduleSessionAction,
-    'TODAY' => l10n.physiotherapyRecordSessionAction,
-    'IN_TREATMENT' => l10n.physiotherapyRecordSessionAction,
-    'ACTIVE_PLAN' => l10n.physiotherapyScheduleFollowUpAction,
-    'FOLLOW_UP_DUE' => l10n.physiotherapyScheduleFollowUpAction,
-    'MISSED' => l10n.physiotherapyMarkAttendanceAction,
-    'COMPLETED' => l10n.physiotherapyPrintInstructionsAction,
-    _ => l10n.physiotherapyAcceptReferralAction,
+    'REFERRAL' => TherapyNextActionKind.acceptReferral,
+    'ACCEPTED' => TherapyNextActionKind.recordAssessment,
+    'ASSESSMENT' => TherapyNextActionKind.scheduleSession,
+    'TODAY' || 'IN_TREATMENT' => TherapyNextActionKind.recordSession,
+    'ACTIVE_PLAN' || 'FOLLOW_UP_DUE' => TherapyNextActionKind.scheduleFollowUp,
+    'MISSED' => TherapyNextActionKind.markAttendance,
+    'COMPLETED' => TherapyNextActionKind.printInstructions,
+    _ => TherapyNextActionKind.acceptReferral,
+  };
+}
+
+String therapyNextActionLabel(AppLocalizations l10n, String status) {
+  return therapyNextActionLabelForKind(
+    l10n,
+    therapyResolveNextActionKindFromStatus(status),
+  );
+}
+
+String therapyNextActionLabelForKind(
+  AppLocalizations l10n,
+  TherapyNextActionKind kind,
+) {
+  return switch (kind) {
+    TherapyNextActionKind.acceptReferral =>
+      l10n.physiotherapyAcceptReferralAction,
+    TherapyNextActionKind.recordAssessment =>
+      l10n.physiotherapyRecordAssessmentAction,
+    TherapyNextActionKind.scheduleSession =>
+      l10n.physiotherapyScheduleSessionAction,
+    TherapyNextActionKind.recordSession =>
+      l10n.physiotherapyRecordSessionAction,
+    TherapyNextActionKind.scheduleFollowUp =>
+      l10n.physiotherapyScheduleFollowUpAction,
+    TherapyNextActionKind.markAttendance =>
+      l10n.physiotherapyMarkAttendanceAction,
+    TherapyNextActionKind.printInstructions =>
+      l10n.physiotherapyPrintInstructionsAction,
   };
 }
 
 IconData therapyNextActionIcon(String status) {
-  return switch (status.toUpperCase()) {
-    'REFERRAL' => Icons.assignment_turned_in_outlined,
-    'ACCEPTED' => Icons.assignment_outlined,
-    'ASSESSMENT' => Icons.event_available_outlined,
-    'TODAY' || 'IN_TREATMENT' => Icons.directions_walk_outlined,
-    'ACTIVE_PLAN' || 'FOLLOW_UP_DUE' => Icons.notification_add_outlined,
-    'MISSED' => Icons.fact_check_outlined,
-    'COMPLETED' => Icons.print_outlined,
-    _ => Icons.assignment_turned_in_outlined,
+  return therapyNextActionIconForKind(
+    therapyResolveNextActionKindFromStatus(status),
+  );
+}
+
+IconData therapyNextActionIconForKind(TherapyNextActionKind kind) {
+  return switch (kind) {
+    TherapyNextActionKind.acceptReferral => Icons.assignment_turned_in_outlined,
+    TherapyNextActionKind.recordAssessment => Icons.assignment_outlined,
+    TherapyNextActionKind.scheduleSession => Icons.event_available_outlined,
+    TherapyNextActionKind.recordSession => Icons.directions_walk_outlined,
+    TherapyNextActionKind.scheduleFollowUp => Icons.notification_add_outlined,
+    TherapyNextActionKind.markAttendance => Icons.fact_check_outlined,
+    TherapyNextActionKind.printInstructions => Icons.print_outlined,
   };
 }
 
 AccessRequirement therapyNextActionRequirement(String status) {
-  return status.toUpperCase() == 'COMPLETED'
+  return therapyNextActionRequirementForKind(
+    therapyResolveNextActionKindFromStatus(status),
+  );
+}
+
+AccessRequirement therapyNextActionRequirementForKind(
+  TherapyNextActionKind kind,
+) {
+  return kind == TherapyNextActionKind.printInstructions
       ? therapyNextActionReadRequirement
       : therapyNextActionWriteRequirement;
 }
@@ -68,9 +122,9 @@ bool therapyNextActionEnabled({
   if (isSaving) {
     return false;
   }
-  return switch (item.status.toUpperCase()) {
-    'ASSESSMENT' => item.apiPatientId != null,
-    'MISSED' => item.hasAppointment,
+  return switch (therapyResolveNextActionKind(item)) {
+    TherapyNextActionKind.scheduleSession => item.apiPatientId != null,
+    TherapyNextActionKind.markAttendance => item.hasAppointment,
     _ => true,
   };
 }
@@ -101,41 +155,38 @@ class TherapyNextActionButton extends ConsumerWidget {
               failure: (_) => false,
             ) ??
         false;
-    final String label = therapyNextActionLabel(l10n, item.status);
-    final IconData icon = therapyNextActionIcon(item.status);
-    final AccessRequirement requirement = therapyNextActionRequirement(
-      item.status,
-    );
+    final TherapyNextActionKind kind = therapyResolveNextActionKind(item);
+    final String label = therapyNextActionLabelForKind(l10n, kind);
+    final IconData icon = therapyNextActionIconForKind(kind);
+    final AccessRequirement requirement =
+        therapyNextActionRequirementForKind(kind);
     final bool actionEnabled = therapyNextActionEnabled(
       item: item,
       isSaving: isSaving,
     );
 
+    if (!actionEnabled) {
+      return const SizedBox.shrink();
+    }
+
     return AppAccessActionGate(
       requirement: requirement,
-      builder: (BuildContext context, bool isAllowed) {
-        final bool enabled = isAllowed && actionEnabled;
-        final Color primaryColor = enabled
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+      builder: (BuildContext context, bool _) {
+        final Color primaryColor = theme.colorScheme.primary;
 
         return Semantics(
           button: true,
-          enabled: enabled,
+          enabled: true,
           label: label,
           child: Tooltip(
             message: label,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: enabled
-                  ? () {
-                      unawaited(onPressed());
-                    }
-                  : null,
+              onTap: () {
+                unawaited(onPressed());
+              },
               child: MouseRegion(
-                cursor: enabled
-                    ? SystemMouseCursors.click
-                    : SystemMouseCursors.basic,
+                cursor: SystemMouseCursors.click,
                 child: Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: theme.spacing.xs,
@@ -158,23 +209,13 @@ class TherapyNextActionButton extends ConsumerWidget {
                                   ?.copyWith(
                                     color: primaryColor,
                                     fontWeight: FontWeight.w600,
-                                    decoration: enabled
-                                        ? TextDecoration.underline
-                                        : null,
+                                    decoration: TextDecoration.underline,
                                     decorationColor: primaryColor.withValues(
                                       alpha: 0.4,
                                     ),
                                   ),
                         ),
                       ),
-                      if (!enabled) ...<Widget>[
-                        SizedBox(width: theme.spacing.xs),
-                        Icon(
-                          Icons.lock_outlined,
-                          size: compact ? 10 : 12,
-                          color: primaryColor.withValues(alpha: 0.5),
-                        ),
-                      ],
                     ],
                   ),
                 ),

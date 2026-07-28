@@ -155,9 +155,10 @@ class AppButton extends StatelessWidget {
     final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
       context,
     );
-    final bool compactIconOnly =
-        iconOnly ||
-        (labelScope?.forceIconOnly == true && _resolvedIcon != null);
+    final bool compactIconOnly = labelScope?.showLabels == true
+        ? false
+        : iconOnly ||
+              (labelScope?.forceIconOnly == true && _resolvedIcon != null);
     final bool showLabel = !compactIconOnly;
 
     final bool canPress = enabled && !isLoading && onPressed != null;

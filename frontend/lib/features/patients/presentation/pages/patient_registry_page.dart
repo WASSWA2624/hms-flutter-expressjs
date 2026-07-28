@@ -1182,7 +1182,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       id: 'next_action',
       label: l10n.patientsNextActionColumnLabel,
       alwaysVisible: true,
-      cellBuilder: (_, Patient patient) => _NextActionCell(
+      cellBuilder: (BuildContext context, Patient patient) => _NextActionCell(
         patient: patient,
         onCompleteRecord: () {
           unawaited(showPatientEditDialog(context, ref, patient));
@@ -1490,10 +1490,51 @@ class _NextActionCell extends StatelessWidget {
             ),
           );
         }
-        return AppButton.secondary(
+        // Opaque GestureDetector (same pattern as OpdBoardNextActionCell) so
+        // DataRow onSelectChanged does not steal the tap.
+        final Color primaryColor = theme.colorScheme.primary;
+        return Semantics(
+          button: true,
+          enabled: true,
           label: l10n.patientsCompleteRecordAction,
-          leadingIcon: Icons.edit_note_outlined,
-          onPressed: onCompleteRecord,
+          child: Tooltip(
+            message: l10n.patientsCompleteRecordAction,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onCompleteRecord,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.xs,
+                    vertical: 2,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        Icons.edit_note_outlined,
+                        size: 16,
+                        color: primaryColor,
+                      ),
+                      SizedBox(width: theme.spacing.xs),
+                      Flexible(
+                        child: Text(
+                          l10n.patientsCompleteRecordAction,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

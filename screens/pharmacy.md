@@ -2,7 +2,7 @@
 
 Primary surface: `PharmacyWorkspacePage` (`frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`).
 
-Write gate: `AccessRequirement` with `AppPermissions.pharmacyWrite`. Billing payment actions also need `billingWrite`. Catalog browse / print / detail browse remain without write. Unauthorized write controls do not render.
+Write gate: `AppPermissions.pharmacyWrite` (`_writeRequirement`). Billing record-payment also needs `billingWrite`. Unauthorized write / next-action controls do not render. Backend auth remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -12,14 +12,17 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 | Duplicate / redundant surface | Outcome | Merge / removal |
 | --- | --- | --- |
-| Tab-strip **Refresh** / stock shortcut actions (**Low stock** / **Almost out** / **Expiring soon**) | Reload queue / open catalog filters | **Removed** — queue syncs after mutations / realtime / scaffold **Try again**; catalog is the sole stock entry |
-| Rotating tab primary (**Billing** on pending-payment) | Same catalog / payment goals | **Merged** — stable **Catalog and stock** primary on every tab; payment is row **Next action** / detail |
-| Advanced filters **Queue status** + **Pending payment** vs tab strip | Same queue scope | **Removed** from advanced filters — tabs own queue status / pending payment |
-| Inline **Drug stock** panel (dead) vs **Catalog and stock** dialog | Browse / map stock | **Removed** dead panel — catalog dialog is the sole stock surface |
-| Detail **Workflow readiness** checklist | Restates dispense / stock / attest / print availability | **Removed** — eligible actions and patient context fields carry the state |
-| Detail actions shown disabled when ineligible (attest / return / cancel / dispense / pay) | No-op chrome | **Removed** — only eligible, authorized writes render; print always available |
-| Mobile `_MedicationLineActions` vs desktop `_MedicationPrimaryLineAction` | Same map-stock / price-source write | **Merged** — one primary line action widget |
-| Row **Next action** vs detail eligible writes | Start primary / secondary + print | **Kept** — next-action is the labeled minimal path (no empty detail shell); detail holds remaining eligible writes + print |
+| Tab-strip **Refresh** | Reload queue | **Removed** — mutations / realtime / adaptive poll / scaffold **Try again** |
+| Rotating primary (**Catalog** vs **Billing** by tab) + Catalog secondary on payment tab | Open catalog / leave for billing | **Merged** — stable **Catalog and stock** primary on every tab; billing desk stays in main nav; **Record payment** remains the in-queue payment path |
+| Toolbar **Low stock** / **Almost out** / **Expiring soon** | Open catalog inventory | **Removed** — sole catalog entry is the primary; inventory filters live inside the catalog dialog |
+| Advanced filters **Queue status** + **Pending payment** vs tab strip | Select queue | **Removed** from advanced filters — tabs own queue; clear filters preserves tab status / pending-payment |
+| Deep link `orderId` / `encounterId` only `selectOrder` | Intermediate shell; hunt for row | **Removed** — deep link opens prescription detail dialog |
+| Detail **Dispense** (and other writes) as disabled no-ops | Restate blocked capability | **Removed** — detail actions render only when authorized and eligible |
+| Detail **Workflow readiness** panel | Restate dispense / stock / attest / print availability | **Removed** — actions and line items already surface readiness; progressive disclosure via timeline remains |
+| Dead inline **Drug stock** panel vs catalog dialog | Browse / map stock | **Removed** — catalog dialog is the sole stock surface |
+| Mobile `_MedicationLineActions` vs desktop line action | Same map-stock / price-source write | **Merged** — one `_MedicationPrimaryLineAction` |
+| Mobile list without next-action trailing | Same stage write as desktop column | **Fixed** — next-action on `AppListTableMobileItem.trailing` |
+| Row **Next action** vs row select → detail actions | Start primary / all item actions | **Kept** — next-action is the labeled minimal path; detail holds secondary actions + print |
 
 ---
 
@@ -32,20 +35,20 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, applies queue filter.
   - Condition: Always when workspace loads.
-  - Counts: From workbench summary; Ready / Partial / Pending payment use warning tone.
+  - Counts: Summary counts per section.
 
 - **Catalog and stock** (primary)
-  - Location: Tab-strip primary on every tab.
-  - Opens modal: Yes — `openPharmacyCatalogDialog` (drugs / formulary / inventory / storage).
-  - Immediate result: Manage catalog, stock, formulary, storage layout.
-  - Condition: Always when workspace loads (browse); mutations inside catalog respect write gate.
+  - Location: Tab-strip primary on every worklist tab.
+  - Opens modal: Yes — catalog / formulary / inventory / storage dialog.
+  - Immediate result: Browse and manage drugs, formulary, stock, storage.
+  - Condition: Always shown when workspace loads (catalog writes gated inside dialog).
 
-Tab-strip **Refresh** and stock shortcut secondaries were removed.
+Tab-strip **Refresh**, rotating **Billing** primary, and inventory-alert shortcuts were removed.
 
 - **Try again** (page load failure)
   - Location: `AsyncStateScaffold`.
   - Opens modal: No.
-  - Immediate result: Retries workspace load.
+  - Immediate result: Reloads pharmacy workspace.
   - Condition: Load failure.
 
 ### Search / filters / table chrome
@@ -53,77 +56,81 @@ Tab-strip **Refresh** and stock shortcut secondaries were removed.
 - **Search**, **Clear**, **Filters** (advanced), **Settings** (columns), pagination
   - Location: `AppListTable` / `AppSearchBar` chrome.
   - Opens modal: Advanced filters; Table Settings.
-  - Immediate result: Search / filters / column visibility for the active section (`pharmacy_{section}`).
+  - Immediate result: Client/server filters / search / column visibility for the active tab.
   - Condition: Always on the worklist.
 
 #### Advanced filters (from **Filters**)
 
-Fields: location, priority, partial stock, urgent, order date from/to.
+Fields: care location; priority; partial stock; urgent; order date from/to.
 
 - **Apply filters** / **Clear filters** / **Close**
   - Location: Panel footer / chrome.
-  - Immediate result: Applies or clears advanced filters **without changing the active queue tab**.
+  - Immediate result: Applies or clears advanced filters **without changing** tab-owned status / pending-payment.
 
 ### Empty / no-results
 
 - **Empty worklist**
   - Location: `AppWorkspaceStatePanel.empty`.
   - Opens modal: No.
-  - Immediate result: Empty copy; catalog primary remains.
+  - Immediate result: Empty copy; **Catalog and stock** remains available.
   - Condition: No rows after tab / search / filters.
 
 ### Row activation / next-action
 
-- **Row select** (desktop / mobile)
+- **Row select** (desktop row / mobile item)
   - Location: Table row / mobile list item.
-  - Opens modal: Prescription detail dialog.
-  - Immediate result: Loads workflow; shows patient context, eligible actions, medications, timeline, print.
-  - Condition: When rows exist.
+  - Opens modal: Prescription detail (`_PharmacyDetailPanel`).
+  - Immediate result: Loads workflow; eligible actions, items, timeline.
+  - Condition: Always when rows exist.
 
-- **Next action** (labeled primary row control)
-  - Location: Next-action column; mobile list.
-  - Opens modal: Record payment / attest / dispense / return / cancel dialog directly (or detail when only view).
-  - Immediate result: Completes that mutation path without an empty detail shell first.
-  - Condition: Write (and billing write for payment); unauthorized next-action absent. View remains when write denied.
+- **Next action** (status-aware label)
+  - Location: `next_action` column (always visible); mobile `AppListTableMobileItem.trailing`.
+  - Opens modal: Mutation dialog for the top allowed action (record/confirm billing, dispense, attest, return, cancel) or detail when view-only.
+  - Immediate result: Completes that path without opening full detail first (except view-details).
+  - Condition: Write (+ billing write for payment); unauthorized control absent.
 
-### Detail dialog (from row select / deep link `orderId`)
+### Detail dialog (from row select)
 
-- Eligible writes only: **Record payment**, **Dispense**, **Attest**, **Return**, **Cancel order**
-  - Location: Detail quick actions.
-  - Opens modal: Matching mutation dialog (required inputs / confirmations).
-  - Immediate result: Mutates via controller; snackbar; worklist refresh.
-  - Condition: Capability + write / billing gates; omitted when ineligible or unauthorized.
+- **Close**
+  - Location: Dialog chrome.
+  - Opens modal: No.
+  - Immediate result: Dismisses detail.
+
+- **Record payment** / **Dispense** / **Attest** / **Return** / **Cancel order**
+  - Location: Detail action panel (only when authorized and eligible).
+  - Opens modal: Billing dialog or dispense/attest/return/cancel forms.
+  - Immediate result: Mutates order; snackbar; workspace sync.
+  - Condition: Capability + write / billing write; Dispense omitted when payment blocks; unauthorized / ineligible actions absent.
 
 - **Print instructions**
-  - Location: Detail extra action (not write-gated).
+  - Location: Detail action panel extra (not write-gated).
   - Opens modal: Print flow.
-  - Immediate result: Prints medication instructions.
-  - Condition: Always when detail is open.
+  - Immediate result: Prints patient medication instructions.
+  - Condition: When detail is open.
 
-- Line **Map stock** / **Use pharmacy/facility price**
-  - Location: Medication line action column (desktop + mobile).
-  - Opens modal: Catalog (map stock) or applies price source mutation.
-  - Condition: Write; unauthorized control absent.
+- Line **Map stock** / price source actions
+  - Location: Medication items table.
+  - Opens modal: Mapping / price confirm as required.
+  - Immediate result: Updates line stock mapping or price source.
+  - Condition: Write.
 
-### Catalog dialog (from tab primary / inventory deep link / map stock)
+### Catalog dialog
 
-- Drugs / Formulary / Inventory / Storage tabs with add/edit/delete and stock filters.
-- Condition: Mutations require write; browse available when catalog opens.
+Opened from tab primary or `?section=inventory` (inventory tab preselected). Nested drug / formulary / inventory / storage panels keep their add/edit/delete/adjust flows and destructive confirms.
 
 ### Deep links
 
-- `?section=` — selects tab (aliases supported).
-- `?section=inventory` / `stock` — opens catalog dialog on inventory tab.
-- `?orderId=` / encounter deep link — opens prescription detail for that order.
+- **`?orderId=` / `?encounterId=`** — opens prescription detail for the matching row (no select-only shell).
+- **`?section=` / `?search=`** — selects tab / pre-fills search; `section=inventory` opens catalog.
 
----
+### Manual checks (Req 7)
 
-## Verification (Req 7)
+- [ ] Unauthorized user: next-action write controls absent; Catalog primary remains; detail print remains.
+- [ ] Every worklist tab: one **Catalog and stock** primary; no Refresh / Low stock / Billing toolbar.
+- [ ] Advanced filters omit Queue status / Pending payment; clearing filters does not leave the active tab queue.
+- [ ] Deep link `/pharmacy?orderId=…` opens detail without hunting the row.
+- [ ] Payment-blocked order: detail shows Record payment, not a disabled Dispense.
+- [ ] Detail omits Workflow readiness panel; ineligible write actions are absent.
+- [ ] Loading / empty / validation / error snackbars still surface on simplified paths.
 
-- Widget tests in `frontend/test/features/pharmacy/presentation/pharmacy_workspace_page_test.dart` prove:
-  - **Refresh** / stock shortcuts / rotating **Billing** primary are absent; **Catalog and stock** is the sole strip primary.
-  - Advanced filters omit Queue status and Pending payment.
-  - Row next-action opens cancel (representative write) without the detail shell.
-  - Detail omits workflow readiness chrome; shows only eligible writes + print.
-  - Read-only users keep catalog; write next-action absent; print still reachable from detail.
-  - Inventory deep link opens catalog; `orderId` opens detail.
+Widget tests in `frontend/test/features/pharmacy/presentation/pharmacy_workspace_page_test.dart` cover toolbar merges, deep-link detail, next-action cancel path, read-only next-action / detail write absence, advanced-filter omissions, and readiness removal.

@@ -422,6 +422,68 @@ void main() {
     expect(find.text('2'), findsOneWidget);
   });
 
+  testWidgets('tablet toolbar keeps title text and icon-only primary action', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Patients',
+          leadingIcon: Icons.people_outline,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(
+              iconOnly: true,
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: 'Register patient',
+              semanticLabel: 'Register patient',
+              onPressed: () {},
+            ),
+            showGlobalActions: false,
+            overflowLabel: 'More actions',
+          ),
+          body: const Text('Worklist'),
+        ),
+      ),
+      size: const Size(649, 600),
+    );
+
+    expect(find.text('Patients'), findsOneWidget);
+    expect(find.text('Register patient'), findsNothing);
+    expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+  });
+
+  testWidgets('desktop toolbar shows primary action label', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Patients',
+          leadingIcon: Icons.people_outline,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(
+              iconOnly: true,
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: 'Register patient',
+              semanticLabel: 'Register patient',
+              onPressed: () {},
+            ),
+            showGlobalActions: false,
+            overflowLabel: 'More actions',
+          ),
+          body: const Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.text('Patients'), findsOneWidget);
+    expect(find.text('Register patient'), findsOneWidget);
+    expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+  });
+
   testWidgets('mobile toolbar keeps primary action inline as icon only', (
     WidgetTester tester,
   ) async {

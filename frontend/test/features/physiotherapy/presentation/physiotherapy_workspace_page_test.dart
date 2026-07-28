@@ -16,6 +16,8 @@ import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_
 import 'package:hosspi_hms/features/physiotherapy/domain/repositories/physiotherapy_repository.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -65,6 +67,7 @@ const TherapyWorkItem _missedItem = TherapyWorkItem(
   patientId: 'PAT-MISS',
   patientDisplayName: 'Max Missed',
   status: 'MISSED',
+  appointmentApiId: 'APT-MISS',
 );
 
 const TherapyWorkItem _completedItem = TherapyWorkItem(
@@ -85,6 +88,27 @@ AppAccessPolicy _therapyWritePolicy() {
         AppPermissions.clinicalWrite,
         AppPermissions.patientRead,
         AppPermissions.patientWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _therapyReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['VIEWER']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.patientRead,
+        AppPermissions.billingRead,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'ACTIVE'),
@@ -141,6 +165,12 @@ AppListTable<TherapyWorkItem> _table(WidgetTester tester) {
   );
 }
 
+Future<void> _pumpAfterAction(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pumpAndSettle();
+}
+
 Future<GoRouter> _pumpPhysiotherapyWorkspace(
   WidgetTester tester, {
   required _MockPhysiotherapyRepository repository,
@@ -148,6 +178,7 @@ Future<GoRouter> _pumpPhysiotherapyWorkspace(
   String initialLocation = '/physiotherapy',
   Size viewport = const Size(1440, 900),
   List<TherapyWorkItem>? items,
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -197,7 +228,9 @@ Future<GoRouter> _pumpPhysiotherapyWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_therapyWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _therapyWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -241,9 +274,10 @@ void main() {
     expect(find.textContaining('Missed'), findsWidgets);
     expect(find.textContaining('Completed'), findsWidgets);
     expect(find.text('Rita Referral'), findsOneWidget);
-    expect(find.byTooltip('Schedule session'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
-    expect(find.byType(AppTabToolbarAction), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Schedule session'), findsNothing);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_referrals',
@@ -253,6 +287,40 @@ void main() {
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
     expect(find.text('Accept referral'), findsWidgets);
+  });
+
+  testWidgets('tab strip has no Refresh or stage primary', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(tester, repository: repository);
+
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
+  });
+
+  testWidgets('advanced filters omit queue scope group', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    final List<AppSearchBarFilterGroup>? groups =
+        _table(tester).search?.filterGroups;
+    expect(groups, isNotNull);
+    expect(
+      groups!.any((AppSearchBarFilterGroup group) => group.key == 'scope'),
+      isFalse,
+    );
+    expect(
+      groups.any(
+        (AppSearchBarFilterGroup group) =>
+            group.label == l10n.physiotherapyQueueFilterLabel,
+      ),
+      isFalse,
+    );
   });
 
   testWidgets('does not paint a dedicated physiotherapy title header', (
@@ -290,8 +358,8 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'today');
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
-    expect(find.byTooltip('Record session'), findsWidgets);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Record session'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
     final List<PhysiotherapyWorklistQuery> todayQueries = verify(
       () => repository.listWorkItems(captureAny()),
     ).captured.cast<PhysiotherapyWorklistQuery>();
@@ -317,8 +385,8 @@ void main() {
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_activePlans',
     );
-    expect(find.byTooltip('Schedule session'), findsWidgets);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Schedule follow-up'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_followUpItem]);
@@ -327,8 +395,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'follow-up');
-    expect(find.byTooltip('Schedule follow-up'), findsWidgets);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Schedule follow-up'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_missedItem]);
@@ -337,8 +405,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'missed');
-    expect(find.byTooltip('Mark attendance'), findsWidgets);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Mark attendance'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_completedItem]);
@@ -347,8 +415,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'completed');
-    expect(find.byTooltip('Print instructions'), findsWidgets);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Print instructions'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
   testWidgets('deep link section=today selects Today tab', (
@@ -373,7 +441,7 @@ void main() {
       ),
       isTrue,
     );
-    expect(find.byTooltip('Record session'), findsWidgets);
+    expect(find.text('Record session'), findsWidgets);
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
   });
 
@@ -386,7 +454,7 @@ void main() {
     );
 
     expect(router.state.uri.queryParameters.containsKey('section'), isFalse);
-    expect(find.byTooltip('Schedule session'), findsOneWidget);
+    expect(find.text('Accept referral'), findsWidgets);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_referrals',
@@ -415,18 +483,128 @@ void main() {
     );
   });
 
-  testWidgets('AppTabStrip renders on narrow mobile viewport', (
+  testWidgets('accept-referral next-action opens dialog without detail shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(
+      tester,
+      repository: repository,
+      items: <TherapyWorkItem>[_referralItem],
+    );
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.text(l10n.physiotherapyAcceptReferralAction));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(ClinicalFreeTextActionDialog), findsOneWidget);
+    expect(find.text(l10n.physiotherapyAcceptReferralDialogTitle), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsNothing);
+  });
+
+  testWidgets('detail omits accept-referral when it is the row next-action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(
+      tester,
+      repository: repository,
+      items: <TherapyWorkItem>[_referralItem],
+    );
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.text('Rita Referral'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.physiotherapyAcceptReferralAction),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.physiotherapyAddProgressNoteAction),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('detail omits record-session when it is the row next-action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(
+      tester,
+      repository: repository,
+      items: <TherapyWorkItem>[_todayItem],
+      initialLocation: '/physiotherapy?section=today',
+      initialQuery: PhysiotherapyWorkspaceQuery.fromUri(
+        Uri.parse('/physiotherapy?section=today'),
+      ),
+    );
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.text('Tina Today'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.physiotherapyRecordSessionAction),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.physiotherapyAddProgressNoteAction),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unauthorized policy hides write next-actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(
+      tester,
+      repository: repository,
+      items: <TherapyWorkItem>[_referralItem, _completedItem],
+      accessPolicy: _therapyReadOnlyPolicy(),
+    );
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    expect(find.text(l10n.physiotherapyAcceptReferralAction), findsNothing);
+
+    await tester.tap(find.textContaining('Completed').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.physiotherapyPrintInstructionsAction), findsWidgets);
+  });
+
+  testWidgets('AppTabStrip renders next-action trailing on mobile viewport', (
     WidgetTester tester,
   ) async {
     await _pumpPhysiotherapyWorkspace(
       tester,
       repository: repository,
       viewport: const Size(390, 844),
+      items: <TherapyWorkItem>[_referralItem],
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('Referrals'), findsWidgets);
-    expect(find.textContaining('Completed'), findsWidgets);
     expect(find.text('Accept referral'), findsWidgets);
+    expect(find.byType(AppListTableMobileItem), findsOneWidget);
   });
 }

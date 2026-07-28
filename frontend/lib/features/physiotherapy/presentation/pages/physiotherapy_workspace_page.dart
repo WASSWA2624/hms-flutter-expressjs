@@ -7,7 +7,6 @@ import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -352,26 +351,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 }
               }
             },
-            primaryAction: showFollowUpWorklist
-                ? null
-                : _primaryActionForSection(
-                    context,
-                    ref,
-                    section,
-                    state,
-                  ),
-            secondaryActions: showFollowUpWorklist
-                ? const <Widget>[]
-                : <Widget>[
-              AppTabToolbarAction(
-                label: l10n.commonRefreshActionLabel,
-                icon: Icons.refresh,
-                isLoading: state.isRefreshing,
-                onPressed: state.isRefreshing
-                    ? null
-                    : () => unawaited(controller.refresh()),
-              ),
-            ],
           ),
           SizedBox(height: theme.spacing.sm),
           if (showFollowUpWorklist)
@@ -443,86 +422,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       PhysiotherapyQueueScope.completed ||
       PhysiotherapyQueueScope.all => AppTabCountTone.info,
     };
-  }
-
-  Widget _primaryActionForSection(
-    BuildContext context,
-    WidgetRef ref,
-    PhysiotherapyQueueScope currentSection,
-    PhysiotherapyWorkspaceState currentState,
-  ) {
-    final l10n = context.l10n;
-    final controller = ref.read(
-      physiotherapyWorkspaceControllerProvider.notifier,
-    );
-
-    return AppAccessActionGate(
-      requirement: _therapyWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        final (
-          String label,
-          IconData icon,
-          VoidCallback? onPressed,
-        ) = switch (currentSection) {
-          PhysiotherapyQueueScope.referrals ||
-          PhysiotherapyQueueScope.activePlans => (
-            l10n.physiotherapyScheduleSessionAction,
-            Icons.event_available_outlined,
-            isAllowed &&
-                    currentState.selectedDetail?.item.apiPatientId != null &&
-                    !currentState.isSaving
-                ? () => _openScheduleSession(context, controller, l10n)
-                : null,
-          ),
-          PhysiotherapyQueueScope.today => (
-            l10n.physiotherapyRecordSessionAction,
-            Icons.directions_walk_outlined,
-            isAllowed && !currentState.isSaving
-                ? () => _openRecordSession(context, controller)
-                : null,
-          ),
-          PhysiotherapyQueueScope.followUpDue => (
-            l10n.physiotherapyScheduleFollowUpAction,
-            Icons.notification_add_outlined,
-            isAllowed && !currentState.isSaving
-                ? () => _openScheduleFollowUp(context, controller, l10n)
-                : null,
-          ),
-          PhysiotherapyQueueScope.missed => (
-            l10n.physiotherapyMarkAttendanceAction,
-            Icons.fact_check_outlined,
-            isAllowed && !currentState.isSaving
-                ? () => _openMarkAttendance(context, controller)
-                : null,
-          ),
-          PhysiotherapyQueueScope.completed => (
-            l10n.physiotherapyPrintInstructionsAction,
-            Icons.print_outlined,
-            currentState.selectedDetail != null
-                ? () => _printInstructions(
-                    context,
-                    ref,
-                    currentState.selectedDetail!,
-                  )
-                : null,
-          ),
-          PhysiotherapyQueueScope.all => (
-            l10n.physiotherapyScheduleSessionAction,
-            Icons.event_available_outlined,
-            isAllowed && !currentState.isSaving
-                ? () => _openScheduleSession(context, controller, l10n)
-                : null,
-          ),
-        };
-
-        return AppTabToolbarPrimary(
-          label: label,
-          icon: icon,
-          enabled: onPressed != null,
-          onPressed: onPressed,
-        );
-      },
-    );
   }
 
   Future<void> _openScheduleSession(
@@ -778,6 +677,10 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
               label: _workspaceStatusForStatus(l10n, item.status).label,
             ),
           ],
+          trailing: TherapyNextActionButton(
+            item: item,
+            onPressed: () => _runTherapyNextAction(context, ref, item),
+          ),
         );
       },
       search: AppListTableSearch<TherapyWorkItem>(
@@ -815,11 +718,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           ),
         ],
         filterValue: filterValue,
-        hasActiveFilters: state.query.hasActiveFilters,
+        hasActiveFilters: state.query.filters.isActive ||
+            state.query.search.trim().isNotEmpty,
         onFilterChanged: (AppSearchBarFilterValue value) {
           controller.applyWorklistFilters(
             search: searchController.text,
-            scope: _scopeFromFilterValue(value) ?? state.query.scope,
+            scope: section,
             filters: _filtersFromValue(value),
           );
         },
@@ -870,6 +774,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                       physiotherapyWorkspaceControllerProvider.notifier,
                     ),
                     dialogState,
+                    omitNextActionKind: therapyResolveNextActionKind(item),
                   ),
           );
         },
@@ -881,8 +786,9 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     PhysiotherapyWorkspaceController controller,
-    PhysiotherapyWorkspaceState detailState,
-  ) {
+    PhysiotherapyWorkspaceState detailState, {
+    TherapyNextActionKind? omitNextActionKind,
+  }) {
     final l10n = context.l10n;
     if (detailState.isRefreshingDetail) {
       return AppWorkspaceStatePanel.loading(
@@ -899,6 +805,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     }
 
     final TherapyWorkItem item = detail.item;
+    final TherapyNextActionKind omit =
+        omitNextActionKind ?? therapyResolveNextActionKind(item);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -940,6 +848,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         _ActionsPanel(
           detail: detail,
           isSaving: detailState.isSaving,
+          omitNextActionKind: omit,
           onActionFailure: (AppFailure failure) {
             _showFailure(context, failure);
           },
@@ -1093,12 +1002,14 @@ class _ActionsPanel extends ConsumerWidget {
   const _ActionsPanel({
     required this.detail,
     required this.isSaving,
+    required this.omitNextActionKind,
     required this.onActionFailure,
     required this.onActionSaved,
   });
 
   final PhysiotherapyDetail detail;
   final bool isSaving;
+  final TherapyNextActionKind omitNextActionKind;
   final ValueChanged<AppFailure> onActionFailure;
   final VoidCallback onActionSaved;
 
@@ -1109,11 +1020,15 @@ class _ActionsPanel extends ConsumerWidget {
       physiotherapyWorkspaceControllerProvider.notifier,
     );
     final TherapyWorkItem item = detail.item;
+    final TherapyNextActionKind omit = omitNextActionKind;
+    final bool canSchedule = item.apiPatientId != null;
+    final bool canMarkAttendance = item.hasAppointment;
 
     return AppQuickActions(
       title: l10n.physiotherapyActionsTitle,
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: <AppPermissionActionItem>[
+        if (omit != TherapyNextActionKind.acceptReferral)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyAcceptReferralAction,
@@ -1134,13 +1049,13 @@ class _ActionsPanel extends ConsumerWidget {
                     );
                   },
           ),
+        if (omit != TherapyNextActionKind.scheduleSession && canSchedule)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyScheduleSessionAction,
             icon: Icons.event_available_outlined,
-            enabled: item.apiPatientId != null,
             isLoading: isSaving,
-            onPressed: isSaving || item.apiPatientId == null
+            onPressed: isSaving
                 ? null
                 : () async {
                     final _SchedulePayload? payload =
@@ -1166,6 +1081,7 @@ class _ActionsPanel extends ConsumerWidget {
                     );
                   },
           ),
+        if (omit != TherapyNextActionKind.recordAssessment)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyRecordAssessmentAction,
@@ -1196,6 +1112,7 @@ class _ActionsPanel extends ConsumerWidget {
                     );
                   },
           ),
+        if (omit != TherapyNextActionKind.recordSession)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyRecordSessionAction,
@@ -1224,13 +1141,13 @@ class _ActionsPanel extends ConsumerWidget {
                     );
                   },
           ),
+        if (omit != TherapyNextActionKind.markAttendance && canMarkAttendance)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyMarkAttendanceAction,
             icon: Icons.fact_check_outlined,
-            enabled: item.hasAppointment,
             isLoading: isSaving,
-            onPressed: isSaving || !item.hasAppointment
+            onPressed: isSaving
                 ? null
                 : () async {
                     final _AttendancePayload? payload =
@@ -1253,52 +1170,53 @@ class _ActionsPanel extends ConsumerWidget {
                     );
                   },
           ),
-          AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
-            label: l10n.physiotherapyUpdatePlanAction,
-            icon: Icons.playlist_add_check_outlined,
-            isLoading: isSaving,
-            onPressed: isSaving
-                ? null
-                : () async {
-                    final _PlanPayload? payload =
-                        await showAppDialog<_PlanPayload>(
-                          context: context,
-                          builder: (_) => _PlanDialog(initialPlan: item.plan),
-                        );
-                    if (payload == null) {
-                      return;
-                    }
-                    if (!context.mounted) {
-                      return;
-                    }
-                    await _runAction(
-                      context,
-                      controller.updatePlan(
-                        plan: payload.plan,
-                        startDate: payload.startDate,
-                        endDate: payload.endDate,
-                      ),
-                    );
-                  },
-          ),
-          AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
-            label: l10n.physiotherapyAddProgressNoteAction,
-            icon: Icons.note_add_outlined,
-            isLoading: isSaving,
-            onPressed: isSaving
-                ? null
-                : () async {
-                    await _openFreeTextAction(
-                      context,
-                      title: l10n.physiotherapyAddProgressNoteDialogTitle,
-                      label: l10n.physiotherapyNoteFieldLabel,
-                      submitLabel: l10n.physiotherapySaveAction,
-                      onSubmit: controller.addProgressNote,
-                    );
-                  },
-          ),
+        AppPermissionActionItem(
+          requirement: _therapyWriteRequirement,
+          label: l10n.physiotherapyUpdatePlanAction,
+          icon: Icons.playlist_add_check_outlined,
+          isLoading: isSaving,
+          onPressed: isSaving
+              ? null
+              : () async {
+                  final _PlanPayload? payload =
+                      await showAppDialog<_PlanPayload>(
+                        context: context,
+                        builder: (_) => _PlanDialog(initialPlan: item.plan),
+                      );
+                  if (payload == null) {
+                    return;
+                  }
+                  if (!context.mounted) {
+                    return;
+                  }
+                  await _runAction(
+                    context,
+                    controller.updatePlan(
+                      plan: payload.plan,
+                      startDate: payload.startDate,
+                      endDate: payload.endDate,
+                    ),
+                  );
+                },
+        ),
+        AppPermissionActionItem(
+          requirement: _therapyWriteRequirement,
+          label: l10n.physiotherapyAddProgressNoteAction,
+          icon: Icons.note_add_outlined,
+          isLoading: isSaving,
+          onPressed: isSaving
+              ? null
+              : () async {
+                  await _openFreeTextAction(
+                    context,
+                    title: l10n.physiotherapyAddProgressNoteDialogTitle,
+                    label: l10n.physiotherapyNoteFieldLabel,
+                    submitLabel: l10n.physiotherapySaveAction,
+                    onSubmit: controller.addProgressNote,
+                  );
+                },
+        ),
+        if (omit != TherapyNextActionKind.scheduleFollowUp)
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyScheduleFollowUpAction,
@@ -1338,23 +1256,24 @@ class _ActionsPanel extends ConsumerWidget {
                     }
                   },
           ),
-          AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
-            label: l10n.physiotherapyCloseEpisodeAction,
-            icon: Icons.task_alt_outlined,
-            isLoading: isSaving,
-            onPressed: isSaving
-                ? null
-                : () async {
-                    await _openFreeTextAction(
-                      context,
-                      title: l10n.physiotherapyCloseEpisodeDialogTitle,
-                      label: l10n.physiotherapySummaryFieldLabel,
-                      submitLabel: l10n.physiotherapySaveAction,
-                      onSubmit: controller.closeEpisode,
-                    );
-                  },
-          ),
+        AppPermissionActionItem(
+          requirement: _therapyWriteRequirement,
+          label: l10n.physiotherapyCloseEpisodeAction,
+          icon: Icons.task_alt_outlined,
+          isLoading: isSaving,
+          onPressed: isSaving
+              ? null
+              : () async {
+                  await _openFreeTextAction(
+                    context,
+                    title: l10n.physiotherapyCloseEpisodeDialogTitle,
+                    label: l10n.physiotherapySummaryFieldLabel,
+                    submitLabel: l10n.physiotherapySaveAction,
+                    onSubmit: controller.closeEpisode,
+                  );
+                },
+        ),
+        if (omit != TherapyNextActionKind.printInstructions)
           AppPermissionActionItem(
             requirement: _therapyReadRequirement,
             label: l10n.physiotherapyPrintInstructionsAction,
@@ -1363,7 +1282,7 @@ class _ActionsPanel extends ConsumerWidget {
               _printInstructions(context, ref, detail);
             },
           ),
-        ],
+      ],
     );
   }
 
@@ -2085,48 +2004,6 @@ List<AppSearchBarFieldChoice> _searchFields(AppLocalizations l10n) {
 List<AppSearchBarFilterGroup> _filterGroups(AppLocalizations l10n) {
   return <AppSearchBarFilterGroup>[
     AppSearchBarFilterGroup(
-      key: 'scope',
-      label: l10n.physiotherapyQueueFilterLabel,
-      allLabel: l10n.physiotherapyFilterAll,
-      choices: <AppSearchBarFilterChoice>[
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.referrals.name,
-          label: l10n.physiotherapyScopeReferrals,
-          icon: Icons.assignment_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.today.name,
-          label: l10n.physiotherapyScopeToday,
-          icon: Icons.today_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.missed.name,
-          label: l10n.physiotherapyScopeMissed,
-          icon: Icons.event_busy_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.activePlans.name,
-          label: l10n.physiotherapyScopeActivePlans,
-          icon: Icons.fact_check_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.followUpDue.name,
-          label: l10n.physiotherapyScopeFollowUpDue,
-          icon: Icons.notification_important_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.completed.name,
-          label: l10n.physiotherapyScopeCompleted,
-          icon: Icons.task_alt_outlined,
-        ),
-        AppSearchBarFilterChoice(
-          value: PhysiotherapyQueueScope.all.name,
-          label: l10n.physiotherapyScopeAll,
-          icon: Icons.all_inbox_outlined,
-        ),
-      ],
-    ),
-    AppSearchBarFilterGroup(
       key: 'source',
       label: l10n.physiotherapySourceLabel,
       allLabel: l10n.physiotherapyFilterAll,
@@ -2199,7 +2076,6 @@ AppSearchBarFilterValue _filterValueFromQuery(
         'therapist': query.filters.therapist!.trim(),
     },
     options: <String, String>{
-      'scope': query.scope.name,
       if ((query.filters.source ?? '').trim().isNotEmpty)
         'source': query.filters.source!.trim(),
       if ((query.filters.status ?? '').trim().isNotEmpty)
@@ -2220,19 +2096,6 @@ PhysiotherapyWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
     dateFrom: value.dateFrom,
     dateTo: value.dateTo,
   );
-}
-
-PhysiotherapyQueueScope? _scopeFromFilterValue(AppSearchBarFilterValue value) {
-  final String? scopeName = value.option('scope');
-  if (scopeName == null) {
-    return null;
-  }
-  for (final PhysiotherapyQueueScope scope in PhysiotherapyQueueScope.values) {
-    if (scope.name == scopeName) {
-      return scope;
-    }
-  }
-  return null;
 }
 
 List<AppSelectOption<String>> _attendanceOptions(AppLocalizations l10n) {

@@ -550,7 +550,7 @@ void main() {
     expect(find.text('+256700000000'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
     expect(find.text('OPD - In Progress'), findsNothing);
-    // Open record is label-only (row select opens detail); not a second button.
+    // Open record is label-only (row or next-action cell opens detail).
     expect(find.text('Open record'), findsOneWidget);
     expect(
       find.descendant(
@@ -562,7 +562,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Table Settings'), findsOneWidget);
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
   });
 
   testWidgets(
@@ -596,7 +596,8 @@ void main() {
       await tester.tap(find.text('Complete record'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit patient'), findsOneWidget);
+      expect(find.byType(PatientFormDialog), findsOneWidget);
+      expect(find.text('EDIT PATIENT'), findsOneWidget);
       expect(find.text('Delete'), findsNothing);
       expect(find.text('Quick actions'), findsNothing);
     },
