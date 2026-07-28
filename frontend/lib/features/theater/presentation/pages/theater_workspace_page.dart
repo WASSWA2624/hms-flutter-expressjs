@@ -81,13 +81,28 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
     if (state?.selectedCase == null) {
       return;
     }
+    final bool canWrite = ref
+        .read(appAccessPolicyProvider)
+        .grants(AppPermissions.clinicalWrite);
+    // Panel-focused deep links open the mutation dialog directly (no empty
+    // detail shell). Bare case links open detail with the stage next-action
+    // omitted so it is not duplicated inside Quick Actions.
+    if (query.focusPanel != null && canWrite) {
+      await _openTheaterFocusedAction(
+        context,
+        ref,
+        state!.selectedCase!,
+        query.focusPanel!,
+      );
+      return;
+    }
     await _openTheaterCaseDialog(
       context,
       ref,
       state!,
       state.selectedCase!,
-      ref.watch(appAccessPolicyProvider).grants(AppPermissions.clinicalWrite),
-      focusPanel: query.focusPanel,
+      canWrite,
+      omitNextActionKind: theaterResolveNextActionKind(state.selectedCase!),
     );
   }
 
@@ -281,96 +296,27 @@ class _TheaterWorkspaceContentState
   Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     TheaterWorkspaceState state,
-    TheaterWorkspaceController controller,
     bool canWrite,
   ) {
-    if (!canWrite) {
-      return _buildRefreshPrimaryAction(l10n, state, controller);
-    }
-    if (_section.isFollowUps) {
+    if (!canWrite || _section.isFollowUps) {
       return null;
     }
-    return switch (_section) {
-      TheaterSection.scheduled ||
-      TheaterSection.inTheater ||
-      TheaterSection.recovery ||
-      TheaterSection.all ||
-      TheaterSection.followUps => AppTabToolbarPrimary(
-        label: l10n.theaterScheduleCaseAction,
-        icon: Icons.add,
-        semanticLabel: l10n.theaterScheduleCaseAction,
-        tooltip: l10n.theaterScheduleCaseAction,
-        enabled: !state.isMutating,
-        onPressed: state.isMutating
-            ? null
-            : () => _showScheduleCaseDialog(
-                context,
-                ref,
-                initialPatientId: widget.initialQuery?.initialPatientId,
-                initialEncounterId: widget.initialQuery?.initialEncounterId,
-                initialEmergencyCaseId:
-                    widget.initialQuery?.initialEmergencyCaseId,
-              ),
-      ),
-    };
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    TheaterWorkspaceState state,
-    TheaterWorkspaceController controller,
-    bool canWrite,
-  ) {
-    if (!canWrite) {
-      return const <Widget>[];
-    }
-    if (_section.isFollowUps) {
-      return const <Widget>[];
-    }
-    return switch (_section) {
-      TheaterSection.scheduled ||
-      TheaterSection.inTheater ||
-      TheaterSection.recovery ||
-      TheaterSection.all ||
-      TheaterSection.followUps => <Widget>[
-        _buildRefreshSecondaryAction(l10n, state, controller),
-      ],
-    };
-  }
-
-  AppTabToolbarPrimary _buildRefreshPrimaryAction(
-    AppLocalizations l10n,
-    TheaterWorkspaceState state,
-    TheaterWorkspaceController controller,
-  ) {
     return AppTabToolbarPrimary(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      semanticLabel: l10n.commonRefreshActionLabel,
-      tooltip: l10n.commonRefreshActionLabel,
-      isLoading: state.isRefreshing,
-      enabled: !state.isRefreshing,
-      onPressed: state.isRefreshing
+      label: l10n.theaterScheduleCaseAction,
+      icon: Icons.add,
+      semanticLabel: l10n.theaterScheduleCaseAction,
+      tooltip: l10n.theaterScheduleCaseAction,
+      enabled: !state.isMutating,
+      onPressed: state.isMutating
           ? null
-          : () => unawaited(controller.refresh()),
-    );
-  }
-
-  AppTabToolbarAction _buildRefreshSecondaryAction(
-    AppLocalizations l10n,
-    TheaterWorkspaceState state,
-    TheaterWorkspaceController controller,
-  ) {
-    return AppTabToolbarAction(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      semanticLabel: l10n.commonRefreshActionLabel,
-      tooltip: l10n.commonRefreshActionLabel,
-      isLoading: state.isRefreshing,
-      enabled: !state.isRefreshing,
-      onPressed: state.isRefreshing
-          ? null
-          : () => unawaited(controller.refresh()),
+          : () => _showScheduleCaseDialog(
+              context,
+              ref,
+              initialPatientId: widget.initialQuery?.initialPatientId,
+              initialEncounterId: widget.initialQuery?.initialEncounterId,
+              initialEmergencyCaseId:
+                  widget.initialQuery?.initialEmergencyCaseId,
+            ),
     );
   }
 
@@ -423,18 +369,7 @@ class _TheaterWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(
-                l10n,
-                state,
-                controller,
-                canWrite,
-              ),
-              secondaryActions: _buildSecondaryActions(
-                l10n,
-                state,
-                controller,
-                canWrite,
-              ),
+              primaryAction: _buildPrimaryAction(l10n, state, canWrite),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -542,21 +477,23 @@ class _TheaterCaseBoard extends ConsumerWidget {
           ),
         ],
         filterGroups: <AppSearchBarFilterGroup>[
-          AppSearchBarFilterGroup(
-            key: _theaterStatusFilterKey,
-            label: l10n.theaterStatusFilterLabel,
-            allLabel: l10n.opdAllFieldsFilterLabel,
-            choices: _theaterStatusFilterChoices(l10n),
-          ),
-          AppSearchBarFilterGroup(
-            key: _theaterStageFilterKey,
-            label: l10n.theaterStageFilterLabel,
-            allLabel: l10n.opdAllFieldsFilterLabel,
-            choices: _theaterStageFilterChoices(l10n),
-          ),
+          if (section == TheaterSection.all) ...<AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _theaterStatusFilterKey,
+              label: l10n.theaterStatusFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _theaterStatusFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _theaterStageFilterKey,
+              label: l10n.theaterStageFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _theaterStageFilterChoices(l10n),
+            ),
+          ],
         ],
-        filterValue: _theaterFilterValue(state.query),
-        hasActiveFilters: _hasTheaterFilters(state.query),
+        filterValue: _theaterFilterValue(state.query, section),
+        hasActiveFilters: _hasTheaterFilters(state.query, section),
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final String? nextStatus = value.option(_theaterStatusFilterKey);
           final String? nextStage = value.option(_theaterStageFilterKey);
@@ -569,11 +506,14 @@ class _TheaterCaseBoard extends ConsumerWidget {
             _theaterAnesthetistFilterKey,
           );
           AppFailure? failure;
-          if (nextStatus != state.query.status) {
-            failure = await controller.applyStatus(nextStatus);
-          }
-          if (nextStage != state.query.stage) {
-            failure ??= await controller.applyStage(nextStage);
+          // Tabs own status/stage on Scheduled / In theater / Recovery.
+          if (section == TheaterSection.all) {
+            if (nextStatus != state.query.status) {
+              failure = await controller.applyStatus(nextStatus);
+            }
+            if (nextStage != state.query.stage) {
+              failure ??= await controller.applyStage(nextStage);
+            }
           }
           if (!_isSameTheaterFilterDate(nextDate, state.query.scheduledDate)) {
             failure ??= await controller.applyScheduledDate(nextDate);
@@ -596,7 +536,16 @@ class _TheaterCaseBoard extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
       onRowSelected: (TheaterCase item) {
-        unawaited(_openTheaterCaseDialog(context, ref, state, item, canWrite));
+        unawaited(
+          _openTheaterCaseDialog(
+            context,
+            ref,
+            state,
+            item,
+            canWrite,
+            omitNextActionKind: theaterResolveNextActionKind(item),
+          ),
+        );
       },
       previousPageLabel: l10n.opdPreviousPageLabel,
       nextPageLabel: l10n.opdNextPageLabel,
@@ -634,6 +583,10 @@ class _TheaterCaseBoard extends ConsumerWidget {
               label: _caseStatusLabel(l10n, item.status),
             ),
           ],
+          trailing: _TheaterNextActionButton(
+            theaterCase: item,
+            canWrite: canWrite,
+          ),
         );
       },
     );
@@ -646,20 +599,20 @@ class _TheaterCaseDetail extends ConsumerWidget {
     required this.isLoading,
     required this.isMutating,
     required this.canWrite,
-    this.focusPanel,
+    this.omitNextActionKind,
   });
 
   final TheaterCase? theaterCase;
   final bool isLoading;
   final bool isMutating;
   final bool canWrite;
-  final TheaterDetailPanel? focusPanel;
+  final TheaterNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
     final TheaterCase? selected = theaterCase;
     if (selected == null) {
+      final AppLocalizations l10n = context.l10n;
       return AppWorkspaceDetailPanel(
         title: l10n.theaterCaseDetailTitle,
         child: AppStateView(
@@ -677,31 +630,7 @@ class _TheaterCaseDetail extends ConsumerWidget {
           theaterCase: selected,
           canWrite: canWrite,
           isMutating: isMutating,
-          focusPanel: focusPanel,
-          headerActions: canWrite
-              ? <Widget>[
-                  AppButton(
-                    iconOnly: true,
-                    leadingIcon: Icons.edit_calendar_outlined,
-                    label: l10n.theaterRescheduleAction,
-                    semanticLabel: l10n.theaterRescheduleAction,
-                    tooltip: l10n.theaterRescheduleAction,
-                    onPressed: isMutating
-                        ? null
-                        : () => _showRescheduleDialog(context, ref, selected),
-                  ),
-                  AppButton(
-                    iconOnly: true,
-                    leadingIcon: Icons.alt_route_outlined,
-                    label: l10n.theaterUpdateStageAction,
-                    semanticLabel: l10n.theaterUpdateStageAction,
-                    tooltip: l10n.theaterUpdateStageAction,
-                    onPressed: isMutating
-                        ? null
-                        : () => _showStageDialog(context, ref, selected),
-                  ),
-                ]
-              : const <Widget>[],
+          omitNextActionKind: omitNextActionKind,
         ),
       ],
     );
@@ -714,7 +643,7 @@ Future<void> _openTheaterCaseDialog(
   TheaterWorkspaceState fallbackState,
   TheaterCase theaterCase,
   bool canWrite, {
-  TheaterDetailPanel? focusPanel,
+  TheaterNextActionKind? omitNextActionKind,
 }) async {
   final TheaterWorkspaceController controller = ref.read(
     theaterWorkspaceControllerProvider.notifier,
@@ -737,68 +666,57 @@ Future<void> _openTheaterCaseDialog(
       icon: const Icon(Icons.local_activity_outlined),
       scrollable: true,
       maxWidth: 980,
-      content: _TheaterCaseDetail(
-        theaterCase: selected,
-        isLoading: state.isRefreshingDetail,
-        isMutating: state.isMutating,
-        canWrite: canWrite,
-        focusPanel: focusPanel,
+      content: Consumer(
+        builder: (BuildContext context, WidgetRef ref, _) {
+          final TheaterWorkspaceState current =
+              _readTheaterState(ref) ?? state;
+          return _TheaterCaseDetail(
+            theaterCase: current.selectedCase ?? selected,
+            isLoading: current.isRefreshingDetail,
+            isMutating: current.isMutating,
+            canWrite: canWrite,
+            omitNextActionKind: omitNextActionKind,
+          );
+        },
       ),
     ),
   );
 }
 
-class _TheaterCaseDetailBody extends ConsumerStatefulWidget {
+/// Panel deep links open the mutation dialog directly (no empty detail shell).
+Future<void> _openTheaterFocusedAction(
+  BuildContext context,
+  WidgetRef ref,
+  TheaterCase theaterCase,
+  TheaterDetailPanel panel,
+) async {
+  switch (panel) {
+    case TheaterDetailPanel.checklist:
+      await _showChecklistDialog(context, ref);
+    case TheaterDetailPanel.anesthesia:
+      await _showAnesthesiaDialog(context, ref, theaterCase);
+    case TheaterDetailPanel.postop:
+      await _showPostOpDialog(context, ref, theaterCase);
+    case TheaterDetailPanel.resources:
+      await _showAssignResourceDialog(context, ref);
+  }
+}
+
+class _TheaterCaseDetailBody extends StatelessWidget {
   const _TheaterCaseDetailBody({
     required this.theaterCase,
     required this.canWrite,
     required this.isMutating,
-    this.focusPanel,
-    this.headerActions = const <Widget>[],
+    this.omitNextActionKind,
   });
 
   final TheaterCase theaterCase;
   final bool canWrite;
   final bool isMutating;
-  final TheaterDetailPanel? focusPanel;
-  final List<Widget> headerActions;
-
-  @override
-  ConsumerState<_TheaterCaseDetailBody> createState() =>
-      _TheaterCaseDetailBodyState();
-}
-
-class _TheaterCaseDetailBodyState
-    extends ConsumerState<_TheaterCaseDetailBody> {
-  @override
-  void initState() {
-    super.initState();
-    final TheaterDetailPanel? panel = widget.focusPanel;
-    if (panel == null || !widget.canWrite) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      switch (panel) {
-        case TheaterDetailPanel.checklist:
-          unawaited(_showChecklistDialog(context, ref));
-        case TheaterDetailPanel.anesthesia:
-          unawaited(_showAnesthesiaDialog(context, ref, widget.theaterCase));
-        case TheaterDetailPanel.postop:
-          unawaited(_showPostOpDialog(context, ref, widget.theaterCase));
-        case TheaterDetailPanel.resources:
-          unawaited(_showAssignResourceDialog(context, ref));
-      }
-    });
-  }
+  final TheaterNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context) {
-    final TheaterCase theaterCase = widget.theaterCase;
-    final bool canWrite = widget.canWrite;
-    final bool isMutating = widget.isMutating;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final bool hasSourceContext = _sourceContextLabel(l10n, theaterCase) != null;
@@ -806,7 +724,6 @@ class _TheaterCaseDetailBodyState
       if (hasSourceContext)
         AppWorkspaceDetailPanel(
           title: l10n.theaterSourceContextLabel,
-          actions: widget.headerActions,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -842,7 +759,6 @@ class _TheaterCaseDetailBodyState
         ),
       AppWorkspaceDetailPanel(
         title: l10n.theaterTeamTitle,
-        actions: hasSourceContext ? const <Widget>[] : widget.headerActions,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -919,7 +835,11 @@ class _TheaterCaseDetailBodyState
         ),
         if (canWrite) ...<Widget>[
           SizedBox(height: theme.spacing.md),
-          _TheaterActionBar(theaterCase: theaterCase, isMutating: isMutating),
+          _TheaterActionBar(
+            theaterCase: theaterCase,
+            isMutating: isMutating,
+            omitNextActionKind: omitNextActionKind,
+          ),
         ],
         for (var index = 0; index < detailSections.length; index += 1) ...<Widget>[
           SizedBox(height: theme.spacing.md),
@@ -934,48 +854,77 @@ class _TheaterActionBar extends ConsumerWidget {
   const _TheaterActionBar({
     required this.theaterCase,
     required this.isMutating,
+    this.omitNextActionKind,
   });
 
   final TheaterCase theaterCase;
   final bool isMutating;
+  final TheaterNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final TheaterNextActionKind? omit = omitNextActionKind;
+    final bool isTerminal =
+        theaterCase.normalizedStatus == 'CANCELLED' ||
+        theaterCase.normalizedStatus == 'COMPLETED';
+
+    if (isTerminal) {
+      return const SizedBox.shrink();
+    }
 
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
       actions: <AppActionItem>[
+        AppActionItem(
+          label: l10n.theaterRescheduleAction,
+          leadingIcon: Icons.edit_calendar_outlined,
+          enabled: !isMutating,
+          onPressed: () => _showRescheduleDialog(context, ref, theaterCase),
+        ),
+        if (omit != TheaterNextActionKind.startCase)
+          AppActionItem(
+            label: l10n.theaterUpdateStageAction,
+            leadingIcon: Icons.alt_route_outlined,
+            enabled: !isMutating,
+            onPressed: () => _showStageDialog(context, ref, theaterCase),
+          ),
         AppActionItem(
           label: l10n.theaterAssignResourceAction,
           leadingIcon: Icons.meeting_room_outlined,
           enabled: !isMutating,
           onPressed: () => _showAssignResourceDialog(context, ref),
         ),
-        AppActionItem(
-          label: l10n.theaterUpdateReadinessAction,
-          leadingIcon: Icons.fact_check_outlined,
-          enabled: !isMutating,
-          onPressed: () => _showChecklistDialog(context, ref),
-        ),
-        AppActionItem(
-          label: l10n.theaterAnesthesiaAction,
-          leadingIcon: Icons.monitor_heart_outlined,
-          enabled: !isMutating,
-          onPressed: () => _showAnesthesiaDialog(context, ref, theaterCase),
-        ),
-        AppActionItem(
-          label: l10n.theaterPostOpAction,
-          leadingIcon: Icons.note_add_outlined,
-          enabled: !isMutating,
-          onPressed: () => _showPostOpDialog(context, ref, theaterCase),
-        ),
-        AppActionItem(
-          label: l10n.theaterHandoverAction,
-          leadingIcon: Icons.output_outlined,
-          enabled: !isMutating,
-          onPressed: () => _showHandoverDialog(context, ref),
-        ),
+        if (omit != TheaterNextActionKind.updateReadiness)
+          AppActionItem(
+            label: l10n.theaterUpdateReadinessAction,
+            leadingIcon: Icons.fact_check_outlined,
+            enabled: !isMutating,
+            onPressed: () => _showChecklistDialog(context, ref),
+          ),
+        if (omit != TheaterNextActionKind.anesthesia)
+          AppActionItem(
+            label: l10n.theaterAnesthesiaAction,
+            leadingIcon: Icons.monitor_heart_outlined,
+            enabled: !isMutating,
+            onPressed: () =>
+                _showAnesthesiaDialog(context, ref, theaterCase),
+          ),
+        if (omit != TheaterNextActionKind.postOp)
+          AppActionItem(
+            label: l10n.theaterPostOpAction,
+            leadingIcon: Icons.note_add_outlined,
+            enabled: !isMutating,
+            onPressed: () => _showPostOpDialog(context, ref, theaterCase),
+          ),
+        if (omit != TheaterNextActionKind.handover)
+          AppActionItem(
+            label: l10n.theaterHandoverAction,
+            leadingIcon: Icons.output_outlined,
+            enabled: !isMutating,
+            onPressed: () => _showHandoverDialog(context, ref),
+          ),
         AppActionItem(
           label: l10n.theaterFinalizeAction,
           leadingIcon: Icons.verified_outlined,
@@ -2108,7 +2057,11 @@ const String _theaterRoomFilterKey = 'room';
 const String _theaterSurgeonFilterKey = 'surgeon';
 const String _theaterAnesthetistFilterKey = 'anesthetist';
 
-AppSearchBarFilterValue _theaterFilterValue(TheaterCaseQuery query) {
+AppSearchBarFilterValue _theaterFilterValue(
+  TheaterCaseQuery query,
+  TheaterSection section,
+) {
+  final bool includeStatusStage = section == TheaterSection.all;
   return AppSearchBarFilterValue(
     dateFrom: query.scheduledDate,
     texts: <String, String>{
@@ -2119,15 +2072,18 @@ AppSearchBarFilterValue _theaterFilterValue(TheaterCaseQuery query) {
         _theaterAnesthetistFilterKey: query.anesthetistUserId!,
     },
     options: <String, String>{
-      if (query.status != null) _theaterStatusFilterKey: query.status!,
-      if (query.stage != null) _theaterStageFilterKey: query.stage!,
+      if (includeStatusStage && query.status != null)
+        _theaterStatusFilterKey: query.status!,
+      if (includeStatusStage && query.stage != null)
+        _theaterStageFilterKey: query.stage!,
     },
   );
 }
 
-bool _hasTheaterFilters(TheaterCaseQuery query) {
-  return query.status != null ||
-      query.stage != null ||
+bool _hasTheaterFilters(TheaterCaseQuery query, TheaterSection section) {
+  final bool includeStatusStage = section == TheaterSection.all;
+  return (includeStatusStage && query.status != null) ||
+      (includeStatusStage && query.stage != null) ||
       query.scheduledDate != null ||
       query.roomId != null ||
       query.surgeonUserId != null ||
@@ -2246,29 +2202,6 @@ String _readinessLabel(BuildContext context, TheaterCase theaterCase) {
     theaterCase.checklistCompleted,
     theaterCase.checklistTotal,
   );
-}
-
-String _nextActionLabel(BuildContext context, TheaterCase theaterCase) {
-  final AppLocalizations l10n = context.l10n;
-  if (theaterCase.normalizedStatus == 'CANCELLED') {
-    return l10n.theaterStatusCancelled;
-  }
-  if (theaterCase.normalizedStatus == 'COMPLETED') {
-    return l10n.theaterStatusCompleted;
-  }
-  if (!theaterCase.isReady) {
-    return l10n.theaterUpdateReadinessAction;
-  }
-  if (theaterCase.normalizedStatus == 'SCHEDULED') {
-    return l10n.theaterStartCaseAction;
-  }
-  if (!theaterCase.hasFinalAnesthesia) {
-    return l10n.theaterAnesthesiaAction;
-  }
-  if (!theaterCase.hasFinalPostOp) {
-    return l10n.theaterPostOpAction;
-  }
-  return l10n.theaterHandoverAction;
 }
 
 String _roomLabel(BuildContext context, TheaterCase theaterCase) {

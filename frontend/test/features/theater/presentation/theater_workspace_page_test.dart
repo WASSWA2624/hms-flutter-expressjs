@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dar
 import 'package:hosspi_hms/features/theater/domain/repositories/theater_repository.dart';
 import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -26,11 +27,6 @@ class _MockTheaterRepository extends Mock implements TheaterRepository {}
 
 Finder _toolbarPrimary(String label) => find.descendant(
   of: find.byType(AppTabToolbarPrimary),
-  matching: find.text(label),
-);
-
-Finder _toolbarAction(String label) => find.descendant(
-  of: find.byType(AppTabToolbarAction),
   matching: find.text(label),
 );
 
@@ -62,6 +58,18 @@ const TheaterCase _scheduledCase = TheaterCase(
   patientDisplayName: 'Sam Scheduled',
   status: 'SCHEDULED',
   workflowStage: 'PRE_OP',
+  checklistTotal: 2,
+  checklistCompleted: 0,
+);
+
+const TheaterCase _readyScheduledCase = TheaterCase(
+  id: 'TC-READY',
+  displayId: 'TC-READY',
+  patientDisplayName: 'Pat Ready',
+  status: 'SCHEDULED',
+  workflowStage: 'PRE_OP',
+  checklistTotal: 2,
+  checklistCompleted: 2,
 );
 
 const TheaterCase _inTheaterCase = TheaterCase(
@@ -70,6 +78,9 @@ const TheaterCase _inTheaterCase = TheaterCase(
   patientDisplayName: 'Ira InTheater',
   status: 'IN_PROGRESS',
   workflowStage: 'INTRA_OP',
+  checklistTotal: 2,
+  checklistCompleted: 2,
+  anesthesiaStatus: 'DRAFT',
 );
 
 const TheaterCase _recoveryCase = TheaterCase(
@@ -78,6 +89,10 @@ const TheaterCase _recoveryCase = TheaterCase(
   patientDisplayName: 'Riley Recovery',
   status: 'IN_PROGRESS',
   workflowStage: 'POST_OP',
+  checklistTotal: 2,
+  checklistCompleted: 2,
+  anesthesiaStatus: 'FINAL',
+  postOpStatus: 'DRAFT',
 );
 
 AppAccessPolicy _theaterWritePolicy() {
@@ -247,7 +262,8 @@ void main() {
     expect(find.text('Riley Recovery'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(_toolbarPrimary('Schedule case'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
     expect(_table(tester).columnVisibilityLabel, 'Settings');
@@ -327,7 +343,7 @@ void main() {
       isTrue,
     );
     expect(_toolbarPrimary('Schedule case'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
   });
 
   testWidgets('deep link section=in-theater selects In theater tab', (
@@ -352,26 +368,29 @@ void main() {
     expect(find.text('Ira InTheater'), findsOneWidget);
     expect(find.text('Sam Scheduled'), findsNothing);
     expect(_toolbarPrimary('Schedule case'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
   });
 
-  testWidgets('deep link focusCaseId still opens case detail dialog', (
-    WidgetTester tester,
-  ) async {
-    await _pumpTheaterWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/theater?id=TC-SCHED&panel=checklist',
-      initialQuery: TheaterBoardQuery.fromUri(
-        Uri.parse('/theater?id=TC-SCHED&panel=checklist'),
-      ),
-    );
+  testWidgets(
+    'deep link panel=checklist opens readiness dialog without detail shell',
+    (WidgetTester tester) async {
+      await _pumpTheaterWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/theater?id=TC-SCHED&panel=checklist',
+        initialQuery: TheaterBoardQuery.fromUri(
+          Uri.parse('/theater?id=TC-SCHED&panel=checklist'),
+        ),
+      );
 
-    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-    verify(() => repository.getCase(any())).called(greaterThanOrEqualTo(1));
-  });
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('Update readiness'), findsWidgets);
+      expect(find.text('Case detail'), findsNothing);
+      verify(() => repository.getCase(any())).called(greaterThanOrEqualTo(1));
+    },
+  );
 
-  testWidgets('read-only users see refresh-only tab toolbar', (
+  testWidgets('read-only users see no schedule or write next-actions', (
     WidgetTester tester,
   ) async {
     await _pumpTheaterWorkspace(
@@ -380,10 +399,11 @@ void main() {
       accessPolicy: _theaterReadOnlyPolicy(),
     );
 
-    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(_toolbarPrimary('Schedule case'), findsNothing);
-    expect(_toolbarPrimary('Refresh'), findsOneWidget);
-    expect(find.byType(AppTabToolbarAction), findsNothing);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
+    expect(find.text('Update readiness'), findsWidgets);
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (
@@ -399,5 +419,94 @@ void main() {
     expect(find.textContaining('Scheduled'), findsWidgets);
     expect(find.textContaining('Recovery'), findsWidgets);
     expect(find.widgetWithText(AppButton, 'Update readiness'), findsWidgets);
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
   });
+
+  testWidgets(
+    'row next-action opens readiness; detail omits Update readiness duplicate',
+    (WidgetTester tester) async {
+      await _pumpTheaterWorkspace(tester, repository: repository);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Update readiness').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Case detail'), findsNothing);
+      expect(find.text('Checklist phase'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Sam Scheduled'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Case detail'), findsOneWidget);
+      expect(find.byType(AppQuickActions), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Update readiness'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Reschedule'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'ready scheduled next-action is Start case; detail omits Update stage',
+    (WidgetTester tester) async {
+      _stubCases(repository, cases: const <TheaterCase>[_readyScheduledCase]);
+      await _pumpTheaterWorkspace(tester, repository: repository);
+
+      expect(find.widgetWithText(AppButton, 'Start case'), findsOneWidget);
+
+      await tester.tap(find.text('Pat Ready'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Case detail'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Update stage'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Update readiness'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'advanced filters omit status/stage on Scheduled; All cases keeps them',
+    (WidgetTester tester) async {
+      final GoRouter router = await _pumpTheaterWorkspace(
+        tester,
+        repository: repository,
+      );
+
+      expect(_table(tester).search?.filterGroups.length, 2);
+
+      await tester.tap(find.textContaining('Scheduled').first);
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.queryParameters['section'], 'scheduled');
+      expect(_table(tester).search?.filterGroups, isEmpty);
+
+      await tester.tap(find.textContaining('All cases').first);
+      await tester.pumpAndSettle();
+
+      expect(_table(tester).search?.filterGroups.length, 2);
+    },
+  );
 }

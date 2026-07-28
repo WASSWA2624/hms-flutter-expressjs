@@ -210,6 +210,13 @@ class _SubscriptionsWorkspaceContentState
     final AppFailure? lastFailure = failure is AppFailure ? failure : null;
     final ThemeData theme = Theme.of(context);
 
+    final bool isOverview = state.query.panel == SubscriptionPanel.overview;
+    final List<AppWorkspaceSummaryNotification> queueChips =
+        _queueSummaryChips(state);
+    final List<SubscriptionResource> panelResources = _resourcesForPanel(
+      state.query.panel,
+    );
+
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
@@ -221,15 +228,22 @@ class _SubscriptionsWorkspaceContentState
               activePanel: state.query.panel,
               isRefreshing: state.isRefreshing,
               onPanelSelected: (SubscriptionPanel panel) {
-                controller.applyPanel(panel);
-                final SubscriptionsWorkspaceQuery newQuery = state.query
-                    .copyWith(panel: panel);
-                context.go(newQuery.location());
+                final SubscriptionResource resource =
+                    _defaultResourceForPanel(panel);
+                unawaited(controller.applyPanel(panel));
+                context.go(
+                  state.query
+                      .copyWith(panel: panel, resource: resource)
+                      .location(),
+                );
               },
-              summaryNotifications: _summaryNotifications(context, state),
               primaryAction: _primaryAction(context, canWrite, state),
             ),
             SizedBox(height: theme.spacing.sm),
+            if (queueChips.isNotEmpty) ...<Widget>[
+              _SubscriptionsQueueChipBar(chips: queueChips),
+              SizedBox(height: theme.spacing.md),
+            ],
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
@@ -237,18 +251,44 @@ class _SubscriptionsWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _SubscriptionOverviewPanel(state: state, canWrite: canWrite),
-            SizedBox(height: theme.spacing.md),
-            _SubscriptionsWorklistPanel(
-              state: state,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              onItemSelected: (SubscriptionItem item) {
-                unawaited(
-                  _openSubscriptionDetailDialog(context, ref, item, canWrite),
-                );
-              },
-            ),
+            if (isOverview)
+              _SubscriptionOverviewPanel(state: state, canWrite: canWrite)
+            else ...<Widget>[
+              if (panelResources.length > 1) ...<Widget>[
+                _SubscriptionsResourceTabBar(
+                  resources: panelResources,
+                  selected: state.query.resource,
+                  isRefreshing: state.isRefreshing,
+                  onResourceSelected: (SubscriptionResource resource) {
+                    unawaited(controller.applyResource(resource));
+                    context.go(
+                      state.query
+                          .copyWith(
+                            panel: resource.defaultPanel,
+                            resource: resource,
+                          )
+                          .location(),
+                    );
+                  },
+                ),
+                SizedBox(height: theme.spacing.sm),
+              ],
+              _SubscriptionsWorklistPanel(
+                state: state,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                onItemSelected: (SubscriptionItem item) {
+                  unawaited(
+                    _openSubscriptionDetailDialog(
+                      context,
+                      ref,
+                      item,
+                      canWrite,
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -260,7 +300,7 @@ class _SubscriptionsWorkspaceContentState
     bool canWrite,
     SubscriptionsWorkspaceState state,
   ) {
-    if (!canWrite) {
+    if (!canWrite || state.query.panel == SubscriptionPanel.overview) {
       return null;
     }
     return switch (state.query.resource) {
@@ -271,8 +311,8 @@ class _SubscriptionsWorkspaceContentState
         onPressed: () => _showPlanDialog(context, ref),
       ),
       SubscriptionResource.subscriptions => AppTabToolbarPrimary(
-        label: _SubscriptionsText.activateSubscription,
-        icon: Icons.play_circle_outline,
+        label: _SubscriptionsText.newSubscription,
+        icon: Icons.add,
         enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
         onPressed: () => _showSubscriptionDialog(context, ref, state),
       ),
@@ -292,83 +332,82 @@ class _SubscriptionsWorkspaceContentState
     };
   }
 
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
+  List<AppWorkspaceSummaryNotification> _queueSummaryChips(
     SubscriptionsWorkspaceState state,
   ) {
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
-    SubscriptionQueueSummary? queueById(String id) {
-      for (final SubscriptionQueueSummary queue in state.queueSummaries) {
-        if (queue.id == id) {
-          return queue;
-        }
-      }
-      return null;
-    }
 
-    AppWorkspaceSummaryNotification card({
+    AppWorkspaceSummaryNotification? chip({
       required String metricId,
       required String label,
       required IconData icon,
+      required String queueId,
       AppWorkspaceStatusTone tone = AppWorkspaceStatusTone.neutral,
-      String? queueId,
     }) {
-      final SubscriptionQueueSummary? queue = queueId == null
-          ? null
-          : queueById(queueId);
+      final SubscriptionQueueSummary? queue = _queueById(state, queueId);
+      final int count = state.summaryValue(metricId);
+      if (count <= 0 || queue == null) {
+        return null;
+      }
       return AppWorkspaceSummaryNotification(
         label: label,
-        count: state.summaryValue(metricId),
+        count: count,
         icon: icon,
         tone: tone,
-        onSelected: queue == null ? () {} : () => controller.applyQueue(queue),
+        isSelected: state.query.queue == queue.queue,
+        onSelected: () {
+          unawaited(controller.applyQueue(queue));
+          context.go(
+            state.query
+                .copyWith(
+                  panel: queue.panel,
+                  resource: queue.resource,
+                  queue: queue.queue,
+                )
+                .location(),
+          );
+        },
       );
     }
 
-    return <AppWorkspaceSummaryNotification>[
-      card(
-        metricId: _SummaryIds.activeSubscriptions,
-        label: _SubscriptionsText.activeSubscriptions,
-        icon: Icons.verified_outlined,
-        tone: AppWorkspaceStatusTone.success,
-      ),
-      card(
+    return <AppWorkspaceSummaryNotification?>[
+      chip(
         metricId: _SummaryIds.pendingChanges,
         label: _SubscriptionsText.pendingChanges,
         icon: Icons.pending_actions_outlined,
         queueId: _QueueIds.pendingChanges,
       ),
-      card(
+      chip(
         metricId: _SummaryIds.pastDueInvoices,
         label: _SubscriptionsText.pastDueInvoices,
         icon: Icons.receipt_long_outlined,
         tone: AppWorkspaceStatusTone.warning,
         queueId: _QueueIds.pastDueBilling,
       ),
-      card(
+      chip(
         metricId: _SummaryIds.deniedModules,
         label: _SubscriptionsText.deniedModules,
         icon: Icons.block_outlined,
         tone: AppWorkspaceStatusTone.error,
         queueId: _QueueIds.moduleBlocked,
       ),
-      card(
+      chip(
         metricId: _SummaryIds.expiringLicenses,
         label: _SubscriptionsText.expiringLicenses,
         icon: Icons.event_busy_outlined,
         tone: AppWorkspaceStatusTone.warning,
         queueId: _QueueIds.renewalsDue,
       ),
-      card(
+      chip(
         metricId: _SummaryIds.approachingLimits,
         label: _SubscriptionsText.approachingLimits,
         icon: Icons.trending_up_outlined,
         tone: AppWorkspaceStatusTone.info,
         queueId: _QueueIds.upgradeRecommended,
       ),
-    ];
+    ].whereType<AppWorkspaceSummaryNotification>().toList(growable: false);
   }
 }
 
@@ -377,24 +416,16 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
     required this.activePanel,
     required this.isRefreshing,
     required this.onPanelSelected,
-    required this.summaryNotifications,
     this.primaryAction,
   });
 
   final SubscriptionPanel activePanel;
   final bool isRefreshing;
   final ValueChanged<SubscriptionPanel> onPanelSelected;
-  final List<AppWorkspaceSummaryNotification> summaryNotifications;
   final Widget? primaryAction;
-
-  static const String _notificationsTabId = '__notifications__';
 
   @override
   Widget build(BuildContext context) {
-    final int notificationCount = totalWorkspaceSummaryNotificationCount(
-      summaryNotifications,
-    );
-
     return AppTabStrip(
       tabs: <AppTabItem>[
         for (final SubscriptionPanel panel in SubscriptionPanel.values)
@@ -403,29 +434,89 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
             icon: _panelIcon(panel),
             label: _panelLabel(panel),
           ),
-        AppTabItem(
-          id: _notificationsTabId,
-          icon: Icons.notifications_outlined,
-          label: _SubscriptionsText.notifications,
-          count: notificationCount > 0 ? notificationCount : null,
-        ),
       ],
       selectedId: activePanel.serverValue,
-      onTabTapped: isRefreshing ? (_) {} : _onTabTapped,
+      onTabTapped: isRefreshing
+          ? (_) {}
+          : (String tabId) {
+              for (final SubscriptionPanel panel
+                  in SubscriptionPanel.values) {
+                if (panel.serverValue == tabId) {
+                  onPanelSelected(panel);
+                  return;
+                }
+              }
+            },
       primaryAction: primaryAction,
     );
   }
+}
 
-  void _onTabTapped(String tabId) {
-    if (tabId == _notificationsTabId) {
-      return;
-    }
-    for (final SubscriptionPanel panel in SubscriptionPanel.values) {
-      if (panel.serverValue == tabId) {
-        onPanelSelected(panel);
-        return;
-      }
-    }
+class _SubscriptionsQueueChipBar extends StatelessWidget {
+  const _SubscriptionsQueueChipBar({required this.chips});
+
+  final List<AppWorkspaceSummaryNotification> chips;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.sm,
+      children: <Widget>[
+        for (final AppWorkspaceSummaryNotification chip in chips)
+          FilterChip(
+            selected: chip.isSelected,
+            avatar: Icon(
+              chip.icon,
+              size: 18,
+              color: workspaceStatusToneAccentColor(theme, chip.tone),
+            ),
+            label: Text('${chip.label} (${chip.count})'),
+            onSelected: (_) => chip.onSelected(),
+          ),
+      ],
+    );
+  }
+}
+
+class _SubscriptionsResourceTabBar extends StatelessWidget {
+  const _SubscriptionsResourceTabBar({
+    required this.resources,
+    required this.selected,
+    required this.isRefreshing,
+    required this.onResourceSelected,
+  });
+
+  final List<SubscriptionResource> resources;
+  final SubscriptionResource selected;
+  final bool isRefreshing;
+  final ValueChanged<SubscriptionResource> onResourceSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTabStrip(
+      variant: AppTabStripVariant.nested,
+      tabs: <AppTabItem>[
+        for (final SubscriptionResource resource in resources)
+          AppTabItem(
+            id: resource.serverValue,
+            icon: _resourceIcon(resource),
+            label: _resourceLabel(resource),
+          ),
+      ],
+      selectedId: selected.serverValue,
+      onTabTapped: isRefreshing
+          ? (_) {}
+          : (String tabId) {
+              for (final SubscriptionResource resource in resources) {
+                if (resource.serverValue == tabId) {
+                  onResourceSelected(resource);
+                  return;
+                }
+              }
+            },
+    );
   }
 }
 
@@ -442,20 +533,12 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final SubscriptionsOverview overview = state.overview;
     final ThemeData theme = Theme.of(context);
-    final controller = ref.read(
-      subscriptionsWorkspaceControllerProvider.notifier,
-    );
-    final SubscriptionQueueSummary? pastDueQueue = _queueById(
-      state,
-      _QueueIds.pastDueBilling,
-    );
-    final int pastDueCount = state.summaryValue(_SummaryIds.pastDueInvoices);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppResponsiveWrap(
-          maxColumns: 4,
+          maxColumns: 3,
           minItemWidth: 200,
           children: <Widget>[
             _SubscriptionMetricCard(
@@ -502,15 +585,6 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
                   canWrite: canWrite,
                 ),
               ),
-            ),
-            _SubscriptionMetricCard(
-              label: _SubscriptionsText.pastDue,
-              value: pastDueCount.toString(),
-              icon: Icons.receipt_long_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onTap: pastDueQueue == null
-                  ? () {}
-                  : () => controller.applyQueue(pastDueQueue),
             ),
           ],
         ),
@@ -816,14 +890,6 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
         filterValue: _filterValue(state.query),
         hasActiveFilters: state.query.hasActiveFilters,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          final SubscriptionResource resource = _resourceFromFilter(
-            value.option(_FilterKeys.resource),
-            state.query.resource,
-          );
-          if (resource != state.query.resource) {
-            controller.applyResource(resource);
-            return;
-          }
           controller.applyFilters(
             status: _emptyOption(value.option(_FilterKeys.status)),
             tierCode: _emptyOption(value.option(_FilterKeys.tier)),
@@ -971,7 +1037,11 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
     }
 
     if (item.resource == SubscriptionResource.subscriptionPlans) {
-      return _PlanDetailContent(state: state, item: item);
+      return _PlanDetailContent(
+        state: state,
+        item: item,
+        canWrite: canWrite,
+      );
     }
 
     return Column(
@@ -992,10 +1062,15 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
 }
 
 class _PlanDetailContent extends ConsumerWidget {
-  const _PlanDetailContent({required this.state, required this.item});
+  const _PlanDetailContent({
+    required this.state,
+    required this.item,
+    required this.canWrite,
+  });
 
   final SubscriptionsWorkspaceState state;
   final SubscriptionItem item;
+  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1155,13 +1230,14 @@ class _PlanDetailContent extends ConsumerWidget {
           description: _SubscriptionsText.includedModulesAccessHint,
           titleIcon: Icons.extension_outlined,
           actions: <Widget>[
-            AppButton.secondary(
-              label: _SubscriptionsText.addModules,
-              leadingIcon: Icons.add,
-              onPressed: () async {
-                await _showPlanModulesDialog(context, ref, item);
-              },
-            ),
+            if (canWrite)
+              AppButton.secondary(
+                label: _SubscriptionsText.manageModules,
+                leadingIcon: Icons.extension_outlined,
+                onPressed: () async {
+                  await _showPlanModulesDialog(context, ref, item);
+                },
+              ),
           ],
           child: includedLabels.isEmpty
               ? Text(
@@ -1548,13 +1624,13 @@ class _DetailActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppQuickActions(
-      title: context.l10n.patientsQuickActionsTitle,
+      title: _SubscriptionsText.quickActions,
       extraActions: <Widget>[
         if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
           AppButton.secondary(
             label: _SubscriptionsText.editSubscription,
             leadingIcon: Icons.edit_outlined,
-            enabled: !state.isSaving && state.lookups.plans.isNotEmpty,
+            enabled: !state.isSaving,
             onPressed: () =>
                 _showEditSubscriptionDialog(context, ref, state, item),
           ),
@@ -1620,17 +1696,6 @@ class _DetailActions extends ConsumerWidget {
             leadingIcon: Icons.replay_outlined,
             enabled: !state.isSaving,
             onPressed: () => _showRetryInvoiceDialog(context, ref),
-          ),
-          AppReportActionButton.download(
-            label: _SubscriptionsText.printInvoice,
-            tooltip: _SubscriptionsText.reportEndpointPending,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(_SubscriptionsText.reportEndpointPending),
-                ),
-              );
-            },
           ),
         ],
       ],
@@ -2100,29 +2165,31 @@ class _PlanFormState extends State<_PlanForm> {
               validator: _optionalIntegerValidator,
             ),
           ),
-          Text(
-            _SubscriptionsText.includedModules,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+          if (widget.initial == null) ...<Widget>[
+            Text(
+              _SubscriptionsText.includedModules,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          Text(
-            _SubscriptionsText.includedModulesCheckboxHint,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            Text(
+              _SubscriptionsText.includedModulesCheckboxHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          _PlanModulesCheckboxPanel(
-            modules: modules,
-            selectedIds: _includedModuleIds,
-            onChanged: (Set<String> next) {
-              setState(() {
-                _includedModuleIds
-                  ..clear()
-                  ..addAll(next);
-              });
-            },
-          ),
+            _PlanModulesCheckboxPanel(
+              modules: modules,
+              selectedIds: _includedModuleIds,
+              onChanged: (Set<String> next) {
+                setState(() {
+                  _includedModuleIds
+                    ..clear()
+                    ..addAll(next);
+                });
+              },
+            ),
+          ],
         ],
       ),
       actions: buildAppDialogFormActions(
@@ -2447,7 +2514,7 @@ class _PlanModulesFormState extends State<_PlanModulesForm> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return AppDialog(
-      title: const Text(_SubscriptionsText.addModules),
+      title: const Text(_SubscriptionsText.manageModules),
       icon: const Icon(Icons.extension_outlined),
       scrollable: true,
       pinActionsToBottom: true,
@@ -2497,7 +2564,7 @@ class _SubscriptionForm extends StatefulWidget {
     required this.state,
     this.initial,
     this.initialTenantId,
-    this.submitLabel = _SubscriptionsText.activateSubscription,
+    this.submitLabel = _SubscriptionsText.newSubscription,
   });
 
   final Widget dialogTitle;
@@ -2551,16 +2618,17 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
             ),
             onChanged: (String? value) => setState(() => _tenantId = value),
           ),
-          AppSelectField<String>.searchable(
-            value: _planId,
-            labelText: _SubscriptionsText.plan,
-            isRequired: true,
-            options: _lookupOptions(widget.state.lookups.plans),
-            validator: AppValidators.requiredValue(
-              _SubscriptionsText.planRequired,
+          if (!isEdit)
+            AppSelectField<String>.searchable(
+              value: _planId,
+              labelText: _SubscriptionsText.plan,
+              isRequired: true,
+              options: _lookupOptions(widget.state.lookups.plans),
+              validator: AppValidators.requiredValue(
+                _SubscriptionsText.planRequired,
+              ),
+              onChanged: (String? value) => setState(() => _planId = value),
             ),
-            onChanged: (String? value) => setState(() => _planId = value),
-          ),
           AppSelectField<String>(
             value: _status,
             labelText: _SubscriptionsText.status,
@@ -2595,10 +2663,16 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
           if (!validateAndSaveAppForm(_formKey)) {
             return;
           }
+          final String? planId = isEdit
+              ? widget.initial?.planId ?? _planId
+              : _planId;
+          if (planId == null || planId.isEmpty) {
+            return;
+          }
           Navigator.of(context).pop(
             SubscriptionDraft(
               tenantId: _tenantId!,
-              planId: _planId!,
+              planId: planId,
               status: _status,
               startDate: _datePayload(_startDate),
               endDate: _datePayload(_endDate),
@@ -3309,17 +3383,11 @@ Future<void> _showSubscriptionDialog(
   final SubscriptionDraft? draft = await showAppDialog<SubscriptionDraft>(
     context: context,
     builder: (_) => _SubscriptionForm(
-      dialogTitle: Text(
-        initialTenantId == null
-            ? _SubscriptionsText.activateSubscription
-            : _SubscriptionsText.assignSubscription,
-      ),
-      dialogIcon: const Icon(Icons.play_circle_outline),
+      dialogTitle: const Text(_SubscriptionsText.newSubscription),
+      dialogIcon: const Icon(Icons.add),
       state: state,
       initialTenantId: initialTenantId,
-      submitLabel: initialTenantId == null
-          ? _SubscriptionsText.activateSubscription
-          : _SubscriptionsText.assignSubscription,
+      submitLabel: _SubscriptionsText.newSubscription,
     ),
   );
   if (draft == null || !context.mounted) {
@@ -3516,8 +3584,8 @@ class _CohortAccountCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: AppButton.secondary(
                 label: account.subscriptionId == null
-                    ? _SubscriptionsText.assignSubscription
-                    : _SubscriptionsText.modify,
+                    ? _SubscriptionsText.newSubscription
+                    : _SubscriptionsText.editSubscription,
                 leadingIcon: account.subscriptionId == null
                     ? Icons.add_circle_outline
                     : Icons.edit_outlined,
@@ -3747,24 +3815,23 @@ Future<void> _showCancelSubscriptionDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final SubscriptionActionDraft? draft =
-      await showAppDialog<SubscriptionActionDraft>(
-        context: context,
-        builder: (_) => const _ReasonForm(
-          dialogTitle: Text(_SubscriptionsText.cancelSubscription),
-          dialogIcon: Icon(Icons.block_outlined),
-          submitLabel: _SubscriptionsText.cancelSubscription,
-          reasonLabel: _SubscriptionsText.reason,
-        ),
-      );
-  if (draft == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(subscriptionsWorkspaceControllerProvider.notifier)
-      .cancelSelectedSubscription();
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppConfirmActionDialog(
+      title: _SubscriptionsText.cancelSubscription,
+      body: _SubscriptionsText.cancelSubscriptionBody,
+      submitLabel: _SubscriptionsText.cancelSubscription,
+      icon: const Icon(Icons.block_outlined),
+      destructive: true,
+      submitLeadingIcon: Icons.block_outlined,
+      onConfirm: () => ref
+          .read(subscriptionsWorkspaceControllerProvider.notifier)
+          .cancelSelectedSubscription(),
+    ),
+  );
+  if (confirmed == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -3850,19 +3917,6 @@ void _showMutationResult(BuildContext context, AppFailure? failure) {
 List<AppSearchBarFilterGroup> _filterGroups(SubscriptionsWorkspaceState state) {
   final SubscriptionLookups lookups = state.lookups;
   return <AppSearchBarFilterGroup>[
-    AppSearchBarFilterGroup(
-      key: _FilterKeys.resource,
-      label: _SubscriptionsText.resource,
-      allLabel: _resourceLabel(state.query.resource),
-      choices: <AppSearchBarFilterChoice>[
-        for (final SubscriptionResource resource in SubscriptionResource.values)
-          AppSearchBarFilterChoice(
-            value: resource.serverValue,
-            label: _resourceLabel(resource),
-            icon: _resourceIcon(resource),
-          ),
-      ],
-    ),
     if (_statusChoices(state).isNotEmpty)
       AppSearchBarFilterGroup(
         key: _FilterKeys.status,
@@ -3946,7 +4000,6 @@ List<AppSearchBarFilterGroup> _filterGroups(SubscriptionsWorkspaceState state) {
 
 AppSearchBarFilterValue _filterValue(SubscriptionsWorkspaceQuery query) {
   final Map<String, String> options = <String, String>{
-    _FilterKeys.resource: query.resource.serverValue,
     if (_hasText(query.status)) _FilterKeys.status: query.status!,
     if (_hasText(query.tierCode)) _FilterKeys.tier: query.tierCode!,
     if (_hasText(query.billingCycle))
@@ -4019,16 +4072,6 @@ List<AppSearchBarFilterChoice> _datePresetChoices() {
       icon: Icons.event_repeat_outlined,
     ),
   ];
-}
-
-SubscriptionResource _resourceFromFilter(
-  String? value,
-  SubscriptionResource fallback,
-) {
-  if (!_hasText(value)) {
-    return fallback;
-  }
-  return SubscriptionResource.fromServer(value);
 }
 
 SubscriptionDatePreset _datePresetFromFilter(String? value) {
@@ -4345,6 +4388,36 @@ IconData _panelIcon(SubscriptionPanel panel) {
   };
 }
 
+SubscriptionResource _defaultResourceForPanel(SubscriptionPanel panel) {
+  return switch (panel) {
+    SubscriptionPanel.overview => SubscriptionResource.subscriptions,
+    SubscriptionPanel.catalog => SubscriptionResource.subscriptionPlans,
+    SubscriptionPanel.operations => SubscriptionResource.subscriptions,
+    SubscriptionPanel.billing => SubscriptionResource.subscriptionInvoices,
+    SubscriptionPanel.governance => SubscriptionResource.licenses,
+  };
+}
+
+List<SubscriptionResource> _resourcesForPanel(SubscriptionPanel panel) {
+  return switch (panel) {
+    SubscriptionPanel.overview => const <SubscriptionResource>[],
+    SubscriptionPanel.catalog => const <SubscriptionResource>[
+      SubscriptionResource.subscriptionPlans,
+      SubscriptionResource.modules,
+    ],
+    SubscriptionPanel.operations => const <SubscriptionResource>[
+      SubscriptionResource.subscriptions,
+      SubscriptionResource.moduleSubscriptions,
+    ],
+    SubscriptionPanel.billing => const <SubscriptionResource>[
+      SubscriptionResource.subscriptionInvoices,
+    ],
+    SubscriptionPanel.governance => const <SubscriptionResource>[
+      SubscriptionResource.licenses,
+    ],
+  };
+}
+
 String? _querySignature(SubscriptionsWorkspaceQuery? query) {
   if (query == null) {
     return null;
@@ -4585,7 +4658,6 @@ final class _LimitRow {
 }
 
 abstract final class _FilterKeys {
-  static const String resource = 'resource';
   static const String status = 'status';
   static const String tier = 'tier';
   static const String billingCycle = 'billing_cycle';
@@ -4599,7 +4671,6 @@ abstract final class _FilterKeys {
 }
 
 abstract final class _SummaryIds {
-  static const String activeSubscriptions = 'active_subscriptions';
   static const String pendingChanges = 'pending_changes';
   static const String pastDueInvoices = 'past_due_invoices';
   static const String deniedModules = 'denied_modules';
@@ -4670,11 +4741,9 @@ abstract final class _SubscriptionsText {
       'Fetching plans, subscriptions, modules, licenses, and invoices.';
   static const String savedMessage = 'Subscription workspace updated.';
   static const String overview = 'Overview';
-  static const String notifications = 'Notifications';
   static const String activePlans = 'Active plans';
   static const String notSubscribed = 'Not subscribed';
   static const String closedSubscriptions = 'Closed subscriptions';
-  static const String activeSubscriptions = 'Active subscriptions';
   static const String pendingChanges = 'Pending changes';
   static const String pastDueInvoices = 'Past due invoices';
   static const String pastDue = 'Past due';
@@ -4692,7 +4761,7 @@ abstract final class _SubscriptionsText {
       'Checked modules are visible in the app menu for tenants on this plan.';
   static const String includedModulesAccessHint =
       'Modules control what appears in the app menu and what the tenant can access.';
-  static const String addModules = 'Add modules';
+  static const String manageModules = 'Manage modules';
   static const String saveModules = 'Save modules';
   static const String selectAllModules = 'Select all';
   static const String clearAllModules = 'Clear all';
@@ -4723,7 +4792,7 @@ abstract final class _SubscriptionsText {
   static const String all = 'All';
   static const String emptyTitle = 'No subscription records';
   static const String emptyBody =
-      'Adjust the filters or activate a subscription to populate this view.';
+      'Adjust the filters or create a subscription to populate this view.';
   static const String previousPage = 'Previous subscription page';
   static const String nextPage = 'Next subscription page';
   static const String record = 'Record';
@@ -4742,6 +4811,7 @@ abstract final class _SubscriptionsText {
   static const String noSelectionTitle = 'Select a record';
   static const String noSelectionBody =
       'Choose a subscription record to review plan limits, modules, invoices, licenses, and next actions.';
+  static const String quickActions = 'Quick actions';
   static const String plans = 'Plans';
   static const String subscriptions = 'Subscriptions';
   static const String moduleSubscriptions = 'Module subscriptions';
@@ -4749,11 +4819,9 @@ abstract final class _SubscriptionsText {
   static const String createPlan = 'Create plan';
   static const String editPlan = 'Edit plan';
   static const String savePlan = 'Save plan';
-  static const String activateSubscription = 'Activate subscription';
-  static const String assignSubscription = 'Assign subscription';
+  static const String newSubscription = 'New subscription';
   static const String editSubscription = 'Edit subscription';
   static const String saveSubscription = 'Save subscription';
-  static const String modify = 'Modify';
   static const String assignModule = 'Assign module';
   static const String addLicense = 'Add license';
   static const String updateLicense = 'Update license';
@@ -4761,13 +4829,12 @@ abstract final class _SubscriptionsText {
   static const String changePlan = 'Change plan';
   static const String activate = 'Activate';
   static const String cancelSubscription = 'Cancel subscription';
+  static const String cancelSubscriptionBody =
+      'Cancel this subscription? The tenant loses access according to plan rules.';
   static const String enableModule = 'Enable module';
   static const String disableModule = 'Disable module';
   static const String collectInvoice = 'Collect invoice';
   static const String retryInvoice = 'Retry invoice';
-  static const String printInvoice = 'Print invoice';
-  static const String reportEndpointPending =
-      'Generated subscription invoice reports are not available yet.';
   static const String tenant = 'Tenant';
   static const String plan = 'Plan';
   static const String planId = 'Plan ID';
@@ -4817,7 +4884,6 @@ abstract final class _SubscriptionsText {
   static const String paymentMethod = 'Payment method';
   static const String notes = 'Notes';
   static const String retryReason = 'Retry reason';
-  static const String resource = 'Resource';
   static const String allStatuses = 'All statuses';
   static const String allTiers = 'All tiers';
   static const String allBillingCycles = 'All billing cycles';

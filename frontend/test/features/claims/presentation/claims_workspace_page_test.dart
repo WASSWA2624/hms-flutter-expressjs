@@ -699,7 +699,8 @@ void main() {
       await tester.tap(nextAction);
       await tester.pumpAndSettle();
 
-      expect(find.text('Update authorization status'), findsOneWidget);
+      // AppDialog uppercases plain Text titles.
+      expect(find.text('UPDATE AUTHORIZATION STATUS'), findsOneWidget);
       verifyNever(() => repository.getDetail(any()));
     },
   );
@@ -724,7 +725,7 @@ void main() {
       await tester.tap(closeAction);
       await tester.pumpAndSettle();
 
-      expect(find.text('Close claim'), findsOneWidget);
+      expect(find.text('CLOSE CLAIM'), findsOneWidget);
       // Status was chosen by next-action — dialog collects notes only.
       expect(find.text('Payer response'), findsNothing);
       expect(
@@ -800,7 +801,7 @@ void main() {
       await tester.tap(find.byTooltip('Update status'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Update authorization status'), findsOneWidget);
+      expect(find.text('UPDATE AUTHORIZATION STATUS'), findsOneWidget);
       verifyNever(() => repository.getDetail(any()));
     },
   );

@@ -1,5 +1,55 @@
 part of '../pages/theater_workspace_page.dart';
 
+/// Stage-aware next step for a theater case row.
+enum TheaterNextActionKind {
+  updateReadiness,
+  startCase,
+  anesthesia,
+  postOp,
+  handover,
+}
+
+TheaterNextActionKind? theaterResolveNextActionKind(TheaterCase theaterCase) {
+  if (theaterCase.normalizedStatus == 'CANCELLED' ||
+      theaterCase.normalizedStatus == 'COMPLETED') {
+    return null;
+  }
+  if (!theaterCase.isReady) {
+    return TheaterNextActionKind.updateReadiness;
+  }
+  if (theaterCase.normalizedStatus == 'SCHEDULED') {
+    return TheaterNextActionKind.startCase;
+  }
+  if (!theaterCase.hasFinalAnesthesia) {
+    return TheaterNextActionKind.anesthesia;
+  }
+  if (!theaterCase.hasFinalPostOp) {
+    return TheaterNextActionKind.postOp;
+  }
+  return TheaterNextActionKind.handover;
+}
+
+String theaterNextActionLabel(
+  AppLocalizations l10n,
+  TheaterCase theaterCase,
+) {
+  final TheaterNextActionKind? kind = theaterResolveNextActionKind(theaterCase);
+  if (kind == null) {
+    return switch (theaterCase.normalizedStatus) {
+      'CANCELLED' => l10n.theaterStatusCancelled,
+      'COMPLETED' => l10n.theaterStatusCompleted,
+      _ => l10n.profileUnknownValue,
+    };
+  }
+  return switch (kind) {
+    TheaterNextActionKind.updateReadiness => l10n.theaterUpdateReadinessAction,
+    TheaterNextActionKind.startCase => l10n.theaterStartCaseAction,
+    TheaterNextActionKind.anesthesia => l10n.theaterAnesthesiaAction,
+    TheaterNextActionKind.postOp => l10n.theaterPostOpAction,
+    TheaterNextActionKind.handover => l10n.theaterHandoverAction,
+  };
+}
+
 List<AppListTableColumn<TheaterCase>> defaultTheaterColumnsForSection(
   BuildContext context,
   TheaterSection section,
@@ -249,8 +299,8 @@ AppListTableColumn<TheaterCase> _theaterNextActionColumn(
     alwaysVisible: true,
     sortComparator: (TheaterCase left, TheaterCase right) =>
         appListTableCompareText(
-          _nextActionLabel(context, left),
-          _nextActionLabel(context, right),
+          theaterNextActionLabel(l10n, left),
+          theaterNextActionLabel(l10n, right),
         ),
     cellBuilder: (BuildContext context, TheaterCase item) {
       return _TheaterNextActionButton(theaterCase: item, canWrite: canWrite);
@@ -284,7 +334,7 @@ bool theaterTableSearchMatcher(
     _stageLabel(l10n, item.workflowStage),
     _readinessLabel(context, item),
     _responsibleRoleLabel(l10n, item),
-    _nextActionLabel(context, item),
+    theaterNextActionLabel(l10n, item),
     item.surgeonUserDisplayId,
     item.surgeonDisplayName,
     item.anesthetistUserDisplayId,
@@ -305,11 +355,12 @@ class _TheaterNextActionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String label = _nextActionLabel(context, theaterCase);
-    final bool isTerminal =
-        theaterCase.normalizedStatus == 'CANCELLED' ||
-        theaterCase.normalizedStatus == 'COMPLETED';
-    if (isTerminal || !canWrite) {
+    final AppLocalizations l10n = context.l10n;
+    final String label = theaterNextActionLabel(l10n, theaterCase);
+    final TheaterNextActionKind? kind = theaterResolveNextActionKind(
+      theaterCase,
+    );
+    if (kind == null || !canWrite) {
       return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
 
@@ -358,24 +409,23 @@ Future<void> _runTheaterNextAction(
 
   final TheaterCase active =
       _readTheaterState(ref)?.selectedCase ?? theaterCase;
+  final TheaterNextActionKind? kind = theaterResolveNextActionKind(active);
+  if (kind == null) {
+    return;
+  }
 
-  if (!active.isReady) {
-    await _showChecklistDialog(context, ref);
-    return;
+  switch (kind) {
+    case TheaterNextActionKind.updateReadiness:
+      await _showChecklistDialog(context, ref);
+    case TheaterNextActionKind.startCase:
+      await _showStageDialog(context, ref, active);
+    case TheaterNextActionKind.anesthesia:
+      await _showAnesthesiaDialog(context, ref, active);
+    case TheaterNextActionKind.postOp:
+      await _showPostOpDialog(context, ref, active);
+    case TheaterNextActionKind.handover:
+      await _showHandoverDialog(context, ref);
   }
-  if (active.normalizedStatus == 'SCHEDULED') {
-    await _showStageDialog(context, ref, active);
-    return;
-  }
-  if (!active.hasFinalAnesthesia) {
-    await _showAnesthesiaDialog(context, ref, active);
-    return;
-  }
-  if (!active.hasFinalPostOp) {
-    await _showPostOpDialog(context, ref, active);
-    return;
-  }
-  await _showHandoverDialog(context, ref);
 }
 
 

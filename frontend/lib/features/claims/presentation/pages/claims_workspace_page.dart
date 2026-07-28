@@ -727,7 +727,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         body: l10n.claimsEmptyQueueBody,
         icon: Icons.inbox_outlined,
       ),
-      columns: _defaultColumnsForSection(context, ref, l10n, section, state),
+      columns: _defaultColumnsForSection(context, ref, l10n, section),
       columnChoices: _columnChoicesForSection(context, l10n, section),
       mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
         return AppListTableMobileItem(
@@ -764,7 +764,6 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
   WidgetRef ref,
   AppLocalizations l10n,
   ClaimsDeskSection section,
-  ClaimsWorkspaceState state,
 ) {
   return switch (section) {
     ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
@@ -1144,16 +1143,17 @@ Future<void> _handleClaimsNextAction(
   final ClaimsWorkspaceController controller = ref.read(
     claimsWorkspaceControllerProvider.notifier,
   );
+  // Capture a navigator-owned context before focus rebuilds the queue row.
+  final NavigatorState navigator = Navigator.of(context);
   // Stage writes only need embedded ids — skip the detail fetch shell.
   controller.focusItem(item);
-  // Yield so the focus emission can rebuild without deactivating this context
-  // before the mutation dialog is presented.
-  await Future<void>.delayed(Duration.zero);
-  if (!context.mounted) {
+
+  final BuildContext dialogContext = navigator.context;
+  if (!dialogContext.mounted) {
     return;
   }
 
-  final AppLocalizations l10n = context.l10n;
+  final AppLocalizations l10n = dialogContext.l10n;
   final ClaimsQueueDetail focused = ClaimsQueueDetail(
     item: item,
     authorization: item.authorization,
@@ -1161,7 +1161,7 @@ Future<void> _handleClaimsNextAction(
   );
 
   if (item.isAuthorization) {
-    await _openAuthorizationStatusDialog(context, controller, focused);
+    await _openAuthorizationStatusDialog(dialogContext, controller, focused);
     return;
   }
 
@@ -1172,11 +1172,11 @@ Future<void> _handleClaimsNextAction(
 
   switch (status) {
     case 'REJECTED':
-      await _openSubmitClaimDialog(context, controller);
+      await _openSubmitClaimDialog(dialogContext, controller);
     case 'SUBMITTED':
     case 'PARTIAL':
       await _openClaimResponseDialog(
-        context,
+        dialogContext,
         controller,
         initialStatus: 'APPROVED',
         title: l10n.claimsRecordResponseDialogTitle,
@@ -1185,7 +1185,7 @@ Future<void> _handleClaimsNextAction(
     case 'APPROVED':
       // Next-action already chose "Close as paid" — do not restate status.
       await _openClaimResponseDialog(
-        context,
+        dialogContext,
         controller,
         initialStatus: 'PAID',
         title: l10n.claimsCloseClaimDialogTitle,
@@ -1193,7 +1193,7 @@ Future<void> _handleClaimsNextAction(
         statusEditable: false,
       );
     default:
-      await _openSubmitClaimDialog(context, controller);
+      await _openSubmitClaimDialog(dialogContext, controller);
   }
 }
 
