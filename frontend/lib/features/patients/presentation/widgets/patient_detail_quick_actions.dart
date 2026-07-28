@@ -132,7 +132,13 @@ class PatientDetailQuickActions extends ConsumerWidget {
             activeModules: <String>['inpatient-bed-management'],
           ),
         ),
-      if (hasActiveAdmission)
+      // Active work Continue is the sole discharge entry when an admission
+      // work item is already listed; keep the chip only for visit-only cases.
+      if (hasActiveAdmission &&
+          !collectPatientActiveWorkItems(detail).any(
+            (PatientActiveWorkItem item) =>
+                item.kind == PatientActiveWorkKind.admission,
+          ))
         AppPermissionActionItem(
           label: dischargeActionLabel,
           icon: Icons.logout_outlined,

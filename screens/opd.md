@@ -16,6 +16,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Row **WorkflowActionButton** (route/dialog to other modules for OPD-owned steps) | Same stage mutation | **Replaced** — stage-aware **Next action** opens the OPD mutation dialog (or department handoff) directly |
 | Parallel `_OpdPatientActionsDialog` appointment hub vs shared `OpdAppointmentActionsDialog` | Check-in / reschedule / cancel | **Merged** — shared appointment hub only |
 | Arrival next-action opened appointment hub then required start again | Start encounter | **Removed** intermediate hub — next-action opens encounter dialog directly |
+| Continue-encounter next-action opened Flow Actions with stage primary omitted | Continue visit stage | **Removed** hub shell — next-action runs the stage mutation / handoff directly |
+| Post-start Flow Actions omitted the stage primary (same as worklist omit) | Continue visit stage | **Fixed** — omit applies only to row-select hubs; post-start continuation keeps the primary |
 | Queue next-action labeled **Start OPD encounter** (same as toolbar / arrivals) | Misleading parallel start | **Removed** — queue next-action is empty; row select is the sole queue-hub entry |
 | Detail Quick Action matching row next-action (pay / vitals / assign doctor / review / disposition / …) | Same write | **Omitted** from Flow Actions / appointment hub via `omitNextActionKey` / `omitPrimaryAction` |
 | Deep link `flowId` + `panel=` opened Flow Actions then required hunting for the action | Intermediate shell | **Removed** — focused panel opens the mutation dialog directly |
@@ -95,8 +97,9 @@ Tab-strip **Refresh** was removed.
 
 - Widget tests in `frontend/test/features/opd/presentation/opd_workspace_page_test.dart` prove:
   - **Refresh** is absent from the tab strip on desktop/mobile.
-  - **Start OPD encounter** remains the labeled create entry (toolbar + arrival next-action); queue rows do not show that label.
-  - Arrival **Start OPD encounter** next-action skips the appointment hub.
+  - **Start OPD encounter** remains the labeled create entry (toolbar + arrival next-action); queue rows have no next-action control.
+  - Arrival **Start OPD encounter** next-action skips the appointment hub; row select hub omits that primary.
   - Active **Record vitals** next-action opens the vitals dialog; Flow Actions omits that duplicate.
+  - Deep link `flowId` + `panel=vitals` opens the vitals dialog without a Flow Actions shell.
   - Unauthorized users see no Start OPD encounter / Record vitals.
   - Queue row still opens the shared queue hub; cancel performs no mutation.

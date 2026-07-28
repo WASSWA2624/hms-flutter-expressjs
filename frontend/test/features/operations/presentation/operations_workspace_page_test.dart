@@ -481,6 +481,73 @@ void main() {
     expect(find.text('Request detail'), findsNothing);
   });
 
+  testWidgets(
+    'next action opens update status for in-progress without asset',
+    (WidgetTester tester) async {
+      when(() => repository.updateRequestStatus(any(), any())).thenAnswer(
+        (_) async =>
+            const Result<OperationsWorkItem>.success(_inProgressRequest),
+      );
+
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.textContaining('In progress').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Update repair status'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update status'), findsWidgets);
+      expect(find.text('Request detail'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'next action opens service log for in-progress with asset',
+    (WidgetTester tester) async {
+      _stubRepository(
+        repository,
+        requests: const <OperationsWorkItem>[_inProgressWithAsset],
+      );
+      when(() => repository.addServiceLog(any())).thenAnswer(
+        (_) async => const Result<OperationsServiceLog>.success(
+          OperationsServiceLog(
+            id: 'SL-1',
+            assetId: 'AS-001',
+            notes: 'Checked',
+          ),
+        ),
+      );
+
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('Record service work'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add service log'), findsWidgets);
+      expect(find.text('Request detail'), findsNothing);
+    },
+  );
+
+  testWidgets('next action opens closeout for completed request', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.appendRequestNote(any(), any())).thenAnswer(
+      (_) async => const Result<OperationsWorkItem>.success(_completedRequest),
+    );
+
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.textContaining('Completed').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add closeout note if needed'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Closeout note'), findsWidgets);
+    expect(find.text('Request detail'), findsNothing);
+  });
+
   testWidgets('detail omits assign when it is the row next action', (
     WidgetTester tester,
   ) async {
@@ -621,9 +688,40 @@ void main() {
 
     expect(find.textContaining('Create request'), findsNothing);
     expect(find.text('Assign technician or team'), findsNothing);
-    expect(find.text('Review request'), findsWidgets);
+    expect(find.text('Review request'), findsNothing);
     expect(find.text('Report'), findsOneWidget);
+
+    await tester.tap(find.text('Generator alarm'));
+    await tester.pumpAndSettle();
+    expect(find.text('Request detail'), findsOneWidget);
   });
+
+  testWidgets(
+    'status filter is absent on scoped tabs and present on All requests',
+    (WidgetTester tester) async {
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      bool hasStatusFilter() {
+        return _queueTable(tester).search!.filterGroups.any(
+          (AppSearchBarFilterGroup group) => group.key == 'status',
+        );
+      }
+
+      expect(hasStatusFilter(), isTrue);
+
+      await tester.tap(find.textContaining('Open').first);
+      await tester.pumpAndSettle();
+      expect(hasStatusFilter(), isFalse);
+
+      await tester.tap(find.textContaining('In progress').first);
+      await tester.pumpAndSettle();
+      expect(hasStatusFilter(), isFalse);
+
+      await tester.tap(find.textContaining('Completed').first);
+      await tester.pumpAndSettle();
+      expect(hasStatusFilter(), isFalse);
+    },
+  );
 
   testWidgets('mobile list shows next-action trailing', (
     WidgetTester tester,

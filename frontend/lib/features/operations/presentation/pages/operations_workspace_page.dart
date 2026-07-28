@@ -373,14 +373,6 @@ class _OperationsWorkspaceContentState
                 onItemSelected: (OperationsWorkItem item) {
                   unawaited(_openRequestDetailDialog(context, item, canMutate));
                 },
-                onOpenDetail:
-                    (BuildContext detailContext, OperationsWorkItem item) {
-                      return _openRequestDetailDialog(
-                        detailContext,
-                        item,
-                        canMutate,
-                      );
-                    },
                 section: _section,
               ),
           ],
@@ -487,7 +479,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
     required this.columnVisibilityController,
     required this.canMutate,
     required this.onItemSelected,
-    required this.onOpenDetail,
     required this.section,
   });
 
@@ -497,8 +488,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
   columnVisibilityController;
   final bool canMutate;
   final ValueChanged<OperationsWorkItem> onItemSelected;
-  final Future<void> Function(BuildContext context, OperationsWorkItem item)
-  onOpenDetail;
   final OperationsDeskSection section;
 
   @override
@@ -597,7 +586,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
         l10n,
         state: state,
         canMutate: canMutate,
-        onOpenDetail: onOpenDetail,
       ),
       columnChoices: _operationColumnChoices(l10n),
       mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
@@ -623,7 +611,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
             item: item,
             state: state,
             canMutate: canMutate,
-            onOpenDetail: onOpenDetail,
           ),
         );
       },
@@ -1221,14 +1208,11 @@ class _OperationsNextActionButton extends ConsumerWidget {
     required this.item,
     required this.state,
     required this.canMutate,
-    required this.onOpenDetail,
   });
 
   final OperationsWorkItem item;
   final OperationsWorkspaceState state;
   final bool canMutate;
-  final Future<void> Function(BuildContext context, OperationsWorkItem item)
-  onOpenDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1314,7 +1298,7 @@ class _OperationsNextActionButton extends ConsumerWidget {
         );
       case _OperationsNextActionKind.review:
       case _OperationsNextActionKind.none:
-        await onOpenDetail(context, item);
+        break;
     }
   }
 }
@@ -2010,8 +1994,6 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
   AppLocalizations l10n, {
   required OperationsWorkspaceState state,
   required bool canMutate,
-  required Future<void> Function(BuildContext context, OperationsWorkItem item)
-  onOpenDetail,
 }) {
   return <AppListTableColumn<OperationsWorkItem>>[
     AppListTableColumn<OperationsWorkItem>(
@@ -2085,7 +2067,6 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
           item: item,
           state: state,
           canMutate: canMutate,
-          onOpenDetail: onOpenDetail,
         );
       },
     ),

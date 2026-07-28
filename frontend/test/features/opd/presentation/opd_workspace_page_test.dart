@@ -153,6 +153,14 @@ void _stubWorkspace(_MockOpdRepository repository) {
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
   );
+  when(
+    () => repository.getBillingDefaults(
+      facilityId: any(named: 'facilityId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+  );
 }
 
 Future<GoRouter> _pumpOpdWorkspace(
@@ -384,11 +392,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(AppListTableMobileItem), findsWidgets);
-
-    await tester.tap(find.text('Quinn Queue'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('QUEUE ACTIONS'), findsOneWidget);
+    // Worklist start remains available as a labeled next-action on arrivals.
+    expect(_startOpdEncounterInWorklist(), findsOneWidget);
   });
 
   testWidgets('settings modal uses Table Settings title', (
@@ -521,6 +526,49 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'deep link panel=vitals opens vitals dialog without Flow Actions shell',
+    (WidgetTester tester) async {
+      when(() => repository.getOpdFlow(any())).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.success(
+          OpdFlowDetail(summary: _activeFlow),
+        ),
+      );
+
+      await _pumpOpdWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/opd?flowId=encounter-active&panel=vitals',
+        initialQuery: OpdWorkspaceQuery.fromUri(
+          Uri.parse('/opd?flowId=encounter-active&panel=vitals'),
+        ),
+      );
+
+      expect(find.text('FLOW ACTIONS'), findsNothing);
+      expect(find.textContaining('Vitals'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'arrival row select hub omits Start OPD encounter duplicate',
+    (WidgetTester tester) async {
+      await _pumpOpdWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('Ann Arrival'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Start OPD encounter'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('Reschedule'), findsOneWidget);
+    },
+  );
 
   testWidgets('unauthorized user has no Start walk-in or next-action writes', (
     WidgetTester tester,

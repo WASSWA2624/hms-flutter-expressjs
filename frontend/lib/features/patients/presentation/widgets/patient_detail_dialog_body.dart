@@ -30,6 +30,34 @@ Future<void> showPatientDetailDialog(
   }
 }
 
+Future<void> showPatientEditDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Patient patient,
+) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => PatientFormDialog(
+      patient: patient,
+      referenceData:
+          _readCurrentState(ref)?.referenceData ??
+          const PatientReferenceData(),
+      onSubmit: (Map<String, Object?> payload) {
+        return ref
+            .read(patientRegistryControllerProvider.notifier)
+            .updatePatient(patient.id, payload);
+      },
+    ),
+  );
+
+  if (saved == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+    );
+  }
+}
+
 class PatientDetailDialog extends ConsumerWidget {
   const PatientDetailDialog({
     required this.patientId,
@@ -144,7 +172,7 @@ class PatientDetailDialog extends ConsumerWidget {
             label: l10n.patientsEditAction,
             leadingIcon: Icons.edit_outlined,
             onPressed: isAllowed
-                ? () => _openPatientForm(context, ref, patient)
+                ? () => unawaited(showPatientEditDialog(context, ref, patient))
                 : null,
           ),
         ),
@@ -382,34 +410,6 @@ class PatientDetailDialog extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _openPatientForm(
-    BuildContext context,
-    WidgetRef ref,
-    Patient patient,
-  ) async {
-    final bool? saved = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => PatientFormDialog(
-        patient: patient,
-        referenceData:
-            _readCurrentState(ref)?.referenceData ??
-            const PatientReferenceData(),
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .updatePatient(patient.id, payload);
-        },
-      ),
-    );
-
-    if (saved == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsSavedMessage)),
-      );
-    }
   }
 
   Future<void> _confirmDeletePatient(

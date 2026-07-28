@@ -197,6 +197,7 @@ class _PatientRegistryContentState
                 }
               },
               primaryAction: _buildPrimaryAction(l10n),
+              secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             _PatientList(
@@ -220,6 +221,35 @@ class _PatientRegistryContentState
     };
   }
 
+  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
+    final List<PatientDuplicateCandidate> duplicates =
+        widget.state.overview.duplicates;
+    if (duplicates.isEmpty) {
+      return const <Widget>[];
+    }
+
+    return <Widget>[
+      AppAccessActionGate(
+        requirement: _PatientRegistryContent._writeRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          if (!isAllowed) {
+            return const SizedBox.shrink();
+          }
+          return AppTabToolbarAction(
+            icon: Icons.content_copy_outlined,
+            label: l10n.patientsDuplicateSummaryLabel,
+            semanticLabel: l10n.patientsDuplicateSummaryLabel,
+            tooltip: l10n.patientsDuplicateSummaryBody,
+            enabled: isAllowed,
+            onPressed: () {
+              unawaited(_openDuplicateReviewDialog(context, duplicates));
+            },
+          );
+        },
+      ),
+    ];
+  }
+
   Widget _registerPatientPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
       requirement: _PatientRegistryContent._writeRequirement,
@@ -238,6 +268,16 @@ class _PatientRegistryContentState
           },
         );
       },
+    );
+  }
+
+  Future<void> _openDuplicateReviewDialog(
+    BuildContext context,
+    List<PatientDuplicateCandidate> duplicates,
+  ) async {
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => PatientDuplicateReviewDialog(duplicates: duplicates),
     );
   }
 
@@ -1144,8 +1184,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       alwaysVisible: true,
       cellBuilder: (_, Patient patient) => _NextActionCell(
         patient: patient,
-        onPressed: () {
-          unawaited(showPatientDetailDialog(context, ref, patient.id));
+        onCompleteRecord: () {
+          unawaited(showPatientEditDialog(context, ref, patient));
         },
       ),
     ),
@@ -1410,19 +1450,28 @@ class _VisitContextCell extends StatelessWidget {
 }
 
 class _NextActionCell extends StatelessWidget {
-  const _NextActionCell({required this.patient, required this.onPressed});
+  const _NextActionCell({
+    required this.patient,
+    required this.onCompleteRecord,
+  });
 
   final Patient patient;
-  final VoidCallback onPressed;
+  final VoidCallback onCompleteRecord;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    // Complete records: label-only guidance — row select opens the detail.
+    // Incomplete: sole next-action control opens the edit form directly.
     if (!patient.requiresCompletion) {
-      return AppButton.tertiary(
-        label: l10n.patientsOpenRecordAction,
-        leadingIcon: Icons.open_in_new,
-        onPressed: onPressed,
+      return Text(
+        l10n.patientsOpenRecordAction,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       );
     }
 
@@ -1430,12 +1479,23 @@ class _NextActionCell extends StatelessWidget {
       requirement: const AccessRequirement(
         allPermissions: <AppPermission>[AppPermissions.patientWrite],
       ),
-      builder: (_, bool isAllowed) => AppButton.secondary(
-        label: l10n.patientsCompleteRecordAction,
-        leadingIcon: Icons.edit_note_outlined,
-        enabled: isAllowed,
-        onPressed: isAllowed ? onPressed : null,
-      ),
+      builder: (_, bool isAllowed) {
+        if (!isAllowed) {
+          return Text(
+            l10n.patientsCompleteRecordAction,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          );
+        }
+        return AppButton.secondary(
+          label: l10n.patientsCompleteRecordAction,
+          leadingIcon: Icons.edit_note_outlined,
+          onPressed: onCompleteRecord,
+        );
+      },
     );
   }
 }

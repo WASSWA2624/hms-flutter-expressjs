@@ -1,2 +1,2 @@
 export '../pages/patient_registry_page.dart'
-    show PatientDetailDialog, showPatientDetailDialog;
+    show PatientDetailDialog, showPatientDetailDialog, showPatientEditDialog;
