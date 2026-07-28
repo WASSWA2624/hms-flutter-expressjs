@@ -72,6 +72,8 @@ void main() {
       await tester.enterText(find.byType(EditableText).at(1), '123456');
       await tester.enterText(find.byType(EditableText).at(2), 'NewPass12');
       await tester.enterText(find.byType(EditableText).at(3), 'NewPass12');
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pump();
       await tester.tap(find.text(l10n.authResetPasswordActionLabel));
       await tester.pump();
       await tester.pumpAndSettle();
@@ -109,6 +111,7 @@ void main() {
 
       await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
       await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
+      tester.view.viewInsets = FakeViewPadding.zero;
       await tester.tap(find.text(l10n.authResetPasswordActionLabel));
       await tester.pump();
       await tester.pumpAndSettle();
@@ -155,6 +158,7 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'NewPass12');
     await tester.enterText(find.byType(EditableText).at(1), 'NewPass12');
+    tester.view.viewInsets = FakeViewPadding.zero;
     await tester.tap(find.text(l10n.authResetPasswordActionLabel));
     await tester.pump();
     await tester.pumpAndSettle();
@@ -198,7 +202,7 @@ void main() {
       tester,
       _ResetPasswordRepository(),
       theme: AppTheme.dark,
-      size: const Size(320, 640),
+      size: const Size(320, 900),
     );
 
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
@@ -215,12 +219,14 @@ Future<void> _pumpResetPassword(
   AuthRepository repository, {
   String location = '/reset-password',
   ThemeData? theme,
-  Size size = const Size(1200, 800),
+  Size size = const Size(1200, 1400),
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
+  tester.view.viewInsets = FakeViewPadding.zero;
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetViewInsets);
 
   final GoRouter router = GoRouter(
     initialLocation: location,
