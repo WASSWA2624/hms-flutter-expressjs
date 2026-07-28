@@ -1,44 +1,45 @@
-# Tighten Add Diagnosis Transfer Pane Density
+# Simplify Add Diagnosis Transfer UX
 
-Make `ClinicalDiagnosisActionDialog` transfer panes denser: compact search, tighter select column, fuller diagnosis text, and less row padding. Keep borderless diagnosis-type radios. Inventory: `screens/clinical.md`. Follow `prompts/.cursor/prompt.mdc`.
+Polish `ClinicalDiagnosisActionDialog` for simpler transfer UX: matched toolbar heights, searchable selected pane, clearer action labels, row-click toggle, no name-column sort chrome, and a more compact diagnosis-type row. Inventory: `screens/clinical.md`. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Context
 
-Opened from `/clinical` encounter **Add diagnosis**. Diagnosis-type radios are acceptable. Remaining issues: available-pane search field is too tall; transfer action still reads **Add**; select/checkbox column remains wider than the control; name/subtitle truncate despite spare width; table rows use excess vertical padding vs content. Apply the same density treatment to available and selected panes.
+Opened from `/clinical` encounter **Add diagnosis**. Density improved, but: transfer action height does not match the search field; selected pane shows **N selected** without search and places **Deselect** outside search chrome; Name column still shows sort affordance; checking a diagnosis requires the checkbox only; action labels (**Add selections** / **Deselect**) are unclear; diagnosis-type radios still consume excess vertical space. Keep the two-pane transfer model and submit flow.
 
-**Select column:** leftmost checkbox column sized to the checkbox only (no spare horizontal slack).
+**Row-click toggle:** clicking the diagnosis name/row (not only the checkbox) toggles that row’s checked state on the same pane.
 
 ## Requirements
 
-1. Keep diagnosis-type radios borderless (Primary / Secondary / Differential); no visual redesign of that control.
-2. Compact the available-pane search field so its height aligns with the adjacent transfer action (dense/compact field chrome, not a tall labeled stack that dwarfs the button).
-3. Relabel the available transfer action to **Add selections** (keep current `+` / add icon; do not require a right-arrow icon).
-4. Shrink the select/checkbox column on both panes to checkbox-only width; header and row checkboxes stay vertically aligned on one line.
-5. Give the Name column the remaining pane width so diagnosis title and detail subtitle (code | category | …) are fully readable without unnecessary ellipsis when space allows; wrap or multi-line only if needed to avoid clipping.
-6. Reduce table row and header vertical padding/density on both panes so rows are content-tight while remaining tappable and readable.
-7. Apply the same select-column, name-visibility, and row-density treatment to the selected pane (count + **Deselect** unchanged in behavior).
-8. Preserve Cancel / **Add diagnosis**, default type Primary, catalog search/load/retry, Add selections / Deselect transfer rules, caller write gate, loading/empty/error/success, theme tokens, and responsive stacking.
+1. Match available-pane transfer action height to the dense search field so search and action share one compact toolbar row.
+2. Relabel available transfer action to **Add selected diagnosis** (keep `+` / add icon).
+3. On the selected pane, replace the **N selected** count chrome with a dense search field that filters the selected list client-side; place **Remove selected diagnosis** as the search-row trailing action (same pattern as available).
+4. Relabel the selected transfer action from **Deselect** to **Remove selected diagnosis** (keep remove icon).
+5. Remove Name-column sort affordance/chrome on both panes (no sort arrow or sort underline); keep name + subtitle display.
+6. Enable row-click toggle on both panes: clicking the diagnosis content toggles the row checkbox; checkbox clicks keep working; multi-check then transfer unchanged.
+7. Compact the diagnosis-type block (Primary / Secondary / Differential): reduce vertical gap/padding so it is a single tight control row while staying borderless and readable.
+8. Keep overall chrome simple: no new panels, titles, or match-count banners; preserve Cancel / **Add diagnosis**, default Primary, catalog search/load/retry, transfer rules, caller write gate, loading/empty/error/success, theme tokens, and responsive stacking.
 
 ## Constraints
 
-- Reuse `ClinicalDiagnosisActionDialog`, `AppListTable`, and existing theme tokens; extend shared table/field density only if required for checkbox-tight columns or compact rows in this dialog.
+- Reuse `ClinicalDiagnosisActionDialog`, `AppListTable`, `AppTextField`, and theme tokens; extend shared pieces only if required for equal toolbar height, disabling name sort, or row-click toggle.
 - No diagnosis-type semantics, catalog source, or submit-contract changes; no unrelated clinical refactors.
 - Unauthorized UI remains absent via the existing caller write gate.
 
 ## Acceptance Criteria
 
-- Diagnosis-type radios unchanged in presentation from current borderless style (1).
-- Search height matches the transfer action row; no oversized search stack (2).
-- Available action label is **Add selections** with add icon (3).
-- Select column is checkbox-tight on both panes; Name uses remaining width with readable details (4–5, 7).
-- Row/header vertical density is content-tight on both panes (6–7).
-- Transfer, submit, empty, error, retry, and success behavior still work (8).
-- Update dialog tests for the new action label and column density; manually verify light/dark on mobile, tablet, and desktop.
+- Available search and **Add selected diagnosis** share equal toolbar height (1–2).
+- Selected pane has dense search + **Remove selected diagnosis**; **N selected** is gone (3–4).
+- Name columns show no sort affordance (5).
+- Clicking diagnosis text/row toggles check on both panes; transfer still multi-select (6).
+- Diagnosis-type row uses less vertical space and stays borderless (7).
+- Dialog remains simple; submit/empty/error/retry/success still work (8).
+- Update dialog tests for new labels, selected search, row-click toggle, and absent sort chrome; manually verify light/dark on mobile, tablet, and desktop.
 
 ## Relevant Files
 
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_text_field.dart`
 - `frontend/lib/l10n/app_en.arb`
 - `screens/clinical.md`
 - `frontend/test/shared/clinical_actions/clinical_diagnosis_action_dialog_test.dart`
