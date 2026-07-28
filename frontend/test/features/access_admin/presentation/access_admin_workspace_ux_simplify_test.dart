@@ -93,6 +93,21 @@ void main() {
       expect(pageSource.contains('accessAdminMobileNextAction'), isTrue);
       expect(pageSource.contains('trailing: accessAdminMobileNextAction'), isTrue);
     });
+
+    test('edit role does not auto-reopen detail after success', () {
+      final int onRoleEditStart = pageSource.indexOf('onRoleEdit:');
+      expect(onRoleEditStart, greaterThanOrEqualTo(0));
+      final String onRoleEditBlock = pageSource.substring(
+        onRoleEditStart,
+        pageSource.indexOf('onShowFailure:', onRoleEditStart),
+      );
+      expect(onRoleEditBlock.contains('openAccessAdminEditRoleDialog'), isTrue);
+      expect(
+        onRoleEditBlock.contains('_openDetailDialog'),
+        isFalse,
+        reason: 'Post-edit detail reopen only restated the result',
+      );
+    });
   });
 
   group('accessAdminMobileNextAction', () {

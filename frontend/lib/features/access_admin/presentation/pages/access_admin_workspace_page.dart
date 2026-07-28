@@ -206,18 +206,11 @@ class _AccessAdminWorkspaceContentState
                   unawaited(_openDetailDialog(context, item, canWrite));
                 },
                 onRoleEdit: (AccessAdminItem role) {
-                  unawaited(() async {
-                    final AccessAdminItem? updated =
-                        await openAccessAdminEditRoleDialog(
-                      context,
-                      ref,
-                      state,
-                      role,
-                    );
-                    if (updated != null && context.mounted) {
-                      await _openDetailDialog(context, updated, canWrite);
-                    }
-                  }());
+                  // Edit completes in the shared dialog; do not reopen detail
+                  // (that only restated the result and required an extra Close).
+                  unawaited(
+                    openAccessAdminEditRoleDialog(context, ref, state, role),
+                  );
                 },
                 onShowFailure: (AppFailure failure) {
                   _showSnack(context, context.l10n.failureMessage(failure));

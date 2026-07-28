@@ -126,6 +126,8 @@ class NursingWorklistPanel extends ConsumerWidget {
             if (subtitle.isNotEmpty)
               AppListTableMobileMeta(label: subtitle),
           ],
+          // Same stage write as the desktop next-action column (sole primary).
+          trailing: NursingNextActionCell(item: item, scope: scope),
         );
       },
     );

@@ -20,6 +20,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Detail **Activate / Deactivate** vs row status next-action | Toggle user status | **Removed** from detail — row next-action is the sole status entry |
 | Detail **Activate registration** vs row next-action | Activate registration | **Removed** from detail — row next-action is the sole activate entry; **Reject** stays on detail |
 | Mobile list without next-action trailing (after detail merge) | Status / edit / activate | **Fixed** — `accessAdminMobileNextAction` on `AppListTableMobileItem.trailing` mirrors desktop `next_action` |
+| Post-edit **role detail auto-reopen** | View role after edit | **Removed** — edit ends on the synced worklist; open detail via row select when needed |
 
 ---
 
@@ -90,7 +91,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 - **Edit role** (next-action)
   - Location: `next_action` column; mobile `AppListTableMobileItem.trailing` via `accessAdminMobileNextAction`.
   - Opens modal: Yes — shared edit-role dialog.
-  - Immediate result: Updates role identity/scope; on success reopens role detail.
+  - Immediate result: Updates role identity/scope; worklist syncs (no auto detail reopen).
   - Condition: `canWrite` and role is not system-critical.
 
 ### Registrations
@@ -144,9 +145,9 @@ Permissions and entitlements details are read-only summaries (no write next-acti
 
 ## Manual checks (Req 7)
 
-- **Duplicates gone**: Overview and Refresh absent from the tab strip on desktop/mobile and light/dark; detail has no Activate/Deactivate, Edit role, or Activate registration.
+- **Duplicates gone**: Overview and Refresh absent from the tab strip on desktop/mobile and light/dark; detail has no Activate/Deactivate, Edit role, or Activate registration; Edit role does not auto-reopen detail.
 - **Merged entry points**: Create user uses the shared mutation dialog (tenant/facility scope + similarity); Create role / Edit role use shared role dialogs.
-- **Authorized minimal paths**: With `canWrite`, Create user/role appear as tab primary; status / edit / activate appear as row next-actions (desktop column + mobile trailing) only; Delete role and Reject registration remain on detail.
+- **Authorized minimal paths**: With `canWrite`, Create user/role appear as tab primary; status / edit / activate appear as row next-actions (desktop column + mobile trailing) only; Delete role and Reject registration remain on detail; Edit role returns to the worklist.
 - **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
 

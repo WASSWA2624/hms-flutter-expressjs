@@ -42,56 +42,92 @@ void main() {
     });
   });
 
-  group('nursingPrimaryActionLabel / nursingPrimaryActionIcon', () {
+  group('nursingResolveNextActionKind / label', () {
     late AppLocalizations l10n;
 
     setUpAll(() async {
       l10n = await AppLocalizations.delegate.load(const Locale('en'));
     });
 
-    test('returns contextual labels per scope', () {
+    const NursingPatientSummary routine = NursingPatientSummary(
+      id: 'adm-1',
+      admissionId: 'adm-1',
+      displayId: 'ADM-1',
+      patientDisplayName: 'Routine',
+      stage: 'ADMITTED_IN_BED',
+      admissionStatus: 'ADMITTED_IN_BED',
+    );
+
+    const NursingPatientSummary medDue = NursingPatientSummary(
+      id: 'adm-2',
+      admissionId: 'adm-2',
+      displayId: 'ADM-2',
+      patientDisplayName: 'Med Due',
+      stage: 'ADMITTED_IN_BED',
+      admissionStatus: 'ADMITTED_IN_BED',
+      medicationDueCount: 1,
+      taskTypeCode: 'MEDICATION_DUE',
+    );
+
+    const NursingPatientSummary urgent = NursingPatientSummary(
+      id: 'adm-3',
+      admissionId: 'adm-3',
+      displayId: 'ADM-3',
+      patientDisplayName: 'Urgent',
+      stage: 'ADMITTED_IN_BED',
+      admissionStatus: 'ADMITTED_IN_BED',
+      hasCriticalAlert: true,
+    );
+
+    test('resolves one primary next-action per scope and row', () {
       expect(
-        nursingPrimaryActionLabel(l10n, NursingQueueScope.all),
+        nursingResolveNextActionKind(routine, NursingQueueScope.all),
+        NursingNextActionKind.vitals,
+      );
+      expect(
+        nursingResolveNextActionLabel(l10n, routine, NursingQueueScope.all),
         l10n.nursingActionRecordVitals,
       );
       expect(
-        nursingPrimaryActionLabel(l10n, NursingQueueScope.medicationDue),
+        nursingResolveNextActionKind(medDue, NursingQueueScope.medicationDue),
+        NursingNextActionKind.medication,
+      );
+      expect(
+        nursingResolveNextActionLabel(
+          l10n,
+          medDue,
+          NursingQueueScope.medicationDue,
+        ),
         l10n.nursingActionAdministerMedication,
       );
       expect(
-        nursingPrimaryActionLabel(l10n, NursingQueueScope.handoverPending),
-        l10n.nursingActionCreateHandover,
+        nursingResolveNextActionKind(urgent, NursingQueueScope.urgent),
+        NursingNextActionKind.escalate,
       );
       expect(
-        nursingPrimaryActionLabel(l10n, NursingQueueScope.transferPending),
-        l10n.nursingActionAcknowledgeTransfer,
+        nursingResolveNextActionLabel(l10n, urgent, NursingQueueScope.urgent),
+        l10n.nursingActionEscalate,
       );
       expect(
-        nursingPrimaryActionLabel(l10n, NursingQueueScope.dischargePending),
-        l10n.nursingActionDischargeClearance,
-      );
-    });
-
-    test('returns contextual icons per scope', () {
-      expect(
-        nursingPrimaryActionIcon(NursingQueueScope.all),
-        Icons.monitor_heart_outlined,
+        nursingResolveNextActionKind(
+          routine,
+          NursingQueueScope.handoverPending,
+        ),
+        NursingNextActionKind.handover,
       );
       expect(
-        nursingPrimaryActionIcon(NursingQueueScope.medicationDue),
-        Icons.medication_outlined,
+        nursingResolveNextActionKind(
+          routine,
+          NursingQueueScope.transferPending,
+        ),
+        NursingNextActionKind.transfer,
       );
       expect(
-        nursingPrimaryActionIcon(NursingQueueScope.handoverPending),
-        Icons.swap_horiz_outlined,
-      );
-      expect(
-        nursingPrimaryActionIcon(NursingQueueScope.transferPending),
-        Icons.transfer_within_a_station_outlined,
-      );
-      expect(
-        nursingPrimaryActionIcon(NursingQueueScope.dischargePending),
-        Icons.fact_check_outlined,
+        nursingResolveNextActionKind(
+          routine,
+          NursingQueueScope.dischargePending,
+        ),
+        NursingNextActionKind.discharge,
       );
     });
   });

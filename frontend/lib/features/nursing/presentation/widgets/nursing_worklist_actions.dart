@@ -151,9 +151,11 @@ class NursingNextActionCell extends ConsumerWidget {
     final String label = nursingResolveNextActionLabel(l10n, item, scope);
     final IconData icon = nursingResolveNextActionIcon(item, scope);
 
+    // hideWhenDenied (default): unauthorized next-action does not render.
     return AppAccessActionGate(
       requirement: nursingWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
+        void onPressed() => nursingExecuteRowAction(context, ref, item, scope);
         if (compact) {
           return AppButton(
             iconOnly: true,
@@ -161,20 +163,14 @@ class NursingNextActionCell extends ConsumerWidget {
             label: label,
             tooltip: label,
             semanticLabel: label,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => nursingExecuteRowAction(context, ref, item, scope)
-                : null,
+            onPressed: isAllowed ? onPressed : null,
           );
         }
         return AppButton.tertiary(
           label: label,
           leadingIcon: icon,
-          enabled: isAllowed,
           tooltip: label,
-          onPressed: isAllowed
-              ? () => nursingExecuteRowAction(context, ref, item, scope)
-              : null,
+          onPressed: isAllowed ? onPressed : null,
         );
       },
     );

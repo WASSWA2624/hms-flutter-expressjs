@@ -39,30 +39,6 @@ NursingQueueScope? nursingScopeFromQueryValue(String? raw) {
   };
 }
 
-String nursingPrimaryActionLabel(
-  AppLocalizations l10n,
-  NursingQueueScope scope,
-) {
-  return switch (scope) {
-    NursingQueueScope.medicationDue => l10n.nursingActionAdministerMedication,
-    NursingQueueScope.handoverPending => l10n.nursingActionCreateHandover,
-    NursingQueueScope.transferPending => l10n.nursingActionAcknowledgeTransfer,
-    NursingQueueScope.dischargePending => l10n.nursingActionDischargeClearance,
-    _ => l10n.nursingActionRecordVitals,
-  };
-}
-
-IconData nursingPrimaryActionIcon(NursingQueueScope scope) {
-  return switch (scope) {
-    NursingQueueScope.medicationDue => Icons.medication_outlined,
-    NursingQueueScope.handoverPending => Icons.swap_horiz_outlined,
-    NursingQueueScope.transferPending =>
-      Icons.transfer_within_a_station_outlined,
-    NursingQueueScope.dischargePending => Icons.fact_check_outlined,
-    _ => Icons.monitor_heart_outlined,
-  };
-}
-
 int? _tabCountOrNull(int value) => value > 0 ? value : null;
 
 List<AppTabItem> nursingTabItems(

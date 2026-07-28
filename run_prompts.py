@@ -27,7 +27,9 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = Path(__file__).parent
 STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
 # How many prompt agents may run in parallel against the shared workspace.
-MAX_CONCURRENCY = 5
+# Keep this modest: agents share one working tree and high fan-out causes
+# frequent non-finished agent statuses under load.
+MAX_CONCURRENCY = 3
 MAX_ATTEMPTS = 3
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
@@ -113,18 +115,10 @@ def _run_git(args: list[str], *, check: bool = True) -> subprocess.CompletedProc
     )
 
 
-def _git_has_changes() -> bool:
+def _git_has_staged_changes() -> bool:
+    """True when the index has staged changes ready to commit."""
     staged = _run_git(["diff", "--cached", "--quiet"], check=False)
-    unstaged = _run_git(["diff", "--quiet"], check=False)
-    untracked = _run_git(
-        ["ls-files", "--others", "--exclude-standard"],
-        check=True,
-    )
-    return (
-        staged.returncode != 0
-        or unstaged.returncode != 0
-        or bool(untracked.stdout.strip())
-    )
+    return staged.returncode != 0
 
 
 def _commit_and_push(prompt_key: str) -> dict:
@@ -133,8 +127,21 @@ def _commit_and_push(prompt_key: str) -> dict:
     for exclude in GIT_EXCLUDES:
         _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
 
-    if not _git_has_changes():
-        print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+    # Only staged changes can be committed. Untracked leftovers from another
+    # concurrent agent (or ignore rules) must not fail this prompt's git step.
+    if not _git_has_staged_changes():
+        leftover = _run_git(
+            ["ls-files", "--others", "--exclude-standard"],
+            check=True,
+        ).stdout.strip()
+        if leftover:
+            print(
+                f"[GIT] {prompt_key}: no staged changes "
+                f"(untracked still present; skipped commit)",
+                flush=True,
+            )
+        else:
+            print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
         return {"committed": False, "pushed": False}
 
     message = f"Apply prompt: {prompt_key}"
@@ -142,6 +149,10 @@ def _commit_and_push(prompt_key: str) -> dict:
         _run_git(["commit", "-m", message])
     except subprocess.CalledProcessError as err:
         detail = (err.stderr or err.stdout or str(err)).strip()
+        # Race with another prompt: index emptied between staging and commit.
+        if "nothing to commit" in detail.lower():
+            print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+            return {"committed": False, "pushed": False}
         raise RuntimeError(f"git commit failed: {detail}") from err
 
     print(f"[GIT] {prompt_key}: committed", flush=True)
@@ -189,7 +200,32 @@ async def run_prompt(
                 status = result.status
                 print(f"[{status.upper()}] {key}", flush=True)
                 if status != "finished":
-                    return {"file": key, "status": status}
+                    last_error = f"agent status={status}"
+                    result_id = getattr(result, "id", None)
+                    if result_id:
+                        last_error = f"{last_error} run={result_id}"
+                    # Agent crashes / cancelled runs are often transient under
+                    # high concurrency — retry like other retryable failures.
+                    if attempt < MAX_ATTEMPTS:
+                        wait_s = 2 ** (attempt - 1)
+                        print(
+                            f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
+                            f"{last_error} (sleep {wait_s}s)",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        await asyncio.sleep(wait_s)
+                        continue
+                    print(
+                        f"[ERROR] {key}: {last_error}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    return {
+                        "file": key,
+                        "status": "error",
+                        "message": last_error,
+                    }
 
                 async with git_lock:
                     git_info = await asyncio.to_thread(_commit_and_push, key)
