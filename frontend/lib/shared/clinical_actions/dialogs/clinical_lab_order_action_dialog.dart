@@ -67,7 +67,7 @@ final class _PendingLabRequest {
 }
 
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
-  final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
+  List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
   final Set<String> _selectedRequestKeys = <String>{};
   ClinicalRequestBillingSubmit? _billingSubmit;
   bool _isSaving = false;
@@ -110,6 +110,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                     patientContext: widget.patientContext,
                   ),
             removeSelectedDestructive: true,
+            addItemsLabel: l10n.clinicalLabRequestAddPanelsAction,
             onAddItems: _openCatalogPicker,
             onRemoveSelected: _selectedRequestKeys.isEmpty
                 ? null
@@ -210,10 +211,8 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     }
     setState(() {
       _failure = null;
-      _requests
-        ..clear()
-        ..addAll(
-          confirmed.map(
+      _requests = confirmed
+          .map(
             (ClinicalLabRequestCatalogSelection selection) =>
                 _PendingLabRequest(
                   kind: selection.kind == ClinicalLabRequestCatalogKind.tests
@@ -221,8 +220,8 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                       : _LabRequestSelectionKind.panels,
                   option: selection.option,
                 ),
-          ),
-        );
+          )
+          .toList(growable: true);
       _pruneSelection();
     });
   }
@@ -362,7 +361,10 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     }
     final String removedKey = _requestKey(_requests[index]);
     setState(() {
-      _requests.removeAt(index);
+      _requests = <_PendingLabRequest>[
+        for (int i = 0; i < _requests.length; i++)
+          if (i != index) _requests[i],
+      ];
       _selectedRequestKeys.remove(removedKey);
       _failure = null;
     });
@@ -373,10 +375,12 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       return;
     }
     setState(() {
-      _requests.removeWhere(
-        (_PendingLabRequest request) =>
-            _selectedRequestKeys.contains(_requestKey(request)),
-      );
+      _requests = _requests
+          .where(
+            (_PendingLabRequest request) =>
+                !_selectedRequestKeys.contains(_requestKey(request)),
+          )
+          .toList(growable: true);
       _selectedRequestKeys.clear();
       _failure = null;
     });

@@ -459,25 +459,40 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: AppListTable<T>(
+        // Force a fresh table state whenever the selection identity changes so
+        // sort/visibility caches cannot keep an empty body after confirm.
+        key: ObjectKey(items),
         items: items,
         displayMode: AppListTableDisplayMode.table,
         tableHorizontalMargin: theme.spacing.sm,
+        showRowNumbers: false,
+        padEmptyRows: false,
+        forceCompact: true,
+        enableColumnResize: false,
         itemKeyBuilder: (T item) => ValueKey<String>(itemKey(item)),
+        onRowSelected: enabled
+            ? (T item) {
+                final String key = itemKey(item);
+                _toggleKey(key, !selectedKeys.contains(key));
+              }
+            : null,
         columns: _columns(context),
-        emptyBuilder: (BuildContext context) {
-          return Padding(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: Center(
-              child: Text(
-                emptyLabel,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-        },
+        emptyBuilder: items.isEmpty
+            ? (BuildContext context) {
+                return Padding(
+                  padding: EdgeInsets.all(theme.spacing.lg),
+                  child: Center(
+                    child: Text(
+                      emptyLabel,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              }
+            : null,
         footer: items.isEmpty
             ? null
             : _ClinicalRequestCatalogTableTotalFooter(
@@ -494,19 +509,32 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              AppListTableMobileItem(
-                title: nameLabel(item),
-                caption: typeLabel(item),
-                meta: <AppListTableMobileMeta>[
-                  AppListTableMobileMeta(
-                    label: clinicalRequestCatalogPriceLabel(
-                      context,
-                      optionFor(item),
+              InkWell(
+                onTap: enabled
+                    ? () => _toggleKey(key, !selectedKeys.contains(key))
+                    : null,
+                child: AppListTableMobileItem(
+                  leading: IgnorePointer(
+                    child: Checkbox(
+                      value: selectedKeys.contains(key),
+                      onChanged: (_) {},
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    icon: Icons.payments_outlined,
                   ),
-                ],
-                showAvatar: false,
+                  title: nameLabel(item),
+                  caption: typeLabel(item),
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: clinicalRequestCatalogPriceLabel(
+                        context,
+                        optionFor(item),
+                      ),
+                      icon: Icons.payments_outlined,
+                    ),
+                  ],
+                  showAvatar: false,
+                ),
               ),
               Padding(
                 padding: EdgeInsets.only(
@@ -514,21 +542,10 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
                   right: theme.spacing.sm,
                   bottom: theme.spacing.sm,
                 ),
-                child: Row(
-                  children: <Widget>[
-                    Checkbox(
-                      value: selectedKeys.contains(key),
-                      onChanged: enabled
-                          ? (bool? value) => _toggleKey(key, value ?? false)
-                          : null,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    _ClinicalRequestRemoveItemButton(
-                      label: l10n.clinicalRequestRemoveItemAction,
-                      enabled: enabled,
-                      onPressed: enabled ? () => onDeleteItem(item) : null,
-                    ),
-                  ],
+                child: _ClinicalRequestRemoveItemButton(
+                  label: l10n.clinicalRequestRemoveItemAction,
+                  enabled: enabled,
+                  onPressed: enabled ? () => onDeleteItem(item) : null,
                 ),
               ),
             ],
@@ -541,41 +558,41 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
   List<AppListTableColumn<T>> _columns(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
+    // No sortComparators: selected-request tables must always render the live
+    // list. Default sorting + cached sorted rows previously kept an empty body
+    // while the Total footer (driven by [items]) still updated.
     return <AppListTableColumn<T>>[
       _selectionColumn(context),
       AppListTableColumn<T>(
         id: _selectedCatalogNameColumnKey,
         label: l10n.clinicalRequestSelectedNameColumnLabel,
-        sortComparator: (T left, T right) =>
-            appListTableCompareText(nameLabel(left), nameLabel(right)),
         cellBuilder: (BuildContext context, T item) {
-          return Text(nameLabel(item));
+          return Text(
+            nameLabel(item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
         },
       ),
       AppListTableColumn<T>(
         id: _selectedCatalogTypeColumnKey,
         label: l10n.clinicalRequestSelectedTypeColumnLabel,
-        sortComparator: (T left, T right) =>
-            appListTableCompareText(typeLabel(left), typeLabel(right)),
         cellBuilder: (BuildContext context, T item) {
-          return Text(typeLabel(item));
+          return Text(
+            typeLabel(item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
         },
       ),
       AppListTableColumn<T>(
         id: _selectedCatalogPriceColumnKey,
         label: l10n.clinicalRequestSelectedPriceColumnLabel,
-        sortComparator: (T left, T right) {
-          final num? leftPrice = clinicalCatalogOptionUnitPrice(
-            optionFor(left),
-          );
-          final num? rightPrice = clinicalCatalogOptionUnitPrice(
-            optionFor(right),
-          );
-          return (leftPrice ?? 0).compareTo(rightPrice ?? 0);
-        },
         cellBuilder: (BuildContext context, T item) {
           return Text(
             clinicalRequestCatalogPriceLabel(context, optionFor(item)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           );
         },
       ),
@@ -583,6 +600,7 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         id: _selectedCatalogActionsColumnKey,
         label: l10n.clinicalRequestSelectedActionsColumnLabel,
         alwaysVisible: true,
+        fixedWidth: 120,
         cellBuilder: (BuildContext context, T item) {
           return _ClinicalRequestRemoveItemButton(
             label: l10n.clinicalRequestRemoveItemAction,
@@ -599,6 +617,7 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
       id: _selectedCatalogSelectColumnKey,
       label: '',
       alwaysVisible: true,
+      fixedWidth: 40,
       headerBuilder: (BuildContext context) {
         final bool allSelected =
             items.isNotEmpty &&
@@ -606,27 +625,33 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         final bool someSelected = items.any(
           (T item) => selectedKeys.contains(itemKey(item)),
         );
-        return Checkbox(
-          tristate: true,
-          value: allSelected
-              ? true
-              : someSelected
-              ? null
-              : false,
-          onChanged: !enabled || items.isEmpty
-              ? null
-              : (bool? checked) => _toggleAll(checked ?? false),
-          visualDensity: VisualDensity.compact,
+        return Center(
+          child: Checkbox(
+            tristate: true,
+            value: allSelected
+                ? true
+                : someSelected
+                ? null
+                : false,
+            onChanged: !enabled || items.isEmpty
+                ? null
+                : (bool? checked) => _toggleAll(checked ?? false),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         );
       },
       cellBuilder: (BuildContext context, T item) {
         final String key = itemKey(item);
-        return Checkbox(
-          value: selectedKeys.contains(key),
-          onChanged: enabled
-              ? (bool? value) => _toggleKey(key, value ?? false)
-              : null,
-          visualDensity: VisualDensity.compact,
+        return Center(
+          child: IgnorePointer(
+            child: Checkbox(
+              value: selectedKeys.contains(key),
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
         );
       },
     );
@@ -651,7 +676,7 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
   }
 }
 
-const double _catalogTableRowNumberWidth = 48;
+const double _catalogTableSelectColumnWidth = 40;
 const double _catalogTableActionsColumnWidth = 120;
 
 /// Footer row aligned with [AppListTable] price and actions columns.
@@ -691,8 +716,7 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
           dataRowMinHeight: 40,
           dataRowMaxHeight: 48,
           columns: const <DataColumn>[
-            DataColumn(label: SizedBox(width: _catalogTableRowNumberWidth)),
-            DataColumn(label: SizedBox(width: 48)),
+            DataColumn(label: SizedBox(width: _catalogTableSelectColumnWidth)),
             DataColumn(label: SizedBox()),
             DataColumn(label: SizedBox()),
             DataColumn(label: SizedBox()),
@@ -701,8 +725,7 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
           rows: <DataRow>[
             DataRow(
               cells: <DataCell>[
-                const DataCell(SizedBox(width: _catalogTableRowNumberWidth)),
-                const DataCell(SizedBox(width: 48)),
+                const DataCell(SizedBox(width: _catalogTableSelectColumnWidth)),
                 DataCell(Text(totalLabel, style: totalLabelStyle)),
                 const DataCell(SizedBox.shrink()),
                 DataCell(Text(amountLabel, style: totalAmountStyle)),

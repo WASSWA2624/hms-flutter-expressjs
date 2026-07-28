@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -5,7 +7,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
@@ -36,24 +37,44 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
 }
 
 class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  static const String _columnVisibilityStorageKey =
+      'clinical_prescription_selected_medicines_columns';
+  static const String _selectColumnKey = 'select';
+  static const String _medicineColumnKey = 'medicine';
+  static const String _doseColumnKey = 'dose';
+  static const String _sigColumnKey = 'sig';
+  static const String _quantityColumnKey = 'quantity';
+  static const String _durationColumnKey = 'duration';
+  static const String _instructionsColumnKey = 'instructions';
+  static const String _priceColumnKey = 'price';
+  static const String _actionsColumnKey = 'actions';
+  static const String _routeFilterKey = 'route';
+  static const String _frequencyFilterKey = 'frequency';
+
   final List<_PrescriptionLineFormState> _lines =
       <_PrescriptionLineFormState>[];
+  final Set<String> _selectedLineKeys = <String>{};
+  late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<_PrescriptionLineFormState>
+  _columnVisibilityController;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   int _nextLineId = 0;
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
-  ClinicalRequestPaymentMode _dispenseBillingMode =
-      ClinicalRequestPaymentMode.billLater;
-  String? _focusedLineId;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<_PrescriptionLineFormState>();
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _columnVisibilityController.dispose();
     for (final _PrescriptionLineFormState line in _lines) {
       line.dispose();
     }
@@ -64,82 +85,140 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<ClinicalRequestBillingLineItem> lineItems =
-        _prescriptionBillingLineItems();
+    final List<_PrescriptionLineFormState> visibleLines = _lines
+        .where(_matchesOptionFilters)
+        .toList(growable: false);
+    final List<AppListTableColumn<_PrescriptionLineFormState>> defaultColumns =
+        _defaultColumns(context);
+    final List<AppListTableColumn<_PrescriptionLineFormState>> columnChoices =
+        _columnChoices(context);
 
     return AppDialog(
       title: Text(l10n.clinicalPrescribeAction),
       icon: const Icon(Icons.medication_outlined),
-      maxWidth: 560,
+      maxWidth: 880,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      content: SizedBox(
-        height: (MediaQuery.sizeOf(context).height * 0.5).clamp(360.0, 520.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_failure != null)
-                AppFormInformationBanner.failure(
-                  context: context,
-                  failure: _failure!,
-                ),
-              Text(
-                l10n.clinicalRequestMainPanelHelp,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: theme.spacing.md),
-              ClinicalRequestFlowToolbar(
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
+          Expanded(
+            child: AppListTable<_PrescriptionLineFormState>(
+              items: visibleLines,
+              columns: defaultColumns,
+              columnChoices: columnChoices,
+              columnVisibilityController: _columnVisibilityController,
+              columnVisibilityStorageKey: _columnVisibilityStorageKey,
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle: l10n.clinicalPrescriptionColumnsTitle,
+              columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+              columnVisibilityResetLabel: l10n.labResetColumnsAction,
+              displayMode: AppListTableDisplayMode.table,
+              tableHorizontalMargin: theme.spacing.sm,
+              showRowNumbers: false,
+              itemKeyBuilder: (_PrescriptionLineFormState line) =>
+                  ValueKey<String>(_lineKey(line)),
+              search: AppListTableSearch<_PrescriptionLineFormState>(
+                controller: _searchController,
+                semanticLabel: l10n.clinicalPrescriptionSearchLabel,
+                hintText: l10n.clinicalPrescriptionSearchHint,
                 enabled: !_isSaving,
-                addItemsLabel: l10n.clinicalPrescriptionAddMedicineAction,
-                onAddItems: () => _openLineDialog(),
-                onReviewBilling:
-                    _dispenseBillingMode == ClinicalRequestPaymentMode.payNow &&
-                        lineItems.isNotEmpty
-                    ? _openBillingDialog
-                    : null,
+                matcher: _matchesSearch,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
+                advancedFilterTitle: l10n.clinicalFiltersLabel,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                enableDateFilter: false,
+                allFieldsLabel: l10n.labScopeAll,
+                filterGroups: _filterGroups(l10n),
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
+                trailingActions: _searchTrailingActions(l10n),
               ),
-              SizedBox(height: theme.spacing.sm),
-              SegmentedButton<ClinicalRequestPaymentMode>(
-                segments: <ButtonSegment<ClinicalRequestPaymentMode>>[
-                  ButtonSegment<ClinicalRequestPaymentMode>(
-                    value: ClinicalRequestPaymentMode.billLater,
-                    icon: const Icon(Icons.local_pharmacy_outlined),
-                    label: Text(l10n.radiologyPrescriptionBillOnDispenseLabel),
+              emptyBuilder: (BuildContext context) {
+                final bool hasQueryOrFilters =
+                    _searchController.text.trim().isNotEmpty ||
+                    _filterValue.isActive;
+                return Padding(
+                  padding: EdgeInsets.all(theme.spacing.lg),
+                  child: Center(
+                    child: Text(
+                      hasQueryOrFilters
+                          ? l10n.clinicalPrescriptionEmptySearchLabel
+                          : l10n.clinicalPrescriptionNoMedicinesLabel,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                  ButtonSegment<ClinicalRequestPaymentMode>(
-                    value: ClinicalRequestPaymentMode.payNow,
-                    icon: const Icon(Icons.payments_outlined),
-                    label: Text(l10n.radiologyPrescriptionPayAtPrescribeLabel),
-                  ),
-                ],
-                selected: <ClinicalRequestPaymentMode>{_dispenseBillingMode},
-                showSelectedIcon: false,
-                onSelectionChanged: _isSaving
-                    ? null
-                    : (Set<ClinicalRequestPaymentMode> values) {
-                        setState(() => _dispenseBillingMode = values.first);
-                      },
-              ),
-              if (_dispenseBillingMode ==
-                  ClinicalRequestPaymentMode.payNow) ...<Widget>[
-                SizedBox(height: theme.spacing.md),
-                ClinicalRequestFlowSummaryBar(
-                  itemCount: _lines
-                      .where((line) => line.drugId?.isNotEmpty ?? false)
-                      .length,
-                  lineItems: lineItems,
-                  billing: _billingSubmit,
-                ),
-              ],
-              SizedBox(height: theme.spacing.md),
-              Expanded(child: _buildSelectedLinesPanel(context)),
-            ],
+                );
+              },
+              mobileItemBuilder:
+                  (BuildContext context, _PrescriptionLineFormState line) {
+                    final String key = _lineKey(line);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        AppListTableMobileItem(
+                          title: _medicineName(line, l10n),
+                          caption: _doseLabel(line),
+                          meta: <AppListTableMobileMeta>[
+                            AppListTableMobileMeta(label: _sigLabel(line)),
+                            AppListTableMobileMeta(label: _quantityLabel(line)),
+                          ],
+                          showAvatar: false,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(
+                            left: theme.spacing.sm,
+                            right: theme.spacing.sm,
+                            bottom: theme.spacing.sm,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Checkbox(
+                                value: _selectedLineKeys.contains(key),
+                                onChanged: _isSaving
+                                    ? null
+                                    : (bool? value) =>
+                                          _toggleKey(key, value ?? false),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              AppButton.tertiary(
+                                label: l10n.clinicalPrescriptionEditLineDialogTitle,
+                                leadingIcon: Icons.edit_outlined,
+                                enabled: !_isSaving,
+                                onPressed: () => unawaited(
+                                  _openLineDialog(editIndex: _lineIndex(line)),
+                                ),
+                              ),
+                              AppButton.tertiary(
+                                label: l10n.clinicalRequestRemoveItemAction,
+                                leadingIcon: Icons.delete_outline,
+                                color: theme.colorScheme.error,
+                                enabled: !_isSaving,
+                                onPressed: () =>
+                                    unawaited(_confirmAndDeleteLine(line)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+            ),
           ),
-        ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -151,97 +230,417 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           label: l10n.clinicalPrescribeAction,
           leadingIcon: Icons.send_outlined,
           isLoading: _isSaving,
+          enabled: !_isSaving && _lines.isNotEmpty,
           onPressed: _submit,
         ),
       ],
     );
   }
 
-  Widget _buildSelectedLinesPanel(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final _PrescriptionLineFormState? focusedLine = _focusedLine();
-    final List<AppSelectOption<String>> options = <AppSelectOption<String>>[
-      for (final _PrescriptionLineFormState line in _lines)
-        AppSelectOption<String>(
-          value: line.id.toString(),
-          label:
-              clinicalActionCatalogDisplayLabelById(
-                widget.referenceData.drugs,
-                line.drugId,
-              ) ??
-              l10n.clinicalPrescriptionNoMedicinesLabel,
-          searchText: clinicalPrescriptionReadableSummary(
-            drugName: clinicalActionCatalogDisplayLabelById(
-              widget.referenceData.drugs,
-              line.drugId,
-            ),
-            quantity: line.quantityController.text.trim(),
-            quantityUnit: line.quantityUnit,
-            doseAmount: line.doseAmountController.text.trim(),
-            doseUnit: line.doseUnit,
-            route: line.route,
-            frequency: line.frequency,
-            durationValue: line.durationController.text.trim(),
-            durationUnit: line.durationUnit,
-            instructions: line.instructionsController.text.trim(),
-          ).toLowerCase(),
-          leadingIcon: const Icon(Icons.medication_outlined),
-          labelWidget: Text(
-            clinicalPrescriptionReadableSummary(
-              drugName: clinicalActionCatalogDisplayLabelById(
-                widget.referenceData.drugs,
-                line.drugId,
-              ),
-              quantity: line.quantityController.text.trim(),
-              quantityUnit: line.quantityUnit,
-              doseAmount: line.doseAmountController.text.trim(),
-              doseUnit: line.doseUnit,
-              route: line.route,
-              frequency: line.frequency,
-              durationValue: line.durationController.text.trim(),
-              durationUnit: line.durationUnit,
-              instructions: line.instructionsController.text.trim(),
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium,
-          ),
-        ),
+  List<AppSearchBarAction> _searchTrailingActions(AppLocalizations l10n) {
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.delete_outline,
+        label: l10n.clinicalRequestRemoveSelectedAction,
+        enabled: !_isSaving && _selectedLineKeys.isNotEmpty,
+        destructive: true,
+        onPressed: _selectedLineKeys.isEmpty || _isSaving
+            ? null
+            : () => unawaited(_confirmAndDeleteSelected()),
+      ),
+      AppSearchBarAction(
+        icon: Icons.add_circle_outline,
+        label: l10n.clinicalPrescriptionAddMedicineAction,
+        enabled: !_isSaving,
+        onPressed: _isSaving ? null : () => unawaited(_openLineDialog()),
+      ),
+      AppSearchBarAction(
+        icon: Icons.payments_outlined,
+        label: l10n.clinicalRequestReviewBillingAction,
+        enabled: !_isSaving && _lines.isNotEmpty,
+        onPressed: _lines.isEmpty || _isSaving
+            ? null
+            : () => unawaited(_openBillingDialog()),
+      ),
     ];
+  }
 
-    return ClinicalRequestSelectionManager(
-      title: l10n.clinicalPrescriptionHeaderTitle,
-      emptyLabel: l10n.clinicalPrescriptionNoMedicinesLabel,
-      options: options,
-      value: _focusedLineId,
-      enabled: !_isSaving,
-      onChanged: (String? value) {
-        setState(() => _focusedLineId = value);
+  List<AppListTableColumn<_PrescriptionLineFormState>> _defaultColumns(
+    BuildContext context,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    return <AppListTableColumn<_PrescriptionLineFormState>>[
+      _selectionColumn(context),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _medicineColumnKey,
+        label: l10n.clinicalPrescriptionMedicineLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(
+                  _medicineName(left, l10n),
+                  _medicineName(right, l10n),
+                ),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_medicineName(line, l10n));
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _doseColumnKey,
+        label: l10n.clinicalDoseAmountLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(_doseLabel(left), _doseLabel(right)),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_doseLabel(line));
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _sigColumnKey,
+        label: l10n.clinicalPrescriptionSigColumnLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(_sigLabel(left), _sigLabel(right)),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_sigLabel(line));
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _quantityColumnKey,
+        label: l10n.opdDrugQuantityLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(
+                  _quantityLabel(left),
+                  _quantityLabel(right),
+                ),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_quantityLabel(line));
+        },
+      ),
+      _actionsColumn(context),
+    ];
+  }
+
+  List<AppListTableColumn<_PrescriptionLineFormState>> _columnChoices(
+    BuildContext context,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    return <AppListTableColumn<_PrescriptionLineFormState>>[
+      ..._defaultColumns(context),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _durationColumnKey,
+        label: l10n.clinicalDurationValueLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(
+                  _durationLabel(left),
+                  _durationLabel(right),
+                ),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_durationLabel(line));
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _instructionsColumnKey,
+        label: l10n.clinicalInstructionsLabel,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) =>
+                appListTableCompareText(
+                  left.instructionsController.text,
+                  right.instructionsController.text,
+                ),
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          final String instructions = line.instructionsController.text.trim();
+          return Text(instructions.isEmpty ? '—' : instructions);
+        },
+      ),
+      AppListTableColumn<_PrescriptionLineFormState>(
+        id: _priceColumnKey,
+        label: l10n.clinicalRequestSelectedPriceColumnLabel,
+        numeric: true,
+        sortComparator:
+            (_PrescriptionLineFormState left, _PrescriptionLineFormState right) {
+              return (_unitPrice(left) ?? 0).compareTo(_unitPrice(right) ?? 0);
+            },
+        cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+          return Text(_priceLabel(context, line));
+        },
+      ),
+    ];
+  }
+
+  AppListTableColumn<_PrescriptionLineFormState> _selectionColumn(
+    BuildContext context,
+  ) {
+    final List<_PrescriptionLineFormState> visibleLines = _lines
+        .where(_matchesOptionFilters)
+        .where(
+          (_PrescriptionLineFormState line) =>
+              _matchesSearch(line, _searchController.text),
+        )
+        .toList(growable: false);
+    return AppListTableColumn<_PrescriptionLineFormState>(
+      id: _selectColumnKey,
+      label: '',
+      alwaysVisible: true,
+      headerBuilder: (BuildContext context) {
+        final bool allSelected =
+            visibleLines.isNotEmpty &&
+            visibleLines.every(
+              (_PrescriptionLineFormState line) =>
+                  _selectedLineKeys.contains(_lineKey(line)),
+            );
+        final bool someSelected = visibleLines.any(
+          (_PrescriptionLineFormState line) =>
+              _selectedLineKeys.contains(_lineKey(line)),
+        );
+        return Checkbox(
+          tristate: true,
+          value: allSelected
+              ? true
+              : someSelected
+              ? null
+              : false,
+          onChanged: _isSaving || visibleLines.isEmpty
+              ? null
+              : (bool? checked) => _toggleAllVisible(checked ?? false),
+          visualDensity: VisualDensity.compact,
+        );
       },
-      onEdit: focusedLine == null
-          ? null
-          : () => _openLineDialog(
-              editIndex: _lines.indexWhere(
-                (_PrescriptionLineFormState line) => line.id == focusedLine.id,
-              ),
-            ),
-      onDelete: focusedLine == null || _lines.length <= 1
-          ? null
-          : () => _removeLine(focusedLine),
+      cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+        final String key = _lineKey(line);
+        return Checkbox(
+          value: _selectedLineKeys.contains(key),
+          onChanged: _isSaving
+              ? null
+              : (bool? value) => _toggleKey(key, value ?? false),
+          visualDensity: VisualDensity.compact,
+        );
+      },
     );
   }
 
-  _PrescriptionLineFormState? _focusedLine() {
-    if (_focusedLineId == null) {
+  AppListTableColumn<_PrescriptionLineFormState> _actionsColumn(
+    BuildContext context,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    return AppListTableColumn<_PrescriptionLineFormState>(
+      id: _actionsColumnKey,
+      label: l10n.clinicalRequestSelectedActionsColumnLabel,
+      alwaysVisible: true,
+      cellBuilder: (BuildContext context, _PrescriptionLineFormState line) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.edit_outlined,
+              label: l10n.clinicalPrescriptionEditLineDialogTitle,
+              semanticLabel: l10n.clinicalPrescriptionEditLineDialogTitle,
+              tooltip: l10n.clinicalPrescriptionEditLineDialogTitle,
+              enabled: !_isSaving,
+              onPressed: _isSaving
+                  ? null
+                  : () => unawaited(
+                      _openLineDialog(editIndex: _lineIndex(line)),
+                    ),
+            ),
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: l10n.clinicalRequestRemoveItemAction,
+              semanticLabel: l10n.clinicalRequestRemoveItemAction,
+              tooltip: l10n.clinicalRequestRemoveItemAction,
+              enabled: !_isSaving,
+              color: colorScheme.error,
+              onPressed: _isSaving
+                  ? null
+                  : () => unawaited(_confirmAndDeleteLine(line)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<AppSearchBarFilterGroup> _filterGroups(AppLocalizations l10n) {
+    final Set<String> routes = <String>{
+      for (final _PrescriptionLineFormState line in _lines)
+        if ((line.route ?? '').trim().isNotEmpty) line.route!.trim(),
+    };
+    final Set<String> frequencies = <String>{
+      for (final _PrescriptionLineFormState line in _lines)
+        if ((line.frequency ?? '').trim().isNotEmpty) line.frequency!.trim(),
+    };
+    return <AppSearchBarFilterGroup>[
+      if (routes.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: _routeFilterKey,
+          label: l10n.opdMedicationRouteLabel,
+          allLabel: l10n.labScopeAll,
+          choices: <AppSearchBarFilterChoice>[
+            for (final String route in routes.toList()..sort())
+              AppSearchBarFilterChoice(
+                value: route,
+                label: clinicalActionApiLabel(route),
+              ),
+          ],
+        ),
+      if (frequencies.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: _frequencyFilterKey,
+          label: l10n.opdFrequencyLabel,
+          allLabel: l10n.labScopeAll,
+          choices: <AppSearchBarFilterChoice>[
+            for (final String frequency in frequencies.toList()..sort())
+              AppSearchBarFilterChoice(
+                value: frequency,
+                label: clinicalFrequencyReadable(frequency),
+              ),
+          ],
+        ),
+    ];
+  }
+
+  bool _matchesOptionFilters(_PrescriptionLineFormState line) {
+    final String? route = _filterValue.option(_routeFilterKey);
+    if (route != null && line.route != route) {
+      return false;
+    }
+    final String? frequency = _filterValue.option(_frequencyFilterKey);
+    if (frequency != null && line.frequency != frequency) {
+      return false;
+    }
+    return true;
+  }
+
+  bool _matchesSearch(_PrescriptionLineFormState line, String query) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final String haystack = <String>[
+      _medicineName(line, l10n),
+      _doseLabel(line),
+      _sigLabel(line),
+      _quantityLabel(line),
+      _durationLabel(line),
+      line.instructionsController.text,
+    ].join(' ').toLowerCase();
+    return haystack.contains(normalized);
+  }
+
+  String _lineKey(_PrescriptionLineFormState line) => line.id.toString();
+
+  int _lineIndex(_PrescriptionLineFormState line) {
+    return _lines.indexWhere(
+      (_PrescriptionLineFormState item) => item.id == line.id,
+    );
+  }
+
+  void _toggleKey(String key, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedLineKeys.add(key);
+      } else {
+        _selectedLineKeys.remove(key);
+      }
+    });
+  }
+
+  void _toggleAllVisible(bool selected) {
+    final Iterable<String> visibleKeys = _lines
+        .where(_matchesOptionFilters)
+        .where(
+          (_PrescriptionLineFormState line) =>
+              _matchesSearch(line, _searchController.text),
+        )
+        .map(_lineKey);
+    setState(() {
+      if (!selected) {
+        _selectedLineKeys.removeAll(visibleKeys);
+        return;
+      }
+      _selectedLineKeys.addAll(visibleKeys);
+    });
+  }
+
+  void _pruneSelection() {
+    final Set<String> validKeys = _lines.map(_lineKey).toSet();
+    _selectedLineKeys.removeWhere((String key) => !validKeys.contains(key));
+  }
+
+  String _medicineName(_PrescriptionLineFormState line, AppLocalizations l10n) {
+    return clinicalActionCatalogDisplayLabelById(
+          widget.referenceData.drugs,
+          line.drugId,
+        ) ??
+        l10n.clinicalPrescriptionMedicineLabel;
+  }
+
+  String _doseLabel(_PrescriptionLineFormState line) {
+    return clinicalActionJoinDisplay(<String?>[
+      clinicalActionTrimmedOrNull(line.doseAmountController.text),
+      clinicalActionTrimmedOrNull(line.doseUnit),
+    ], separator: ' ');
+  }
+
+  String _sigLabel(_PrescriptionLineFormState line) {
+    return clinicalActionJoinDisplay(<String?>[
+      if ((line.route ?? '').trim().isNotEmpty)
+        clinicalActionApiLabel(line.route!.trim()),
+      if ((line.frequency ?? '').trim().isNotEmpty)
+        clinicalFrequencyReadable(line.frequency!.trim()),
+    ], separator: ' · ');
+  }
+
+  String _quantityLabel(_PrescriptionLineFormState line) {
+    return clinicalActionJoinDisplay(<String?>[
+      clinicalActionTrimmedOrNull(line.quantityController.text),
+      clinicalActionTrimmedOrNull(line.quantityUnit),
+    ], separator: ' ');
+  }
+
+  String _durationLabel(_PrescriptionLineFormState line) {
+    return clinicalActionJoinDisplay(<String?>[
+      clinicalActionTrimmedOrNull(line.durationController.text),
+      clinicalActionTrimmedOrNull(line.durationUnit),
+    ], separator: ' ');
+  }
+
+  ClinicalActionCatalogOption? _drugOption(_PrescriptionLineFormState line) {
+    final String? drugId = line.drugId?.trim();
+    if (drugId == null || drugId.isEmpty) {
       return null;
     }
-    for (final _PrescriptionLineFormState line in _lines) {
-      if (line.id.toString() == _focusedLineId) {
-        return line;
+    for (final ClinicalActionCatalogOption drug
+        in widget.referenceData.drugs) {
+      if (drug.apiId == drugId) {
+        return drug;
       }
     }
-    return null;
+    return ClinicalActionCatalogOption(
+      id: drugId,
+      name: clinicalActionCatalogDisplayLabelById(
+        widget.referenceData.drugs,
+        drugId,
+      ),
+    );
+  }
+
+  num? _unitPrice(_PrescriptionLineFormState line) {
+    final ClinicalActionCatalogOption? option = _drugOption(line);
+    return option == null ? null : clinicalCatalogOptionUnitPrice(option);
+  }
+
+  String _priceLabel(BuildContext context, _PrescriptionLineFormState line) {
+    final ClinicalActionCatalogOption? option = _drugOption(line);
+    if (option == null) {
+      return '—';
+    }
+    return clinicalRequestCatalogPriceLabel(context, option);
   }
 
   Future<void> _openLineDialog({int? editIndex}) async {
@@ -354,6 +753,70 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     setState(() => _billingSubmit = billing);
   }
 
+  Future<void> _confirmAndDeleteLine(_PrescriptionLineFormState line) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool confirmed =
+        await showClinicalRequestRemoveItemsConfirmationDialog(
+          context: context,
+          items: <ClinicalRequestRemovePreviewItem>[
+            ClinicalRequestRemovePreviewItem(
+              name: _medicineName(line, l10n),
+              typeLabel: l10n.clinicalPrescriptionMedicineLabel,
+            ),
+          ],
+        );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    _removeLine(line);
+  }
+
+  Future<void> _confirmAndDeleteSelected() async {
+    if (_selectedLineKeys.isEmpty) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final List<_PrescriptionLineFormState> selected = _lines
+        .where(
+          (_PrescriptionLineFormState line) =>
+              _selectedLineKeys.contains(_lineKey(line)),
+        )
+        .toList(growable: false);
+    final bool confirmed =
+        await showClinicalRequestRemoveItemsConfirmationDialog(
+          context: context,
+          items: selected
+              .map(
+                (_PrescriptionLineFormState line) =>
+                    ClinicalRequestRemovePreviewItem(
+                      name: _medicineName(line, l10n),
+                      typeLabel: l10n.clinicalPrescriptionMedicineLabel,
+                    ),
+              )
+              .toList(growable: false),
+        );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    setState(() {
+      final List<_PrescriptionLineFormState> removed = _lines
+          .where(
+            (_PrescriptionLineFormState line) =>
+                _selectedLineKeys.contains(_lineKey(line)),
+          )
+          .toList(growable: false);
+      _lines.removeWhere(
+        (_PrescriptionLineFormState line) =>
+            _selectedLineKeys.contains(_lineKey(line)),
+      );
+      for (final _PrescriptionLineFormState line in removed) {
+        line.dispose();
+      }
+      _selectedLineKeys.clear();
+      _failure = null;
+    });
+  }
+
   _PrescriptionLineFormState _createLine() {
     final _PrescriptionLineFormState line = _PrescriptionLineFormState(
       id: _nextLineId,
@@ -364,20 +827,17 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   void _removeLine(_PrescriptionLineFormState line) {
     setState(() {
-      if (_focusedLineId == line.id.toString()) {
-        _focusedLineId = null;
-      }
+      _selectedLineKeys.remove(_lineKey(line));
       _lines.remove(line);
       line.dispose();
+      _pruneSelection();
+      _failure = null;
     });
   }
 
   Future<void> _submit() async {
     if (_lines.isEmpty) {
       setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     setState(() {
@@ -403,11 +863,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         }),
     ];
 
+    // Bill-later by default; pass reviewed billing only when confirmed.
     final AppFailure? failure = await widget.onSubmit(
       items: items,
-      billing: _dispenseBillingMode == ClinicalRequestPaymentMode.payNow
-          ? _billingSubmit
-          : null,
+      billing: _billingSubmit,
     );
     _finishSubmit(failure);
   }
@@ -437,24 +896,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       }
       quantities[drugId] =
           int.tryParse(line.quantityController.text.trim()) ?? 1;
-      ClinicalActionCatalogOption? option;
-      for (final ClinicalActionCatalogOption drug
-          in widget.referenceData.drugs) {
-        if (drug.apiId == drugId) {
-          option = drug;
-          break;
-        }
+      final ClinicalActionCatalogOption? option = _drugOption(line);
+      if (option != null) {
+        options.add(option);
       }
-      options.add(
-        option ??
-            ClinicalActionCatalogOption(
-              id: drugId,
-              name: clinicalActionCatalogDisplayLabelById(
-                widget.referenceData.drugs,
-                drugId,
-              ),
-            ),
-      );
     }
     return clinicalRequestBillingLineItems(
       options: options,

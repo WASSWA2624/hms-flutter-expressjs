@@ -209,10 +209,17 @@ class _ClinicalRadiologyRequestCatalogDialogState
             columnVisibilityResetLabel: l10n.labResetColumnsAction,
             displayMode: AppListTableDisplayMode.table,
             tableHorizontalMargin: 0,
+            showRowNumbers: false,
+            padEmptyRows: false,
+            forceCompact: true,
+            enableColumnResize: false,
             maxVisibleItems: _maxVisibleCatalogOptions,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             isLoading: _isSearching,
+            onRowSelected: (ClinicalActionCatalogOption item) {
+              _toggleSelection(item, selected: !_isStagedSelected(item));
+            },
             rowColorBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
                   if (!_isStagedSelected(item)) {
@@ -249,27 +256,35 @@ class _ClinicalRadiologyRequestCatalogDialogState
             ),
             mobileItemBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
-                  return AppListTableMobileItem(
-                    leading: Checkbox(
-                      value: _isStagedSelected(item),
-                      onChanged: (bool? value) {
-                        _toggleSelection(item, selected: value ?? false);
-                      },
-                      visualDensity: VisualDensity.compact,
+                  final bool selected = _isStagedSelected(item);
+                  return InkWell(
+                    onTap: () => _toggleSelection(item, selected: !selected),
+                    child: AppListTableMobileItem(
+                      leading: IgnorePointer(
+                        child: Checkbox(
+                          value: selected,
+                          onChanged: (_) {},
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      title: item.name ?? item.displayTitle,
+                      meta: <AppListTableMobileMeta>[
+                        if ((clinicalRadiologyOptionModality(item) ?? '')
+                            .isNotEmpty)
+                          AppListTableMobileMeta(
+                            label: clinicalRadiologyOptionModality(item)!,
+                            icon: Icons.biotech_outlined,
+                          ),
+                        if ((clinicalRadiologyOptionBodyRegion(item) ?? '')
+                            .isNotEmpty)
+                          AppListTableMobileMeta(
+                            label: clinicalRadiologyOptionBodyRegion(item)!,
+                          ),
+                      ],
+                      showAvatar: false,
                     ),
-                    title: item.name ?? item.displayTitle,
-                    meta: <AppListTableMobileMeta>[
-                      if ((clinicalRadiologyOptionModality(item) ?? '').isNotEmpty)
-                        AppListTableMobileMeta(
-                          label: clinicalRadiologyOptionModality(item)!,
-                          icon: Icons.biotech_outlined,
-                        ),
-                      if ((clinicalRadiologyOptionBodyRegion(item) ?? '').isNotEmpty)
-                        AppListTableMobileMeta(
-                          label: clinicalRadiologyOptionBodyRegion(item)!,
-                        ),
-                    ],
-                    showAvatar: false,
                   );
                 },
           ),
@@ -322,7 +337,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
             SizedBox(height: theme.spacing.sm),
             Row(
               children: <Widget>[
-                SizedBox(width: 220, child: _priorityField(l10n)),
+                Expanded(child: _priorityField(l10n)),
                 SizedBox(width: theme.spacing.sm),
                 Expanded(child: _bodyRegionField(l10n, bodyRegionOptions)),
               ],
@@ -465,7 +480,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
               ClinicalActionCatalogOption right,
             ) => appListTableCompareText(left.name, right.name),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-          return Text(item.name ?? item.displayTitle);
+          return Text(
+            item.name ?? item.displayTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
         },
       ),
       AppListTableColumn<ClinicalActionCatalogOption>(
@@ -485,6 +504,8 @@ class _ClinicalRadiologyRequestCatalogDialogState
               l10n,
               clinicalRadiologyOptionModality(item),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           );
         },
       ),
@@ -502,6 +523,8 @@ class _ClinicalRadiologyRequestCatalogDialogState
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Text(
             clinicalRadiologyOptionBodyRegion(item) ?? l10n.profileUnknownValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           );
         },
       ),
@@ -518,7 +541,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
             },
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Padding(
-            padding: EdgeInsetsDirectional.only(end: theme.spacing.md),
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
             child: Text(
               clinicalRequestPriceLabel(
                 context,
@@ -526,6 +549,8 @@ class _ClinicalRadiologyRequestCatalogDialogState
                 clinicalCatalogOptionCurrency(item),
               ),
               textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           );
         },
@@ -540,6 +565,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
       id: _selectColumnKey,
       label: '',
       alwaysVisible: true,
+      fixedWidth: 32,
       headerBuilder: (BuildContext context) {
         return ValueListenableBuilder<TextEditingValue>(
           valueListenable: _searchController,
@@ -555,33 +581,39 @@ class _ClinicalRadiologyRequestCatalogDialogState
                 visibleItems.isNotEmpty &&
                 visibleItems.every(_isStagedSelected);
             final bool someSelected = visibleItems.any(_isStagedSelected);
-            return Checkbox(
-              tristate: true,
-              value: allSelected
-                  ? true
-                  : someSelected
-                  ? null
-                  : false,
-              onChanged: visibleItems.isEmpty
-                  ? null
-                  : (bool? checked) {
-                      _toggleFilteredItems(
-                        visibleItems,
-                        selected: checked ?? false,
-                      );
-                    },
-              visualDensity: VisualDensity.compact,
+            return Center(
+              child: Checkbox(
+                tristate: true,
+                value: allSelected
+                    ? true
+                    : someSelected
+                    ? null
+                    : false,
+                onChanged: visibleItems.isEmpty
+                    ? null
+                    : (bool? checked) {
+                        _toggleFilteredItems(
+                          visibleItems,
+                          selected: checked ?? false,
+                        );
+                      },
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             );
           },
         );
       },
       cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-        return Checkbox(
-          value: _isStagedSelected(item),
-          onChanged: (bool? value) {
-            _toggleSelection(item, selected: value ?? false);
-          },
-          visualDensity: VisualDensity.compact,
+        return Center(
+          child: IgnorePointer(
+            child: Checkbox(
+              value: _isStagedSelected(item),
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
         );
       },
     );

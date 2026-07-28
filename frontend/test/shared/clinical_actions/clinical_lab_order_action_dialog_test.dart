@@ -57,7 +57,7 @@ void main() {
       expect(find.text('Cancel'), findsNothing);
       expect(
         find.text(
-          'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.',
+          'Review your selection below. Use Add Lab Panels to browse the catalog, then review billing before submitting.',
         ),
         findsNothing,
       );
@@ -96,7 +96,7 @@ void main() {
             },
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -128,15 +128,78 @@ void main() {
       expect(find.text('ENC0000003'), findsOneWidget);
     });
 
+    testWidgets('confirmed catalog items appear in selected table', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: <ClinicalActionCatalogOption>[
+          const ClinicalActionCatalogOption(
+            id: '4e73222f-7b32-4a31-a1c1-9c1b59889479',
+            publicId: 'LBT0000001',
+            name: 'Complete blood count',
+            unitPrice: 25000,
+            currency: 'UGX',
+          ),
+          const ClinicalActionCatalogOption(
+            id: 'lipid-id',
+            publicId: 'LBT0000002',
+            name: 'Lipid profile',
+            unitPrice: 40000,
+            currency: 'UGX',
+          ),
+        ],
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Complete blood count'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lipid profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No lab requests selected. Use Add Lab Panels.'), findsNothing);
+      expect(find.text('Complete blood count'), findsOneWidget);
+      expect(find.text('Lipid profile'), findsOneWidget);
+      expect(find.text('Total'), findsOneWidget);
+      expect(find.text('Remove item'), findsNWidgets(2));
+
+      // Row click marks a line for bulk remove.
+      await tester.tap(find.text('Lipid profile'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppButton, 'Remove selected'), findsOneWidget);
+
+      await tester.tap(find.text('Remove item').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Remove'));
+      await tester.pumpAndSettle();
+      expect(find.text('Complete blood count'), findsNothing);
+    });
+
     testWidgets('catalog picker supports checkbox multi-select', (
       WidgetTester tester,
     ) async {
       await _pumpLabOrderDialog(
         tester,
-        catalogOptions: _sampleCatalogOptions(),
+        catalogOptions: <ClinicalActionCatalogOption>[
+          const ClinicalActionCatalogOption(
+            id: '4e73222f-7b32-4a31-a1c1-9c1b59889479',
+            publicId: 'LBT0000001',
+            name: 'Complete blood count',
+            unitPrice: 25,
+            currency: 'USD',
+          ),
+        ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -148,9 +211,18 @@ void main() {
         findsNWidgets(2),
       );
 
-      await _tapRowCheckbox(tester, 'Complete blood count');
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
 
+      expect(find.text('1 selected'), findsOneWidget);
+
+      // Clicking the row again deselects the item.
+      await tester.tap(find.text('Complete blood count'));
+      await tester.pumpAndSettle();
+      expect(find.text('0 selected'), findsOneWidget);
+
+      await tester.tap(find.text('Complete blood count'));
+      await tester.pumpAndSettle();
       expect(find.text('1 selected'), findsOneWidget);
 
       await tester.tap(
@@ -169,14 +241,16 @@ void main() {
     ) async {
       await _pumpLabOrderDialog(
         tester,
-        catalogOptions: _sampleCatalogOptions(),
+        catalogOptions: <ClinicalActionCatalogOption>[
+          _sampleCatalogOptions().first,
+        ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
-      await _tapRowCheckbox(tester, 'Complete blood count');
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
       await tester.tap(
         find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
@@ -197,9 +271,7 @@ void main() {
 
       expect(find.text('Complete blood count'), findsNothing);
       expect(
-        find.text(
-          'No lab requests selected. Use Add items to choose tests or panels.',
-        ),
+        find.text('No lab requests selected. Use Add Lab Panels.'),
         findsOneWidget,
       );
     });
@@ -209,14 +281,16 @@ void main() {
       (WidgetTester tester) async {
         await _pumpLabOrderDialog(
           tester,
-          catalogOptions: _sampleCatalogOptions(),
+          catalogOptions: <ClinicalActionCatalogOption>[
+            _sampleCatalogOptions().first,
+          ],
         );
 
-        await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+        await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
         await tester.pumpAndSettle();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
-        await _tapRowCheckbox(tester, 'Complete blood count');
+        await _tapTableRowCheckbox(tester, 'Complete blood count');
         await tester.pumpAndSettle();
         await tester.tap(
           find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
@@ -241,7 +315,9 @@ void main() {
     ) async {
       await _pumpLabOrderDialog(
         tester,
-        catalogOptions: _sampleCatalogOptions(),
+        catalogOptions: <ClinicalActionCatalogOption>[
+          _sampleCatalogOptions().first,
+        ],
         patientContext: const ClinicalRequestPatientContext(
           patientName: 'Jane Doe',
           patientId: 'P-1001',
@@ -256,11 +332,11 @@ void main() {
       expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
-      await _tapRowCheckbox(tester, 'Complete blood count');
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
       await tester.tap(
         find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
@@ -280,15 +356,17 @@ void main() {
     ) async {
       await _pumpLabOrderDialog(
         tester,
-        catalogOptions: _sampleCatalogOptions(),
+        catalogOptions: <ClinicalActionCatalogOption>[
+          _sampleCatalogOptions().first,
+        ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      await _tapRowCheckbox(tester, 'Complete blood count');
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
       expect(find.text('1 selected'), findsOneWidget);
 
@@ -297,9 +375,7 @@ void main() {
 
       expect(find.text('Complete blood count'), findsNothing);
       expect(
-        find.text(
-          'No lab requests selected. Use Add items to choose tests or panels.',
-        ),
+        find.text('No lab requests selected. Use Add Lab Panels.'),
         findsOneWidget,
       );
     });
@@ -309,15 +385,17 @@ void main() {
     ) async {
       await _pumpLabOrderDialog(
         tester,
-        catalogOptions: _sampleCatalogOptions(),
+        catalogOptions: <ClinicalActionCatalogOption>[
+          _sampleCatalogOptions().first,
+        ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      await _tapRowCheckbox(tester, 'Complete blood count');
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.close).last);
@@ -348,7 +426,7 @@ void main() {
             },
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -368,26 +446,8 @@ void main() {
 
 Future<void> _tapTableRowCheckbox(WidgetTester tester, String rowLabel) async {
   expect(find.text(rowLabel), findsOneWidget);
-  await tester.tap(find.byType(Checkbox).at(1));
-}
-
-Future<void> _tapRowCheckbox(WidgetTester tester, String rowLabel) async {
-  expect(find.text(rowLabel), findsOneWidget);
-
-  final List<String> rowLabels = <String>[
-    'Complete blood count',
-    'Lipid profile',
-  ];
-  rowLabels.sort((String left, String right) {
-    return tester
-        .getCenter(find.text(left))
-        .dy
-        .compareTo(tester.getCenter(find.text(right)).dy);
-  });
-
-  final int rowIndex = rowLabels.indexOf(rowLabel);
-  expect(rowIndex, greaterThanOrEqualTo(0));
-  await tester.tap(find.byType(Checkbox).at(rowIndex + 1));
+  // Row cells toggle selection via onRowSelected; checkbox is display-only.
+  await tester.tap(find.text(rowLabel));
 }
 
 List<ClinicalActionCatalogOption> _sampleCatalogOptions() {

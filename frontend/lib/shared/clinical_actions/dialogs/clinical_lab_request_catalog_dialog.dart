@@ -273,7 +273,14 @@ class _ClinicalLabRequestCatalogDialogState
               columnVisibilityResetLabel: l10n.labResetColumnsAction,
               displayMode: AppListTableDisplayMode.table,
               tableHorizontalMargin: 0,
+              showRowNumbers: false,
               isLoading: _isSearching,
+              onRowSelected: (ClinicalActionCatalogOption item) {
+                _toggleSelection(
+                  item,
+                  selected: !_isStagedSelected(item, _selectionKind),
+                );
+              },
               rowColorBuilder:
                   (BuildContext context, ClinicalActionCatalogOption item) {
                     if (!_isStagedSelected(item, _selectionKind)) {
@@ -306,21 +313,31 @@ class _ClinicalLabRequestCatalogDialogState
                   AppMutedText(l10n.clinicalLabRequestNoCatalogOptions),
               mobileItemBuilder:
                   (BuildContext context, ClinicalActionCatalogOption item) {
-                    return AppListTableMobileItem(
-                      leading: Checkbox(
-                        value: _isStagedSelected(item, _selectionKind),
-                        onChanged: (bool? value) {
-                          _toggleSelection(item, selected: value ?? false);
-                        },
-                        visualDensity: VisualDensity.compact,
+                    final bool selected = _isStagedSelected(
+                      item,
+                      _selectionKind,
+                    );
+                    return InkWell(
+                      onTap: () =>
+                          _toggleSelection(item, selected: !selected),
+                      child: AppListTableMobileItem(
+                        leading: IgnorePointer(
+                          child: Checkbox(
+                            value: selected,
+                            onChanged: (_) {},
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        title: item.name ?? item.displayTitle,
+                        caption: item.code,
+                        meta: <AppListTableMobileMeta>[
+                          if ((item.category ?? '').isNotEmpty)
+                            AppListTableMobileMeta(label: item.category!),
+                        ],
+                        showAvatar: false,
                       ),
-                      title: item.name ?? item.displayTitle,
-                      caption: item.code,
-                      meta: <AppListTableMobileMeta>[
-                        if ((item.category ?? '').isNotEmpty)
-                          AppListTableMobileMeta(label: item.category!),
-                      ],
-                      showAvatar: false,
                     );
                   },
             ),
@@ -434,6 +451,7 @@ class _ClinicalLabRequestCatalogDialogState
       id: _selectColumnKey,
       label: '',
       alwaysVisible: true,
+      fixedWidth: 40,
       headerBuilder: (BuildContext context) {
         return ValueListenableBuilder<TextEditingValue>(
           valueListenable: _searchController,
@@ -455,33 +473,39 @@ class _ClinicalLabRequestCatalogDialogState
               (ClinicalActionCatalogOption item) =>
                   _isStagedSelected(item, _selectionKind),
             );
-            return Checkbox(
-              tristate: true,
-              value: allSelected
-                  ? true
-                  : someSelected
-                  ? null
-                  : false,
-              onChanged: visibleItems.isEmpty
-                  ? null
-                  : (bool? checked) {
-                      _toggleFilteredItems(
-                        visibleItems,
-                        selected: checked ?? false,
-                      );
-                    },
-              visualDensity: VisualDensity.compact,
+            return Center(
+              child: Checkbox(
+                tristate: true,
+                value: allSelected
+                    ? true
+                    : someSelected
+                    ? null
+                    : false,
+                onChanged: visibleItems.isEmpty
+                    ? null
+                    : (bool? checked) {
+                        _toggleFilteredItems(
+                          visibleItems,
+                          selected: checked ?? false,
+                        );
+                      },
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             );
           },
         );
       },
       cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-        return Checkbox(
-          value: _isStagedSelected(item, _selectionKind),
-          onChanged: (bool? value) {
-            _toggleSelection(item, selected: value ?? false);
-          },
-          visualDensity: VisualDensity.compact,
+        return Center(
+          child: IgnorePointer(
+            child: Checkbox(
+              value: _isStagedSelected(item, _selectionKind),
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
         );
       },
     );

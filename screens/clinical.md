@@ -448,7 +448,7 @@ Dialog opens maximized by default. Diagnosis type uses dense borderless radios (
   - Immediate result: After confirm, removes selected staged tests/panels.
   - Condition: At least one row selected; not saving.
 
-- **Add items**
+- **Add Lab Panels**
   - Location: Toolbar.
   - Opens modal: Yes — **Lab request catalog** (`showClinicalLabRequestCatalogDialog`).
   - Immediate result: Opens catalog picker; confirmed selections replace staged list.
@@ -486,7 +486,7 @@ Dialog opens maximized by default. Diagnosis type uses dense borderless radios (
   - Immediate result: Abort or confirm removal from staged list.
   - Condition: Always.
 
-#### Lab request catalog (from **Add items**)
+#### Lab request catalog (from **Add Lab Panels**)
 
 - **Individual tests** / **Lab panels**
   - Location: Catalog kind radios (`clinicalLabRequestTestsModeLabel` / `clinicalLabRequestPanelsModeLabel`).
@@ -503,8 +503,14 @@ Dialog opens maximized by default. Diagnosis type uses dense borderless radios (
 - **Catalog source chips** / search / **Laboratory filters** (advanced filters Apply / Clear)
   - Location: Catalog body.
   - Opens modal: Filters panel when Filters pressed.
-  - Immediate result: Filter/search catalog; checkboxes stage selections.
+  - Immediate result: Filter/search catalog; row click or checkbox column stages selections.
   - Condition: Always in catalog.
+
+- **Row click / checkbox column**
+  - Location: Catalog table rows (fixed-width centered checkbox column).
+  - Opens modal: No.
+  - Immediate result: Toggles that test/panel in the staged selection.
+  - Condition: Always in catalog table.
 
 - **Settings** → Lab catalog table columns (**Apply columns** / **Reset columns**)
   - Location: Catalog table chrome.
@@ -549,39 +555,66 @@ Same toolbar pattern as lab:
 
 #### Radiology request catalog (from **Add study**)
 
-- Search / filters / row checkboxes / table Settings (same pattern as lab catalog)
+- Metadata fields: Modality / Laterality (equal width), Priority / Body region (equal width), Clinical note (full width)
+- Dense study table: no row # column; minimal fixed-width checkbox column; single-line cells; row click toggles selection
+- Search / filters / table Settings (same pattern as lab catalog)
 - **Confirm selected studies** (primary footer; no Cancel button in source — dismiss via dialog Close)
   - Immediate result: Returns selections (with modality/laterality/priority/body region/clinical note metadata) to radiology order dialog.
 
 ### Prescribe (`ClinicalPrescriptionActionDialog`)
 
+- **Search** (text field)
+  - Location: Selected-medicines `AppListTable` search bar.
+  - Opens modal: No.
+  - Immediate result: Filters listed medicines by medicine/dose/route/frequency text.
+  - Condition: Always.
+
+- **Filters**
+  - Location: Table search bar.
+  - Opens modal: Yes — advanced filters panel (route / frequency when lines exist).
+  - Immediate result: Filters visible rows by selected route/frequency options.
+  - Condition: Always; option groups appear once medicines are listed.
+
+- **Settings**
+  - Location: Table search bar.
+  - Opens modal: Yes — **Prescription columns** visibility dialog.
+  - Immediate result: Toggles nested columns (duration, instructions, price).
+  - Condition: Always.
+
+- **Remove selected**
+  - Location: Table search bar trailing action.
+  - Opens modal: Yes — remove confirmation (`showClinicalRequestRemoveItemsConfirmationDialog`).
+  - Immediate result: Removes checked prescription lines after confirm.
+  - Condition: Enabled when ≥1 row checkbox is selected and not saving.
+
 - **Add medicine**
-  - Location: Toolbar.
+  - Location: Table search bar trailing action.
   - Opens modal: Yes — **Add medicine** line dialog.
-  - Immediate result: Opens line form; on **Done** adds line to list.
+  - Immediate result: Opens line form; on **Done** adds line as a table row.
   - Condition: Not saving.
 
 - **Review billing**
-  - Location: Toolbar.
+  - Location: Table search bar trailing action.
   - Opens modal: Yes — **Request billing**.
-  - Condition: Payment mode is **Pay at prescribe** and at least one drug line; not saving.
+  - Condition: ≥1 medicine listed and not saving. Submit defaults to bill-later unless billing was confirmed here.
 
-- **Bill on dispense** / **Pay at prescribe**
-  - Location: Segmented payment-mode control.
+- **Row checkbox** / header select-all
+  - Location: First table column.
   - Opens modal: No.
-  - Immediate result: Toggles whether billing is reviewed now vs at dispense.
-  - Condition: Not saving.
+  - Immediate result: Selects lines for **Remove selected**.
+  - Condition: When medicines are listed; disabled while saving.
 
-- **Edit** / **Delete** (selected medicines manager)
-  - Location: Selection manager when a line is focused.
-  - Opens modal: **Edit** opens **Edit medicine** line dialog; **Delete** removes line (no confirm).
-  - Condition: Edit when focused; Delete when focused and more than one line.
+- **Edit** / **Remove item** (per row)
+  - Location: Actions column.
+  - Opens modal: **Edit** opens **Edit medicine** line dialog; **Remove item** opens remove confirmation.
+  - Immediate result: Edit updates the row; Remove deletes that line after confirm.
+  - Condition: Not saving.
 
 - **Cancel** / **Prescribe**
   - Location: Footer.
   - Opens modal: No.
-  - Immediate result: Dismiss / submit prescription.
-  - Condition: Disabled while saving.
+  - Immediate result: Dismiss / submit prescription (billing payload only when **Review billing** was confirmed; otherwise bill-later).
+  - Condition: **Prescribe** requires ≥1 medicine; disabled while saving.
 
 #### Add medicine / Edit medicine line dialog
 

@@ -21008,7 +21008,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalLabRequestSelectedTableEmptyLabel =>
-      'No lab requests selected. Use Add items.';
+      'No lab requests selected. Use Add Lab Panels.';
+
+  @override
+  String get clinicalLabRequestAddPanelsAction => 'Add Lab Panels';
 
   @override
   String clinicalRequestFlowItemCountLabel(int count) {
@@ -21063,6 +21066,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalPrescriptionNoMedicinesLabel => 'No medicines added yet';
+
+  @override
+  String get clinicalPrescriptionSearchLabel => 'Search medicines';
+
+  @override
+  String get clinicalPrescriptionSearchHint =>
+      'Search by medicine, dose, route, or frequency';
+
+  @override
+  String get clinicalPrescriptionColumnsTitle => 'Prescription columns';
+
+  @override
+  String get clinicalPrescriptionSigColumnLabel => 'Route / frequency';
+
+  @override
+  String get clinicalPrescriptionEmptySearchLabel =>
+      'No medicines match your search or filters';
 
   @override
   String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';

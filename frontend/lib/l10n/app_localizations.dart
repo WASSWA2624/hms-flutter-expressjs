@@ -38899,8 +38899,14 @@ abstract class AppLocalizations {
   /// Empty state for selected lab requests table.
   ///
   /// In en, this message translates to:
-  /// **'No lab requests selected. Use Add items.'**
+  /// **'No lab requests selected. Use Add Lab Panels.'**
   String get clinicalLabRequestSelectedTableEmptyLabel;
+
+  /// Open lab request catalog picker for tests or panels.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Lab Panels'**
+  String get clinicalLabRequestAddPanelsAction;
 
   /// Selected item count on request flow summary bar.
   ///
@@ -38979,6 +38985,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No medicines added yet'**
   String get clinicalPrescriptionNoMedicinesLabel;
+
+  /// Semantic label for the prescribe selected-medicines search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search medicines'**
+  String get clinicalPrescriptionSearchLabel;
+
+  /// Hint for the prescribe selected-medicines search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by medicine, dose, route, or frequency'**
+  String get clinicalPrescriptionSearchHint;
+
+  /// Title for prescribe table column visibility settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription columns'**
+  String get clinicalPrescriptionColumnsTitle;
+
+  /// Prescribe table column for route and frequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Route / frequency'**
+  String get clinicalPrescriptionSigColumnLabel;
+
+  /// Empty state when prescribe table search or filters match nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines match your search or filters'**
+  String get clinicalPrescriptionEmptySearchLabel;
 
   /// Empty billing panel message.
   ///

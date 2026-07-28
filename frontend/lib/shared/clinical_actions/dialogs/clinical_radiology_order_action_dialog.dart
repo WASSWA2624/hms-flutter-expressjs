@@ -79,7 +79,7 @@ final class _PendingRadiologyRequest {
 
 class _RadiologyOrderDialogState
     extends State<ClinicalRadiologyOrderActionDialog> {
-  final List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
+  List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
   final Set<String> _selectedRequestKeys = <String>{};
   bool _isSaving = false;
   AppFailure? _failure;
@@ -246,10 +246,8 @@ class _RadiologyOrderDialogState
     }
     setState(() {
       _failure = null;
-      _requests
-        ..clear()
-        ..addAll(
-          confirmed.map(
+      _requests = confirmed
+          .map(
             (ClinicalRadiologyCatalogSelection selection) =>
                 _PendingRadiologyRequest(
                   option: selection.option,
@@ -259,8 +257,8 @@ class _RadiologyOrderDialogState
                   priority: selection.priority,
                   modality: selection.modality,
                 ),
-          ),
-        );
+          )
+          .toList(growable: true);
       _pruneSelection();
     });
   }
@@ -348,7 +346,10 @@ class _RadiologyOrderDialogState
     }
     final String removedId = _requests[index].id;
     setState(() {
-      _requests.removeAt(index);
+      _requests = <_PendingRadiologyRequest>[
+        for (int i = 0; i < _requests.length; i++)
+          if (i != index) _requests[i],
+      ];
       _selectedRequestKeys.remove(removedId);
       _failure = null;
     });
@@ -359,10 +360,12 @@ class _RadiologyOrderDialogState
       return;
     }
     setState(() {
-      _requests.removeWhere(
-        (_PendingRadiologyRequest request) =>
-            _selectedRequestKeys.contains(request.id),
-      );
+      _requests = _requests
+          .where(
+            (_PendingRadiologyRequest request) =>
+                !_selectedRequestKeys.contains(request.id),
+          )
+          .toList(growable: true);
       _selectedRequestKeys.clear();
       _failure = null;
     });

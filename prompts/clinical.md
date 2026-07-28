@@ -1,40 +1,47 @@
-# Finish Add Diagnosis Density Polish
+# Refine Prescribe Dialog Selected Medicines Table
 
-Final polish on `ClinicalDiagnosisActionDialog`: match transfer-action height to search fields, drop the Diagnosis type label text, and minimize transfer-table row height. Inventory: `screens/clinical.md`. Follow `prompts/.cursor/prompt.mdc`.
+Rebuild `ClinicalPrescriptionActionDialog` so selected medicines use `AppListTable` with search-bar actions, matching lab/radiology selected-items UX. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Context
 
-Opened from `/clinical` encounter **Add diagnosis**. Transfer UX is largely complete. Remaining polish: **Add selected diagnosis** and **Remove selected diagnosis** still do not match search-field height; the **Diagnosis type** label text adds vertical chrome above Primary / Secondary / Differential; transfer-table rows still have excess vertical padding relative to title + subtitle content.
+Prescribe opens from clinical encounter **Prescribe**. Today: help copy (`clinicalRequestMainPanelHelp`), **Bill on dispense** / **Pay at prescribe** toggle, top toolbar (**Add medicine**, **Review billing**), and **Build prescription** `ClinicalRequestSelectionManager`.
 
-**Matched toolbar height:** search input and adjacent transfer action share the same rendered height in each pane toolbar.
+**Selected medicines table:** `AppListTable` of lines added via **Add medicine**. Checkboxes select rows for bulk remove; clinician can still add medicines afterward.
 
 ## Requirements
 
-1. Make **Add selected diagnosis** and **Remove selected diagnosis** the same height as their adjacent dense search fields on both panes.
-2. Remove the visible **Diagnosis type** label text; keep Primary / Secondary / Differential borderless radios selectable, with an accessible semantic label only (no on-screen title).
-3. Minimize transfer-table row and header vertical padding/density on both panes so row height is content-tight around the diagnosis title and subtitle while remaining tappable and readable.
-4. Preserve Cancel / **Add diagnosis**, default Primary, dual-pane search, row-click toggle, Add/Remove transfer rules, catalog search/load/retry, caller write gate, loading/empty/error/success, theme tokens, and responsive stacking.
+1. Remove the help text ("Review selection, add catalog items, then confirm billing").
+2. Remove **Bill on dispense** / **Pay at prescribe** and the pay-now summary bar. Default submit to bill-later unless **Review billing** was confirmed; no mode toggle required to prescribe.
+3. Remove the top toolbar and **Build prescription** manager. Body = selected-medicines `AppListTable` (+ failure banner). Keep footer **Cancel** / **Prescribe**.
+4. Use `AppListTable` + `AppListTableSearch` with **Filters**, **Settings** (column visibility), and trailing actions: **Add medicine**, **Review billing**, **Remove selected**. Match clinical catalog/worklist search-bar patterns.
+5. First column = row checkbox. **Remove selected** deletes checked lines only (reuse shared confirm if one already exists). Empty selection disables the action.
+6. Default-visible columns: medicine name, dose, route/frequency (or readable summary), quantity. Nest duration, instructions, price via Settings. Keep row edit (existing line dialog) and single-row remove if the table pattern supports it.
+7. **Add medicine** opens the existing line dialog; Done appends a row. **Review billing** opens existing billing flow when ≥1 medicine exists; disable when empty or saving.
+8. Cover saving, empty ("No medicines added yet"), no-search-results, line validation, submit failure, success close. Unauthorized prescribe UI must not render. Responsive; theme tokens only.
+9. Tests: help + payment toggle absent; table/search actions present; checkbox remove-selected; add adds a row; review billing gated on non-empty list.
 
 ## Constraints
 
-- Reuse `ClinicalDiagnosisActionDialog`, `AppListTable`, `AppButton`, `AppTextField`, and `AppRadioGroup`; extend shared dense metrics only if required for equal toolbar height or tighter rows.
-- No diagnosis-type semantics, catalog source, or submit-contract changes; no unrelated clinical refactors.
-- Unauthorized UI remains absent via the existing caller write gate.
+- Reuse `AppListTable`/`AppListTableSearch`, add-medicine and billing dialogs, submit payload, and clinical write gate. Prefer shared clinical request table helpers over a prescribe-only table.
+- Do not change pharmacy/backend contracts beyond client bill-later defaulting above.
+- No raw UUIDs; use drug display names and readable dosing.
 
 ## Acceptance Criteria
 
-- Both pane transfer actions match search-field height (1).
-- No on-screen **Diagnosis type** label; radios remain usable with semantics (2).
-- Transfer rows/headers are visually shorter and content-tight on both panes (3).
-- Submit, transfer, empty, error, retry, and success behavior still work (4).
-- Update dialog tests for absent Diagnosis type label and preserved radio/actions; manually verify light/dark on mobile, tablet, and desktop.
+- Help copy and payment-mode controls gone (Req 1–2).
+- No top toolbar or Build prescription dropdown; lines live in `AppListTable` (Req 3–4).
+- Search bar has Filters, Settings, Add medicine, Review billing, Remove selected (Req 4–5, 7).
+- Checkbox + Remove selected deletes only selected lines; Add medicine still works (Req 5–6).
+- Core dosing columns default-visible; Settings nests extras (Req 6).
+- Submit works with bill-later default and optional reviewed billing (Req 2, 7–8).
+- Req 9 tests pass; unauthorized controls absent.
 
 ## Relevant Files
 
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
-- `frontend/lib/shared/components/app_button.dart`
-- `frontend/lib/shared/components/app_text_field.dart`
-- `frontend/lib/shared/components/app_radio_group.dart`
-- `screens/clinical.md`
-- `frontend/test/shared/clinical_actions/clinical_diagnosis_action_dialog_test.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/test/shared/clinical_actions/`
+- `screens/clinical.md` (update only if Prescribe actions/labels change)

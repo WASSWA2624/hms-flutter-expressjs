@@ -910,6 +910,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   String? _cachedSortColumnKey;
   bool? _cachedSortAscending;
   List<T>? _cachedSortedItems;
+  int _lastSeenItemsLength = -1;
 
   @override
   void initState() {
@@ -1397,6 +1398,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final List<T> sourceItems = _usesInfinitePagination
         ? _accumulatedItems
         : sourcePage?.items ?? widget.items ?? <T>[];
+    // In-place list mutations keep the same [List] identity, so also invalidate
+    // when the item count changes (empty → selected rows is the common case).
+    if (sourceItems.length != _lastSeenItemsLength) {
+      _lastSeenItemsLength = sourceItems.length;
+      _invalidateSortCache();
+    }
     final String normalizedQuery = query.trim();
     List<T> visibleItems = sourceItems;
 
@@ -1857,8 +1864,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return sourceItems;
     }
 
+    // Length must be part of the cache key: callers often mutate the same
+    // List instance in place (clear/addAll), which keeps [identical] true.
     if (identical(sourceItems, _cachedSortSource) &&
         _cachedSortedItems != null &&
+        _cachedSortedItems!.length == sourceItems.length &&
         _cachedSortColumnKey == sortColumnKey &&
         _cachedSortAscending == _sortAscending) {
       return _cachedSortedItems!;

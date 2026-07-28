@@ -212,15 +212,70 @@ void main() {
     expect(find.text('Cancel'), findsNothing);
     expect(find.text('0 selected'), findsNothing);
     expect(find.text('Confirm selected studies'), findsOneWidget);
+    expect(find.text('#'), findsNothing);
+    expect(find.text('Modality'), findsWidgets);
+    expect(find.text('Laterality'), findsOneWidget);
+    expect(find.text('Priority'), findsOneWidget);
+    expect(find.text('Body region'), findsWidgets);
+    expect(find.text('Clinical note'), findsOneWidget);
 
-    await tester.tap(find.byType(Checkbox).last);
+    // Row click toggles selection.
+    await tester.tap(find.text('CT chest'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox).last).value, isTrue);
+
+    await tester.tap(find.text('CT chest'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox).last).value, isFalse);
+
+    await tester.tap(find.text('CT chest'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Confirm selected studies'));
     await tester.pumpAndSettle();
 
+    // Confirmed studies must appear in the Request radiology table (not only Total).
+    expect(find.textContaining('No imaging requests selected'), findsNothing);
     expect(find.text('CT chest'), findsOneWidget);
+    expect(find.text('Total'), findsOneWidget);
     expect(find.text('Choose imaging study'), findsNothing);
+  });
+
+  testWidgets('request radiology submits confirmed studies', (
+    WidgetTester tester,
+  ) async {
+    List<ClinicalActionRadiologyRequest>? submitted;
+    await _pumpDialog(
+      tester,
+      ClinicalRadiologyOrderActionDialog(
+        referenceData: const ClinicalActionReferenceData(
+          radiologyTests: _radiologyCatalogFixtures,
+        ),
+        onSearchRadiologyTests: _mockSearchRadiologyTests,
+        onSubmit:
+            ({
+              required List<ClinicalActionRadiologyRequest> requests,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              submitted = requests;
+              return null;
+            },
+      ),
+    );
+
+    await tester.tap(find.text('Add study'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('CT chest'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirm selected studies'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CT chest'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Request radiology'));
+    await tester.pumpAndSettle();
+
+    expect(submitted, isNotNull);
+    expect(submitted!.map((r) => r.radiologyTestId), <String>['RAD-CT-CHEST']);
   });
 }
 
