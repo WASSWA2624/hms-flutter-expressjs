@@ -53,7 +53,7 @@ Tab-strip **Refresh**, **OPD**, **Lab**, and **Discharge** shortcuts were remove
 #### Advanced filters panel (from **Filters**)
 
 - **Choose date** (from / to date pickers)
-  - Location: Advanced filters date fields (`opdDatePickerButtonLabel`).
+  - Location: Advanced filters **Last updated** date fields (`clinicalLastUpdatedLabel` / `opdDatePickerButtonLabel`).
   - Opens modal: Native/app date picker (field chrome).
   - Immediate result: Sets `dateFrom` / `dateTo`.
   - Condition: Date filter enabled (default on clinical worklist).
@@ -454,6 +454,12 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
 
 #### Lab request catalog (from **Add items**)
 
+- **Individual tests** / **Lab panels**
+  - Location: Catalog kind radios (`clinicalLabRequestTestsModeLabel` / `clinicalLabRequestPanelsModeLabel`).
+  - Opens modal: No.
+  - Immediate result: Reloads catalog for tests vs panels; clears/restages selection kind.
+  - Condition: Always in catalog (when parent not saving).
+
 - **Favorite test ActionChips**
   - Location: Frequently used tests wrap.
   - Opens modal: No.
@@ -478,6 +484,18 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
   - Condition: Always.
 
 #### Request billing (from **Review billing**)
+
+- **Bill later** / **Pay now**
+  - Location: Billing panel payment-mode radios.
+  - Opens modal: No.
+  - Immediate result: Sets payment mode / paid-amount behavior for the submit payload.
+  - Condition: Panel enabled (parent not saving).
+
+- **Decrease quantity** / **Increase quantity** (icon-only)
+  - Location: Per editable billing line quantity stepper.
+  - Opens modal: No.
+  - Immediate result: Adjusts line quantity (decrease disabled at qty ≤ 1).
+  - Condition: Panel enabled.
 
 - **Cancel** / **Done**
   - Location: Billing dialog footer.
@@ -560,6 +578,12 @@ Same toolbar pattern as lab:
 
 #### Procedure catalog (from **Add items**)
 
+- **Catalog source chips** (All / Favorites / Facility / Global)
+  - Location: Catalog layer selector.
+  - Opens modal: No.
+  - Immediate result: Reloads procedure catalog for selected source.
+  - Condition: Always in catalog.
+
 - **Add**
   - Location: Catalog footer.
   - Opens modal: No.
@@ -618,8 +642,8 @@ Used when disposition is not admission/IPD discharge context.
 
 Used when admission discharge context applies (has admission + IPD/active admission state/location).
 
-- **Try again / Refresh** (load error body action, and footer **Refresh**)
-  - Location: Error body / footer secondary.
+- **Refresh** (load error body action, and footer **Refresh**)
+  - Location: Error body / footer secondary (`commonRefreshActionLabel`).
   - Opens modal: No.
   - Immediate result: Reloads admission discharge detail.
   - Condition: Error body when load failed; footer when detail loaded.
