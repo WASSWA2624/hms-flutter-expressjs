@@ -316,6 +316,8 @@ final class WardProfileDto {
     required this.isActive,
     this.resourceUuid,
     this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -332,6 +334,8 @@ final class WardProfileDto {
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id') ??
           _optionalString(json, 'human_friendly_id'),
+      createdAt: _optionalDateTime(json, 'created_at'),
+      updatedAt: _optionalDateTime(json, 'updated_at'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -345,6 +349,8 @@ final class WardProfileDto {
   final bool isActive;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   WardProfile toEntity() {
@@ -358,6 +364,8 @@ final class WardProfileDto {
       isActive: isActive,
       resourceUuid: resourceUuid,
       displayId: displayId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       deletedAt: deletedAt,
     );
   }

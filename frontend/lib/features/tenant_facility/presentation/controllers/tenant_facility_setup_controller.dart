@@ -75,8 +75,6 @@ final class TenantFacilitySetupController
         .loadSetup(
           facilityId: _selectedFacilityId,
           tenantId: _selectedTenantId,
-          includeDeleted: false,
-          includeStructure: false,
         )
         .then((Result<FacilitySetupSnapshot> result) {
           if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
@@ -101,8 +99,6 @@ final class TenantFacilitySetupController
           .loadSetup(
             facilityId: _selectedFacilityId,
             tenantId: _selectedTenantId,
-            includeDeleted: false,
-            includeStructure: false,
           );
       if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
         _selectedFacilityId ??= value.facility?.id;

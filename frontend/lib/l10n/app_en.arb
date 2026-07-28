@@ -9438,6 +9438,10 @@
   "@tenantFacilityEditWardTitle": {
     "description": "Edit ward modal title."
   },
+  "tenantFacilityWardIdLabel": "Ward ID",
+  "@tenantFacilityWardIdLabel": {
+    "description": "Human-friendly ward identifier label in details."
+  },
   "tenantFacilityWardDetailsTitle": "Ward details",
   "@tenantFacilityWardDetailsTitle": {
     "description": "Title for the focused ward details dialog."

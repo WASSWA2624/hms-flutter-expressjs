@@ -332,6 +332,8 @@ final class WardProfile {
     this.isActive = true,
     this.resourceUuid,
     this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -344,6 +346,8 @@ final class WardProfile {
   final bool isActive;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
@@ -361,6 +365,8 @@ final class WardProfile {
     bool? isActive,
     String? resourceUuid,
     String? displayId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -374,6 +380,8 @@ final class WardProfile {
       isActive: isActive ?? this.isActive,
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }

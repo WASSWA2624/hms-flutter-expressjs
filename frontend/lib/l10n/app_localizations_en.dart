@@ -7446,6 +7446,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityEditWardTitle => 'Edit ward';
 
   @override
+  String get tenantFacilityWardIdLabel => 'Ward ID';
+
+  @override
   String get tenantFacilityWardDetailsTitle => 'Ward details';
 
   @override

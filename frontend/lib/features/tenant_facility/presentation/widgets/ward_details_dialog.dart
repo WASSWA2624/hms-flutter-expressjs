@@ -6,9 +6,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -287,6 +289,17 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
     final String? facilityName = _resolveFacilityName();
     final String typeLabel = _wardTypeLabel(l10n, _ward.type);
     final String departmentName = _resolveDepartmentName();
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      _ward.displayId,
+      opaqueId: _ward.resourceUuid ?? _ward.id,
+    );
+    final Locale locale = Localizations.localeOf(context);
+    final String? createdAt = _ward.createdAt == null
+        ? null
+        : AppFormatters.dateTime(_ward.createdAt!, locale);
+    final String? updatedAt = _ward.updatedAt == null
+        ? null
+        : AppFormatters.dateTime(_ward.updatedAt!, locale);
 
     final List<_WardDetailFact> facts = <_WardDetailFact>[
       _WardDetailFact(
@@ -309,6 +322,12 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
         value: statusLabel,
         icon: Icons.toggle_on_outlined,
       ),
+      if (displayId != null)
+        _WardDetailFact(
+          label: l10n.tenantFacilityWardIdLabel,
+          value: displayId,
+          icon: Icons.tag_outlined,
+        ),
       _WardDetailFact(
         label: l10n.profileTenantLabel,
         value: _resolveTenantName(),
@@ -319,6 +338,18 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
           label: l10n.profileFacilityLabel,
           value: facilityName,
           icon: Icons.local_hospital_outlined,
+        ),
+      if (createdAt != null)
+        _WardDetailFact(
+          label: l10n.tenantFacilityCreatedAtLabel,
+          value: createdAt,
+          icon: Icons.schedule_outlined,
+        ),
+      if (updatedAt != null)
+        _WardDetailFact(
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          value: updatedAt,
+          icon: Icons.update_outlined,
         ),
     ];
 
@@ -387,6 +418,14 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            if (displayId != null)
+                              Text(
+                                displayId,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                           ],
                         ),
                       ],

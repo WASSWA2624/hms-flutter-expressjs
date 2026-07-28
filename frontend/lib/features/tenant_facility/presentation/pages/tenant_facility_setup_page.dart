@@ -51,6 +51,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/management/platform_admin_list_config.dart';
 
 class TenantFacilitySetupPage extends ConsumerWidget {
   const TenantFacilitySetupPage({super.key, this.initialQuery});
@@ -2563,7 +2564,7 @@ class _DepartmentSetupSectionState
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter = 'active';
+  String? _listStatusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -2676,7 +2677,7 @@ class _DepartmentSetupSectionState
   Future<void> _onFiltersChanged(AppSearchBarFilterValue value) async {
     final String? previousTenant = _tenantFilterId;
     _applyServerFilters(value);
-    _statusFilter = value.option('status');
+    _listStatusFilter = value.option('status');
     _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     if (tenantChanged) {
@@ -2812,7 +2813,7 @@ class _DepartmentSetupSectionState
                 : scopedTenantId,
           )
         : null;
-    final bool includeDeleted = _statusFilter != 'active';
+    final bool includeDeleted = _listStatusFilter != 'active';
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
         repository.listDepartments(
           request: _pageRequest,
@@ -2869,7 +2870,7 @@ class _DepartmentSetupSectionState
         };
 
         List<DepartmentProfile> departments = page.items;
-        if (_statusFilter == 'deleted') {
+        if (_listStatusFilter == 'deleted') {
           departments = departments
               .where((DepartmentProfile item) => item.isDeleted)
               .toList(growable: false);
@@ -2878,7 +2879,7 @@ class _DepartmentSetupSectionState
           _loading = false;
           _failure = null;
           _departments = departments;
-          _totalItemCount = _statusFilter == 'deleted'
+          _totalItemCount = _listStatusFilter == 'deleted'
               ? departments.length
               : (page.totalItemCount ?? departments.length);
           _tenantOptions = tenants;
@@ -3031,9 +3032,12 @@ class _DepartmentSetupSectionState
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final TenantFacilityDepartmentsListScope scope =
         tenantFacilityDepartmentsListScope(policy);
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isSubmitting = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select(
+        (TenantFacilitySetupSubmissionState state) => state.isSubmitting,
+      ),
+    );
     final bool canManageRecords = widget.canSubmit;
-    final bool isSubmitting = submission.isSubmitting;
     final TenantFacilityDepartmentsListScope createScope = scope;
     final bool prerequisitesMet =
         createScope == TenantFacilityDepartmentsListScope.facility
@@ -3113,6 +3117,11 @@ class _DepartmentSetupSectionState
               return details;
             },
             items: _departments,
+            serverDrivenList: true,
+            onSearchChanged: _onSearchChanged,
+            pageRequest: _pageRequest,
+            totalItemCount: _totalItemCount,
+            onPageChanged: _onPageChanged,
             emptyLabel: l10n.tenantFacilityNoDepartments,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
             searchLabel: l10n.tenantFacilitySearchLabel,
@@ -3318,11 +3327,12 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter = 'active';
+  String? _listStatusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
+  bool _departmentsReady = false;
   List<UnitProfile> _units = const <UnitProfile>[];
   List<DepartmentProfile> _departments = const <DepartmentProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
@@ -3464,6 +3474,8 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     final String? previousTenant = _tenantFilterId;
     final String? previousFacility = _facilityFilterId;
     _applyServerFilters(value);
+    _listStatusFilter = value.option('status');
+    _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     final bool facilityChanged = previousFacility != _facilityFilterId;
     if (tenantChanged) {
@@ -3474,6 +3486,31 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
       _syncDepartmentFilterToOptions();
     }
     await _reload(silent: true);
+  }
+
+
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final String next = raw.trim();
+      if (next == _searchQuery) {
+        return;
+      }
+      _searchQuery = next;
+      _pageRequest = _pageRequest.first();
+      unawaited(_reload(silent: true));
+    });
+  }
+
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    _pageRequest = request;
+    await _reload(silent: true);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _reloadFacilityOptions() async {
@@ -3552,6 +3589,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
       }
       setState(() {
         _loading = false;
+        _departmentsReady = false;
         _units = const <UnitProfile>[];
         _departments = const <DepartmentProfile>[];
         _facilityOptions = const <FacilityProfile>[];
@@ -3589,14 +3627,16 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
+    final bool includeDeleted = _listStatusFilter != 'active';
     final Future<Result<AppPage<UnitProfile>>> unitsFuture = repository
         .listUnits(
-          request: _lookupOptionsRequest,
+          request: _pageRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           departmentId: scopedDepartmentId,
+          search: _searchQuery.isEmpty ? null : _searchQuery,
           isActive: _isActiveFilter,
-          includeDeleted: true,
+          includeDeleted: includeDeleted,
         );
 
     final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
@@ -3645,9 +3685,11 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
         };
 
         List<DepartmentProfile> departments = const <DepartmentProfile>[];
+        bool departmentsReady = false;
         departmentsResult.when(
           success: (AppPage<DepartmentProfile> departmentsPage) {
             departments = departmentsPage.items;
+            departmentsReady = true;
           },
           failure: (_) {},
         );
@@ -3656,10 +3698,20 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
             department.id: department.name,
         };
 
+        List<UnitProfile> units = page.items;
+        if (_listStatusFilter == 'deleted') {
+          units = units
+              .where((UnitProfile item) => item.isDeleted)
+              .toList(growable: false);
+        }
         setState(() {
           _loading = false;
           _failure = null;
-          _units = page.items;
+          _departmentsReady = departmentsReady;
+          _units = units;
+          _totalItemCount = _listStatusFilter == 'deleted'
+              ? units.length
+              : (page.totalItemCount ?? units.length);
           _departments = departments;
           _tenantOptions = tenants;
           _facilityOptions = facilities;
@@ -3675,6 +3727,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
           _failure = failure;
           if (!silent) {
             _units = const <UnitProfile>[];
+            _departmentsReady = false;
           }
         });
       },
@@ -3834,16 +3887,23 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     final TenantFacilityUnitsListScope scope = tenantFacilityUnitsListScope(
       policy,
     );
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isSubmitting = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select(
+        (TenantFacilitySetupSubmissionState state) => state.isSubmitting,
+      ),
+    );
     final bool canManageRecords = widget.canSubmit;
-    final bool isSubmitting = submission.isSubmitting;
-    final bool prerequisitesMet = _accessibleDepartments.isNotEmpty;
+    final bool hasAccessibleDepartments = _accessibleDepartments.isNotEmpty;
+    // Avoid a false gate when departments failed to load independently of units.
+    final bool prerequisitesMet =
+        !_departmentsReady || hasAccessibleDepartments;
     final bool canAdd =
         canManageRecords &&
         prerequisitesMet &&
         !isSubmitting &&
         _busyUnitId == null;
-    final String? blockedMessage = canManageRecords && !prerequisitesMet
+    final String? blockedMessage =
+        canManageRecords && _departmentsReady && !hasAccessibleDepartments
         ? l10n.tenantFacilityGateNeedDepartmentForUnits
         : null;
     final bool showTenantColumn = tenantFacilityUnitsShowsTenantColumn(scope);
@@ -3884,10 +3944,13 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
             body: l10n.tenantFacilityUnitsLoadingBody,
           )
         : _failure != null && _units.isEmpty
-        ? Center(
-            child: Text(
-              l10n.failureMessage(_failure!),
-              textAlign: TextAlign.center,
+        ? AppWorkspaceStatePanel.error(
+            title: l10n.tenantFacilityUnitsListTitle,
+            body: l10n.failureMessage(_failure!),
+            action: AppButton.secondary(
+              label: l10n.commonRetryActionLabel,
+              leadingIcon: Icons.refresh,
+              onPressed: () => unawaited(_reload()),
             ),
           )
         : _SearchableEntityGroup<UnitProfile>(
@@ -3917,6 +3980,11 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
               return details;
             },
             items: _units,
+            serverDrivenList: true,
+            onSearchChanged: _onSearchChanged,
+            pageRequest: _pageRequest,
+            totalItemCount: _totalItemCount,
+            onPageChanged: _onPageChanged,
             emptyLabel: l10n.tenantFacilityNoUnits,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
             searchLabel: l10n.tenantFacilitySearchLabel,
@@ -4102,7 +4170,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter = 'active';
+  String? _listStatusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -4262,6 +4330,8 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     final String? previousTenant = _tenantFilterId;
     final String? previousFacility = _facilityFilterId;
     _applyServerFilters(value);
+    _listStatusFilter = value.option('status');
+    _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     final bool facilityChanged = previousFacility != _facilityFilterId;
     if (tenantChanged) {
@@ -4272,6 +4342,31 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
       _syncDepartmentFilterToOptions();
     }
     await _reload(silent: true);
+  }
+
+
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final String next = raw.trim();
+      if (next == _searchQuery) {
+        return;
+      }
+      _searchQuery = next;
+      _pageRequest = _pageRequest.first();
+      unawaited(_reload(silent: true));
+    });
+  }
+
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    _pageRequest = request;
+    await _reload(silent: true);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _reloadFacilityOptions() async {
@@ -4388,15 +4483,17 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
+    final bool includeDeleted = _listStatusFilter != 'active';
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
         .listWards(
-          request: _lookupOptionsRequest,
+          request: _pageRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           departmentId: scopedDepartmentId,
+          search: _searchQuery.isEmpty ? null : _searchQuery,
           type: _typeFilter,
           isActive: _isActiveFilter,
-          includeDeleted: true,
+          includeDeleted: includeDeleted,
         );
 
     final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
@@ -4458,11 +4555,20 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
             department.id: department.name,
         };
 
+        List<WardProfile> wards = page.items;
+        if (_listStatusFilter == 'deleted') {
+          wards = wards
+              .where((WardProfile item) => item.isDeleted)
+              .toList(growable: false);
+        }
         setState(() {
           _loading = false;
           _failure = null;
           _departmentsReady = departmentsReady;
-          _wards = page.items;
+          _wards = wards;
+          _totalItemCount = _listStatusFilter == 'deleted'
+              ? wards.length
+              : (page.totalItemCount ?? wards.length);
           _departments = departments;
           _tenantOptions = tenants;
           _facilityOptions = facilities;
@@ -4652,9 +4758,12 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     final TenantFacilityWardsListScope scope = tenantFacilityWardsListScope(
       policy,
     );
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isSubmitting = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select(
+        (TenantFacilitySetupSubmissionState state) => state.isSubmitting,
+      ),
+    );
     final bool canManageRecords = widget.canSubmit;
-    final bool isSubmitting = submission.isSubmitting;
     final bool hasAccessibleDepartments = _accessibleDepartments.isNotEmpty;
     // Avoid a false gate when departments failed to load independently of wards.
     final bool prerequisitesMet =
@@ -4707,6 +4816,13 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
             nameColumnLabel: l10n.tenantFacilityWardNameLabel,
             nameDetailBuilder: (WardProfile ward) {
               final List<String> details = <String>[];
+              final String? wardId = tenantFacilityHumanFriendlyDisplayId(
+                ward.displayId,
+                opaqueId: ward.resourceUuid ?? ward.id,
+              );
+              if (wardId != null) {
+                details.add(wardId);
+              }
               final String department = _departmentLabel(ward);
               if (department != '—') {
                 details.add(department);
@@ -4726,6 +4842,11 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
               return details;
             },
             items: _wards,
+            serverDrivenList: true,
+            onSearchChanged: _onSearchChanged,
+            pageRequest: _pageRequest,
+            totalItemCount: _totalItemCount,
+            onPageChanged: _onPageChanged,
             emptyLabel: l10n.tenantFacilityNoWards,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
             searchLabel: l10n.tenantFacilitySearchLabel,
@@ -4912,11 +5033,12 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter = 'active';
+  String? _listStatusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
+  bool _facilitiesReady = false;
   List<RoomProfile> _rooms = const <RoomProfile>[];
   List<WardProfile> _wards = const <WardProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
@@ -5060,6 +5182,8 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     final String? previousTenant = _tenantFilterId;
     final String? previousFacility = _facilityFilterId;
     _applyServerFilters(value);
+    _listStatusFilter = value.option(TenantFacilityRoomsFilterKeys.status);
+    _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     final bool facilityChanged = previousFacility != _facilityFilterId;
     if (tenantChanged) {
@@ -5070,6 +5194,30 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
       _syncWardFilterToOptions();
     }
     await _reload(silent: true);
+  }
+
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final String next = raw.trim();
+      if (next == _searchQuery) {
+        return;
+      }
+      _searchQuery = next;
+      _pageRequest = _pageRequest.first();
+      unawaited(_reload(silent: true));
+    });
+  }
+
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    _pageRequest = request;
+    await _reload(silent: true);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _reloadFacilityOptions() async {
@@ -5148,6 +5296,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
       }
       setState(() {
         _loading = false;
+        _facilitiesReady = false;
         _rooms = const <RoomProfile>[];
         _wards = const <WardProfile>[];
         _facilityOptions = const <FacilityProfile>[];
@@ -5190,13 +5339,15 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
+    final bool includeDeleted = _listStatusFilter != 'active';
     final Future<Result<AppPage<RoomProfile>>> roomsFuture = repository
         .listRooms(
-          request: _lookupOptionsRequest,
+          request: _pageRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           wardId: scopedWardId,
-          includeDeleted: true,
+          search: _searchQuery.isEmpty ? null : _searchQuery,
+          includeDeleted: includeDeleted,
         );
 
     final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
@@ -5232,12 +5383,22 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
           ...snapshot.facilities,
           if (snapshot.facility != null) snapshot.facility!,
         ];
+        bool facilitiesReady = !loadFacilities;
         facilitiesResult?.when(
           success: (AppPage<FacilityProfile> facilitiesPage) {
             facilities = facilitiesPage.items;
+            facilitiesReady = true;
           },
           failure: (_) {},
         );
+        if (scope == TenantFacilityRoomsListScope.facility) {
+          final String? facilityId =
+              (policy.facilityId ?? snapshot.facility?.id)?.trim();
+          facilitiesReady =
+              facilityId != null &&
+              facilityId.isNotEmpty &&
+              !(snapshot.facility?.isDeleted ?? false);
+        }
         final Map<String, String> facilityNames = <String, String>{
           for (final FacilityProfile facility in facilities)
             facility.id: facility.name,
@@ -5254,10 +5415,20 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
           for (final WardProfile ward in wards) ward.id: ward.name,
         };
 
+        List<RoomProfile> rooms = page.items;
+        if (_listStatusFilter == 'deleted') {
+          rooms = rooms
+              .where((RoomProfile item) => item.isDeleted)
+              .toList(growable: false);
+        }
         setState(() {
           _loading = false;
           _failure = null;
-          _rooms = page.items;
+          _facilitiesReady = facilitiesReady;
+          _rooms = rooms;
+          _totalItemCount = _listStatusFilter == 'deleted'
+              ? rooms.length
+              : (page.totalItemCount ?? rooms.length);
           _wards = wards;
           _tenantOptions = tenants;
           _facilityOptions = facilities;
@@ -5273,6 +5444,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
           _failure = failure;
           if (!silent) {
             _rooms = const <RoomProfile>[];
+            _facilitiesReady = false;
           }
         });
       },
@@ -5413,23 +5585,31 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     final TenantFacilityRoomsListScope scope = tenantFacilityRoomsListScope(
       policy,
     );
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isSubmitting = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select(
+        (TenantFacilitySetupSubmissionState state) => state.isSubmitting,
+      ),
+    );
     final bool canManageRecords = widget.canSubmit;
-    final bool isSubmitting = submission.isSubmitting;
-    final bool prerequisitesMet = switch (scope) {
+    final bool hasAccessibleFacilities = switch (scope) {
       TenantFacilityRoomsListScope.facility =>
-        (policy.facilityId ?? snapshot.facility?.id)?.trim().isNotEmpty == true &&
+        (policy.facilityId ?? snapshot.facility?.id)?.trim().isNotEmpty ==
+                true &&
             !(snapshot.facility?.isDeleted ?? false),
       TenantFacilityRoomsListScope.tenant ||
       TenantFacilityRoomsListScope.platform =>
         _accessibleFacilities.isNotEmpty,
     };
+    // Avoid a false gate when facilities failed to load independently of rooms.
+    final bool prerequisitesMet =
+        !_facilitiesReady || hasAccessibleFacilities;
     final bool canAdd =
         canManageRecords &&
         prerequisitesMet &&
         !isSubmitting &&
         _busyRoomId == null;
-    final String? blockedMessage = canManageRecords && !prerequisitesMet
+    final String? blockedMessage =
+        canManageRecords && _facilitiesReady && !hasAccessibleFacilities
         ? l10n.tenantFacilityGateNeedFacilityForRooms
         : null;
     final bool showTenantColumn = tenantFacilityRoomsShowsTenantColumn(scope);
@@ -5481,10 +5661,13 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             body: l10n.tenantFacilityRoomsLoadingBody,
           )
         : _failure != null && _rooms.isEmpty
-        ? Center(
-            child: Text(
-              l10n.failureMessage(_failure!),
-              textAlign: TextAlign.center,
+        ? AppWorkspaceStatePanel.error(
+            title: l10n.tenantFacilityRoomsLabel,
+            body: l10n.failureMessage(_failure!),
+            action: AppButton.secondary(
+              label: l10n.commonRetryActionLabel,
+              leadingIcon: Icons.refresh,
+              onPressed: () => unawaited(_reload()),
             ),
           )
         : _SearchableEntityGroup<RoomProfile>(
@@ -5518,6 +5701,11 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
               return details;
             },
             items: _rooms,
+            serverDrivenList: true,
+            onSearchChanged: _onSearchChanged,
+            pageRequest: _pageRequest,
+            totalItemCount: _totalItemCount,
+            onPageChanged: _onPageChanged,
             emptyLabel: l10n.tenantFacilityNoRooms,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
             searchLabel: l10n.tenantFacilitySearchLabel,
@@ -5711,7 +5899,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter = 'active';
+  String? _listStatusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -5901,6 +6089,8 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     final String? previousFacility = _facilityFilterId;
     final String? previousWard = _wardFilterId;
     _applyServerFilters(value);
+    _listStatusFilter = value.option('status');
+    _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     final bool facilityChanged = previousFacility != _facilityFilterId;
     final bool wardChanged = previousWard != _wardFilterId;
@@ -5915,6 +6105,31 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
       _syncRoomFilterToOptions();
     }
     await _reload(silent: true);
+  }
+
+
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final String next = raw.trim();
+      if (next == _searchQuery) {
+        return;
+      }
+      _searchQuery = next;
+      _pageRequest = _pageRequest.first();
+      unawaited(_reload(silent: true));
+    });
+  }
+
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    _pageRequest = request;
+    await _reload(silent: true);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _reloadFacilityOptions() async {
@@ -6039,14 +6254,16 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
+    final bool includeDeleted = _listStatusFilter != 'active';
     final Future<Result<AppPage<BedProfile>>> bedsFuture = repository.listBeds(
-      request: _lookupOptionsRequest,
+      request: _pageRequest,
       tenantId: scopedTenantId,
       facilityId: scopedFacilityId,
       wardId: _wardFilterId,
       roomId: _roomFilterId,
+      search: _searchQuery.isEmpty ? null : _searchQuery,
       status: _statusFilter,
-      includeDeleted: true,
+      includeDeleted: includeDeleted,
     );
 
     final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
@@ -6116,10 +6333,19 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
           for (final RoomProfile room in rooms) room.id: room.name,
         };
 
+        List<BedProfile> beds = page.items;
+        if (_listStatusFilter == 'deleted') {
+          beds = beds
+              .where((BedProfile item) => item.isDeleted)
+              .toList(growable: false);
+        }
         setState(() {
           _loading = false;
           _failure = null;
-          _beds = page.items;
+          _beds = beds;
+          _totalItemCount = _listStatusFilter == 'deleted'
+              ? beds.length
+              : (page.totalItemCount ?? beds.length);
           _wards = wards;
           _rooms = rooms;
           _tenantOptions = tenants;
@@ -6323,9 +6549,12 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     final TenantFacilityBedsListScope scope = tenantFacilityBedsListScope(
       policy,
     );
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isSubmitting = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select(
+        (TenantFacilitySetupSubmissionState state) => state.isSubmitting,
+      ),
+    );
     final bool canManageRecords = widget.canSubmit;
-    final bool isSubmitting = submission.isSubmitting;
     final bool prerequisitesMet = _accessibleWards.isNotEmpty;
     final bool canAdd =
         canManageRecords &&
@@ -6393,6 +6622,11 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
               return details;
             },
             items: _beds,
+            serverDrivenList: true,
+            onSearchChanged: _onSearchChanged,
+            pageRequest: _pageRequest,
+            totalItemCount: _totalItemCount,
+            onPageChanged: _onPageChanged,
             emptyLabel: l10n.tenantFacilityNoBeds,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
             searchLabel: l10n.tenantFacilitySearchLabel,
@@ -6653,6 +6887,11 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.statusLabelBuilder,
     this.nameColumnLabel,
     this.nameDetailBuilder,
+    this.serverDrivenList = false,
+    this.onSearchChanged,
+    this.pageRequest,
+    this.totalItemCount,
+    this.onPageChanged,
   });
 
   final String title;
@@ -6691,6 +6930,11 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String Function(T item)? statusLabelBuilder;
   final String? nameColumnLabel;
   final List<String> Function(T item)? nameDetailBuilder;
+  final bool serverDrivenList;
+  final ValueChanged<String>? onSearchChanged;
+  final AppPageRequest? pageRequest;
+  final int? totalItemCount;
+  final Future<void> Function(AppPageRequest request)? onPageChanged;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -6705,7 +6949,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
   static const String _allScopes = '__all_scopes__';
 
   final TextEditingController _searchController = TextEditingController();
-  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  late AppSearchBarFilterValue _filterValue;
   String _scopeId = _allScopes;
 
   bool get _hasScopeSelector =>
@@ -6714,7 +6958,27 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       widget.itemScopeId != null;
 
   @override
+  void initState() {
+    super.initState();
+    _filterValue = widget.serverDrivenList
+        ? const AppSearchBarFilterValue(
+            options: <String, String>{_statusFilterKey: _statusActive},
+          )
+        : AppSearchBarFilterValue.empty;
+    if (widget.serverDrivenList && widget.onSearchChanged != null) {
+      _searchController.addListener(_handleSearchTextChanged);
+    }
+  }
+
+  void _handleSearchTextChanged() {
+    widget.onSearchChanged?.call(_searchController.text);
+  }
+
+  @override
   void dispose() {
+    if (widget.serverDrivenList && widget.onSearchChanged != null) {
+      _searchController.removeListener(_handleSearchTextChanged);
+    }
     _searchController.dispose();
     super.dispose();
   }
@@ -6736,10 +7000,12 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
   List<T> get _visibleItems {
     final String? status = _filterValue.options[_statusFilterKey];
     Iterable<T> items = widget.items;
-    if (status == _statusActive) {
-      items = items.where((T item) => !widget.isDeletedBuilder(item));
-    } else if (status == _statusDeleted) {
-      items = items.where(widget.isDeletedBuilder);
+    if (!widget.serverDrivenList) {
+      if (status == _statusActive) {
+        items = items.where((T item) => !widget.isDeletedBuilder(item));
+      } else if (status == _statusDeleted) {
+        items = items.where(widget.isDeletedBuilder);
+      }
     }
     final String? Function(T item)? itemScopeId = widget.itemScopeId;
     if (_hasScopeSelector && _scopeId != _allScopes && itemScopeId != null) {
@@ -6753,8 +7019,15 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final List<T> items = _visibleItems;
+    final bool hasNonDefaultStatus =
+        _filterValue.options[_statusFilterKey] != null &&
+        !(widget.serverDrivenList &&
+            _filterValue.options[_statusFilterKey] == _statusActive);
     final bool hasActiveFilters =
-        _filterValue.options.isNotEmpty ||
+        hasNonDefaultStatus ||
+        _filterValue.options.keys.any(
+          (String key) => key != _statusFilterKey,
+        ) ||
         (_hasScopeSelector && _scopeId != _allScopes);
 
     final double actionGap = theme.spacing.xs;
@@ -6867,7 +7140,37 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         : null;
 
     final Widget table = AppListTable<T>(
-      items: items,
+      items: widget.serverDrivenList ? null : items,
+      page: widget.serverDrivenList
+          ? AppPage<T>(
+              items: items,
+              request: widget.pageRequest ?? PlatformAdminListConfig.initialPageRequest,
+              totalItemCount: widget.totalItemCount ?? items.length,
+            )
+          : null,
+      isLoading: searchLoading,
+      paginationMode: widget.serverDrivenList
+          ? AppListTablePaginationMode.buttons
+          : AppListTablePaginationMode.infinite,
+      onPageChanged: widget.serverDrivenList ? (AppPageRequest request) {
+        unawaited(widget.onPageChanged?.call(request) ?? Future<void>.value());
+      } : null,
+      previousPageLabel: widget.serverDrivenList ? l10n.hrPreviousPageLabel : null,
+      nextPageLabel: widget.serverDrivenList ? l10n.hrNextPageLabel : null,
+      pageLabelBuilder: widget.serverDrivenList
+          ? (AppPage<T> page) {
+              if (searchLoading) {
+                return '';
+              }
+              final int total = page.totalItemCount ?? page.items.length;
+              if (total == 0) {
+                return l10n.commonTableEmptyLabel;
+              }
+              final int start = page.pageIndex * page.pageSize + 1;
+              final int end = start + page.items.length - 1;
+              return '$start-$end / $total';
+            }
+          : null,
       columnVisibilityStorageKey:
           widget.columnVisibilityStorageKey ??
           'setup_structure_${widget.title}',
@@ -6892,10 +7195,12 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         controller: _searchController,
         semanticLabel: widget.searchLabel,
         hintText: widget.searchHint,
-        matcher: (T item, String query) => _entitySearchText(
-          widget.titleBuilder(item),
-          widget.subtitleBuilder(item),
-        ).contains(_normalizeSearch(query)),
+        matcher: widget.serverDrivenList
+            ? (_, _) => true
+            : (T item, String query) => _entitySearchText(
+                widget.titleBuilder(item),
+                widget.subtitleBuilder(item),
+              ).contains(_normalizeSearch(query)),
         showAdvancedFilterButton: true,
         advancedFilterTitle: l10n.commonFilterActionLabel,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
@@ -8819,19 +9124,8 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
       );
     }
 
-    // Bounded peer set only — backend confirm_similar remains authoritative.
-    // matches (e.g., moving a unit between departments).
+    // Bounded peer set only - backend confirm_similar remains authoritative.
     await appendMatches();
-    // Tighter check restricted to the target department.
-    await appendMatches(scopedDepartmentId: departmentId);
-    final String trimmedName = name.trim();
-    if (trimmedName.isNotEmpty) {
-      await appendMatches(search: trimmedName);
-      await appendMatches(
-        search: trimmedName,
-        scopedDepartmentId: departmentId,
-      );
-    }
 
     return units;
   }
@@ -9575,21 +9869,8 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
       );
     }
 
-    // Always load the full facility peer set first.
+    // Bounded peer set only - backend confirm_similar remains authoritative.
     await appendMatches();
-    if (departmentId != null && departmentId.isNotEmpty) {
-      await appendMatches(scopedDepartmentId: departmentId);
-    }
-    final String trimmedName = name.trim();
-    if (trimmedName.isNotEmpty) {
-      await appendMatches(search: trimmedName);
-      if (departmentId != null && departmentId.isNotEmpty) {
-        await appendMatches(
-          search: trimmedName,
-          scopedDepartmentId: departmentId,
-        );
-      }
-    }
 
     return wards;
   }
@@ -10299,18 +10580,8 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
       );
     }
 
-    // Always load the full facility peer set first.
+    // Bounded peer set only - backend confirm_similar remains authoritative.
     await appendMatches();
-    if (wardId != null && wardId.isNotEmpty) {
-      await appendMatches(scopedWardId: wardId);
-    }
-    final String trimmedName = name.trim();
-    if (trimmedName.isNotEmpty) {
-      await appendMatches(search: trimmedName);
-      if (wardId != null && wardId.isNotEmpty) {
-        await appendMatches(search: trimmedName, scopedWardId: wardId);
-      }
-    }
 
     return rooms;
   }
@@ -11223,13 +11494,8 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
       );
     }
 
+    // Bounded peer set only - backend confirm_similar remains authoritative.
     await appendMatches();
-    await appendMatches(scopedWardId: wardId);
-    final String trimmedLabel = label.trim();
-    if (trimmedLabel.isNotEmpty) {
-      await appendMatches(search: trimmedLabel);
-      await appendMatches(search: trimmedLabel, scopedWardId: wardId);
-    }
 
     return beds;
   }

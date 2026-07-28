@@ -361,7 +361,7 @@ class _FacilityCatalogConfigPanelState
     _diagnosisSearchController.addListener(_onDiagnosisSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(_ensureTabLoaded(_activeTab, prefetchSiblings: false));
+        unawaited(_ensureTabLoaded(_tab, prefetchSiblings: false));
       }
     });
   }
@@ -374,7 +374,7 @@ class _FacilityCatalogConfigPanelState
       _radiologyHydrated = false;
       _labHydrated = false;
       _diagnosisHydrated = false;
-      unawaited(_ensureTabLoaded(_activeTab, force: true, prefetchSiblings: false));
+      unawaited(_ensureTabLoaded(_tab, force: true, prefetchSiblings: false));
     }
   }
 

@@ -76,6 +76,7 @@ void main() {
       final String sectionSource = roomSectionSource().replaceAll('\r\n', '\n');
 
       expect(sectionSource.contains('_accessibleFacilities.isNotEmpty'), isTrue);
+      expect(sectionSource.contains('_facilitiesReady'), isTrue);
       expect(
         sectionSource.contains('l10n.tenantFacilityGateNeedFacilityForRooms'),
         isTrue,
@@ -142,11 +143,16 @@ void main() {
         sectionSource.contains('tenantFacilityRoomsLoadingBody'),
         isTrue,
       );
+      expect(sectionSource.contains('AppWorkspaceStatePanel.error('), isTrue);
+      expect(sectionSource.contains('commonRetryActionLabel'), isTrue);
       expect(sectionSource.contains('busyItemId: _busyRoomId'), isTrue);
       expect(sectionSource.contains('itemIdBuilder:'), isTrue);
       expect(sectionSource.contains('_runBusyRoomAction'), isTrue);
       expect(sectionSource.contains('onRestore:'), isTrue);
       expect(sectionSource.contains('onPermanentDelete:'), isFalse);
+      expect(sectionSource.contains('serverDrivenList: true'), isTrue);
+      expect(sectionSource.contains('onSearchChanged: _onSearchChanged'), isTrue);
+      expect(sectionSource.contains('onPageChanged: _onPageChanged'), isTrue);
     });
 
     test('default columns nest floor/facility/tenant via optionalColumns', () {
@@ -182,6 +188,10 @@ void main() {
       );
       expect(
         sectionSource.contains('TenantFacilityRoomsFilterKeys.ward'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityRoomsFilterKeys.status'),
         isTrue,
       );
       expect(

@@ -60,6 +60,7 @@ void main() {
       final String sectionSource = unitSectionSource().replaceAll('\r\n', '\n');
 
       expect(sectionSource.contains('_accessibleDepartments.isNotEmpty'), isTrue);
+      expect(sectionSource.contains('_departmentsReady'), isTrue);
       expect(
         sectionSource.contains('l10n.tenantFacilityGateNeedDepartmentForUnits'),
         isTrue,
@@ -121,6 +122,8 @@ void main() {
         sectionSource.contains('tenantFacilityUnitsLoadingBody'),
         isTrue,
       );
+      expect(sectionSource.contains('AppWorkspaceStatePanel.error('), isTrue);
+      expect(sectionSource.contains('commonRetryActionLabel'), isTrue);
       expect(sectionSource.contains('busyItemId: _busyUnitId'), isTrue);
       expect(sectionSource.contains('itemIdBuilder:'), isTrue);
       expect(sectionSource.contains('_runBusyUnitAction'), isTrue);

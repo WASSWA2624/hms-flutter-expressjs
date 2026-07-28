@@ -274,8 +274,16 @@ void main() {
         isTrue,
       );
       expect(detailsSource.contains('return departmentId;'), isFalse);
+      expect(
+        detailsSource.contains('tenantFacilityHumanFriendlyDisplayId'),
+        isTrue,
+      );
+      expect(detailsSource.contains('tenantFacilityWardIdLabel'), isTrue);
+      expect(detailsSource.contains('tenantFacilityCreatedAtLabel'), isTrue);
+      expect(detailsSource.contains('tenantFacilityUpdatedAtLabel'), isTrue);
       final String sectionSource = wardSectionSource();
       expect(sectionSource.contains('onRowSelected:'), isTrue);
+      expect(sectionSource.contains('tenantFacilityHumanFriendlyDisplayId'), isTrue);
       expect(setupPageSource.contains('departmentName: departmentName'), isTrue);
     });
   });

@@ -13726,6 +13726,12 @@ abstract class AppLocalizations {
   /// **'Edit ward'**
   String get tenantFacilityEditWardTitle;
 
+  /// Human-friendly ward identifier label in details.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward ID'**
+  String get tenantFacilityWardIdLabel;
+
   /// Title for the focused ward details dialog.
   ///
   /// In en, this message translates to:
