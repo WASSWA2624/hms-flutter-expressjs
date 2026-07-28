@@ -224,7 +224,6 @@ Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
     billingSourceColumnId: billingSourceColumn(l10n),
     billingAmountDueColumnId: billingAmountDueColumn(l10n),
     billingAmountPaidColumnId: billingAmountPaidColumn(l10n),
-    billingBalanceColumnId: billingBalanceColumn(l10n),
     billingUpdatedColumnId: billingUpdatedColumn(l10n),
     billingStatusColumnId: billingStatusColumn(l10n),
     billingNextActionColumnId: billingNextActionColumn(
@@ -343,21 +342,6 @@ AppListTableColumn<BillingWorkItem> billingAmountPaidColumn(
         appListTableCompareNumber(left.paidAmount, right.paidAmount),
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(billingMoney(context, item.paidAmount, item.currency));
-    },
-  );
-}
-
-AppListTableColumn<BillingWorkItem> billingBalanceColumn(
-  AppLocalizations l10n,
-) {
-  return AppListTableColumn<BillingWorkItem>(
-    id: billingBalanceColumnId,
-    label: l10n.billingBalanceColumn,
-    numeric: true,
-    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-        appListTableCompareNumber(left.balanceDue, right.balanceDue),
-    cellBuilder: (BuildContext context, BillingWorkItem item) {
-      return Text(billingMoney(context, item.balanceDue, item.currency));
     },
   );
 }
