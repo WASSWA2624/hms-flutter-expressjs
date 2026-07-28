@@ -184,6 +184,38 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<AppPage<WardProfile>>> listWards({
+    required AppPageRequest request,
+    String? tenantId,
+    String? facilityId,
+    String? departmentId,
+    String? search,
+    WardSetupType? type,
+    bool? isActive,
+    bool includeDeleted = false,
+  }) {
+    return _apiClient.get<AppPage<WardProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.wards,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'tenant_id': tenantId,
+          'facility_id': facilityId,
+          'department_id': departmentId,
+          'search': search,
+          'ward_type': type?.apiValue,
+          'is_active': isActive?.toString(),
+          'include_deleted': includeDeleted ? 'true' : null,
+          'sort_by': 'name',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) => _decodeWardPage(data, request: request).page,
+    );
+  }
+
+  @override
   Future<Result<void>> deleteTenant(String id) {
     return _deleteResource(HmsApiResource.tenants, id);
   }
@@ -1472,6 +1504,31 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     );
   }
 
+  static _WardPageDto _decodeWardPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final List<WardProfile> items = decodeList<WardProfileDto>(
+      envelope['data'],
+      WardProfileDto.fromJson,
+    ).map((WardProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
+    return _WardPageDto(
+      page: AppPage<WardProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
   static int? _optionalInt(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -1501,4 +1558,10 @@ final class _UnitPageDto {
   const _UnitPageDto({required this.page});
 
   final AppPage<UnitProfile> page;
+}
+
+final class _WardPageDto {
+  const _WardPageDto({required this.page});
+
+  final AppPage<WardProfile> page;
 }

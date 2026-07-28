@@ -47,6 +47,17 @@ abstract interface class TenantFacilityRepository {
     bool includeDeleted = false,
   });
 
+  Future<Result<AppPage<WardProfile>>> listWards({
+    required AppPageRequest request,
+    String? tenantId,
+    String? facilityId,
+    String? departmentId,
+    String? search,
+    WardSetupType? type,
+    bool? isActive,
+    bool includeDeleted = false,
+  });
+
   Future<Result<void>> deleteTenant(String id);
 
   Future<Result<TenantProfile>> restoreTenant(String id);
