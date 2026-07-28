@@ -219,8 +219,11 @@ class _AppTextFieldState extends State<AppTextField> {
         contentPadding: widget.isDense
             ? EdgeInsets.symmetric(
                 horizontal: theme.spacing.sm,
-                vertical: theme.spacing.sm,
+                vertical: 10,
               )
+            : null,
+        constraints: widget.isDense
+            ? const BoxConstraints.tightFor(height: 40)
             : null,
         label: floatingLabel,
         labelText: floatingLabel == null ? resolvedLabelText : null,

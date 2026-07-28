@@ -91,6 +91,9 @@ void main() {
     );
     expect(typeGroup.presentation, AppRadioGroupPresentation.borderless);
     expect(typeGroup.dense, isTrue);
+    expect(typeGroup.labelText, isNull);
+    expect(typeGroup.semanticLabel, 'Diagnosis type');
+    expect(find.text('Diagnosis type'), findsNothing);
     expect(find.text('Primary'), findsWidgets);
     expect(find.text('Secondary'), findsOneWidget);
     expect(find.text('Differential'), findsOneWidget);

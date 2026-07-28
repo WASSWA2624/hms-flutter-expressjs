@@ -112,12 +112,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
               context: context,
               failure: _catalogFailure!,
             ),
-          _buildDiagnosisTypeRow(
-            context: context,
-            l10n: l10n,
-            theme: theme,
-            wideLayout: wideLayout,
-          ),
+          _buildDiagnosisTypeRadios(l10n: l10n, wideLayout: wideLayout),
           SizedBox(height: theme.spacing.sm),
           Expanded(
             child: LayoutBuilder(
@@ -215,15 +210,12 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     );
   }
 
-  Widget _buildDiagnosisTypeRow({
-    required BuildContext context,
+  Widget _buildDiagnosisTypeRadios({
     required AppLocalizations l10n,
-    required ThemeData theme,
     required bool wideLayout,
   }) {
-    final AppRadioGroup<String> radios = AppRadioGroup<String>(
+    return AppRadioGroup<String>(
       value: _diagnosisType,
-      labelText: wideLayout ? null : l10n.opdDiagnosisTypeLabel,
       semanticLabel: l10n.opdDiagnosisTypeLabel,
       enabled: !_isSaving,
       dense: true,
@@ -250,23 +242,6 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
         }
         setState(() => _diagnosisType = value);
       },
-    );
-
-    if (!wideLayout) {
-      return radios;
-    }
-
-    return Row(
-      children: <Widget>[
-        Text(
-          l10n.opdDiagnosisTypeLabel,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(width: theme.spacing.md),
-        Expanded(child: radios),
-      ],
     );
   }
 
@@ -298,23 +273,29 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       child: Row(
         children: <Widget>[
           Expanded(
-            child: AppTextField(
-              controller: searchController,
-              hintText: searchLabel,
-              semanticLabel: searchLabel,
-              useFloatingLabel: false,
-              isDense: true,
-              enabled: !_isSaving,
-              onChanged: onSearchChanged,
+            child: SizedBox(
+              height: 40,
+              child: AppTextField(
+                controller: searchController,
+                hintText: searchLabel,
+                semanticLabel: searchLabel,
+                useFloatingLabel: false,
+                isDense: true,
+                enabled: !_isSaving,
+                onChanged: onSearchChanged,
+              ),
             ),
           ),
           SizedBox(width: theme.spacing.sm),
-          AppButton.primary(
-            label: actionLabel,
-            leadingIcon: actionIcon,
-            dense: true,
-            enabled: actionEnabled,
-            onPressed: onAction,
+          SizedBox(
+            height: 40,
+            child: AppButton.primary(
+              label: actionLabel,
+              leadingIcon: actionIcon,
+              dense: true,
+              enabled: actionEnabled,
+              onPressed: onAction,
+            ),
           ),
         ],
       ),
@@ -468,7 +449,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                 softWrap: true,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  height: 1.25,
+                  height: 1.15,
                 ),
               ),
               if (subtitle.isNotEmpty)
@@ -477,7 +458,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                   softWrap: true,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
-                    height: 1.25,
+                    height: 1.1,
                   ),
                 ),
             ],

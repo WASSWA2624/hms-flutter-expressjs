@@ -241,10 +241,10 @@ class AppButton extends StatelessWidget {
                 : compact
                 ? spacing.md
                 : spacing.lg,
-            vertical: dense ? spacing.xs : spacing.sm,
+            vertical: dense ? 0 : spacing.sm,
           );
     final double minimumDimension = math.max(
-      dense ? 36 : theme.appTokens.minInteractiveDimension,
+      dense ? 40 : theme.appTokens.minInteractiveDimension,
       theme.appTokens.listIconSize + (dense ? spacing.sm : spacing.lg),
     );
 
@@ -257,11 +257,14 @@ class AppButton extends StatelessWidget {
       minimumSize: WidgetStatePropertyAll<Size>(
         iconOnly
             ? Size.square(minimumDimension)
-            : Size(
-                spacing.none,
-                dense ? 36 : theme.appTokens.minInteractiveDimension,
-              ),
+            : Size(spacing.none, dense ? 40 : theme.appTokens.minInteractiveDimension),
       ),
+      maximumSize: dense && !iconOnly
+          ? const WidgetStatePropertyAll<Size>(Size(double.infinity, 40))
+          : null,
+      fixedSize: dense && !iconOnly
+          ? const WidgetStatePropertyAll<Size>(Size.fromHeight(40))
+          : null,
       padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(

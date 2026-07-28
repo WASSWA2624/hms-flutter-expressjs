@@ -2651,7 +2651,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
   double get _headingRowHeight {
     if (widget.dense) {
-      return 36;
+      return 32;
     }
     return widget.compact ? 44 : 48;
   }
@@ -2686,14 +2686,14 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    // Content-tight single-line rows; max height still allows wrapped cells.
+    // Content-tight rows; max height still allows wrapped cells.
     final double rowMinHeight = widget.dense
-        ? 28
+        ? 36
         : widget.compact
         ? 32
         : 36;
     final double rowMaxHeight = widget.dense
-        ? 88
+        ? 64
         : widget.compact
         ? 96
         : 112;
