@@ -511,6 +511,48 @@ void main() {
       expect(query.signature, contains('enc-1'));
     });
   });
+
+  group('clinicalOpdFlowApiId', () {
+    test('prefers explicit opdFlowApiId', () {
+      expect(
+        clinicalOpdFlowApiId(
+          _entry(
+            encounterPublicId: 'ENC0000004',
+            opdFlowApiId: 'flow-explicit',
+          ),
+        ),
+        'flow-explicit',
+      );
+    });
+
+    test('uses encounter public id for encounter-sourced outpatient rows', () {
+      expect(
+        clinicalOpdFlowApiId(
+          _entry(
+            sourceQueue: 'ENCOUNTER',
+            encounterId: 'uuid-enc-4',
+            encounterPublicId: 'ENC0000004',
+            encounterType: 'OUTPATIENT',
+          ),
+        ),
+        'ENC0000004',
+      );
+    });
+
+    test('returns null for inpatient rows without explicit flow id', () {
+      expect(
+        clinicalOpdFlowApiId(
+          _entry(
+            sourceQueue: 'IPD',
+            encounterId: 'uuid-ipd',
+            encounterPublicId: 'ENC0000099',
+            encounterType: 'IPD',
+          ),
+        ),
+        isNull,
+      );
+    });
+  });
 }
 
 ClinicalWorklistEntry _entry({
