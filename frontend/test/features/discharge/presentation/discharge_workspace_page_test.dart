@@ -53,6 +53,22 @@ AppAccessPolicy _dischargeWritePolicy() {
   );
 }
 
+AppAccessPolicy _dischargeReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'inpatient-bed-management',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
 const IpdAdmissionSummary _planned = IpdAdmissionSummary(
   id: 'adm-planned',
   displayId: 'ADM-P1',
@@ -88,6 +104,7 @@ void _stubQueue(
     _pending,
     _completed,
   ],
+  bool detailHasSummary = false,
 }) {
   when(() => repository.listQueue(any())).thenAnswer(
     (_) async => Result<AppPage<IpdAdmissionSummary>>.success(
@@ -112,7 +129,17 @@ void _stubQueue(
       orElse: () => items.first,
     );
     return Result<DischargeAdmissionDetail>.success(
-      DischargeAdmissionDetail(ipd: IpdAdmissionDetail(summary: summary)),
+      DischargeAdmissionDetail(
+        ipd: IpdAdmissionDetail(summary: summary),
+        latestDischargeSummary: detailHasSummary
+            ? DischargeSummaryRecord(
+                id: 'sum-1',
+                admissionId: summary.id,
+                status: summary.dischargeStatus ?? 'PLANNED',
+                summaryText: 'Ready for discharge.',
+              )
+            : null,
+      ),
     );
   });
 }
@@ -122,6 +149,7 @@ Future<void> _pumpDischargeWorkspace(
   required _MockDischargeRepository repository,
   DischargeWorklistQuery? initialQuery,
   String initialLocation = '/discharge',
+  AppAccessPolicy? policy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -156,7 +184,9 @@ Future<void> _pumpDischargeWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_dischargeWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          policy ?? _dischargeWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -195,8 +225,10 @@ void main() {
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Carol Completed'), findsOneWidget);
-    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Start discharge plan'), findsNothing);
+    expect(find.byTooltip('Manage clearance'), findsNothing);
+    expect(find.byTooltip('Print discharge summary'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
@@ -240,6 +272,7 @@ void main() {
     expect(find.text('Bob Pending'), findsNothing);
     expect(find.text('Carol Completed'), findsNothing);
     expect(find.byTooltip('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
   testWidgets('deep link section=completed selects Completed tab with Print', (
@@ -258,10 +291,10 @@ void main() {
     expect(find.text('Alice Planned'), findsNothing);
     expect(find.text('Bob Pending'), findsNothing);
     expect(find.byTooltip('Print discharge summary'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
-  testWidgets('switching tabs filters rows and updates primary action', (
+  testWidgets('switching tabs filters rows and updates next-action labels', (
     WidgetTester tester,
   ) async {
     await _pumpDischargeWorkspace(tester, repository: repository);
@@ -279,7 +312,7 @@ void main() {
 
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Alice Planned'), findsNothing);
-    expect(find.byTooltip('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
   });
 
   testWidgets('search matcher filters visible rows client-side', (
@@ -305,6 +338,48 @@ void main() {
 
     expect(find.byType(AppDialog), findsOneWidget);
     verify(() => repository.getAdmissionDetail('adm-planned')).called(1);
+  });
+
+  testWidgets('detail shows one continue action not duplicate planning buttons', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Bob Pending'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('Start discharge plan'), findsWidgets);
+    expect(find.text('Manage clearance'), findsNothing);
+    expect(find.text('Edit summary'), findsNothing);
+  });
+
+  testWidgets('next action opens planning without prior detail shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byTooltip('Start discharge plan').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    verify(() => repository.getAdmissionDetail('adm-pending')).called(1);
+    // Planning dialog uses Save plan / disposition chrome, not detail title alone.
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('unauthorized write hides plan next-action and keeps print', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      policy: _dischargeReadOnlyPolicy(),
+    );
+
+    expect(find.byTooltip('Start discharge plan'), findsNothing);
+    expect(find.byTooltip('Manage clearance'), findsNothing);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
   });
 
   testWidgets('switches to mobile list layout at small breakpoints', (

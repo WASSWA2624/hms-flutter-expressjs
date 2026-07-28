@@ -1054,7 +1054,7 @@ class _NotificationNextActionCell extends ConsumerWidget {
       enabled: !state.isSaving,
       onPressed: () {
         if (canWrite) {
-          unawaited(_handleNotificationNextAction(context, ref, state, item));
+          unawaited(_handleNotificationNextAction(context, ref, item));
           return;
         }
         unawaited(
@@ -1087,7 +1087,6 @@ String _notificationNextActionLabel(
 Future<void> _handleNotificationNextAction(
   BuildContext context,
   WidgetRef ref,
-  CommunicationsWorkspaceState state,
   NotificationItem item,
 ) async {
   final CommunicationsWorkspaceController controller = ref.read(

@@ -36,9 +36,7 @@ Future<void> showCommunicationsNotificationDetailDialog(
       scrollable: true,
       maxWidth: 960,
       content: CommunicationsNotificationDetailContent(
-        state: state,
         notification: notification,
-        canWrite: canWrite,
       ),
       actions: _notificationDialogActions(
         context,
@@ -106,20 +104,16 @@ Future<void> showCommunicationsTemplateDetailDialog(
   );
 }
 
-class CommunicationsNotificationDetailContent extends ConsumerWidget {
+class CommunicationsNotificationDetailContent extends StatelessWidget {
   const CommunicationsNotificationDetailContent({
-    required this.state,
     required this.notification,
-    required this.canWrite,
     super.key,
   });
 
-  final CommunicationsWorkspaceState state;
   final NotificationItem notification;
-  final bool canWrite;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -193,7 +187,6 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
           SizedBox(height: Theme.of(context).spacing.md),
           CommunicationsDeliveryHistory(deliveries: notification.deliveries),
         ],
-        if (canWrite) SizedBox(height: Theme.of(context).spacing.md),
       ],
     );
   }

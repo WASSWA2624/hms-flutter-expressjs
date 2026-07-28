@@ -414,8 +414,6 @@ void main() {
       (_) async => const Result<NotificationMetrics>.success(
         NotificationMetrics(
           total: 1,
-          unread: 0,
-          attentionRequired: 0,
           failedDeliveries: 1,
         ),
       ),
