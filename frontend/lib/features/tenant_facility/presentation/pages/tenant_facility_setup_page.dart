@@ -3966,6 +3966,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
 
   bool _loading = true;
   AppFailure? _failure;
+  bool _departmentsReady = false;
   List<WardProfile> _wards = const <WardProfile>[];
   List<DepartmentProfile> _departments = const <DepartmentProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
@@ -5314,9 +5315,6 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                   tenantOptions: _tenantOptions,
                   facilityOptions: _accessibleFacilities,
                   wardOptions: _accessibleWards,
-                  tenantNameFor: _tenantLabel,
-                  facilityNameFor: _facilityLabel,
-                  wardNameFor: _wardLabel,
                 ),
               ),
             ),
@@ -5377,18 +5375,15 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                   tenantOptions: _tenantOptions,
                   facilityOptions: _accessibleFacilities,
                   wardOptions: _accessibleWards,
-                  tenantNameFor: _tenantLabel,
-                  facilityNameFor: _facilityLabel,
-                  wardNameFor: _wardLabel,
                 );
                 if (!mounted) {
                   return;
                 }
-                setState(() => _busyRoomId = room.id);
+                setState(() => _busyRoomId = room.mutationId);
                 try {
                   await _reload(silent: true);
                 } finally {
-                  if (mounted && _busyRoomId == room.id) {
+                  if (mounted && _busyRoomId == room.mutationId) {
                     setState(() => _busyRoomId = null);
                   }
                 }
@@ -5407,7 +5402,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                     room,
                     () => ref
                         .read(tenantFacilitySetupSubmissionProvider.notifier)
-                        .deleteRoom(room.id),
+                        .deleteRoom(room.mutationId),
                   ),
                 );
                 if (!mounted) {
@@ -5416,7 +5411,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                 try {
                   await _reload(silent: true);
                 } finally {
-                  if (mounted && _busyRoomId == room.id) {
+                  if (mounted && _busyRoomId == room.mutationId) {
                     setState(() => _busyRoomId = null);
                   }
                 }
@@ -5435,7 +5430,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                     room,
                     () => ref
                         .read(tenantFacilitySetupSubmissionProvider.notifier)
-                        .restoreRoom(room.id),
+                        .restoreRoom(room.mutationId),
                   ),
                 );
                 if (!mounted) {
@@ -5444,7 +5439,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                 try {
                   await _reload(silent: true);
                 } finally {
-                  if (mounted && _busyRoomId == room.id) {
+                  if (mounted && _busyRoomId == room.mutationId) {
                     setState(() => _busyRoomId = null);
                   }
                 }
@@ -11166,6 +11161,9 @@ Future<void> _openRoomDialog(
   List<TenantProfile> tenantOptions = const <TenantProfile>[],
   List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
   List<WardProfile> wardOptions = const <WardProfile>[],
+  String Function(RoomProfile room)? tenantNameFor,
+  String Function(RoomProfile room)? facilityNameFor,
+  String Function(RoomProfile room)? wardNameFor,
   bool openDetailsOnSave = true,
 }) async {
   final Object? result = await showAppDialog<Object?>(
@@ -11182,12 +11180,51 @@ Future<void> _openRoomDialog(
   if (!openDetailsOnSave || !context.mounted || result is! RoomProfile) {
     return;
   }
+
+  String? tenantName = tenantNameFor?.call(result) ?? snapshot.tenant?.name;
+  if (tenantName == null || tenantName == '—') {
+    for (final TenantProfile tenant in tenantOptions) {
+      if (tenant.id == result.tenantId) {
+        tenantName = tenant.name;
+        break;
+      }
+    }
+  }
+
+  String? facilityName =
+      facilityNameFor?.call(result) ?? snapshot.facility?.name;
+  if (facilityName == null || facilityName == '—') {
+    for (final FacilityProfile facility in facilityOptions) {
+      if (facility.id == result.facilityId) {
+        facilityName = facility.name;
+        break;
+      }
+    }
+  }
+
+  String? wardName = wardNameFor?.call(result);
+  if (wardName == null || wardName == '—') {
+    wardName = _wardName(snapshot, result.wardId);
+    if (wardName == null) {
+      final String? wardId = result.wardId?.trim();
+      if (wardId != null && wardId.isNotEmpty) {
+        for (final WardProfile ward in wardOptions) {
+          if (ward.id == wardId) {
+            wardName = ward.name;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   await _openRoomDetails(
     context,
     room: result,
     snapshot: snapshot,
-    tenantName: snapshot.tenant?.name,
-    facilityName: snapshot.facility?.name,
+    tenantName: tenantName,
+    facilityName: facilityName,
+    wardName: wardName,
   );
 }
 

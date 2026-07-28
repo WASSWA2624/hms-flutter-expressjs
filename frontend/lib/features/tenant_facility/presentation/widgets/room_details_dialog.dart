@@ -6,9 +6,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -141,14 +143,14 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
     }
     final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
     if (snapshot == null) {
-      return wardId;
+      return _emptyValue;
     }
     for (final WardProfile ward in snapshot.wards) {
       if (ward.id == wardId) {
         return ward.name;
       }
     }
-    return wardId;
+    return _emptyValue;
   }
 
   RoomProfile? _findRoomInSetup() {
@@ -265,6 +267,17 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
     final String floor = _room.floor?.trim().isNotEmpty == true
         ? _room.floor!.trim()
         : _emptyValue;
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      _room.displayId,
+      opaqueId: _room.resourceUuid ?? _room.id,
+    );
+    final Locale locale = Localizations.localeOf(context);
+    final String? createdAt = _room.createdAt == null
+        ? null
+        : AppFormatters.dateTime(_room.createdAt!, locale);
+    final String? updatedAt = _room.updatedAt == null
+        ? null
+        : AppFormatters.dateTime(_room.updatedAt!, locale);
 
     final List<_RoomDetailFact> facts = <_RoomDetailFact>[
       _RoomDetailFact(
@@ -287,6 +300,12 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
         value: statusLabel,
         icon: Icons.toggle_on_outlined,
       ),
+      if (displayId != null)
+        _RoomDetailFact(
+          label: l10n.tenantFacilityRoomIdLabel,
+          value: displayId,
+          icon: Icons.tag_outlined,
+        ),
       _RoomDetailFact(
         label: l10n.profileFacilityLabel,
         value: _resolveFacilityName(),
@@ -297,6 +316,18 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
         value: _resolveTenantName(),
         icon: Icons.apartment_outlined,
       ),
+      if (createdAt != null)
+        _RoomDetailFact(
+          label: l10n.tenantFacilityCreatedAtLabel,
+          value: createdAt,
+          icon: Icons.schedule_outlined,
+        ),
+      if (updatedAt != null)
+        _RoomDetailFact(
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          value: updatedAt,
+          icon: Icons.update_outlined,
+        ),
     ];
 
     return AppDialog(
@@ -357,6 +388,14 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
                               label: statusLabel,
                               tone: _statusTone(),
                             ),
+                            if (displayId != null)
+                              Text(
+                                displayId,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             Text(
                               _resolveWardName(),
                               style: theme.textTheme.labelLarge?.copyWith(

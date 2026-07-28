@@ -11,6 +11,9 @@ void main() {
     late String roomSimilaritySource;
     late String roomSimilarityDialogSource;
     late String roomDetailsDialogSource;
+    late String roomDtoSource;
+    late String roomEntitySource;
+    late String roomServiceSource;
 
     setUpAll(() {
       setupPageSource = File(
@@ -33,6 +36,15 @@ void main() {
       ).readAsStringSync();
       roomDetailsDialogSource = File(
         'lib/features/tenant_facility/presentation/widgets/room_details_dialog.dart',
+      ).readAsStringSync();
+      roomDtoSource = File(
+        'lib/features/tenant_facility/data/dtos/tenant_facility_dtos.dart',
+      ).readAsStringSync();
+      roomEntitySource = File(
+        'lib/features/tenant_facility/domain/entities/tenant_facility_setup.dart',
+      ).readAsStringSync();
+      roomServiceSource = File(
+        '../backend/src/modules/room/services/room.service.js',
       ).readAsStringSync();
     });
 
@@ -123,7 +135,11 @@ void main() {
     test('room list uses branded loader and row-scoped mutation busy', () {
       final String sectionSource = roomSectionSource();
       expect(
-        sectionSource.contains('AppLoadingIndicator.compact()'),
+        sectionSource.contains('tenantFacilityRoomsLoadingTitle'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityRoomsLoadingBody'),
         isTrue,
       );
       expect(sectionSource.contains('busyItemId: _busyRoomId'), isTrue);
@@ -131,6 +147,21 @@ void main() {
       expect(sectionSource.contains('_runBusyRoomAction'), isTrue);
       expect(sectionSource.contains('onRestore:'), isTrue);
       expect(sectionSource.contains('onPermanentDelete:'), isFalse);
+    });
+
+    test('default columns nest floor/facility/tenant via optionalColumns', () {
+      final String sectionSource = roomSectionSource().replaceAll('\r\n', '\n');
+      expect(sectionSource.contains("id: 'ward'"), isTrue);
+      expect(sectionSource.contains('optionalColumns:'), isTrue);
+      expect(sectionSource.contains("id: 'floor'"), isTrue);
+      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
+      expect(
+        sectionSource.contains('setup_structure_rooms_\${scope.name}_v2'),
+        isTrue,
+      );
+      expect(sectionSource.contains("?? facilityId"), isFalse);
+      expect(sectionSource.contains("?? tenantId"), isFalse);
+      expect(sectionSource.contains("?? wardId"), isFalse);
     });
 
     test('role-scoped columns and filters for rooms', () {
@@ -208,22 +239,48 @@ void main() {
       final String formSource = roomFormSource();
       expect(formSource.contains('AbsorbPointer'), isTrue);
       expect(formSource.contains('Positioned.fill'), isTrue);
-      expect(formSource.contains('_showLoadingOverlay'), isTrue);
+      expect(formSource.contains('showDialogLoadingOverlay'), isTrue);
+      expect(formSource.contains('tenantFacilityRoomFormLoadingTitle'), isTrue);
+      expect(formSource.contains('tenantFacilityRoomSimilarityCheckingBody'), isTrue);
       expect(
         formSource.contains('AppLoadingIndicator.compact(expand: false)'),
         isFalse,
       );
     });
 
-    test('successful save opens room details dialog', () {
+    test('successful save opens room details dialog with related names', () {
       expect(setupPageSource.contains('_openRoomDetails'), isTrue);
       expect(setupPageSource.contains('showRoomDetailsDialog'), isTrue);
       expect(setupPageSource.contains('openDetailsOnSave'), isTrue);
+      expect(setupPageSource.contains('wardNameFor:'), isTrue);
       expect(roomDetailsDialogSource.contains('showRoomDetailsDialog'), isTrue);
       expect(
         roomDetailsDialogSource.contains('tenantFacilityRoomDetailsTitle'),
         isTrue,
       );
+      expect(
+        roomDetailsDialogSource.contains('tenantFacilityRoomIdLabel'),
+        isTrue,
+      );
+      expect(
+        roomDetailsDialogSource.contains('tenantFacilityCreatedAtLabel'),
+        isTrue,
+      );
+      expect(
+        roomDetailsDialogSource.contains('return wardId;'),
+        isFalse,
+      );
+    });
+
+    test('room profile exposes human-friendly id and timestamps', () {
+      expect(roomEntitySource.contains('final String? displayId;'), isTrue);
+      expect(roomEntitySource.contains('final DateTime? createdAt;'), isTrue);
+      expect(roomEntitySource.contains('final DateTime? updatedAt;'), isTrue);
+      expect(roomDtoSource.contains("'display_id'"), isTrue);
+      expect(roomDtoSource.contains("'human_friendly_id'"), isTrue);
+      expect(roomDtoSource.contains("'created_at'"), isTrue);
+      expect(roomServiceSource.contains('normalizeRoomRecord'), isTrue);
+      expect(roomServiceSource.contains('display_id:'), isTrue);
     });
   });
 }
