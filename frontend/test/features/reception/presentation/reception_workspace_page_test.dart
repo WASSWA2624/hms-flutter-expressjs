@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -24,6 +23,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -613,35 +613,21 @@ void main() {
     expect(find.text('Ada Appointment'), findsOneWidget);
     expect(find.text('Schedule appointment'), findsOneWidget);
     expect(find.text('Register patient'), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
-    expect(find.text('Patient registry'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.text('Patient registry'), findsNothing);
     expect(find.text('Full registry'), findsNothing);
-    expect(find.byTooltip('Patient registry'), findsOneWidget);
-    expect(find.bySemanticsLabel('Patient registry'), findsWidgets);
-    expect(find.text('Outpatient (OPD)'), findsOneWidget);
+    expect(find.text('Outpatient (OPD)'), findsNothing);
     expect(find.text('Full OPD'), findsNothing);
-    expect(
-      tester
-          .widget<AppTabToolbarAction>(
-            find.widgetWithText(AppTabToolbarAction, 'Patient registry'),
-          )
-          .icon,
-      AppRouteIcons.patients,
-    );
-    expect(
-      tester
-          .widget<AppTabToolbarAction>(
-            find.widgetWithText(AppTabToolbarAction, 'Outpatient (OPD)'),
-          )
-          .icon,
-      AppRouteIcons.opd,
-    );
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(AppTabToolbarPrimary),
         matching: find.text('Register patient'),
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
       findsOneWidget,
     );
 
@@ -659,7 +645,7 @@ void main() {
         ('desktop light', const Size(1440, 900), AppTheme.light),
         ('mobile dark', const Size(390, 844), AppTheme.dark),
       ]) {
-    testWidgets('navigation shortcuts remain consistent on $name', (
+    testWidgets('omits cross-module toolbar shortcuts on $name', (
       WidgetTester tester,
     ) async {
       await _pumpWorkspace(
@@ -669,57 +655,30 @@ void main() {
         theme: theme,
       );
 
-      final AppTabToolbarAction patientRegistry = tester
-          .widget<AppTabToolbarAction>(
-            find.widgetWithText(AppTabToolbarAction, 'Patient registry'),
-          );
-      final AppTabToolbarAction outpatient = tester.widget<AppTabToolbarAction>(
-        find.widgetWithText(AppTabToolbarAction, 'Outpatient (OPD)'),
-      );
-      expect(patientRegistry.icon, AppRouteIcons.patients);
-      expect(outpatient.icon, AppRouteIcons.opd);
+      expect(find.text('Patient registry'), findsNothing);
+      expect(find.text('Outpatient (OPD)'), findsNothing);
+      expect(find.text('Refresh'), findsNothing);
       expect(find.text('Full OPD'), findsNothing);
+      expect(find.byTooltip('Patient registry'), findsNothing);
+      expect(find.byTooltip('Outpatient (OPD)'), findsNothing);
+      expect(find.byTooltip('Refresh'), findsNothing);
+      expect(
+        find.byType(AppTabToolbarPrimary),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(AppTabToolbarAction, 'Schedule appointment')
+            .evaluate()
+            .isNotEmpty ||
+            find.byTooltip('Schedule appointment').evaluate().isNotEmpty,
+        isTrue,
+        reason: 'Schedule remains available (label or icon-only tooltip)',
+      );
     });
   }
 
-  testWidgets('patient registry shortcut navigates directly without mutation', (
-    WidgetTester tester,
-  ) async {
-    final GoRouter router = await _pumpWorkspace(
-      tester,
-      repository: repository,
-    );
-
-    await tester.tap(
-      find.widgetWithText(AppTabToolbarAction, 'Patient registry'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(router.state.uri.path, '/patients');
-    expect(find.text('Patient registry'), findsOneWidget);
-    verifyNever(() => repository.createAppointment(any()));
-  });
-
-  testWidgets('outpatient shortcut navigates directly without mutation', (
-    WidgetTester tester,
-  ) async {
-    final GoRouter router = await _pumpWorkspace(
-      tester,
-      repository: repository,
-    );
-
-    await tester.tap(
-      find.widgetWithText(AppTabToolbarAction, 'Outpatient (OPD)'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(router.state.uri.path, '/opd');
-    expect(find.text('OPD workspace'), findsOneWidget);
-    verifyNever(() => repository.createAppointment(any()));
-  });
-
   testWidgets(
-    'tab selection updates URL and keeps the complete toolbar active',
+    'tab selection updates URL and keeps the desk toolbar active',
     (WidgetTester tester) async {
       final GoRouter router = await _pumpWorkspace(
         tester,
@@ -739,9 +698,9 @@ void main() {
         expect(router.state.uri.queryParameters['section'], section);
         expect(find.text('Register patient'), findsOneWidget);
         expect(find.text('Schedule appointment'), findsOneWidget);
-        expect(find.text('Refresh'), findsOneWidget);
-        expect(find.text('Patient registry'), findsOneWidget);
-        expect(find.text('Outpatient (OPD)'), findsOneWidget);
+        expect(find.text('Refresh'), findsNothing);
+        expect(find.text('Patient registry'), findsNothing);
+        expect(find.text('Outpatient (OPD)'), findsNothing);
         expect(find.text('Full OPD'), findsNothing);
         expect(find.text('Billing'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
@@ -752,25 +711,18 @@ void main() {
               .onPressed,
           isNotNull,
         );
-        for (final String label in <String>[
-          'Schedule appointment',
-          'Refresh',
-          'Patient registry',
-          'Outpatient (OPD)',
-        ]) {
-          final AppTabToolbarAction action = tester.widget<AppTabToolbarAction>(
-            find.widgetWithText(AppTabToolbarAction, label),
-          );
-          expect(action.enabled, isTrue, reason: '$label on $tab');
-          expect(action.onPressed, isNotNull, reason: '$label on $tab');
-        }
+        final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
+          find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
+        );
+        expect(schedule.enabled, isTrue, reason: 'Schedule on $tab');
+        expect(schedule.onPressed, isNotNull, reason: 'Schedule on $tab');
         expect(
           tester
               .widgetList<AppTabToolbarAction>(find.byType(AppTabToolbarAction))
-              .last
+              .single
               .label,
-          'Refresh',
-          reason: 'Refresh must be the rightmost secondary action on $tab',
+          'Schedule appointment',
+          reason: 'Schedule is the only secondary action on $tab',
         );
       }
     },
@@ -801,59 +753,6 @@ void main() {
       ),
       findsOneWidget,
     );
-  });
-
-  testWidgets('patient registry shortcut is absent without route access', (
-    WidgetTester tester,
-  ) async {
-    await _pumpWorkspace(
-      tester,
-      repository: repository,
-      policy: _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-      initialLocation: '/reception?section=payment-gate',
-    );
-
-    expect(find.text('Payment gate'), findsWidgets);
-    expect(find.text('Patient registry'), findsNothing);
-    expect(find.text('Full registry'), findsNothing);
-    expect(find.byIcon(Icons.badge_outlined), findsNothing);
-  });
-
-  testWidgets(
-    'patient registry shortcut is absent when its module is inactive',
-    (WidgetTester tester) async {
-      await _pumpWorkspace(
-        tester,
-        repository: repository,
-        policy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.patientRead,
-            AppPermissions.billingRead,
-          },
-          patientRegistry: false,
-        ),
-        initialLocation: '/reception?section=payment-gate',
-      );
-
-      expect(find.text('Payment gate'), findsWidgets);
-      expect(find.text('Patient registry'), findsNothing);
-      expect(find.byIcon(Icons.badge_outlined), findsNothing);
-    },
-  );
-
-  testWidgets('outpatient shortcut is absent when its module is inactive', (
-    WidgetTester tester,
-  ) async {
-    await _pumpWorkspace(
-      tester,
-      repository: repository,
-      policy: _policy(schedulingQueue: false),
-      initialLocation: '/reception?section=payment-gate',
-    );
-
-    expect(find.text('Payment gate'), findsWidgets);
-    expect(find.text('Outpatient (OPD)'), findsNothing);
-    expect(find.byIcon(AppRouteIcons.opd), findsNothing);
   });
 
   for (final (String name, Size size) in <(String, Size)>[
@@ -1334,7 +1233,7 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
   });
 
-  testWidgets('payment gate removes settled patients after refresh', (
+  testWidgets('payment gate removes settled patients after controller refresh', (
     WidgetTester tester,
   ) async {
     final _MockBillingRepository changingBilling = _MockBillingRepository();
@@ -1362,8 +1261,14 @@ void main() {
       initialLocation: '/reception?section=payment-gate',
     );
     expect(find.text('Penny Payment'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
 
-    await tester.tap(find.text('Refresh'));
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(ReceptionWorkspacePage)),
+    );
+    await container
+        .read(receptionPaymentGateControllerProvider.notifier)
+        .refresh();
     await tester.pumpAndSettle();
 
     expect(find.text('Penny Payment'), findsNothing);
@@ -1371,233 +1276,166 @@ void main() {
     expect(calls, 2);
   });
 
-  testWidgets('refresh synchronizes every section without loading the page', (
-    WidgetTester tester,
-  ) async {
-    final _MockBillingRepository billingRepository = _MockBillingRepository();
-    _stubBilling(billingRepository);
-    await _pumpWorkspace(
-      tester,
-      repository: repository,
-      billingRepository: billingRepository,
-    );
+  testWidgets(
+    'controller refresh synchronizes every section without loading the page',
+    (WidgetTester tester) async {
+      final _MockBillingRepository billingRepository = _MockBillingRepository();
+      _stubBilling(billingRepository);
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        billingRepository: billingRepository,
+      );
 
-    final appointmentCompleter = Completer<Result<AppPage<OpdAppointment>>>();
-    final queueCompleter = Completer<Result<AppPage<OpdQueueEntry>>>();
-    final flowCompleter = Completer<Result<AppPage<OpdFlowSummary>>>();
-    final billingCompleter = Completer<Result<AppPage<BillingWorkItem>>>();
-    when(
-      () => repository.listAppointments(any()),
-    ).thenAnswer((_) => appointmentCompleter.future);
-    when(
-      () => repository.listVisitQueues(any()),
-    ).thenAnswer((_) => queueCompleter.future);
-    when(
-      () => repository.listOpdFlows(any()),
-    ).thenAnswer((_) => flowCompleter.future);
-    when(
-      () => billingRepository.listWorkItems(any()),
-    ).thenAnswer((_) => billingCompleter.future);
+      final appointmentCompleter = Completer<Result<AppPage<OpdAppointment>>>();
+      final queueCompleter = Completer<Result<AppPage<OpdQueueEntry>>>();
+      final flowCompleter = Completer<Result<AppPage<OpdFlowSummary>>>();
+      final billingCompleter = Completer<Result<AppPage<BillingWorkItem>>>();
+      when(
+        () => repository.listAppointments(any()),
+      ).thenAnswer((_) => appointmentCompleter.future);
+      when(
+        () => repository.listVisitQueues(any()),
+      ).thenAnswer((_) => queueCompleter.future);
+      when(
+        () => repository.listOpdFlows(any()),
+      ).thenAnswer((_) => flowCompleter.future);
+      when(
+        () => billingRepository.listWorkItems(any()),
+      ).thenAnswer((_) => billingCompleter.future);
 
-    await tester.tap(find.text('Refresh'));
-    await tester.pump();
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(ReceptionWorkspacePage)),
+      );
+      unawaited(
+        Future.wait(<Future<Object?>>[
+          container
+              .read(opdWorkspaceControllerProvider.notifier)
+              .refreshReceptionData(),
+          container
+              .read(receptionPaymentGateControllerProvider.notifier)
+              .refresh(),
+        ]),
+      );
+      await tester.pump();
 
-    expect(find.text('Ada Appointment'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) => widget is AppListTable && widget.isLoading,
-      ),
-      findsNothing,
-    );
-    expect(
-      tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
-      isFalse,
-    );
-    final AppTabToolbarPrimary register = tester.widget<AppTabToolbarPrimary>(
-      find.byType(AppTabToolbarPrimary),
-    );
-    expect(register.enabled, isTrue);
-    expect(register.isLoading, isFalse);
-    final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
-      find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
-    );
-    expect(schedule.enabled, isTrue);
-    expect(schedule.isLoading, isFalse);
-    final AppTabToolbarAction refresh = tester.widget<AppTabToolbarAction>(
-      find.widgetWithText(AppTabToolbarAction, 'Refresh'),
-    );
-    expect(refresh.enabled, isFalse);
-    expect(refresh.isLoading, isTrue);
-    expect(
-      find.descendant(
-        of: find.widgetWithText(AppTabToolbarAction, 'Refresh'),
-        matching: find.byType(CircularProgressIndicator),
-      ),
-      findsOneWidget,
-    );
-    expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.byTooltip('Settings'), findsOneWidget);
-
-    const OpdAppointment refreshedAppointment = OpdAppointment(
-      id: 'appointment-refreshed',
-      patientDisplayName: 'Fresh Appointment',
-      status: 'SCHEDULED',
-    );
-    const OpdQueueEntry refreshedQueue = OpdQueueEntry(
-      id: 'queue-refreshed',
-      patientDisplayName: 'Fresh Queue',
-      status: 'WAITING',
-    );
-    final OpdFlowSummary refreshedFlow = OpdFlowSummary(
-      id: 'flow-refreshed',
-      patientDisplayName: 'Fresh Active',
-      status: 'OPEN',
-      startedAt: _todayAtNoon,
-      stage: 'WAITING_VITALS',
-    );
-    final BillingWorkItem refreshedInvoice = _billingInvoice(
-      id: 'invoice-refreshed',
-      displayId: 'INV-REFRESHED',
-      patientId: 'patient-refreshed',
-      patientDisplayId: 'PAT-REFRESHED',
-      patientName: 'Fresh Payment',
-      encounterId: 'encounter-refreshed',
-      encounterDisplayId: 'ENC-REFRESHED',
-      source: 'LABORATORY',
-      description: 'Refreshed service',
-      balance: 10000,
-    );
-    appointmentCompleter.complete(
-      const Result<AppPage<OpdAppointment>>.success(
-        AppPage<OpdAppointment>(
-          items: <OpdAppointment>[refreshedAppointment],
-          request: AppPageRequest(),
-          totalItemCount: 1,
+      expect(find.text('Refresh'), findsNothing);
+      expect(find.text('Ada Appointment'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) => widget is AppListTable && widget.isLoading,
         ),
-      ),
-    );
-    queueCompleter.complete(
-      const Result<AppPage<OpdQueueEntry>>.success(
-        AppPage<OpdQueueEntry>(
-          items: <OpdQueueEntry>[refreshedQueue],
-          request: AppPageRequest(),
-          totalItemCount: 1,
-        ),
-      ),
-    );
-    flowCompleter.complete(
-      Result<AppPage<OpdFlowSummary>>.success(
-        AppPage<OpdFlowSummary>(
-          items: <OpdFlowSummary>[refreshedFlow],
-          request: const AppPageRequest(),
-          totalItemCount: 1,
-        ),
-      ),
-    );
-    billingCompleter.complete(
-      Result<AppPage<BillingWorkItem>>.success(
-        AppPage<BillingWorkItem>(
-          items: <BillingWorkItem>[refreshedInvoice],
-          request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
-          totalItemCount: 1,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+        findsNothing,
+      );
+      expect(
+        tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
+        isFalse,
+      );
+      final AppTabToolbarPrimary register = tester.widget<AppTabToolbarPrimary>(
+        find.byType(AppTabToolbarPrimary),
+      );
+      expect(register.enabled, isTrue);
+      expect(register.isLoading, isFalse);
+      final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
+        find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
+      );
+      expect(schedule.enabled, isTrue);
+      expect(schedule.isLoading, isFalse);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
 
-    final AppTabStrip tabs = tester.widget<AppTabStrip>(
-      find.byType(AppTabStrip),
-    );
-    for (final AppTabItem tab in tabs.tabs) {
-      if (tab.id == ReceptionDeskSection.highPriority.name) {
-        expect(tab.count, 0, reason: tab.id);
-      } else {
-        expect(tab.count, 1, reason: tab.id);
-      }
-    }
-    expect(find.text('Fresh Appointment'), findsOneWidget);
-    await tester.tap(find.textContaining('Desk queue').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Fresh Queue'), findsOneWidget);
-    await tester.tap(find.textContaining('Active visits').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Fresh Active'), findsOneWidget);
-    await tester.tap(find.textContaining('Payment gate').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Fresh Payment'), findsOneWidget);
-  });
-
-  testWidgets('refresh is single-flight and exposes progress tooltip', (
-    WidgetTester tester,
-  ) async {
-    final Completer<Result<AppPage<OpdAppointment>>> completer =
-        Completer<Result<AppPage<OpdAppointment>>>();
-    var appointmentCalls = 0;
-    when(() => repository.listAppointments(any())).thenAnswer((
-      Invocation invocation,
-    ) {
-      appointmentCalls += 1;
-      if (appointmentCalls == 1) {
-        return Future<Result<AppPage<OpdAppointment>>>.value(
-          Result<AppPage<OpdAppointment>>.success(
-            AppPage<OpdAppointment>(
-              items: const <OpdAppointment>[_appointment],
-              request:
-                  (invocation.positionalArguments.single as OpdAppointmentQuery)
-                      .pageRequest,
-            ),
+      const OpdAppointment refreshedAppointment = OpdAppointment(
+        id: 'appointment-refreshed',
+        patientDisplayName: 'Fresh Appointment',
+        status: 'SCHEDULED',
+      );
+      const OpdQueueEntry refreshedQueue = OpdQueueEntry(
+        id: 'queue-refreshed',
+        patientDisplayName: 'Fresh Queue',
+        status: 'WAITING',
+      );
+      final OpdFlowSummary refreshedFlow = OpdFlowSummary(
+        id: 'flow-refreshed',
+        patientDisplayName: 'Fresh Active',
+        status: 'OPEN',
+        startedAt: _todayAtNoon,
+        stage: 'WAITING_VITALS',
+      );
+      final BillingWorkItem refreshedInvoice = _billingInvoice(
+        id: 'invoice-refreshed',
+        displayId: 'INV-REFRESHED',
+        patientId: 'patient-refreshed',
+        patientDisplayId: 'PAT-REFRESHED',
+        patientName: 'Fresh Payment',
+        encounterId: 'encounter-refreshed',
+        encounterDisplayId: 'ENC-REFRESHED',
+        source: 'LABORATORY',
+        description: 'Refreshed service',
+        balance: 10000,
+      );
+      appointmentCompleter.complete(
+        const Result<AppPage<OpdAppointment>>.success(
+          AppPage<OpdAppointment>(
+            items: <OpdAppointment>[refreshedAppointment],
+            request: AppPageRequest(),
+            totalItemCount: 1,
           ),
-        );
-      }
-      return completer.future;
-    });
-    await _pumpWorkspace(tester, repository: repository);
-
-    final Finder refreshAction = find.widgetWithText(
-      AppTabToolbarAction,
-      'Refresh',
-    );
-    final Size idleSize = tester.getSize(refreshAction);
-    await tester.tap(find.text('Refresh'));
-    await tester.pump();
-    expect(find.byTooltip('Refresh in progress'), findsOneWidget);
-    expect(find.bySemanticsLabel('Refresh in progress'), findsOneWidget);
-    expect(tester.widget<AppTabToolbarAction>(refreshAction).isLoading, isTrue);
-    expect(tester.getSize(refreshAction), idleSize);
-    expect(
-      find.descendant(
-        of: refreshAction,
-        matching: find.byType(CircularProgressIndicator),
-      ),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Refresh'));
-    await tester.pump();
-    expect(appointmentCalls, 2);
-
-    completer.complete(
-      const Result<AppPage<OpdAppointment>>.success(
-        AppPage<OpdAppointment>(
-          items: <OpdAppointment>[_appointment],
-          request: AppPageRequest(),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('Refresh'), findsOneWidget);
-    expect(
-      tester.widget<AppTabToolbarAction>(refreshAction).isLoading,
-      isFalse,
-    );
-    expect(
-      find.descendant(of: refreshAction, matching: find.byIcon(Icons.refresh)),
-      findsOneWidget,
-    );
-    expect(appointmentCalls, 2);
-  });
+      );
+      queueCompleter.complete(
+        const Result<AppPage<OpdQueueEntry>>.success(
+          AppPage<OpdQueueEntry>(
+            items: <OpdQueueEntry>[refreshedQueue],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      flowCompleter.complete(
+        Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: <OpdFlowSummary>[refreshedFlow],
+            request: const AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      billingCompleter.complete(
+        Result<AppPage<BillingWorkItem>>.success(
+          AppPage<BillingWorkItem>(
+            items: <BillingWorkItem>[refreshedInvoice],
+            request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-  testWidgets('refresh restores its icon and retains data after failure', (
+      final AppTabStrip tabs = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      for (final AppTabItem tab in tabs.tabs) {
+        if (tab.id == ReceptionDeskSection.highPriority.name ||
+            tab.id == ReceptionDeskSection.followUps.name) {
+          expect(tab.count, 0, reason: tab.id);
+        } else {
+          expect(tab.count, 1, reason: tab.id);
+        }
+      }
+      expect(find.text('Fresh Appointment'), findsOneWidget);
+      await tester.tap(find.textContaining('Desk queue').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Fresh Queue'), findsOneWidget);
+      await tester.tap(find.textContaining('Active visits').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Fresh Active'), findsOneWidget);
+      await tester.tap(find.textContaining('Payment gate').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Fresh Payment'), findsOneWidget);
+    },
+  );
+
+  testWidgets('controller refresh retains prior data after failure', (
     WidgetTester tester,
   ) async {
     var appointmentCalls = 0;
@@ -1627,23 +1465,17 @@ void main() {
     });
     await _pumpWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Refresh'));
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(ReceptionWorkspacePage)),
+    );
+    await container
+        .read(opdWorkspaceControllerProvider.notifier)
+        .refreshReceptionData();
     await tester.pumpAndSettle();
 
-    final Finder refreshAction = find.widgetWithText(
-      AppTabToolbarAction,
-      'Refresh',
-    );
+    expect(find.text('Refresh'), findsNothing);
     expect(find.text('Ada Appointment'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
-    expect(
-      tester.widget<AppTabToolbarAction>(refreshAction).isLoading,
-      isFalse,
-    );
-    expect(
-      find.descendant(of: refreshAction, matching: find.byIcon(Icons.refresh)),
-      findsOneWidget,
-    );
+    expect(find.text('Schedule appointment'), findsOneWidget);
     expect(appointmentCalls, 2);
   });
 
