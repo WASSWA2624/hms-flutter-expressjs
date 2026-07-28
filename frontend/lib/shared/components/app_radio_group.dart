@@ -126,7 +126,7 @@ class AppRadioGroup<T> extends StatelessWidget {
                           ? theme.textTheme.labelLarge
                           : theme.textTheme.titleSmall)
                       ?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
                 SizedBox(height: dense ? theme.spacing.xs : theme.spacing.sm),
@@ -298,7 +298,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
                   ? theme.textTheme.bodyMedium
                   : theme.textTheme.titleSmall)
               ?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: borderless ? 1.2 : null,
                 color: enabled
                     ? colors.onSurface

@@ -62,7 +62,7 @@ class AppMenuCountBadge extends StatelessWidget {
       textAlign: TextAlign.end,
       style: theme.textTheme.titleSmall?.copyWith(
         color: accentColor,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w600,
         height: 1,
       ),
     );

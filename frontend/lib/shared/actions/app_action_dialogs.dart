@@ -582,7 +582,7 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
                     : colorScheme.onSurfaceVariant,
                 height: 1.45,
                 fontWeight: widget.destructive
-                    ? FontWeight.w600
+                    ? FontWeight.w500
                     : FontWeight.w400,
               ),
             ),
@@ -810,7 +810,7 @@ class _DestructiveConfirmationBody extends StatelessWidget {
         ) ??
         TextStyle(color: colorScheme.onSurface, height: 1.5);
     final TextStyle emphasisStyle = baseStyle.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
 
     return Container(

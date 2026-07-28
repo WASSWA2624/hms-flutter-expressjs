@@ -275,7 +275,7 @@ class AppButton extends StatelessWidget {
         ),
       ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(
-        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       foregroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
@@ -403,7 +403,7 @@ class _ButtonContent extends StatelessWidget {
     final AppSpacingTokens spacing = theme.spacing;
     final double iconSize = theme.appTokens.listIconSize;
     final TextStyle? labelStyle = theme.textTheme.labelLarge?.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       fontSize: 14,
     );
     final Widget labelText = labelWidget ??

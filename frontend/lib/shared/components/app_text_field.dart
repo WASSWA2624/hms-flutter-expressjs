@@ -168,7 +168,7 @@ class _AppTextFieldState extends State<AppTextField> {
     final TextStyle fieldLabelStyle =
         inputTheme.labelStyle ??
         theme.textTheme.labelLarge ??
-        const TextStyle(fontWeight: FontWeight.w600);
+        const TextStyle(fontWeight: FontWeight.w500);
     final Widget? floatingLabel = widget.useFloatingLabel
         ? appFieldLabelWidget(
             context,
@@ -210,7 +210,7 @@ class _AppTextFieldState extends State<AppTextField> {
         color: canEdit
             ? theme.colorScheme.onSurface
             : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w400,
         fontSize: 16,
         height: 1.5,
       ),

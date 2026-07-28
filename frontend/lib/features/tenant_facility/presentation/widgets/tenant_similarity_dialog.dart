@@ -135,7 +135,7 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
                     child: Text(
                       l10n.tenantFacilitySimilarTenantMatchesHeading,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -145,7 +145,7 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
                     ),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -242,14 +242,14 @@ class _ProposedTenantCard extends StatelessWidget {
                       label,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       value,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -321,7 +321,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                     Text(
                       l10n.tenantFacilitySimilarTenantExistingHeading,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: accent,
                       ),
                     ),
@@ -329,7 +329,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                     Text(
                       match.tenant.name,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (match.tenant.slug != null &&
@@ -339,7 +339,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                         match.tenant.slug!,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -364,7 +364,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                       '${match.score}%',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: badgeOnContainer,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -375,7 +375,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                           : l10n.tenantFacilitySimilarTenantPartialMatchLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: badgeOnContainer,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -400,7 +400,7 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
                   Text(
                     l10n.tenantFacilitySimilarTenantComparisonHeading,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
@@ -465,7 +465,7 @@ class _ComparisonTableHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle style = theme.textTheme.labelSmall!.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w600,
     );
 
     return Row(
@@ -517,7 +517,7 @@ class _FieldComparisonRow extends StatelessWidget {
           child: Text(
             _fieldLabel(l10n, comparison.field),
             style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -525,7 +525,7 @@ class _FieldComparisonRow extends StatelessWidget {
           child: Text(
             _display(comparison.inputValue, l10n),
             style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -533,7 +533,7 @@ class _FieldComparisonRow extends StatelessWidget {
           child: Text(
             _display(comparison.candidateValue, l10n),
             style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -568,7 +568,7 @@ class _FieldComparisonStacked extends StatelessWidget {
               child: Text(
                 _fieldLabel(l10n, comparison.field),
                 style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -607,13 +607,13 @@ class _StackedValue extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           value,
           style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -673,7 +673,7 @@ class _StatusChip extends StatelessWidget {
         score == null ? label : '$label · $score',
         style: theme.textTheme.labelSmall?.copyWith(
           color: fg,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

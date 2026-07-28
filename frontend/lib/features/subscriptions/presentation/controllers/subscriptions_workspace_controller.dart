@@ -102,7 +102,22 @@ final class SubscriptionsWorkspaceController
   }
 
   Future<AppFailure?> applyPanel(SubscriptionPanel panel) {
-    return applyResource(_defaultResourceForPanel(panel));
+    final SubscriptionsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final SubscriptionResource resource = _defaultResourceForPanel(panel);
+    return _loadQuery(
+      current.query
+          .copyWith(
+            panel: panel,
+            resource: resource,
+            pageRequest: current.query.pageRequest.first(),
+          )
+          .resetFilters()
+          .copyWith(panel: panel, resource: resource),
+      clearSelectedItem: true,
+    );
   }
 
   Future<AppFailure?> applyResource(SubscriptionResource resource) {

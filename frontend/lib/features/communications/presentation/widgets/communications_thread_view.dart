@@ -393,7 +393,7 @@ class _MessageBubble extends StatelessWidget {
                                 mentionStyle: theme.textTheme.bodyMedium!
                                     .copyWith(
                                       color: colors.primary,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w500,
                                     ),
                               ),
                             ),

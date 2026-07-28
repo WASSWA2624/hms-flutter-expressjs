@@ -2,7 +2,7 @@
 
 Primary surface: `SubscriptionsWorkspacePage` (`frontend/lib/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart`).
 
-Write gate: `AppPermissions.subscriptionsWrite` (toolbar primaries, detail quick actions, plan footer **Edit plan**, cohort account actions). Read: `subscriptionsRead` via route access.
+Write gate: `AppPermissions.subscriptionsWrite` (creates / edits / renew / change plan / cancel / collect / retry). Read: `subscriptions:read` via route access (super-admin gated at router).
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -12,106 +12,113 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 | Duplicate / redundant surface | Outcome | Merge / removal |
 | --- | --- | --- |
-| Dead **Notifications** tab (badge only, tap no-op) | None | **Removed** — queue chips under the panel strip own queue jumps |
-| Unwired summary notification menu vs Overview **Past due** card | Apply past-due queue | **Merged** — queue chips only when count &gt; 0; Overview past-due card removed |
-| Overview always stacked above every panel’s worklist | Same metrics + list chrome | **Split** — Overview panel is metrics/cohorts only; other panels own the worklist |
-| Advanced filters **Resource** group vs panel / nested resource tabs | Switch resource | **Removed** from advanced filters — tabs own resource navigation |
-| Toolbar **Activate subscription** vs detail **Activate** | Create new vs activate existing | **Renamed** create entry to **New subscription**; detail keeps **Activate** |
-| Cohort **Assign subscription** / **Modify** vs create / edit labels | Same create/edit forms | **Unified** — **New subscription** / **Edit subscription** |
-| Edit subscription plan dropdown vs **Change plan** | Change plan | **Removed** plan field from edit form — **Change plan** is the sole plan-migration path |
-| Create/edit plan module checkboxes + **Add modules** dialog | Update included modules | **Split** — modules on **Create plan** only; existing plans use **Manage modules** |
-| Cancel **Reason** form (reason never sent to API) | Cancel subscription | **Replaced** with destructive confirm (`AppConfirmActionDialog`) |
-| **Print invoice** snackbar stub | No report | **Removed** until a real report endpoint exists |
-| Detail quick-actions title from patients l10n | Wrong module copy | **Fixed** — subscriptions **Quick actions** label |
+| Fake **Notifications** tab (count only; tap no-op) + unused summary payload | Jump to attention queues | **Removed** tab — actionable **queue chips** under the strip (claims pattern) |
+| Overview **Past due** metric vs Past due invoices chip | Apply past-due queue | **Removed** metric — chip is the sole entry |
+| Overview metrics + worklist on every panel | Same subscriptions list as Operations | **Scoped** — cohort / usage / recommendations only on **Overview**; worklists on other panels |
+| Overview + Operations both defaulting to subscriptions worklist | Browse / activate subscriptions | **Overview** monitors only; **Operations** owns the worklist + **Activate subscription** |
+| Advanced filters **Resource** group vs panel / nested resource tabs | Switch resource | **Removed** from filters — panels + nested **Plans / Modules** and **Subscriptions / Module subscriptions** tabs own navigation |
+| Dead **Active subscriptions** notification (`onSelected` empty) | None | **Removed** |
+| Plan detail **Add modules** + **Edit plan** module checkboxes | Edit included modules | **Merged** — **Manage modules** on detail (write-only); create form still collects modules; edit plan form omits module list |
+| **Edit subscription** plan field + **Change plan** | Change plan | **Merged** — edit keeps status / dates; **Change plan** is the sole plan-change path |
+| Invoice **Print invoice** snackbar-only shell | No backend report | **Removed** — client-only shell never called the API |
+| Unauthorized **Manage modules** / create toolbar | Mutations | **Unauthorized UI absent** — omitted without `subscriptionsWrite` |
 
 ---
 
 ## Subscriptions workspace screen
 
-### Panel strip
+### Tab strip
 
 - **Overview / Plans / Subscriptions / Invoices / Licenses**
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
-  - Immediate result: Switches panel (+ default resource), updates URL `?panel=…&resource=…`.
-  - Condition: Always shown.
+  - Immediate result: Switches panel (+ default resource), updates URL `?panel=…`.
+  - Condition: Always when workspace loads.
 
-- **New subscription** / **Create plan** / **Assign module** / **Add license** (primary by resource)
-  - Location: Tab-strip primary (`AppTabToolbarPrimary`).
-  - Opens modal: Matching create form.
-  - Immediate result: Creates record; snackbar; workspace refresh.
-  - Condition: `subscriptionsWrite` and a non-Overview panel with a creatable resource; omitted when unauthorized.
+- **Create plan** (primary, Plans resource)
+  - Location: Tab-strip primary.
+  - Opens modal: Yes — plan create form (includes modules).
+  - Immediate result: Creates plan; snackbar; refresh.
+  - Condition: `subscriptionsWrite`; omitted on Overview and when unauthorized.
 
-Panel-strip **Notifications** tab was removed. Queue chips (below the strip) apply pending / past-due / denied / expiring / approaching-limit queues when counts are positive.
+- **Activate subscription** (primary, Subscriptions resource)
+  - Location: Tab-strip primary on Operations.
+  - Opens modal: Yes — activate / assign form.
+  - Immediate result: Creates subscription; snackbar; refresh.
+  - Condition: `subscriptionsWrite` and tenants available.
 
-- **Try again** (page load / inline failure)
-  - Location: `AsyncStateScaffold` or `AppFailureStateView`.
+- **Assign module** / **Add license** (primary on Module subscriptions / Licenses)
+  - Location: Tab-strip primary.
+  - Opens modal: Yes — assign / license form.
+  - Condition: `subscriptionsWrite`; lookups non-empty.
+
+### Queue chips (attention)
+
+- **Pending changes / Past due invoices / Denied modules / Expiring licenses / Approaching limits**
+  - Location: Chip row under tab strip (`ActionChip`).
   - Opens modal: No.
-  - Immediate result: Retries workspace load / refresh.
-  - Condition: Load or mutation failure surface.
+  - Immediate result: `applyQueue` → switches panel / resource / queue; URL updated.
+  - Condition: Chip renders only when count &gt; 0 and matching queue summary exists.
 
-### Nested resource tabs (non-Overview)
+### Nested resource tabs
 
-- **Plans / Modules** (Plans panel), **Subscriptions / Module subscriptions** (Subscriptions panel)
-  - Location: Nested `AppTabStrip`.
-  - Immediate result: Switches resource within the active panel.
-  - Condition: Panel has more than one resource.
+- **Plans / Modules** (Catalog)
+- **Subscriptions / Module subscriptions** (Operations)
+  - Location: Nested `AppTabStrip` above the worklist.
+  - Immediate result: `applyResource`; updates URL `?resource=…`.
+  - Condition: Multi-resource panels only.
 
-### Overview panel
+### Overview panel (Overview tab only)
 
-- **Active plans / Not subscribed / Closed subscriptions** metric cards
-  - Opens modal: Tenant cohort dialog (browse + optional **New subscription** / **Edit subscription** when write-authorized).
-- Usage limits and recommendations: read-only progressive disclosure.
+- **Active plans / Not subscribed / Closed subscriptions**
+  - Location: Cohort metric cards.
+  - Opens modal: Yes — tenant cohort dialog (assign / modify when write-authorized).
+  - Immediate result: Lists cohort tenants; optional mutation dialogs.
+  - Condition: Overview panel only.
 
-### Search / filters / table chrome (worklist panels)
+- **Usage limits** / **Recommendations**
+  - Location: Progressive disclosure under cohort cards.
+  - Condition: When overview payload includes them.
+
+### Search / filters / table chrome (non-Overview panels)
 
 - **Search**, **Clear**, **Filters** (advanced), **Settings** (columns)
-  - Location: `AppListTable` / `AppSearchBar` chrome.
-  - Opens modal: Advanced filters panel; Table Settings dialog.
-  - Immediate result: Filters/search/column visibility for the active resource.
-  - Condition: Non-Overview panels with a worklist.
-
-#### Advanced filters (from **Filters**)
-
-Fields vary by resource: status, tier, billing cycle, plan, module, fit, invoice status, license type, eligibility, date preset.
-
-- **Apply filters** / **Clear filters** / **Close**
-  - Immediate result: Applies or clears advanced filters **without changing panel/resource**.
-
-Resource selection was removed from advanced filters.
+  - Location: `AppListTable` chrome.
+  - Opens modal: Advanced filters (no Resource group); Table Settings.
+  - Immediate result: Filters / search / columns for the active resource.
+  - Condition: Worklist panels only.
 
 ### Row activation
 
-- **Row select** (desktop / mobile)
+- **Row select**
   - Location: Table row / mobile list item.
-  - Opens modal: Subscription detail dialog.
-  - Immediate result: Selects item and opens the single detail surface (actions + fields + timeline; plans get plan hero / modules / accounts).
+  - Opens modal: Detail dialog (`_SubscriptionDetailPanel` / plan detail).
+  - Immediate result: Selects item; plan detail loads plan stats / accounts.
   - Condition: When rows exist.
 
-### Detail dialog (from row select)
+### Detail dialog actions (write-authorized)
 
-Write actions appear only when `subscriptionsWrite`.
+- Subscriptions: **Edit subscription** (status / dates), **Renew**, **Change plan**, **Activate**, **Cancel subscription**.
+- Module subscriptions: **Enable / Disable module**.
+- Licenses: **Update license**.
+- Invoices: **Collect invoice**, **Retry invoice** (no print shell).
+- Plans: footer **Edit plan** (metadata); section **Manage modules**.
 
-Subscriptions: **Edit subscription**, **Renew**, **Change plan**, **Activate**, **Cancel subscription** (confirm).  
-Module subscriptions: **Enable/Disable module** (reason required by API).  
-Licenses: **Update license**.  
-Invoices: **Collect invoice**, **Retry invoice**.  
-Plans: **Manage modules**; footer **Edit plan**.
-
-### Empty / no-results / validation
+### Empty / error / validation
 
 - Empty worklist: `emptyTitle` / `emptyBody`.
-- Form validation stays inside each mutation dialog; success/error via snackbar (`savedMessage` / failure message).
-- Cancel uses confirm-only (no discarded reason field).
+- Load / mutation failure: scaffold **Try again** / inline `AppFailureStateView` retry.
+- Form validation stays inside each mutation dialog; success / error via snackbar.
 
 ---
 
 ## Verification (Req 7)
 
 - Widget tests in `frontend/test/features/subscriptions/presentation/subscriptions_workspace_page_test.dart` prove:
-  - **Notifications** tab is absent; queue chips appear for positive counts.
-  - **New subscription** is the sole create primary on the Subscriptions panel when write-authorized.
-  - Unauthorized users see no create primaries / detail mutation controls.
-  - Advanced filters omit a Resource group.
-  - Cancel uses confirm (no reason shell); Print invoice is absent.
-  - Overview panel has no worklist; Plans/Subscriptions panels show nested resource tabs where applicable.
+  - **Notifications** tab is absent; queue chips are the sole attention entry.
+  - Overview shows cohort metrics without worklist / past-due card / create primary.
+  - Catalog nested **Plans / Modules** tabs exist; advanced filters omit **Resource**.
+  - Operations owns **Activate subscription**; nested module-subscriptions tab present.
+  - Read-only users see no create / edit / manage-modules controls.
+  - Invoice detail omits **Print invoice**.
+  - Edit subscription form omits **Plan**; **Change plan** remains on detail.

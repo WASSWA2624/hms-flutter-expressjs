@@ -501,7 +501,7 @@ Future<bool?> showRoleMutationDialog({
                               ? l10n.accessAdminRoleScopeLabel
                               : createScopeOptions.first.label,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         )
                       else

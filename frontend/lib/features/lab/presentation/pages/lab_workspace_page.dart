@@ -947,7 +947,7 @@ class _LabCompactNextActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -2176,7 +2176,7 @@ class _LabConfigurationTypeOption extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: foreground,
-                  fontWeight: _selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: _selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),

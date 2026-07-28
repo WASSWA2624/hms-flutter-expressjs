@@ -686,7 +686,7 @@ class _SubscriptionMetricCardState extends State<_SubscriptionMetricCard> {
                       widget.value,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: accent,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         height: 1,
                       ),
                     ),
@@ -697,7 +697,7 @@ class _SubscriptionMetricCardState extends State<_SubscriptionMetricCard> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
@@ -793,7 +793,7 @@ class _LimitProgress extends StatelessWidget {
                 child: Text(
                   row.label,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1121,7 +1121,7 @@ class _PlanDetailContent extends ConsumerWidget {
                         Text(
                           planName,
                           style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             color: planTheme.foreground,
                           ),
                         ),
@@ -1130,7 +1130,7 @@ class _PlanDetailContent extends ConsumerWidget {
                             planId,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                       ],
@@ -1163,7 +1163,7 @@ class _PlanDetailContent extends ConsumerWidget {
                       : (item.tierCode ?? item.name ?? item.title),
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: planTheme.foreground,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1334,7 +1334,7 @@ class _PlanMetricChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1385,7 +1385,7 @@ class _PlanStatCard extends StatelessWidget {
             value,
             style: theme.textTheme.headlineSmall?.copyWith(
               color: accent,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(width: theme.spacing.sm),
@@ -1393,7 +1393,7 @@ class _PlanStatCard extends StatelessWidget {
             child: Text(
               label,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1444,7 +1444,7 @@ class _PlanAccountsSection extends StatelessWidget {
                                 Text(
                                   account.title,
                                   style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 SizedBox(height: theme.spacing.xs),
@@ -1867,7 +1867,7 @@ class _TwoLineCell extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (subtitle != null && subtitle!.trim().isNotEmpty)
@@ -1924,7 +1924,7 @@ class _PlanBadge extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.labelLarge?.copyWith(
         color: planTheme.foreground,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -2169,7 +2169,7 @@ class _PlanFormState extends State<_PlanForm> {
             Text(
               _SubscriptionsText.includedModules,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Text(
@@ -2319,7 +2319,7 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
                           ? _SubscriptionsText.clearAllModules
                           : _SubscriptionsText.selectAllModules,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
@@ -2346,7 +2346,7 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
                         ),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -2462,7 +2462,7 @@ class _PlanModuleOptionTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
                     ),
@@ -3463,7 +3463,7 @@ Future<void> _openTenantCohortDialog(
               child: Text(
                 _SubscriptionsText.cohortDialogDescription(summary.count),
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -3550,7 +3550,7 @@ class _CohortAccountCard extends StatelessWidget {
                 child: Text(
                   account.title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -3624,7 +3624,7 @@ class _CohortMetaChip extends StatelessWidget {
           label,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

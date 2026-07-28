@@ -233,7 +233,7 @@ class _TimelineNode extends StatelessWidget {
                     Text(
                       item.title,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (timestamp.isNotEmpty)

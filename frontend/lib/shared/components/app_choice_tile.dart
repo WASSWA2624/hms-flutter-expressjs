@@ -75,7 +75,7 @@ class AppChoiceTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: selected ? accent : colorScheme.onSurface,
                         ),
                       ),

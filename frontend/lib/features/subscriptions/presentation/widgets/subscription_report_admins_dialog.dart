@@ -288,7 +288,7 @@ class _AdminContactCard extends StatelessWidget {
           child: Text(
             _initials(contact.displayName),
             style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -300,7 +300,7 @@ class _AdminContactCard extends StatelessWidget {
               Text(
                 contact.displayName,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               SizedBox(height: theme.spacing.xs),
@@ -308,7 +308,7 @@ class _AdminContactCard extends StatelessWidget {
                 roleLabel,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               if (contact.email != null) ...<Widget>[
@@ -377,7 +377,7 @@ class _ContactLine extends StatelessWidget {
             child: SelectableText(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
                 height: 1.25,
               ),

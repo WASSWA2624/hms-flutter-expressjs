@@ -1159,7 +1159,7 @@ class _RadiologyViewModeRadioOption extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -1947,7 +1947,7 @@ class _StudyBlockState extends ConsumerState<_StudyBlock> {
                       _formatDateTimeOrNull(context, widget.study.performedAt),
                     ]),
                     titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -2798,7 +2798,7 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
                 request.clinicalNote,
               ]),
               titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

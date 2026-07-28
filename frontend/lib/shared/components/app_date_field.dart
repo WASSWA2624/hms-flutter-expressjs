@@ -611,7 +611,7 @@ class _DatePartTextField extends StatelessWidget {
       },
       style: theme.textTheme.bodyLarge?.copyWith(
         color: textColor,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w400,
       ),
       decoration: InputDecoration(
         hintText: hintText ?? labelText,

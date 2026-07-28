@@ -137,7 +137,7 @@ class _AuthBrandHeader extends StatelessWidget {
               displayName,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 22,
                 height: 1.2,
                 letterSpacing: -0.2,
@@ -157,7 +157,7 @@ class _AuthBrandHeader extends StatelessWidget {
           textAlign: TextAlign.center,
           style: theme.textTheme.titleSmall?.copyWith(
             color: colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             fontSize: 16,
             letterSpacing: -0.1,
           ),

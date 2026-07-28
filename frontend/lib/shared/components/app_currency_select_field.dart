@@ -233,7 +233,7 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
                                         alpha: 0.62,
                                       ))
                               : colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (selected != null)
@@ -380,7 +380,7 @@ class _CurrencySelectButton extends StatelessWidget {
                               color: hasCurrency
                                   ? contentColor
                                   : colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                   ),
                 ),

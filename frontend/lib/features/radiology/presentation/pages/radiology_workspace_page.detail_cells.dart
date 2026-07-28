@@ -32,7 +32,7 @@ class _DetailLine extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -49,7 +49,7 @@ class _DetailLine extends StatelessWidget {
                       fontWeight: FontWeight.w400,
                     )
                   : theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
             ),
           ),

@@ -226,10 +226,17 @@ Future<GoRouter> _pumpTheaterWorkspace(
       ),
     ),
   );
+  // Adaptive polling keeps timers alive, so avoid pumpAndSettle.
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 500));
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(seconds: 1));
   return router;
+}
+
+Future<void> _pumpAfterAction(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(seconds: 1));
 }
 
 void main() {
@@ -286,7 +293,7 @@ void main() {
     _stubCases(repository);
 
     await tester.tap(find.textContaining('Scheduled').first);
-    await tester.pumpAndSettle();
+    await _pumpAfterAction(tester);
 
     expect(router.state.uri.queryParameters['section'], 'scheduled');
     expect(_table(tester).columnVisibilityStorageKey, 'theater_scheduled');
@@ -304,7 +311,7 @@ void main() {
     _stubCases(repository);
 
     await tester.tap(find.textContaining('In theater').first);
-    await tester.pumpAndSettle();
+    await _pumpAfterAction(tester);
 
     expect(router.state.uri.queryParameters['section'], 'in-theater');
     queries = verify(
@@ -319,7 +326,7 @@ void main() {
     _stubCases(repository);
 
     await tester.tap(find.textContaining('Recovery').first);
-    await tester.pumpAndSettle();
+    await _pumpAfterAction(tester);
 
     expect(router.state.uri.queryParameters['section'], 'recovery');
     queries = verify(
@@ -332,7 +339,7 @@ void main() {
     _stubCases(repository);
 
     await tester.tap(find.textContaining('All cases').first);
-    await tester.pumpAndSettle();
+    await _pumpAfterAction(tester);
 
     expect(router.state.uri.queryParameters.containsKey('section'), isFalse);
     queries = verify(
@@ -384,8 +391,8 @@ void main() {
       );
 
       expect(find.byType(AppDialog), findsOneWidget);
-      expect(find.text('Update readiness'), findsWidgets);
-      expect(find.text('Case detail'), findsNothing);
+      expect(find.text('UPDATE READINESS'), findsOneWidget);
+      expect(find.text('CASE DETAIL'), findsNothing);
       verify(() => repository.getCase(any())).called(greaterThanOrEqualTo(1));
     },
   );
@@ -427,19 +434,25 @@ void main() {
     (WidgetTester tester) async {
       await _pumpTheaterWorkspace(tester, repository: repository);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Update readiness').first);
-      await tester.pumpAndSettle();
+      final Finder nextAction = find.widgetWithText(
+        AppButton,
+        'Update readiness',
+      );
+      await tester.ensureVisible(nextAction.first);
+      await tester.tap(nextAction.first);
+      await _pumpAfterAction(tester);
 
-      expect(find.text('Case detail'), findsNothing);
-      expect(find.text('Checklist phase'), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('CASE DETAIL'), findsNothing);
+      expect(find.text('UPDATE READINESS'), findsOneWidget);
 
       await tester.tap(find.text('Cancel').first);
-      await tester.pumpAndSettle();
+      await _pumpAfterAction(tester);
 
       await tester.tap(find.text('Sam Scheduled'));
-      await tester.pumpAndSettle();
+      await _pumpAfterAction(tester);
 
-      expect(find.text('Case detail'), findsOneWidget);
+      expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.byType(AppQuickActions), findsOneWidget);
       expect(
         find.descendant(
@@ -467,9 +480,10 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Start case'), findsOneWidget);
 
       await tester.tap(find.text('Pat Ready'));
-      await tester.pumpAndSettle();
+      await _pumpAfterAction(tester);
 
-      expect(find.text('Case detail'), findsOneWidget);
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -498,13 +512,13 @@ void main() {
       expect(_table(tester).search?.filterGroups.length, 2);
 
       await tester.tap(find.textContaining('Scheduled').first);
-      await tester.pumpAndSettle();
+      await _pumpAfterAction(tester);
 
       expect(router.state.uri.queryParameters['section'], 'scheduled');
       expect(_table(tester).search?.filterGroups, isEmpty);
 
       await tester.tap(find.textContaining('All cases').first);
-      await tester.pumpAndSettle();
+      await _pumpAfterAction(tester);
 
       expect(_table(tester).search?.filterGroups.length, 2);
     },

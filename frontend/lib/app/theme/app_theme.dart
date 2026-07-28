@@ -74,11 +74,13 @@ abstract final class AppTheme {
       ),
     );
 
-    final TextTheme textTheme = baseTextTheme.apply(
-      fontFamily: AppFontFamily.primary,
-      fontFamilyFallback: AppFontFamily.fallback,
-      bodyColor: palette.bodyTextColor,
-      displayColor: palette.displayTextColor,
+    final TextTheme textTheme = _withLighterWeights(
+      baseTextTheme.apply(
+        fontFamily: AppFontFamily.primary,
+        fontFamilyFallback: AppFontFamily.fallback,
+        bodyColor: palette.bodyTextColor,
+        displayColor: palette.displayTextColor,
+      ),
     );
     const TextStyle inputTextStyle = TextStyle(
       fontFamily: AppFontFamily.primary,
@@ -210,11 +212,11 @@ abstract final class AppTheme {
         ),
         labelStyle: inputTextStyle.copyWith(
           color: palette.inputLabelColor,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
         ),
         floatingLabelStyle: inputTextStyle.copyWith(
           color: palette.inputFloatingLabelColor,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
@@ -266,12 +268,12 @@ abstract final class AppTheme {
         ),
         headingTextStyle: textTheme.labelLarge?.copyWith(
           color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
         ),
         dataTextStyle: textTheme.bodyMedium?.copyWith(
           color: colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
         ),
         dataRowColor: WidgetStateProperty.resolveWith<Color?>((
           Set<WidgetState> states,
@@ -361,6 +363,55 @@ abstract final class AppTheme {
         borderRadius: BorderRadius.circular(radius.xs),
       ),
     );
+  }
+
+  /// Shifts Material text styles one weight step lighter so titles/labels read
+  /// as Regular/Medium instead of Medium/Bold across the app.
+  static TextTheme _withLighterWeights(TextTheme theme) {
+    TextStyle? lighten(TextStyle? style) {
+      if (style == null) {
+        return null;
+      }
+      return style.copyWith(fontWeight: _lighterWeight(style.fontWeight));
+    }
+
+    return theme.copyWith(
+      displayLarge: lighten(theme.displayLarge),
+      displayMedium: lighten(theme.displayMedium),
+      displaySmall: lighten(theme.displaySmall),
+      headlineLarge: lighten(theme.headlineLarge),
+      headlineMedium: lighten(theme.headlineMedium),
+      headlineSmall: lighten(theme.headlineSmall),
+      titleLarge: lighten(theme.titleLarge),
+      titleMedium: lighten(theme.titleMedium),
+      titleSmall: lighten(theme.titleSmall),
+      bodyLarge: lighten(theme.bodyLarge),
+      bodyMedium: lighten(theme.bodyMedium),
+      bodySmall: lighten(theme.bodySmall),
+      labelLarge: lighten(theme.labelLarge),
+      labelMedium: lighten(theme.labelMedium),
+      labelSmall: lighten(theme.labelSmall),
+    );
+  }
+
+  static FontWeight? _lighterWeight(FontWeight? weight) {
+    if (weight == null) {
+      return FontWeight.w400;
+    }
+    final int value = weight.value;
+    if (value >= 800) {
+      return FontWeight.w600;
+    }
+    if (value >= 700) {
+      return FontWeight.w600;
+    }
+    if (value >= 600) {
+      return FontWeight.w500;
+    }
+    if (value >= 500) {
+      return FontWeight.w400;
+    }
+    return FontWeight.w400;
   }
 
   static AppSidebarTokens _sidebarTokens({

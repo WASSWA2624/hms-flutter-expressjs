@@ -272,7 +272,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             color: canSelect
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w400,
           ),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
@@ -567,7 +567,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       color: option.enabled
           ? colorScheme.onSurface
           : colorScheme.onSurface.withValues(alpha: 0.38),
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
     );
     final Widget label =
         option.labelWidget ?? Text(option.label, style: labelStyle);
@@ -681,7 +681,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
     );
     return <DropdownMenuEntry<T>>[
       DropdownMenuEntry<T>(

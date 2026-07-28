@@ -118,7 +118,7 @@ class _SubscriptionExpiredPromptHostState
             l10n.subscriptionExpiredPromptBody,
             style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
               height: 1.35,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           actions: <Widget>[

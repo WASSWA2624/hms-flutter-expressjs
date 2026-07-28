@@ -1022,7 +1022,7 @@ class _ClinicalCompactFallbackAction extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: primaryColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1178,7 +1178,7 @@ class _ClinicalStatusText extends StatelessWidget {
     final Color color = _clinicalToneColor(theme, status.tone);
     final IconData icon = status.icon ?? _clinicalStatusIcon(status.tone);
     final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.labelLarge)
-        ?.copyWith(color: color, fontWeight: FontWeight.w700);
+        ?.copyWith(color: color, fontWeight: FontWeight.w600);
 
     return Semantics(
       label: status.label,
@@ -1887,7 +1887,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
                 Text(
                   l10n.opdVitalsSummaryLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 _ClinicalStatusText(status: vitalStatus),
@@ -1963,7 +1963,7 @@ class _ClinicalVitalSummary extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
@@ -1972,7 +1972,7 @@ class _ClinicalVitalSummary extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: valueColor,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (recordedAtLabel.isNotEmpty)
@@ -2042,7 +2042,7 @@ class _ClinicalVitalLegendItem extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -2340,7 +2340,7 @@ class _ClinicalGenericRecordRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -2419,7 +2419,7 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                     Text(
                       record.title ?? record.id,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (_hasText(status))
@@ -2574,7 +2574,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
                     Text(
                       item.displayTitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs),

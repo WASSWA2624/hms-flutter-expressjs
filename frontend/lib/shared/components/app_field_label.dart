@@ -91,7 +91,7 @@ TextStyle _requiredLabelStyle(ColorScheme colorScheme) {
   _cachedLabelColorScheme = colorScheme;
   _cachedRequiredStyle = TextStyle(
     color: colorScheme.error,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w600,
   );
   _cachedOptionalStyle = null;
   return _cachedRequiredStyle!;
@@ -105,7 +105,7 @@ TextStyle _optionalLabelStyle(ColorScheme colorScheme) {
   _cachedLabelColorScheme = colorScheme;
   _cachedOptionalStyle = TextStyle(
     color: colorScheme.onSurfaceVariant,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
   );
   _cachedRequiredStyle = null;
   return _cachedOptionalStyle!;

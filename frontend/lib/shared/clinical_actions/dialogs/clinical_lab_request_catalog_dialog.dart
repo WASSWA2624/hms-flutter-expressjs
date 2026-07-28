@@ -229,7 +229,7 @@ class _ClinicalLabRequestCatalogDialogState
                 child: Text(
                   l10n.labOrderFavoriteTestsLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -254,7 +254,7 @@ class _ClinicalLabRequestCatalogDialogState
             child: Text(
               l10n.clinicalLabRequestSelectedCount(_stagedSelections.length),
               style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.primary,
               ),
             ),

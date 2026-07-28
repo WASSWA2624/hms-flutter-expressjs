@@ -208,7 +208,7 @@ class TherapyNextActionButton extends ConsumerWidget {
                                       : theme.textTheme.bodySmall)
                                   ?.copyWith(
                                     color: primaryColor,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                     decoration: TextDecoration.underline,
                                     decorationColor: primaryColor.withValues(
                                       alpha: 0.4,

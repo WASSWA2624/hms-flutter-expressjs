@@ -96,7 +96,7 @@ class AppReportSectionTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: section.enabled
                               ? null
                               : colorScheme.onSurfaceVariant,
@@ -120,7 +120,7 @@ class AppReportSectionTile extends StatelessWidget {
                   section.count.toString(),
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

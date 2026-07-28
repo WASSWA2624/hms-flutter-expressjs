@@ -33,7 +33,7 @@ class AuthPrimaryButton extends StatelessWidget {
           vertical: spacing.md,
         ),
         textStyle: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           fontSize: 15,
           letterSpacing: 0.1,
         ),
@@ -72,7 +72,7 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
     final Color onPrimary = theme.colorScheme.onPrimary;
 
     final TextStyle labelStyle = theme.textTheme.labelLarge!.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
       fontSize: 15,
       color: onPrimary,
     );

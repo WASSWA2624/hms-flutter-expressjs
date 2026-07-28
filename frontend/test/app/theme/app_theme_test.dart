@@ -17,6 +17,9 @@ void main() {
         theme.textTheme.bodyMedium?.fontFamilyFallback,
         AppFontFamily.fallback,
       );
+      expect(theme.textTheme.bodyMedium?.fontWeight, FontWeight.w400);
+      expect(theme.textTheme.titleMedium?.fontWeight, FontWeight.w400);
+      expect(theme.textTheme.labelLarge?.fontWeight, FontWeight.w400);
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure50);

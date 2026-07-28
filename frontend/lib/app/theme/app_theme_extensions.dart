@@ -499,10 +499,10 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
   static const double mobileTitleSizeFactor = 0.95;
   static const double mobileSecondarySizeFactor = 0.85;
 
-  /// Weights for dense mobile lists (lighter than default label styles).
-  static const FontWeight mobileTitleWeight = FontWeight.w500;
+  /// Weights for dense mobile lists (aligned with the app's lighter typography).
+  static const FontWeight mobileTitleWeight = FontWeight.w400;
   static const FontWeight mobileSecondaryWeight = FontWeight.w400;
-  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w600;
+  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w500;
 
   /// Metrics for dense mobile list chrome.
   static const double mobileAvatarExtent = 26;

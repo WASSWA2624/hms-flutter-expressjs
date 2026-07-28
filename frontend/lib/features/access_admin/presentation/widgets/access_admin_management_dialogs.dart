@@ -2128,7 +2128,7 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
                       Text(
                         permission.title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       if (code != null) ...<Widget>[
@@ -2565,7 +2565,7 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                       Text(
                         title.isEmpty ? '—' : title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (technicalName != null) ...<Widget>[
@@ -3660,7 +3660,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
               child: Text(
                 _userInitials(identity.primary),
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -3672,7 +3672,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
                   Text(
                     identity.primary,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
@@ -3940,7 +3940,7 @@ class _UserDetailStatusChip extends StatelessWidget {
       side: BorderSide(color: foreground.withValues(alpha: 0.24)),
       labelStyle: theme.textTheme.labelMedium?.copyWith(
         color: foreground,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
       visualDensity: VisualDensity.compact,
     );
@@ -3985,7 +3985,7 @@ class _UserDetailInfoTile extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
 
     return Padding(

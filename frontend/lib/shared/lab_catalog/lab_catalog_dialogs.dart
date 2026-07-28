@@ -2011,7 +2011,7 @@ class _LabEnableFacilityOfferingDialogState
                 l10n.labSelectedTestCount(selectedListedCount, listedCount),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             );
@@ -2259,7 +2259,7 @@ class _LabEnableFacilityOfferingDialogState
                               Text(
                                 item.name ?? item.displayTitle,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                               AppMutedText(
@@ -2715,7 +2715,7 @@ Widget _labEnableOfferingStatusCell(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: color,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -2808,7 +2808,7 @@ class _LabEnableOfferingPriceDialogState
             Text(
               item.displayTitle,
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             if (item.displaySubtitle != null &&
@@ -3173,7 +3173,7 @@ class _SelectedPanelTestRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (subtitle.isNotEmpty)
@@ -3310,7 +3310,7 @@ class _LabPanelTestSelectionTableState
         Text(
           l10n.labPanelSelectedTestsCountLabel(widget.selectedTests.length),
           style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: theme.spacing.xs),

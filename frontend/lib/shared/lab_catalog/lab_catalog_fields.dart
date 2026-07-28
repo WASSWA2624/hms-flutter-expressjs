@@ -309,7 +309,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           onTap: () => onSelected(option),

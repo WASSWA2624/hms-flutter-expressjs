@@ -443,7 +443,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                                   : theme.colorScheme.onSurface.withValues(
                                       alpha: 0.62,
                                     ),
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w400,
                             ),
                             decoration: InputDecoration(
                               hintText: widget.hintText,
@@ -1416,7 +1416,7 @@ class _DialogSectionTitle extends StatelessWidget {
       label,
       style: theme.textTheme.titleSmall?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

@@ -107,6 +107,7 @@ Tab-strip **Refresh** was removed.
 
 - [x] Unauthorized user: Schedule case, next-action writes, and detail write actions absent; no Refresh toolbar. *(widget)*
 - [x] Not-ready case: only **Update readiness** next-action; detail has no Update readiness duplicate. *(widget)*
+- [x] Ready scheduled case: **Start case** next-action; detail omits Update stage. *(widget)*
 - [x] No Refresh control on the tab strip; Schedule case remains the sole primary for writers. *(widget)*
 - [x] Advanced filters omit Status / Stage on Scheduled; All cases keeps them. *(widget)*
 - [x] Mobile list shows next-action trailing. *(widget)*

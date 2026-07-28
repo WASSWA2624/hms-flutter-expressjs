@@ -1080,7 +1080,7 @@ class _LabBulkResultActionsBar extends StatelessWidget {
               Text(
                 l10n.labBulkResultActionsTitle,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -1187,7 +1187,7 @@ class _LabApplyingChangesBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -1214,7 +1214,7 @@ class _LabResultValidationMessage extends StatelessWidget {
           : l10n.labResultEntryRequiredMessage,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.error,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -1309,7 +1309,7 @@ class _LabOrderResultSection extends StatelessWidget {
           Text(
             l10n.labItemsSectionTitle,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: theme.spacing.sm),
@@ -1361,7 +1361,7 @@ class _InlineOrderMeta extends StatelessWidget {
           text,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -1834,7 +1834,7 @@ class _LabResultHeaderText extends StatelessWidget {
     return Text(
       label,
       style: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.1,
       ),
@@ -1947,8 +1947,8 @@ class _LabResultTestCell extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
     final TextStyle titleStyle =
-        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800) ??
-        const TextStyle(fontWeight: FontWeight.w800);
+        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
+        const TextStyle(fontWeight: FontWeight.w600);
     final double firstLineHeight =
         (titleStyle.fontSize ?? 14) * (titleStyle.height ?? 1.2);
     final Widget titleColumn = Column(
@@ -2343,7 +2343,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                   : l10n.labResultEntryRequiredMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.error,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -2429,7 +2429,7 @@ class _CompletedResultReadout extends StatelessWidget {
       value,
       style: theme.textTheme.titleSmall?.copyWith(
         color: abnormal ? theme.colorScheme.error : null,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -2896,7 +2896,7 @@ class _LabReportPreview extends StatelessWidget {
         Text(
           l10n.labReportTitle,
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: theme.spacing.sm),
@@ -3036,7 +3036,7 @@ class _ReportPreviewResultCell extends StatelessWidget {
       value,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: abnormal ? theme.colorScheme.error : null,
-        fontWeight: abnormal ? FontWeight.w700 : null,
+        fontWeight: abnormal ? FontWeight.w600 : null,
       ),
     );
   }
@@ -3082,14 +3082,14 @@ class _PreviewMeta extends StatelessWidget {
             label,
             style: theme.textTheme.labelMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: theme.spacing.xs),
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -3392,7 +3392,7 @@ class _ReopenVerifiedResultDialogState
             Text(
               _item.displayTitle,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             if (_item.displayReferenceRange != null) ...<Widget>[
@@ -3412,7 +3412,7 @@ class _ReopenVerifiedResultDialogState
                 l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

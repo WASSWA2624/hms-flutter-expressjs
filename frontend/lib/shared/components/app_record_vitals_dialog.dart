@@ -367,7 +367,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         softWrap: false,
-        style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
+        style: baseStyle?.copyWith(fontWeight: FontWeight.w600),
       );
     }
 
@@ -376,22 +376,22 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
         children: <InlineSpan>[
           TextSpan(
             text: name,
-            style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
+            style: baseStyle?.copyWith(fontWeight: FontWeight.w600),
           ),
           TextSpan(
             text: ' · ',
-            style: baseStyle?.copyWith(fontWeight: FontWeight.w500),
+            style: baseStyle?.copyWith(fontWeight: FontWeight.w400),
           ),
           for (int index = 0; index < parts.length; index++) ...<InlineSpan>[
             if (index > 0)
               TextSpan(
                 text: ' · ',
-                style: baseStyle?.copyWith(fontWeight: FontWeight.w500),
+                style: baseStyle?.copyWith(fontWeight: FontWeight.w400),
               ),
             TextSpan(
               text: parts[index].text,
               style: baseStyle?.copyWith(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
                 color:
                     appVitalSignStatusColor(context, parts[index].status) ??
                     baseStyle.color,

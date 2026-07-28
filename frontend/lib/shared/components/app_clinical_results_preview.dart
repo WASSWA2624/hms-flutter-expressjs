@@ -453,7 +453,7 @@ class AppClinicalResultEntryView extends StatelessWidget {
               moduleDisplay.label,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             AppStatusBadge(
@@ -474,7 +474,7 @@ class AppClinicalResultEntryView extends StatelessWidget {
         Text(
           entry.title,
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (entry.subtitle != null &&
@@ -560,7 +560,7 @@ class _LaboratoryContentAdapter extends StatelessWidget {
           Text(
             valueLabel,
             style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         if (content.referenceRange != null &&
@@ -612,7 +612,7 @@ class _RadiologyContentAdapter extends StatelessWidget {
             meta,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         if (narrative.isNotEmpty) ...<Widget>[

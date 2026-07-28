@@ -129,7 +129,7 @@ class _RadiologyCompactNextActionButton extends StatelessWidget {
                                   : theme.textTheme.bodySmall)
                               ?.copyWith(
                                 color: primaryColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                     ),
                   ),

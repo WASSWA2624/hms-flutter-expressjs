@@ -109,7 +109,7 @@ class _DashboardMetricCard extends StatelessWidget {
                         : theme.textTheme.headlineSmall)
                     ?.copyWith(
                       color: card.accent,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       height: 1,
                       letterSpacing: -0.3,
                     ),
@@ -122,7 +122,7 @@ class _DashboardMetricCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.1,
               ),
             ),

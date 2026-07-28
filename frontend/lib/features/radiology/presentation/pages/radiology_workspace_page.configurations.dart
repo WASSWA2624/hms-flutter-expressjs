@@ -389,7 +389,7 @@ class _RadiologyConfigurationsDialogState
                   leadingIcon: _radiologyModalityIcon(item.modality),
                   padding: EdgeInsets.zero,
                   titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 );
               },

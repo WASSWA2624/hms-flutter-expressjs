@@ -772,7 +772,7 @@ class _BloodPressureInput extends StatelessWidget {
                     final Widget heading = Text(
                       title,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     );
                     final Widget? unitField = unitOptions.isEmpty
@@ -1109,7 +1109,7 @@ class _VitalFieldSuffix extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1162,7 +1162,7 @@ class _VitalRangeCaption extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.bodySmall?.copyWith(
         color: color,
-        fontWeight: status == null ? FontWeight.w500 : FontWeight.w700,
+        fontWeight: status == null ? FontWeight.w400 : FontWeight.w600,
       ),
     );
   }

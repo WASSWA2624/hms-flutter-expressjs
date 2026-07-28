@@ -404,7 +404,7 @@ class _RoleGroupCardState extends State<_RoleGroupCard> {
                       Text(
                         group.roleName,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       SizedBox(height: theme.spacing.xs),

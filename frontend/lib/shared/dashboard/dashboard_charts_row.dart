@@ -233,7 +233,7 @@ class _DashboardDistributionChart extends StatelessWidget {
                         Text(
                           NumberFormat.compact().format(total),
                           style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
@@ -307,7 +307,7 @@ class _DistributionLegendItem extends StatelessWidget {
             '${_formatToken(segment.label)} ${percent.round()}%',
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

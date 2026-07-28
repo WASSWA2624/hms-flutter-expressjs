@@ -1040,7 +1040,7 @@ DataRow _clinicalLabOrderDataRow({
               child: Text(
                 title,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -1331,7 +1331,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
                       Text(
                         title,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (_hasText(subtitle))
@@ -1399,7 +1399,7 @@ class _ClinicalLabeledChip extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         child ?? Text(value ?? ''),
@@ -1553,7 +1553,7 @@ List<Widget> _clinicalBatchHeaderActions({
   return <Widget>[
     Text(
       l10n.clinicalLabRequestSelectedCount(selectedCount),
-      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     ),
     AppAccessActionGate(
       requirement: clinicalEncounterWriteRequirement,

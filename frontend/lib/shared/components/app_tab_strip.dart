@@ -369,7 +369,7 @@ double _estimateTabWidth({
     text: TextSpan(
       text: tab.label.trim(),
       style: (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-          ?.copyWith(fontWeight: FontWeight.w500),
+          ?.copyWith(fontWeight: FontWeight.w400),
     ),
     maxLines: 1,
     textDirection: textDirection,
@@ -382,7 +382,7 @@ double _estimateTabWidth({
       text: TextSpan(
         text: '${tab.count}',
         style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           fontSize: 10,
           height: 1,
         ),
@@ -555,7 +555,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
               // while still standing out from the flat toolbar actions (w400).
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.primary,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
               ),
             ),
         ],
@@ -737,8 +737,8 @@ class _AppTabChipState extends State<_AppTabChip> {
     // primary) so the tab labels read as the dominant level of the strip.
     // The bundled font ships 400/500/700 only, so stick to those weights.
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w700
-        : FontWeight.w500;
+        ? FontWeight.w600
+        : FontWeight.w400;
     final bool flareLeft = widget.isSelected && !widget.isFirst;
     final bool flareRight = widget.isSelected;
 
@@ -797,7 +797,7 @@ class _AppTabChipState extends State<_AppTabChip> {
                         '${widget.count}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: _countToneColor(theme, widget.countTone),
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           fontSize: 10,
                           height: 1,
                         ),
@@ -823,8 +823,8 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w600
-        : FontWeight.w500;
+        ? FontWeight.w500
+        : FontWeight.w400;
     final Color hoverFill = _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.04)
         : Colors.transparent;
@@ -879,7 +879,7 @@ class _AppTabChipState extends State<_AppTabChip> {
                         '${widget.count}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: _countToneColor(theme, widget.countTone),
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           fontSize: 10,
                           height: 1,
                         ),

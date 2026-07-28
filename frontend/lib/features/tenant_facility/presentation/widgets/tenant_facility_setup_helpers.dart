@@ -309,7 +309,7 @@ class TenantFacilityNestedTableCell extends StatelessWidget {
         titleStyle ??
         theme.textTheme.bodyMedium?.copyWith(
           color: deleted ? colorScheme.onSurfaceVariant : null,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         );
     final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
       color: colorScheme.onSurfaceVariant,

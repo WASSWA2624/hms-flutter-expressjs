@@ -52,7 +52,7 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
               child: Text(
                 l10n.clinicalRequestFlowItemCountLabel(itemCount),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -63,7 +63,7 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
                 currency,
               ),
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.primary,
               ),
             ),
@@ -183,7 +183,7 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
                           child: Text(
                             item.name,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -192,7 +192,7 @@ class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
                           item.typeLabel,
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -239,7 +239,7 @@ class ClinicalRequestPatientContextStrip extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle valueStyle = theme.textTheme.bodyMedium!;
     final TextStyle labelStyle = valueStyle.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
     );
     final List<Widget> facts = <Widget>[
       if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
@@ -696,10 +696,10 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle totalLabelStyle = theme.textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w600,
     );
     final TextStyle totalAmountStyle = theme.textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w900,
+      fontWeight: FontWeight.w600,
       color: colorScheme.primary,
     );
 
@@ -777,7 +777,7 @@ class _ClinicalRequestRemoveItemButton extends StatelessWidget {
       label: Text(
         label,
         style: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: labelColor,
         ),
       ),
@@ -843,7 +843,7 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (subtitle != null && subtitle!.isNotEmpty)
@@ -859,7 +859,7 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
                     priceLabel,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

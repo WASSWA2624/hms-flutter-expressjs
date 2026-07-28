@@ -64,7 +64,7 @@ class AppWizardStepper extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.labelLarge?.copyWith(
               color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: theme.spacing.sm),
@@ -140,7 +140,7 @@ class AppWizardStepper extends StatelessWidget {
             current.label,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: colorScheme.onSurface,
             ),
           ),
@@ -152,7 +152,7 @@ class AppWizardStepper extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -316,7 +316,7 @@ class _StepNodeState extends State<_StepNode> {
                       '${widget.index}',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: circleFg,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: widget.compact ? 12 : 14,
                         height: 1,
                       ),
@@ -335,8 +335,8 @@ class _StepNodeState extends State<_StepNode> {
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: labelColor,
                       fontWeight: widget.active
-                          ? FontWeight.w800
-                          : FontWeight.w600,
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       height: 1.15,
                       fontSize: widget.compact ? 11 : 12,
                     ),
@@ -347,7 +347,7 @@ class _StepNodeState extends State<_StepNode> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: labelColor.withValues(alpha: 0.85),
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         fontSize: widget.compact ? 9 : 10,
                       ),
                     ),

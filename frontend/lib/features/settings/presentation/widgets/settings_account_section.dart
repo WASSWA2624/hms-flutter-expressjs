@@ -385,7 +385,7 @@ class _ProfileSummary extends StatelessWidget {
               child: Text(
                 profile.initials,
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -397,7 +397,7 @@ class _ProfileSummary extends StatelessWidget {
                   Text(
                     displayName,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (supportingLine.isNotEmpty) ...<Widget>[
@@ -450,7 +450,7 @@ class _ProfileBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -578,7 +578,7 @@ class _ProfileDetailRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? valueStyle = theme.textTheme.bodyLarge?.copyWith(
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
 
     return LayoutBuilder(

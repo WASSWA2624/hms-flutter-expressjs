@@ -163,7 +163,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
                     isRequired: widget.isRequired,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   )
                 : null,
@@ -207,7 +207,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
             isRequired: widget.isRequired,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           )!,
           SizedBox(height: theme.spacing.xs),
@@ -540,7 +540,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
                     color: canEdit
                         ? colorScheme.onSurface
                         : colorScheme.onSurface.withValues(alpha: 0.62),
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                   ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
@@ -618,7 +618,7 @@ class _PhoneCountryButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: contentColor,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

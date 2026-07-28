@@ -158,7 +158,7 @@ class _HrAvailabilityCalendarState extends State<HrAvailabilityCalendar> {
                       Text(
                         hrDayLabel(l10n, day),
                         style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (availability != null)

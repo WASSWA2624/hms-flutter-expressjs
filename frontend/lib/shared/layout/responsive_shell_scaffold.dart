@@ -531,7 +531,7 @@ class AppMenuBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
               ),
@@ -897,7 +897,7 @@ class _UserMenuHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (email != null) ...<Widget>[
@@ -967,7 +967,7 @@ class _UserMenuChip extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -1017,7 +1017,7 @@ class _AvatarInitialsText extends StatelessWidget {
       overflow: TextOverflow.clip,
       style: Theme.of(context).textTheme.labelLarge?.copyWith(
         fontSize: size,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -1109,7 +1109,7 @@ class _MobileShellDrawer extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -1396,7 +1396,7 @@ class _ShellMenuGroupHeader extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.78),
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.4,
         ),
       ),
@@ -1591,8 +1591,8 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
                   fontWeight: widget.selected
-                      ? FontWeight.w600
-                      : FontWeight.w500,
+                      ? FontWeight.w500
+                      : FontWeight.w400,
                 ),
               ),
             ),
@@ -1701,7 +1701,7 @@ class _MenuItemCountBadge extends StatelessWidget {
             color: selected
                 ? sidebar.selectedForegroundColor
                 : sidebar.badgeAccentForegroundColor,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

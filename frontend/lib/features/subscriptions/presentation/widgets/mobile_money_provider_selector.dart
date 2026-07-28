@@ -87,7 +87,7 @@ class _MobileMoneyProviderChip extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: labelColor,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   decoration: selected ? TextDecoration.underline : null,
                   decorationColor: brand.accent,
                   decorationThickness: 2,
@@ -150,7 +150,7 @@ class _InitialsLogo extends StatelessWidget {
         style: TextStyle(
           color: brand.onAccent,
           fontSize: size * 0.34,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           height: 1,
         ),
       ),

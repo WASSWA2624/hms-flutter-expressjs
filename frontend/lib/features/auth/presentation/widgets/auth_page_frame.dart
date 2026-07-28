@@ -39,7 +39,7 @@ class AuthPageFrame extends StatelessWidget {
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             fontSize: switch (breakpoint) {
               AppBreakpoint.xs || AppBreakpoint.sm => 22,
               _ => 24,

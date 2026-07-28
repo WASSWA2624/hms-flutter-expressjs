@@ -117,7 +117,7 @@ Future<UnitSimilarityDialogResult> showUnitSimilarityDialog(
                     child: Text(
                       l10n.tenantFacilitySimilarTenantMatchesHeading,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -127,7 +127,7 @@ Future<UnitSimilarityDialogResult> showUnitSimilarityDialog(
                     ),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -247,14 +247,14 @@ class _ProposedUnitCard extends StatelessWidget {
               l10n.tenantFacilityUnitOverallSimilarityLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: badgeOnContainer,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Text(
               '$overallScore%',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: badgeOnContainer,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -275,14 +275,14 @@ class _ProposedUnitCard extends StatelessWidget {
                       label,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       value,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -326,7 +326,7 @@ class _UnitNoMatchScorePanel extends StatelessWidget {
             child: Text(
               l10n.tenantFacilityUnitNoMatchScoreLabel(score),
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -343,7 +343,7 @@ class _UnitNoMatchScorePanel extends StatelessWidget {
               '$score%',
               style: theme.textTheme.labelLarge?.copyWith(
                 color: statusColors.onSuccessContainer,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -391,14 +391,14 @@ class _UnitSimilarityMatchCard extends StatelessWidget {
                       l10n.tenantFacilitySimilarUnitExistingHeading,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       unit.name,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if ((match.departmentName ?? '').trim().isNotEmpty) ...<
@@ -429,7 +429,7 @@ class _UnitSimilarityMatchCard extends StatelessWidget {
                   '${match.score}%',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: accent,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -446,7 +446,7 @@ class _UnitSimilarityMatchCard extends StatelessWidget {
                   Text(
                     '${comparison.field}: ${comparison.score}%',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
             ],

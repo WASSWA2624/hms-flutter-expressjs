@@ -124,7 +124,7 @@ showRadiologyCatalogSimilarityDialog(
                   child: Text(
                     l10n.radiologySimilarProcedureMatchesHeading,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -134,7 +134,7 @@ showRadiologyCatalogSimilarityDialog(
                   ),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -245,14 +245,14 @@ class _ProposedFactGrid extends StatelessWidget {
                   label,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs / 2),
                 Text(
                   value,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -321,7 +321,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                     Text(
                       l10n.radiologySimilarProcedureExistingHeading,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: accent,
                       ),
                     ),
@@ -329,7 +329,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                     Text(
                       test.name,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (test.effectiveId.trim().isNotEmpty ||
@@ -344,7 +344,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                         ].join(' · '),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -369,7 +369,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                       l10n.radiologySimilarProcedureScoreLabel(match.score),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: badgeOnContainer,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -382,7 +382,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                           : l10n.radiologySimilarProcedureNearMatchLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: badgeOnContainer,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -407,7 +407,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                   Text(
                     l10n.radiologySimilarProcedureComparisonHeading,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
@@ -467,7 +467,7 @@ class _ComparisonTableHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final TextStyle? style = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w600,
     );
 
     return Row(
@@ -687,7 +687,7 @@ class _FieldComparisonRow extends StatelessWidget {
                 child: Text(
                   fieldLabel,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -698,7 +698,7 @@ class _FieldComparisonRow extends StatelessWidget {
           child: Text(
             comparison.proposedValue,
             style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -710,7 +710,7 @@ class _FieldComparisonRow extends StatelessWidget {
               color: comparison.status == _FieldCompareStatus.match
                   ? theme.colorScheme.onSurface
                   : status.color,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -721,7 +721,7 @@ class _FieldComparisonRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: theme.textTheme.labelSmall?.copyWith(
               color: status.color,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -753,7 +753,7 @@ class _FieldComparisonStacked extends StatelessWidget {
               child: Text(
                 fieldLabel,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -761,7 +761,7 @@ class _FieldComparisonStacked extends StatelessWidget {
               status.label,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: status.color,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -779,7 +779,7 @@ class _FieldComparisonStacked extends StatelessWidget {
             color: comparison.status == _FieldCompareStatus.match
                 ? theme.colorScheme.onSurface
                 : status.color,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

@@ -2400,7 +2400,7 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             )
@@ -2946,16 +2946,16 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
     _cachedHeadingTextStyle = theme.textTheme.labelLarge?.copyWith(
       color: cs.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.1,
     );
     _cachedDataTextStyle = theme.textTheme.bodyMedium?.copyWith(
       color: cs.onSurface,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
     );
     _cachedNumberColumnStyle = theme.textTheme.labelMedium?.copyWith(
       color: cs.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
     );
     _rowNumberStyle = null;
   }
@@ -2969,7 +2969,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     }
     _rowNumberStyle = theme.textTheme.labelMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
     return _rowNumberStyle;
   }
@@ -3449,7 +3449,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
       color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: isSorted ? FontWeight.w700 : FontWeight.w600,
+      fontWeight: isSorted ? FontWeight.w600 : FontWeight.w500,
     );
 
     Widget label;

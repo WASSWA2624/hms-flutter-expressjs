@@ -354,7 +354,7 @@ class _DepartmentDetailsDialogState
                         Text(
                           _department.name,
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             height: 1.15,
                           ),
                         ),
@@ -372,7 +372,7 @@ class _DepartmentDetailsDialogState
                               typeLabel,
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             if (displayId != null)
@@ -380,7 +380,7 @@ class _DepartmentDetailsDialogState
                                 displayId,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                           ],
@@ -502,14 +502,14 @@ class _DepartmentFactTile extends StatelessWidget {
                     fact.label,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: theme.spacing.xs / 2),
                   Text(
                     fact.value,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -552,7 +552,7 @@ class _DepartmentStatusBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelLarge?.copyWith(
             color: foreground,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

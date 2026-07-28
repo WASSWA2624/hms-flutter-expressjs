@@ -29,7 +29,7 @@ class AuthTextLink extends StatelessWidget {
             vertical: theme.spacing.sm,
           ),
           textStyle: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
         ),

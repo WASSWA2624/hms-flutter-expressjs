@@ -199,7 +199,7 @@ class AppMessagePanel extends StatelessWidget {
                     title!,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: colors.onContainer,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: theme.spacing.xs),
@@ -264,7 +264,7 @@ class _AppSectionPanelHeader extends StatelessWidget {
                   title!,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colors.onContainer,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               if (description != null) ...<Widget>[

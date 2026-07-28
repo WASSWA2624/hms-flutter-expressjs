@@ -305,7 +305,7 @@ class _BillingCycleOption extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: foreground,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -387,7 +387,7 @@ class _PlanColumnTile extends StatelessWidget {
                         child: Text(
                           label,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             color: planTheme.foreground,
                           ),
                           maxLines: 2,
@@ -408,7 +408,7 @@ class _PlanColumnTile extends StatelessWidget {
                   Text(
                     priceLabel,
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: planTheme.foreground,
                       height: 1.1,
                       fontSize: 22,
@@ -419,7 +419,7 @@ class _PlanColumnTile extends StatelessWidget {
                     cycleLabel,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   SizedBox(height: theme.spacing.sm),
@@ -455,7 +455,7 @@ class _PlanColumnTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: planTheme.foreground,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),

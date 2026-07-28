@@ -317,11 +317,11 @@ class _LoadingMetrics {
         gapAfterLogo: spacing.sm,
         copyMaxWidth: 240,
         brandStyle: (ThemeData theme) => theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
       ),
       AppLoadingIndicatorSize.regular => _LoadingMetrics(
         logoSize: compactViewport ? 48 : 56,
@@ -329,11 +329,11 @@ class _LoadingMetrics {
         gapAfterLogo: spacing.md,
         copyMaxWidth: 320,
         brandStyle: (ThemeData theme) => theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
       ),
       AppLoadingIndicatorSize.large => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -349,9 +349,9 @@ class _LoadingMetrics {
           _ => 420,
         },
         brandStyle: (ThemeData theme) => theme.textTheme.headlineSmall
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.15),
+            ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.15),
         titleStyle: (ThemeData theme) =>
-            theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
       ),
       AppLoadingIndicatorSize.hero => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -371,13 +371,13 @@ class _LoadingMetrics {
               ? theme.textTheme.headlineSmall
               : theme.textTheme.headlineMedium;
           return brandBase?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
             height: 1.15,
           );
         },
         titleStyle: (ThemeData theme) => theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: theme.colorScheme.onSurface,
         ),
       ),

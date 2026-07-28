@@ -465,7 +465,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           child: Text(
             title,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: colors.onSurface,
             ),
           ),
@@ -474,7 +474,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           '$count',
           style: theme.textTheme.labelMedium?.copyWith(
             color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -531,7 +531,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           subtitle: Text(

@@ -1672,7 +1672,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                         : theme.textTheme.titleMedium)
                     ?.copyWith(
                       color: colorScheme.primary,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
             ),
@@ -1688,7 +1688,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                 style: (framed
                         ? theme.textTheme.headlineSmall
                         : theme.textTheme.titleLarge)
-                    ?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
+                    ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
               ),
               SizedBox(height: theme.spacing.xs),
               Wrap(
@@ -1702,7 +1702,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                       slug,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                 ],
@@ -1940,7 +1940,7 @@ class _TenantStatusBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelLarge?.copyWith(
             color: foreground,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -1977,7 +1977,7 @@ class _TenantMetaRow extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -3464,7 +3464,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
                       Text(
                         facility.name,
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           height: 1.2,
                         ),
                       ),
@@ -3738,7 +3738,7 @@ class _FacilityMetricChip extends StatelessWidget {
                 Text(
                   '$value',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: selected ? colorScheme.primary : null,
                   ),
                 ),
@@ -3748,7 +3748,7 @@ class _FacilityMetricChip extends StatelessWidget {
                     color: selected
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w700 : null,
+                    fontWeight: selected ? FontWeight.w600 : null,
                   ),
                 ),
               ],
@@ -3886,7 +3886,7 @@ class _FacilityStructureCrudPanelState<T>
                           title: Text(
                             widget.titleBuilder(item),
                             style: mutedStyle?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           subtitle: Column(
@@ -5397,7 +5397,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
                 style: (framed
                         ? theme.textTheme.headlineSmall
                         : theme.textTheme.titleLarge)
-                    ?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
+                    ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
               ),
               SizedBox(height: theme.spacing.xs),
               Wrap(
@@ -5411,7 +5411,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
                       displayId,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                 ],

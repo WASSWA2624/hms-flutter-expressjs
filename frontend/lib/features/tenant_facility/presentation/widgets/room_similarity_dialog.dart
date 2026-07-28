@@ -116,7 +116,7 @@ Future<RoomSimilarityDialogResult> showRoomSimilarityDialog(
                     child: Text(
                       l10n.tenantFacilitySimilarTenantMatchesHeading,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -126,7 +126,7 @@ Future<RoomSimilarityDialogResult> showRoomSimilarityDialog(
                     ),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -242,14 +242,14 @@ class _ProposedRoomCard extends StatelessWidget {
               l10n.tenantFacilityRoomOverallSimilarityLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: badgeOnContainer,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Text(
               '$overallScore%',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: badgeOnContainer,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -270,14 +270,14 @@ class _ProposedRoomCard extends StatelessWidget {
                       label,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       value,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -321,7 +321,7 @@ class _RoomNoMatchScorePanel extends StatelessWidget {
             child: Text(
               l10n.tenantFacilityRoomNoMatchScoreLabel(score),
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -338,7 +338,7 @@ class _RoomNoMatchScorePanel extends StatelessWidget {
               '$score%',
               style: theme.textTheme.labelLarge?.copyWith(
                 color: statusColors.onSuccessContainer,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -386,14 +386,14 @@ class _RoomSimilarityMatchCard extends StatelessWidget {
                       l10n.tenantFacilitySimilarRoomExistingHeading,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       room.name,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if ((match.wardName ?? '').trim().isNotEmpty) ...<Widget>[
@@ -431,7 +431,7 @@ class _RoomSimilarityMatchCard extends StatelessWidget {
                   '${match.score}%',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: accent,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -448,7 +448,7 @@ class _RoomSimilarityMatchCard extends StatelessWidget {
                   Text(
                     '${comparison.field}: ${comparison.score}%',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
             ],

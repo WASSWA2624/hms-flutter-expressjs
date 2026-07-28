@@ -530,7 +530,7 @@ class _SetupStepPanel extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (optional)
@@ -622,8 +622,8 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
                                     ? colorScheme.onSurfaceVariant
                                     : colorScheme.onSurface,
                                 fontWeight: item.satisfied
-                                    ? FontWeight.w500
-                                    : FontWeight.w700,
+                                    ? FontWeight.w400
+                                    : FontWeight.w600,
                                 decoration: item.satisfied
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -640,7 +640,7 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
                                 ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: pendingTone,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -992,7 +992,7 @@ class _StepBadge extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: tone,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -1045,7 +1045,7 @@ class TenantFacilityPermissionStrip extends StatelessWidget {
                   Text(
                     l10n.tenantFacilityPermissionsTitle,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   _PermissionChip(
@@ -1093,7 +1093,7 @@ class _PermissionChip extends StatelessWidget {
           '$label · ${allowed ? l10n.tenantFacilityPermissionAllowed : l10n.tenantFacilityPermissionDenied}',
           style: theme.textTheme.labelMedium?.copyWith(
             color: tone,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

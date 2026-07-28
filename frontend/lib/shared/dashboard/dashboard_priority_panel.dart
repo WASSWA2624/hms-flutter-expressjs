@@ -454,7 +454,7 @@ class _DashboardWorklistRow extends StatelessWidget {
       subtitle: item.subtitle,
     );
     final TextStyle? headlineStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
     );
     final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
       color: colorScheme.onSurfaceVariant,
@@ -572,7 +572,7 @@ class _DashboardShortcutTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     height: 1.2,
                   ),
                 ),
@@ -639,7 +639,7 @@ class _DashboardQuietState extends StatelessWidget {
             message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],

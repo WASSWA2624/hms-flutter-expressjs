@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
@@ -66,7 +67,7 @@ AppAccessPolicy _subscriptionsWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+      user: const AuthUserProfile(roles: <String>['BILLING']),
       permissions: <AppPermission>{
         AppPermissions.subscriptionsRead,
         AppPermissions.subscriptionsWrite,
@@ -85,7 +86,7 @@ AppAccessPolicy _subscriptionsReadOnlyPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+      user: const AuthUserProfile(roles: <String>['BILLING']),
       permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
@@ -196,10 +197,7 @@ void _stubWorkspace(_MockSubscriptionsRepository repository) {
   );
   when(() => repository.getPlanDetail(any())).thenAnswer(
     (_) async => const Result<SubscriptionPlanDetail>.success(
-      SubscriptionPlanDetail(
-        plan: _planItem,
-        stats: SubscriptionPlanStats(),
-      ),
+      SubscriptionPlanDetail(plan: _planItem),
     ),
   );
 }
@@ -319,8 +317,8 @@ void main() {
       ],
     );
     expect(find.text('Notifications'), findsNothing);
-    expect(find.widgetWithText(ActionChip, 'Past due invoices (2)'), findsOneWidget);
-    expect(find.widgetWithText(ActionChip, 'Pending changes (1)'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'Past due invoices (2)'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'Pending changes (1)'), findsOneWidget);
     expect(find.text('Starter Plan'), findsOneWidget);
     expect(_toolbarPrimary('Create plan'), findsOneWidget);
   });
@@ -328,22 +326,15 @@ void main() {
   testWidgets('overview shows cohort metrics without worklist or past-due card', (
     WidgetTester tester,
   ) async {
-    await _pumpSubscriptionsWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/subscriptions?panel=overview',
-      initialQuery: const SubscriptionsWorkspaceQuery(
-        panel: SubscriptionPanel.overview,
-        resource: SubscriptionResource.subscriptions,
-      ),
-    );
+    await _pumpSubscriptionsWorkspace(tester, repository: repository);
+    await _selectPanelTab(tester, 'Overview');
 
     expect(find.text('Active plans'), findsOneWidget);
     expect(find.text('Not subscribed'), findsOneWidget);
     expect(find.text('Closed subscriptions'), findsOneWidget);
     expect(find.text('Past due'), findsNothing);
     expect(find.byType(AppListTable<SubscriptionItem>), findsNothing);
-    expect(_toolbarPrimary('Activate subscription'), findsNothing);
+    expect(_toolbarPrimary('New subscription'), findsNothing);
     expect(_toolbarPrimary('Create plan'), findsNothing);
   });
 
@@ -382,13 +373,14 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('operations owns Activate subscription as the sole create entry', (
+  testWidgets('operations owns New subscription as the sole create entry', (
     WidgetTester tester,
   ) async {
     await _pumpSubscriptionsWorkspace(tester, repository: repository);
 
     await _selectPanelTab(tester, 'Subscriptions');
-    expect(_toolbarPrimary('Activate subscription'), findsOneWidget);
+    expect(_toolbarPrimary('New subscription'), findsOneWidget);
+    expect(find.text('Activate subscription'), findsNothing);
     expect(find.text('Acme Clinic'), findsOneWidget);
 
     final List<AppTabStrip> strips = tester
@@ -423,15 +415,8 @@ void main() {
   testWidgets('invoice detail omits Print invoice shell action', (
     WidgetTester tester,
   ) async {
-    await _pumpSubscriptionsWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/subscriptions?panel=billing&resource=subscription-invoices',
-      initialQuery: const SubscriptionsWorkspaceQuery(
-        panel: SubscriptionPanel.billing,
-        resource: SubscriptionResource.subscriptionInvoices,
-      ),
-    );
+    await _pumpSubscriptionsWorkspace(tester, repository: repository);
+    await _selectPanelTab(tester, 'Invoices');
 
     expect(find.text('SINV-1'), findsOneWidget);
     await tester.tap(find.text('SINV-1'));
@@ -444,20 +429,15 @@ void main() {
   testWidgets('edit subscription keeps Change plan as the sole plan-change path', (
     WidgetTester tester,
   ) async {
-    await _pumpSubscriptionsWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/subscriptions?panel=operations&resource=subscriptions',
-      initialQuery: const SubscriptionsWorkspaceQuery(
-        panel: SubscriptionPanel.operations,
-        resource: SubscriptionResource.subscriptions,
-      ),
-    );
+    await _pumpSubscriptionsWorkspace(tester, repository: repository);
+    await _selectPanelTab(tester, 'Subscriptions');
 
     await tester.tap(find.text('Acme Clinic'));
     await tester.pumpAndSettle();
     expect(find.text('Edit subscription'), findsOneWidget);
     expect(find.text('Change plan'), findsOneWidget);
+    expect(find.text('Cancel subscription'), findsOneWidget);
+    expect(find.text('Print invoice'), findsNothing);
 
     await tester.tap(find.text('Edit subscription'));
     await tester.pumpAndSettle();
@@ -470,5 +450,27 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  testWidgets('cancel subscription uses confirm without discarded reason', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.cancelSubscription(any())).thenAnswer(
+      (_) async => const Result<void>.success(null),
+    );
+
+    await _pumpSubscriptionsWorkspace(tester, repository: repository);
+    await _selectPanelTab(tester, 'Subscriptions');
+
+    await tester.tap(find.text('Acme Clinic'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel subscription'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Cancel this subscription?'),
+      findsOneWidget,
+    );
+    expect(find.text('Reason'), findsNothing);
   });
 }

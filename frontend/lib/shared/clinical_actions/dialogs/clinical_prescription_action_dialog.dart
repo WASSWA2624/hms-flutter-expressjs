@@ -1150,7 +1150,7 @@ class _PrescriptionLineHeader extends StatelessWidget {
               Text(
                 '${l10n.clinicalPrescriptionMedicineLabel} ${index + 1}',
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
@@ -1225,7 +1225,7 @@ class _PrescriptionDurationField extends StatelessWidget {
                 Text(
                   l10n.clinicalDurationValueLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

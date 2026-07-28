@@ -761,7 +761,7 @@ class _SettingsActionTile extends StatelessWidget {
                     Text(
                       action.title,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs / 2),

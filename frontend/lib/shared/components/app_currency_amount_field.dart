@@ -469,7 +469,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                             color: canEditAmount
                                 ? colorScheme.onSurface
                                 : colorScheme.onSurface.withValues(alpha: 0.62),
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                   decoration: InputDecoration(
                     border: InputBorder.none,

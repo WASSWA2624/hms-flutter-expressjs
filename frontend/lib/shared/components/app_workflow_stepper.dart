@@ -247,7 +247,7 @@ class AppWorkflowStepper extends StatelessWidget {
             current.blockedReason!,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.statusColors.warning,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -401,7 +401,7 @@ class _WorkflowStepEntry extends StatelessWidget {
     final TextStyle labelStyle = (theme.textTheme.labelMedium ??
             const TextStyle())
         .copyWith(
-          fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+          fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
           color: labelColor,
           letterSpacing: isCurrent ? 0.15 : null,
         );
@@ -696,7 +696,7 @@ class _WorkflowStepTag extends StatelessWidget {
         text,
         style: theme.textTheme.labelSmall?.copyWith(
           color: foreground,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),
       ),
