@@ -83,7 +83,6 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final OpdFlowSummary flow = widget.flow;
     final List<ReportSectionAvailability> availabilities =
         buildOpdPrintSectionAvailabilities(flow: flow, detail: widget.detail);
@@ -123,23 +122,25 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
               failure: _failure!,
             ),
           OpdActionContextPanel(flow: flow, showTitle: false),
-          Text(
-            l10n.patientsReportSectionsLabel,
-            style: theme.textTheme.titleSmall,
-          ),
-          AppReportSectionPicker(
-            sections: tiles,
-            selectedIds: selected,
-            onSelectionChanged: _isBusy
-                ? (_) {}
-                : (Set<Object> next) {
-                    setState(() {
-                      _selectedSections = sanitizeReportSectionSelection(
-                        selectedIds: next,
-                        sections: availabilities,
-                      ).cast<OpdPrintSection>().toSet();
-                    });
-                  },
+          AppFormSection(
+            title: l10n.patientsReportSectionsLabel,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppReportSectionPicker(
+                sections: tiles,
+                selectedIds: selected,
+                onSelectionChanged: _isBusy
+                    ? (_) {}
+                    : (Set<Object> next) {
+                        setState(() {
+                          _selectedSections = sanitizeReportSectionSelection(
+                            selectedIds: next,
+                            sections: availabilities,
+                          ).cast<OpdPrintSection>().toSet();
+                        });
+                      },
+              ),
+            ],
           ),
           AppReportPreviewPanel(
             selectable: true,

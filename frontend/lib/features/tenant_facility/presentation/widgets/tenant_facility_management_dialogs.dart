@@ -1760,36 +1760,15 @@ class _TenantDetailsSummary extends StatelessWidget {
       required List<AppInfoSheetItem> items,
       int maxColumns = 3,
     }) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(
-                icon,
-                size: theme.appTokens.listIconSize,
-                color: colorScheme.primary,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppInfoSheetGrid(
-            emptyValue: emptyValue,
-            maxColumns: maxColumns,
-            minItemWidth: framed ? 180 : 120,
-            items: items,
-          ),
-        ],
+      return AppWorkspaceDetailPanel(
+        title: title,
+        titleIcon: icon,
+        child: AppInfoSheetGrid(
+          emptyValue: emptyValue,
+          maxColumns: maxColumns,
+          minItemWidth: framed ? 180 : 120,
+          items: items,
+        ),
       );
     }
 
@@ -1829,12 +1808,7 @@ class _TenantDetailsSummary extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.lg),
-          Divider(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           section(
             title: l10n.tenantFacilityFacilityDetailsContactHeading,
             icon: Icons.contact_mail_outlined,
@@ -1853,12 +1827,7 @@ class _TenantDetailsSummary extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.lg),
-          Divider(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           section(
             title: l10n.settingsConfigurationTenantTitle,
             icon: Icons.tune_outlined,
@@ -2068,51 +2037,38 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String showLabel = l10n.tenantFacilityTenantDetailsShowSummaryAction;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            if (!summaryVisible) ...<Widget>[
-              IconButton(
-                tooltip: showLabel,
-                visualDensity: VisualDensity.compact,
-                onPressed: onShowSummary,
-                icon: const Icon(Icons.visibility_outlined),
-              ),
-              SizedBox(width: theme.spacing.xs),
-            ],
-            Expanded(
-              child: Text(
-                l10n.tenantFacilityTenantDetailsFacilitiesHeading,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+    return AppWorkspaceDetailPanel(
+      title: l10n.tenantFacilityTenantDetailsFacilitiesHeading,
+      actions: <Widget>[
+        if (!summaryVisible)
+          IconButton(
+            tooltip: showLabel,
+            visualDensity: VisualDensity.compact,
+            onPressed: onShowSummary,
+            icon: const Icon(Icons.visibility_outlined),
+          ),
+      ],
+      child: SizedBox(
+        height: math.max(320, MediaQuery.sizeOf(context).height * 0.45),
+        child: failure != null
+            ? AppFailureStateView(failure: failure!, onRetry: onRetry)
+            : AppListTable<FacilityProfile>(
+                page: AppPage<FacilityProfile>(
+                  items: facilities,
+                  request: pageRequest,
+                  totalItemCount: totalItemCount,
                 ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Expanded(
-          child: failure != null
-              ? AppFailureStateView(failure: failure!, onRetry: onRetry)
-              : AppListTable<FacilityProfile>(
-                  page: AppPage<FacilityProfile>(
-                    items: facilities,
-                    request: pageRequest,
-                    totalItemCount: totalItemCount,
-                  ),
-                  isLoading: loading,
-                  itemKeyBuilder: (FacilityProfile item) =>
-                      ValueKey<String>(item.id),
-                  onRowSelected: onRowSelected,
-                  initialSortColumnKey: 'name',
-                  previousPageLabel: l10n.hrPreviousPageLabel,
-                  nextPageLabel: l10n.hrNextPageLabel,
-                  pageLabelBuilder: (AppPage<FacilityProfile> page) {
-                    if (loading) {
-                      return '';
-                    }
+                isLoading: loading,
+                itemKeyBuilder: (FacilityProfile item) =>
+                    ValueKey<String>(item.id),
+                onRowSelected: onRowSelected,
+                initialSortColumnKey: 'name',
+                previousPageLabel: l10n.hrPreviousPageLabel,
+                nextPageLabel: l10n.hrNextPageLabel,
+                pageLabelBuilder: (AppPage<FacilityProfile> page) {
+                  if (loading) {
+                    return '';
+                  }
                     final int total = page.totalItemCount ?? page.items.length;
                     if (total == 0) {
                       return l10n.commonTableEmptyLabel;
@@ -2244,8 +2200,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                         );
                       },
                 ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -3565,101 +3520,115 @@ class _FacilityDetailsSummary extends StatelessWidget {
               label: l10n.tenantFacilityTenantStatusLabel,
               value: statusLabel,
             ),
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              l10n.tenantFacilityFacilityDetailsStructureHeading,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            SizedBox(height: theme.spacing.md),
+            AppWorkspaceDetailPanel(
+              title: l10n.tenantFacilityFacilityDetailsStructureHeading,
+              child: loading && snapshot == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : Wrap(
+                      spacing: theme.spacing.sm,
+                      runSpacing: theme.spacing.sm,
+                      children: <Widget>[
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityFacilityDetailsUsersHeading,
+                          value: userCount,
+                          selected:
+                              selectedPanel == _FacilityDetailsPanel.users,
+                          onTap: () =>
+                              onPanelSelected(_FacilityDetailsPanel.users),
+                        ),
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityDepartmentsListTitle,
+                          value:
+                              snapshot?.departments
+                                  .where(
+                                    (DepartmentProfile item) => !item.isDeleted,
+                                  )
+                                  .length ??
+                              0,
+                          selected: selectedPanel ==
+                              _FacilityDetailsPanel.departments,
+                          onTap: () => onPanelSelected(
+                            _FacilityDetailsPanel.departments,
+                          ),
+                        ),
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityUnitsListTitle,
+                          value:
+                              snapshot?.units
+                                  .where((UnitProfile item) => !item.isDeleted)
+                                  .length ??
+                              0,
+                          selected:
+                              selectedPanel == _FacilityDetailsPanel.units,
+                          onTap: () =>
+                              onPanelSelected(_FacilityDetailsPanel.units),
+                        ),
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityWardsLabel,
+                          value:
+                              snapshot?.wards
+                                  .where((WardProfile item) => !item.isDeleted)
+                                  .length ??
+                              0,
+                          selected:
+                              selectedPanel == _FacilityDetailsPanel.wards,
+                          onTap: () =>
+                              onPanelSelected(_FacilityDetailsPanel.wards),
+                        ),
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityRoomsLabel,
+                          value:
+                              snapshot?.rooms
+                                  .where((RoomProfile item) => !item.isDeleted)
+                                  .length ??
+                              0,
+                          selected:
+                              selectedPanel == _FacilityDetailsPanel.rooms,
+                          onTap: () =>
+                              onPanelSelected(_FacilityDetailsPanel.rooms),
+                        ),
+                        _FacilityMetricChip(
+                          label: l10n.tenantFacilityBedsLabel,
+                          value:
+                              snapshot?.beds
+                                  .where((BedProfile item) => !item.isDeleted)
+                                  .length ??
+                              0,
+                          selected: selectedPanel == _FacilityDetailsPanel.beds,
+                          onTap: () =>
+                              onPanelSelected(_FacilityDetailsPanel.beds),
+                        ),
+                      ],
+                    ),
             ),
-            SizedBox(height: theme.spacing.sm),
-            if (loading && snapshot == null)
-              const Center(child: CircularProgressIndicator())
-            else
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityFacilityDetailsUsersHeading,
-                    value: userCount,
-                    selected: selectedPanel == _FacilityDetailsPanel.users,
-                    onTap: () => onPanelSelected(_FacilityDetailsPanel.users),
-                  ),
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityDepartmentsListTitle,
-                    value:
-                        snapshot?.departments
-                            .where((DepartmentProfile item) => !item.isDeleted)
-                            .length ??
-                        0,
-                    selected:
-                        selectedPanel == _FacilityDetailsPanel.departments,
-                    onTap: () =>
-                        onPanelSelected(_FacilityDetailsPanel.departments),
-                  ),
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityUnitsListTitle,
-                    value:
-                        snapshot?.units
-                            .where((UnitProfile item) => !item.isDeleted)
-                            .length ??
-                        0,
-                    selected: selectedPanel == _FacilityDetailsPanel.units,
-                    onTap: () => onPanelSelected(_FacilityDetailsPanel.units),
-                  ),
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityWardsLabel,
-                    value:
-                        snapshot?.wards
-                            .where((WardProfile item) => !item.isDeleted)
-                            .length ??
-                        0,
-                    selected: selectedPanel == _FacilityDetailsPanel.wards,
-                    onTap: () => onPanelSelected(_FacilityDetailsPanel.wards),
-                  ),
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityRoomsLabel,
-                    value:
-                        snapshot?.rooms
-                            .where((RoomProfile item) => !item.isDeleted)
-                            .length ??
-                        0,
-                    selected: selectedPanel == _FacilityDetailsPanel.rooms,
-                    onTap: () => onPanelSelected(_FacilityDetailsPanel.rooms),
-                  ),
-                  _FacilityMetricChip(
-                    label: l10n.tenantFacilityBedsLabel,
-                    value:
-                        snapshot?.beds
-                            .where((BedProfile item) => !item.isDeleted)
-                            .length ??
-                        0,
-                    selected: selectedPanel == _FacilityDetailsPanel.beds,
-                    onTap: () => onPanelSelected(_FacilityDetailsPanel.beds),
-                  ),
-                ],
-              ),
             if (phone != null ||
                 email != null ||
                 address.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.md),
-              Text(
-                l10n.tenantFacilityFacilityDetailsContactHeading,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+              AppWorkspaceDetailPanel(
+                title: l10n.tenantFacilityFacilityDetailsContactHeading,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (phone != null && phone.isNotEmpty)
+                      _TenantMetaRow(
+                        label: l10n.profilePhoneLabel,
+                        value: phone,
+                      ),
+                    if (email != null && email.isNotEmpty)
+                      _TenantMetaRow(
+                        label: l10n.profileEmailLabel,
+                        value: email,
+                      ),
+                    if (address.isNotEmpty)
+                      _TenantMetaRow(
+                        label: l10n.tenantFacilityAddressLineLabel,
+                        value: address,
+                      ),
+                  ],
                 ),
               ),
-              SizedBox(height: theme.spacing.sm),
-              if (phone != null && phone.isNotEmpty)
-                _TenantMetaRow(label: l10n.profilePhoneLabel, value: phone),
-              if (email != null && email.isNotEmpty)
-                _TenantMetaRow(label: l10n.profileEmailLabel, value: email),
-              if (address.isNotEmpty)
-                _TenantMetaRow(
-                  label: l10n.tenantFacilityAddressLineLabel,
-                  value: address,
-                ),
             ],
           ],
         ),
@@ -3863,80 +3832,56 @@ class _FacilityStructureCrudPanelState<T>
               .toList(growable: false);
     final bool canAdd = widget.canAdd ?? widget.canManage;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (widget.canManage)
-                  AppButton.tertiary(
-                    leadingIcon: Icons.add,
-                    label: widget.addLabel,
-                    semanticLabel: widget.addLabel,
-                    tooltip: widget.blockedMessage ?? widget.addLabel,
-                    enabled: canAdd,
-                    onPressed: canAdd ? widget.onAdd : null,
-                  ),
-              ],
-            ),
-            if (widget.blockedMessage != null) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                widget.blockedMessage!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            SizedBox(height: theme.spacing.sm),
-            AppSearchBar(
-              controller: _searchController,
-              hintText: l10n.tenantFacilitySearchLabel,
-              semanticLabel: l10n.tenantFacilitySearchLabel,
-              onChanged: (_) => setState(() {}),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Expanded(
-              child: filtered.isEmpty
-                  ? AppWorkspaceStatePanel.empty(
-                      title: widget.title,
-                      body: widget.items.isEmpty
-                          ? widget.emptyLabel
-                          : l10n.tenantFacilitySearchNoResults,
-                    )
-                  : ListView.separated(
-                      itemCount: filtered.length,
-                      separatorBuilder: (BuildContext context, int index) =>
-                          const Divider(height: 1),
-                      itemBuilder: (BuildContext context, int index) {
-                        final T item = filtered[index];
-                        final bool deleted = widget.isDeletedBuilder(item);
-                        final String subtitle = widget.subtitleBuilder(item);
-                        final TextStyle? mutedStyle = deleted
-                            ? theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              )
-                            : null;
-                        final AppWorkspaceStatusTone statusTone = deleted
-                            ? AppWorkspaceStatusTone.error
-                            : AppWorkspaceStatusTone.success;
+    return AppWorkspaceDetailPanel(
+      title: widget.title,
+      description: widget.blockedMessage,
+      actions: <Widget>[
+        if (widget.canManage)
+          AppButton.tertiary(
+            leadingIcon: Icons.add,
+            label: widget.addLabel,
+            semanticLabel: widget.addLabel,
+            tooltip: widget.blockedMessage ?? widget.addLabel,
+            enabled: canAdd,
+            onPressed: canAdd ? widget.onAdd : null,
+          ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppSearchBar(
+            controller: _searchController,
+            hintText: l10n.tenantFacilitySearchLabel,
+            semanticLabel: l10n.tenantFacilitySearchLabel,
+            onChanged: (_) => setState(() {}),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Expanded(
+            child: filtered.isEmpty
+                ? AppWorkspaceStatePanel.empty(
+                    title: widget.title,
+                    body: widget.items.isEmpty
+                        ? widget.emptyLabel
+                        : l10n.tenantFacilitySearchNoResults,
+                  )
+                : ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (BuildContext context, int index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (BuildContext context, int index) {
+                      final T item = filtered[index];
+                      final bool deleted = widget.isDeletedBuilder(item);
+                      final String subtitle = widget.subtitleBuilder(item);
+                      final TextStyle? mutedStyle = deleted
+                          ? theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            )
+                          : null;
+                      final AppWorkspaceStatusTone statusTone = deleted
+                          ? AppWorkspaceStatusTone.error
+                          : AppWorkspaceStatusTone.success;
 
-                        return ListTile(
+                      return ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(
                             widget.titleBuilder(item),
@@ -4000,9 +3945,8 @@ class _FacilityStructureCrudPanelState<T>
                         );
                       },
                     ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -4055,78 +3999,62 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.tenantFacilityFacilityDetailsUsersHeading,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+    return AppWorkspaceDetailPanel(
+      title: l10n.tenantFacilityFacilityDetailsUsersHeading,
+      actions: <Widget>[
+        if (canManage)
+          AppButton.tertiary(
+            leadingIcon: Icons.person_add_outlined,
+            label: l10n.accessAdminCreateUserAction,
+            semanticLabel: l10n.accessAdminCreateUserAction,
+            tooltip: l10n.accessAdminCreateUserAction,
+            onPressed: onAdd,
+          ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppSearchBar(
+            controller: searchController,
+            hintText: l10n.tenantFacilitySearchLabel,
+            semanticLabel: l10n.tenantFacilitySearchLabel,
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Expanded(
+            child: failure != null
+                ? AppFailureStateView(failure: failure!)
+                : AppListTable<AccessAdminItem>(
+                    page: AppPage<AccessAdminItem>(
+                      items: users,
+                      request: pageRequest,
+                      totalItemCount: totalItemCount,
                     ),
-                  ),
-                ),
-                if (canManage)
-                  AppButton.tertiary(
-                    leadingIcon: Icons.person_add_outlined,
-                    label: l10n.accessAdminCreateUserAction,
-                    semanticLabel: l10n.accessAdminCreateUserAction,
-                    tooltip: l10n.accessAdminCreateUserAction,
-                    onPressed: onAdd,
-                  ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppSearchBar(
-              controller: searchController,
-              hintText: l10n.tenantFacilitySearchLabel,
-              semanticLabel: l10n.tenantFacilitySearchLabel,
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Expanded(
-              child: failure != null
-              ? AppFailureStateView(failure: failure!)
-              : AppListTable<AccessAdminItem>(
-                      page: AppPage<AccessAdminItem>(
-                        items: users,
-                        request: pageRequest,
-                        totalItemCount: totalItemCount,
-                      ),
-                      isLoading: loading,
-                      itemKeyBuilder: (AccessAdminItem item) =>
-                          ValueKey<String>(item.id),
-                      previousPageLabel: l10n.hrPreviousPageLabel,
-                      nextPageLabel: l10n.hrNextPageLabel,
-                      pageLabelBuilder: (AppPage<AccessAdminItem> page) {
-                        if (loading) {
-                          return '';
-                        }
-                        final int total =
-                            page.totalItemCount ?? page.items.length;
-                        if (total == 0) {
-                          return l10n.commonTableEmptyLabel;
-                        }
-                        final int start = page.pageIndex * page.pageSize + 1;
-                        final int end = start + page.items.length - 1;
-                        return '$start-$end / $total';
-                      },
-                      onPageChanged: onPageChanged,
-                      columns: <AppListTableColumn<AccessAdminItem>>[
-                        AppListTableColumn<AccessAdminItem>(
-                          label: l10n.accessAdminCreateUserDetailsSectionTitle,
-                          cellBuilder: (_, AccessAdminItem user) => Text(
-                            user.title,
-                            style: user.isDeleted
-                                ? theme.textTheme.bodyMedium?.copyWith(
+                    isLoading: loading,
+                    itemKeyBuilder: (AccessAdminItem item) =>
+                        ValueKey<String>(item.id),
+                    previousPageLabel: l10n.hrPreviousPageLabel,
+                    nextPageLabel: l10n.hrNextPageLabel,
+                    pageLabelBuilder: (AppPage<AccessAdminItem> page) {
+                      if (loading) {
+                        return '';
+                      }
+                      final int total =
+                          page.totalItemCount ?? page.items.length;
+                      if (total == 0) {
+                        return l10n.commonTableEmptyLabel;
+                      }
+                      final int start = page.pageIndex * page.pageSize + 1;
+                      final int end = start + page.items.length - 1;
+                      return '$start-$end / $total';
+                    },
+                    onPageChanged: onPageChanged,
+                    columns: <AppListTableColumn<AccessAdminItem>>[
+                      AppListTableColumn<AccessAdminItem>(
+                        label: l10n.accessAdminCreateUserDetailsSectionTitle,
+                        cellBuilder: (_, AccessAdminItem user) => Text(
+                          user.title,
+                          style: user.isDeleted
+                              ? theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                   )
                                 : null,
@@ -4208,22 +4136,21 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                         title: l10n.tenantFacilityFacilityDetailsUsersHeading,
                         body: l10n.tenantFacilityFacilityDetailsNoUsers,
                       ),
-                      mobileItemBuilder:
-                          (BuildContext context, AccessAdminItem user) {
-                            return AppListTableMobileItem(
-                              title: user.title,
-                              caption: user.email ?? user.subtitle,
-                              meta: <AppListTableMobileMeta>[
-                                AppListTableMobileMeta(
-                                  label: _userStatusLabel(l10n, user),
-                                ),
-                              ],
-                            );
-                          },
-                    ),
-            ),
-          ],
-        ),
+                    mobileItemBuilder:
+                        (BuildContext context, AccessAdminItem user) {
+                          return AppListTableMobileItem(
+                            title: user.title,
+                            caption: user.email ?? user.subtitle,
+                            meta: <AppListTableMobileMeta>[
+                              AppListTableMobileMeta(
+                                label: _userStatusLabel(l10n, user),
+                              ),
+                            ],
+                          );
+                        },
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -5535,36 +5462,15 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
       required List<AppInfoSheetItem> items,
       int maxColumns = 3,
     }) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(
-                icon,
-                size: theme.appTokens.listIconSize,
-                color: colorScheme.primary,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppInfoSheetGrid(
-            emptyValue: emptyValue,
-            maxColumns: maxColumns,
-            minItemWidth: framed ? 180 : 120,
-            items: items,
-          ),
-        ],
+      return AppWorkspaceDetailPanel(
+        title: title,
+        titleIcon: icon,
+        child: AppInfoSheetGrid(
+          emptyValue: emptyValue,
+          maxColumns: maxColumns,
+          minItemWidth: framed ? 180 : 120,
+          items: items,
+        ),
       );
     }
 
@@ -5600,12 +5506,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.lg),
-          Divider(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           section(
             title: l10n.tenantFacilityFacilityDetailsContactHeading,
             icon: Icons.contact_mail_outlined,
@@ -5632,12 +5533,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.lg),
-          Divider(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           section(
             title: l10n.settingsConfigurationTenantTitle,
             icon: Icons.tune_outlined,

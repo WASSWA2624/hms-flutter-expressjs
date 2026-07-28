@@ -945,7 +945,6 @@ class _TheaterActionBar extends ConsumerWidget {
 
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
-      presentation: AppQuickActionsPresentation.plain,
       actions: <AppActionItem>[
         AppActionItem(
           label: l10n.theaterAssignResourceAction,

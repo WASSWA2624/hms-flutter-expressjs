@@ -1588,7 +1588,6 @@ class _WorkItemActions extends ConsumerWidget {
         SizedBox(height: Theme.of(context).spacing.md),
         AppQuickActions(
           title: context.l10n.patientsQuickActionsTitle,
-          presentation: AppQuickActionsPresentation.plain,
           permissionActions: _workItemActions(context, ref, item, enabled),
         ),
       ],

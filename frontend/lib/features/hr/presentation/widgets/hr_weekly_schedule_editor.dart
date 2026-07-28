@@ -5,6 +5,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Monday-first display order; values match API `day_of_week` (0 = Sunday).
 const List<int> kHrWeekDayOrder = <int>[1, 2, 3, 4, 5, 6, 0];
@@ -367,18 +368,10 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
-    return Column(
+    final Widget days = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (showSectionTitle) ...<Widget>[
-          Text(
-            sectionTitle ?? l10n.hrWeeklyScheduleSectionTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.xs),
-        ],
         for (final int day in kHrWeekDayOrder)
           _HrDayScheduleSection(
             dayLabel: hrDayLabel(l10n, day),
@@ -403,6 +396,15 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
             requiredFieldMessage: l10n.hrFieldRequiredLabel,
           ),
       ],
+    );
+
+    if (!showSectionTitle) {
+      return days;
+    }
+
+    return AppWorkspaceDetailPanel(
+      title: sectionTitle ?? l10n.hrWeeklyScheduleSectionTitle,
+      child: days,
     );
   }
 }

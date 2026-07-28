@@ -2330,12 +2330,10 @@ class _PatientReportPrintPreviewDialogState
             },
           ),
           SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.patientsReportPreviewSectionTitle,
-            style: theme.textTheme.titleMedium,
+          AppWorkspaceDetailPanel(
+            title: l10n.patientsReportPreviewSectionTitle,
+            child: _PatientReportPreviewPages(document: document),
           ),
-          SizedBox(height: theme.spacing.sm),
-          _PatientReportPreviewPages(document: document),
         ],
       ),
       actions: <Widget>[

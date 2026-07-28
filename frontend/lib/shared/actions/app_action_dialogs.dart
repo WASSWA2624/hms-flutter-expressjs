@@ -679,35 +679,51 @@ class _AppTextActionDialogState extends State<AppTextActionDialog> {
           ...widget.leadingContent,
           if (widget.sectionTitle != null &&
               widget.sectionTitle!.trim().isNotEmpty)
-            Text(
-              widget.sectionTitle!,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+            AppFormSection(
+              title: widget.sectionTitle,
+              description: widget.description,
+              children: <Widget>[
+                AppTextField(
+                  controller: _controller,
+                  labelText: widget.fieldLabel,
+                  prefixIcon: widget.prefixIcon,
+                  minLines: widget.minLines,
+                  maxLines: widget.maxLines,
+                  enabled: !_isSaving,
+                  isRequired: widget.isRequired,
+                  autofocus: widget.autofocus,
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: widget.isRequired
+                      ? AppValidators.requiredText(l10n.validationRequired)
+                      : null,
+                ),
+              ],
+            )
+          else ...<Widget>[
+            if (widget.description != null &&
+                widget.description!.trim().isNotEmpty)
+              Text(
+                widget.description!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
               ),
+            AppTextField(
+              controller: _controller,
+              labelText: widget.fieldLabel,
+              prefixIcon: widget.prefixIcon,
+              minLines: widget.minLines,
+              maxLines: widget.maxLines,
+              enabled: !_isSaving,
+              isRequired: widget.isRequired,
+              autofocus: widget.autofocus,
+              textCapitalization: TextCapitalization.sentences,
+              validator: widget.isRequired
+                  ? AppValidators.requiredText(l10n.validationRequired)
+                  : null,
             ),
-          if (widget.description != null &&
-              widget.description!.trim().isNotEmpty)
-            Text(
-              widget.description!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.45,
-              ),
-            ),
-          AppTextField(
-            controller: _controller,
-            labelText: widget.fieldLabel,
-            prefixIcon: widget.prefixIcon,
-            minLines: widget.minLines,
-            maxLines: widget.maxLines,
-            enabled: !_isSaving,
-            isRequired: widget.isRequired,
-            autofocus: widget.autofocus,
-            textCapitalization: TextCapitalization.sentences,
-            validator: widget.isRequired
-                ? AppValidators.requiredText(l10n.validationRequired)
-                : null,
-          ),
+          ],
         ],
       ),
       actions: _actionDialogButtons(

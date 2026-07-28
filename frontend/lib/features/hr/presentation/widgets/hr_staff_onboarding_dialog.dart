@@ -682,23 +682,23 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
             ),
             if (!isEdit) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
-              Text(
-                l10n.hrStaffOnboardingRolesSectionTitle,
-                style: theme.textTheme.titleSmall,
-              ),
-              SizedBox(height: theme.spacing.sm),
-              AppRoleAssignmentPicker(
-                roles: _roleAssignmentOptions(),
-                selectedRoleIds: _selectedRoleIds,
-                loadRolePermissions: _loadRolePermissions,
-                onSelectionChanged: (Set<String> value) {
-                  setState(() {
-                    _selectedRoleIds
-                      ..clear()
-                      ..addAll(value);
-                  });
-                  _recomputeClinicalSections();
-                },
+              AppFormSection(
+                title: l10n.hrStaffOnboardingRolesSectionTitle,
+                children: <Widget>[
+                  AppRoleAssignmentPicker(
+                    roles: _roleAssignmentOptions(),
+                    selectedRoleIds: _selectedRoleIds,
+                    loadRolePermissions: _loadRolePermissions,
+                    onSelectionChanged: (Set<String> value) {
+                      setState(() {
+                        _selectedRoleIds
+                          ..clear()
+                          ..addAll(value);
+                      });
+                      _recomputeClinicalSections();
+                    },
+                  ),
+                ],
               ),
             ],
             if (_showPractitionerType) ...<Widget>[

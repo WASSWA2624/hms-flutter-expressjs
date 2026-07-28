@@ -215,8 +215,6 @@ class PatientDetailQuickActions extends ConsumerWidget {
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
       permissionActions: actions,
-      presentation: AppQuickActionsPresentation.plain,
-      leadingIcon: null,
     );
   }
 }

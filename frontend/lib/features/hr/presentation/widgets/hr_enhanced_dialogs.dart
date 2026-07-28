@@ -99,45 +99,50 @@ Future<void> showHrModuleAccessDialog(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            l10n.hrModuleAccessSectionTitle,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          if (access == null || access.moduleAccess.isEmpty)
-            Text(l10n.hrNoModuleAccessLabel)
-          else
-            for (final HrModuleAccess module in access.moduleAccess)
-              ListTile(
-                dense: true,
-                leading: Icon(
-                  module.granted ? Icons.check_circle_outline : Icons.block,
-                  color: module.granted
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.error,
-                ),
-                title: Text(module.label ?? module.slug),
-                subtitle: module.moduleGroup == null
-                    ? null
-                    : Text(module.moduleGroup!),
-              ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.hrEffectivePermissionsTitle,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          if (access == null || access.effectivePermissions.isEmpty)
-            Text(l10n.profileUnknownValue)
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: access.effectivePermissions
-                  .take(24)
-                  .map((String permission) => Chip(label: Text(permission)))
-                  .toList(growable: false),
+          AppWorkspaceDetailPanel(
+            title: l10n.hrModuleAccessSectionTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (access == null || access.moduleAccess.isEmpty)
+                  Text(l10n.hrNoModuleAccessLabel)
+                else
+                  for (final HrModuleAccess module in access.moduleAccess)
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        module.granted
+                            ? Icons.check_circle_outline
+                            : Icons.block,
+                        color: module.granted
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                      title: Text(module.label ?? module.slug),
+                      subtitle: module.moduleGroup == null
+                          ? null
+                          : Text(module.moduleGroup!),
+                    ),
+              ],
             ),
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppWorkspaceDetailPanel(
+            title: l10n.hrEffectivePermissionsTitle,
+            child: access == null || access.effectivePermissions.isEmpty
+                ? Text(l10n.profileUnknownValue)
+                : Wrap(
+                    spacing: Theme.of(context).spacing.sm,
+                    runSpacing: Theme.of(context).spacing.sm,
+                    children: access.effectivePermissions
+                        .take(24)
+                        .map(
+                          (String permission) => Chip(label: Text(permission)),
+                        )
+                        .toList(growable: false),
+                  ),
+          ),
         ],
       ),
       actions: <Widget>[
