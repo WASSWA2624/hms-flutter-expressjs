@@ -88,7 +88,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Condition: Always when rows exist.
 
 - **Next action** (status/capability-aware label)
-  - Location: `next_action` column (always visible).
+  - Location: `next_action` column (always visible on desktop); mobile list item `trailing`.
   - Opens modal: Assign or triage form when that is next; otherwise mutates start/complete directly; review/view opens detail.
   - Immediate result: Sole primary write for the row, or opens detail when read-only.
   - Condition: Write next-actions require matching capability; unauthorized write next-actions become **View details** (opens detail). Terminal rows show non-button **No action needed**.
