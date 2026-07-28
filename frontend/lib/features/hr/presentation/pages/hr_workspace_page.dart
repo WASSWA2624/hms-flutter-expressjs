@@ -658,38 +658,18 @@ class _HrStaffDetailPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: selected.profile.displayName,
-      description: selected.profile.effectiveId,
-      actions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.edit_outlined,
-          label: l10n.hrEditStaffAction,
-          semanticLabel: l10n.hrEditStaffAction,
-          tooltip: l10n.hrEditStaffAction,
-          onPressed: state.isMutating
-              ? null
-              : () => showHrStaffOnboardingDialog(
-                  context,
-                  ref,
-                  staff: selected.profile,
-                ),
-        ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (state.isRefreshingDetail)
+          const LinearProgressIndicator(minHeight: 2),
+        if (selected.profile.isSeparated)
+          Padding(
+            padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
+            child: _HrSeparationBanner(profile: selected.profile),
+          ),
+        _HrStaffDetailBody(state: state, detail: selected),
       ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (state.isRefreshingDetail)
-            const LinearProgressIndicator(minHeight: 2),
-          if (selected.profile.isSeparated)
-            Padding(
-              padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
-              child: _HrSeparationBanner(profile: selected.profile),
-            ),
-          _HrStaffDetailBody(state: state, detail: selected),
-        ],
-      ),
     );
   }
 }
@@ -721,6 +701,22 @@ class _HrStaffDetailBody extends ConsumerWidget {
           showAvatar: false,
           persistExpandPreference: false,
           initiallyExpanded: false,
+          actions: profile.isSeparated || state.isMutating
+              ? const <Widget>[]
+              : <Widget>[
+                  AppButton(
+                    iconOnly: true,
+                    leadingIcon: Icons.edit_outlined,
+                    label: l10n.hrEditStaffAction,
+                    semanticLabel: l10n.hrEditStaffAction,
+                    tooltip: l10n.hrEditStaffAction,
+                    onPressed: () => showHrStaffOnboardingDialog(
+                      context,
+                      ref,
+                      staff: profile,
+                    ),
+                  ),
+                ],
           compactSupportingText: hrJoinDisplay(<String?>[
             profile.position,
             l10n.hrReferencePractitionerTypeLabel(
@@ -953,35 +949,32 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
+        AppWorkspaceDetailPanel(
           title: l10n.hrAvailabilitySectionTitle,
-          leadingIcon: Icons.schedule_outlined,
-          density: AppContentPanelDensity.compact,
-          children: <Widget>[
-            HrAvailabilityCalendar(
-              availabilities: detail.availabilities,
-              leaves: detail.leaves,
-              onRecordAvailability: profile.isSeparated || state.isMutating
-                  ? null
-                  : () => showHrRecordAvailabilityDialog(context, ref),
-              onDayTap: (int day) {
-                HrStaffAvailability? availability;
-                for (final HrStaffAvailability item in detail.availabilities) {
-                  if (item.dayOfWeek == day) {
-                    availability = item;
-                    break;
-                  }
+          titleIcon: Icons.schedule_outlined,
+          child: HrAvailabilityCalendar(
+            availabilities: detail.availabilities,
+            leaves: detail.leaves,
+            onRecordAvailability: profile.isSeparated || state.isMutating
+                ? null
+                : () => showHrRecordAvailabilityDialog(context, ref),
+            onDayTap: (int day) {
+              HrStaffAvailability? availability;
+              for (final HrStaffAvailability item in detail.availabilities) {
+                if (item.dayOfWeek == day) {
+                  availability = item;
+                  break;
                 }
-                showHrAvailabilityDaySheet(
-                  context,
-                  dayOfWeek: day,
-                  availability: availability,
-                  onEdit: () => showHrRecordAvailabilityDialog(context, ref),
-                  onAddSlot: () => showHrRecordAvailabilityDialog(context, ref),
-                );
-              },
-            ),
-          ],
+              }
+              showHrAvailabilityDaySheet(
+                context,
+                dayOfWeek: day,
+                availability: availability,
+                onEdit: () => showHrRecordAvailabilityDialog(context, ref),
+                onAddSlot: () => showHrRecordAvailabilityDialog(context, ref),
+              );
+            },
+          ),
         ),
         SizedBox(height: theme.spacing.md),
         _SmallRecordSection(
@@ -1276,25 +1269,27 @@ class _SmallRecordSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: title,
-      leadingIcon: icon,
-      density: AppContentPanelDensity.compact,
-      children: rows.isEmpty
-          ? <Widget>[
-              Text(emptyText),
-              if (onEmptyAction != null &&
-                  (emptyActionLabel ?? '').trim().isNotEmpty) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
-                AppButton.secondary(
-                  label: emptyActionLabel!,
-                  onPressed: onEmptyAction,
-                ),
+      titleIcon: icon,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: rows.isEmpty
+            ? <Widget>[
+                Text(emptyText),
+                if (onEmptyAction != null &&
+                    (emptyActionLabel ?? '').trim().isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  AppButton.secondary(
+                    label: emptyActionLabel!,
+                    onPressed: onEmptyAction,
+                  ),
+                ],
+              ]
+            : <Widget>[
+                for (final _RecordLine row in rows) _RecordLineTile(line: row),
               ],
-            ]
-          : <Widget>[
-              for (final _RecordLine row in rows) _RecordLineTile(line: row),
-            ],
+      ),
     );
   }
 }

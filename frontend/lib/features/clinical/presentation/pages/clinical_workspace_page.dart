@@ -3357,13 +3357,7 @@ List<Widget> _withClinicalSectionSpacing(
   BuildContext context,
   List<Widget> sections,
 ) {
-  final double spacing = Theme.of(context).spacing.md;
-  return <Widget>[
-    for (var index = 0; index < sections.length; index += 1) ...<Widget>[
-      if (index > 0) SizedBox(height: spacing),
-      sections[index],
-    ],
-  ];
+  return appWorkspaceDetailSectionSpacing(context, sections);
 }
 
 bool _clinicalTriageShowsWorkflowStage(ClinicalTriageHandoff? handoff) {

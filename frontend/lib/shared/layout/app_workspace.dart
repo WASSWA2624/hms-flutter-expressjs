@@ -619,6 +619,23 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
   }
 }
 
+/// Spaces titled [AppWorkspaceDetailPanel] sections in detail dialogs.
+///
+/// Detail modal bodies should be a [Column] of these panels (not one outer
+/// panel wrapping custom section chrome).
+List<Widget> appWorkspaceDetailSectionSpacing(
+  BuildContext context,
+  List<Widget> sections,
+) {
+  final double spacing = Theme.of(context).spacing.md;
+  return <Widget>[
+    for (var index = 0; index < sections.length; index += 1) ...<Widget>[
+      if (index > 0) SizedBox(height: spacing),
+      sections[index],
+    ],
+  ];
+}
+
 class AppWorkspacePatientContextHeader extends StatelessWidget {
   const AppWorkspacePatientContextHeader({
     required this.patientName,

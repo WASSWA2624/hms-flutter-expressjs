@@ -37,42 +37,38 @@ Future<void> showRadiologyCatalogProcedureDetailsDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppSectionPanel(
-              tone: AppWorkspaceStatusTone.info,
-              density: AppContentPanelDensity.compact,
-              leadingIcon: Icons.info_outline,
+            AppWorkspaceDetailPanel(
               title: procedure.name,
-              children: <Widget>[
-                Wrap(
-                  spacing: theme.spacing.md,
-                  runSpacing: theme.spacing.sm,
-                  children: <Widget>[
-                    for (final (String label, String value) in facts)
-                      SizedBox(
-                        width: 220,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              label,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
+              titleIcon: Icons.info_outline,
+              child: Wrap(
+                spacing: theme.spacing.md,
+                runSpacing: theme.spacing.sm,
+                children: <Widget>[
+                  for (final (String label, String value) in facts)
+                    SizedBox(
+                      width: 220,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            label,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
                             ),
-                            SizedBox(height: theme.spacing.xs / 2),
-                            Text(
-                              value,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                          SizedBox(height: theme.spacing.xs / 2),
+                          Text(
+                            value,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-              ],
+                    ),
+                ],
+              ),
             ),
           ],
         ),

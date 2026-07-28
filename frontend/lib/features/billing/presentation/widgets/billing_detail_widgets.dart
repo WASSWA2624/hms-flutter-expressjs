@@ -498,13 +498,13 @@ class _InvoiceLineItemsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.items.isEmpty) {
-      return _DetailSection(
+      return AppWorkspaceDetailPanel(
         title: l10n.billingLineItemsTitle,
         child: Text(l10n.billingNoLineItems),
       );
     }
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.billingLineItemsTitle,
       child: AppListTable<BillingInvoiceItem>(
         items: item.items,
@@ -632,13 +632,13 @@ class _PaymentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.payments.isEmpty) {
-      return _DetailSection(
+      return AppWorkspaceDetailPanel(
         title: l10n.billingPaymentsTitle,
         child: Text(l10n.billingNoPayments),
       );
     }
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.billingPaymentsTitle,
       child: Column(
         children: <Widget>[
@@ -670,13 +670,13 @@ class _AdjustmentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.adjustments.isEmpty) {
-      return _DetailSection(
+      return AppWorkspaceDetailPanel(
         title: l10n.billingAdjustmentsTitle,
         child: Text(l10n.billingNoAdjustments),
       );
     }
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.billingAdjustmentsTitle,
       child: Column(
         children: <Widget>[
@@ -737,26 +737,6 @@ class _NonInvoiceDetailSection extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _DetailSection extends StatelessWidget {
-  const _DetailSection({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(title, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.sm),
-        child,
-      ],
     );
   }
 }

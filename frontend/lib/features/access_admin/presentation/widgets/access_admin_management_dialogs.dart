@@ -2056,15 +2056,13 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
           ),
           if (description != '—') ...<Widget>[
             SizedBox(height: theme.spacing.md),
-            AppSectionPanel(
+            AppWorkspaceDetailPanel(
               title: l10n.accessAdminPermissionDescriptionColumnLabel,
-              leadingIcon: Icons.notes_outlined,
-              children: <Widget>[
-                Text(
-                  description,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
-                ),
-              ],
+              titleIcon: Icons.notes_outlined,
+              child: Text(
+                description,
+                style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+              ),
             ),
           ],
         ],
@@ -2425,50 +2423,47 @@ class _AccessAdminRoleDetailDialogState
             permissionCount: permissionOptions.length,
           ),
           SizedBox(height: theme.spacing.md),
-          AppSectionPanel(
+          AppWorkspaceDetailPanel(
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
-            leadingIcon: Icons.lock_outline,
-            trailing: hasPermissions
+            titleIcon: Icons.lock_outline,
+            actions: hasPermissions
                 ? (canManagePermissions
-                      ? Flexible(
-                          child: Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: AppButton.secondary(
-                              label: l10n.accessAdminEditRolePermissionsAction,
-                              leadingIcon: Icons.tune_outlined,
-                              enabled: !_saving,
-                              onPressed: _saving
-                                  ? null
-                                  : () => unawaited(_addPermissions()),
+                      ? <Widget>[
+                          AppButton.secondary(
+                            label: l10n.accessAdminEditRolePermissionsAction,
+                            leadingIcon: Icons.tune_outlined,
+                            enabled: !_saving,
+                            onPressed: _saving
+                                ? null
+                                : () => unawaited(_addPermissions()),
+                          ),
+                        ]
+                      : <Widget>[
+                          Text(
+                            l10n.hrAccessPermissionCountLabel(
+                              permissionOptions.length,
+                            ),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colors.onSurfaceVariant,
                             ),
                           ),
-                        )
-                      : Text(
-                          l10n.hrAccessPermissionCountLabel(
-                            permissionOptions.length,
-                          ),
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ))
-                : null,
-            children: <Widget>[
-              if (hasPermissions)
-                AppPermissionGroupedView(
-                  permissions: permissionOptions,
-                  initiallyExpandAll: permissionOptions.length <= 24,
-                  emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
-                )
-              else
-                _RolePermissionsEmptyState(
-                  message: l10n.accessAdminRoleDetailNoPermissionsMessage,
-                  actionLabel: l10n.accessAdminAddRolePermissionsAction,
-                  showAction: canManagePermissions,
-                  actionEnabled: !_saving,
-                  onAdd: () => unawaited(_addPermissions()),
-                ),
-            ],
+                        ])
+                : const <Widget>[],
+            child: hasPermissions
+                ? AppPermissionGroupedView(
+                    permissions: permissionOptions,
+                    initiallyExpandAll: permissionOptions.length <= 24,
+                    emptyMessage:
+                        l10n.accessAdminRoleDetailNoPermissionsMessage,
+                  )
+                : _RolePermissionsEmptyState(
+                    message: l10n.accessAdminRoleDetailNoPermissionsMessage,
+                    actionLabel: l10n.accessAdminAddRolePermissionsAction,
+                    showAction: canManagePermissions,
+                    actionEnabled: !_saving,
+                    onAdd: () => unawaited(_addPermissions()),
+                  ),
           ),
         ],
       ),
@@ -3516,11 +3511,11 @@ class _AccessAdminUserDetailDialogState
         children: <Widget>[
           _UserDetailSummaryCard(item: item),
           SizedBox(height: theme.spacing.md),
-          AppSectionPanel(
+          AppWorkspaceDetailPanel(
             title: l10n.accessAdminUserDetailProfileSectionTitle,
             description: l10n.accessAdminUserDetailProfileSectionDescription,
-            leadingIcon: Icons.badge_outlined,
-            children: <Widget>[_UserDetailAccountFields(item: item)],
+            titleIcon: Icons.badge_outlined,
+            child: _UserDetailAccountFields(item: item),
           ),
           SizedBox(height: theme.spacing.md),
           AppUserAccessPanel(

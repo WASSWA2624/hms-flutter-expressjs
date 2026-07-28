@@ -326,22 +326,25 @@ class CommunicationsTemplateDetailContent extends StatelessWidget {
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppSectionPanel(
+        AppWorkspaceDetailPanel(
           title: context.l10n.communicationsPreviewTitle,
-          leadingIcon: Icons.preview_outlined,
-          children: <Widget>[
-            Text(
-              template.previewSubject ??
-                  template.subject ??
-                  context.l10n.profileUnknownValue,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Text(
-              template.previewBody ??
-                  template.body ??
-                  context.l10n.profileUnknownValue,
-            ),
-          ],
+          titleIcon: Icons.preview_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                template.previewSubject ??
+                    template.subject ??
+                    context.l10n.profileUnknownValue,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              Text(
+                template.previewBody ??
+                    template.body ??
+                    context.l10n.profileUnknownValue,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -375,21 +378,24 @@ class CommunicationsDeliveryHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: context.l10n.communicationsDeliveryHistoryTitle,
-      leadingIcon: Icons.mark_email_read_outlined,
-      children: <Widget>[
-        for (final NotificationDelivery delivery in deliveries)
-          AppListItemRow(
-            title: communicationsApiLabel(context, delivery.channel),
-            subtitle: communicationsDeliveryRecipient(delivery),
-            leadingIcon: Icons.send_outlined,
-            padding: EdgeInsets.zero,
-            trailing: AppWorkspaceStatusBadge(
-              status: communicationsDeliveryStatus(context, delivery.status),
+      titleIcon: Icons.mark_email_read_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final NotificationDelivery delivery in deliveries)
+            AppListItemRow(
+              title: communicationsApiLabel(context, delivery.channel),
+              subtitle: communicationsDeliveryRecipient(delivery),
+              leadingIcon: Icons.send_outlined,
+              padding: EdgeInsets.zero,
+              trailing: AppWorkspaceStatusBadge(
+                status: communicationsDeliveryStatus(context, delivery.status),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

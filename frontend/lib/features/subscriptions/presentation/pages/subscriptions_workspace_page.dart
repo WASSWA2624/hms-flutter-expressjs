@@ -1150,36 +1150,34 @@ class _PlanDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
+        AppWorkspaceDetailPanel(
           title: _SubscriptionsText.includedModules,
           description: _SubscriptionsText.includedModulesAccessHint,
-          leadingIcon: Icons.extension_outlined,
-          density: AppContentPanelDensity.compact,
-          trailing: AppButton.secondary(
-            label: _SubscriptionsText.addModules,
-            leadingIcon: Icons.add,
-            onPressed: () async {
-              await _showPlanModulesDialog(context, ref, item);
-            },
-          ),
-          children: <Widget>[
-            if (includedLabels.isEmpty)
-              Text(
-                _SubscriptionsText.noModulesIncluded,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final String label in includedLabels)
-                    Chip(label: Text(label)),
-                ],
-              ),
+          titleIcon: Icons.extension_outlined,
+          actions: <Widget>[
+            AppButton.secondary(
+              label: _SubscriptionsText.addModules,
+              leadingIcon: Icons.add,
+              onPressed: () async {
+                await _showPlanModulesDialog(context, ref, item);
+              },
+            ),
           ],
+          child: includedLabels.isEmpty
+              ? Text(
+                  _SubscriptionsText.noModulesIncluded,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    for (final String label in includedLabels)
+                      Chip(label: Text(label)),
+                  ],
+                ),
         ),
         SizedBox(height: theme.spacing.md),
         if (state.isLoadingPlanDetail)
@@ -1214,19 +1212,20 @@ class _PlanDetailContent extends ConsumerWidget {
             ],
           ),
           SizedBox(height: theme.spacing.md),
-          _PlanAccountsSection(
-            title: _SubscriptionsText.linkedTenants,
-            emptyLabel: _SubscriptionsText.noLinkedTenants,
-            accounts:
-                detail?.activeAccounts ?? const <SubscriptionTenantAccount>[],
-          ),
-          SizedBox(height: theme.spacing.md),
-          _PlanAccountsSection(
-            title: _SubscriptionsText.pendingApprovals,
-            emptyLabel: _SubscriptionsText.noPendingApprovals,
-            accounts:
-                detail?.pendingAccounts ?? const <SubscriptionTenantAccount>[],
-          ),
+          ...appWorkspaceDetailSectionSpacing(context, <Widget>[
+            _PlanAccountsSection(
+              title: _SubscriptionsText.linkedTenants,
+              emptyLabel: _SubscriptionsText.noLinkedTenants,
+              accounts:
+                  detail?.activeAccounts ?? const <SubscriptionTenantAccount>[],
+            ),
+            _PlanAccountsSection(
+              title: _SubscriptionsText.pendingApprovals,
+              emptyLabel: _SubscriptionsText.noPendingApprovals,
+              accounts:
+                  detail?.pendingAccounts ?? const <SubscriptionTenantAccount>[],
+            ),
+          ]),
         ],
       ],
     );
@@ -1342,56 +1341,57 @@ class _PlanAccountsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: title,
-      leadingIcon: Icons.business_outlined,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (accounts.isEmpty)
-          Text(
-            emptyLabel,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          for (final SubscriptionTenantAccount account in accounts)
-            Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.sm),
-              child: AppContentPanel(
-                density: AppContentPanelDensity.compact,
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+      titleIcon: Icons.business_outlined,
+      child: accounts.isEmpty
+          ? Text(
+              emptyLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final SubscriptionTenantAccount account in accounts)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                    child: AppContentPanel(
+                      density: AppContentPanelDensity.compact,
+                      child: Row(
                         children: <Widget>[
-                          Text(
-                            account.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  account.title,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: theme.spacing.xs),
+                                Text(
+                                  _joinDisplay(<String?>[
+                                    _statusLabel(account.status),
+                                    _date(context, account.startDate),
+                                    _date(context, account.endDate),
+                                  ]),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            _joinDisplay(<String?>[
-                              _statusLabel(account.status),
-                              _date(context, account.startDate),
-                              _date(context, account.endDate),
-                            ]),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                          _StatusBadge(status: account.status),
                         ],
                       ),
                     ),
-                    _StatusBadge(status: account.status),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
-      ],
     );
   }
 }

@@ -946,28 +946,25 @@ class _OperationsDetailPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.operationsDetailTitle,
-      description: item.effectiveDisplayId,
-      actions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.summarize_outlined,
-          label: l10n.operationsOpenReportAction,
-
-          semanticLabel: l10n.operationsOpenReportAction,
-          tooltip: l10n.operationsOpenReportAction,
-          onPressed: () => _showRequestReportDialog(context, state, item),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (state.isRefreshingDetail)
+          const LinearProgressIndicator(minHeight: 2),
+        Align(
+          alignment: Alignment.centerRight,
+          child: AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.summarize_outlined,
+            label: l10n.operationsOpenReportAction,
+            semanticLabel: l10n.operationsOpenReportAction,
+            tooltip: l10n.operationsOpenReportAction,
+            onPressed: () => _showRequestReportDialog(context, state, item),
+          ),
         ),
+        SizedBox(height: Theme.of(context).spacing.md),
+        _OperationsDetailBody(state: state, item: item, canMutate: canMutate),
       ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (state.isRefreshingDetail)
-            const LinearProgressIndicator(minHeight: 2),
-          _OperationsDetailBody(state: state, item: item, canMutate: canMutate),
-        ],
-      ),
     );
   }
 }
@@ -1044,19 +1041,24 @@ class _OperationsDetailBody extends ConsumerWidget {
           ),
         ],
       ),
-      AppSectionPanel(
+      AppWorkspaceDetailPanel(
         title: l10n.operationsIssueTitle,
-        leadingIcon: Icons.report_problem_outlined,
-        children: <Widget>[
-          Text(_issueLabel(l10n, item)),
-          if (_display(item.metadata.notes, '').isNotEmpty)
-            Text(
-              item.metadata.notes!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+        titleIcon: Icons.report_problem_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(_issueLabel(l10n, item)),
+            if (_display(item.metadata.notes, '').isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                item.metadata.notes!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
       if (canMutate) _OperationsActionPanel(item: item, state: state),
       _ServiceLogsPanel(logs: state.serviceLogs),

@@ -764,145 +764,146 @@ class _IpdDetailPanel extends ConsumerWidget {
     final bool canClinical = _ipdClinicalWriteRequirement.isAllowed(policy);
     final bool actionsEnabled = !state.isSaving;
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.ipdAdmissionDetailTitle,
-      description: admission.summary.displayId ?? '',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (state.isRefreshingDetail)
-            const LinearProgressIndicator(minHeight: 2),
-          AppPatientDetails(
-            semanticLabel: l10n.ipdPatientContextLabel,
-            patientName: admission.patientDisplayName,
-            patientNumber: (admission.summary.patientId ?? '').trim(),
-            patientNumberLabel: l10n.opdPatientIdLabel,
-            ageLabel: admission.patientDateOfBirth == null
-                ? null
-                : AppFormatters.mediumDate(
-                    admission.patientDateOfBirth!,
-                    Localizations.localeOf(context),
-                  ),
-            genderLabel: admission.patientGender == null
-                ? null
-                : _apiLabel(admission.patientGender!),
-            showAvatar: false,
-            status: _stageStatus(context, admission.summary.stage),
-            alerts: <AppWorkspaceStatus>[
-              if (admission.summary.hasCriticalAlert)
-                AppWorkspaceStatus(
-                  label: _criticalAlertLabel(context, admission.summary),
-                  tone: AppWorkspaceStatusTone.error,
-                  icon: Icons.notification_important_outlined,
-                ),
-            ],
-            expandedFields: <AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.ipdAdmissionIdLabel,
-                value: admission.summary.displayId ?? '',
-                icon: Icons.confirmation_number_outlined,
-                copyable: true,
-                copyTooltip: l10n.copyAdmissionIdAction,
-                copiedMessage: l10n.admissionIdCopiedMessage,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.ipdEncounterIdLabel,
-                value: admission.summary.encounterId ?? '',
-                icon: Icons.assignment_outlined,
-                copyable: (admission.summary.encounterId ?? '').isNotEmpty,
-                copyTooltip: l10n.opdCopyEncounterIdAction,
-                copiedMessage: l10n.opdEncounterIdCopiedMessage,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.ipdWardBedLabel,
-                value: admission.summary.location ?? l10n.profileUnknownValue,
-                icon: Icons.bed_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.ipdFacilityLabel,
-                value: admission.facilityName ?? l10n.profileUnknownValue,
-                icon: Icons.apartment_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.ipdIcuStatusLabel,
-                value: _icuStatusLabel(context, admission.icu.status),
-                icon: Icons.monitor_heart_outlined,
-                tone: admission.icu.hasCriticalAlert
-                    ? AppWorkspaceStatusTone.error
-                    : AppWorkspaceStatusTone.neutral,
-              ),
-            ],
-            actions: <Widget>[
-              _IpdDetailActions(
-                admission: admission,
-                state: state,
-                canOperate: canOperate,
-                canClinical: canClinical,
-                actionsEnabled: actionsEnabled,
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          if (admission.sourceContext != null)
-            _IpdSourceContextSection(admission: admission),
-          if (admission.theatre.handoverSummary != null)
-            _IpdTheatreHandoverSection(admission: admission),
-          _IpdBedSection(admission: admission),
-          InsuranceAuthorizationPanel(
-            patientId: admission.summary.patientId,
-            admissionId: admission.summary.id,
-            encounterId: admission.summary.encounterId,
-            canManage: canOperate,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _IpdRecordSection(
-            title: l10n.ipdTransfersSectionTitle,
-            icon: Icons.swap_horiz,
-            records: <IpdClinicalRecord>[
-              for (final IpdTransferRequest request
-                  in admission.transferRequests)
-                IpdClinicalRecord(
-                  id: request.id,
-                  kind: _ipdTransferKind,
-                  status: request.status,
-                  title: _joinDisplay(<String?>[
-                    request.fromWard?.displayTitle,
-                    request.toWard?.displayTitle,
-                  ]),
-                  occurredAt: request.requestedAt,
-                ),
-            ],
-            emptyTitle: l10n.ipdNoTransfersTitle,
-            emptyBody: l10n.ipdNoTransfersBody,
-          ),
-          _IpdRecordSection(
-            title: l10n.ipdRoundsSectionTitle,
-            icon: Icons.fact_check_outlined,
-            records: admission.wardRounds,
-            emptyTitle: l10n.ipdNoRoundsTitle,
-            emptyBody: l10n.ipdNoRoundsBody,
-          ),
-          _IpdRecordSection(
-            title: l10n.ipdNursingSectionTitle,
-            icon: Icons.note_alt_outlined,
-            records: admission.nursingNotes,
-            emptyTitle: l10n.ipdNoNursingNotesTitle,
-            emptyBody: l10n.ipdNoNursingNotesBody,
-          ),
-          _IpdRecordSection(
-            title: l10n.ipdMedicationSectionTitle,
-            icon: Icons.medication_outlined,
-            records: <IpdClinicalRecord>[
-              ...admission.medicationAdministrations,
-              ...admission.medicationReminders,
-            ],
-            emptyTitle: l10n.ipdNoMedicationTitle,
-            emptyBody: l10n.ipdNoMedicationBody,
-          ),
-          _IpdDischargeSection(admission: admission),
-          _IpdTimelineSection(admission: admission),
-        ],
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> detailSections = <Widget>[
+      if (admission.sourceContext != null)
+        _IpdSourceContextSection(admission: admission),
+      if (admission.theatre.handoverSummary != null)
+        _IpdTheatreHandoverSection(admission: admission),
+      _IpdBedSection(admission: admission),
+      InsuranceAuthorizationPanel(
+        patientId: admission.summary.patientId,
+        admissionId: admission.summary.id,
+        encounterId: admission.summary.encounterId,
+        canManage: canOperate,
       ),
+      _IpdRecordSection(
+        title: l10n.ipdTransfersSectionTitle,
+        icon: Icons.swap_horiz,
+        records: <IpdClinicalRecord>[
+          for (final IpdTransferRequest request in admission.transferRequests)
+            IpdClinicalRecord(
+              id: request.id,
+              kind: _ipdTransferKind,
+              status: request.status,
+              title: _joinDisplay(<String?>[
+                request.fromWard?.displayTitle,
+                request.toWard?.displayTitle,
+              ]),
+              occurredAt: request.requestedAt,
+            ),
+        ],
+        emptyTitle: l10n.ipdNoTransfersTitle,
+        emptyBody: l10n.ipdNoTransfersBody,
+      ),
+      _IpdRecordSection(
+        title: l10n.ipdRoundsSectionTitle,
+        icon: Icons.fact_check_outlined,
+        records: admission.wardRounds,
+        emptyTitle: l10n.ipdNoRoundsTitle,
+        emptyBody: l10n.ipdNoRoundsBody,
+      ),
+      _IpdRecordSection(
+        title: l10n.ipdNursingSectionTitle,
+        icon: Icons.note_alt_outlined,
+        records: admission.nursingNotes,
+        emptyTitle: l10n.ipdNoNursingNotesTitle,
+        emptyBody: l10n.ipdNoNursingNotesBody,
+      ),
+      _IpdRecordSection(
+        title: l10n.ipdMedicationSectionTitle,
+        icon: Icons.medication_outlined,
+        records: <IpdClinicalRecord>[
+          ...admission.medicationAdministrations,
+          ...admission.medicationReminders,
+        ],
+        emptyTitle: l10n.ipdNoMedicationTitle,
+        emptyBody: l10n.ipdNoMedicationBody,
+      ),
+      _IpdDischargeSection(admission: admission),
+      _IpdTimelineSection(admission: admission),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (state.isRefreshingDetail)
+          const LinearProgressIndicator(minHeight: 2),
+        AppPatientDetails(
+          semanticLabel: l10n.ipdPatientContextLabel,
+          patientName: admission.patientDisplayName,
+          patientNumber: (admission.summary.patientId ?? '').trim(),
+          patientNumberLabel: l10n.opdPatientIdLabel,
+          ageLabel: admission.patientDateOfBirth == null
+              ? null
+              : AppFormatters.mediumDate(
+                  admission.patientDateOfBirth!,
+                  Localizations.localeOf(context),
+                ),
+          genderLabel: admission.patientGender == null
+              ? null
+              : _apiLabel(admission.patientGender!),
+          showAvatar: false,
+          status: _stageStatus(context, admission.summary.stage),
+          alerts: <AppWorkspaceStatus>[
+            if (admission.summary.hasCriticalAlert)
+              AppWorkspaceStatus(
+                label: _criticalAlertLabel(context, admission.summary),
+                tone: AppWorkspaceStatusTone.error,
+                icon: Icons.notification_important_outlined,
+              ),
+          ],
+          expandedFields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: l10n.ipdAdmissionIdLabel,
+              value: admission.summary.displayId ?? '',
+              icon: Icons.confirmation_number_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyAdmissionIdAction,
+              copiedMessage: l10n.admissionIdCopiedMessage,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.ipdEncounterIdLabel,
+              value: admission.summary.encounterId ?? '',
+              icon: Icons.assignment_outlined,
+              copyable: (admission.summary.encounterId ?? '').isNotEmpty,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.ipdWardBedLabel,
+              value: admission.summary.location ?? l10n.profileUnknownValue,
+              icon: Icons.bed_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.ipdFacilityLabel,
+              value: admission.facilityName ?? l10n.profileUnknownValue,
+              icon: Icons.apartment_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.ipdIcuStatusLabel,
+              value: _icuStatusLabel(context, admission.icu.status),
+              icon: Icons.monitor_heart_outlined,
+              tone: admission.icu.hasCriticalAlert
+                  ? AppWorkspaceStatusTone.error
+                  : AppWorkspaceStatusTone.neutral,
+            ),
+          ],
+          actions: <Widget>[
+            _IpdDetailActions(
+              admission: admission,
+              state: state,
+              canOperate: canOperate,
+              canClinical: canClinical,
+              actionsEnabled: actionsEnabled,
+            ),
+          ],
+        ),
+        for (var index = 0; index < detailSections.length; index += 1) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          detailSections[index],
+        ],
+      ],
     );
   }
 }
@@ -1588,9 +1589,9 @@ class _IpdBedSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final IpdBedAssignment? assignment = admission.activeBedAssignment;
     final IpdBedOption? bed = assignment?.bed;
-    return _IpdSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.ipdBedSectionTitle,
-      icon: Icons.bed_outlined,
+      titleIcon: Icons.bed_outlined,
       child: _IpdKeyValueGrid(
         values: <_IpdKeyValue>[
           _IpdKeyValue(l10n.ipdBedFieldLabel, bed?.displayTitle),
@@ -1619,9 +1620,9 @@ class _IpdDischargeSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final IpdDischargeSummary? discharge = admission.latestDischargeSummary;
     final IpdPharmacyClearance pharmacy = admission.pharmacyClearance;
-    return _IpdSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.ipdDischargeSectionTitle,
-      icon: Icons.logout_outlined,
+      titleIcon: Icons.logout_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -1692,9 +1693,9 @@ class _IpdSourceContextSection extends StatelessWidget {
     if (source == null) {
       return const SizedBox.shrink();
     }
-    return _IpdSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.ipdSourceContextTitle,
-      icon: Icons.input_outlined,
+      titleIcon: Icons.input_outlined,
       child: _IpdKeyValueGrid(
         values: <_IpdKeyValue>[
           _IpdKeyValue(
@@ -1737,30 +1738,27 @@ class _IpdTheatreHandoverSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
-      child: _IpdSection(
-        title: l10n.ipdTheatreHandoverTitle,
-        icon: Icons.event_seat_outlined,
-        child: _IpdKeyValueGrid(
-          values: <_IpdKeyValue>[
-            _IpdKeyValue(l10n.theaterCaseIdColumnLabel, handover.caseDisplayId),
-            _IpdKeyValue(
-              l10n.theaterStageLabel,
-              handover.workflowStage == null
-                  ? null
-                  : _apiLabel(handover.workflowStage!),
-            ),
-            _IpdKeyValue(
-              l10n.theaterHandoverDestinationLabel,
-              handover.handoverDestination == null
-                  ? null
-                  : _apiLabel(handover.handoverDestination!),
-            ),
-            _IpdKeyValue(l10n.theaterPostOpNoteLabel, handover.postOpNote),
-            _IpdKeyValue(l10n.theaterStageNotesLabel, handover.stageNotes),
-          ],
-        ),
+    return AppWorkspaceDetailPanel(
+      title: l10n.ipdTheatreHandoverTitle,
+      titleIcon: Icons.event_seat_outlined,
+      child: _IpdKeyValueGrid(
+        values: <_IpdKeyValue>[
+          _IpdKeyValue(l10n.theaterCaseIdColumnLabel, handover.caseDisplayId),
+          _IpdKeyValue(
+            l10n.theaterStageLabel,
+            handover.workflowStage == null
+                ? null
+                : _apiLabel(handover.workflowStage!),
+          ),
+          _IpdKeyValue(
+            l10n.theaterHandoverDestinationLabel,
+            handover.handoverDestination == null
+                ? null
+                : _apiLabel(handover.handoverDestination!),
+          ),
+          _IpdKeyValue(l10n.theaterPostOpNoteLabel, handover.postOpNote),
+          _IpdKeyValue(l10n.theaterStageNotesLabel, handover.stageNotes),
+        ],
       ),
     );
   }
@@ -1774,24 +1772,22 @@ class _IpdTimelineSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> items = admission.timeline
-        .map(
-          (IpdTimelineItem item) => AppWorkspaceActivityItem(
-            title: _timelineTypeLabel(context, item.type),
-            subtitle: _dateTimeLabel(context, item.occurredAt),
-            description: item.label,
-            icon: Icons.timeline_outlined,
-          ),
-        )
-        .toList(growable: false);
 
-    return Padding(
-      padding: EdgeInsets.only(top: Theme.of(context).spacing.md),
-      child: AppWorkspaceActivityList(
-        title: l10n.ipdTimelineSectionTitle,
-        items: items,
+    return AppWorkspaceDetailPanel(
+      title: l10n.ipdTimelineSectionTitle,
+      titleIcon: Icons.timeline_outlined,
+      child: AppTimeline(
         emptyTitle: l10n.ipdNoTimelineTitle,
         emptyBody: l10n.ipdNoTimelineBody,
+        items: <AppTimelineItem>[
+          for (final IpdTimelineItem item in admission.timeline)
+            AppTimelineItem(
+              title: _timelineTypeLabel(context, item.type),
+              occurredAt: item.occurredAt,
+              description: item.label,
+              icon: Icons.timeline_outlined,
+            ),
+        ],
       ),
     );
   }
@@ -1814,9 +1810,9 @@ class _IpdRecordSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _IpdSection(
+    return AppWorkspaceDetailPanel(
       title: title,
-      icon: icon,
+      titleIcon: icon,
       child: records.isEmpty
           ? AppStateView(
               variant: AppStateViewVariant.empty,
@@ -1893,56 +1889,6 @@ class _IpdRecordRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _IpdSection extends StatelessWidget {
-  const _IpdSection({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.md),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Icon(icon, size: theme.appTokens.listIconSize),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.sm),
-              child,
-            ],
-          ),
-        ),
       ),
     );
   }

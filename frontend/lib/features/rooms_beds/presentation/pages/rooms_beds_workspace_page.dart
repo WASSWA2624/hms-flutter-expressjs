@@ -879,17 +879,20 @@ class _BedDetailContent extends ConsumerWidget {
                 ),
             ],
           ),
-        AppSectionPanel(
+        AppWorkspaceDetailPanel(
           title: l10n.roomsBedsAssignmentHistoryTitle,
-          leadingIcon: Icons.history_outlined,
-          children: <Widget>[
-            if (item.assignmentHistory.isEmpty)
-              Text(l10n.roomsBedsNoAssignmentsLabel)
-            else
-              for (final BedAssignmentRecord assignment
-                  in item.assignmentHistory)
-                _AssignmentListItem(assignment: assignment),
-          ],
+          titleIcon: Icons.history_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (item.assignmentHistory.isEmpty)
+                Text(l10n.roomsBedsNoAssignmentsLabel)
+              else
+                for (final BedAssignmentRecord assignment
+                    in item.assignmentHistory)
+                  _AssignmentListItem(assignment: assignment),
+            ],
+          ),
         ),
       ],
     );

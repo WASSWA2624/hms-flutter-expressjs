@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -8,6 +7,7 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const AccessRequirement _radiologyWorkflowMutationRequirement =
     AccessRequirement(
@@ -41,7 +41,6 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final int activeIndex = radiologyWorkflowStepIndex(workflow);
     final RadiologyNextActions next = workflow.nextActions;
     final List<AppWorkflowStepAction> currentActions =
@@ -135,47 +134,47 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
 
     final bool canCollapse = activeIndex >= 3;
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.radiologyWorkflowProgressTitle,
-      spacing: theme.spacing.sm,
-      trailing: canCollapse
-          ? AppButton(
-              iconOnly: true,
-              leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
-              label: l10n.radiologyWorkflowProgressTitle,
-              semanticLabel: l10n.radiologyWorkflowProgressTitle,
-              tooltip: l10n.radiologyWorkflowProgressTitle,
-              onPressed: () => onExpandedChanged(!expanded),
+      collapsible: false,
+      actions: canCollapse
+          ? <Widget>[
+              AppButton(
+                iconOnly: true,
+                dense: true,
+                leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
+                label: l10n.radiologyWorkflowProgressTitle,
+                semanticLabel: l10n.radiologyWorkflowProgressTitle,
+                tooltip: l10n.radiologyWorkflowProgressTitle,
+                onPressed: () => onExpandedChanged(!expanded),
+              ),
+            ]
+          : const <Widget>[],
+      child: !expanded && canCollapse
+          ? AppButton.tertiary(
+              label: l10n.radiologyWorkflowProgressCollapsedSummary(
+                activeIndex,
+                defs.length,
+              ),
+              leadingIcon: Icons.timeline_outlined,
+              onPressed: () => onExpandedChanged(true),
             )
-          : null,
-      children: <Widget>[
-        if (!expanded && canCollapse)
-          AppButton.tertiary(
-            label: l10n.radiologyWorkflowProgressCollapsedSummary(
-              activeIndex,
-              defs.length,
+          : AppWorkflowStepper(
+              semanticLabel: l10n.radiologyWorkflowProgressTitle,
+              steps: <AppWorkflowStepItem>[
+                for (var index = 0; index < defs.length; index += 1)
+                  AppWorkflowStepItem(
+                    id: defs[index].id,
+                    label: defs[index].label,
+                    helpText: defs[index].help,
+                    state: _stepState(index, activeIndex, workflow),
+                    actions: index == activeIndex
+                        ? currentActions
+                        : const <AppWorkflowStepAction>[],
+                    onTap: index <= activeIndex ? () => onStepTap(index) : null,
+                  ),
+              ],
             ),
-            leadingIcon: Icons.timeline_outlined,
-            onPressed: () => onExpandedChanged(true),
-          )
-        else
-          AppWorkflowStepper(
-            semanticLabel: l10n.radiologyWorkflowProgressTitle,
-            steps: <AppWorkflowStepItem>[
-              for (var index = 0; index < defs.length; index += 1)
-                AppWorkflowStepItem(
-                  id: defs[index].id,
-                  label: defs[index].label,
-                  helpText: defs[index].help,
-                  state: _stepState(index, activeIndex, workflow),
-                  actions: index == activeIndex
-                      ? currentActions
-                      : const <AppWorkflowStepAction>[],
-                  onTap: index <= activeIndex ? () => onStepTap(index) : null,
-                ),
-            ],
-          ),
-      ],
     );
   }
 

@@ -1103,88 +1103,77 @@ class _MortuaryDetailPanel extends StatelessWidget {
       );
     }
 
-    final ThemeData theme = Theme.of(context);
-    return AppWorkspaceDetailPanel(
-      title: l10n.mortuaryDetailTitle,
-      description: _mortuaryPublicIdentifier(item),
-      actions: <Widget>[
-        AppPermissionActionButton(
-          requirement: _exportRequirement,
-          label: l10n.mortuaryPrintDocumentsAction,
-          icon: Icons.print_outlined,
-          onPressed: onPrint,
+    final List<Widget> sections = <Widget>[
+      if (state.isRefreshingDetail) const LinearProgressIndicator(),
+      AppPatientDetails(
+        patientName:
+            item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+        patientNumber:
+            _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
+        patientNumberLabel: l10n.mortuaryCaseNumberLabel,
+        copyPatientNumberMessage: l10n.identifierCopiedMessage,
+        copyPatientNumberSemanticLabel: l10n.copyIdentifierAction,
+        semanticLabel: l10n.mortuaryDeceasedContextLabel,
+        showAvatar: false,
+        status: AppWorkspaceStatus(
+          label:
+              _displayCode(item.caseStatus ?? item.status) ??
+              l10n.mortuaryUnknownValueLabel,
+          tone: _statusTone(item.caseStatus ?? item.status),
         ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (state.isRefreshingDetail) const LinearProgressIndicator(),
-          AppPatientDetails(
-            patientName:
-                item.effectiveDeceasedLabel ??
-                l10n.mortuaryUnknownDeceasedLabel,
-            patientNumber:
-                _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
-            patientNumberLabel: l10n.mortuaryCaseNumberLabel,
-            copyPatientNumberMessage: l10n.identifierCopiedMessage,
-            copyPatientNumberSemanticLabel: l10n.copyIdentifierAction,
-            semanticLabel: l10n.mortuaryDeceasedContextLabel,
-            showAvatar: false,
-            status: AppWorkspaceStatus(
-              label:
-                  _displayCode(item.caseStatus ?? item.status) ??
-                  l10n.mortuaryUnknownValueLabel,
-              tone: _statusTone(item.caseStatus ?? item.status),
-            ),
-            expandedFields: <AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.mortuaryIdentificationFieldLabel,
-                value:
-                    _displayCode(item.caseIdentificationStatus) ??
-                    l10n.mortuaryUnknownValueLabel,
-                icon: Icons.badge_outlined,
-                tone: _identificationTone(item.caseIdentificationStatus),
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.mortuaryBillingFieldLabel,
-                value:
-                    _displayCode(item.caseBillingStatus) ??
-                    l10n.mortuaryUnknownValueLabel,
-                icon: Icons.receipt_long_outlined,
-                tone: _billingTone(item.caseBillingStatus),
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.mortuaryStorageSlotFieldLabel,
-                value: item.storageLabel ?? l10n.mortuaryUnknownValueLabel,
-                icon: Icons.inventory_2_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.mortuaryFacilityFieldLabel,
-                value: item.facilityLabel ?? l10n.mortuaryUnknownValueLabel,
-                icon: Icons.apartment_outlined,
-              ),
-            ],
+        actions: onPrint == null
+            ? const <Widget>[]
+            : <Widget>[
+                AppPermissionActionButton(
+                  requirement: _exportRequirement,
+                  label: l10n.mortuaryPrintDocumentsAction,
+                  icon: Icons.print_outlined,
+                  onPressed: onPrint,
+                ),
+              ],
+        expandedFields: <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: l10n.mortuaryIdentificationFieldLabel,
+            value:
+                _displayCode(item.caseIdentificationStatus) ??
+                l10n.mortuaryUnknownValueLabel,
+            icon: Icons.badge_outlined,
+            tone: _identificationTone(item.caseIdentificationStatus),
           ),
-          SizedBox(height: theme.spacing.md),
-          _ActionGapPanel(item: item),
-          SizedBox(height: theme.spacing.md),
-          _IdentitySection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _StorageSection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _CustodySection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _ViewingSection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _PostMortemSection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _ReleaseSection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _BillingSection(item: item),
-          SizedBox(height: theme.spacing.md),
-          _DocumentsSection(item: item),
+          AppWorkspacePatientContextField(
+            label: l10n.mortuaryBillingFieldLabel,
+            value:
+                _displayCode(item.caseBillingStatus) ??
+                l10n.mortuaryUnknownValueLabel,
+            icon: Icons.receipt_long_outlined,
+            tone: _billingTone(item.caseBillingStatus),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.mortuaryStorageSlotFieldLabel,
+            value: item.storageLabel ?? l10n.mortuaryUnknownValueLabel,
+            icon: Icons.inventory_2_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.mortuaryFacilityFieldLabel,
+            value: item.facilityLabel ?? l10n.mortuaryUnknownValueLabel,
+            icon: Icons.apartment_outlined,
+          ),
         ],
       ),
+      _ActionGapPanel(item: item),
+      _IdentitySection(item: item),
+      _StorageSection(item: item),
+      _CustodySection(item: item),
+      _ViewingSection(item: item),
+      _PostMortemSection(item: item),
+      _ReleaseSection(item: item),
+      _BillingSection(item: item),
+      _DocumentsSection(item: item),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _withMortuaryDetailSectionSpacing(context, sections),
     );
   }
 }
@@ -1285,76 +1274,79 @@ class _IdentitySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryIdentitySectionTitle,
-      leadingIcon: Icons.person_outline,
-      children: <Widget>[
-        AppInfoTileGrid(
-          emptyValue: l10n.mortuaryUnknownValueLabel,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.mortuaryCaseFieldLabel,
-              value: _mortuaryCaseIdentifier(item),
-              icon: Icons.tag_outlined,
-              copyable: true,
-              copyTooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryDeceasedFieldLabel,
-              value: item.effectiveDeceasedLabel,
-              icon: Icons.person_outline,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryPatientFieldLabel,
-              value: item.patientLabel,
-              icon: Icons.assignment_ind_outlined,
-              copyable: true,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryFacilityFieldLabel,
-              value: item.facilityLabel,
-              icon: Icons.apartment_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryStatusFieldLabel,
-              value: _displayCode(item.caseStatus ?? item.status),
-              icon: Icons.flag_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryReceivedAtFieldLabel,
-              value: _formatDateTime(context, item.receivedAt),
-              icon: Icons.schedule_outlined,
-            ),
-          ],
-        ),
-        AppInfoTileGrid(
-          emptyValue: l10n.mortuaryUnknownValueLabel,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.mortuarySourceWorkflowFieldLabel,
-              value: item.sourceWorkflow,
-              icon: Icons.account_tree_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuarySourceDepartmentFieldLabel,
-              value: item.sourceDepartment,
-              icon: Icons.local_hospital_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuarySourceReferenceFieldLabel,
-              value: item.sourceReferenceId,
-              icon: Icons.link_outlined,
-              copyable: true,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryReceivedFromFieldLabel,
-              value: item.receivedFrom,
-              icon: Icons.move_to_inbox_outlined,
-            ),
-          ],
-        ),
-      ],
+      titleIcon: Icons.person_outline,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppInfoTileGrid(
+            emptyValue: l10n.mortuaryUnknownValueLabel,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.mortuaryCaseFieldLabel,
+                value: _mortuaryCaseIdentifier(item),
+                icon: Icons.tag_outlined,
+                copyable: true,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryDeceasedFieldLabel,
+                value: item.effectiveDeceasedLabel,
+                icon: Icons.person_outline,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryPatientFieldLabel,
+                value: item.patientLabel,
+                icon: Icons.assignment_ind_outlined,
+                copyable: true,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryFacilityFieldLabel,
+                value: item.facilityLabel,
+                icon: Icons.apartment_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryStatusFieldLabel,
+                value: _displayCode(item.caseStatus ?? item.status),
+                icon: Icons.flag_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryReceivedAtFieldLabel,
+                value: _formatDateTime(context, item.receivedAt),
+                icon: Icons.schedule_outlined,
+              ),
+            ],
+          ),
+          AppInfoTileGrid(
+            emptyValue: l10n.mortuaryUnknownValueLabel,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.mortuarySourceWorkflowFieldLabel,
+                value: item.sourceWorkflow,
+                icon: Icons.account_tree_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuarySourceDepartmentFieldLabel,
+                value: item.sourceDepartment,
+                icon: Icons.local_hospital_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuarySourceReferenceFieldLabel,
+                value: item.sourceReferenceId,
+                icon: Icons.link_outlined,
+                copyable: true,
+              ),
+              AppInfoTileData(
+                label: l10n.mortuaryReceivedFromFieldLabel,
+                value: item.receivedFrom,
+                icon: Icons.move_to_inbox_outlined,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1368,38 +1360,36 @@ class _StorageSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final MortuaryStorageAssignment? assignment = item.storageAssignment;
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryStorageSectionTitle,
-      leadingIcon: Icons.inventory_2_outlined,
-      children: <Widget>[
-        AppInfoTileGrid(
-          emptyValue: l10n.mortuaryUnknownValueLabel,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.mortuaryStorageUnitFieldLabel,
-              value: item.storageUnitLabel ?? assignment?.storageUnitLabel,
-              icon: Icons.inventory_outlined,
+      titleIcon: Icons.inventory_2_outlined,
+      child: AppInfoTileGrid(
+        emptyValue: l10n.mortuaryUnknownValueLabel,
+        items: <AppInfoTileData>[
+          AppInfoTileData(
+            label: l10n.mortuaryStorageUnitFieldLabel,
+            value: item.storageUnitLabel ?? assignment?.storageUnitLabel,
+            icon: Icons.inventory_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryStorageSlotFieldLabel,
+            value: item.storageSlotLabel ?? assignment?.storageSlotLabel,
+            icon: Icons.grid_view_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryStorageStatusFieldLabel,
+            value: _displayCode(
+              item.storageSlotStatus ?? assignment?.storageSlotStatus,
             ),
-            AppInfoTileData(
-              label: l10n.mortuaryStorageSlotFieldLabel,
-              value: item.storageSlotLabel ?? assignment?.storageSlotLabel,
-              icon: Icons.grid_view_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryStorageStatusFieldLabel,
-              value: _displayCode(
-                item.storageSlotStatus ?? assignment?.storageSlotStatus,
-              ),
-              icon: Icons.thermostat_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryAssignedAtFieldLabel,
-              value: _formatDateTime(context, assignment?.assignedAt),
-              icon: Icons.login_outlined,
-            ),
-          ],
-        ),
-      ],
+            icon: Icons.thermostat_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryAssignedAtFieldLabel,
+            value: _formatDateTime(context, assignment?.assignedAt),
+            icon: Icons.login_outlined,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1432,11 +1422,14 @@ class _CustodySection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceActivityList(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryCustodySectionTitle,
-      emptyTitle: l10n.mortuaryNoCustodyEventsLabel,
-      emptyBody: l10n.mortuaryNoCustodyEventsBody,
-      items: events,
+      titleIcon: Icons.swap_horiz_outlined,
+      child: AppWorkspaceActivityList(
+        emptyTitle: l10n.mortuaryNoCustodyEventsLabel,
+        emptyBody: l10n.mortuaryNoCustodyEventsBody,
+        items: events,
+      ),
     );
   }
 }
@@ -1467,11 +1460,14 @@ class _ViewingSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceActivityList(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryViewingSectionTitle,
-      emptyTitle: l10n.mortuaryNoViewingsLabel,
-      emptyBody: l10n.mortuaryNoViewingsBody,
-      items: events,
+      titleIcon: Icons.event_available_outlined,
+      child: AppWorkspaceActivityList(
+        emptyTitle: l10n.mortuaryNoViewingsLabel,
+        emptyBody: l10n.mortuaryNoViewingsBody,
+        items: events,
+      ),
     );
   }
 }
@@ -1504,11 +1500,14 @@ class _PostMortemSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceActivityList(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryPostMortemSectionTitle,
-      emptyTitle: l10n.mortuaryNoPostMortemLabel,
-      emptyBody: l10n.mortuaryNoPostMortemBody,
-      items: events,
+      titleIcon: Icons.fact_check_outlined,
+      child: AppWorkspaceActivityList(
+        emptyTitle: l10n.mortuaryNoPostMortemLabel,
+        emptyBody: l10n.mortuaryNoPostMortemBody,
+        items: events,
+      ),
     );
   }
 }
@@ -1545,11 +1544,14 @@ class _ReleaseSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceActivityList(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryReleaseSectionTitle,
-      emptyTitle: l10n.mortuaryNoReleaseLabel,
-      emptyBody: l10n.mortuaryNoReleaseBody,
-      items: events,
+      titleIcon: Icons.outbox_outlined,
+      child: AppWorkspaceActivityList(
+        emptyTitle: l10n.mortuaryNoReleaseLabel,
+        emptyBody: l10n.mortuaryNoReleaseBody,
+        items: events,
+      ),
     );
   }
 }
@@ -1581,11 +1583,14 @@ class _BillingSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceActivityList(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryBillingSectionTitle,
-      emptyTitle: l10n.mortuaryNoBillingLabel,
-      emptyBody: l10n.mortuaryNoBillingBody,
-      items: events,
+      titleIcon: Icons.receipt_long_outlined,
+      child: AppWorkspaceActivityList(
+        emptyTitle: l10n.mortuaryNoBillingLabel,
+        emptyBody: l10n.mortuaryNoBillingBody,
+        items: events,
+      ),
     );
   }
 }
@@ -1598,35 +1603,33 @@ class _DocumentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.mortuaryDocumentsSectionTitle,
-      leadingIcon: Icons.description_outlined,
-      children: <Widget>[
-        AppInfoTileGrid(
-          emptyValue: l10n.mortuaryNoDocumentsBody,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.mortuaryIntakeDocumentLabel,
-              value: item.receivedAt == null
-                  ? null
-                  : _formatDateTime(context, item.receivedAt),
-              icon: Icons.assignment_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryCustodyLogDocumentLabel,
-              value: item.custodyEvents.length.toString(),
-              icon: Icons.timeline_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.mortuaryReleaseDocumentLabel,
-              value: item.releaseAuthorisations.isEmpty
-                  ? null
-                  : item.releaseAuthorisations.length.toString(),
-              icon: Icons.outbox_outlined,
-            ),
-          ],
-        ),
-      ],
+      titleIcon: Icons.description_outlined,
+      child: AppInfoTileGrid(
+        emptyValue: l10n.mortuaryNoDocumentsBody,
+        items: <AppInfoTileData>[
+          AppInfoTileData(
+            label: l10n.mortuaryIntakeDocumentLabel,
+            value: item.receivedAt == null
+                ? null
+                : _formatDateTime(context, item.receivedAt),
+            icon: Icons.assignment_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryCustodyLogDocumentLabel,
+            value: item.custodyEvents.length.toString(),
+            icon: Icons.timeline_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryReleaseDocumentLabel,
+            value: item.releaseAuthorisations.isEmpty
+                ? null
+                : item.releaseAuthorisations.length.toString(),
+            icon: Icons.outbox_outlined,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2275,6 +2278,13 @@ MortuaryWorkspaceState? _mortuaryStateFromAsync(
     success: (MortuaryWorkspaceState state) => state,
     failure: (_) => null,
   );
+}
+
+List<Widget> _withMortuaryDetailSectionSpacing(
+  BuildContext context,
+  List<Widget> sections,
+) {
+  return appWorkspaceDetailSectionSpacing(context, sections);
 }
 
 const AccessRequirement _writeRequirement = AccessRequirement(

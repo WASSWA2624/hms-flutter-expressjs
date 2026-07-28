@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
@@ -11,6 +10,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const AccessRequirement _labWorkflowMutationRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.labWrite],
@@ -35,7 +35,6 @@ class LabWorkflowProgressSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final int activeIndex = labWorkflowStepIndex(workflow);
     final LabWorkflowNextActions next = workflow.nextActions;
     final List<AppWorkflowStepAction> currentActions =
@@ -144,26 +143,24 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           (id: 'verified', label: l10n.labWorkflowStepVerified, help: null),
         ];
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.labWorkflowProgressTitle,
-      spacing: theme.spacing.sm,
-      children: <Widget>[
-        AppWorkflowStepper(
-          semanticLabel: l10n.labWorkflowProgressTitle,
-          steps: <AppWorkflowStepItem>[
-            for (var index = 0; index < defs.length; index += 1)
-              AppWorkflowStepItem(
-                id: defs[index].id,
-                label: defs[index].label,
-                helpText: defs[index].help,
-                state: _stepState(index, activeIndex, workflow),
-                actions: index == activeIndex
-                    ? currentActions
-                    : const <AppWorkflowStepAction>[],
-              ),
-          ],
-        ),
-      ],
+      collapsible: false,
+      child: AppWorkflowStepper(
+        semanticLabel: l10n.labWorkflowProgressTitle,
+        steps: <AppWorkflowStepItem>[
+          for (var index = 0; index < defs.length; index += 1)
+            AppWorkflowStepItem(
+              id: defs[index].id,
+              label: defs[index].label,
+              helpText: defs[index].help,
+              state: _stepState(index, activeIndex, workflow),
+              actions: index == activeIndex
+                  ? currentActions
+                  : const <AppWorkflowStepAction>[],
+            ),
+        ],
+      ),
     );
   }
 

@@ -531,4 +531,27 @@ void main() {
     expect(find.byIcon(Icons.expand_less), findsNothing);
     expect(find.byIcon(Icons.expand_more), findsNothing);
   });
+
+  testWidgets('appWorkspaceDetailSectionSpacing inserts gaps between sections', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return Column(
+            children: appWorkspaceDetailSectionSpacing(context, const <Widget>[
+              AppWorkspaceDetailPanel(title: 'One', child: Text('A')),
+              AppWorkspaceDetailPanel(title: 'Two', child: Text('B')),
+            ]),
+          );
+        },
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.text('One'), findsOneWidget);
+    expect(find.text('Two'), findsOneWidget);
+    expect(find.byType(SizedBox), findsWidgets);
+  });
 }

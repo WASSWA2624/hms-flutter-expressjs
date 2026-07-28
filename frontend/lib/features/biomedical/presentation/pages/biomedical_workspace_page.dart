@@ -900,169 +900,158 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.biomedicalDetailTitle,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppPatientDetails(
-              semanticLabel: l10n.biomedicalDetailTitle,
-              patientName: asset.displayTitle,
-              patientNumber: asset.displayId,
-              patientNumberLabel: l10n.biomedicalAssetTagLabel,
-              ageLabel: asset.displaySubtitle,
-              showAvatar: false,
-              status: AppWorkspaceStatus(
-                label: _labelForCode(
-                  asset.priority,
-                  fallback: l10n.biomedicalNotAvailableLabel,
-                ),
-                tone: _toneForPriority(asset.priority),
-              ),
-              expandedFields: <AppWorkspacePatientContextField>[
-                AppWorkspacePatientContextField(
-                  label: l10n.biomedicalAssetTagLabel,
-                  value: asset.displayId,
-                  copyable: true,
-                ),
-                AppWorkspacePatientContextField(
-                  label: l10n.biomedicalFacilityLabel,
-                  value: _dash(asset.facilityLabel, l10n),
-                ),
-                AppWorkspacePatientContextField(
-                  label: l10n.biomedicalCategoryLabel,
-                  value: _dash(asset.categoryLabel, l10n),
-                ),
-                AppWorkspacePatientContextField(
-                  label: l10n.biomedicalOwnerLabel,
-                  value: _dash(asset.engineerLabel, l10n),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppPatientDetails(
+          semanticLabel: l10n.biomedicalDetailTitle,
+          patientName: asset.displayTitle,
+          patientNumber: asset.displayId,
+          patientNumberLabel: l10n.biomedicalAssetTagLabel,
+          ageLabel: asset.displaySubtitle,
+          showAvatar: false,
+          status: AppWorkspaceStatus(
+            label: _labelForCode(
+              asset.priority,
+              fallback: l10n.biomedicalNotAvailableLabel,
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _DetailActions(
-              state: state,
-              asset: asset,
-              canWrite: canWrite,
-              canPrint: canPrint,
+            tone: _toneForPriority(asset.priority),
+          ),
+          expandedFields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: l10n.biomedicalAssetTagLabel,
+              value: asset.displayId,
+              copyable: true,
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppSectionPanel(
-              title: l10n.biomedicalRegistrySectionTitle,
-              leadingIcon: Icons.badge_outlined,
-              children: <Widget>[
-                AppInfoTileGrid(
-                  items: <AppInfoTileData>[
-                    AppInfoTileData(
-                      label: l10n.biomedicalAssetTagLabel,
-                      value: asset.displayId,
-                      icon: Icons.tag_outlined,
-                      copyable: true,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalEquipmentLabel,
-                      value: asset.effectiveEquipmentLabel,
-                      icon: Icons.medical_services_outlined,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalResourceLabel,
-                      value: _labelForResource(l10n, asset.resource),
-                      icon: Icons.dataset_outlined,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalTargetPathLabel,
-                      value: asset.targetPath,
-                      icon: Icons.link_outlined,
-                      copyable: true,
-                    ),
-                  ],
-                ),
-              ],
+            AppWorkspacePatientContextField(
+              label: l10n.biomedicalFacilityLabel,
+              value: _dash(asset.facilityLabel, l10n),
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppSectionPanel(
-              title: l10n.biomedicalReadinessSectionTitle,
-              leadingIcon: Icons.health_and_safety_outlined,
-              children: <Widget>[
-                AppInfoTileGrid(
-                  items: <AppInfoTileData>[
-                    AppInfoTileData(
-                      label: l10n.biomedicalStatusLabel,
-                      value: _labelForCode(asset.status),
-                      icon: Icons.verified_outlined,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalPriorityLabel,
-                      value: _labelForCode(asset.priority),
-                      icon: Icons.priority_high_outlined,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalNextDueLabel,
-                      value: _formatDate(context, asset.nextDueAt),
-                      icon: Icons.event_outlined,
-                    ),
-                    AppInfoTileData(
-                      label: l10n.biomedicalLastUpdatedLabel,
-                      value: _formatDateTime(context, asset.timelineAt),
-                      icon: Icons.update_outlined,
-                    ),
-                  ],
-                ),
-              ],
+            AppWorkspacePatientContextField(
+              label: l10n.biomedicalCategoryLabel,
+              value: _dash(asset.categoryLabel, l10n),
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _RelatedSection(
-              title: l10n.biomedicalMaintenanceSectionTitle,
-              icon: Icons.build_outlined,
-              statuses: <AppWorkspaceStatus>[
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalScheduleMaintenanceAction,
-                  tone: AppWorkspaceStatusTone.info,
-                ),
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalCreateWorkOrderAction,
-                  tone: AppWorkspaceStatusTone.warning,
-                ),
-              ],
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _RelatedSection(
-              title: l10n.biomedicalComplianceSectionTitle,
-              icon: Icons.fact_check_outlined,
-              statuses: <AppWorkspaceStatus>[
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalRecordCalibrationAction,
-                  tone: AppWorkspaceStatusTone.info,
-                ),
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalRecordSafetyTestAction,
-                  tone: AppWorkspaceStatusTone.success,
-                ),
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalLogIncidentAction,
-                  tone: AppWorkspaceStatusTone.warning,
-                ),
-              ],
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _RelatedSection(
-              title: l10n.biomedicalLifecycleSectionTitle,
-              icon: Icons.sync_alt_outlined,
-              statuses: <AppWorkspaceStatus>[
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalTransferLocationAction,
-                  tone: AppWorkspaceStatusTone.info,
-                ),
-                AppWorkspaceStatus(
-                  label: l10n.biomedicalDisposeTransferAction,
-                  tone: AppWorkspaceStatusTone.error,
-                ),
-              ],
+            AppWorkspacePatientContextField(
+              label: l10n.biomedicalOwnerLabel,
+              value: _dash(asset.engineerLabel, l10n),
             ),
           ],
         ),
-      ),
+        SizedBox(height: Theme.of(context).spacing.md),
+        _DetailActions(
+          state: state,
+          asset: asset,
+          canWrite: canWrite,
+          canPrint: canPrint,
+        ),
+        SizedBox(height: Theme.of(context).spacing.md),
+        ...appWorkspaceDetailSectionSpacing(context, <Widget>[
+          AppWorkspaceDetailPanel(
+            title: l10n.biomedicalRegistrySectionTitle,
+            titleIcon: Icons.badge_outlined,
+            child: AppInfoTileGrid(
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.biomedicalAssetTagLabel,
+                  value: asset.displayId,
+                  icon: Icons.tag_outlined,
+                  copyable: true,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalEquipmentLabel,
+                  value: asset.effectiveEquipmentLabel,
+                  icon: Icons.medical_services_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalResourceLabel,
+                  value: _labelForResource(l10n, asset.resource),
+                  icon: Icons.dataset_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalTargetPathLabel,
+                  value: asset.targetPath,
+                  icon: Icons.link_outlined,
+                  copyable: true,
+                ),
+              ],
+            ),
+          ),
+          AppWorkspaceDetailPanel(
+            title: l10n.biomedicalReadinessSectionTitle,
+            titleIcon: Icons.health_and_safety_outlined,
+            child: AppInfoTileGrid(
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.biomedicalStatusLabel,
+                  value: _labelForCode(asset.status),
+                  icon: Icons.verified_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalPriorityLabel,
+                  value: _labelForCode(asset.priority),
+                  icon: Icons.priority_high_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalNextDueLabel,
+                  value: _formatDate(context, asset.nextDueAt),
+                  icon: Icons.event_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.biomedicalLastUpdatedLabel,
+                  value: _formatDateTime(context, asset.timelineAt),
+                  icon: Icons.update_outlined,
+                ),
+              ],
+            ),
+          ),
+          _RelatedSection(
+            title: l10n.biomedicalMaintenanceSectionTitle,
+            icon: Icons.build_outlined,
+            statuses: <AppWorkspaceStatus>[
+              AppWorkspaceStatus(
+                label: l10n.biomedicalScheduleMaintenanceAction,
+                tone: AppWorkspaceStatusTone.info,
+              ),
+              AppWorkspaceStatus(
+                label: l10n.biomedicalCreateWorkOrderAction,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
+            ],
+          ),
+          _RelatedSection(
+            title: l10n.biomedicalComplianceSectionTitle,
+            icon: Icons.fact_check_outlined,
+            statuses: <AppWorkspaceStatus>[
+              AppWorkspaceStatus(
+                label: l10n.biomedicalRecordCalibrationAction,
+                tone: AppWorkspaceStatusTone.info,
+              ),
+              AppWorkspaceStatus(
+                label: l10n.biomedicalRecordSafetyTestAction,
+                tone: AppWorkspaceStatusTone.success,
+              ),
+              AppWorkspaceStatus(
+                label: l10n.biomedicalLogIncidentAction,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
+            ],
+          ),
+          _RelatedSection(
+            title: l10n.biomedicalLifecycleSectionTitle,
+            icon: Icons.sync_alt_outlined,
+            statuses: <AppWorkspaceStatus>[
+              AppWorkspaceStatus(
+                label: l10n.biomedicalTransferLocationAction,
+                tone: AppWorkspaceStatusTone.info,
+              ),
+              AppWorkspaceStatus(
+                label: l10n.biomedicalDisposeTransferAction,
+                tone: AppWorkspaceStatusTone.error,
+              ),
+            ],
+          ),
+        ]),
+      ],
     );
   }
 }
@@ -1420,19 +1409,17 @@ class _RelatedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: title,
-      leadingIcon: icon,
-      children: <Widget>[
-        Wrap(
-          spacing: Theme.of(context).spacing.xs,
-          runSpacing: Theme.of(context).spacing.xs,
-          children: <Widget>[
-            for (final AppWorkspaceStatus status in statuses)
-              AppWorkspaceStatusBadge(status: status),
-          ],
-        ),
-      ],
+      titleIcon: icon,
+      child: Wrap(
+        spacing: Theme.of(context).spacing.xs,
+        runSpacing: Theme.of(context).spacing.xs,
+        children: <Widget>[
+          for (final AppWorkspaceStatus status in statuses)
+            AppWorkspaceStatusBadge(status: status),
+        ],
+      ),
     );
   }
 }

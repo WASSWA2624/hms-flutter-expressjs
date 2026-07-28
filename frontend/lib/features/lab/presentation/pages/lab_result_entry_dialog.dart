@@ -1296,88 +1296,67 @@ class _LabOrderResultSection extends StatelessWidget {
     final LabOrderSummary order = workflow.order;
     final String orderLabel = order.displayId ?? order.apiId;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    '${l10n.labOrderFieldLabel} $orderLabel',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+    return AppWorkspaceDetailPanel(
+      title: '${l10n.labOrderFieldLabel} $orderLabel',
+      collapsible: false,
+      actions: canMutate && (onEditOrder != null || onDeleteOrder != null)
+          ? <Widget>[
+              if (onEditOrder != null)
+                AppButton(
+                  leadingIcon: Icons.edit_outlined,
+                  label: l10n.labEditOrderAction,
+                  semanticLabel: l10n.labEditOrderAction,
+                  tooltip: l10n.labEditOrderAction,
+                  onPressed: onEditOrder,
                 ),
-                if (canMutate && (onEditOrder != null || onDeleteOrder != null))
-                  Wrap(
-                    spacing: theme.spacing.xs,
-                    children: <Widget>[
-                      if (onEditOrder != null)
-                        AppButton(
-                          leadingIcon: Icons.edit_outlined,
-                          label: l10n.labEditOrderAction,
-                          semanticLabel: l10n.labEditOrderAction,
-                          tooltip: l10n.labEditOrderAction,
-                          onPressed: onEditOrder,
-                        ),
-                      if (onDeleteOrder != null)
-                        AppButton(
-                          icon: Icons.delete_outline,
-                          label: l10n.labDeleteOrderAction,
-                          semanticLabel: l10n.labDeleteOrderAction,
-                          tooltip: l10n.labDeleteOrderAction,
-                          color: theme.statusColors.danger,
-                          onPressed: onDeleteOrder,
-                        ),
-                    ],
-                  ),
-              ],
+              if (onDeleteOrder != null)
+                AppButton(
+                  icon: Icons.delete_outline,
+                  label: l10n.labDeleteOrderAction,
+                  semanticLabel: l10n.labDeleteOrderAction,
+                  tooltip: l10n.labDeleteOrderAction,
+                  color: theme.statusColors.danger,
+                  onPressed: onDeleteOrder,
+                ),
+            ]
+          : const <Widget>[],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _InlineOrderMeta(
+            icon: Icons.event_outlined,
+            text:
+                '${l10n.labOrderedAtFieldLabel}: ${_optionalDateTimeLabel(context, order.orderedAt) ?? l10n.profileUnknownValue}',
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Text(
+            l10n.labItemsSectionTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
-            SizedBox(height: theme.spacing.xs),
-            _InlineOrderMeta(
-              icon: Icons.event_outlined,
-              text:
-                  '${l10n.labOrderedAtFieldLabel}: ${_optionalDateTimeLabel(context, order.orderedAt) ?? l10n.profileUnknownValue}',
+          ),
+          SizedBox(height: theme.spacing.sm),
+          if (drafts.isEmpty)
+            AppWorkspaceStatePanel.empty(
+              title: l10n.labNoOrderItemsEntryTitle,
+              body: l10n.labNoOrderItemsEntryBody,
+              icon: Icons.science_outlined,
+            )
+          else
+            _LabResultEntryTable(
+              drafts: drafts,
+              catalogPanels: catalogPanels,
+              canMutate: canMutate,
+              selectedItemIds: selectedItemIds,
+              onToggleItemSelection: onToggleItemSelection,
+              onSaveDraft: onSaveDraft,
+              onSubmit: onSubmitItem,
+              onVerify: onVerifyItem,
+              onEditVerified: onEditVerified,
+              onReject: onRejectItem,
+              onRemove: onRemoveResult,
             ),
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              l10n.labItemsSectionTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            if (drafts.isEmpty)
-              AppWorkspaceStatePanel.empty(
-                title: l10n.labNoOrderItemsEntryTitle,
-                body: l10n.labNoOrderItemsEntryBody,
-                icon: Icons.science_outlined,
-              )
-            else
-              _LabResultEntryTable(
-                drafts: drafts,
-                catalogPanels: catalogPanels,
-                canMutate: canMutate,
-                selectedItemIds: selectedItemIds,
-                onToggleItemSelection: onToggleItemSelection,
-                onSaveDraft: onSaveDraft,
-                onSubmit: onSubmitItem,
-                onVerify: onVerifyItem,
-                onEditVerified: onEditVerified,
-                onReject: onRejectItem,
-                onRemove: onRemoveResult,
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

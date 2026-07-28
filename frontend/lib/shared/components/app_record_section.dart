@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 typedef AppRecordTextBuilder<T> = String Function(T item);
 typedef AppRecordWidgetBuilder<T> =
@@ -12,6 +13,10 @@ typedef AppRecordWidgetBuilder<T> =
 
 enum AppRecordActionVariant { add, edit, delete }
 
+/// CRUD record list section for detail dialogs.
+///
+/// Uses [AppWorkspaceDetailPanel] chrome so patient and other detail modals
+/// share the same collapsible section component as the rest of the app.
 class AppExpandableRecordSection<T> extends StatelessWidget {
   const AppExpandableRecordSection({
     required this.title,
@@ -22,7 +27,7 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
     this.itemLeadingIcon,
     this.itemLeadingBuilder,
     this.maxItems,
-    this.initiallyExpanded = false,
+    this.initiallyExpanded = true,
     this.responsiveActionButtons = false,
     this.onAdd,
     this.onEdit,
@@ -62,36 +67,39 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
     final List<T> visibleItems = maxItems == null
         ? items
         : items.take(maxItems!).toList(growable: false);
+    final Widget? addButton = _addButton(context);
 
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: EdgeInsets.only(bottom: theme.spacing.sm),
+    return AppWorkspaceDetailPanel(
+      title: title,
       initiallyExpanded: initiallyExpanded,
-      title: Text(title, style: theme.textTheme.titleSmall),
-      trailing: _addButton(context),
-      children: <Widget>[
-        if (visibleItems.isEmpty)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.xs),
+      actions: addButton == null ? const <Widget>[] : <Widget>[addButton],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (visibleItems.isEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 emptyLabel,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-          )
-        else
-          for (final T item in visibleItems)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: _itemLeading(context, item),
-              title: _itemTitle(context, item),
-              trailing: _itemActions(context, item),
-            ),
-      ],
+            )
+          else
+            for (var index = 0; index < visibleItems.length; index += 1) ...<
+              Widget
+            >[
+              if (index > 0) const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: _itemLeading(context, visibleItems[index]),
+                title: _itemTitle(context, visibleItems[index]),
+                trailing: _itemActions(context, visibleItems[index]),
+              ),
+            ],
+        ],
+      ),
     );
   }
 
@@ -220,6 +228,7 @@ class _GuardedRecordAction extends StatelessWidget {
       case AppRecordActionVariant.add:
         return AppButton.primary(
           iconOnly: iconOnly,
+          dense: true,
           leadingIcon: icon,
           label: label,
           semanticLabel: label,
@@ -229,6 +238,7 @@ class _GuardedRecordAction extends StatelessWidget {
       case AppRecordActionVariant.edit:
         return AppButton.secondary(
           iconOnly: iconOnly,
+          dense: true,
           leadingIcon: icon,
           label: label,
           semanticLabel: label,
@@ -238,6 +248,7 @@ class _GuardedRecordAction extends StatelessWidget {
       case AppRecordActionVariant.delete:
         return AppButton.tertiary(
           iconOnly: iconOnly,
+          dense: true,
           leadingIcon: icon,
           label: label,
           semanticLabel: label,

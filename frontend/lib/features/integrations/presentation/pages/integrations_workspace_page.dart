@@ -1465,11 +1465,28 @@ class _IntegrationDetailPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: _detailTitle(context, item),
-      description: _kindLabel(l10n, item.kind),
-      actions: _detailActions(context, controller, state, item, canManage),
-      child: _detailBody(context, state, item),
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> detailActions = _detailActions(
+      context,
+      controller,
+      state,
+      item,
+      canManage,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (detailActions.isNotEmpty) ...<Widget>[
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: detailActions,
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
+        _detailBody(context, state, item),
+      ],
     );
   }
 }
@@ -1778,19 +1795,21 @@ class _IntegrationConfigSummary extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.integrationsConfigurationTitle,
       description: integration.hasConfig
           ? l10n.integrationsConfigurationMaskedBody
           : l10n.integrationsConfigurationEmptyBody,
-      leadingIcon: Icons.settings_applications_outlined,
-      children: <Widget>[
-        if (entries.isEmpty)
-          Text(l10n.integrationsNoConfigurationRows)
-        else
-          for (final String entry in entries)
-            Text(entry, maxLines: 2, overflow: TextOverflow.ellipsis),
-      ],
+      titleIcon: Icons.settings_applications_outlined,
+      child: entries.isEmpty
+          ? Text(l10n.integrationsNoConfigurationRows)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (final String entry in entries)
+                  Text(entry, maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+            ),
     );
   }
 }
@@ -1804,19 +1823,21 @@ class _RelatedWebhooksPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.integrationsRelatedWebhooksTitle,
-      leadingIcon: Icons.webhook_outlined,
-      children: <Widget>[
-        if (webhooks.isEmpty)
-          Text(l10n.integrationsNoRelatedWebhooks)
-        else
-          for (final WebhookSubscriptionRecord webhook in webhooks.take(4))
-            _CompactFactRow(
-              label: _fallback(context, webhook.event),
-              value: _fallback(context, webhook.targetHost),
+      titleIcon: Icons.webhook_outlined,
+      child: webhooks.isEmpty
+          ? Text(l10n.integrationsNoRelatedWebhooks)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (final WebhookSubscriptionRecord webhook in webhooks.take(4))
+                  _CompactFactRow(
+                    label: _fallback(context, webhook.event),
+                    value: _fallback(context, webhook.targetHost),
+                  ),
+              ],
             ),
-      ],
     );
   }
 }
@@ -1830,19 +1851,21 @@ class _RelatedLogsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.integrationsRelatedLogsTitle,
-      leadingIcon: Icons.receipt_long_outlined,
-      children: <Widget>[
-        if (logs.isEmpty)
-          Text(l10n.integrationsNoRelatedLogs)
-        else
-          for (final IntegrationLogRecord log in logs.take(4))
-            _CompactFactRow(
-              label: _statusLabelForValue(context, log.status),
-              value: _fallback(context, log.message),
+      titleIcon: Icons.receipt_long_outlined,
+      child: logs.isEmpty
+          ? Text(l10n.integrationsNoRelatedLogs)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (final IntegrationLogRecord log in logs.take(4))
+                  _CompactFactRow(
+                    label: _statusLabelForValue(context, log.status),
+                    value: _fallback(context, log.message),
+                  ),
+              ],
             ),
-      ],
     );
   }
 }
@@ -1863,38 +1886,40 @@ class _ApiKeyPermissionsPanel extends ConsumerWidget {
       apiKey,
     );
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.integrationsPermissionsTitle,
-      leadingIcon: Icons.admin_panel_settings_outlined,
-      children: <Widget>[
-        if (permissions.isEmpty)
-          Text(l10n.integrationsNoPermissions)
-        else
-          for (final ApiKeyPermissionRecord permission in permissions)
-            _PermissionGrantRow(
-              label:
-                  state.permissionOption(permission.permissionId)?.label ??
-                  permission.permissionId,
-              onRemove: () async {
-                final bool confirmed = await _confirm(
-                  context,
-                  title: l10n.integrationsRemovePermissionDialogTitle,
-                  message: l10n.integrationsRemovePermissionDialogBody,
-                  confirmLabel: l10n.integrationsRemovePermissionAction,
-                  icon: Icons.remove_circle_outline,
-                );
-                if (!context.mounted || !confirmed) {
-                  return;
-                }
-                final AppFailure? failure = await controller
-                    .removeApiKeyPermission(permission.id);
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                  _showSavedIfNeeded(context, failure);
-                }
-              },
+      titleIcon: Icons.admin_panel_settings_outlined,
+      child: permissions.isEmpty
+          ? Text(l10n.integrationsNoPermissions)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (final ApiKeyPermissionRecord permission in permissions)
+                  _PermissionGrantRow(
+                    label:
+                        state.permissionOption(permission.permissionId)?.label ??
+                        permission.permissionId,
+                    onRemove: () async {
+                      final bool confirmed = await _confirm(
+                        context,
+                        title: l10n.integrationsRemovePermissionDialogTitle,
+                        message: l10n.integrationsRemovePermissionDialogBody,
+                        confirmLabel: l10n.integrationsRemovePermissionAction,
+                        icon: Icons.remove_circle_outline,
+                      );
+                      if (!context.mounted || !confirmed) {
+                        return;
+                      }
+                      final AppFailure? failure = await controller
+                          .removeApiKeyPermission(permission.id);
+                      if (context.mounted) {
+                        _showFailureIfNeeded(context, failure);
+                        _showSavedIfNeeded(context, failure);
+                      }
+                    },
+                  ),
+              ],
             ),
-      ],
     );
   }
 }

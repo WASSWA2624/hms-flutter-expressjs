@@ -1331,47 +1331,44 @@ class _WorkflowSummarySection extends StatelessWidget {
         ),
     ];
 
-    return AppSectionPanel(
+    return AppWorkspaceDetailPanel(
       title: l10n.radiologyOrderMetadataTitle,
-      spacing: Theme.of(context).spacing.sm,
-      children: <Widget>[
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool wide = constraints.maxWidth >= 720;
-            if (!wide) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: lines,
-              );
-            }
-
-            final int columnCount = lines.length <= 3 ? lines.length : 2;
-            final int rowCount = (lines.length / columnCount).ceil();
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool wide = constraints.maxWidth >= 720;
+          if (!wide) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (int row = 0; row < rowCount; row++) ...<Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      for (
-                        int column = 0;
-                        column < columnCount;
-                        column++
-                      ) ...<Widget>[
-                        if (row * columnCount + column < lines.length)
-                          Expanded(child: lines[row * columnCount + column]),
-                      ],
-                    ],
-                  ),
-                  if (row < rowCount - 1)
-                    SizedBox(height: Theme.of(context).spacing.xs),
-                ],
-              ],
+              children: lines,
             );
-          },
-        ),
-      ],
+          }
+
+          final int columnCount = lines.length <= 3 ? lines.length : 2;
+          final int rowCount = (lines.length / columnCount).ceil();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (int row = 0; row < rowCount; row++) ...<Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    for (
+                      int column = 0;
+                      column < columnCount;
+                      column++
+                    ) ...<Widget>[
+                      if (row * columnCount + column < lines.length)
+                        Expanded(child: lines[row * columnCount + column]),
+                    ],
+                  ],
+                ),
+                if (row < rowCount - 1)
+                  SizedBox(height: Theme.of(context).spacing.xs),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -1386,53 +1383,64 @@ class _RequestSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppSectionPanel(
-      title: l10n.radiologyRequestDetailsTitle,
-      spacing: Theme.of(context).spacing.sm,
-      trailing: AppButton(
-        iconOnly: true,
-        leadingIcon: Icons.edit_outlined,
-        label: l10n.radiologyEditRequestDetailsAction,
-
-        semanticLabel: l10n.radiologyEditRequestDetailsAction,
-        tooltip: l10n.radiologyEditRequestDetailsAction,
-        onPressed: canEdit
-            ? () => _showEditRequestDetailsDialog(context, ref, order)
-            : null,
+    final ThemeData theme = Theme.of(context);
+    final List<_DetailLine> lines = <_DetailLine>[
+      _DetailLine(
+        label: l10n.radiologyBodyRegionLabel,
+        value: order.bodyRegion,
       ),
-      children: <Widget>[
-        _DetailLine(
-          label: l10n.radiologyBodyRegionLabel,
-          value: order.bodyRegion,
-        ),
-        _DetailLine(
-          label: l10n.radiologyLateralityLabel,
-          value: order.laterality,
-        ),
-        _DetailLine(
-          label: l10n.radiologyAssigneeLabel,
-          value: order.assignedUserDisplayName ?? order.assignedUserId,
-        ),
-        _DetailLine(
-          label: l10n.radiologyScheduledAtLabel,
-          value: order.scheduledAt == null
-              ? null
-              : AppFormatters.mediumDate(
-                  order.scheduledAt!,
-                  Localizations.localeOf(context),
-                ),
-        ),
-        _DetailLine(label: l10n.radiologyRoomLabel, value: order.room),
-        _DetailLine(
-          label: l10n.radiologyEquipmentLabel,
-          value: order.equipmentDisplayName ?? order.equipmentRegistryId,
-        ),
-        _DetailLine(
-          label: l10n.radiologyClinicalNotesLabel,
-          value: order.clinicalNote,
-          maxLines: 6,
+      _DetailLine(
+        label: l10n.radiologyLateralityLabel,
+        value: order.laterality,
+      ),
+      _DetailLine(
+        label: l10n.radiologyAssigneeLabel,
+        value: order.assignedUserDisplayName ?? order.assignedUserId,
+      ),
+      _DetailLine(
+        label: l10n.radiologyScheduledAtLabel,
+        value: order.scheduledAt == null
+            ? null
+            : AppFormatters.mediumDate(
+                order.scheduledAt!,
+                Localizations.localeOf(context),
+              ),
+      ),
+      _DetailLine(label: l10n.radiologyRoomLabel, value: order.room),
+      _DetailLine(
+        label: l10n.radiologyEquipmentLabel,
+        value: order.equipmentDisplayName ?? order.equipmentRegistryId,
+      ),
+      _DetailLine(
+        label: l10n.radiologyClinicalNotesLabel,
+        value: order.clinicalNote,
+        maxLines: 6,
+      ),
+    ];
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.radiologyRequestDetailsTitle,
+      actions: <Widget>[
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.edit_outlined,
+          label: l10n.radiologyEditRequestDetailsAction,
+          semanticLabel: l10n.radiologyEditRequestDetailsAction,
+          tooltip: l10n.radiologyEditRequestDetailsAction,
+          onPressed: canEdit
+              ? () => _showEditRequestDetailsDialog(context, ref, order)
+              : null,
         ),
       ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int index = 0; index < lines.length; index += 1) ...<Widget>[
+            if (index > 0) SizedBox(height: theme.spacing.sm),
+            lines[index],
+          ],
+        ],
+      ),
     );
   }
 }

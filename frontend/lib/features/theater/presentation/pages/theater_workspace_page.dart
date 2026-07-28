@@ -669,47 +669,41 @@ class _TheaterCaseDetail extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.theaterCaseDetailTitle,
-      description: selected.displayId,
-      actions: canWrite
-          ? <Widget>[
-              AppButton(
-                iconOnly: true,
-                leadingIcon: Icons.edit_calendar_outlined,
-                label: l10n.theaterRescheduleAction,
-
-                semanticLabel: l10n.theaterRescheduleAction,
-                tooltip: l10n.theaterRescheduleAction,
-                onPressed: isMutating
-                    ? null
-                    : () => _showRescheduleDialog(context, ref, selected),
-              ),
-              AppButton(
-                iconOnly: true,
-                leadingIcon: Icons.alt_route_outlined,
-                label: l10n.theaterUpdateStageAction,
-
-                semanticLabel: l10n.theaterUpdateStageAction,
-                tooltip: l10n.theaterUpdateStageAction,
-                onPressed: isMutating
-                    ? null
-                    : () => _showStageDialog(context, ref, selected),
-              ),
-            ]
-          : const <Widget>[],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (isLoading) const LinearProgressIndicator(minHeight: 2),
-          _TheaterCaseDetailBody(
-            theaterCase: selected,
-            canWrite: canWrite,
-            isMutating: isMutating,
-            focusPanel: focusPanel,
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (isLoading) const LinearProgressIndicator(minHeight: 2),
+        _TheaterCaseDetailBody(
+          theaterCase: selected,
+          canWrite: canWrite,
+          isMutating: isMutating,
+          focusPanel: focusPanel,
+          headerActions: canWrite
+              ? <Widget>[
+                  AppButton(
+                    iconOnly: true,
+                    leadingIcon: Icons.edit_calendar_outlined,
+                    label: l10n.theaterRescheduleAction,
+                    semanticLabel: l10n.theaterRescheduleAction,
+                    tooltip: l10n.theaterRescheduleAction,
+                    onPressed: isMutating
+                        ? null
+                        : () => _showRescheduleDialog(context, ref, selected),
+                  ),
+                  AppButton(
+                    iconOnly: true,
+                    leadingIcon: Icons.alt_route_outlined,
+                    label: l10n.theaterUpdateStageAction,
+                    semanticLabel: l10n.theaterUpdateStageAction,
+                    tooltip: l10n.theaterUpdateStageAction,
+                    onPressed: isMutating
+                        ? null
+                        : () => _showStageDialog(context, ref, selected),
+                  ),
+                ]
+              : const <Widget>[],
+        ),
+      ],
     );
   }
 }
@@ -760,12 +754,14 @@ class _TheaterCaseDetailBody extends ConsumerStatefulWidget {
     required this.canWrite,
     required this.isMutating,
     this.focusPanel,
+    this.headerActions = const <Widget>[],
   });
 
   final TheaterCase theaterCase;
   final bool canWrite;
   final bool isMutating;
   final TheaterDetailPanel? focusPanel;
+  final List<Widget> headerActions;
 
   @override
   ConsumerState<_TheaterCaseDetailBody> createState() =>
@@ -805,6 +801,79 @@ class _TheaterCaseDetailBodyState
     final bool isMutating = widget.isMutating;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool hasSourceContext = _sourceContextLabel(l10n, theaterCase) != null;
+    final List<Widget> detailSections = <Widget>[
+      if (hasSourceContext)
+        AppWorkspaceDetailPanel(
+          title: l10n.theaterSourceContextLabel,
+          actions: widget.headerActions,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _DetailLine(
+                label: l10n.theaterSourceContextLabel,
+                value: _sourceContextLabel(l10n, theaterCase),
+              ),
+              if (theaterCase.procedureName != null)
+                _DetailLine(
+                  label: l10n.theaterProcedureColumnLabel,
+                  value: theaterCase.procedureName,
+                ),
+              if (theaterCase.admissionDisplayId != null)
+                AppButton.tertiary(
+                  label: l10n.theaterOpenInIpdAction,
+                  leadingIcon: Icons.local_hospital_outlined,
+                  onPressed: () => _openIpdWorkspace(
+                    context,
+                    theaterCase.admissionDisplayId!,
+                  ),
+                ),
+              if (theaterCase.emergencyCaseDisplayId != null)
+                AppButton.tertiary(
+                  label: l10n.theaterOpenInEmergencyAction,
+                  leadingIcon: Icons.emergency_outlined,
+                  onPressed: () => _openEmergencyWorkspace(
+                    context,
+                    theaterCase.emergencyCaseDisplayId!,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      AppWorkspaceDetailPanel(
+        title: l10n.theaterTeamTitle,
+        actions: hasSourceContext ? const <Widget>[] : widget.headerActions,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _DetailLine(
+              label: l10n.theaterSurgeonLabel,
+              value:
+                  theaterCase.surgeonDisplayName ??
+                  theaterCase.surgeonUserDisplayId,
+            ),
+            _DetailLine(
+              label: l10n.theaterAnesthetistLabel,
+              value:
+                  theaterCase.anesthetistDisplayName ??
+                  theaterCase.anesthetistUserDisplayId,
+            ),
+            _DetailLine(
+              label: l10n.theaterStageLabel,
+              value: _stageLabel(l10n, theaterCase.workflowStage),
+            ),
+            _DetailLine(
+              label: l10n.theaterStageNotesLabel,
+              value: theaterCase.stageNotes,
+            ),
+          ],
+        ),
+      ),
+      _ChecklistSection(theaterCase: theaterCase),
+      _RecordsSection(theaterCase: theaterCase),
+      _ResourceSection(theaterCase: theaterCase),
+      _TimelineSection(theaterCase: theaterCase),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -848,78 +917,14 @@ class _TheaterCaseDetailBodyState
             ),
           ],
         ),
-        if (_sourceContextLabel(l10n, theaterCase) != null) ...<Widget>[
+        if (canWrite) ...<Widget>[
           SizedBox(height: theme.spacing.md),
-          _DetailSection(
-            title: l10n.theaterSourceContextLabel,
-            children: <Widget>[
-              _DetailLine(
-                label: l10n.theaterSourceContextLabel,
-                value: _sourceContextLabel(l10n, theaterCase),
-              ),
-              if (theaterCase.procedureName != null)
-                _DetailLine(
-                  label: l10n.theaterProcedureColumnLabel,
-                  value: theaterCase.procedureName,
-                ),
-              if (theaterCase.admissionDisplayId != null)
-                AppButton.tertiary(
-                  label: l10n.theaterOpenInIpdAction,
-                  leadingIcon: Icons.local_hospital_outlined,
-                  onPressed: () => _openIpdWorkspace(
-                    context,
-                    theaterCase.admissionDisplayId!,
-                  ),
-                ),
-              if (theaterCase.emergencyCaseDisplayId != null)
-                AppButton.tertiary(
-                  label: l10n.theaterOpenInEmergencyAction,
-                  leadingIcon: Icons.emergency_outlined,
-                  onPressed: () => _openEmergencyWorkspace(
-                    context,
-                    theaterCase.emergencyCaseDisplayId!,
-                  ),
-                ),
-            ],
-          ),
-        ],
-        SizedBox(height: theme.spacing.md),
-        if (canWrite)
           _TheaterActionBar(theaterCase: theaterCase, isMutating: isMutating),
-        if (canWrite) SizedBox(height: theme.spacing.md),
-        _DetailSection(
-          title: l10n.theaterTeamTitle,
-          children: <Widget>[
-            _DetailLine(
-              label: l10n.theaterSurgeonLabel,
-              value:
-                  theaterCase.surgeonDisplayName ??
-                  theaterCase.surgeonUserDisplayId,
-            ),
-            _DetailLine(
-              label: l10n.theaterAnesthetistLabel,
-              value:
-                  theaterCase.anesthetistDisplayName ??
-                  theaterCase.anesthetistUserDisplayId,
-            ),
-            _DetailLine(
-              label: l10n.theaterStageLabel,
-              value: _stageLabel(l10n, theaterCase.workflowStage),
-            ),
-            _DetailLine(
-              label: l10n.theaterStageNotesLabel,
-              value: theaterCase.stageNotes,
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        _ChecklistSection(theaterCase: theaterCase),
-        SizedBox(height: theme.spacing.md),
-        _RecordsSection(theaterCase: theaterCase),
-        SizedBox(height: theme.spacing.md),
-        _ResourceSection(theaterCase: theaterCase),
-        SizedBox(height: theme.spacing.md),
-        _TimelineSection(theaterCase: theaterCase),
+        ],
+        for (var index = 0; index < detailSections.length; index += 1) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          detailSections[index],
+        ],
       ],
     );
   }
@@ -1000,30 +1005,33 @@ class _ChecklistSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<TheaterChecklistItem> items = theaterCase.checklistItems;
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.theaterChecklistTitle,
-      children: items.isEmpty
-          ? <Widget>[AppMutedText(l10n.theaterNoChecklistItemsLabel)]
-          : <Widget>[
-              for (final TheaterChecklistItem item in items)
-                _StatusLine(
-                  icon: item.isChecked
-                      ? Icons.check_circle_outline
-                      : Icons.radio_button_unchecked,
-                  tone: item.isChecked
-                      ? AppWorkspaceStatusTone.success
-                      : AppWorkspaceStatusTone.warning,
-                  title:
-                      item.itemLabel ??
-                      item.itemCode ??
-                      l10n.profileUnknownValue,
-                  subtitle: _joinDisplay(<String?>[
-                    _stageLabel(l10n, item.phase),
-                    _formatDateTimeOrNull(context, item.checkedAt),
-                    item.notes,
-                  ]),
-                ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: items.isEmpty
+            ? <Widget>[AppMutedText(l10n.theaterNoChecklistItemsLabel)]
+            : <Widget>[
+                for (final TheaterChecklistItem item in items)
+                  _StatusLine(
+                    icon: item.isChecked
+                        ? Icons.check_circle_outline
+                        : Icons.radio_button_unchecked,
+                    tone: item.isChecked
+                        ? AppWorkspaceStatusTone.success
+                        : AppWorkspaceStatusTone.warning,
+                    title:
+                        item.itemLabel ??
+                        item.itemCode ??
+                        l10n.profileUnknownValue,
+                    subtitle: _joinDisplay(<String?>[
+                      _stageLabel(l10n, item.phase),
+                      _formatDateTimeOrNull(context, item.checkedAt),
+                      item.notes,
+                    ]),
+                  ),
+              ],
+      ),
     );
   }
 }
@@ -1037,47 +1045,50 @@ class _RecordsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.theaterRecordsTitle,
-      children: <Widget>[
-        _DetailLine(
-          label: l10n.theaterAnesthesiaStatusLabel,
-          value: _recordStatusLabel(l10n, theaterCase.anesthesiaStatus),
-        ),
-        _DetailLine(
-          label: l10n.theaterPostOpStatusLabel,
-          value: _recordStatusLabel(l10n, theaterCase.postOpStatus),
-        ),
-        _DetailLine(
-          label: l10n.theaterAnesthesiaNotesLabel,
-          value: theaterCase.latestAnesthesiaRecord?.notes,
-        ),
-        _DetailLine(
-          label: l10n.theaterPostOpNoteLabel,
-          value: theaterCase.latestPostOpNote?.notes,
-        ),
-        if (theaterCase.anesthesiaObservations.isEmpty)
-          AppMutedText(l10n.theaterNoObservationsLabel)
-        else
-          for (final TheaterAnesthesiaObservation observation
-              in theaterCase.anesthesiaObservations.take(6))
-            _StatusLine(
-              icon: Icons.monitor_heart_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              title:
-                  _joinDisplay(<String?>[
-                    observation.metricKey,
-                    observation.metricValue,
-                    observation.unit,
-                  ]).ifEmpty(
-                    observation.observationType ?? l10n.profileUnknownValue,
-                  ),
-              subtitle: _joinDisplay(<String?>[
-                _formatDateTimeOrNull(context, observation.observedAt),
-                observation.notes,
-              ]),
-            ),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _DetailLine(
+            label: l10n.theaterAnesthesiaStatusLabel,
+            value: _recordStatusLabel(l10n, theaterCase.anesthesiaStatus),
+          ),
+          _DetailLine(
+            label: l10n.theaterPostOpStatusLabel,
+            value: _recordStatusLabel(l10n, theaterCase.postOpStatus),
+          ),
+          _DetailLine(
+            label: l10n.theaterAnesthesiaNotesLabel,
+            value: theaterCase.latestAnesthesiaRecord?.notes,
+          ),
+          _DetailLine(
+            label: l10n.theaterPostOpNoteLabel,
+            value: theaterCase.latestPostOpNote?.notes,
+          ),
+          if (theaterCase.anesthesiaObservations.isEmpty)
+            AppMutedText(l10n.theaterNoObservationsLabel)
+          else
+            for (final TheaterAnesthesiaObservation observation
+                in theaterCase.anesthesiaObservations.take(6))
+              _StatusLine(
+                icon: Icons.monitor_heart_outlined,
+                tone: AppWorkspaceStatusTone.info,
+                title:
+                    _joinDisplay(<String?>[
+                      observation.metricKey,
+                      observation.metricValue,
+                      observation.unit,
+                    ]).ifEmpty(
+                      observation.observationType ?? l10n.profileUnknownValue,
+                    ),
+                subtitle: _joinDisplay(<String?>[
+                  _formatDateTimeOrNull(context, observation.observedAt),
+                  observation.notes,
+                ]),
+              ),
+        ],
+      ),
     );
   }
 }
@@ -1093,30 +1104,33 @@ class _ResourceSection extends StatelessWidget {
     final List<TheaterResourceAllocation> allocations =
         theaterCase.resourceAllocations;
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.theaterResourcesTitle,
-      children: allocations.isEmpty
-          ? <Widget>[AppMutedText(l10n.theaterNoResourcesLabel)]
-          : <Widget>[
-              for (final TheaterResourceAllocation allocation in allocations)
-                _StatusLine(
-                  icon: allocation.isActive
-                      ? Icons.link_outlined
-                      : Icons.link_off_outlined,
-                  tone: allocation.isActive
-                      ? AppWorkspaceStatusTone.success
-                      : AppWorkspaceStatusTone.neutral,
-                  title: _joinDisplay(<String?>[
-                    _apiLabel(allocation.resourceType),
-                    allocation.resourceLabel,
-                    allocation.resourceDisplayId,
-                  ]),
-                  subtitle: _joinDisplay(<String?>[
-                    _formatDateTimeOrNull(context, allocation.assignedAt),
-                    allocation.notes,
-                  ]),
-                ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: allocations.isEmpty
+            ? <Widget>[AppMutedText(l10n.theaterNoResourcesLabel)]
+            : <Widget>[
+                for (final TheaterResourceAllocation allocation in allocations)
+                  _StatusLine(
+                    icon: allocation.isActive
+                        ? Icons.link_outlined
+                        : Icons.link_off_outlined,
+                    tone: allocation.isActive
+                        ? AppWorkspaceStatusTone.success
+                        : AppWorkspaceStatusTone.neutral,
+                    title: _joinDisplay(<String?>[
+                      _apiLabel(allocation.resourceType),
+                      allocation.resourceLabel,
+                      allocation.resourceDisplayId,
+                    ]),
+                    subtitle: _joinDisplay(<String?>[
+                      _formatDateTimeOrNull(context, allocation.assignedAt),
+                      allocation.notes,
+                    ]),
+                  ),
+              ],
+      ),
     );
   }
 }
@@ -1130,52 +1144,20 @@ class _TimelineSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return _DetailSection(
+    return AppWorkspaceDetailPanel(
       title: l10n.theaterTimelineTitle,
-      children: <Widget>[
-        AppTimeline(
-          emptyTitle: l10n.theaterNoTimelineLabel,
-          emptyBody: '',
-          maxItems: 8,
-          items: <AppTimelineItem>[
-            for (final TheaterTimelineItem item in theaterCase.timeline)
-              AppTimelineItem(
-                title: item.label,
-                occurredAt: item.occurredAt,
-                icon: Icons.history_outlined,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _DetailSection extends StatelessWidget {
-  const _DetailSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(title, style: theme.textTheme.titleSmall),
-            SizedBox(height: theme.spacing.sm),
-            ...children,
-          ],
-        ),
+      child: AppTimeline(
+        emptyTitle: l10n.theaterNoTimelineLabel,
+        emptyBody: '',
+        maxItems: 8,
+        items: <AppTimelineItem>[
+          for (final TheaterTimelineItem item in theaterCase.timeline)
+            AppTimelineItem(
+              title: item.label,
+              occurredAt: item.occurredAt,
+              icon: Icons.history_outlined,
+            ),
+        ],
       ),
     );
   }

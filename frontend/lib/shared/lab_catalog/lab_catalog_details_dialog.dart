@@ -72,145 +72,148 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppSectionPanel(
-              tone: AppWorkspaceStatusTone.info,
-              density: AppContentPanelDensity.compact,
-              leadingIcon: Icons.info_outline,
+            AppWorkspaceDetailPanel(
               title: item.displayTitle,
-              children: <Widget>[
-                Wrap(
-                  spacing: theme.spacing.md,
-                  runSpacing: theme.spacing.sm,
-                  children: <Widget>[
-                    for (final (String label, String value) in facts)
-                      SizedBox(
-                        width: 220,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              label,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
+              titleIcon: Icons.info_outline,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Wrap(
+                    spacing: theme.spacing.md,
+                    runSpacing: theme.spacing.sm,
+                    children: <Widget>[
+                      for (final (String label, String value) in facts)
+                        SizedBox(
+                          width: 220,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: theme.spacing.xs / 2),
-                            Text(
-                              value,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                              SizedBox(height: theme.spacing.xs / 2),
+                              Text(
+                                value,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-                if (!isPanel && item.referenceRanges.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.md),
-                  Text(
-                    l10n.labTestRangesSectionTitle,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    ],
                   ),
-                  SizedBox(height: theme.spacing.sm),
-                  for (final LabReferenceRange range
-                      in item.referenceRanges) ...<Widget>[
+                  if (!isPanel && item.referenceRanges.isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.md),
                     Text(
-                      range.displayLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      l10n.labTestRangesSectionTitle,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: theme.spacing.xs),
-                  ],
-                ],
-                if (isPanel) ...<Widget>[
-                  SizedBox(height: theme.spacing.md),
-                  Text(
-                    l10n.labPanelTestsLabel,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  if (item.panelItems.isEmpty)
-                    AppMutedText(l10n.labPanelNoSelectedTests)
-                  else
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant,
+                    SizedBox(height: theme.spacing.sm),
+                    for (final LabReferenceRange range
+                        in item.referenceRanges) ...<Widget>[
+                      Text(
+                        range.displayLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        borderRadius: BorderRadius.circular(theme.radius.sm),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          for (
-                            int index = 0;
-                            index < item.panelItems.length;
-                            index += 1
-                          ) ...<Widget>[
-                            if (index > 0)
-                              Divider(
-                                height: 1,
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: theme.spacing.md,
-                                vertical: theme.spacing.sm,
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    '${index + 1}.',
-                                    style: theme.textTheme.labelLarge
-                                        ?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
-                                  SizedBox(width: theme.spacing.sm),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        Text(
-                                          item.panelItems[index].displayTitle,
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                        if (_panelItemSubtitle(
-                                          item.panelItems[index],
-                                        ).isNotEmpty)
+                      SizedBox(height: theme.spacing.xs),
+                    ],
+                  ],
+                  if (isPanel) ...<Widget>[
+                    SizedBox(height: theme.spacing.md),
+                    Text(
+                      l10n.labPanelTestsLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.sm),
+                    if (item.panelItems.isEmpty)
+                      AppMutedText(l10n.labPanelNoSelectedTests)
+                    else
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                          borderRadius: BorderRadius.circular(theme.radius.sm),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            for (
+                              int index = 0;
+                              index < item.panelItems.length;
+                              index += 1
+                            ) ...<Widget>[
+                              if (index > 0)
+                                Divider(
+                                  height: 1,
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: theme.spacing.md,
+                                  vertical: theme.spacing.sm,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      '${index + 1}.',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    SizedBox(width: theme.spacing.sm),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
                                           Text(
-                                            _panelItemSubtitle(
-                                              item.panelItems[index],
-                                            ),
-                                            style: theme.textTheme.bodySmall
+                                            item.panelItems[index].displayTitle,
+                                            style: theme.textTheme.bodyMedium
                                                 ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                           ),
-                                      ],
+                                          if (_panelItemSubtitle(
+                                            item.panelItems[index],
+                                          ).isNotEmpty)
+                                            Text(
+                                              _panelItemSubtitle(
+                                                item.panelItems[index],
+                                              ),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),
