@@ -9079,6 +9079,34 @@
   "@tenantFacilityUnitSimilarityCheckingMessage": {
     "description": "Loading message while unit similarity is checked."
   },
+  "tenantFacilityUnitsLoadingTitle": "Loading units",
+  "@tenantFacilityUnitsLoadingTitle": {
+    "description": "Title while the units setup list is loading."
+  },
+  "tenantFacilityUnitsLoadingBody": "Fetching units for your access scope...",
+  "@tenantFacilityUnitsLoadingBody": {
+    "description": "Body while the units setup list is loading."
+  },
+  "tenantFacilityUnitOptionsLoadingTitle": "Loading options",
+  "@tenantFacilityUnitOptionsLoadingTitle": {
+    "description": "Title while unit form scope options are loading."
+  },
+  "tenantFacilityUnitOptionsLoadingBody": "Loading tenants, facilities, and departments...",
+  "@tenantFacilityUnitOptionsLoadingBody": {
+    "description": "Body while unit form scope options are loading."
+  },
+  "tenantFacilityUnitSavingTitle": "Saving unit",
+  "@tenantFacilityUnitSavingTitle": {
+    "description": "Title while a unit create/edit is saving."
+  },
+  "tenantFacilityUnitSavingBody": "Please wait while the unit is saved...",
+  "@tenantFacilityUnitSavingBody": {
+    "description": "Body while a unit create/edit is saving."
+  },
+  "tenantFacilityUnitIdLabel": "Unit ID",
+  "@tenantFacilityUnitIdLabel": {
+    "description": "Label for a unit human-friendly identifier."
+  },
   "tenantFacilityUnitNameAlreadyInUse": "This unit name is already in use",
   "@tenantFacilityUnitNameAlreadyInUse": {
     "description": "Error when an exact unit name conflict is found."
@@ -9208,6 +9236,38 @@
   "tenantFacilityRoomSimilarityCheckingMessage": "Checking for similar rooms…",
   "@tenantFacilityRoomSimilarityCheckingMessage": {
     "description": "Loading message while room similarity is checked."
+  },
+  "tenantFacilityRoomIdLabel": "Room ID",
+  "@tenantFacilityRoomIdLabel": {
+    "description": "Human-friendly room identifier label in details."
+  },
+  "tenantFacilityRoomsLoadingTitle": "Loading rooms",
+  "@tenantFacilityRoomsLoadingTitle": {
+    "description": "Title shown while the rooms setup list is loading."
+  },
+  "tenantFacilityRoomsLoadingBody": "Fetching rooms for your current scope.",
+  "@tenantFacilityRoomsLoadingBody": {
+    "description": "Body shown while the rooms setup list is loading."
+  },
+  "tenantFacilityRoomFormLoadingTitle": "Loading room options",
+  "@tenantFacilityRoomFormLoadingTitle": {
+    "description": "Title shown while room create/edit options are loading."
+  },
+  "tenantFacilityRoomFormLoadingBody": "Preparing facilities and wards for this room.",
+  "@tenantFacilityRoomFormLoadingBody": {
+    "description": "Body shown while room create/edit options are loading."
+  },
+  "tenantFacilityRoomSimilarityCheckingBody": "Reviewing similar rooms before saving.",
+  "@tenantFacilityRoomSimilarityCheckingBody": {
+    "description": "Body shown while room similarity is being checked."
+  },
+  "tenantFacilityRoomSavingTitle": "Saving room",
+  "@tenantFacilityRoomSavingTitle": {
+    "description": "Title shown while a room create/edit is saving."
+  },
+  "tenantFacilityRoomSavingBody": "Applying your room changes.",
+  "@tenantFacilityRoomSavingBody": {
+    "description": "Body shown while a room create/edit is saving."
   },
   "tenantFacilityRoomNameAlreadyInUse": "This room name is already in use",
   "@tenantFacilityRoomNameAlreadyInUse": {
@@ -9489,6 +9549,38 @@
   "tenantFacilityBedLabelLabel": "Bed label",
   "@tenantFacilityBedLabelLabel": {
     "description": "Bed label field label."
+  },
+  "tenantFacilityBedIdLabel": "Bed ID",
+  "@tenantFacilityBedIdLabel": {
+    "description": "Human-friendly bed identifier label in details."
+  },
+  "tenantFacilityCreatedAtLabel": "Created at",
+  "@tenantFacilityCreatedAtLabel": {
+    "description": "Created-at timestamp label in structure details dialogs."
+  },
+  "tenantFacilityUpdatedAtLabel": "Updated at",
+  "@tenantFacilityUpdatedAtLabel": {
+    "description": "Updated-at timestamp label in structure details dialogs."
+  },
+  "tenantFacilityBedsLoadingTitle": "Loading beds",
+  "@tenantFacilityBedsLoadingTitle": {
+    "description": "Title shown while the beds setup list is loading."
+  },
+  "tenantFacilityBedsLoadingBody": "Fetching beds for your current scope.",
+  "@tenantFacilityBedsLoadingBody": {
+    "description": "Body shown while the beds setup list is loading."
+  },
+  "tenantFacilityBedFormLoadingTitle": "Loading bed options",
+  "@tenantFacilityBedFormLoadingTitle": {
+    "description": "Title shown while bed create/edit options are loading."
+  },
+  "tenantFacilityBedFormLoadingBody": "Preparing wards and rooms for this bed.",
+  "@tenantFacilityBedFormLoadingBody": {
+    "description": "Body shown while bed create/edit options are loading."
+  },
+  "tenantFacilityBedSimilarityCheckingBody": "Reviewing similar beds before saving.",
+  "@tenantFacilityBedSimilarityCheckingBody": {
+    "description": "Body shown while bed similarity is being checked."
   },
   "tenantFacilityBedWardLabel": "Ward",
   "@tenantFacilityBedWardLabel": {

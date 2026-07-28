@@ -140,7 +140,11 @@ bool unitMatchesExcludeId(UnitProfile unit, String? excludeId) {
   if (excludeId == null || excludeId.trim().isEmpty) {
     return false;
   }
-  return unit.id == excludeId.trim();
+  final String needle = excludeId.trim();
+  return unit.id == needle ||
+      unit.mutationId == needle ||
+      (unit.resourceUuid != null && unit.resourceUuid == needle) ||
+      (unit.displayId != null && unit.displayId == needle);
 }
 
 UnitDuplicateCheckResult checkUnitDuplicates({

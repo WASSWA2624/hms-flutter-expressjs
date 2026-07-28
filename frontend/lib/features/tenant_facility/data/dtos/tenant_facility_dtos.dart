@@ -251,6 +251,10 @@ final class UnitProfileDto {
     this.facilityId,
     this.departmentId,
     required this.isActive,
+    this.resourceUuid,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -262,6 +266,12 @@ final class UnitProfileDto {
       facilityId: _optionalString(json, 'facility_id'),
       departmentId: _optionalString(json, 'department_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      resourceUuid:
+          _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
+      createdAt: _optionalDateTime(json, 'created_at'),
+      updatedAt: _optionalDateTime(json, 'updated_at'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -272,6 +282,10 @@ final class UnitProfileDto {
   final String? facilityId;
   final String? departmentId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   UnitProfile toEntity() {
@@ -282,6 +296,10 @@ final class UnitProfileDto {
       facilityId: facilityId,
       departmentId: departmentId,
       isActive: isActive,
+      resourceUuid: resourceUuid,
+      displayId: displayId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       deletedAt: deletedAt,
     );
   }
@@ -343,6 +361,10 @@ final class RoomProfileDto {
     required this.name,
     this.wardId,
     this.floor,
+    this.resourceUuid,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -354,6 +376,12 @@ final class RoomProfileDto {
       name: _requiredString(json, 'name'),
       wardId: _optionalString(json, 'ward_id'),
       floor: _optionalString(json, 'floor'),
+      resourceUuid:
+          _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
+      createdAt: _optionalDateTime(json, 'created_at'),
+      updatedAt: _optionalDateTime(json, 'updated_at'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -364,6 +392,10 @@ final class RoomProfileDto {
   final String name;
   final String? wardId;
   final String? floor;
+  final String? resourceUuid;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   RoomProfile toEntity() {
@@ -374,6 +406,10 @@ final class RoomProfileDto {
       name: name,
       wardId: wardId,
       floor: floor,
+      resourceUuid: resourceUuid,
+      displayId: displayId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       deletedAt: deletedAt,
     );
   }
@@ -388,6 +424,9 @@ final class BedProfileDto {
     required this.label,
     required this.status,
     this.roomId,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -400,6 +439,10 @@ final class BedProfileDto {
       label: _requiredString(json, 'label'),
       status: BedSetupStatusX.fromApiValue(_optionalString(json, 'status')),
       roomId: _optionalString(json, 'room_id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
+      createdAt: _optionalDateTime(json, 'created_at'),
+      updatedAt: _optionalDateTime(json, 'updated_at'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -411,6 +454,9 @@ final class BedProfileDto {
   final String label;
   final BedSetupStatus status;
   final String? roomId;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   BedProfile toEntity() {
@@ -422,6 +468,9 @@ final class BedProfileDto {
       label: label,
       status: status,
       roomId: roomId,
+      displayId: displayId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       deletedAt: deletedAt,
     );
   }

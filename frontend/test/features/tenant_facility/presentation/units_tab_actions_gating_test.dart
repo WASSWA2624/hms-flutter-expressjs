@@ -110,7 +110,15 @@ void main() {
     test('unit list uses branded loader and row-scoped mutation busy', () {
       final String sectionSource = unitSectionSource();
       expect(
-        sectionSource.contains('AppLoadingIndicator.compact()'),
+        sectionSource.contains('AppLoadingIndicator.compact('),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityUnitsLoadingTitle'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityUnitsLoadingBody'),
         isTrue,
       );
       expect(sectionSource.contains('busyItemId: _busyUnitId'), isTrue);
@@ -146,6 +154,11 @@ void main() {
         sectionSource.contains('TenantFacilityUnitsFilterKeys.active'),
         isTrue,
       );
+      expect(sectionSource.contains('optionalColumns:'), isTrue);
+      expect(
+        sectionSource.contains("id: 'department'"),
+        isTrue,
+      );
       expect(
         helpersSource.contains('abstract final class TenantFacilityUnitsFilterKeys'),
         isTrue,
@@ -154,6 +167,29 @@ void main() {
         helpersSource.contains(
           'typedef TenantFacilityUnitsListScope = TenantFacilityDepartmentsListScope',
         ),
+        isTrue,
+      );
+    });
+
+    test('unit labels never fall back to raw UUIDs', () {
+      final String sectionSource = unitSectionSource().replaceAll('\r\n', '\n');
+      expect(
+        sectionSource.contains("return _facilityNamesById[facilityId] ?? '—';"),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains("return _tenantNamesById[tenantId] ?? '—';"),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains(
+          "_departmentName(snapshot, departmentId) ??\n        '—';",
+        ),
+        isTrue,
+      );
+      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
+      expect(
+        sectionSource.contains('tenantFacilityHumanFriendlyDisplayId'),
         isTrue,
       );
     });
@@ -207,6 +243,9 @@ void main() {
       expect(formSource.contains('Positioned.fill'), isTrue);
       expect(formSource.contains('showDialogLoadingOverlay'), isTrue);
       expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(formSource.contains('body: overlayBody'), isTrue);
+      expect(formSource.contains('tenantFacilityUnitOptionsLoadingTitle'), isTrue);
+      expect(formSource.contains('tenantFacilityUnitSavingTitle'), isTrue);
       expect(
         formSource.contains('AppLoadingIndicator.compact(expand: false)'),
         isFalse,
@@ -219,12 +258,15 @@ void main() {
       expect(setupPageSource.contains('showUnitDetailsDialog'), isTrue);
       expect(setupPageSource.contains('_openUnitDetails'), isTrue);
       expect(setupPageSource.contains('lastSavedUnit'), isTrue);
-      expect(
-        File(
-          'lib/features/tenant_facility/presentation/widgets/unit_details_dialog.dart',
-        ).readAsStringSync().contains('showTenantFacilityUnitFormDialog'),
-        isTrue,
-      );
+      final String detailsSource = File(
+        'lib/features/tenant_facility/presentation/widgets/unit_details_dialog.dart',
+      ).readAsStringSync();
+      expect(detailsSource.contains('showTenantFacilityUnitFormDialog'), isTrue);
+      expect(detailsSource.contains('tenantFacilityUnitIdLabel'), isTrue);
+      expect(detailsSource.contains('tenantFacilityCreatedAtLabel'), isTrue);
+      expect(detailsSource.contains('tenantFacilityUpdatedAtLabel'), isTrue);
+      expect(detailsSource.contains('tenantFacilityHumanFriendlyDisplayId'), isTrue);
+      expect(detailsSource.contains('return departmentId;'), isFalse);
     });
   });
 }

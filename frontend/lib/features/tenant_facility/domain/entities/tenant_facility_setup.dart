@@ -267,6 +267,10 @@ final class UnitProfile {
     this.facilityId,
     this.departmentId,
     this.isActive = true,
+    this.resourceUuid,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -276,9 +280,16 @@ final class UnitProfile {
   final String? facilityId;
   final String? departmentId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 
   UnitProfile copyWith({
     String? id,
@@ -287,6 +298,10 @@ final class UnitProfile {
     String? facilityId,
     String? departmentId,
     bool? isActive,
+    String? resourceUuid,
+    String? displayId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -297,6 +312,10 @@ final class UnitProfile {
       facilityId: facilityId ?? this.facilityId,
       departmentId: departmentId ?? this.departmentId,
       isActive: isActive ?? this.isActive,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
@@ -357,6 +376,10 @@ final class RoomProfile {
     required this.name,
     this.wardId,
     this.floor,
+    this.resourceUuid,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -366,9 +389,16 @@ final class RoomProfile {
   final String name;
   final String? wardId;
   final String? floor;
+  final String? resourceUuid;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 
   RoomProfile copyWith({
     String? id,
@@ -377,6 +407,10 @@ final class RoomProfile {
     String? name,
     String? wardId,
     String? floor,
+    String? resourceUuid,
+    String? displayId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -387,6 +421,10 @@ final class RoomProfile {
       name: name ?? this.name,
       wardId: wardId ?? this.wardId,
       floor: floor ?? this.floor,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
@@ -401,6 +439,9 @@ final class BedProfile {
     required this.label,
     required this.status,
     this.roomId,
+    this.displayId,
+    this.createdAt,
+    this.updatedAt,
     this.deletedAt,
   });
 
@@ -411,6 +452,9 @@ final class BedProfile {
   final String label;
   final BedSetupStatus status;
   final String? roomId;
+  final String? displayId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
@@ -423,6 +467,9 @@ final class BedProfile {
     String? label,
     BedSetupStatus? status,
     String? roomId,
+    String? displayId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -434,6 +481,9 @@ final class BedProfile {
       label: label ?? this.label,
       status: status ?? this.status,
       roomId: roomId ?? this.roomId,
+      displayId: displayId ?? this.displayId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }

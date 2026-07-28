@@ -13,12 +13,24 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId} = require('@lib/billing/identifiers');
+  resolveEntityId,
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
+
+const normalizeUnitRecord = (unit) => {
+  if (!unit || typeof unit !== 'object') {
+    return unit;
+  }
+
+  return {
+    ...unit,
+    resource_uuid: unit.id,
+    display_id: resolvePublicIdentifier(unit.human_friendly_id) || null};
+};
 
 const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
@@ -163,7 +175,7 @@ const listUnits = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   const totalPages = Math.ceil(total / limit);
 
   return {
-    units,
+    units: units.map((unit) => normalizeUnitRecord(unit)),
     pagination: {
       page,
       limit,
@@ -184,7 +196,7 @@ const getUnitById = async (id) => {
     throw new HttpError('errors.unit.not_found', 404);
   }
 
-  return unit;
+  return normalizeUnitRecord(unit);
 };
 
 /**
@@ -214,7 +226,7 @@ const createUnit = async (data, context = {}) => {
     operation: 'created',
     name: unit.name});
 
-  return unit;
+  return normalizeUnitRecord(unit);
 };
 
 /**
@@ -256,7 +268,7 @@ const updateUnit = async (id, data, context = {}) => {
     operation: 'updated',
     name: unit.name});
 
-  return unit;
+  return normalizeUnitRecord(unit);
 };
 
 /**
@@ -330,7 +342,7 @@ const restoreUnit = async (id, context = {}) => {
     operation: 'restored',
     name: unit.name});
 
-  return unit;
+  return normalizeUnitRecord(unit);
 };
 
 module.exports = {

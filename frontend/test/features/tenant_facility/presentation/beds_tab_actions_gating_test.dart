@@ -121,7 +121,15 @@ void main() {
     test('bed list uses branded loader and row-scoped mutation busy', () {
       final String sectionSource = bedSectionSource();
       expect(
-        sectionSource.contains('AppLoadingIndicator.compact()'),
+        sectionSource.contains('AppLoadingIndicator.compact('),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityBedsLoadingTitle'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityBedsLoadingBody'),
         isTrue,
       );
       expect(sectionSource.contains('busyItemId: _busyBedId'), isTrue);
@@ -129,6 +137,28 @@ void main() {
       expect(sectionSource.contains('_runBusyBedAction'), isTrue);
       expect(sectionSource.contains('onRestore:'), isTrue);
       expect(sectionSource.contains('onPermanentDelete:'), isFalse);
+    });
+
+    test('default columns nest room/facility/tenant under label', () {
+      final String sectionSource = bedSectionSource();
+      expect(sectionSource.contains("id: 'ward'"), isTrue);
+      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
+      expect(
+        sectionSource.contains("id: 'room'"),
+        isFalse,
+      );
+      expect(
+        sectionSource.contains("id: 'facility'"),
+        isFalse,
+      );
+      expect(
+        sectionSource.contains("id: 'tenant'"),
+        isFalse,
+      );
+      expect(sectionSource.contains("?? '—'"), isTrue);
+      expect(sectionSource.contains('?? facilityId'), isFalse);
+      expect(sectionSource.contains('?? wardId'), isFalse);
+      expect(sectionSource.contains('?? roomId'), isFalse);
     });
 
     test('role-scoped columns and filters for beds', () {
@@ -210,6 +240,8 @@ void main() {
       expect(formSource.contains('AbsorbPointer'), isTrue);
       expect(formSource.contains('Positioned.fill'), isTrue);
       expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(formSource.contains('tenantFacilityBedFormLoadingTitle'), isTrue);
+      expect(formSource.contains('tenantFacilityBedFormLoadingBody'), isTrue);
       expect(
         formSource.contains(
           'if (_checkingSimilarity || _loadingOptions)\n              Padding(',
@@ -228,6 +260,10 @@ void main() {
       expect(bedDetailsSource.contains('showTenantFacilityBedFormDialog'), isTrue);
       expect(bedDetailsSource.contains('deleteBed(_bed.id)'), isTrue);
       expect(bedDetailsSource.contains('_BedFactTile'), isTrue);
+      expect(bedDetailsSource.contains('tenantFacilityBedIdLabel'), isTrue);
+      expect(bedDetailsSource.contains('tenantFacilityCreatedAtLabel'), isTrue);
+      expect(bedDetailsSource.contains('tenantFacilityUpdatedAtLabel'), isTrue);
+      expect(bedDetailsSource.contains('tenantFacilityHumanFriendlyDisplayId'), isTrue);
       expect(
         bedDetailsSource.contains('tenantFacilityEditBedDetailsAction'),
         isTrue,

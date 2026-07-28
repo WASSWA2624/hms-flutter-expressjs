@@ -60,6 +60,7 @@ void main() {
       final String sectionSource = wardSectionSource().replaceAll('\r\n', '\n');
 
       expect(sectionSource.contains('_accessibleDepartments.isNotEmpty'), isTrue);
+      expect(sectionSource.contains('_departmentsReady'), isTrue);
       expect(
         sectionSource.contains('l10n.tenantFacilityGateNeedDepartmentForWards'),
         isTrue,
@@ -111,9 +112,13 @@ void main() {
     test('ward list uses branded loader and row-scoped mutation busy', () {
       final String sectionSource = wardSectionSource();
       expect(
-        sectionSource.contains('AppLoadingIndicator.compact()'),
+        sectionSource.contains('AppLoadingIndicator.compact('),
         isTrue,
       );
+      expect(sectionSource.contains('title: l10n.commonLoadingTitle'), isTrue);
+      expect(sectionSource.contains('body: l10n.commonLoadingBody'), isTrue);
+      expect(sectionSource.contains('AppWorkspaceStatePanel.error('), isTrue);
+      expect(sectionSource.contains('commonRetryActionLabel'), isTrue);
       expect(sectionSource.contains('busyItemId: _busyWardId'), isTrue);
       expect(sectionSource.contains('itemIdBuilder:'), isTrue);
       expect(sectionSource.contains('_runBusyWardAction'), isTrue);
@@ -161,6 +166,28 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('wards nest department/facility/tenant under name with type default column', () {
+      final String sectionSource = wardSectionSource().replaceAll('\r\n', '\n');
+      expect(sectionSource.contains("id: 'type'"), isTrue);
+      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
+      expect(
+        sectionSource.contains("id: 'department'"),
+        isFalse,
+      );
+      expect(
+        sectionSource.contains("id: 'facility'"),
+        isFalse,
+      );
+      expect(
+        sectionSource.contains("id: 'tenant'"),
+        isFalse,
+      );
+      expect(sectionSource.contains("?? '—'"), isTrue);
+      expect(sectionSource.contains('?? facilityId'), isFalse);
+      expect(sectionSource.contains('?? tenantId'), isFalse);
+      expect(sectionSource.contains('??\n        departmentId'), isFalse);
     });
 
     test('role-aware create pickers and optional department', () {
@@ -217,6 +244,7 @@ void main() {
       expect(formSource.contains('Positioned.fill'), isTrue);
       expect(formSource.contains('showLoadingOverlay'), isTrue);
       expect(formSource.contains('AppLoadingIndicator('), isTrue);
+      expect(formSource.contains('body: overlayBody'), isTrue);
       expect(
         formSource.contains(
           'const AppLoadingIndicator.compact(expand: false),\n                    SizedBox(width: theme.spacing.sm),',
@@ -245,8 +273,10 @@ void main() {
         detailsSource.contains('tenantFacilityDeleteWardDetailsAction'),
         isTrue,
       );
+      expect(detailsSource.contains('return departmentId;'), isFalse);
       final String sectionSource = wardSectionSource();
       expect(sectionSource.contains('onRowSelected:'), isTrue);
+      expect(setupPageSource.contains('departmentName: departmentName'), isTrue);
     });
   });
 }

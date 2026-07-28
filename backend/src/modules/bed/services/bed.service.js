@@ -10,6 +10,7 @@
 const bedRepository = require('@repositories/bed/bed.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identifier-resolution');
 const {
   resolveModelIdByIdentifier,
@@ -17,6 +18,18 @@ const {
 } = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
+
+const normalizeBedRecord = (bed) => {
+  if (!bed || typeof bed !== 'object') {
+    return bed;
+  }
+
+  return {
+    ...bed,
+    resource_uuid: bed.id,
+    display_id: resolvePublicIdentifier(bed.human_friendly_id) || null,
+  };
+};
 
 const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
@@ -238,7 +251,9 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
     bedRepository.count(repoFilters, listOptions),
   ]);
 
-  const mappedBeds = includeOccupancy ? beds.map(mapOccupancyBed) : beds;
+  const mappedBeds = (includeOccupancy ? beds.map(mapOccupancyBed) : beds).map(
+    normalizeBedRecord
+  );
 
   return buildBedListResult(mappedBeds, page, limit, total);
 };
@@ -257,7 +272,7 @@ const getBedById = async (id) => {
     throw new HttpError('errors.bed.not_found', 404);
   }
 
-  return bed;
+  return normalizeBedRecord(bed);
 };
 
 /**
@@ -310,7 +325,7 @@ const createBed = async (data, context = {}) => {
     room_id: bed.room_id
   });
 
-  return bed;
+  return normalizeBedRecord(bed);
 };
 
 /**
@@ -378,7 +393,7 @@ const updateBed = async (id, data, context = {}) => {
     room_id: bed.room_id
   });
 
-  return bed;
+  return normalizeBedRecord(bed);
 };
 
 /**
@@ -478,7 +493,7 @@ const restoreBed = async (id, context = {}) => {
     room_id: bed.room_id,
   });
 
-  return bed;
+  return normalizeBedRecord(bed);
 };
 
 module.exports = {

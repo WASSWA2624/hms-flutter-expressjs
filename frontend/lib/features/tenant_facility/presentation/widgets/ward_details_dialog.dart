@@ -160,14 +160,14 @@ class _WardDetailsDialogState extends ConsumerState<_WardDetailsDialog> {
     }
     final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
     if (snapshot == null) {
-      return departmentId;
+      return _emptyValue;
     }
     for (final DepartmentProfile department in snapshot.departments) {
       if (department.id == departmentId) {
         return department.name;
       }
     }
-    return departmentId;
+    return _emptyValue;
   }
 
   WardProfile? _findWardInSetup() {

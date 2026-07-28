@@ -14,6 +14,7 @@ const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identif
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
+const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -22,6 +23,18 @@ const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.TENANT_ADMIN,
   ROLES.NURSE
 ]);
+
+const normalizeRoomRecord = (room) => {
+  if (!room || typeof room !== 'object') {
+    return room;
+  }
+
+  return {
+    ...room,
+    resource_uuid: room.id,
+    display_id: resolvePublicIdentifier(room.human_friendly_id) || null
+  };
+};
 
 const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
   await publishCrudRealtimeEvent({
@@ -127,7 +140,12 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
     roomRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
     roomRepository.count(repoFilters, listOptions)]);
 
-  return buildRoomListResult(rooms, page, limit, total);
+  return buildRoomListResult(
+    rooms.map((room) => normalizeRoomRecord(room)),
+    page,
+    limit,
+    total
+  );
 };
 
 /**
@@ -144,7 +162,7 @@ const getRoomById = async (id) => {
     throw new HttpError('errors.room.not_found', 404);
   }
 
-  return room;
+  return normalizeRoomRecord(room);
 };
 
 /**
@@ -193,7 +211,7 @@ const createRoom = async (data, context = {}) => {
     ward_id: room.ward_id
   });
 
-  return room;
+  return normalizeRoomRecord(room);
 };
 
 /**
@@ -256,7 +274,7 @@ const updateRoom = async (id, data, context = {}) => {
     ward_id: room.ward_id
   });
 
-  return room;
+  return normalizeRoomRecord(room);
 };
 
 /**
@@ -344,7 +362,7 @@ const restoreRoom = async (id, context = {}) => {
     name: room.name,
     ward_id: room.ward_id});
 
-  return room;
+  return normalizeRoomRecord(room);
 };
 
 module.exports = {

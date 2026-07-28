@@ -13210,6 +13210,48 @@ abstract class AppLocalizations {
   /// **'Checking for similar units…'**
   String get tenantFacilityUnitSimilarityCheckingMessage;
 
+  /// Title while the units setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading units'**
+  String get tenantFacilityUnitsLoadingTitle;
+
+  /// Body while the units setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching units for your access scope...'**
+  String get tenantFacilityUnitsLoadingBody;
+
+  /// Title while unit form scope options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading options'**
+  String get tenantFacilityUnitOptionsLoadingTitle;
+
+  /// Body while unit form scope options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading tenants, facilities, and departments...'**
+  String get tenantFacilityUnitOptionsLoadingBody;
+
+  /// Title while a unit create/edit is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving unit'**
+  String get tenantFacilityUnitSavingTitle;
+
+  /// Body while a unit create/edit is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while the unit is saved...'**
+  String get tenantFacilityUnitSavingBody;
+
+  /// Label for a unit human-friendly identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit ID'**
+  String get tenantFacilityUnitIdLabel;
+
   /// Error when an exact unit name conflict is found.
   ///
   /// In en, this message translates to:
@@ -13389,6 +13431,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking for similar rooms…'**
   String get tenantFacilityRoomSimilarityCheckingMessage;
+
+  /// Human-friendly room identifier label in details.
+  ///
+  /// In en, this message translates to:
+  /// **'Room ID'**
+  String get tenantFacilityRoomIdLabel;
+
+  /// Title shown while the rooms setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading rooms'**
+  String get tenantFacilityRoomsLoadingTitle;
+
+  /// Body shown while the rooms setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching rooms for your current scope.'**
+  String get tenantFacilityRoomsLoadingBody;
+
+  /// Title shown while room create/edit options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading room options'**
+  String get tenantFacilityRoomFormLoadingTitle;
+
+  /// Body shown while room create/edit options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing facilities and wards for this room.'**
+  String get tenantFacilityRoomFormLoadingBody;
+
+  /// Body shown while room similarity is being checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing similar rooms before saving.'**
+  String get tenantFacilityRoomSimilarityCheckingBody;
+
+  /// Title shown while a room create/edit is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving room'**
+  String get tenantFacilityRoomSavingTitle;
+
+  /// Body shown while a room create/edit is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying your room changes.'**
+  String get tenantFacilityRoomSavingBody;
 
   /// Error when an exact room name conflict is found.
   ///
@@ -13803,6 +13893,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bed label'**
   String get tenantFacilityBedLabelLabel;
+
+  /// Human-friendly bed identifier label in details.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed ID'**
+  String get tenantFacilityBedIdLabel;
+
+  /// Created-at timestamp label in structure details dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Created at'**
+  String get tenantFacilityCreatedAtLabel;
+
+  /// Updated-at timestamp label in structure details dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated at'**
+  String get tenantFacilityUpdatedAtLabel;
+
+  /// Title shown while the beds setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading beds'**
+  String get tenantFacilityBedsLoadingTitle;
+
+  /// Body shown while the beds setup list is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching beds for your current scope.'**
+  String get tenantFacilityBedsLoadingBody;
+
+  /// Title shown while bed create/edit options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading bed options'**
+  String get tenantFacilityBedFormLoadingTitle;
+
+  /// Body shown while bed create/edit options are loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing wards and rooms for this bed.'**
+  String get tenantFacilityBedFormLoadingBody;
+
+  /// Body shown while bed similarity is being checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing similar beds before saving.'**
+  String get tenantFacilityBedSimilarityCheckingBody;
 
   /// Bed ward selection field label.
   ///

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
@@ -163,8 +164,7 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
         }
       }
     }
-    final String wardId = _bed.wardId.trim();
-    return wardId.isEmpty ? _emptyValue : wardId;
+    return _emptyValue;
   }
 
   String _resolveRoomName() {
@@ -184,7 +184,17 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
         }
       }
     }
-    return roomId;
+    return _emptyValue;
+  }
+
+  String _formatTimestamp(BuildContext context, DateTime? value) {
+    if (value == null) {
+      return _emptyValue;
+    }
+    return AppFormatters.dateTime(
+      value.toLocal(),
+      Localizations.localeOf(context),
+    );
   }
 
   BedProfile? _findBedInSetup() {
@@ -300,6 +310,10 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
     final String? facilityName = _resolveFacilityName();
     final String wardName = _resolveWardName();
     final String roomName = _resolveRoomName();
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      _bed.displayId,
+      opaqueId: _bed.id,
+    );
 
     final List<_BedDetailFact> facts = <_BedDetailFact>[
       _BedDetailFact(
@@ -307,6 +321,12 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
         value: _bed.label,
         icon: Icons.bed_outlined,
       ),
+      if (displayId != null)
+        _BedDetailFact(
+          label: l10n.tenantFacilityBedIdLabel,
+          value: displayId,
+          icon: Icons.tag_outlined,
+        ),
       _BedDetailFact(
         label: l10n.tenantFacilityBedWardLabel,
         value: wardName,
@@ -332,6 +352,18 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
           label: l10n.profileFacilityLabel,
           value: facilityName,
           icon: Icons.local_hospital_outlined,
+        ),
+      if (_bed.createdAt != null)
+        _BedDetailFact(
+          label: l10n.tenantFacilityCreatedAtLabel,
+          value: _formatTimestamp(context, _bed.createdAt),
+          icon: Icons.schedule_outlined,
+        ),
+      if (_bed.updatedAt != null)
+        _BedDetailFact(
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          value: _formatTimestamp(context, _bed.updatedAt),
+          icon: Icons.update_outlined,
         ),
     ];
 
@@ -393,6 +425,14 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
                               label: statusLabel,
                               tone: _statusTone(),
                             ),
+                            if (displayId != null)
+                              Text(
+                                displayId,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             Text(
                               wardName,
                               style: theme.textTheme.labelLarge?.copyWith(

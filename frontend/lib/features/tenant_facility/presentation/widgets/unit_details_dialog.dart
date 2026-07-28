@@ -6,9 +6,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -153,14 +155,14 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
     }
     final FacilitySetupSnapshot? snapshot = _effectiveSnapshot;
     if (snapshot == null) {
-      return departmentId;
+      return _emptyValue;
     }
     for (final DepartmentProfile department in snapshot.departments) {
       if (department.id == departmentId) {
         return department.name;
       }
     }
-    return departmentId;
+    return _emptyValue;
   }
 
   UnitProfile? _findUnitInSetup() {
@@ -251,7 +253,7 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
         onConfirm: () async {
           final bool deleted = await ref
               .read(tenantFacilitySetupSubmissionProvider.notifier)
-              .deleteUnit(_unit.id);
+              .deleteUnit(_unit.mutationId);
           if (deleted) {
             return null;
           }
@@ -276,6 +278,17 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
     final String statusLabel = _statusLabel(l10n);
     final String? facilityName = _resolveFacilityName();
     final String departmentName = _resolveDepartmentName();
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      _unit.displayId,
+      opaqueId: _unit.resourceUuid ?? _unit.id,
+    );
+    final Locale locale = Localizations.localeOf(context);
+    final String? createdAt = _unit.createdAt == null
+        ? null
+        : AppFormatters.dateTime(_unit.createdAt!, locale);
+    final String? updatedAt = _unit.updatedAt == null
+        ? null
+        : AppFormatters.dateTime(_unit.updatedAt!, locale);
 
     final List<_UnitDetailFact> facts = <_UnitDetailFact>[
       _UnitDetailFact(
@@ -293,6 +306,12 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
         value: statusLabel,
         icon: Icons.toggle_on_outlined,
       ),
+      if (displayId != null)
+        _UnitDetailFact(
+          label: l10n.tenantFacilityUnitIdLabel,
+          value: displayId,
+          icon: Icons.tag_outlined,
+        ),
       _UnitDetailFact(
         label: l10n.profileTenantLabel,
         value: _resolveTenantName(),
@@ -303,6 +322,18 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
           label: l10n.profileFacilityLabel,
           value: facilityName,
           icon: Icons.local_hospital_outlined,
+        ),
+      if (createdAt != null)
+        _UnitDetailFact(
+          label: l10n.tenantFacilityCreatedAtLabel,
+          value: createdAt,
+          icon: Icons.schedule_outlined,
+        ),
+      if (updatedAt != null)
+        _UnitDetailFact(
+          label: l10n.tenantFacilityUpdatedAtLabel,
+          value: updatedAt,
+          icon: Icons.update_outlined,
         ),
     ];
 
@@ -370,6 +401,14 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            if (displayId != null)
+                              Text(
+                                displayId,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                           ],

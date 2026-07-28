@@ -7151,6 +7151,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking for similar units…';
 
   @override
+  String get tenantFacilityUnitsLoadingTitle => 'Loading units';
+
+  @override
+  String get tenantFacilityUnitsLoadingBody =>
+      'Fetching units for your access scope...';
+
+  @override
+  String get tenantFacilityUnitOptionsLoadingTitle => 'Loading options';
+
+  @override
+  String get tenantFacilityUnitOptionsLoadingBody =>
+      'Loading tenants, facilities, and departments...';
+
+  @override
+  String get tenantFacilityUnitSavingTitle => 'Saving unit';
+
+  @override
+  String get tenantFacilityUnitSavingBody =>
+      'Please wait while the unit is saved...';
+
+  @override
+  String get tenantFacilityUnitIdLabel => 'Unit ID';
+
+  @override
   String get tenantFacilityUnitNameAlreadyInUse =>
       'This unit name is already in use';
 
@@ -7255,6 +7279,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tenantFacilityRoomSimilarityCheckingMessage =>
       'Checking for similar rooms…';
+
+  @override
+  String get tenantFacilityRoomIdLabel => 'Room ID';
+
+  @override
+  String get tenantFacilityRoomsLoadingTitle => 'Loading rooms';
+
+  @override
+  String get tenantFacilityRoomsLoadingBody =>
+      'Fetching rooms for your current scope.';
+
+  @override
+  String get tenantFacilityRoomFormLoadingTitle => 'Loading room options';
+
+  @override
+  String get tenantFacilityRoomFormLoadingBody =>
+      'Preparing facilities and wards for this room.';
+
+  @override
+  String get tenantFacilityRoomSimilarityCheckingBody =>
+      'Reviewing similar rooms before saving.';
+
+  @override
+  String get tenantFacilityRoomSavingTitle => 'Saving room';
+
+  @override
+  String get tenantFacilityRoomSavingBody => 'Applying your room changes.';
 
   @override
   String get tenantFacilityRoomNameAlreadyInUse =>
@@ -7477,6 +7528,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityBedLabelLabel => 'Bed label';
+
+  @override
+  String get tenantFacilityBedIdLabel => 'Bed ID';
+
+  @override
+  String get tenantFacilityCreatedAtLabel => 'Created at';
+
+  @override
+  String get tenantFacilityUpdatedAtLabel => 'Updated at';
+
+  @override
+  String get tenantFacilityBedsLoadingTitle => 'Loading beds';
+
+  @override
+  String get tenantFacilityBedsLoadingBody =>
+      'Fetching beds for your current scope.';
+
+  @override
+  String get tenantFacilityBedFormLoadingTitle => 'Loading bed options';
+
+  @override
+  String get tenantFacilityBedFormLoadingBody =>
+      'Preparing wards and rooms for this bed.';
+
+  @override
+  String get tenantFacilityBedSimilarityCheckingBody =>
+      'Reviewing similar beds before saving.';
 
   @override
   String get tenantFacilityBedWardLabel => 'Ward';
