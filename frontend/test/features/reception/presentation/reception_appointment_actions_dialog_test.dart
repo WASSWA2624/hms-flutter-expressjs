@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
 
@@ -69,10 +70,16 @@ void main() {
           find.byType(OpdAppointmentActionsDialog),
         );
     expect(hub.actionRequirement, same(receptionFrontDeskWriteRequirement));
+    expect(hub.omitPrimaryAction, isTrue);
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('Scheduled'), findsWidgets);
+    // Next-step guidance remains; Check in itself stays on the worklist only.
     expect(find.text('Start OPD encounter'), findsWidgets);
+    expect(
+      find.widgetWithText(AppButton, 'Start OPD encounter'),
+      findsNothing,
+    );
     expect(find.text('Queue'), findsNothing);
     expect(find.text('Reschedule'), findsOneWidget);
     expect(find.text('Cancel appointment'), findsOneWidget);

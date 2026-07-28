@@ -75,7 +75,7 @@ class _ReceptionPaymentGateDetailDialog extends StatelessWidget {
       ),
       actions: <Widget>[
         AppButton.secondary(
-          label: context.l10n.commonCancelActionLabel,
+          label: context.l10n.commonCloseActionLabel,
           leadingIcon: AppActionIcons.cancel,
           onPressed: () => Navigator.of(context).maybePop(),
         ),

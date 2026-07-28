@@ -322,14 +322,11 @@ void main() {
   ) async {
     await _pumpReportsWorkspace(tester, repository: repository);
 
-    await tester.tap(
-      find
-          .descendant(
-            of: find.byType(AppListTable<ReportsWorkspaceItem>).first,
-            matching: find.text('Daily census'),
-          )
-          .first,
-    );
+    final AppListTable<ReportsWorkspaceItem> table = _itemsTable(tester);
+    expect(table.onRowSelected, isNotNull);
+    table.onRowSelected!(_definitionItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));

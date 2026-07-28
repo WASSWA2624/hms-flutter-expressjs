@@ -587,13 +587,11 @@ class _ReportDetailPanel extends ConsumerWidget {
     required this.item,
     required this.canWrite,
     required this.canExport,
-    this.isDialog = false,
   });
 
   final ReportsWorkspaceItem item;
   final bool canWrite;
   final bool canExport;
-  final bool isDialog;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -641,7 +639,7 @@ class _ReportDetailPanel extends ConsumerWidget {
           kind: AppReportActionKind.preview,
           icon: Icons.cancel_outlined,
           enabled: !isSaving,
-          onPressed: () => _confirmCancelRun(context, ref, isDialog: isDialog),
+          onPressed: () => _confirmCancelRun(context, ref, isDialog: true),
         ),
       if (canExport &&
           item.downloadAvailable &&
@@ -659,33 +657,23 @@ class _ReportDetailPanel extends ConsumerWidget {
         ),
     ];
 
-    final Widget preview = AppReportPreviewPanel(
-      title: item.title,
-      selectable: true,
-      child: _ReportPreviewBody(item: item),
-    );
-
-    if (isDialog) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (actions.isNotEmpty) ...<Widget>[
-            Wrap(
-              spacing: Theme.of(context).spacing.sm,
-              runSpacing: Theme.of(context).spacing.sm,
-              children: actions,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
-          preview,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (actions.isNotEmpty) ...<Widget>[
+          Wrap(
+            spacing: Theme.of(context).spacing.sm,
+            runSpacing: Theme.of(context).spacing.sm,
+            children: actions,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
         ],
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.reportsPreviewTitle,
-      actions: actions,
-      child: preview,
+        AppReportPreviewPanel(
+          title: item.title,
+          selectable: true,
+          child: _ReportPreviewBody(item: item),
+        ),
+      ],
     );
   }
 }
@@ -694,12 +682,10 @@ class _ComplianceDetailPanel extends ConsumerWidget {
   const _ComplianceDetailPanel({
     required this.item,
     required this.canExport,
-    this.isDialog = false,
   });
 
   final ComplianceLogItem item;
   final bool canExport;
-  final bool isDialog;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -720,33 +706,23 @@ class _ComplianceDetailPanel extends ConsumerWidget {
         ),
     ];
 
-    final Widget preview = AppReportPreviewPanel(
-      title: item.title,
-      selectable: true,
-      child: _CompliancePreviewBody(item: item),
-    );
-
-    if (isDialog) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (actions.isNotEmpty) ...<Widget>[
-            Wrap(
-              spacing: Theme.of(context).spacing.sm,
-              runSpacing: Theme.of(context).spacing.sm,
-              children: actions,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
-          preview,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (actions.isNotEmpty) ...<Widget>[
+          Wrap(
+            spacing: Theme.of(context).spacing.sm,
+            runSpacing: Theme.of(context).spacing.sm,
+            children: actions,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
         ],
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.reportsComplianceDetailTitle,
-      actions: actions,
-      child: preview,
+        AppReportPreviewPanel(
+          title: item.title,
+          selectable: true,
+          child: _CompliancePreviewBody(item: item),
+        ),
+      ],
     );
   }
 }
@@ -1208,13 +1184,16 @@ Future<void> openReportDetailDialog(
   ReportsWorkspaceItem item,
   AppAccessPolicy policy,
 ) async {
-  ref.read(reportsWorkspaceControllerProvider.notifier).selectItem(item);
   if (!context.mounted) {
     return;
   }
 
   final AppLocalizations l10n = context.l10n;
-  await showAppDialog<void>(
+  final bool canWrite = canWriteReports(policy);
+  final bool canExport = canExportEvidence(policy);
+  // Push the dialog before selectItem rebuilds the workspace tree so the
+  // calling context stays mounted long enough to open the route.
+  final Future<void> dialogFuture = showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
       title: Text(l10n.reportsPreviewTitle),
@@ -1223,12 +1202,13 @@ Future<void> openReportDetailDialog(
       maxWidth: 960,
       content: _ReportDetailPanel(
         item: item,
-        canWrite: canWriteReports(policy),
-        canExport: canExportEvidence(policy),
-        isDialog: true,
+        canWrite: canWrite,
+        canExport: canExport,
       ),
     ),
   );
+  ref.read(reportsWorkspaceControllerProvider.notifier).selectItem(item);
+  await dialogFuture;
 }
 
 Future<void> openComplianceDetailDialog(
@@ -1238,15 +1218,13 @@ Future<void> openComplianceDetailDialog(
   ComplianceLogItem item,
   AppAccessPolicy policy,
 ) async {
-  ref
-      .read(reportsWorkspaceControllerProvider.notifier)
-      .selectComplianceLog(item);
   if (!context.mounted) {
     return;
   }
 
   final AppLocalizations l10n = context.l10n;
-  await showAppDialog<void>(
+  final bool canExport = canExportEvidence(policy);
+  final Future<void> dialogFuture = showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
       title: Text(l10n.reportsComplianceDetailTitle),
@@ -1255,11 +1233,14 @@ Future<void> openComplianceDetailDialog(
       maxWidth: 960,
       content: _ComplianceDetailPanel(
         item: item,
-        canExport: canExportEvidence(policy),
-        isDialog: true,
+        canExport: canExport,
       ),
     ),
   );
+  ref
+      .read(reportsWorkspaceControllerProvider.notifier)
+      .selectComplianceLog(item);
+  await dialogFuture;
 }
 
 Future<void> _handleReportNextAction(
@@ -1731,28 +1712,6 @@ List<AppSelectOption<String>> _frequencyOptions(
       label: l10n.reportsFrequencyMonthly,
     ),
   ];
-}
-
-IconData _summaryIcon(String id) {
-  if (id.contains('definition')) return Icons.article_outlined;
-  if (id.contains('schedule')) return Icons.schedule_outlined;
-  if (id.contains('widget')) return Icons.dashboard_customize_outlined;
-  if (id.contains('kpi')) return Icons.bar_chart_outlined;
-  if (id.contains('activity')) return Icons.insights_outlined;
-  return Icons.pending_actions_outlined;
-}
-
-AppWorkspaceStatusTone _summaryTone(String id) {
-  if (id.contains('critical') || id.contains('failed')) {
-    return AppWorkspaceStatusTone.error;
-  }
-  if (id.contains('queued') || id.contains('due')) {
-    return AppWorkspaceStatusTone.warning;
-  }
-  if (id.contains('definition') || id.contains('widget')) {
-    return AppWorkspaceStatusTone.info;
-  }
-  return AppWorkspaceStatusTone.neutral;
 }
 
 IconData _panelIcon(ReportsWorkspacePanel panel) {

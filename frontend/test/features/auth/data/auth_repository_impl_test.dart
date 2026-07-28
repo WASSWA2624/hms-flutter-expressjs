@@ -109,6 +109,22 @@ void main() {
         failure: (_) => fail('expected success'),
       );
     });
+
+    test('register omits optional tenant_name when not provided', () async {
+      final result = await repository.register(
+        email: 'admin@example.com',
+        password: 'Password1!',
+        facilityName: 'Mirembe Clinic',
+        adminName: 'Jane Doe',
+        facilityType: 'CLINIC',
+        phone: '+256700000000',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(apiClient.lastPostUri, ApiEndpoints.auth(AuthEndpoint.register));
+      expect(apiClient.lastPostData?['facility_name'], 'Mirembe Clinic');
+      expect(apiClient.lastPostData?.containsKey('tenant_name'), isFalse);
+    });
   });
 }
 

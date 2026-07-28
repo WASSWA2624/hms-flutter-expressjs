@@ -29,8 +29,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
-      expect(find.text(l10n.authTenantNameLabel), findsNothing);
-      expect(find.text(l10n.authFacilityNameLabel), findsOneWidget);
+      expect(find.textContaining(l10n.authTenantNameLabel), findsNothing);
+      expect(find.textContaining(l10n.authFacilityNameLabel), findsOneWidget);
       expect(find.text('Create facility account'), findsNothing);
     },
   );
@@ -153,19 +153,20 @@ void main() {
       find.widgetWithText(FilledButton, l10n.authRegisterActionLabel),
       findsOneWidget,
     );
-    expect(find.text(l10n.authTenantNameLabel), findsNothing);
+    expect(find.textContaining(l10n.authTenantNameLabel), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
 
 Future<void> _fillRequiredFields(WidgetTester tester) async {
   final editable = find.byType(EditableText);
-  // admin, email, password, facility, phone national digits, location
+  // admin, email, password, facility, (facility-type select), phone, location
+  expect(editable, findsNWidgets(7));
   await tester.enterText(editable.at(0), 'Jane Admin');
   await tester.enterText(editable.at(1), 'admin@example.com');
   await tester.enterText(editable.at(2), 'Password1!');
   await tester.enterText(editable.at(3), 'Mirembe Clinic');
-  await tester.enterText(editable.at(4), '700000000');
+  await tester.enterText(editable.at(5), '700000000');
   await tester.pump();
 }
 
@@ -181,7 +182,7 @@ Future<void> _pumpRegister(
   addTearDown(tester.view.resetPhysicalSize);
 
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
+    overrides: [
       authRepositoryProvider.overrideWithValue(repository),
     ],
   );

@@ -78,12 +78,16 @@ void main() {
 
       expect(find.byType(ResetPasswordPage), findsNothing);
       expect(find.byType(LoginPage), findsOneWidget);
-      expect(find.text(l10n.authResetPasswordCompletedTitle), findsOneWidget);
-      expect(find.text(l10n.authResetPasswordCompletedBody), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.textContaining(l10n.authResetPasswordCompletedTitle),
+        findsOneWidget,
+      );
       expect(
         find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
         findsOneWidget,
       );
+      expect(find.text(l10n.authResetPasswordTitle), findsNothing);
       expect(repository.resetPasswordCalls, 1);
       expect(repository.lastEmail, 'nurse@example.com');
       expect(repository.lastCode, '123456');
@@ -110,7 +114,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LoginPage), findsOneWidget);
-      expect(find.text(l10n.authResetPasswordCompletedTitle), findsOneWidget);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.textContaining(l10n.authResetPasswordCompletedTitle),
+        findsOneWidget,
+      );
       expect(repository.resetPasswordCalls, 1);
       expect(repository.lastToken, 'link-token-abc');
       expect(repository.lastEmail, isNull);
@@ -231,33 +239,33 @@ Future<void> _pumpResetPassword(
               return LoginPage(from: state.uri.queryParameters['from']);
             },
           ),
-          GoRoute(
-            path: '/forgot-password',
-            builder: (BuildContext context, _) {
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Text('forgot'),
-                      TextButton(
-                        onPressed: () => context.go('/reset-password'),
-                        child: const Text('back-reset'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
         ],
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (BuildContext context, _) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text('forgot'),
+                  TextButton(
+                    onPressed: () => context.go('/reset-password'),
+                    child: const Text('back-reset'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     ],
   );
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         authRepositoryProvider.overrideWithValue(repository),
       ],
       child: MaterialApp.router(
@@ -347,11 +355,11 @@ final class _ResetPasswordRepository implements AuthRepository {
   Future<Result<void>> register({
     required String email,
     required String password,
-    required String tenantName,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    String? tenantName,
     String? location,
     String? interests,
   }) {

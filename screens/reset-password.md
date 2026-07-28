@@ -48,16 +48,16 @@ Reachable nested surface after a successful reset: `/login` (success banner + si
 
 ### Reachable after successful reset — `/login`
 
-- **Success banner** (`authResetPasswordCompletedTitle` / `Body`)
-  - Location: Top of login form (one-shot local flag after reading `passwordResetCompleted`).
-  - Immediate result: Confirms password changed; user signs in on the same surface (no empty intermediate shell).
+- **Success SnackBar** (`authResetPasswordCompletedTitle` / `Body`)
+  - Location: One-shot on `/login` after reading `passwordResetCompleted` (no intermediate hub).
+  - Immediate result: Confirms password changed; user signs in on the login form.
 
 ### States
 
 - Loading: primary button shows submitting; fields and secondary links disabled.
 - Validation: required / min-length / mismatch / invalid code before submit; inline field errors.
 - Error / retry: failure banner on the form; edit fields and submit again.
-- Success: navigation to `/login` with success banner (no password-updated hub).
+- Success: navigation to `/login` with a one-shot success SnackBar (no password-updated hub).
 - Empty / no-results: N/A (credential form). Unauthorized chrome: N/A (public).
 
 ---
@@ -67,7 +67,7 @@ Reachable nested surface after a successful reset: `/login` (success banner + si
 - Widget tests in `frontend/test/features/auth/presentation/pages/reset_password_page_test.dart` prove:
   - Code mode shows one **Reset password** primary, **Forgot password?**, and **Back to sign in**; no **Password updated** hub / **Enter reset code**.
   - Link-token mode omits email/code and **Forgot password?**; still one primary + **Back to sign in**.
-  - Successful reset opens `/login` with the success banner (no reset success hub).
+  - Successful reset opens `/login` with the success SnackBar (no reset success hub).
   - Validation failure stays on `/reset-password`.
   - Invalid token / API failure keeps the form and shows the failure message.
   - Narrow viewport + dark theme still show the primary reset control.

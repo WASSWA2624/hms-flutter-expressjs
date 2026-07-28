@@ -10,6 +10,7 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_visibility_memory.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -2703,12 +2704,12 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    // Content-tight rows: grow with the tallest cell; wrap without a fixed cap.
+    // Rows grow with wrapped cell content; min height keeps comfortable padding.
     final double rowMinHeight = widget.dense
-        ? 36
+        ? 44
         : widget.compact
-        ? 32
-        : 36;
+        ? 48
+        : 52;
     const double rowMaxHeight = double.infinity;
     final int minRowCount = widget.padEmptyRows
         ? _minTableRowCount
@@ -3094,19 +3095,238 @@ class _AppListTableCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final TextStyle style = DefaultTextStyle.of(context).style;
     // Tight width so text wraps at the column edge; row height then follows
     // the tallest cell via DataTable's unbounded dataRowMaxHeight.
     return SizedBox(
       width: width,
-      child: DefaultTextStyle(
-        style: style,
-        overflow: TextOverflow.visible,
-        textAlign: numeric ? TextAlign.right : TextAlign.start,
-        child: child,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+        child: AppListTableTextPolicy(
+          child: DefaultTextStyle(
+            style: style,
+            overflow: TextOverflow.visible,
+            textAlign: numeric ? TextAlign.right : TextAlign.start,
+            child: _AppListTableWrappingScope(child: child),
+          ),
+        ),
       ),
     );
   }
+}
+
+/// Rewrites nested [Text]/[RichText] so explicit maxLines/ellipsis in cell
+/// builders cannot prevent wrapping inside the table.
+class _AppListTableWrappingScope extends StatelessWidget {
+  const _AppListTableWrappingScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => _enableCellTextWrapping(child);
+}
+
+Widget _enableCellTextWrapping(Widget widget) {
+  if (widget is Text) {
+    return Text.rich(
+      widget.textSpan ?? TextSpan(text: widget.data, style: widget.style),
+      key: widget.key,
+      style: widget.style,
+      strutStyle: widget.strutStyle,
+      textAlign: widget.textAlign,
+      textDirection: widget.textDirection,
+      locale: widget.locale,
+      overflow: TextOverflow.visible,
+      textScaler: widget.textScaler,
+      semanticsLabel: widget.semanticsLabel,
+      textWidthBasis: widget.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior,
+      selectionColor: widget.selectionColor,
+    );
+  }
+
+  if (widget is RichText) {
+    return RichText(
+      key: widget.key,
+      text: widget.text,
+      textAlign: widget.textAlign,
+      textDirection: widget.textDirection,
+      overflow: TextOverflow.visible,
+      textScaler: widget.textScaler,
+      locale: widget.locale,
+      strutStyle: widget.strutStyle,
+      textWidthBasis: widget.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior,
+      selectionColor: widget.selectionColor,
+    );
+  }
+
+  if (widget is Padding) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return Padding(
+      key: widget.key,
+      padding: widget.padding,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is Align) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return Align(
+      key: widget.key,
+      alignment: widget.alignment,
+      widthFactor: widget.widthFactor,
+      heightFactor: widget.heightFactor,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is SizedBox) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return SizedBox(
+      key: widget.key,
+      width: widget.width,
+      height: widget.height,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is ConstrainedBox) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return ConstrainedBox(
+      key: widget.key,
+      constraints: widget.constraints,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is ColoredBox) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return ColoredBox(
+      key: widget.key,
+      color: widget.color,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is DecoratedBox) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return DecoratedBox(
+      key: widget.key,
+      decoration: widget.decoration,
+      position: widget.position,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  if (widget is Flexible) {
+    return Flexible(
+      key: widget.key,
+      flex: widget.flex,
+      fit: widget.fit,
+      child: _enableCellTextWrapping(widget.child),
+    );
+  }
+
+  if (widget is Expanded) {
+    return Expanded(
+      key: widget.key,
+      flex: widget.flex,
+      child: _enableCellTextWrapping(widget.child),
+    );
+  }
+
+  if (widget is Column) {
+    return Column(
+      key: widget.key,
+      mainAxisAlignment: widget.mainAxisAlignment,
+      mainAxisSize: widget.mainAxisSize,
+      crossAxisAlignment: widget.crossAxisAlignment,
+      textDirection: widget.textDirection,
+      verticalDirection: widget.verticalDirection,
+      textBaseline: widget.textBaseline,
+      children: widget.children.map(_enableCellTextWrapping).toList(),
+    );
+  }
+
+  if (widget is Row) {
+    return Row(
+      key: widget.key,
+      mainAxisAlignment: widget.mainAxisAlignment,
+      mainAxisSize: widget.mainAxisSize,
+      crossAxisAlignment: widget.crossAxisAlignment == CrossAxisAlignment.center
+          ? CrossAxisAlignment.start
+          : widget.crossAxisAlignment,
+      textDirection: widget.textDirection,
+      verticalDirection: widget.verticalDirection,
+      textBaseline: widget.textBaseline,
+      children: widget.children.map(_enableCellTextWrapping).toList(),
+    );
+  }
+
+  if (widget is Wrap) {
+    return Wrap(
+      key: widget.key,
+      direction: widget.direction,
+      alignment: widget.alignment,
+      spacing: widget.spacing,
+      runAlignment: widget.runAlignment,
+      runSpacing: widget.runSpacing,
+      crossAxisAlignment: widget.crossAxisAlignment,
+      textDirection: widget.textDirection,
+      verticalDirection: widget.verticalDirection,
+      clipBehavior: widget.clipBehavior,
+      children: widget.children.map(_enableCellTextWrapping).toList(),
+    );
+  }
+
+  if (widget is GestureDetector) {
+    final Widget? child = widget.child;
+    if (child == null) {
+      return widget;
+    }
+    return GestureDetector(
+      key: widget.key,
+      onTap: widget.onTap,
+      onTapDown: widget.onTapDown,
+      onTapUp: widget.onTapUp,
+      onTapCancel: widget.onTapCancel,
+      onSecondaryTap: widget.onSecondaryTap,
+      onSecondaryTapDown: widget.onSecondaryTapDown,
+      onSecondaryTapUp: widget.onSecondaryTapUp,
+      onSecondaryTapCancel: widget.onSecondaryTapCancel,
+      onDoubleTap: widget.onDoubleTap,
+      onLongPress: widget.onLongPress,
+      onLongPressStart: widget.onLongPressStart,
+      onLongPressMoveUpdate: widget.onLongPressMoveUpdate,
+      onLongPressUp: widget.onLongPressUp,
+      onLongPressEnd: widget.onLongPressEnd,
+      behavior: widget.behavior,
+      excludeFromSemantics: widget.excludeFromSemantics,
+      child: _enableCellTextWrapping(child),
+    );
+  }
+
+  return widget;
 }
 
 class _DesktopRowKeyboardActivator extends StatefulWidget {

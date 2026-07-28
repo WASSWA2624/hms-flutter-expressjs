@@ -368,6 +368,19 @@ void _stubWorkspace(_MockOpdRepository repository) {
       <OpdProviderSchedule>[],
     ),
   );
+  when(() => repository.listProviders()).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(
+    () => repository.getBillingDefaults(
+      facilityId: any(named: 'facilityId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async =>
+        const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+  );
 }
 
 void _stubBilling(_MockBillingRepository repository) {
@@ -638,7 +651,34 @@ void main() {
       find.byKey(const ValueKey<String>('opdWorkflowContextPanel')),
       findsOneWidget,
     );
+    // Check in is the worklist next-action; hub keeps complementary writes only.
+    expect(
+      find.widgetWithText(AppButton, 'Start OPD encounter'),
+      findsNothing,
+    );
+    expect(find.text('Reschedule'), findsOneWidget);
+    expect(find.text('Cancel appointment'), findsOneWidget);
   });
+
+  testWidgets(
+    'appointment Check in next-action opens encounter dialog directly',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/reception?section=appointments',
+      );
+
+      expect(find.text('Start OPD encounter'), findsWidgets);
+      await tester.tap(find.text('Start OPD encounter').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.byType(OpdEncounterDialog), findsOneWidget);
+    },
+  );
 
   for (final (String name, Size size, ThemeData theme)
       in <(String, Size, ThemeData)>[

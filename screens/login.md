@@ -46,7 +46,7 @@ Authenticated visitors are redirected to `/` by route guards (auth entry routes)
 - Loading: primary button shows submitting; fields and secondary links disabled.
 - Validation: required identifier / password before submit; inline field errors.
 - Error / retry: failure banner on the form; edit fields or submit again (no separate retry control).
-- Success: navigation away (no success shell on `/login`). Password-reset completion shows a one-shot banner when arriving from `/reset-password` (see `screens/reset-password.md`).
+- Success: navigation away (no success shell on `/login`). Password-reset completion shows a one-shot SnackBar when arriving from `/reset-password` (see `screens/reset-password.md`).
 - Empty / no-results: N/A (credential form). Unauthorized chrome: N/A (public).
 
 ---

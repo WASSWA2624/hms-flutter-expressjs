@@ -9,6 +9,7 @@ import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
@@ -301,10 +302,14 @@ class AppWorkspaceStatusBadge extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Color color = _toneForegroundColor(theme, status.tone);
     final IconData icon = status.icon ?? _defaultIcon(status.tone);
+    final bool wrap = AppListTableTextPolicy.wrapOf(context);
 
     return Semantics(
       label: status.label,
       child: Row(
+        crossAxisAlignment: wrap
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: theme.appTokens.listIconSize, color: color),
@@ -312,7 +317,9 @@ class AppWorkspaceStatusBadge extends StatelessWidget {
           Flexible(
             child: Text(
               status.label,
-              overflow: TextOverflow.ellipsis,
+              softWrap: wrap,
+              maxLines: wrap ? null : 1,
+              overflow: wrap ? TextOverflow.visible : TextOverflow.ellipsis,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,

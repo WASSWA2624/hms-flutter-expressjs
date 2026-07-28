@@ -1467,6 +1467,16 @@ class _ReceptionWorkspaceContentState
     return _ReceptionDeskMobileRow(
       section: _section,
       row: row,
+      onAppointmentNextAction: row.appointment == null
+          ? null
+          : () {
+              final OpdAppointmentPrimaryAction primary =
+                  resolveOpdAppointmentPrimaryAction(
+                    appointment: row.appointment!,
+                    linkedFlow: row.flow,
+                  );
+              unawaited(_runAppointmentNextAction(row, primary));
+            },
     );
   }
 
@@ -1825,24 +1835,31 @@ class _ReceptionWorkspaceContentState
       return;
     }
 
-    final bool? changed = switch (primary) {
-      OpdAppointmentPrimaryAction.startEncounter =>
-        await _checkInAppointment(appointment),
-      OpdAppointmentPrimaryAction.reschedule =>
-        await showOpdRescheduleAppointmentDialog(
+    final bool? changed;
+    switch (primary) {
+      case OpdAppointmentPrimaryAction.startEncounter:
+        changed = await _checkInAppointment(appointment);
+      case OpdAppointmentPrimaryAction.reschedule:
+        changed = await showOpdRescheduleAppointmentDialog(
           context: context,
           appointment: appointment,
-        ),
-      OpdAppointmentPrimaryAction.continueEncounter =>
-        await _openFlowActions(
-          row.flow ??
-              findActiveOpdFlowForAppointment(
-                appointment: appointment,
-                flows: widget.state.flows.items,
-              ),
-        ),
-      OpdAppointmentPrimaryAction.none => null,
-    };
+        );
+      case OpdAppointmentPrimaryAction.continueEncounter:
+        final OpdFlowSummary? flow =
+            row.flow ??
+            findActiveOpdFlowForAppointment(
+              appointment: appointment,
+              flows: widget.state.flows.items,
+            );
+        if (flow == null) {
+          return;
+        }
+        // Flow actions show their own snackbar; avoid a second toast here.
+        await _openFlowActions(flow);
+        return;
+      case OpdAppointmentPrimaryAction.none:
+        return;
+    }
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
         context,
@@ -2484,10 +2501,12 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
   const _ReceptionDeskMobileRow({
     required this.section,
     required this.row,
+    this.onAppointmentNextAction,
   });
 
   final ReceptionDeskSection section;
   final _ReceptionDeskRow row;
+  final VoidCallback? onAppointmentNextAction;
 
   @override
   Widget build(BuildContext context) {
@@ -2532,12 +2551,35 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
           : billingClearanceLabel(context, row.paymentGateEntry!.clearanceState),
       ReceptionDeskSection.followUps => null,
     };
-    final String? nextLabel = row.nextActionLabel(section, l10n);
+    final bool appointmentHasNextAction =
+        section == ReceptionDeskSection.appointments &&
+        onAppointmentNextAction != null &&
+        row.appointmentNextActionLabel(l10n) != null;
+    final String? nextLabel = appointmentHasNextAction
+        ? null
+        : row.nextActionLabel(section, l10n);
     final DateTime? when = row.time;
+    final OpdAppointment? appointment = row.appointment;
+    final Widget? appointmentTrailing =
+        appointmentHasNextAction && appointment != null
+        ? OpdBoardNextActionCell(
+            kind:
+                resolveOpdAppointmentPrimaryAction(
+                      appointment: appointment,
+                      linkedFlow: row.flow,
+                    ) ==
+                    OpdAppointmentPrimaryAction.continueEncounter
+                ? OpdBoardNextActionKind.continueAppointmentEncounter
+                : OpdBoardNextActionKind.checkInAppointment,
+            labelOverride: row.appointmentNextActionLabel(l10n),
+            onPressed: onAppointmentNextAction!,
+          )
+        : null;
 
     return AppListTableMobileItem(
       title: row.patientName(context),
       caption: row.patientIdentifier,
+      trailing: appointmentTrailing,
       meta: <AppListTableMobileMeta>[
         if (row.queueEntry?.isPrioritized == true)
           AppListTableMobileMeta(label: l10n.receptionHighPriorityBadgeLabel),

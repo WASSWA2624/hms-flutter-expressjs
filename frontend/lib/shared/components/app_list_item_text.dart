@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
 
 class AppListItemText extends StatelessWidget {
   const AppListItemText({
@@ -25,6 +26,13 @@ class AppListItemText extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String? resolvedSubtitle = subtitle?.trim();
+    final bool wrap = AppListTableTextPolicy.wrapOf(context);
+    final bool effectiveSoftWrap = wrap || softWrap;
+    final int? effectiveTitleMaxLines = wrap ? null : titleMaxLines;
+    final int? effectiveSubtitleMaxLines = wrap ? null : subtitleMaxLines;
+    final TextOverflow overflow = wrap
+        ? TextOverflow.visible
+        : TextOverflow.ellipsis;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,17 +40,17 @@ class AppListItemText extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          maxLines: titleMaxLines,
-          softWrap: softWrap,
-          overflow: TextOverflow.ellipsis,
+          maxLines: effectiveTitleMaxLines,
+          softWrap: effectiveSoftWrap,
+          overflow: overflow,
           style: titleStyle,
         ),
         if (resolvedSubtitle != null && resolvedSubtitle.isNotEmpty)
           Text(
             resolvedSubtitle,
-            maxLines: subtitleMaxLines,
-            softWrap: softWrap,
-            overflow: TextOverflow.ellipsis,
+            maxLines: effectiveSubtitleMaxLines,
+            softWrap: effectiveSoftWrap,
+            overflow: overflow,
             style:
                 subtitleStyle ??
                 theme.textTheme.bodySmall?.copyWith(

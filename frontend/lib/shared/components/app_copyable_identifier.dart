@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
 
 const Set<String> appDefaultIdentifierPlaceholders = <String>{
   'unknown',
@@ -128,12 +129,18 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
     final TextStyle? effectiveTextStyle =
         widget.textStyle ??
         theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700);
+    final bool wrap = AppListTableTextPolicy.wrapOf(context);
+    final int? maxLines = wrap ? null : widget.maxLines;
+    final TextOverflow overflow = wrap
+        ? TextOverflow.visible
+        : TextOverflow.ellipsis;
 
     if (!_canCopy) {
       return Text(
         visibleValue,
-        maxLines: widget.maxLines,
-        overflow: TextOverflow.ellipsis,
+        maxLines: maxLines,
+        softWrap: wrap || widget.maxLines != 1,
+        overflow: overflow,
         style: effectiveTextStyle,
       );
     }
@@ -164,13 +171,17 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
               onTap: _copy,
               borderRadius: BorderRadius.circular(theme.radius.sm),
               child: Row(
+                crossAxisAlignment: wrap
+                    ? CrossAxisAlignment.start
+                    : CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Flexible(
                     child: Text(
                       visibleValue,
-                      maxLines: widget.maxLines,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: maxLines,
+                      softWrap: wrap || widget.maxLines != 1,
+                      overflow: overflow,
                       style: effectiveTextStyle?.copyWith(
                         color: colorScheme.onSurface,
                       ),

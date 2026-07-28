@@ -14119,13 +14119,13 @@ abstract class AppLocalizations {
   /// Self-registration page title.
   ///
   /// In en, this message translates to:
-  /// **'Create facility account'**
+  /// **'Set up your facility'**
   String get authRegisterTitle;
 
   /// Self-registration page supporting text.
   ///
   /// In en, this message translates to:
-  /// **'Register the first administrator for a facility workspace.'**
+  /// **'Create the first administrator for a facility workspace.'**
   String get authRegisterBody;
 
   /// Self-registration submit action label.

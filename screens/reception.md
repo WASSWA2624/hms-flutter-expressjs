@@ -15,7 +15,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Tab-strip **Patient registry** shortcut | Navigate to `/patients` | **Removed** — registry remains in app navigation |
 | Tab-strip **Outpatient (OPD)** shortcut | Navigate to `/opd` | **Removed** — OPD remains in app navigation |
 | Tab-strip **Refresh** | Reload desk lists | **Removed** — lists refresh after mutations / scaffold retry; no parallel reload control |
-| Appointment row tap vs next-action button | Both open appointment actions | **Kept** — one dialog; next-action is the labeled primary row control (same pattern as clinical) |
+| Appointment **Next action** opened the same hub as row select | Start encounter / hub | **Removed** intermediate hub — next-action opens check-in (or reschedule) directly; hub omits that primary via `omitPrimaryAction` |
 | Schedule dialog **New patient** tab vs toolbar **Register patient** | Create patient | **Kept** — distinct goals (register alone vs schedule); new-patient is progressive disclosure inside schedule |
 | **High priority** tab vs **Desk queue** priority badge | Filtered queue subset | **Kept** — distinct desk focus, same row actions as queue |
 
@@ -66,25 +66,27 @@ Tab-strip **Refresh**, **Patient registry**, and **Outpatient (OPD)** shortcuts 
   - Opens modal: No (closes panel/dialog).
   - Immediate result: Applies or resets filters/columns for `reception_{section}`.
 
-### Row activation (all sections)
+### Row activation / next-action
 
 - **Row select** (desktop row / mobile item)
   - Location: Table row / mobile list item.
   - Opens modal: Section-specific detail/actions dialog (below).
-  - Immediate result: Opens the single primary detail surface for that row.
+  - Immediate result: Opens the complementary hub for that row (appointment hub omits Check in).
   - Condition: Always when rows exist.
+
+- **Next action** (appointments)
+  - Location: `next_action` column; mobile `AppListTableMobileItem.trailing`.
+  - Opens modal: Encounter dialog for Check in, or reschedule dialog — no empty appointment hub shell.
+  - Immediate result: Persists via controller; snackbar; workspace refresh.
+  - Condition: `receptionFrontDeskWriteRequirement` (via `OpdBoardNextActionCell`); unauthorized control absent.
+
+- Queue / High priority / Active visits / Payment gate next-action columns are **label-only** (row select opens the hub).
 
 ### Appointments section
 
-- **Next action** button (label from appointment primary action)
-  - Location: Next-action column.
-  - Opens modal: Yes — **Appointment actions** (`ReceptionAppointmentActionsDialog` → shared `OpdAppointmentActionsDialog`).
-  - Immediate result: Same hub as row select (front-desk write; clinical/vitals actions off).
-  - Condition: When a primary appointment action label resolves.
+#### Appointment actions dialog (row select)
 
-#### Appointment actions dialog
-
-Shared OPD appointment hub with `receptionFrontDeskWriteRequirement`, `allowClinicalActions: false`, `allowVitalsActions: false`. Nested actions follow OPD appointment inventory (check-in, confirm, cancel, reschedule, linked flow actions when present). Unauthorized write controls absent.
+Shared OPD appointment hub with `receptionFrontDeskWriteRequirement`, `allowClinicalActions: false`, `allowVitalsActions: false`, `omitPrimaryAction: true`. Complementary actions: Reschedule, Cancel appointment. Unauthorized write controls absent.
 
 ### Desk queue / High priority sections
 
@@ -99,7 +101,7 @@ Shared OPD appointment hub with `receptionFrontDeskWriteRequirement`, `allowClin
 ### Payment gate section
 
 - Row select → **Billing guidance** read-only dialog (`ReceptionPaymentGateDetailDialog`).
-- Actions: **Cancel** only (no cashier mutations).
+- Actions: **Close** only (no cashier mutations).
 - Next-action column shows guidance label text.
 
 ### Follow-ups section
@@ -114,6 +116,10 @@ Shared OPD appointment hub with `receptionFrontDeskWriteRequirement`, `allowClin
 - Widget tests in `frontend/test/features/reception/presentation/reception_workspace_page_test.dart` prove:
   - **Patient registry**, **Outpatient (OPD)**, and **Refresh** are absent from the tab strip on desktop/mobile and light/dark.
   - **Register patient** and **Schedule appointment** remain the sole labeled desk entry points when authorized.
+  - Appointment **Start OPD encounter** next-action opens the encounter dialog directly (no appointment hub).
+  - Row select opens appointment hub without a Check in button (complementary Reschedule / Cancel only).
   - Unauthorized users see no register/schedule/nav shortcuts.
   - Controller-driven refresh still syncs sections without a toolbar Refresh control.
   - Active-visit billing mutations stay unavailable from reception flow actions.
+
+- `reception_appointment_actions_dialog_test.dart` proves the shared hub defaults to `omitPrimaryAction: true`.
