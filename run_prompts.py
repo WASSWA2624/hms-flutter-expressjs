@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from cursor_sdk import (
@@ -31,6 +32,9 @@ STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
 # frequent non-finished agent statuses under load.
 MAX_CONCURRENCY = 3
 MAX_ATTEMPTS = 3
+# Parallel Cursor agents may also touch git; retry through index.lock races.
+GIT_LOCK_RETRIES = 10
+GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
 # Let Cursor pick the best available model for each run.
@@ -38,6 +42,7 @@ MODEL = "auto"
 SKIP_DIR_NAMES = {".cursor"}
 # Never commit runner bookkeeping into prompt-driven commits.
 GIT_EXCLUDES = (".run_prompts_state.json",)
+INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
 def _list_prompt_files() -> list[Path]:
@@ -103,16 +108,65 @@ def _is_retryable(err: BaseException) -> bool:
     )
 
 
-def _run_git(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args],
-        cwd=PROJECT_DIR,
-        check=check,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
+def _git_detail(err: subprocess.CalledProcessError) -> str:
+    return (err.stderr or err.stdout or str(err)).strip()
+
+
+def _is_index_lock_error(detail: str) -> bool:
+    lower = detail.lower()
+    return "index.lock" in lower or (
+        "unable to create" in lower and ".lock" in lower
     )
+
+
+def _clear_stale_index_lock(*, max_age_seconds: float = 30.0) -> bool:
+    """Remove a leftover index.lock when it looks abandoned."""
+    try:
+        if not INDEX_LOCK_PATH.exists():
+            return False
+        age = time.time() - INDEX_LOCK_PATH.stat().st_mtime
+        if age < max_age_seconds:
+            return False
+    except OSError:
+        return False
+
+    try:
+        INDEX_LOCK_PATH.unlink(missing_ok=True)
+        print("[GIT] removed stale .git/index.lock", flush=True)
+        return True
+    except OSError:
+        return False
+
+
+def _run_git(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    last_err: subprocess.CalledProcessError | None = None
+    for attempt in range(1, GIT_LOCK_RETRIES + 1):
+        try:
+            return subprocess.run(
+                ["git", *args],
+                cwd=PROJECT_DIR,
+                check=check,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except subprocess.CalledProcessError as err:
+            last_err = err
+            detail = _git_detail(err)
+            if check and _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
+                _clear_stale_index_lock()
+                delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+                print(
+                    f"[GIT] index.lock busy on `git {' '.join(args)}`; "
+                    f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
+                    flush=True,
+                )
+                time.sleep(delay)
+                continue
+            raise
+    assert last_err is not None
+    raise last_err
 
 
 def _git_has_staged_changes() -> bool:
@@ -123,48 +177,80 @@ def _git_has_staged_changes() -> bool:
 
 def _commit_and_push(prompt_key: str) -> dict:
     """Stage, commit, and push workspace changes after a successful prompt run."""
-    _run_git(["add", "-A"])
-    for exclude in GIT_EXCLUDES:
-        _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
+    last_error = ""
+    for attempt in range(1, GIT_LOCK_RETRIES + 1):
+        try:
+            _run_git(["add", "-A"])
+            for exclude in GIT_EXCLUDES:
+                _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
 
-    # Only staged changes can be committed. Untracked leftovers from another
-    # concurrent agent (or ignore rules) must not fail this prompt's git step.
-    if not _git_has_staged_changes():
-        leftover = _run_git(
-            ["ls-files", "--others", "--exclude-standard"],
-            check=True,
-        ).stdout.strip()
-        if leftover:
-            print(
-                f"[GIT] {prompt_key}: no staged changes "
-                f"(untracked still present; skipped commit)",
-                flush=True,
-            )
-        else:
-            print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
-        return {"committed": False, "pushed": False}
+            # Only staged changes can be committed. Untracked leftovers from another
+            # concurrent agent (or ignore rules) must not fail this prompt's git step.
+            if not _git_has_staged_changes():
+                leftover = _run_git(
+                    ["ls-files", "--others", "--exclude-standard"],
+                    check=True,
+                ).stdout.strip()
+                if leftover:
+                    print(
+                        f"[GIT] {prompt_key}: no staged changes "
+                        f"(untracked still present; skipped commit)",
+                        flush=True,
+                    )
+                else:
+                    print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+                return {"committed": False, "pushed": False}
 
-    message = f"Apply prompt: {prompt_key}"
-    try:
-        _run_git(["commit", "-m", message])
-    except subprocess.CalledProcessError as err:
-        detail = (err.stderr or err.stdout or str(err)).strip()
-        # Race with another prompt: index emptied between staging and commit.
-        if "nothing to commit" in detail.lower():
-            print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
-            return {"committed": False, "pushed": False}
-        raise RuntimeError(f"git commit failed: {detail}") from err
+            message = f"Apply prompt: {prompt_key}"
+            try:
+                _run_git(["commit", "-m", message])
+            except subprocess.CalledProcessError as err:
+                detail = _git_detail(err)
+                # Race with another prompt: index emptied between staging and commit.
+                if "nothing to commit" in detail.lower():
+                    print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+                    return {"committed": False, "pushed": False}
+                if _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
+                    last_error = detail
+                    _clear_stale_index_lock()
+                    delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+                    print(
+                        f"[GIT] {prompt_key}: commit lock busy; "
+                        f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
+                        flush=True,
+                    )
+                    time.sleep(delay)
+                    continue
+                raise RuntimeError(f"git commit failed: {detail}") from err
 
-    print(f"[GIT] {prompt_key}: committed", flush=True)
+            print(f"[GIT] {prompt_key}: committed", flush=True)
 
-    try:
-        _run_git(["push", "-u", "origin", "HEAD"])
-    except subprocess.CalledProcessError as err:
-        detail = (err.stderr or err.stdout or str(err)).strip()
-        raise RuntimeError(f"git push failed: {detail}") from err
+            try:
+                _run_git(["push", "-u", "origin", "HEAD"])
+            except subprocess.CalledProcessError as err:
+                detail = _git_detail(err)
+                raise RuntimeError(f"git push failed: {detail}") from err
 
-    print(f"[GIT] {prompt_key}: pushed", flush=True)
-    return {"committed": True, "pushed": True}
+            print(f"[GIT] {prompt_key}: pushed", flush=True)
+            return {"committed": True, "pushed": True}
+        except RuntimeError as err:
+            detail = str(err)
+            if _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
+                last_error = detail
+                _clear_stale_index_lock()
+                delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+                print(
+                    f"[GIT] {prompt_key}: lock busy; "
+                    f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
+                    flush=True,
+                )
+                time.sleep(delay)
+                continue
+            raise
+
+    raise RuntimeError(
+        f"git commit failed after {GIT_LOCK_RETRIES} lock retries: {last_error}"
+    )
 
 
 async def run_prompt(
@@ -227,8 +313,52 @@ async def run_prompt(
                         "message": last_error,
                     }
 
-                async with git_lock:
-                    git_info = await asyncio.to_thread(_commit_and_push, key)
+                # Keep git failures from re-running a finished agent.
+                try:
+                    async with git_lock:
+                        git_info = await asyncio.to_thread(_commit_and_push, key)
+                except Exception as err:
+                    last_error = _error_text(err)
+                    if attempt < MAX_ATTEMPTS and (
+                        _is_retryable(err) or _is_index_lock_error(last_error)
+                    ):
+                        wait_s = 2 ** (attempt - 1)
+                        print(
+                            f"[RETRY] {key} git attempt {attempt}/{MAX_ATTEMPTS}: "
+                            f"{last_error} (sleep {wait_s}s)",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        await asyncio.sleep(wait_s)
+                        try:
+                            async with git_lock:
+                                git_info = await asyncio.to_thread(
+                                    _commit_and_push, key
+                                )
+                        except Exception as retry_err:
+                            last_error = _error_text(retry_err)
+                            print(
+                                f"[ERROR] {key}: {last_error}",
+                                file=sys.stderr,
+                                flush=True,
+                            )
+                            return {
+                                "file": key,
+                                "status": "error",
+                                "message": last_error,
+                            }
+                    else:
+                        print(
+                            f"[ERROR] {key}: {last_error}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        return {
+                            "file": key,
+                            "status": "error",
+                            "message": last_error,
+                        }
+
                 async with finished_lock:
                     finished.add(key)
                     _save_finished(finished)
