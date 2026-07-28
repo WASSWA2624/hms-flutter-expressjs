@@ -42,9 +42,14 @@ List<ClinicalRelatedRecord> sortClinicalRecordsNewestFirst(
 }
 
 class ClinicalWorkflowProgressStrip extends StatelessWidget {
-  const ClinicalWorkflowProgressStrip({required this.handoff, super.key});
+  const ClinicalWorkflowProgressStrip({
+    required this.handoff,
+    this.onNextAction,
+    super.key,
+  });
 
   final ClinicalTriageHandoff handoff;
+  final VoidCallback? onNextAction;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +70,7 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
         : opdFlowStageIndex(currentStage);
     final String currentLabel = opdStageDisplayLabel(l10n, currentStage);
     final String nextLabel = opdNextStepDisplayLabel(l10n, nextStep);
+    final bool nextActionIsRecordVitals = _isRecordVitalsNextStep(nextStep);
     final List<AppWorkflowStepItem> steps = <AppWorkflowStepItem>[
       for (var index = 0; index < stages.length; index += 1)
         if (index < currentIndex &&
@@ -87,6 +93,10 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
           label: nextLabel,
           description: l10n.opdNextActionColumnLabel,
           state: AppWorkflowStepState.upcoming,
+          onTap: nextActionIsRecordVitals ? onNextAction : null,
+          helpText: nextActionIsRecordVitals && onNextAction != null
+              ? l10n.opdRecordVitalsAction
+              : null,
         ),
     ];
 
@@ -104,6 +114,15 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
       ],
     );
   }
+}
+
+bool _isRecordVitalsNextStep(String? nextStep) {
+  final String normalized = (nextStep ?? '').trim().toUpperCase();
+  return normalized == 'RECORD_VITALS' ||
+      normalized == 'WAITING_VITALS' ||
+      normalized == 'VITALS_NEEDED' ||
+      normalized == 'VITALS_PENDING' ||
+      normalized == 'TRIAGE_PENDING';
 }
 
 class ClinicalLabOrdersTablePanel extends ConsumerStatefulWidget {

@@ -353,8 +353,8 @@ final class ClinicalWorkspaceController
   }
 
   Future<Result<OpdFlowDetail>> loadSelectedOpdFlowDetail() async {
-    final String? opdFlowApiId = _selectedEntry?.opdFlowApiId?.trim();
-    if (opdFlowApiId == null || opdFlowApiId.isEmpty) {
+    final String? opdFlowApiId = _selectedOpdFlowApiId();
+    if (opdFlowApiId == null) {
       return Result<OpdFlowDetail>.failure(AppFailure.validation());
     }
     return _opdRepository.getOpdFlow(opdFlowApiId);
@@ -364,10 +364,8 @@ final class ClinicalWorkspaceController
     required List<Map<String, Object?>> vitals,
     bool updateExisting = false,
   }) {
-    final String? opdFlowApiId = _selectedEntry?.opdFlowApiId?.trim();
-    if (opdFlowApiId == null ||
-        opdFlowApiId.isEmpty ||
-        vitals.isEmpty) {
+    final String? opdFlowApiId = _selectedOpdFlowApiId();
+    if (opdFlowApiId == null || vitals.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
@@ -379,6 +377,14 @@ final class ClinicalWorkspaceController
           })
           .then((Result<OpdFlowDetail> result) => result.map<void>((_) {})),
     );
+  }
+
+  String? _selectedOpdFlowApiId() {
+    final ClinicalWorklistEntry? entry = _selectedEntry;
+    if (entry == null) {
+      return null;
+    }
+    return clinicalOpdFlowApiId(entry);
   }
 
   Future<AppFailure?> addDiagnosis({
@@ -1364,8 +1370,8 @@ final class ClinicalWorkspaceController
   Future<ClinicalEncounterBundle> _withTriageHandoff(
     ClinicalEncounterBundle bundle,
   ) async {
-    final String? opdFlowApiId = bundle.entry.opdFlowApiId;
-    if (opdFlowApiId == null || opdFlowApiId.trim().isEmpty) {
+    final String? opdFlowApiId = clinicalOpdFlowApiId(bundle.entry);
+    if (opdFlowApiId == null) {
       return bundle;
     }
 

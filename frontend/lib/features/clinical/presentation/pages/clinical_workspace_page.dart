@@ -870,7 +870,7 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
       item.nextStep ?? item.stage ?? item.status ?? '',
     );
     if (nextActionCode == 'RECORD_VITALS' &&
-        (item.opdFlowApiId?.trim().isNotEmpty ?? false) &&
+        clinicalOpdFlowApiId(item) != null &&
         !item.isTerminal) {
       return AppAccessActionGate(
         requirement: _ClinicalWorkspaceContentState._writeRequirement,
@@ -1373,7 +1373,10 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         ],
       ),
       if (triageHandoff?.hasContent ?? false)
-        _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
+        _ClinicalTriageHandoffPanel(
+          bundle: bundle,
+          handoff: triageHandoff!,
+        ),
       _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
       if (_clinicalResultsPreviewEntries(bundle) case final previewEntries
           when previewEntries.isNotEmpty)
@@ -1536,15 +1539,29 @@ class _ClinicalInfoGrid extends StatelessWidget {
   }
 }
 
-class _ClinicalTriageHandoffPanel extends StatelessWidget {
-  const _ClinicalTriageHandoffPanel({required this.handoff});
+class _ClinicalTriageHandoffPanel extends ConsumerWidget {
+  const _ClinicalTriageHandoffPanel({
+    required this.bundle,
+    required this.handoff,
+  });
 
+  final ClinicalEncounterBundle bundle;
   final ClinicalTriageHandoff handoff;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    final bool writeAllowed = clinicalEncounterWriteRequirement.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final bool canRecordVitals =
+        writeAllowed &&
+        !bundle.entry.isTerminal &&
+        clinicalOpdFlowApiId(bundle.entry) != null;
     final int abnormalVitalCount = handoff.vitalSigns.where((
       ClinicalVitalSummary vital,
     ) {
@@ -1605,7 +1622,16 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          ClinicalWorkflowProgressStrip(handoff: handoff),
+          ClinicalWorkflowProgressStrip(
+            handoff: handoff,
+            onNextAction: canRecordVitals
+                ? () => _openVitalsDialog(
+                    context,
+                    controller,
+                    hasExistingVitals: handoff.vitalSigns.isNotEmpty,
+                  )
+                : null,
+          ),
           SizedBox(height: theme.spacing.md),
           _ClinicalInfoGrid(fields: facts),
           if (handoff.vitalSigns.isNotEmpty) ...<Widget>[
@@ -1814,7 +1840,7 @@ class _ClinicalActionBar extends ConsumerWidget {
               enabled:
                   isAllowed &&
                   !bundle.entry.isTerminal &&
-                  (bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false),
+                  clinicalOpdFlowApiId(bundle.entry) != null,
               onPressed: () => _openVitalsDialog(
                 context,
                 controller,

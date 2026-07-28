@@ -976,6 +976,31 @@ bool clinicalWorklistEntryIsOutpatient(ClinicalWorklistEntry item) {
   return type != 'IPD' && type != 'INPATIENT';
 }
 
+/// Resolves the OPD flow API id used for vitals / triage APIs.
+///
+/// Prefers [ClinicalWorklistEntry.opdFlowApiId]. For OPD/TRIAGE-sourced rows,
+/// falls back to encounter identifiers because those rows store the flow id in
+/// [ClinicalWorklistEntry.encounterId].
+String? clinicalOpdFlowApiId(ClinicalWorklistEntry entry) {
+  final String? explicit = entry.opdFlowApiId?.trim();
+  if (explicit != null && explicit.isNotEmpty) {
+    return explicit;
+  }
+  final String source = entry.sourceQueue.trim().toUpperCase();
+  if (source != 'OPD' && source != 'TRIAGE') {
+    return null;
+  }
+  final String encounterId = entry.encounterId.trim();
+  if (encounterId.isNotEmpty) {
+    return encounterId;
+  }
+  final String? publicId = entry.encounterPublicId?.trim();
+  if (publicId != null && publicId.isNotEmpty) {
+    return publicId;
+  }
+  return null;
+}
+
 bool clinicalWorklistEntryMatchesScope(
   ClinicalWorklistEntry item,
   ClinicalQueueScope scope,
