@@ -384,47 +384,26 @@ class _ClearanceChecklist extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppWorkflowStepper(
-            semanticLabel: l10n.dischargeClearanceProgressTitle,
-            showDescriptions: false,
-            steps: <AppWorkflowStepItem>[
-              for (var index = 0; index < items.length; index += 1)
-                AppWorkflowStepItem(
-                  id: items[index].code.name,
-                  label: dischargeClearanceLabel(context, items[index].code),
-                  icon: dischargeClearanceIcon(items[index].code),
-                  state: switch (items[index].state) {
-                    DischargeClearanceState.complete =>
-                      AppWorkflowStepState.completed,
-                    DischargeClearanceState.unavailable =>
-                      AppWorkflowStepState.unavailable,
-                    DischargeClearanceState.pending =>
-                      index == firstPendingIndex
-                          ? AppWorkflowStepState.current
-                          : AppWorkflowStepState.upcoming,
-                  },
-                ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              for (final DischargeClearanceItem item in items)
-                SizedBox(
-                  width: 220,
-                  child: DischargeClearanceTile(
-                    item: item,
-                    titleMaxLines: 2,
-                    showReference: false,
-                  ),
-                ),
-            ],
-          ),
+      child: AppWorkflowStepper(
+        semanticLabel: l10n.dischargeClearanceProgressTitle,
+        showDescriptions: false,
+        steps: <AppWorkflowStepItem>[
+          for (var index = 0; index < items.length; index += 1)
+            AppWorkflowStepItem(
+              id: items[index].code.name,
+              label: dischargeClearanceLabel(context, items[index].code),
+              icon: dischargeClearanceIcon(items[index].code),
+              state: switch (items[index].state) {
+                DischargeClearanceState.complete =>
+                  AppWorkflowStepState.completed,
+                DischargeClearanceState.unavailable =>
+                  AppWorkflowStepState.unavailable,
+                DischargeClearanceState.pending =>
+                  index == firstPendingIndex
+                      ? AppWorkflowStepState.current
+                      : AppWorkflowStepState.upcoming,
+              },
+            ),
         ],
       ),
     );

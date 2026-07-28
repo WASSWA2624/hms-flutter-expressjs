@@ -16,7 +16,6 @@ import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
-import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -1448,19 +1447,171 @@ Widget _dischargeNextActionWidget(
   BuildContext context,
   IpdAdmissionSummary item,
 ) {
-  final String encounterId = item.encounterId ?? item.id;
-  if (encounterId.trim().isEmpty) {
-    return Text(_nextActionLabel(context, item));
+  return _DischargeNextActionButton(item: item);
+}
+
+class _DischargeNextActionButton extends ConsumerWidget {
+  const _DischargeNextActionButton({required this.item});
+
+  final IpdAdmissionSummary item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+
+    if (isCompletedDischarge(item)) {
+      return _DischargeCompactAction(
+        label: l10n.dischargePrintSummaryAction,
+        icon: Icons.print_outlined,
+        onPressed: () =>
+            unawaited(_printOrOpenDetailFromQueue(context, ref, item)),
+      );
+    }
+
+    return AppAccessActionGate(
+      requirement: _dischargeClinicalWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        final String label = isPlannedDischarge(item)
+            ? l10n.dischargeManageClearanceAction
+            : l10n.dischargeStartPlanAction;
+        return _DischargeCompactAction(
+          label: label,
+          icon: isPlannedDischarge(item)
+              ? Icons.fact_check_outlined
+              : Icons.edit_note_outlined,
+          onPressed: () =>
+              unawaited(_openPlanningFromQueue(context, ref, item)),
+        );
+      },
+    );
   }
-  return WorkflowActionButton(
-    encounterId: encounterId,
-    patientId: item.patientId,
-    admissionId: item.id,
-    nextStep: _dischargeNextStepCode(item),
-    stage: item.stage,
-    sourceModule: 'discharge',
-    compact: true,
+}
+
+class _DischargeCompactAction extends StatelessWidget {
+  const _DischargeCompactAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color primaryColor = theme.colorScheme.primary;
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onPressed,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.xs,
+                vertical: 2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(icon, size: 14, color: primaryColor),
+                  SizedBox(width: theme.spacing.xs),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _openPlanningFromQueue(
+  BuildContext context,
+  WidgetRef ref,
+  IpdAdmissionSummary admission,
+) async {
+  final DischargeWorkspaceController controller = ref.read(
+    dischargeWorkspaceControllerProvider.notifier,
   );
+  final AppFailure? failure = await controller.selectAdmission(admission);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+  final DischargeAdmissionDetail? detail = _readDischargeState(
+    ref,
+  )?.selectedDetail;
+  if (detail == null) {
+    return;
+  }
+  final AppLocalizations l10n = context.l10n;
+  final String title = detail.hasSummary
+      ? clinicalDispositionActionLabel(
+          l10n,
+          sourceQueue: 'IPD',
+          status: detail.summary.admissionStatus,
+          stage: detail.summary.stage,
+          location: detail.summary.location,
+          hasAdmission: true,
+        )
+      : l10n.dischargeStartPlanAction;
+  await _openDischargePlanningDialog(
+    context,
+    ref,
+    detail,
+    title: Text(title),
+  );
+}
+
+Future<void> _printOrOpenDetailFromQueue(
+  BuildContext context,
+  WidgetRef ref,
+  IpdAdmissionSummary admission,
+) async {
+  final DischargeWorkspaceController controller = ref.read(
+    dischargeWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectAdmission(admission);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+  final DischargeWorkspaceState? state = _readDischargeState(ref);
+  final DischargeAdmissionDetail? detail = state?.selectedDetail;
+  if (detail == null || state == null) {
+    return;
+  }
+  if (detail.hasSummary) {
+    await _printDischargeSummary(context, ref, detail);
+    return;
+  }
+  if (context.mounted) {
+    await _openDischargeDetailDialog(context, ref, state, admission);
+  }
 }
 
 bool _dischargeMatchesSearch(
@@ -1622,16 +1773,6 @@ String _nextActionLabel(BuildContext context, IpdAdmissionSummary item) {
     return context.l10n.dischargeNextActionClearance;
   }
   return context.l10n.dischargeNextActionStartPlan;
-}
-
-String _dischargeNextStepCode(IpdAdmissionSummary item) {
-  if (isCompletedDischarge(item)) {
-    return 'DISPOSITION';
-  }
-  if (isPlannedDischarge(item)) {
-    return 'FINALIZE_DISCHARGE';
-  }
-  return 'DISCHARGE_PLANNING';
 }
 
 String _dateLabel(BuildContext context, DateTime? value) {
