@@ -383,6 +383,82 @@ void main() {
     expect(find.byTooltip('Record vitals'), findsWidgets);
   });
 
+  testWidgets('unauthorized policy hides next-action writes', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    _stubNursingRepository(repository);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/nursing',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/nursing',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: NursingWorkspacePage());
+          },
+        ),
+      ],
+    );
+
+    final AppAccessPolicy readOnly = AppAccessPolicy.fromSession(
+      AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(roles: <String>['RECEPTION']),
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+        },
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'inpatient-bed-management',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nursingRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(readOnly),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Routine Patient'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsNothing);
+    expect(find.byTooltip('Administer medication'), findsNothing);
+    expect(find.byTooltip('Escalate'), findsNothing);
+  });
+
   testWidgets('tapping a row opens the nursing detail dialog', (
     WidgetTester tester,
   ) async {
@@ -415,6 +491,36 @@ void main() {
       find.descendant(
         of: find.byType(AppQuickActions),
         matching: find.text(l10n.nursingActionRecordVitals),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionAddNote),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('detail omits next-action duplicate for medication-due patient', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.textContaining('Medication due').first);
+    await _pumpAfterAction(tester);
+    await tester.tap(find.text('Med Due Patient'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionAdministerMedication),
       ),
       findsNothing,
     );

@@ -246,7 +246,22 @@ void main() {
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.text('Next action'), findsWidgets);
-    expect(find.text('Check in'), findsOneWidget);
+    // Toolbar walk-in primary.
+    expect(
+      find.descendant(
+        of: find.byType(AppTabToolbarPrimary),
+        matching: find.text('Start OPD encounter'),
+      ),
+      findsOneWidget,
+    );
+    // Arrival next-action only (queue rows no longer duplicate this label).
+    expect(
+      find.descendant(
+        of: find.byType(AppListTable<dynamic>),
+        matching: find.text('Start OPD encounter'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Record vitals'), findsWidgets);
   });
 
@@ -356,11 +371,24 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Ann Arrival'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
-    expect(find.text('Check in'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Ann Arrival'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ann Arrival'), findsOneWidget);
+    expect(find.text('Start OPD encounter'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('Quinn Queue'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Quinn Queue'));
     await tester.pumpAndSettle();
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
@@ -437,18 +465,25 @@ void main() {
     );
   });
 
-  testWidgets('arrival Check in next-action opens encounter dialog directly', (
-    WidgetTester tester,
-  ) async {
-    await _pumpOpdWorkspace(tester, repository: repository);
+  testWidgets(
+    'arrival Start OPD encounter next-action opens encounter dialog directly',
+    (WidgetTester tester) async {
+      await _pumpOpdWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Check in'));
-    await tester.pumpAndSettle();
+      // Prefer the row next-action over the toolbar primary with the same label.
+      final Finder arrivalNextAction = find.descendant(
+        of: find.byKey(const ValueKey<String>('opd-appointment-1')),
+        matching: find.text('Start OPD encounter'),
+      );
+      await tester.ensureVisible(arrivalNextAction);
+      await tester.tap(arrivalNextAction);
+      await tester.pumpAndSettle();
 
-    expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
-    expect(find.text('Queue'), findsNothing);
-    expect(find.byType(AppDialog), findsWidgets);
-  });
+      expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
+      expect(find.text('Queue'), findsNothing);
+      expect(find.byType(AppDialog), findsWidgets);
+    },
+  );
 
   testWidgets('active flow next-action opens vitals dialog directly', (
     WidgetTester tester,
@@ -546,7 +581,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    expect(find.text('Check in'), findsNothing);
+    expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
   });

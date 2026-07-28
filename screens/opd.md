@@ -14,11 +14,12 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | --- | --- | --- |
 | Tab-strip **Refresh** | Reload worklist | **Removed** — lists refresh after mutations / scaffold **Try again** |
 | Row **WorkflowActionButton** (route/dialog to other modules for OPD-owned steps) | Same stage mutation | **Replaced** — stage-aware **Next action** opens the OPD mutation dialog (or department handoff) directly |
-| Parallel `_OpdPatientActionsDialog` appointment hub vs shared `OpdAppointmentActionsDialog` | Check-in / reschedule / cancel | **Merged** — shared appointment hub only; separate **Queue** shortcut dropped (check-in is the start path) |
-| Arrival **Check in** next-action opened appointment hub then required Check in again | Start encounter | **Removed** intermediate hub — next-action opens encounter dialog directly |
+| Parallel `_OpdPatientActionsDialog` appointment hub vs shared `OpdAppointmentActionsDialog` | Check-in / reschedule / cancel | **Merged** — shared appointment hub only |
+| Arrival next-action opened appointment hub then required start again | Start encounter | **Removed** intermediate hub — next-action opens encounter dialog directly |
+| Queue next-action labeled **Start OPD encounter** (same as toolbar / arrivals) | Misleading parallel start | **Removed** — queue next-action is empty; row select is the sole queue-hub entry |
 | Detail Quick Action matching row next-action (pay / vitals / assign doctor / review / disposition / …) | Same write | **Omitted** from Flow Actions / appointment hub via `omitNextActionKey` / `omitPrimaryAction` |
 | Deep link `flowId` + `panel=` opened Flow Actions then required hunting for the action | Intermediate shell | **Removed** — focused panel opens the mutation dialog directly |
-| Queue next-action button opening the same hub as row tap | Open queue actions | **Removed** — next-action is label-only; row select is the sole hub entry |
+| Queue next-action button opening the same hub as row tap | Open queue actions | **Removed** — next-action is empty; row select is the sole hub entry |
 
 ---
 
@@ -32,7 +33,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Immediate result: Switches `_section`, updates URL `?section=…`, clears filters/search.
   - Condition: Always when workspace loads.
 
-- **Start walk-in** (primary)
+- **Start OPD encounter** (primary)
   - Location: Tab-strip primary (`opdStartWalkInAction`).
   - Opens modal: Yes — encounter dialog, then Flow Actions when a visit continues.
   - Immediate result: Creates/continues OPD encounter; snackbar; workspace refresh.
@@ -59,7 +60,7 @@ Tab-strip **Refresh** was removed.
 - **Empty worklist**
   - Location: `AppWorkspaceStatePanel.empty`.
   - Opens modal: No.
-  - Immediate result: Empty copy; Start walk-in remains when authorized.
+  - Immediate result: Empty copy; Start OPD encounter remains when authorized.
   - Condition: No rows after tab / search / filters.
 
 ### Row activation / next-action
@@ -72,9 +73,9 @@ Tab-strip **Refresh** was removed.
 
 - **Next action** (stage label)
   - Location: `next_action` column (and mobile row trailing).
-  - Opens modal: Matching mutation (check-in, pay, vitals, assign doctor, doctor review, disposition, admission handoff, correct stage) or navigates for department handoff.
+  - Opens modal: Matching mutation (start encounter, pay, vitals, assign doctor, doctor review, disposition, admission handoff, correct stage) or navigates for department handoff.
   - Immediate result: Persists via controller / navigates; snackbar; refresh where needed. No empty hub shell for the primary goal.
-  - Condition: Matching write gate; unauthorized next-action absent. Queue rows show label-only (use row select).
+  - Condition: Matching write gate; unauthorized next-action absent. Queue rows have no next-action control (use row select).
 
 ### Follow-ups tab
 
@@ -94,8 +95,8 @@ Tab-strip **Refresh** was removed.
 
 - Widget tests in `frontend/test/features/opd/presentation/opd_workspace_page_test.dart` prove:
   - **Refresh** is absent from the tab strip on desktop/mobile.
-  - **Start walk-in** remains the sole labeled create entry when authorized.
-  - Arrival **Check in** next-action skips the appointment hub.
+  - **Start OPD encounter** remains the labeled create entry (toolbar + arrival next-action); queue rows do not show that label.
+  - Arrival **Start OPD encounter** next-action skips the appointment hub.
   - Active **Record vitals** next-action opens the vitals dialog; Flow Actions omits that duplicate.
-  - Unauthorized users see no Start walk-in / Check in / Record vitals.
+  - Unauthorized users see no Start OPD encounter / Record vitals.
   - Queue row still opens the shared queue hub; cancel performs no mutation.

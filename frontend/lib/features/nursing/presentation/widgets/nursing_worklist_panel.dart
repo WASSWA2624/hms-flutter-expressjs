@@ -127,7 +127,13 @@ class NursingWorklistPanel extends ConsumerWidget {
               AppListTableMobileMeta(label: subtitle),
           ],
           // Same stage write as the desktop next-action column (sole primary).
-          trailing: NursingNextActionCell(item: item, scope: scope),
+          // Compact avoids overflow beside title/meta on narrow viewports;
+          // tooltip + semanticLabel keep the action labeled for novices/a11y.
+          trailing: NursingNextActionCell(
+            item: item,
+            scope: scope,
+            compact: true,
+          ),
         );
       },
     );

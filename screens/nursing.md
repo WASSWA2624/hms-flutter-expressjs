@@ -105,11 +105,11 @@ Tab-strip primary write, **Add note**, and **Refresh** were removed.
 
 ### Manual checks (Req 7)
 
-- [ ] Unauthorized user: next-action writes and detail write actions absent; Open ICU still available when ICU active.
-- [ ] All-tab routine patient: only **Record vitals** next-action; detail has no Record vitals duplicate.
-- [ ] Medication-due patient: only **Administer medication** next-action; detail omits Administer medication.
+- [x] Unauthorized user: next-action writes and detail write actions absent; Open ICU still available when ICU active. *(widget: `unauthorized policy hides next-action writes`)*
+- [x] All-tab routine patient: only **Record vitals** next-action; detail has no Record vitals duplicate. *(widget)*
+- [x] Medication-due patient: only **Administer medication** next-action; detail omits Administer medication. *(widget)*
 - [ ] Urgent critical patient: only **Escalate** next-action; detail omits Escalate.
-- [ ] Deep link `/nursing?id=…&panel=vitals` opens vitals dialog without an empty detail first.
-- [ ] No Refresh, Add note, or primary write control on the tab strip; worklist still updates after a successful mutation.
-- [ ] Mobile list shows next-action trailing; tapping it completes the same write as desktop.
+- [x] Deep link `/nursing?id=…&panel=vitals` opens vitals dialog without an empty detail first. *(widget)*
+- [x] No Refresh, Add note, or primary write control on the tab strip; worklist still updates after a successful mutation. *(widget; dead `nursingPrimaryAction*` helpers removed)*
+- [x] Mobile list shows next-action trailing; tapping it completes the same write as desktop. *(widget)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths.

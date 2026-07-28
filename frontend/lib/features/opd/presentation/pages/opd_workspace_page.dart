@@ -1330,7 +1330,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       provider: entry.providerDisplayName,
       ownerRole: context.l10n.opdWorkflowReceptionTitle,
       billing: _queueBillingLabel(context, entry),
-      nextStep: context.l10n.opdStartWalkInAction,
+      // No stage next-action — row select opens the queue hub (sole entry).
       billingState: _queueBillingState(entry),
       billingTone: _queueBillingTone(entry),
       time: entry.queuedAt,
@@ -1376,7 +1376,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       ownerRole: context.l10n.opdWorkflowReceptionTitle,
       facility: appointment.facilityName,
       billing: context.l10n.profileUnknownValue,
-      nextStep: context.l10n.opdStartWalkInAction,
+      nextStep: context.l10n.opdCheckInAction,
       time: _appointmentArrivalTime(appointment),
       urgencyRank: _statusUrgencyRank(appointment.status),
       appointment: appointment,

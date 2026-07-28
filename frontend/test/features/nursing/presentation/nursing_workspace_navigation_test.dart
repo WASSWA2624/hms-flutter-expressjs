@@ -66,7 +66,6 @@ void main() {
       stage: 'ADMITTED_IN_BED',
       admissionStatus: 'ADMITTED_IN_BED',
       medicationDueCount: 1,
-      taskTypeCode: 'MEDICATION_DUE',
     );
 
     const NursingPatientSummary urgent = NursingPatientSummary(

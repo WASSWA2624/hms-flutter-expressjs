@@ -618,6 +618,13 @@ class _OperationsQueuePanel extends ConsumerWidget {
             ),
           ],
           showAvatar: false,
+          // Same stage write as the desktop next-action column (sole primary).
+          trailing: _OperationsNextActionButton(
+            item: item,
+            state: state,
+            canMutate: canMutate,
+            onOpenDetail: onOpenDetail,
+          ),
         );
       },
     );
@@ -1245,9 +1252,15 @@ class _OperationsNextActionButton extends ConsumerWidget {
     }
 
     final String label = _nextActionLabelForKind(l10n, kind, item);
+    final IconData icon = _nextActionIcon(kind);
+    final bool isNarrow = MediaQuery.sizeOf(context).width < 600;
     if (kind == _OperationsNextActionKind.review) {
       return AppButton.tertiary(
         label: label,
+        icon: icon,
+        iconOnly: isNarrow,
+        tooltip: label,
+        semanticLabel: label,
         enabled: !isMutating,
         onPressed: isMutating
             ? null
@@ -1257,6 +1270,10 @@ class _OperationsNextActionButton extends ConsumerWidget {
 
     return AppButton.secondary(
       label: label,
+      icon: icon,
+      iconOnly: isNarrow,
+      tooltip: label,
+      semanticLabel: label,
       enabled: !isMutating,
       onPressed: isMutating
           ? null
@@ -2369,6 +2386,17 @@ enum _OperationsNextActionKind {
   closeout,
   review,
   none,
+}
+
+IconData _nextActionIcon(_OperationsNextActionKind kind) {
+  return switch (kind) {
+    _OperationsNextActionKind.assign => Icons.assignment_ind_outlined,
+    _OperationsNextActionKind.serviceLog => Icons.build_outlined,
+    _OperationsNextActionKind.updateStatus => Icons.fact_check_outlined,
+    _OperationsNextActionKind.closeout => Icons.verified_outlined,
+    _OperationsNextActionKind.review => Icons.visibility_outlined,
+    _OperationsNextActionKind.none => Icons.block_outlined,
+  };
 }
 
 _OperationsNextActionKind _nextActionKind(
