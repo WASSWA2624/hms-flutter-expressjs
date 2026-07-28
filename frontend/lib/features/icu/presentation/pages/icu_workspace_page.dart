@@ -7,13 +7,14 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_detail_panel.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -80,13 +81,33 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
     if (state?.selectedDetail == null) {
       return;
     }
+    final IcuPatientSummary summary = state!.selectedDetail!.summary;
+    final IcuWorkspaceSection section =
+        IcuWorkspaceSectionX.fromQueryParam(query.section);
+    final AccessRequirement writeRequirement =
+        IcuWorkspaceWriteRequirement.writeRequirement;
+
+    // Panel-focused deep links open the mutation dialog directly (no empty
+    // detail shell). Bare admission links open detail with the stage
+    // next-action omitted so it is not duplicated inside Quick Actions.
+    if (query.focusPanel != null) {
+      await openIcuFocusedAction(
+        context,
+        ref,
+        state,
+        summary,
+        query.focusPanel!,
+      );
+      return;
+    }
+
     await openIcuDetailDialog(
       context,
       ref,
-      state!,
-      state.selectedDetail!.summary,
-      IcuWorkspaceWriteRequirement.writeRequirement,
-      focusPanel: query.focusPanel,
+      state,
+      summary,
+      writeRequirement,
+      omitNextActionKind: icuBoardNextActionKind(summary, section),
     );
   }
 
@@ -240,70 +261,6 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     };
   }
 
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n,
-    IcuWorkspaceState state,
-    IcuWorkspaceController controller,
-  ) {
-    if (_section.isBedBoard || _section.isFollowUps) {
-      return null;
-    }
-    return AppAccessActionGate(
-      requirement: IcuWorkspaceWriteRequirement.writeRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        final bool canStartStay =
-            state.selectedDetail?.isEligibleToStartStay ?? false;
-        return AppTabToolbarPrimary(
-          label: l10n.icuActionStartStay,
-          icon: Icons.play_circle_outline,
-          enabled: isAllowed && canStartStay && !state.isSaving,
-          onPressed: () => confirmIcuAction(
-            context: context,
-            title: l10n.icuStartStayTitle,
-            body: l10n.icuStartStayBody,
-            actionLabel: l10n.icuStartStayActionLabel,
-            onConfirmed: controller.startIcuStay,
-          ),
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    IcuWorkspaceState state,
-    IcuWorkspaceController controller,
-  ) {
-    final bool isBedView = _section.isBedBoard;
-    final bool isFollowUpsView = _section.isFollowUps;
-    final bool isRefreshing = isFollowUpsView
-        ? false
-        : isBedView
-        ? state.isRefreshingBeds
-        : state.isRefreshingBoard;
-    return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        tooltip: l10n.commonRefreshActionLabel,
-        semanticLabel: l10n.commonRefreshActionLabel,
-        enabled: !isRefreshing,
-        onPressed: isRefreshing
-            ? null
-            : () {
-                if (isFollowUpsView) {
-                  return;
-                }
-                if (isBedView) {
-                  unawaited(controller.loadBedBoard());
-                } else {
-                  unawaited(controller.refresh());
-                }
-              },
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -363,8 +320,6 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state, controller),
-              secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
             if (isFollowUpsView)

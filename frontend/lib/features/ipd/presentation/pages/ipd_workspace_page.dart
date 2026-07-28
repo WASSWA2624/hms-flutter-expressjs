@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_board_next_action.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
@@ -34,47 +35,18 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
-
-const List<AppRole> _ipdAdminActionRoles = <AppRole>[
-  AppRole.superAdmin,
-  AppRole.tenantAdmin,
-  AppRole.facilityAdmin,
-];
-
-const AccessRequirement _ipdOperationalWriteRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._ipdAdminActionRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.operations,
-    AppRole.icuManager,
-  ],
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.operationsWrite,
-  ],
-  activeModules: <String>['inpatient-bed-management'],
-);
 
 const AccessRequirement _ipdBedManageRequirement = AccessRequirement(
-  anyRoles: _ipdAdminActionRoles,
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+  ],
   anyPermissions: <AppPermission>[
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
     AppPermissions.systemAdmin,
   ],
-  activeModules: <String>['inpatient-bed-management'],
-);
-
-const AccessRequirement _ipdClinicalWriteRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._ipdAdminActionRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.icuManager,
-  ],
-  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
   activeModules: <String>['inpatient-bed-management'],
 );
 
@@ -136,7 +108,46 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
     if (!mounted || query.focusAdmissionId == null) {
       return;
     }
-    await _openIpdDetailDialogById(context, ref, query.focusAdmissionId!);
+
+    // Panel / action deep links open the mutation dialog directly (no empty
+    // detail shell). Bare admission links open detail with the stage
+    // next-action omitted so it is not duplicated in Quick Actions.
+    if (query.hasFocusedMutation) {
+      final IpdWorkspaceState? state = _readIpdState(ref);
+      if (state == null) {
+        return;
+      }
+      final bool handled = await runIpdFocusedMutation(
+        context,
+        ref,
+        fallbackState: state,
+        admissionId: query.focusAdmissionId!,
+        panel: query.focusPanel,
+        action: query.focusAction,
+      );
+      if (!handled && mounted) {
+        await _openIpdDetailDialogById(
+          context,
+          ref,
+          query.focusAdmissionId!,
+          omitNextActionKind: ipdBoardNextActionKind(
+            state.selectedAdmission?.summary ??
+                IpdAdmissionSummary(id: query.focusAdmissionId!),
+          ),
+        );
+      }
+      return;
+    }
+
+    final IpdWorkspaceState? state = _readIpdState(ref);
+    await _openIpdDetailDialogById(
+      context,
+      ref,
+      query.focusAdmissionId!,
+      omitNextActionKind: state?.selectedAdmission == null
+          ? null
+          : ipdBoardNextActionKind(state!.selectedAdmission!.summary),
+    );
   }
 
   String? _querySignature(IpdAdmissionQuery? query) {
@@ -145,7 +156,7 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
     }
     return '${query.search}|${query.wardId}|${query.scope.name}'
         '|${query.section.name}|${query.focusAdmissionId}'
-        '|${query.focusPanel?.name}';
+        '|${query.focusPanel?.name}|${query.focusAction}';
   }
 
   @override
@@ -396,7 +407,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       );
     }
     return AppAccessActionGate(
-      requirement: _ipdOperationalWriteRequirement,
+      requirement: ipdOperationalWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.ipdStartAdmissionAction,
@@ -431,7 +442,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       ),
       if (_section.isBedBoard && canManageBeds)
         AppAccessActionGate(
-          requirement: _ipdOperationalWriteRequirement,
+          requirement: ipdOperationalWriteRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppTabToolbarAction(
               label: l10n.ipdStartAdmissionAction,
@@ -760,8 +771,8 @@ class _IpdDetailPanel extends ConsumerWidget {
     }
 
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canOperate = _ipdOperationalWriteRequirement.isAllowed(policy);
-    final bool canClinical = _ipdClinicalWriteRequirement.isAllowed(policy);
+    final bool canOperate = ipdOperationalWriteRequirement.isAllowed(policy);
+    final bool canClinical = ipdClinicalWriteRequirement.isAllowed(policy);
     final bool actionsEnabled = !state.isSaving;
 
     final ThemeData theme = Theme.of(context);

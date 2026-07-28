@@ -300,61 +300,6 @@ class _IntegrationsWorkspaceContentState
     };
   }
 
-  List<Widget> _buildSecondaryActions(
-    BuildContext context,
-    AppLocalizations l10n,
-    IntegrationWorkspaceState state,
-    IntegrationsWorkspaceController controller,
-  ) {
-    return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.integrationsActiveSummaryLabel,
-        icon: Icons.check_circle_outline,
-        semanticLabel: l10n.integrationsActiveSummaryLabel,
-        tooltip: l10n.integrationsActiveSummaryLabel,
-        onPressed: () {
-          unawaited(
-            _applyFilter(controller, IntegrationWorkspaceFilter.active),
-          );
-        },
-      ),
-      AppTabToolbarAction(
-        label: l10n.integrationsWarningsSummaryLabel,
-        icon: Icons.warning_amber_outlined,
-        semanticLabel: l10n.integrationsWarningsSummaryLabel,
-        tooltip: l10n.integrationsWarningsSummaryLabel,
-        onPressed: () {
-          unawaited(
-            _applyFilter(controller, IntegrationWorkspaceFilter.warning),
-          );
-        },
-      ),
-      AppTabToolbarAction(
-        label: l10n.integrationsFailedSummaryLabel,
-        icon: Icons.error_outline,
-        semanticLabel: l10n.integrationsFailedSummaryLabel,
-        tooltip: l10n.integrationsFailedSummaryLabel,
-        onPressed: () {
-          unawaited(
-            _applyFilter(controller, IntegrationWorkspaceFilter.failed),
-          );
-        },
-      ),
-      AppWorkspaceRefreshAction(
-        label: l10n.commonRefreshActionLabel,
-        isLoading: state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () async {
-                final AppFailure? failure = await controller.refresh();
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              },
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -401,12 +346,6 @@ class _IntegrationsWorkspaceContentState
                 }
               },
               primaryAction: _buildSectionPrimaryAction(l10n, state),
-              secondaryActions: _buildSecondaryActions(
-                context,
-                l10n,
-                state,
-                controller,
-              ),
             ),
             SizedBox(height: theme.spacing.sm),
             _IntegrationWorklistPanel(
@@ -472,16 +411,6 @@ class _IntegrationsWorkspaceContentState
         ],
       ),
     );
-  }
-
-  Future<void> _applyFilter(
-    IntegrationsWorkspaceController controller,
-    IntegrationWorkspaceFilter filter,
-  ) async {
-    final AppFailure? failure = await controller.applyFilter(filter);
-    if (mounted) {
-      _showFailureIfNeeded(context, failure);
-    }
   }
 }
 
@@ -576,10 +505,10 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
           ),
         ],
         filterValue: _filterValue(state.query),
-        hasActiveFilters: _isStatusFilter(state.query.filter),
+        hasActiveFilters: state.query.statusFilter != null,
         onFilterChanged: (AppSearchBarFilterValue value) async {
-          final AppFailure? failure = await controller.applyFilter(
-            _filterFromValue(value.option(_integrationFilterKey)),
+          final AppFailure? failure = await controller.applyStatusFilter(
+            _statusFilterFromValue(value.option(_integrationFilterKey)),
           );
           if (context.mounted) {
             _showFailureIfNeeded(context, failure);
@@ -632,6 +561,12 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
             ),
           ],
           showAvatar: false,
+          trailing: _IntegrationNextActionButton(
+            item: item,
+            section: section,
+            state: state,
+            canManage: canManage,
+          ),
         );
       },
     );
@@ -1274,8 +1209,7 @@ class _IntegrationNextActionButton extends ConsumerWidget {
       'review_failure' ||
       'monitor' ||
       'review_key' ||
-      'replay_or_escalate' ||
-      'monitor_delivery' => true,
+      'replay_or_escalate' => true,
       _ => false,
     };
 
@@ -1376,62 +1310,27 @@ Future<void> _handleIntegrationNextAction(
 
   switch (item.nextAction) {
     case 'review_failure':
-      final AppFailure? selectFailure = await controller.selectItem(item);
-      if (!context.mounted || selectFailure != null) {
-        if (context.mounted) {
-          _showFailureIfNeeded(context, selectFailure);
-        }
-        return;
-      }
       await _confirmTestConnection(context, controller, item);
     case 'enable':
       await _toggleIntegration(context, controller, item);
     case 'monitor':
-      final AppFailure? selectFailure = await controller.selectItem(item);
-      if (!context.mounted || selectFailure != null) {
-        if (context.mounted) {
-          _showFailureIfNeeded(context, selectFailure);
-        }
-        return;
-      }
       await _confirmSyncNow(context, controller, item);
     case 'review_key':
-      final AppFailure? selectFailure = await controller.selectItem(item);
-      if (!context.mounted || selectFailure != null) {
-        if (context.mounted) {
-          _showFailureIfNeeded(context, selectFailure);
-        }
-        return;
-      }
-      final IntegrationWorkspaceState? currentState =
-          _integrationStateFromAsync(
-            ref.read(integrationsWorkspaceControllerProvider),
-          );
-      if (currentState != null && context.mounted) {
-        await _openPermissionDialog(
-          context,
-          controller,
-          currentState,
-          apiKey: item.apiKey,
-        );
-      }
+      await _openPermissionDialog(
+        context,
+        controller,
+        state,
+        apiKey: item.apiKey,
+      );
     case 'rotate_or_monitor':
     case 'review':
     case 'RUN_AVAILABLE_ACTION':
     case 'USE_INTEGRATION_STATUS_AND_LOGS':
+    case 'monitor_delivery':
       await openDetail();
     case 'enable_webhook':
       await _toggleWebhook(context, controller, item);
-    case 'monitor_delivery':
-      await openDetail();
     case 'replay_or_escalate':
-      final AppFailure? selectFailure = await controller.selectItem(item);
-      if (!context.mounted || selectFailure != null) {
-        if (context.mounted) {
-          _showFailureIfNeeded(context, selectFailure);
-        }
-        return;
-      }
       await _confirmReplayLog(context, controller, item);
     default:
       await openDetail();
@@ -1503,6 +1402,7 @@ List<Widget> _detailActions(
   }
 
   final AppLocalizations l10n = context.l10n;
+  final String nextAction = item.nextAction;
   return switch (item.kind) {
     IntegrationWorkItemKind.integration => <Widget>[
       AppButton.secondary(
@@ -1520,51 +1420,55 @@ List<Widget> _detailActions(
           );
         },
       ),
-      AppButton.secondary(
-        label: l10n.integrationsTestConnectionAction,
-        leadingIcon: Icons.network_check_outlined,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_confirmTestConnection(context, controller, item));
-        },
-      ),
-      AppButton.secondary(
-        label: l10n.integrationsSyncNowAction,
-        leadingIcon: Icons.sync,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_confirmSyncNow(context, controller, item));
-        },
-      ),
-      AppButton.tertiary(
-        label: item.integration?.isActive == true
-            ? l10n.integrationsDisableAction
-            : l10n.integrationsEnableAction,
-        leadingIcon: item.integration?.isActive == true
-            ? Icons.pause_circle_outline
-            : Icons.play_circle_outline,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_toggleIntegration(context, controller, item));
-        },
-      ),
+      if (nextAction != 'review_failure')
+        AppButton.secondary(
+          label: l10n.integrationsTestConnectionAction,
+          leadingIcon: Icons.network_check_outlined,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_confirmTestConnection(context, controller, item));
+          },
+        ),
+      if (nextAction != 'monitor')
+        AppButton.secondary(
+          label: l10n.integrationsSyncNowAction,
+          leadingIcon: Icons.sync,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_confirmSyncNow(context, controller, item));
+          },
+        ),
+      if (nextAction != 'enable')
+        AppButton.tertiary(
+          label: item.integration?.isActive == true
+              ? l10n.integrationsDisableAction
+              : l10n.integrationsEnableAction,
+          leadingIcon: item.integration?.isActive == true
+              ? Icons.pause_circle_outline
+              : Icons.play_circle_outline,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_toggleIntegration(context, controller, item));
+          },
+        ),
     ],
     IntegrationWorkItemKind.apiKey => <Widget>[
-      AppButton.secondary(
-        label: l10n.integrationsManagePermissionsAction,
-        leadingIcon: Icons.admin_panel_settings_outlined,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(
-            _openPermissionDialog(
-              context,
-              controller,
-              state,
-              apiKey: item.apiKey,
-            ),
-          );
-        },
-      ),
+      if (nextAction != 'review_key')
+        AppButton.secondary(
+          label: l10n.integrationsManagePermissionsAction,
+          leadingIcon: Icons.admin_panel_settings_outlined,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(
+              _openPermissionDialog(
+                context,
+                controller,
+                state,
+                apiKey: item.apiKey,
+              ),
+            );
+          },
+        ),
       AppButton.secondary(
         label: item.apiKey?.isActive == true
             ? l10n.integrationsDisableAction
@@ -1610,28 +1514,30 @@ List<Widget> _detailActions(
           unawaited(_confirmReplayWebhook(context, controller, item));
         },
       ),
-      AppButton.tertiary(
-        label: item.webhook?.isActive == true
-            ? l10n.integrationsDisableAction
-            : l10n.integrationsEnableAction,
-        leadingIcon: item.webhook?.isActive == true
-            ? Icons.pause_circle_outline
-            : Icons.play_circle_outline,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_toggleWebhook(context, controller, item));
-        },
-      ),
+      if (nextAction != 'enable_webhook')
+        AppButton.tertiary(
+          label: item.webhook?.isActive == true
+              ? l10n.integrationsDisableAction
+              : l10n.integrationsEnableAction,
+          leadingIcon: item.webhook?.isActive == true
+              ? Icons.pause_circle_outline
+              : Icons.play_circle_outline,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_toggleWebhook(context, controller, item));
+          },
+        ),
     ],
     IntegrationWorkItemKind.log => <Widget>[
-      AppButton.secondary(
-        label: l10n.integrationsReplayLogAction,
-        leadingIcon: Icons.replay_outlined,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_confirmReplayLog(context, controller, item));
-        },
-      ),
+      if (nextAction != 'replay_or_escalate')
+        AppButton.secondary(
+          label: l10n.integrationsReplayLogAction,
+          leadingIcon: Icons.replay_outlined,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_confirmReplayLog(context, controller, item));
+          },
+        ),
     ],
     IntegrationWorkItemKind.interop => const <Widget>[],
   };
@@ -2908,22 +2814,26 @@ Map<String, Object?> _parseConfigLines(String value) {
 const String _integrationFilterKey = 'integration_filter';
 
 AppSearchBarFilterValue _filterValue(IntegrationWorkspaceQuery query) {
-  if (query.filter == IntegrationWorkspaceFilter.all) {
+  final IntegrationWorkspaceFilter? status = query.statusFilter;
+  if (status == null) {
     return AppSearchBarFilterValue.empty;
   }
   return AppSearchBarFilterValue(
-    options: <String, String>{_integrationFilterKey: query.filter.name},
+    options: <String, String>{_integrationFilterKey: status.name},
   );
 }
 
-IntegrationWorkspaceFilter _filterFromValue(String? value) {
+IntegrationWorkspaceFilter? _statusFilterFromValue(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return null;
+  }
   for (final IntegrationWorkspaceFilter filter
       in IntegrationWorkspaceFilter.values) {
-    if (filter.name == value) {
+    if (filter.name == value && _isStatusFilter(filter)) {
       return filter;
     }
   }
-  return IntegrationWorkspaceFilter.all;
+  return null;
 }
 
 bool _isStatusFilter(IntegrationWorkspaceFilter filter) {

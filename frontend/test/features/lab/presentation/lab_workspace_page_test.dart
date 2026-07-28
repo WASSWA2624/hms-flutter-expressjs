@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
+import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -103,7 +104,12 @@ void _stubWorkspace(_MockLabRepository repository) {
     final LabOrderSummary order = orderId == _completedOrder.id
         ? _completedOrder
         : _orderedOrder;
-    return Result<LabOrderWorkflow>.success(LabOrderWorkflow(order: order));
+    return Result<LabOrderWorkflow>.success(
+      LabOrderWorkflow(
+        order: order,
+        nextActions: const LabWorkflowNextActions(canCollect: true),
+      ),
+    );
   });
 }
 
@@ -198,7 +204,7 @@ void main() {
     expect(find.textContaining('Verified'), findsWidgets);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
     expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Orders view'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
@@ -223,7 +229,7 @@ void main() {
     expect(find.text(l10n.labTitle), findsNothing);
   });
 
-  testWidgets('switching tabs updates section query and toolbar actions', (
+  testWidgets('keeps stable create primary and configurations secondary', (
     WidgetTester tester,
   ) async {
     final GoRouter router = await _pumpLabWorkspace(
@@ -233,23 +239,24 @@ void main() {
 
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
     expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Processing').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'processing');
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_processing');
 
     await tester.tap(find.textContaining('Verified').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'completed');
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_completed');
   });
 
@@ -273,11 +280,51 @@ void main() {
       isTrue,
     );
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsNothing);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_critical');
   });
 
-  testWidgets('read-only users keep view toggle and refresh toolbar actions', (
+  testWidgets('next action opens result entry without route-only loop', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(tester, repository: repository);
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.labNextActionEnterResult), findsWidgets);
+
+    await tester.tap(find.text(l10n.labNextActionEnterResult).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LabResultEntryDialog), findsOneWidget);
+    expect(find.text(l10n.labResultEntryDialogTitle), findsOneWidget);
+    // Edit/Delete live only on the order section (not duplicated in the footer).
+    expect(find.text(l10n.labEditOrderAction), findsOneWidget);
+    expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+  });
+
+  testWidgets('deep link orderId opens result entry dialog directly', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/lab?orderId=LAB-ORDER-1',
+      initialQuery: LabWorkspaceQuery.fromUri(
+        Uri.parse('/lab?orderId=LAB-ORDER-1'),
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(LabResultEntryDialog)),
+    );
+    expect(find.byType(LabResultEntryDialog), findsOneWidget);
+    expect(find.text(l10n.labResultEntryDialogTitle), findsOneWidget);
+    verify(() => repository.loadOrderWorkflow('LAB-ORDER-1')).called(1);
+  });
+
+  testWidgets('read-only users keep view toggle; write actions absent', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy readOnly = AppAccessPolicy.fromSession(
@@ -296,6 +343,6 @@ void main() {
     expect(find.byTooltip('Create Lab Order'), findsNothing);
     expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(find.byTooltip('Orders view'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 }

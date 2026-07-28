@@ -255,21 +255,22 @@ void main() {
     expect(find.byTooltip('Create integration'), findsOneWidget);
   });
 
-  testWidgets('tab toolbar shows status filters and refresh without overflow', (
+  testWidgets('tab toolbar omits status shortcuts and refresh', (
     WidgetTester tester,
   ) async {
     await _pumpIntegrationsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byIcon(Icons.more_vert), findsNothing);
-    expect(find.byTooltip('Active'), findsOneWidget);
-    expect(find.byTooltip('Warnings'), findsOneWidget);
-    expect(find.byTooltip('Failed'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Active'), findsNothing);
+    expect(find.byTooltip('Warnings'), findsNothing);
+    expect(find.byTooltip('Failed'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Total items'), findsNothing);
+    expect(find.byTooltip('Create integration'), findsOneWidget);
   });
 
-  testWidgets('logs and interop tabs keep refresh and status toolbar actions', (
+  testWidgets('logs and interop tabs have no create or refresh toolbar', (
     WidgetTester tester,
   ) async {
     await _pumpIntegrationsWorkspace(tester, repository: repository);
@@ -280,18 +281,16 @@ void main() {
     expect(find.byTooltip('Create integration'), findsNothing);
     expect(find.byTooltip('Create API key'), findsNothing);
     expect(find.byTooltip('Create webhook'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
-    expect(find.byTooltip('Active'), findsOneWidget);
-    expect(find.byTooltip('Warnings'), findsOneWidget);
-    expect(find.byTooltip('Failed'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Active'), findsNothing);
 
     await tester.tap(_tab('Interop'));
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Refresh'), findsOneWidget);
-    expect(find.byTooltip('Active'), findsOneWidget);
-    expect(find.byTooltip('Warnings'), findsOneWidget);
-    expect(find.byTooltip('Failed'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Active'), findsNothing);
+    expect(find.byTooltip('Warnings'), findsNothing);
+    expect(find.byTooltip('Failed'), findsNothing);
   });
 
   testWidgets(
@@ -452,7 +451,7 @@ void main() {
 
     expect(_tab('Integrations'), findsOneWidget);
     expect(find.byTooltip('Create integration'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
   testWidgets(
@@ -469,6 +468,38 @@ void main() {
       expect(find.text('Lab HL7 Feed'), findsOneWidget);
       expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
       expect(find.text('Monitor'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'detail omits Sync now when row next-action is Monitor',
+    (WidgetTester tester) async {
+      await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('Lab HL7 Feed'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Configure'), findsOneWidget);
+      expect(find.text('Test connection'), findsOneWidget);
+      expect(find.text('Sync now'), findsNothing);
+      expect(find.text('Disable'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Monitor next-action opens sync confirm without detail shell',
+    (WidgetTester tester) async {
+      await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+      final Finder monitor = find.widgetWithText(AppButton, 'Monitor');
+      expect(monitor, findsWidgets);
+      await tester.ensureVisible(monitor.first);
+      await tester.pumpAndSettle();
+      await tester.tap(monitor.first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sync now?'), findsOneWidget);
+      expect(find.text('Configure'), findsNothing);
     },
   );
 }

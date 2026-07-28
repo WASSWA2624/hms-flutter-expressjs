@@ -219,8 +219,10 @@ void main() {
     expect(find.textContaining('Bed board'), findsWidgets);
     expect(find.text('Ada Active'), findsOneWidget);
     expect(find.text('Chris Critical'), findsOneWidget);
-    expect(find.byTooltip('Start ICU stay'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Start ICU stay'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.text('Assign bed'), findsWidgets);
+    expect(find.text('Acknowledge alert'), findsWidgets);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).columns.length, lessThanOrEqualTo(5));
@@ -246,11 +248,12 @@ void main() {
     expect(find.text('Chris Critical'), findsOneWidget);
     expect(find.text('Ada Active'), findsNothing);
     expect(find.text('Alert'), findsWidgets);
-    expect(find.byTooltip('Start ICU stay'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Start ICU stay'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.text('Acknowledge alert'), findsWidgets);
   });
 
-  testWidgets('deep link section=beds shows bed board and hides start action', (
+  testWidgets('deep link section=beds shows bed board without toolbar actions', (
     WidgetTester tester,
   ) async {
     await _pumpIcuWorkspace(
@@ -265,7 +268,7 @@ void main() {
     expect(find.byType(IcuBoardPanel), findsNothing);
     expect(find.text('ICU bed board'), findsNothing);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     verify(() => repository.loadBedBoard()).called(greaterThanOrEqualTo(1));
   });
 
@@ -300,7 +303,7 @@ void main() {
     expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
     expect(find.text('ICU bed board'), findsNothing);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
   testWidgets('search submits call applySearch via repository refresh', (
@@ -322,19 +325,27 @@ void main() {
     expect(find.text('Chris Critical'), findsNothing);
   });
 
-  testWidgets('row tap opens ICU detail dialog', (WidgetTester tester) async {
+  testWidgets('row tap opens ICU detail dialog without next-action duplicate', (
+    WidgetTester tester,
+  ) async {
     await _pumpIcuWorkspace(tester, repository: repository);
 
     await tester.tap(find.text('Ada Active'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(find.text('ICU stay'), findsOneWidget);
+    // Assign bed is the board next-action for Ada; detail must omit it.
+    expect(find.descendant(
+      of: find.byType(AppDialog),
+      matching: find.text('Assign bed'),
+    ), findsNothing);
     verify(
       () => repository.loadIcuDetail(any()),
     ).called(greaterThanOrEqualTo(1));
   });
 
-  testWidgets('existing deep links open detail dialog on vitals panel', (
+  testWidgets('panel deep link opens vitals dialog without stay detail shell', (
     WidgetTester tester,
   ) async {
     await _pumpIcuWorkspace(
@@ -346,10 +357,25 @@ void main() {
       ),
     );
 
-    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(find.text('Update vitals'), findsOneWidget);
+    expect(find.text('ICU stay'), findsNothing);
     verify(
       () => repository.loadIcuDetail(any()),
     ).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('id deep link opens stay detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/icu?id=ADM0001',
+      initialQuery: IcuBoardQuery.fromUri(Uri.parse('/icu?id=ADM0001')),
+    );
+
+    expect(find.text('ICU stay'), findsOneWidget);
+    expect(find.text('Update vitals'), findsNothing);
   });
 
   testWidgets('AppListTable uses icu_board column visibility storage key', (

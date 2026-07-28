@@ -23,6 +23,7 @@ final class IntegrationWorkspaceQuery {
   const IntegrationWorkspaceQuery({
     this.search = '',
     this.filter = IntegrationWorkspaceFilter.all,
+    this.statusFilter,
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
@@ -45,31 +46,52 @@ final class IntegrationWorkspaceQuery {
       'kind',
     ]);
     final String searchRaw = pick(<String>['search', 'q']);
+    final String statusRaw = pick(<String>['status']);
     return IntegrationWorkspaceQuery(
       search: searchRaw,
       filter: _filterFromSection(sectionRaw),
+      statusFilter: _statusFilterFromRaw(statusRaw),
     );
   }
 
   final String search;
   final IntegrationWorkspaceFilter filter;
+  final IntegrationWorkspaceFilter? statusFilter;
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting =>
-      search.isNotEmpty || filter != IntegrationWorkspaceFilter.all;
+      search.isNotEmpty ||
+      filter != IntegrationWorkspaceFilter.all ||
+      statusFilter != null;
 
-  String get signature => '${filter.name}|$search';
+  String get signature =>
+      '${filter.name}|${statusFilter?.name ?? ''}|$search';
 
   IntegrationWorkspaceQuery copyWith({
     String? search,
     IntegrationWorkspaceFilter? filter,
+    IntegrationWorkspaceFilter? statusFilter,
     AppPageRequest? pageRequest,
+    bool clearStatusFilter = false,
   }) {
     return IntegrationWorkspaceQuery(
       search: search ?? this.search,
       filter: filter ?? this.filter,
+      statusFilter: clearStatusFilter
+          ? null
+          : statusFilter ?? this.statusFilter,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+
+  static IntegrationWorkspaceFilter? _statusFilterFromRaw(String raw) {
+    return switch (raw.trim().toLowerCase()) {
+      'active' => IntegrationWorkspaceFilter.active,
+      'warning' || 'warnings' => IntegrationWorkspaceFilter.warning,
+      'failed' || 'error' || 'errors' => IntegrationWorkspaceFilter.failed,
+      'disabled' || 'inactive' => IntegrationWorkspaceFilter.disabled,
+      _ => null,
+    };
   }
 
   static IntegrationWorkspaceFilter _filterFromSection(String raw) {
@@ -695,8 +717,19 @@ final class IntegrationWorkspaceState {
   }
 
   bool _matchesFilter(IntegrationWorkItem item) {
+    if (!_matchesSectionFilter(item)) {
+      return false;
+    }
+    return _matchesStatusFilter(item);
+  }
+
+  bool _matchesSectionFilter(IntegrationWorkItem item) {
     return switch (query.filter) {
-      IntegrationWorkspaceFilter.all => true,
+      IntegrationWorkspaceFilter.all ||
+      IntegrationWorkspaceFilter.active ||
+      IntegrationWorkspaceFilter.warning ||
+      IntegrationWorkspaceFilter.failed ||
+      IntegrationWorkspaceFilter.disabled => true,
       IntegrationWorkspaceFilter.integrations =>
         item.kind == IntegrationWorkItemKind.integration,
       IntegrationWorkspaceFilter.apiKeys =>
@@ -707,6 +740,23 @@ final class IntegrationWorkspaceState {
         item.kind == IntegrationWorkItemKind.log,
       IntegrationWorkspaceFilter.interop =>
         item.kind == IntegrationWorkItemKind.interop,
+    };
+  }
+
+  bool _matchesStatusFilter(IntegrationWorkItem item) {
+    final IntegrationWorkspaceFilter? status =
+        query.statusFilter ??
+        switch (query.filter) {
+          IntegrationWorkspaceFilter.active ||
+          IntegrationWorkspaceFilter.warning ||
+          IntegrationWorkspaceFilter.failed ||
+          IntegrationWorkspaceFilter.disabled => query.filter,
+          _ => null,
+        };
+    if (status == null) {
+      return true;
+    }
+    return switch (status) {
       IntegrationWorkspaceFilter.active =>
         item.status.toUpperCase() == 'ACTIVE',
       IntegrationWorkspaceFilter.warning =>
@@ -720,6 +770,7 @@ final class IntegrationWorkspaceState {
                 item.kind == IntegrationWorkItemKind.log,
       IntegrationWorkspaceFilter.disabled =>
         item.status.toUpperCase() == 'INACTIVE',
+      _ => true,
     };
   }
 }

@@ -12,7 +12,6 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
-import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
@@ -1246,37 +1245,22 @@ class _SmallRecordSection extends StatelessWidget {
     required this.icon,
     required this.emptyText,
     required this.rows,
-    this.emptyActionLabel,
-    this.onEmptyAction,
   });
 
   final String title;
   final IconData icon;
   final String emptyText;
   final List<_RecordLine> rows;
-  final String? emptyActionLabel;
-  final VoidCallback? onEmptyAction;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     return AppWorkspaceDetailPanel(
       title: title,
       titleIcon: icon,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: rows.isEmpty
-            ? <Widget>[
-                Text(emptyText),
-                if (onEmptyAction != null &&
-                    (emptyActionLabel ?? '').trim().isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.sm),
-                  AppButton.secondary(
-                    label: emptyActionLabel!,
-                    onPressed: onEmptyAction,
-                  ),
-                ],
-              ]
+            ? <Widget>[Text(emptyText)]
             : <Widget>[
                 for (final _RecordLine row in rows) _RecordLineTile(line: row),
               ],

@@ -49,21 +49,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           requirement: _labWorkflowMutationRequirement,
           capabilityAllowed: next.canCollect,
           isLoading: isSaving,
-          confirmTitle: l10n.labCollectDialogTitle,
-          confirmBody: l10n.labCollectConfirmBody,
-          confirmSubmitLabel: l10n.labCollectSampleAction,
           onPressed: isSaving ? null : () => _collect(context, ref),
-        ),
-      );
-    } else if (canMutate && next.billingGateBlocked) {
-      currentActions.add(
-        AppWorkflowStepAction(
-          id: 'billing_gate',
-          label: l10n.labBillingGateBlockedAction,
-          icon: Icons.payments_outlined,
-          requirement: _labWorkflowMutationRequirement,
-          capabilityAllowed: false,
-          onPressed: null,
         ),
       );
     }
@@ -76,9 +62,6 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           requirement: _labWorkflowMutationRequirement,
           capabilityAllowed: next.canReceiveSample,
           isLoading: isSaving,
-          confirmTitle: l10n.labReceiveDialogTitle,
-          confirmBody: l10n.labReceiveConfirmBody,
-          confirmSubmitLabel: l10n.labReceiveSampleAction,
           onPressed: isSaving ? null : () => _receive(context, ref),
         ),
       );

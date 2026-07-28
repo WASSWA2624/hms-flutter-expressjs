@@ -4,14 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -35,11 +34,13 @@ class IcuStayDetailPanel extends ConsumerWidget {
   const IcuStayDetailPanel({
     required this.state,
     required this.writeRequirement,
+    this.omitNextActionKind,
     super.key,
   });
 
   final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final IcuNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,6 +136,7 @@ class IcuStayDetailPanel extends ConsumerWidget {
           detail: detail,
           state: state,
           writeRequirement: writeRequirement,
+          omitNextActionKind: omitNextActionKind,
         ),
         SizedBox(height: theme.spacing.md),
         IcuAlertPanel(detail: detail),
@@ -156,12 +158,14 @@ class IcuActionPanel extends ConsumerWidget {
     required this.detail,
     required this.state,
     required this.writeRequirement,
+    this.omitNextActionKind,
     super.key,
   });
 
   final IcuPatientDetail detail;
   final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final IcuNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -174,48 +178,52 @@ class IcuActionPanel extends ConsumerWidget {
     final bool canStartStay = detail.isEligibleToStartStay;
     final bool hasEncounter = detail.summary.encounterId != null;
     final bool hasOpenTransfer = detail.summary.hasOpenTransfer;
+    final IcuNextActionKind? omit = omitNextActionKind;
+    const AccessRequirement navigationRequirement = AccessRequirement();
 
-    return AppAccessActionGate(
-      requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
-        title: l10n.icuActionsTitle,
-        presentation: AppQuickActionsPresentation.detailPanel,
-        actions: <AppActionItem>[
-          if (canStartStay)
-            AppActionItem(
-              label: l10n.icuActionStartStay,
-              leadingIcon: Icons.play_circle_outline,
-              enabled: isAllowed,
-              onPressed: () => confirmIcuAction(
-                context: context,
-                title: l10n.icuStartStayTitle,
-                body: l10n.icuStartStayBody,
-                actionLabel: l10n.icuStartStayActionLabel,
-                onConfirmed: () => controller.startIcuStay(),
-              ),
+    return AppQuickActions(
+      title: l10n.icuActionsTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      permissionActions: <AppPermissionActionItem>[
+        if (canStartStay && omit != IcuNextActionKind.startStay)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
+            label: l10n.icuActionStartStay,
+            icon: Icons.play_circle_outline,
+            onPressed: () => confirmIcuAction(
+              context: context,
+              title: l10n.icuStartStayTitle,
+              body: l10n.icuStartStayBody,
+              actionLabel: l10n.icuStartStayActionLabel,
+              onConfirmed: () => controller.startIcuStay(),
             ),
-          AppActionItem(
+          ),
+        if (hasActiveStay && omit != IcuNextActionKind.recordObservation)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionRecordObservation,
-            leadingIcon: Icons.note_add_outlined,
-            enabled: isAllowed && hasActiveStay,
+            icon: Icons.note_add_outlined,
             onPressed: () => openIcuObservationDialog(context),
           ),
-          AppActionItem(
+        if (hasEncounter)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionRecordVitals,
-            leadingIcon: Icons.monitor_heart_outlined,
-            enabled: isAllowed && hasEncounter,
+            icon: Icons.monitor_heart_outlined,
             onPressed: () => openIcuVitalsDialog(context),
           ),
-          AppActionItem(
+        if (hasActiveStay)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionRaiseAlert,
-            leadingIcon: Icons.notification_important_outlined,
-            enabled: isAllowed && hasActiveStay,
+            icon: Icons.notification_important_outlined,
             onPressed: () => openIcuAlertDialog(context),
           ),
-          AppActionItem(
+        if (hasAlert && omit != IcuNextActionKind.acknowledgeAlert)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionAcknowledgeAlert,
-            leadingIcon: Icons.done_all_outlined,
-            enabled: isAllowed && hasAlert,
+            icon: Icons.done_all_outlined,
             onPressed: () => confirmIcuAction(
               context: context,
               title: l10n.icuAcknowledgeTitle,
@@ -224,80 +232,92 @@ class IcuActionPanel extends ConsumerWidget {
               onConfirmed: controller.acknowledgeLatestAlert,
             ),
           ),
-          AppActionItem(
-            label: l10n.icuActionRound,
-            leadingIcon: Icons.rate_review_outlined,
-            enabled: isAllowed,
-            onPressed: () => openIcuRoundDialog(context),
-          ),
-          AppActionItem(
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.icuActionRound,
+          icon: Icons.rate_review_outlined,
+          onPressed: () => openIcuRoundDialog(context),
+        ),
+        if (hasEncounter)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionOrderLab,
-            leadingIcon: Icons.science_outlined,
-            enabled: isAllowed && hasEncounter,
+            icon: Icons.science_outlined,
             onPressed: () => openIcuLabOrderDialog(context),
           ),
-          AppActionItem(
+        if (hasEncounter)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionOrderImaging,
-            leadingIcon: Icons.radio_outlined,
-            enabled: isAllowed && hasEncounter,
+            icon: Icons.radio_outlined,
             onPressed: () => openIcuRadiologyOrderDialog(context),
           ),
-          AppActionItem(
+        if (hasEncounter)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionPrescribe,
-            leadingIcon: Icons.medication_outlined,
-            enabled: isAllowed && hasEncounter,
+            icon: Icons.medication_outlined,
             onPressed: () => openIcuPrescriptionDialog(context),
           ),
-          if (!detail.summary.hasActiveBed)
-            AppActionItem(
-              label: l10n.icuActionAssignBed,
-              leadingIcon: Icons.bed_outlined,
-              enabled: isAllowed,
-              onPressed: () => openIcuAssignBedDialog(context),
-            ),
-          AppActionItem(
+        if (!detail.summary.hasActiveBed &&
+            omit != IcuNextActionKind.assignBed)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
+            label: l10n.icuActionAssignBed,
+            icon: Icons.bed_outlined,
+            onPressed: () => openIcuAssignBedDialog(context),
+          ),
+        if (!hasOpenTransfer && omit != IcuNextActionKind.requestTransfer)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionRequestTransfer,
-            leadingIcon: AppActionIcons.transfer,
-            enabled: isAllowed && !hasOpenTransfer,
+            icon: AppActionIcons.transfer,
             onPressed: () =>
                 openIcuTransferDialog(context, state.referenceData),
           ),
-          if (hasOpenTransfer)
-            AppActionItem(
-              label: l10n.icuActionManageTransfer,
-              leadingIcon: Icons.published_with_changes_outlined,
-              enabled: isAllowed,
-              onPressed: () => openIcuManageTransferDialog(context),
-            ),
-          AppActionItem(
+        if (hasOpenTransfer && omit != IcuNextActionKind.manageTransfer)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
+            label: l10n.icuActionManageTransfer,
+            icon: Icons.published_with_changes_outlined,
+            onPressed: () => openIcuManageTransferDialog(context),
+          ),
+        if (omit != IcuNextActionKind.markReadiness)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionMarkReadiness,
-            leadingIcon: Icons.fact_check_outlined,
-            enabled: isAllowed,
+            icon: Icons.fact_check_outlined,
             onPressed: () => openIcuReadinessDialog(context),
           ),
-          if (detail.summary.isDischargePlanned)
-            AppActionItem(
-              label: l10n.icuActionOpenDischargeClearance,
-              leadingIcon: Icons.assignment_turned_in_outlined,
-              enabled: detail.summary.displayId != null,
-              onPressed: () =>
-                  openIpdDischargeClearance(context, detail.summary),
-            ),
-          AppActionItem(
-            label: l10n.icuActionOpenBilling,
-            leadingIcon: Icons.receipt_long_outlined,
-            onPressed: () => context.go(AppRoutes.billing.path),
+        if (detail.summary.isDischargePlanned &&
+            detail.summary.displayId != null &&
+            omit != IcuNextActionKind.openDischargeClearance)
+          AppPermissionActionItem(
+            requirement: navigationRequirement,
+            label: l10n.icuActionOpenDischargeClearance,
+            icon: Icons.assignment_turned_in_outlined,
+            onPressed: () =>
+                openIpdDischargeClearance(context, detail.summary),
           ),
-          AppActionItem(
+        AppPermissionActionItem(
+          requirement: navigationRequirement,
+          label: l10n.icuActionOpenBilling,
+          icon: Icons.receipt_long_outlined,
+          onPressed: () => context.go(AppRoutes.billing.path),
+        ),
+        if (detail.summary.displayId != null &&
+            omit != IcuNextActionKind.openIpd)
+          AppPermissionActionItem(
+            requirement: navigationRequirement,
             label: l10n.icuActionOpenIpd,
-            leadingIcon: Icons.open_in_new_outlined,
-            enabled: detail.summary.displayId != null,
+            icon: Icons.open_in_new_outlined,
             onPressed: () => openIpdWorkspace(context, detail.summary),
           ),
-          AppActionItem(
+        if (hasActiveStay)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.icuActionEndStay,
-            leadingIcon: Icons.output_outlined,
-            enabled: isAllowed && hasActiveStay,
+            icon: Icons.output_outlined,
             onPressed: () => confirmIcuAction(
               context: context,
               title: l10n.icuEndStayTitle,
@@ -306,34 +326,33 @@ class IcuActionPanel extends ConsumerWidget {
               onConfirmed: controller.transferOut,
             ),
           ),
-        ],
-        extraActions: <Widget>[
-          AppReportActionButton.print(
-            label: l10n.icuPrintSummaryLabel,
-            onPressed: () async {
-              await printFormTemplateDocument(
-                ref: ref,
-                context: context,
-                title: l10n.icuStayDialogTitle,
-                patientContext: buildPrintFormPatientContext(
-                  l10n,
-                  patientName: detail.summary.displayTitle,
-                  patientId: detail.summary.patientId,
-                  encounterId: detail.summary.encounterId,
-                ),
-                contextReference: PrintFormContextReference(
-                  label: l10n.icuAdmissionLabel,
-                  value:
-                      detail.summary.displayId ??
-                      context.l10n.profileUnknownValue,
-                ),
-                bodyHtml: icuSummaryHtml(context, detail),
-                includeSignatures: true,
-              );
-            },
-          ),
-        ],
-      ),
+      ],
+      extraActions: <Widget>[
+        AppReportActionButton.print(
+          label: l10n.icuPrintSummaryLabel,
+          onPressed: () async {
+            await printFormTemplateDocument(
+              ref: ref,
+              context: context,
+              title: l10n.icuStayDialogTitle,
+              patientContext: buildPrintFormPatientContext(
+                l10n,
+                patientName: detail.summary.displayTitle,
+                patientId: detail.summary.patientId,
+                encounterId: detail.summary.encounterId,
+              ),
+              contextReference: PrintFormContextReference(
+                label: l10n.icuAdmissionLabel,
+                value:
+                    detail.summary.displayId ??
+                    context.l10n.profileUnknownValue,
+              ),
+              bodyHtml: icuSummaryHtml(context, detail),
+              includeSignatures: true,
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_columns.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_filters.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -81,7 +82,14 @@ class IcuBoardPanel extends ConsumerWidget {
       onPageChanged: controller.changePage,
       onRowSelected: (IcuPatientSummary summary) {
         unawaited(
-          openIcuDetailDialog(context, ref, state, summary, writeRequirement),
+          openIcuDetailDialog(
+            context,
+            ref,
+            state,
+            summary,
+            writeRequirement,
+            omitNextActionKind: icuBoardNextActionKind(summary, section),
+          ),
         );
       },
       rowColorBuilder: _rowColor,
@@ -137,6 +145,11 @@ class IcuBoardPanel extends ConsumerWidget {
             },
             AppListTableMobileMeta(label: icuStatus(item).label),
           ],
+          trailing: IcuNextActionButton(
+            summary: item,
+            section: section,
+            writeRequirement: writeRequirement,
+          ),
         );
       },
     );

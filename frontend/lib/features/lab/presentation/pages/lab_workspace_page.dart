@@ -33,7 +33,6 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 class LabWorkspacePage extends ConsumerWidget {
   const LabWorkspacePage({this.initialQuery, super.key});
@@ -206,11 +205,56 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     if (_section.isFollowUps) {
       return null;
     }
-    return switch (_section) {
-      LabDeskSection.completed => AppAccessActionGate(
+    return AppAccessActionGate(
+      requirement: _mutationRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.labCreateAction,
+          icon: Icons.add_circle_outline,
+          semanticLabel: l10n.labCreateAction,
+          tooltip: l10n.labCreateAction,
+          enabled: isAllowed && !state.isSaving,
+          onPressed: isAllowed && !state.isSaving
+              ? () => _openCreateLabOrderDialog(context, state)
+              : null,
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    LabWorkspaceState state,
+  ) {
+    if (_section.isFollowUps) {
+      return const <Widget>[];
+    }
+    final bool isPatientsView = state.query.view == LabWorkbenchView.patients;
+    final String viewLabel = isPatientsView
+        ? l10n.labOrdersViewAction
+        : l10n.labPatientsViewAction;
+    return <Widget>[
+      AppTabToolbarAction(
+        label: viewLabel,
+        icon: Icons.swap_horiz_outlined,
+        semanticLabel: viewLabel,
+        tooltip: viewLabel,
+        onPressed: () {
+          unawaited(
+            ref
+                .read(labWorkspaceControllerProvider.notifier)
+                .applyView(
+                  isPatientsView
+                      ? LabWorkbenchView.orders
+                      : LabWorkbenchView.patients,
+                ),
+          );
+        },
+      ),
+      AppAccessActionGate(
         requirement: _mutationRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
+          return AppTabToolbarAction(
             label: l10n.labReferenceRangesAction,
             icon: Icons.tune_outlined,
             semanticLabel: l10n.labReferenceRangesAction,
@@ -222,121 +266,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           );
         },
       ),
-      LabDeskSection.worklist ||
-      LabDeskSection.collection ||
-      LabDeskSection.processing ||
-      LabDeskSection.verification ||
-      LabDeskSection.critical => AppAccessActionGate(
-        requirement: _mutationRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.labCreateAction,
-            icon: Icons.add_circle_outline,
-            semanticLabel: l10n.labCreateAction,
-            tooltip: l10n.labCreateAction,
-            enabled: isAllowed && !state.isSaving,
-            onPressed: isAllowed && !state.isSaving
-                ? () => _openCreateLabOrderDialog(context, state)
-                : null,
-          );
-        },
-      ),
-      LabDeskSection.followUps => null,
-    };
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    LabWorkspaceState state,
-  ) {
-    final bool isPatientsView = state.query.view == LabWorkbenchView.patients;
-    final String viewLabel = isPatientsView
-        ? l10n.labOrdersViewAction
-        : l10n.labPatientsViewAction;
-    final AppTabToolbarAction viewToggle = AppTabToolbarAction(
-      label: viewLabel,
-      icon: Icons.swap_horiz_outlined,
-      semanticLabel: viewLabel,
-      tooltip: viewLabel,
-      onPressed: () {
-        unawaited(
-          ref
-              .read(labWorkspaceControllerProvider.notifier)
-              .applyView(
-                isPatientsView
-                    ? LabWorkbenchView.orders
-                    : LabWorkbenchView.patients,
-              ),
-        );
-      },
-    );
-    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      semanticLabel: l10n.commonRefreshActionLabel,
-      tooltip: l10n.commonRefreshActionLabel,
-      isLoading: state.isRefreshing,
-      enabled: !state.isRefreshing,
-      onPressed: state.isRefreshing
-          ? null
-          : () => unawaited(_refreshWorkbench()),
-    );
-
-    return switch (_section) {
-      LabDeskSection.worklist => <Widget>[
-        viewToggle,
-        AppAccessActionGate(
-          requirement: _mutationRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.labReferenceRangesAction,
-              icon: Icons.tune_outlined,
-              semanticLabel: l10n.labReferenceRangesAction,
-              tooltip: l10n.labReferenceRangesAction,
-              enabled: isAllowed && !state.isSaving,
-              onPressed: isAllowed && !state.isSaving
-                  ? () => _openLabConfigurationsDialog(context, state)
-                  : null,
-            );
-          },
-        ),
-        refreshAction,
-      ],
-      LabDeskSection.completed => <Widget>[
-        viewToggle,
-        refreshAction,
-        AppAccessActionGate(
-          requirement: _mutationRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.labCreateAction,
-              icon: Icons.add_circle_outline,
-              semanticLabel: l10n.labCreateAction,
-              tooltip: l10n.labCreateAction,
-              enabled: isAllowed && !state.isSaving,
-              onPressed: isAllowed && !state.isSaving
-                  ? () => _openCreateLabOrderDialog(context, state)
-                  : null,
-            );
-          },
-        ),
-      ],
-      LabDeskSection.collection ||
-      LabDeskSection.processing ||
-      LabDeskSection.verification ||
-      LabDeskSection.critical => <Widget>[viewToggle, refreshAction],
-      LabDeskSection.followUps => const <Widget>[],
-    };
-  }
-
-  Future<void> _refreshWorkbench() async {
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .refresh();
-    if (!mounted) {
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
+    ];
   }
 
   void _scheduleWorklistSearch(String value) {
@@ -500,11 +430,13 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         _section = section;
         _filterValue = AppSearchBarFilterValue.empty;
       });
-      unawaited(
-        ref
-            .read(labWorkspaceControllerProvider.notifier)
-            .applyScope(_scopeForSection(section)),
-      );
+      if (!section.isFollowUps) {
+        unawaited(
+          ref
+              .read(labWorkspaceControllerProvider.notifier)
+              .applyScope(_scopeForSection(section)),
+        );
+      }
     }
 
     if (query.search.isNotEmpty) {
@@ -516,11 +448,18 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       );
     }
     final LabOrderSummary? order = _findOrderByQuery(query);
-    if (order != null) {
-      await ref
-          .read(labWorkspaceControllerProvider.notifier)
-          .selectOrder(order);
+    if (order == null || !mounted) {
+      return;
     }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    await _openLabDetailDialog(
+      context,
+      ref,
+      widget.state,
+      order,
+      canMutate,
+    );
   }
 
   LabOrderSummary? _findOrderByQuery(LabWorkspaceQuery query) {
@@ -650,8 +589,34 @@ class _LabWorklistPanel extends ConsumerWidget {
             icon: Icons.science_outlined,
           ),
           columns: state.query.view == LabWorkbenchView.patients
-              ? _patientViewWorklistColumns(context)
-              : _orderViewWorklistColumns(context),
+              ? _patientViewWorklistColumns(
+                  context,
+                  onNextAction: (LabOrderSummary order) {
+                    unawaited(
+                      _openLabDetailDialog(
+                        context,
+                        ref,
+                        state,
+                        order,
+                        canMutate,
+                      ),
+                    );
+                  },
+                )
+              : _orderViewWorklistColumns(
+                  context,
+                  onNextAction: (LabOrderSummary order) {
+                    unawaited(
+                      _openLabDetailDialog(
+                        context,
+                        ref,
+                        state,
+                        order,
+                        canMutate,
+                      ),
+                    );
+                  },
+                ),
           columnChoices: _optionalWorklistColumns(context),
           mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
             final String? patientId = item.patientId?.trim();
@@ -804,26 +769,28 @@ List<AppSearchBarFilterChoice> _statusFilterChoices(
 }
 
 List<AppListTableColumn<LabOrderSummary>> _patientViewWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required ValueChanged<LabOrderSummary> onNextAction,
+}) {
   return <AppListTableColumn<LabOrderSummary>>[
     _patientNameWorklistColumn(context),
     _orderWorklistColumn(context, LabWorkbenchView.patients),
     _testsWorklistColumn(context),
     _labWorkflowStatusColumn(context),
-    _labNextActionColumn(context),
+    _labNextActionColumn(context, onNextAction: onNextAction),
   ];
 }
 
 List<AppListTableColumn<LabOrderSummary>> _orderViewWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required ValueChanged<LabOrderSummary> onNextAction,
+}) {
   return <AppListTableColumn<LabOrderSummary>>[
     _orderWorklistColumn(context, LabWorkbenchView.orders),
     _patientNameWorklistColumn(context),
     _testsWorklistColumn(context),
     _labWorkflowStatusColumn(context),
-    _labNextActionColumn(context),
+    _labNextActionColumn(context, onNextAction: onNextAction),
   ];
 }
 
@@ -893,7 +860,10 @@ AppListTableColumn<LabOrderSummary> _labWorkflowStatusColumn(
   );
 }
 
-AppListTableColumn<LabOrderSummary> _labNextActionColumn(BuildContext context) {
+AppListTableColumn<LabOrderSummary> _labNextActionColumn(
+  BuildContext context, {
+  required ValueChanged<LabOrderSummary> onNextAction,
+}) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<LabOrderSummary>(
     id: 'next_action',
@@ -905,24 +875,90 @@ AppListTableColumn<LabOrderSummary> _labNextActionColumn(BuildContext context) {
           _nextActionLabel(context, right),
         ),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
-      return _labNextActionCell(context, item);
+      return _labNextActionCell(
+        context,
+        item,
+        onActivate: () => onNextAction(item),
+      );
     },
   );
 }
 
-Widget _labNextActionCell(BuildContext context, LabOrderSummary item) {
-  final String encounterId = item.encounterId ?? '';
-  if (encounterId.trim().isEmpty) {
-    return _labWorklistTextCell(context, _nextActionLabel(context, item));
+Widget _labNextActionCell(
+  BuildContext context,
+  LabOrderSummary item, {
+  required VoidCallback onActivate,
+}) {
+  final String label = _nextActionLabel(context, item);
+  if (!_isLabNextActionActivatable(item)) {
+    return _labWorklistTextCell(context, label);
   }
-  return WorkflowActionButton(
-    encounterId: encounterId,
-    patientId: item.patientId,
-    orderId: item.id,
-    nextStep: item.status,
-    sourceModule: 'laboratory',
-    compact: true,
-  );
+  return _LabCompactNextActionButton(label: label, onPressed: onActivate);
+}
+
+bool _isLabNextActionActivatable(LabOrderSummary order) {
+  final String status = (order.status ?? '').toUpperCase();
+  return status != 'CANCELLED' && status != 'COMPLETED';
+}
+
+class _LabCompactNextActionButton extends StatelessWidget {
+  const _LabCompactNextActionButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color primaryColor = theme.colorScheme.primary;
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onPressed,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.xs,
+                vertical: 2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    Icons.arrow_forward_outlined,
+                    size: 14,
+                    color: primaryColor,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 AppListTableColumn<LabOrderSummary> _patientIdWorklistColumn(
@@ -2148,95 +2184,6 @@ class _LabConfigurationTypeOption extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ReverseWorkflowDialog extends ConsumerStatefulWidget {
-  const _ReverseWorkflowDialog();
-
-  @override
-  ConsumerState<_ReverseWorkflowDialog> createState() =>
-      _ReverseWorkflowDialogState();
-}
-
-class _ReverseWorkflowDialogState
-    extends ConsumerState<_ReverseWorkflowDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-  AppFailure? _failure;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.labReverseDialogTitle),
-      icon: const Icon(Icons.undo_outlined),
-      scrollable: true,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.labReverseReasonLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: l10n.labReverseWorkflowAction,
-        isSaving: _isSaving,
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .reverseSelected(<String, Object?>{
-          'reason': _reasonController.text.trim(),
-        });
-    if (failure == null) {
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 

@@ -157,7 +157,7 @@ void main() {
         filter: IntegrationWorkspaceFilter.logs,
       );
 
-      expect(query.signature, 'logs|');
+      expect(query.signature, 'logs||');
     });
 
     test('signature changes with filter', () {
@@ -182,6 +182,19 @@ void main() {
       expect(a.signature, isNot(b.signature));
     });
 
+    test('signature changes with statusFilter', () {
+      const IntegrationWorkspaceQuery a = IntegrationWorkspaceQuery(
+        filter: IntegrationWorkspaceFilter.integrations,
+        statusFilter: IntegrationWorkspaceFilter.active,
+      );
+      const IntegrationWorkspaceQuery b = IntegrationWorkspaceQuery(
+        filter: IntegrationWorkspaceFilter.integrations,
+        statusFilter: IntegrationWorkspaceFilter.failed,
+      );
+
+      expect(a.signature, isNot(b.signature));
+    });
+
     test('same parameters produce same signature', () {
       final IntegrationWorkspaceQuery a = IntegrationWorkspaceQuery.fromUri(
         Uri.parse('/integrations?section=webhooks&search=test'),
@@ -191,6 +204,51 @@ void main() {
       );
 
       expect(a.signature, b.signature);
+    });
+  });
+
+  group('IntegrationWorkspaceQuery.statusFilter', () {
+    test('parses status from URI without changing section', () {
+      final IntegrationWorkspaceQuery query = IntegrationWorkspaceQuery.fromUri(
+        Uri.parse('/integrations?section=integrations&status=active'),
+      );
+
+      expect(query.filter, IntegrationWorkspaceFilter.integrations);
+      expect(query.statusFilter, IntegrationWorkspaceFilter.active);
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('section and status filters combine in workItems', () {
+      const IntegrationWorkspaceState state = IntegrationWorkspaceState(
+        query: IntegrationWorkspaceQuery(
+          filter: IntegrationWorkspaceFilter.integrations,
+          statusFilter: IntegrationWorkspaceFilter.active,
+        ),
+        integrations: <IntegrationRecord>[
+          IntegrationRecord(
+            id: 'active-1',
+            name: 'Active Feed',
+            status: 'ACTIVE',
+          ),
+          IntegrationRecord(
+            id: 'inactive-1',
+            name: 'Inactive Feed',
+            status: 'INACTIVE',
+          ),
+        ],
+        apiKeys: <ApiKeyRecord>[
+          ApiKeyRecord(
+            id: 'key-1',
+            name: 'Active Key',
+            userId: 'user-1',
+            isActive: true,
+          ),
+        ],
+      );
+
+      expect(state.workItems.map((IntegrationWorkItem i) => i.id), <String>[
+        'active-1',
+      ]);
     });
   });
 
@@ -212,6 +270,14 @@ void main() {
     test('returns true when filter is not all', () {
       const IntegrationWorkspaceQuery query = IntegrationWorkspaceQuery(
         filter: IntegrationWorkspaceFilter.apiKeys,
+      );
+
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('returns true when statusFilter is set', () {
+      const IntegrationWorkspaceQuery query = IntegrationWorkspaceQuery(
+        statusFilter: IntegrationWorkspaceFilter.warning,
       );
 
       expect(query.hasRouteTargeting, isTrue);

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
@@ -26,6 +31,25 @@ const HrStaffProfile _profile = HrStaffProfile(
 final HrStaffProfile _profileWithHireDate = _profile.copyWith(
   hireDate: DateTime(2024, 3, 15),
 );
+
+AppAccessPolicy _hrWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['HR']),
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+        AppPermissions.rosterWrite,
+        AppPermissions.financialApprove,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
 
 HrWorkspaceState _workspaceState() {
   return const HrWorkspaceState(
@@ -62,8 +86,9 @@ Future<void> _pumpHrDetailWidgets(
     ProviderScope(
       overrides: [
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.authenticated(),
+          const SessionState.ready(),
         ),
+        appAccessPolicyProvider.overrideWithValue(_hrWritePolicy()),
       ],
       child: MaterialApp(
         supportedLocales: AppLocalizations.supportedLocales,

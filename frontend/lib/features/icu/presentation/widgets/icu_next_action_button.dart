@@ -15,8 +15,11 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
-enum _IcuResolvedAction {
-  workflow,
+/// Stage-aware primary board action for an ICU row.
+///
+/// When a registered workflow [IcuPatientSummary.nextStep] owns the row, this
+/// is null so detail Quick Actions keep complementary writes.
+enum IcuNextActionKind {
   startStay,
   acknowledgeAlert,
   manageTransfer,
@@ -26,6 +29,114 @@ enum _IcuResolvedAction {
   assignBed,
   openIpd,
   recordObservation,
+}
+
+IcuNextActionKind? icuBoardNextActionKind(
+  IcuPatientSummary summary,
+  IcuWorkspaceSection section,
+) {
+  final String? nextStep = summary.nextStep?.trim();
+  if (nextStep != null &&
+      nextStep.isNotEmpty &&
+      WorkflowActionRegistry.instance.isRegistered(nextStep)) {
+    return null;
+  }
+  return _resolveIcuNextAction(summary, section);
+}
+
+String icuNextActionLabel(AppLocalizations l10n, IcuNextActionKind action) {
+  return switch (action) {
+    IcuNextActionKind.startStay => l10n.icuActionStartStay,
+    IcuNextActionKind.acknowledgeAlert => l10n.icuActionAcknowledgeAlert,
+    IcuNextActionKind.manageTransfer => l10n.icuActionManageTransfer,
+    IcuNextActionKind.requestTransfer => l10n.icuActionRequestTransfer,
+    IcuNextActionKind.openDischargeClearance =>
+      l10n.icuActionOpenDischargeClearance,
+    IcuNextActionKind.markReadiness => l10n.icuActionMarkReadiness,
+    IcuNextActionKind.assignBed => l10n.icuActionAssignBed,
+    IcuNextActionKind.openIpd => l10n.icuActionOpenIpd,
+    IcuNextActionKind.recordObservation => l10n.icuActionRecordObservation,
+  };
+}
+
+IconData icuNextActionIcon(IcuNextActionKind action) {
+  return switch (action) {
+    IcuNextActionKind.startStay => Icons.play_circle_outline,
+    IcuNextActionKind.acknowledgeAlert => Icons.done_all_outlined,
+    IcuNextActionKind.manageTransfer => Icons.published_with_changes_outlined,
+    IcuNextActionKind.requestTransfer => AppActionIcons.transfer,
+    IcuNextActionKind.openDischargeClearance =>
+      Icons.assignment_turned_in_outlined,
+    IcuNextActionKind.markReadiness => Icons.fact_check_outlined,
+    IcuNextActionKind.assignBed => Icons.bed_outlined,
+    IcuNextActionKind.openIpd => Icons.open_in_new_outlined,
+    IcuNextActionKind.recordObservation => Icons.note_add_outlined,
+  };
+}
+
+bool icuNextActionRequiresWrite(IcuNextActionKind action) {
+  return action != IcuNextActionKind.openIpd &&
+      action != IcuNextActionKind.openDischargeClearance;
+}
+
+IcuNextActionKind _resolveIcuNextAction(
+  IcuPatientSummary item,
+  IcuWorkspaceSection activeSection,
+) {
+  switch (activeSection) {
+    case IcuWorkspaceSection.critical:
+      if (item.hasCriticalAlert) {
+        return IcuNextActionKind.acknowledgeAlert;
+      }
+    case IcuWorkspaceSection.transfers:
+      if (item.hasOpenTransfer) {
+        return IcuNextActionKind.manageTransfer;
+      }
+      return IcuNextActionKind.requestTransfer;
+    case IcuWorkspaceSection.discharge:
+      if (item.isDischargePlanned) {
+        return IcuNextActionKind.openDischargeClearance;
+      }
+      return IcuNextActionKind.markReadiness;
+    case IcuWorkspaceSection.ended:
+      return IcuNextActionKind.openIpd;
+    case IcuWorkspaceSection.active:
+    case IcuWorkspaceSection.all:
+    case IcuWorkspaceSection.beds:
+    case IcuWorkspaceSection.followUps:
+      break;
+  }
+
+  if (_isEligibleToStartStay(item)) {
+    return IcuNextActionKind.startStay;
+  }
+  if (item.hasCriticalAlert) {
+    return IcuNextActionKind.acknowledgeAlert;
+  }
+  if (item.hasOpenTransfer) {
+    return IcuNextActionKind.manageTransfer;
+  }
+  if (item.isDischargePlanned) {
+    return IcuNextActionKind.openDischargeClearance;
+  }
+  if (!item.hasActiveBed) {
+    return IcuNextActionKind.assignBed;
+  }
+  if (item.isEndedIcu) {
+    return IcuNextActionKind.openIpd;
+  }
+  return IcuNextActionKind.recordObservation;
+}
+
+bool _isEligibleToStartStay(IcuPatientSummary item) {
+  if (item.isActiveIcu) {
+    return false;
+  }
+  final String admissionStatus = (item.admissionStatus ?? '').toUpperCase();
+  if (admissionStatus == 'DISCHARGED' || admissionStatus == 'CANCELLED') {
+    return false;
+  }
+  return (item.icuStatus ?? '').toUpperCase() != 'ACTIVE';
 }
 
 class IcuNextActionButton extends ConsumerWidget {
@@ -60,203 +171,118 @@ class IcuNextActionButton extends ConsumerWidget {
       }
     }
 
-    final _IcuResolvedAction action = _resolveAction(summary, section);
+    final IcuNextActionKind action = _resolveIcuNextAction(summary, section);
     final AppLocalizations l10n = context.l10n;
-    final String label = _labelForAction(l10n, action);
-    final IconData icon = _iconForAction(action);
-    final bool requiresWrite = action != _IcuResolvedAction.openIpd;
+    final String label = icuNextActionLabel(l10n, action);
+    final IconData icon = icuNextActionIcon(action);
+    final bool requiresWrite = icuNextActionRequiresWrite(action);
+
+    if (!requiresWrite) {
+      return _IcuCompactActionButton(
+        label: label,
+        icon: icon,
+        enabled: true,
+        onPressed: () => unawaited(runIcuNextAction(context, ref, summary, action)),
+      );
+    }
 
     return AppAccessActionGate(
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
-        final bool enabled = !requiresWrite || isAllowed;
         return _IcuCompactActionButton(
           label: label,
           icon: icon,
-          enabled: enabled,
-          onPressed: enabled
-              ? () => unawaited(_handleAction(context, ref, action))
+          enabled: isAllowed,
+          onPressed: isAllowed
+              ? () => unawaited(runIcuNextAction(context, ref, summary, action))
               : null,
         );
       },
     );
   }
+}
 
-  _IcuResolvedAction _resolveAction(
-    IcuPatientSummary item,
-    IcuWorkspaceSection activeSection,
-  ) {
-    switch (activeSection) {
-      case IcuWorkspaceSection.critical:
-        if (item.hasCriticalAlert) {
-          return _IcuResolvedAction.acknowledgeAlert;
-        }
-      case IcuWorkspaceSection.transfers:
-        if (item.hasOpenTransfer) {
-          return _IcuResolvedAction.manageTransfer;
-        }
-        return _IcuResolvedAction.requestTransfer;
-      case IcuWorkspaceSection.discharge:
-        if (item.isDischargePlanned) {
-          return _IcuResolvedAction.openDischargeClearance;
-        }
-        return _IcuResolvedAction.markReadiness;
-      case IcuWorkspaceSection.ended:
-        return _IcuResolvedAction.openIpd;
-      case IcuWorkspaceSection.active:
-      case IcuWorkspaceSection.all:
-      case IcuWorkspaceSection.beds:
-      case IcuWorkspaceSection.followUps:
-        break;
-    }
+Future<void> runIcuNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  IcuPatientSummary summary,
+  IcuNextActionKind action,
+) async {
+  final IcuWorkspaceController controller = ref.read(
+    icuWorkspaceControllerProvider.notifier,
+  );
+  final AppLocalizations l10n = context.l10n;
 
-    if (_isEligibleToStartStay(item)) {
-      return _IcuResolvedAction.startStay;
+  Future<void> ensureSelected() async {
+    final AppFailure? failure = await controller.selectPatient(summary);
+    if (context.mounted) {
+      showIcuFailureIfNeeded(context, failure);
     }
-    if (item.hasCriticalAlert) {
-      return _IcuResolvedAction.acknowledgeAlert;
-    }
-    if (item.hasOpenTransfer) {
-      return _IcuResolvedAction.manageTransfer;
-    }
-    if (item.isDischargePlanned) {
-      return _IcuResolvedAction.openDischargeClearance;
-    }
-    if (!item.hasActiveBed) {
-      return _IcuResolvedAction.assignBed;
-    }
-    if (item.isEndedIcu) {
-      return _IcuResolvedAction.openIpd;
-    }
-    return _IcuResolvedAction.recordObservation;
   }
 
-  bool _isEligibleToStartStay(IcuPatientSummary item) {
-    if (item.isActiveIcu) {
-      return false;
-    }
-    final String admissionStatus = (item.admissionStatus ?? '').toUpperCase();
-    if (admissionStatus == 'DISCHARGED' || admissionStatus == 'CANCELLED') {
-      return false;
-    }
-    return (item.icuStatus ?? '').toUpperCase() != 'ACTIVE';
-  }
-
-  String _labelForAction(AppLocalizations l10n, _IcuResolvedAction action) {
-    return switch (action) {
-      _IcuResolvedAction.workflow => l10n.icuActionRecordObservation,
-      _IcuResolvedAction.startStay => l10n.icuActionStartStay,
-      _IcuResolvedAction.acknowledgeAlert => l10n.icuActionAcknowledgeAlert,
-      _IcuResolvedAction.manageTransfer => l10n.icuActionManageTransfer,
-      _IcuResolvedAction.requestTransfer => l10n.icuActionRequestTransfer,
-      _IcuResolvedAction.openDischargeClearance =>
-        l10n.icuActionOpenDischargeClearance,
-      _IcuResolvedAction.markReadiness => l10n.icuActionMarkReadiness,
-      _IcuResolvedAction.assignBed => l10n.icuActionAssignBed,
-      _IcuResolvedAction.openIpd => l10n.icuActionOpenIpd,
-      _IcuResolvedAction.recordObservation => l10n.icuActionRecordObservation,
-    };
-  }
-
-  IconData _iconForAction(_IcuResolvedAction action) {
-    return switch (action) {
-      _IcuResolvedAction.workflow => Icons.arrow_forward_outlined,
-      _IcuResolvedAction.startStay => Icons.play_circle_outline,
-      _IcuResolvedAction.acknowledgeAlert => Icons.done_all_outlined,
-      _IcuResolvedAction.manageTransfer =>
-        Icons.published_with_changes_outlined,
-      _IcuResolvedAction.requestTransfer => AppActionIcons.transfer,
-      _IcuResolvedAction.openDischargeClearance =>
-        Icons.assignment_turned_in_outlined,
-      _IcuResolvedAction.markReadiness => Icons.fact_check_outlined,
-      _IcuResolvedAction.assignBed => Icons.bed_outlined,
-      _IcuResolvedAction.openIpd => Icons.open_in_new_outlined,
-      _IcuResolvedAction.recordObservation => Icons.note_add_outlined,
-    };
-  }
-
-  Future<void> _handleAction(
-    BuildContext context,
-    WidgetRef ref,
-    _IcuResolvedAction action,
-  ) async {
-    final IcuWorkspaceController controller = ref.read(
-      icuWorkspaceControllerProvider.notifier,
-    );
-    final AppLocalizations l10n = context.l10n;
-
-    Future<void> ensureSelected() async {
-      final AppFailure? failure = await controller.selectPatient(summary);
-      if (context.mounted) {
-        showIcuFailureIfNeeded(context, failure);
+  switch (action) {
+    case IcuNextActionKind.recordObservation:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
       }
-    }
-
-    switch (action) {
-      case _IcuResolvedAction.workflow:
-      case _IcuResolvedAction.recordObservation:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await openIcuObservationDialog(context);
-      case _IcuResolvedAction.startStay:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await confirmIcuAction(
-          context: context,
-          title: l10n.icuStartStayTitle,
-          body: l10n.icuStartStayBody,
-          actionLabel: l10n.icuStartStayActionLabel,
-          onConfirmed: controller.startIcuStay,
-        );
-      case _IcuResolvedAction.acknowledgeAlert:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await confirmIcuAction(
-          context: context,
-          title: l10n.icuAcknowledgeTitle,
-          body: l10n.icuAcknowledgeBody,
-          actionLabel: l10n.icuActionAcknowledgeAlert,
-          onConfirmed: controller.acknowledgeLatestAlert,
-        );
-      case _IcuResolvedAction.manageTransfer:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await openIcuManageTransferDialog(context);
-      case _IcuResolvedAction.requestTransfer:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        final IcuWorkspaceState? state = readIcuWorkspaceState(ref);
-        if (state == null || !context.mounted) {
-          return;
-        }
-        await openIcuTransferDialog(context, state.referenceData);
-      case _IcuResolvedAction.openDischargeClearance:
-        openIpdDischargeClearance(context, summary);
-      case _IcuResolvedAction.markReadiness:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await openIcuReadinessDialog(context);
-      case _IcuResolvedAction.assignBed:
-        await ensureSelected();
-        if (!context.mounted) {
-          return;
-        }
-        await openIcuAssignBedDialog(context);
-      case _IcuResolvedAction.openIpd:
-        openIpdWorkspace(context, summary);
-    }
+      await openIcuObservationDialog(context);
+    case IcuNextActionKind.startStay:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      await confirmIcuAction(
+        context: context,
+        title: l10n.icuStartStayTitle,
+        body: l10n.icuStartStayBody,
+        actionLabel: l10n.icuStartStayActionLabel,
+        onConfirmed: controller.startIcuStay,
+      );
+    case IcuNextActionKind.acknowledgeAlert:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      await confirmIcuAction(
+        context: context,
+        title: l10n.icuAcknowledgeTitle,
+        body: l10n.icuAcknowledgeBody,
+        actionLabel: l10n.icuActionAcknowledgeAlert,
+        onConfirmed: controller.acknowledgeLatestAlert,
+      );
+    case IcuNextActionKind.manageTransfer:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      await openIcuManageTransferDialog(context);
+    case IcuNextActionKind.requestTransfer:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      final IcuWorkspaceState? state = readIcuWorkspaceState(ref);
+      if (state == null || !context.mounted) {
+        return;
+      }
+      await openIcuTransferDialog(context, state.referenceData);
+    case IcuNextActionKind.openDischargeClearance:
+      openIpdDischargeClearance(context, summary);
+    case IcuNextActionKind.markReadiness:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      await openIcuReadinessDialog(context);
+    case IcuNextActionKind.assignBed:
+      await ensureSelected();
+      if (!context.mounted) {
+        return;
+      }
+      await openIcuAssignBedDialog(context);
+    case IcuNextActionKind.openIpd:
+      openIpdWorkspace(context, summary);
   }
 }
 
@@ -314,14 +340,6 @@ class _IcuCompactActionButton extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (!enabled) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Icon(
-                      Icons.lock_outlined,
-                      size: 10,
-                      color: primaryColor.withValues(alpha: 0.5),
-                    ),
-                  ],
                 ],
               ),
             ),

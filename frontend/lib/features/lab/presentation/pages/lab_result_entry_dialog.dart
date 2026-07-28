@@ -252,7 +252,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final AsyncValue<Result<LabWorkspaceState>> asyncState = ref.watch(
       labWorkspaceControllerProvider,
     );
@@ -277,7 +276,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     final bool showActionLabels = AppBreakpoints.of(
       context,
     ).showsToolbarActionLabels;
-    final Color destructiveActionColor = theme.statusColors.danger;
 
     return AppActionLabelScope(
       showLabels: showActionLabels,
@@ -315,27 +313,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                       context,
                       workflows.first,
                     ),
-                  ),
-                if (workflows.length == 1 &&
-                    canMutate &&
-                    widget.onEditOrder != null)
-                  AppButton.secondary(
-                    label: l10n.labEditOrderAction,
-                    leadingIcon: Icons.edit_outlined,
-                    enabled: !_isSaving,
-                    onPressed: () =>
-                        widget.onEditOrder?.call(context, workflows.first),
-                  ),
-                if (workflows.length == 1 &&
-                    canMutate &&
-                    widget.onDeleteOrder != null)
-                  AppButton.tertiary(
-                    label: l10n.labDeleteOrderAction,
-                    leadingIcon: Icons.delete_outline,
-                    color: destructiveActionColor,
-                    enabled: !_isSaving,
-                    onPressed: () =>
-                        widget.onDeleteOrder?.call(context, workflows.first),
                   ),
               ],
       ),

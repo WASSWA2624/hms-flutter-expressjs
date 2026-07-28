@@ -30,6 +30,7 @@ const HrStaffProfile _staffNeedsDepartment = HrStaffProfile(
   displayId: 'STF-1',
   staffNumber: 'EMP-1',
   userFullName: 'Ada Needs Dept',
+  tenantId: _tenantUuid,
   status: 'ACTIVE',
 );
 
@@ -38,6 +39,7 @@ const HrStaffProfile _staffComplete = HrStaffProfile(
   displayId: 'STF-2',
   staffNumber: 'EMP-2',
   userFullName: 'Ben Complete',
+  tenantId: _tenantUuid,
   departmentId: 'dept-1',
   departmentName: 'Emergency',
   position: 'Nurse',
@@ -91,6 +93,7 @@ AppAccessPolicy _hrWritePolicy() {
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       ],
     ),
   );
@@ -107,6 +110,7 @@ AppAccessPolicy _hrReadOnlyPolicy() {
       permissions: <AppPermission>{AppPermissions.hrRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       ],
     ),
   );
@@ -120,13 +124,7 @@ void _stubWorkspace(
   when(() => repository.loadOverview()).thenAnswer(
     (_) async => const Result<HrWorkspaceOverview>.success(
       HrWorkspaceOverview(
-        summary: HrWorkspaceSummary(
-          leaveRequests: 1,
-          draftRosters: 0,
-          unassignedShifts: 0,
-          overdueShifts: 0,
-          payrollDraftRuns: 0,
-        ),
+        summary: HrWorkspaceSummary(leaveRequests: 1),
       ),
     ),
   );
@@ -235,16 +233,7 @@ Future<void> _pumpHrWorkspace(
         hrRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(
-            session: AuthSession(
-              tokens: SessionTokens(accessToken: 'token'),
-              user: const AuthUserProfile(
-                tenantId: _tenantUuid,
-                email: 'hr@example.com',
-              ),
-              permissions: const <AppPermission>[AppPermissions.hrWrite],
-            ),
-          ),
+          const SessionState.ready(),
         ),
         appAccessPolicyProvider.overrideWithValue(
           accessPolicy ?? _hrWritePolicy(),

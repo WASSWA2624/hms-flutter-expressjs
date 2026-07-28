@@ -102,6 +102,31 @@ final class IntegrationsWorkspaceController
     return null;
   }
 
+  Future<AppFailure?> applyStatusFilter(
+    IntegrationWorkspaceFilter? statusFilter,
+  ) async {
+    final IntegrationWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: statusFilter == null
+            ? current.query.copyWith(
+                clearStatusFilter: true,
+                pageRequest: current.query.pageRequest.first(),
+              )
+            : current.query.copyWith(
+                statusFilter: statusFilter,
+                pageRequest: current.query.pageRequest.first(),
+              ),
+        clearLastFailure: true,
+      ),
+    );
+    return null;
+  }
+
   Future<AppFailure?> changePage(AppPageRequest request) async {
     final IntegrationWorkspaceState? current = _currentState;
     if (current == null) {

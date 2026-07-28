@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_detail_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -26,7 +27,7 @@ Future<void> openIcuDetailDialog(
   IcuWorkspaceState fallbackState,
   IcuPatientSummary summary,
   AccessRequirement writeRequirement, {
-  IcuDetailPanel? focusPanel,
+  IcuNextActionKind? omitNextActionKind,
 }) async {
   final IcuWorkspaceController controller = ref.read(
     icuWorkspaceControllerProvider.notifier,
@@ -44,31 +45,53 @@ Future<void> openIcuDetailDialog(
     return;
   }
 
-  unawaited(
-    showAppDialog<void>(
-      context: context,
-      builder: (_) => AppDialog(
-        title: Text(context.l10n.icuStayDialogTitle),
-        icon: const Icon(Icons.monitor_heart_outlined),
-        scrollable: true,
-        maxWidth: 980,
-        content: Consumer(
-          builder: (BuildContext context, WidgetRef ref, _) {
-            final IcuWorkspaceState current =
-                readIcuWorkspaceState(ref) ?? state;
-            return IcuStayDetailPanel(
-              state: current,
-              writeRequirement: writeRequirement,
-            );
-          },
-        ),
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.icuStayDialogTitle),
+      icon: const Icon(Icons.monitor_heart_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: Consumer(
+        builder: (BuildContext context, WidgetRef ref, _) {
+          final IcuWorkspaceState current =
+              readIcuWorkspaceState(ref) ?? state;
+          return IcuStayDetailPanel(
+            state: current,
+            writeRequirement: writeRequirement,
+            omitNextActionKind: omitNextActionKind,
+          );
+        },
       ),
     ),
   );
+}
 
-  if (focusPanel != null && context.mounted) {
-    await openIcuFocusPanel(context, focusPanel, state.referenceData);
+/// Panel deep links open the mutation dialog directly (no empty detail shell).
+Future<void> openIcuFocusedAction(
+  BuildContext context,
+  WidgetRef ref,
+  IcuWorkspaceState fallbackState,
+  IcuPatientSummary summary,
+  IcuDetailPanel panel,
+) async {
+  final IcuWorkspaceController controller = ref.read(
+    icuWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectPatient(summary);
+  if (context.mounted) {
+    showIcuFailureIfNeeded(context, failure);
   }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final IcuWorkspaceState state = readIcuWorkspaceState(ref) ?? fallbackState;
+  if (state.selectedDetail == null) {
+    return;
+  }
+
+  await openIcuFocusPanel(context, panel, state.referenceData);
 }
 
 Future<void> openIcuFocusPanel(

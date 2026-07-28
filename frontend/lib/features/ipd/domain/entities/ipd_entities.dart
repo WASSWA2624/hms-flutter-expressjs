@@ -72,6 +72,7 @@ final class IpdAdmissionQuery {
     this.pageRequest = const AppPageRequest(),
     this.focusAdmissionId,
     this.focusPanel,
+    this.focusAction,
     this.section = IpdWorkspaceSection.admissionQueue,
   });
 
@@ -83,8 +84,11 @@ final class IpdAdmissionQuery {
   /// Deep-link target: pre-select this admission (display id or uuid).
   final String? focusAdmissionId;
 
-  /// Deep-link target panel to scroll/focus once the admission opens.
+  /// Deep-link target: open this mutation surface (no empty detail shell).
   final IpdDetailPanel? focusPanel;
+
+  /// Deep-link target: focused write (`approve`, `start`, `complete`, …).
+  final String? focusAction;
 
   final IpdWorkspaceSection section;
 
@@ -105,6 +109,7 @@ final class IpdAdmissionQuery {
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
       focusAdmissionId: admissionId,
       focusPanel: IpdDetailPanelX.fromToken(params['panel']),
+      focusAction: _nonEmpty(params['action'])?.toLowerCase(),
       section: section,
     );
   }
@@ -116,6 +121,11 @@ final class IpdAdmissionQuery {
         section != IpdWorkspaceSection.admissionQueue;
   }
 
+  bool get hasFocusedMutation {
+    return focusAdmissionId != null &&
+        (focusPanel != null || (focusAction ?? '').isNotEmpty);
+  }
+
   IpdAdmissionQuery copyWith({
     String? search,
     IpdQueueScope? scope,
@@ -123,6 +133,7 @@ final class IpdAdmissionQuery {
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
     IpdDetailPanel? focusPanel,
+    String? focusAction,
     IpdWorkspaceSection? section,
     bool clearWard = false,
     bool clearFocus = false,
@@ -136,6 +147,7 @@ final class IpdAdmissionQuery {
           ? null
           : focusAdmissionId ?? this.focusAdmissionId,
       focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+      focusAction: clearFocus ? null : focusAction ?? this.focusAction,
       section: section ?? this.section,
     );
   }
