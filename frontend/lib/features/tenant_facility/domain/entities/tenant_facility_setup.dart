@@ -330,6 +330,8 @@ final class WardProfile {
     required this.type,
     this.departmentId,
     this.isActive = true,
+    this.resourceUuid,
+    this.displayId,
     this.deletedAt,
   });
 
@@ -340,9 +342,14 @@ final class WardProfile {
   final WardSetupType type;
   final String? departmentId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 
   WardProfile copyWith({
     String? id,
@@ -352,6 +359,8 @@ final class WardProfile {
     WardSetupType? type,
     String? departmentId,
     bool? isActive,
+    String? resourceUuid,
+    String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -363,6 +372,8 @@ final class WardProfile {
       type: type ?? this.type,
       departmentId: departmentId ?? this.departmentId,
       isActive: isActive ?? this.isActive,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }

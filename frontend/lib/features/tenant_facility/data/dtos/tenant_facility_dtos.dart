@@ -314,6 +314,8 @@ final class WardProfileDto {
     required this.type,
     this.departmentId,
     required this.isActive,
+    this.resourceUuid,
+    this.displayId,
     this.deletedAt,
   });
 
@@ -326,6 +328,10 @@ final class WardProfileDto {
       type: WardSetupTypeX.fromApiValue(_optionalString(json, 'ward_type')),
       departmentId: _optionalString(json, 'department_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      resourceUuid:
+          _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -337,6 +343,8 @@ final class WardProfileDto {
   final WardSetupType type;
   final String? departmentId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
   final DateTime? deletedAt;
 
   WardProfile toEntity() {
@@ -348,6 +356,8 @@ final class WardProfileDto {
       type: type,
       departmentId: departmentId,
       isActive: isActive,
+      resourceUuid: resourceUuid,
+      displayId: displayId,
       deletedAt: deletedAt,
     );
   }

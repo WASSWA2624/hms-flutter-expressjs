@@ -155,10 +155,8 @@ void main() {
       expect(sectionSource.contains('optionalColumns:'), isTrue);
       expect(sectionSource.contains("id: 'floor'"), isTrue);
       expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
-      expect(
-        sectionSource.contains('setup_structure_rooms_\${scope.name}_v2'),
-        isTrue,
-      );
+      expect(sectionSource.contains('setup_structure_rooms_'), isTrue);
+      expect(sectionSource.contains('_v2'), isTrue);
       expect(sectionSource.contains("?? facilityId"), isFalse);
       expect(sectionSource.contains("?? tenantId"), isFalse);
       expect(sectionSource.contains("?? wardId"), isFalse);

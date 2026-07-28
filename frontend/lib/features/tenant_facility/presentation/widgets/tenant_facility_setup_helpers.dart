@@ -253,6 +253,35 @@ String? tenantFacilityHumanFriendlyDisplayId(
   return trimmed;
 }
 
+/// True when [value] looks like a raw UUID or 24-hex opaque id.
+bool tenantFacilityLooksLikeOpaqueId(String? value) {
+  final String? trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return false;
+  }
+  return _tenantFacilityOpaqueIdPattern.hasMatch(trimmed);
+}
+
+/// Related-name label that never surfaces opaque ids and flags deleted parents.
+String tenantFacilityRelatedNameLabel(
+  String? name, {
+  required bool isDeleted,
+  required String deletedLabel,
+  String empty = '—',
+}) {
+  final String? trimmed = name?.trim();
+  if (trimmed == null ||
+      trimmed.isEmpty ||
+      trimmed == empty ||
+      tenantFacilityLooksLikeOpaqueId(trimmed)) {
+    return empty;
+  }
+  if (isDeleted) {
+    return '$trimmed ($deletedLabel)';
+  }
+  return trimmed;
+}
+
 /// Compact primary/secondary cell for dense tables (max 5 data columns).
 class TenantFacilityNestedTableCell extends StatelessWidget {
   const TenantFacilityNestedTableCell({
