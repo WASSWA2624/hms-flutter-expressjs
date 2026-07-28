@@ -2468,19 +2468,8 @@ class _OpdNextActionCell extends ConsumerWidget {
       );
     }
 
-    // Queue rows: row select opens the hub; next-action is label-only guidance.
-    final String label = _nextStepLabel(context, item);
-    if (label == context.l10n.profileUnknownValue) {
-      return const SizedBox.shrink();
-    }
-    return Text(
-      label,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
+    // Queue rows: no next-action control — row select is the sole hub entry.
+    return const SizedBox.shrink();
   }
 
   Future<void> _runFlowNextAction(
@@ -2580,26 +2569,6 @@ String _waitingTimeLabel(
     return context.l10n.profileUnknownValue;
   }
   return _formatShortDuration(duration);
-}
-
-String _nextStepLabel(BuildContext context, _OpdTableItem item) {
-  final String statusLabel = _queueStatusLabel(context, item);
-  final String? rawNext = item.flow?.displayNextStep ?? item.nextStep;
-  if (rawNext == null || rawNext.trim().isEmpty) {
-    return context.l10n.profileUnknownValue;
-  }
-
-  final String label = opdNextStepDisplayLabel(context.l10n, rawNext);
-  if (label.isEmpty) {
-    return context.l10n.profileUnknownValue;
-  }
-  if (label.toLowerCase() == statusLabel.toLowerCase()) {
-    final String? ownerRole = item.ownerRole;
-    if (ownerRole != null && ownerRole.trim().isNotEmpty) {
-      return ownerRole;
-    }
-  }
-  return label;
 }
 
 Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {

@@ -1251,22 +1251,14 @@ class _OperationsNextActionButton extends ConsumerWidget {
       );
     }
 
+    // Review-only rows open via row select — no parallel next-action button.
+    if (kind == _OperationsNextActionKind.review) {
+      return const SizedBox.shrink();
+    }
+
     final String label = _nextActionLabelForKind(l10n, kind, item);
     final IconData icon = _nextActionIcon(kind);
     final bool isNarrow = MediaQuery.sizeOf(context).width < 600;
-    if (kind == _OperationsNextActionKind.review) {
-      return AppButton.tertiary(
-        label: label,
-        icon: icon,
-        iconOnly: isNarrow,
-        tooltip: label,
-        semanticLabel: label,
-        enabled: !isMutating,
-        onPressed: isMutating
-            ? null
-            : () => unawaited(onOpenDetail(context, item)),
-      );
-    }
 
     return AppButton.secondary(
       label: label,

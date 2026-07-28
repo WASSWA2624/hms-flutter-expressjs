@@ -381,12 +381,19 @@ Future<bool?> runOpdAppointmentNextAction({
 
   if (resolved == OpdAppointmentPrimaryAction.continueEncounter &&
       linkedFlow != null) {
-    final String omitKey = resolveOpdFlowNextActionKey(linkedFlow);
-    return showFlowActionsDialog(
-      context: context,
-      flow: linkedFlow,
-      omitNextActionKey: omitKey,
+    // Skip the empty hub shell — run the stage mutation (or handoff) directly.
+    final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(
+      linkedFlow,
     );
+    if (kind != OpdBoardNextActionKind.none) {
+      return runOpdBoardNextAction(
+        context: context,
+        ref: ref,
+        flow: linkedFlow,
+        kind: kind,
+      );
+    }
+    return showFlowActionsDialog(context: context, flow: linkedFlow);
   }
 
   if (resolved != OpdAppointmentPrimaryAction.startEncounter) {
@@ -420,12 +427,9 @@ Future<bool?> runOpdAppointmentNextAction({
   if (activeEncounter == null) {
     return true;
   }
-  final String omitKey = resolveOpdFlowNextActionKey(activeEncounter);
-  return showFlowActionsDialog(
-    context: context,
-    flow: activeEncounter,
-    omitNextActionKey: omitKey,
-  );
+  // Continuation hub keeps the stage primary — the worklist next-action is
+  // not visible while this dialog is open (omit only applies to row select).
+  return showFlowActionsDialog(context: context, flow: activeEncounter);
 }
 
 Future<bool?> _openDoctorReviewDialog(

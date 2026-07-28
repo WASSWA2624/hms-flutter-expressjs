@@ -210,6 +210,24 @@ Future<GoRouter> _pumpOpdWorkspace(
   return router;
 }
 
+Finder _startOpdEncounterInWorklist() {
+  return find.byElementPredicate((Element element) {
+    final Widget widget = element.widget;
+    if (widget is! Text || widget.data != 'Start OPD encounter') {
+      return false;
+    }
+    return element.findAncestorWidgetOfExactType<AppTabToolbarPrimary>() ==
+        null;
+  });
+}
+
+Finder _startOpdEncounterInToolbar() {
+  return find.descendant(
+    of: find.byType(AppTabToolbarPrimary),
+    matching: find.text('Start OPD encounter'),
+  );
+}
+
 void main() {
   late _MockOpdRepository repository;
 
@@ -246,22 +264,9 @@ void main() {
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.text('Next action'), findsWidgets);
-    // Toolbar walk-in primary.
-    expect(
-      find.descendant(
-        of: find.byType(AppTabToolbarPrimary),
-        matching: find.text('Start OPD encounter'),
-      ),
-      findsOneWidget,
-    );
-    // Arrival next-action only (queue rows no longer duplicate this label).
-    expect(
-      find.descendant(
-        of: find.byType(AppListTable<dynamic>),
-        matching: find.text('Start OPD encounter'),
-      ),
-      findsOneWidget,
-    );
+    // Toolbar walk-in primary + arrival next-action only (queue has none).
+    expect(_startOpdEncounterInToolbar(), findsOneWidget);
+    expect(_startOpdEncounterInWorklist(), findsOneWidget);
     expect(find.text('Record vitals'), findsWidgets);
   });
 
@@ -373,17 +378,16 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
-    expect(find.text('Quinn Queue'), findsOneWidget);
+    // Compact widths hide the toolbar label; tooltip remains.
     expect(
-      find.descendant(
-        of: find.byType(AppTabToolbarPrimary),
-        matching: find.text('Start OPD encounter'),
-      ),
+      find.byTooltip('Create or continue an OPD encounter'),
       findsOneWidget,
     );
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
 
     await tester.tap(find.text('Quinn Queue'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
   });
 
@@ -463,17 +467,14 @@ void main() {
     (WidgetTester tester) async {
       await _pumpOpdWorkspace(tester, repository: repository);
 
-      // Prefer the worklist next-action over the toolbar primary with the same label.
-      final Finder arrivalNextAction = find.descendant(
-        of: find.byType(AppListTable<dynamic>),
-        matching: find.text('Start OPD encounter'),
-      );
+      final Finder arrivalNextAction = _startOpdEncounterInWorklist();
       expect(arrivalNextAction, findsOneWidget);
       await tester.tap(arrivalNextAction);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
-      expect(find.text('Queue'), findsNothing);
+      expect(find.text('START OPD ENCOUNTER'), findsOneWidget);
       expect(find.byType(AppDialog), findsWidgets);
     },
   );
