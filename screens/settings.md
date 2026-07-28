@@ -121,8 +121,8 @@ noted once here. Account dialogs are inventoried in `screens/profile.md`.
   and
   `frontend/test/features/settings/presentation/widgets/settings_workspace_section_test.dart`
   prove:
-  - HR with workspace: no Administration **Tenant and facility setup** duplicate; workspace modules remain.
-  - Workspace has no nested Overview/Setup/Modules tabs, no Quick actions, no Setup checklist.
-  - Module **Open** present when readable; absent when `canRead` is false.
+  - HR with workspace: no Administration / **Tenant and facility setup** duplicate; workspace modules remain; no Quick actions / Setup checklist / Context summary.
+  - Elevated admin with workspace: Administration shows **Subscription plans** only (no tenant/facility or users/access shortcuts).
+  - Workspace has no nested Overview/Setup/Modules tabs; module **Open** present when readable and absent when `canRead` is false.
   - Retapping Preferences keeps preferences content visible.
   - Account paths covered by `settings_account_section_test.dart` / `screens/profile.md`.
