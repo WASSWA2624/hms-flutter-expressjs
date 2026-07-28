@@ -498,8 +498,9 @@ void main() {
       await tester.tap(monitor.first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Sync now?'), findsOneWidget);
+      expect(find.textContaining('Sync now'), findsWidgets);
       expect(find.text('Configure'), findsNothing);
+      expect(find.text('The system will enqueue an immediate integration sync.'), findsOneWidget);
     },
   );
 }

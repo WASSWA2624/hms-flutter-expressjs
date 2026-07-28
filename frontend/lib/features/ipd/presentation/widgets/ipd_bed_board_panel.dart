@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
@@ -275,6 +276,43 @@ class _BedActionMenu extends StatelessWidget {
       );
     }
 
+    if (actions.length == 1) {
+      final _BedAction action = actions.first;
+      final ThemeData theme = Theme.of(context);
+      return Semantics(
+        button: true,
+        enabled: enabled,
+        label: action.label,
+        child: Tooltip(
+          message: action.label,
+          child: InkWell(
+            onTap: enabled ? () => onAction(action) : null,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(action.icon, size: 16, color: theme.colorScheme.primary),
+                  SizedBox(width: theme.spacing.xs),
+                  Flexible(
+                    child: Text(
+                      action.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return PopupMenuButton<_BedAction>(
       enabled: enabled,
       tooltip: context.l10n.ipdNextActionColumnLabel,
@@ -425,22 +463,11 @@ List<_BedAction> _bedActionsFor(
   bool canManageBeds,
 ) {
   final AppLocalizations l10n = context.l10n;
-  final List<_BedAction> actions = <_BedAction>[];
-
-  if (bed.occupantAdmissionId != null) {
-    actions.add(
-      _BedAction(
-        label: l10n.ipdBedActionOpenAdmission,
-        icon: Icons.open_in_new,
-        status: null,
-        isPrimary: true,
-      ),
-    );
-  }
-
   if (!canManageBeds) {
-    return actions;
+    return const <_BedAction>[];
   }
+
+  final List<_BedAction> actions = <_BedAction>[];
 
   switch ((bed.status ?? '').toUpperCase()) {
     case 'AVAILABLE':
@@ -449,6 +476,7 @@ List<_BedAction> _bedActionsFor(
           label: l10n.ipdBedActionReserve,
           icon: Icons.event_available_outlined,
           status: 'RESERVED',
+          isPrimary: true,
         ),
         _BedAction(
           label: l10n.ipdBedActionBlock,
@@ -464,7 +492,7 @@ List<_BedAction> _bedActionsFor(
       break;
     case 'OCCUPIED':
       // Bed release for occupied beds is performed through the admission
-      // discharge / release-bed flow, surfaced via "Open admission".
+      // discharge / release-bed flow. Open the admission via row select.
       break;
     case 'RESERVED':
       actions.add(
@@ -472,6 +500,7 @@ List<_BedAction> _bedActionsFor(
           label: l10n.ipdBedActionMarkAvailable,
           icon: Icons.check_circle_outline,
           status: 'AVAILABLE',
+          isPrimary: true,
         ),
       );
       break;
@@ -481,6 +510,7 @@ List<_BedAction> _bedActionsFor(
           label: l10n.ipdBedActionMarkAvailable,
           icon: Icons.check_circle_outline,
           status: 'AVAILABLE',
+          isPrimary: true,
         ),
       );
       break;
@@ -492,6 +522,7 @@ List<_BedAction> _bedActionsFor(
           label: l10n.ipdBedActionReturnToService,
           icon: Icons.restart_alt,
           status: 'AVAILABLE',
+          isPrimary: true,
         ),
       );
       break;

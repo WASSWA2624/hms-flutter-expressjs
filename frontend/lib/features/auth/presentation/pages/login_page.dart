@@ -30,6 +30,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      // Fresh visit: drop sibling-route failure / reset shells from shared auth state.
+      final AuthController auth = ref.read(authControllerProvider.notifier);
+      auth.clearFailure();
+      auth.clearIdentifyTenants();
+      auth.clearPasswordResetSubmitted();
+    });
+  }
+
+  @override
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
@@ -112,15 +127,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: state.isSubmitting
                     ? null
                     : () => context.go(AppRoutes.forgotPassword.location()),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
-                child: Divider(
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.45,
-                  ),
-                  height: 1,
-                ),
               ),
               AuthTextLink(
                 label: l10n.authCreateAccountActionLabel,

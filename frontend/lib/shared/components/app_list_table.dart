@@ -2703,17 +2703,13 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    // Content-tight rows; max height still allows wrapped cells.
+    // Content-tight rows: grow with the tallest cell; wrap without a fixed cap.
     final double rowMinHeight = widget.dense
         ? 36
         : widget.compact
         ? 32
         : 36;
-    final double rowMaxHeight = widget.dense
-        ? 64
-        : widget.compact
-        ? 96
-        : 112;
+    const double rowMaxHeight = double.infinity;
     final int minRowCount = widget.padEmptyRows
         ? _minTableRowCount
         : widget.items.length;
@@ -3080,10 +3076,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 }
 
-/// Constrains cell content to the column width at a fixed readable text size.
+/// Constrains cell content to the column width so text wraps and the row can
+/// grow with the tallest cell.
 ///
-/// Long labels keep their natural font size and clip/ellipsis inside the
-/// column instead of being shrunk by [FittedBox].
+/// Long labels keep their natural font size and wrap inside the column instead
+/// of being shrunk by [FittedBox] or clipped to a fixed line count.
 class _AppListTableCell extends StatelessWidget {
   const _AppListTableCell({
     required this.width,
@@ -3097,16 +3094,16 @@ class _AppListTableCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextStyle style = DefaultTextStyle.of(context).style;
+    // Tight width so text wraps at the column edge; row height then follows
+    // the tallest cell via DataTable's unbounded dataRowMaxHeight.
     return SizedBox(
       width: width,
-      child: Align(
-        alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
-        child: DefaultTextStyle.merge(
-          softWrap: true,
-          overflow: TextOverflow.fade,
-          maxLines: 3,
-          child: child,
-        ),
+      child: DefaultTextStyle(
+        style: style,
+        overflow: TextOverflow.visible,
+        textAlign: numeric ? TextAlign.right : TextAlign.start,
+        child: child,
       ),
     );
   }

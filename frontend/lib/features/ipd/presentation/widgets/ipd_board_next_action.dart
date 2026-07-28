@@ -543,12 +543,12 @@ Future<bool?> _openDischargePlanningForAdmission(
   BuildContext context,
   WidgetRef ref,
   IpdAdmissionDetail admission,
-) {
+) async {
   final AppLocalizations l10n = context.l10n;
   final bool dischargePlanned =
       (admission.latestDischargeSummary?.status ?? '').toUpperCase() ==
       'PLANNED';
-  return showDischargePlanningDialog(
+  final bool? saved = await showDischargePlanningDialog(
     context: context,
     ref: ref,
     admissionId: admission.summary.apiId,
@@ -559,6 +559,10 @@ Future<bool?> _openDischargePlanningForAdmission(
     ),
     onFailure: (AppFailure failure) => showAppFailureSnackBar(context, failure),
   );
+  if (saved == true) {
+    await ref.read(ipdWorkspaceControllerProvider.notifier).refresh();
+  }
+  return saved;
 }
 
 void _showIpdSaved(BuildContext context) {
