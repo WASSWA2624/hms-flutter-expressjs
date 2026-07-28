@@ -343,13 +343,10 @@ class _OperationsWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state),
-              secondaryActions: _buildSecondaryActions(
-                context,
-                l10n,
-                state,
-                controller,
-              ),
+              primaryAction: canMutate
+                  ? _buildPrimaryAction(l10n, state)
+                  : null,
+              secondaryActions: _buildSecondaryActions(context, l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -397,28 +394,13 @@ class _OperationsWorkspaceContentState
     AppLocalizations l10n,
     OperationsWorkspaceState state,
   ) {
-    if (_section == OperationsDeskSection.completed) {
-      return AppTabToolbarPrimary(
-        label: l10n.operationsOpenReportAction,
-        icon: Icons.summarize_outlined,
-        enabled: !state.isMutating,
-        onPressed: state.isMutating
-            ? null
-            : () => _showOperationsReportDialog(context, state),
-      );
-    }
-    return AppAccessActionGate(
-      requirement: _mutationRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppTabToolbarPrimary(
-          label: l10n.operationsCreateRequestAction,
-          icon: Icons.add,
-          enabled: isAllowed && !state.isMutating,
-          onPressed: isAllowed && !state.isMutating
-              ? () => _showCreateRequestDialog(context, ref, state)
-              : null,
-        );
-      },
+    return AppTabToolbarPrimary(
+      label: l10n.operationsCreateRequestAction,
+      icon: Icons.add,
+      enabled: !state.isMutating,
+      onPressed: state.isMutating
+          ? null
+          : () => _showCreateRequestDialog(context, ref, state),
     );
   }
 
@@ -426,40 +408,7 @@ class _OperationsWorkspaceContentState
     BuildContext context,
     AppLocalizations l10n,
     OperationsWorkspaceState state,
-    OperationsWorkspaceController controller,
   ) {
-    final Widget refreshAction = AppWorkspaceRefreshAction(
-      label: l10n.commonRefreshActionLabel,
-      isLoading: state.isRefreshing,
-      onPressed: state.isRefreshing
-          ? null
-          : () async {
-              final AppFailure? failure = await controller.refresh();
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-    );
-
-    if (_section == OperationsDeskSection.completed) {
-      return <Widget>[
-        AppAccessActionGate(
-          requirement: _mutationRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.operationsCreateRequestAction,
-              icon: Icons.add,
-              enabled: isAllowed && !state.isMutating,
-              onPressed: isAllowed && !state.isMutating
-                  ? () => _showCreateRequestDialog(context, ref, state)
-                  : null,
-            );
-          },
-        ),
-        refreshAction,
-      ];
-    }
-
     return <Widget>[
       AppTabToolbarAction(
         label: l10n.operationsOpenReportAction,
@@ -469,7 +418,6 @@ class _OperationsWorkspaceContentState
             ? null
             : () => _showOperationsReportDialog(context, state),
       ),
-      refreshAction,
     ];
   }
 
@@ -598,12 +546,13 @@ class _OperationsQueuePanel extends ConsumerWidget {
         lastDate: DateTime(2100),
         currentDate: DateTime.now(),
         filterGroups: <AppSearchBarFilterGroup>[
-          AppSearchBarFilterGroup(
-            key: _operationsStatusFilterKey,
-            label: l10n.operationsStatusFilterLabel,
-            allLabel: l10n.operationsAllFilterOption,
-            choices: _statusFilterChoices(l10n),
-          ),
+          if (section == OperationsDeskSection.allRequests)
+            AppSearchBarFilterGroup(
+              key: _operationsStatusFilterKey,
+              label: l10n.operationsStatusFilterLabel,
+              allLabel: l10n.operationsAllFilterOption,
+              choices: _statusFilterChoices(l10n),
+            ),
           AppSearchBarFilterGroup(
             key: _operationsPriorityFilterKey,
             label: l10n.operationsPriorityFilterLabel,
@@ -612,10 +561,10 @@ class _OperationsQueuePanel extends ConsumerWidget {
           ),
         ],
         filterValue: _operationsFilterValue(state.query),
-        hasActiveFilters: _hasOperationsFilters(state.query),
+        hasActiveFilters: _hasOperationsFilters(state.query, section),
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final AppFailure? failure = await controller.applyFilters(
-            status: value.option(_operationsStatusFilterKey),
+            status: _statusForSectionFilter(section, value),
             priority: value.option(_operationsPriorityFilterKey),
             facilityId: value.text(_operationsFacilityFilterKey),
             assetId: value.text(_operationsAssetFilterKey),
@@ -951,18 +900,6 @@ class _OperationsDetailPanel extends ConsumerWidget {
       children: <Widget>[
         if (state.isRefreshingDetail)
           const LinearProgressIndicator(minHeight: 2),
-        Align(
-          alignment: Alignment.centerRight,
-          child: AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.summarize_outlined,
-            label: l10n.operationsOpenReportAction,
-            semanticLabel: l10n.operationsOpenReportAction,
-            tooltip: l10n.operationsOpenReportAction,
-            onPressed: () => _showRequestReportDialog(context, state, item),
-          ),
-        ),
-        SizedBox(height: Theme.of(context).spacing.md),
         _OperationsDetailBody(state: state, item: item, canMutate: canMutate),
       ],
     );
@@ -985,7 +922,6 @@ class _OperationsDetailBody extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<Widget> children = <Widget>[
-      _OperationsStatusBanner(item: item),
       AppInfoTileGrid(
         maxColumns: 2,
         items: <AppInfoTileData>[
@@ -1076,36 +1012,6 @@ class _OperationsDetailBody extends ConsumerWidget {
   }
 }
 
-class _OperationsStatusBanner extends StatelessWidget {
-  const _OperationsStatusBanner({required this.item});
-
-  final OperationsWorkItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppContentPanel(
-      tone: _statusTone(item.status),
-      density: AppContentPanelDensity.compact,
-      child: Row(
-        children: <Widget>[
-          Icon(
-            _statusIcon(item.status),
-            size: Theme.of(context).appTokens.listIconSize,
-          ),
-          SizedBox(width: Theme.of(context).spacing.sm),
-          Expanded(
-            child: Text(
-              _nextActionLabel(l10n, item),
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _OperationsActionPanel extends ConsumerWidget {
   const _OperationsActionPanel({required this.item, required this.state});
 
@@ -1118,95 +1024,111 @@ class _OperationsActionPanel extends ConsumerWidget {
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
+    final _OperationsNextActionKind nextKind = _nextActionKind(
+      item,
+      canMutate: true,
+    );
+
+    final List<AppActionItem> actions = <AppActionItem>[
+      if (!item.isTerminal && nextKind != _OperationsNextActionKind.assign)
+        AppActionItem(
+          label: l10n.operationsAssignAction,
+          leadingIcon: Icons.assignment_ind_outlined,
+          enabled: !state.isMutating,
+          onPressed: () => _showAssignDialog(context, ref),
+        ),
+      if (nextKind != _OperationsNextActionKind.updateStatus)
+        AppActionItem(
+          label: l10n.operationsUpdateStatusAction,
+          leadingIcon: Icons.fact_check_outlined,
+          enabled: !state.isMutating,
+          onPressed: () => _showStatusDialog(context, ref, item),
+        ),
+      if (_hasValue(item.assetId) &&
+          nextKind != _OperationsNextActionKind.serviceLog)
+        AppActionItem(
+          label: l10n.operationsAddServiceLogAction,
+          leadingIcon: Icons.build_outlined,
+          enabled: !state.isMutating,
+          onPressed: () => _showServiceLogDialog(context, ref, state),
+        ),
+      if (!item.isTerminal)
+        AppActionItem(
+          label: l10n.operationsPartsVendorAction,
+          leadingIcon: Icons.local_shipping_outlined,
+          enabled: !state.isMutating,
+          onPressed: () => _showNoteDialog(
+            context,
+            title: l10n.operationsPartsVendorAction,
+            fieldLabel: l10n.operationsPartsVendorNoteLabel,
+            submitLabel: l10n.operationsSaveNoteAction,
+            kind: _noteKindPartsVendor,
+            controller: controller,
+          ),
+        ),
+      AppActionItem(
+        label: l10n.operationsSafetyNoteAction,
+        leadingIcon: Icons.health_and_safety_outlined,
+        enabled: !state.isMutating,
+        onPressed: () => _showNoteDialog(
+          context,
+          title: l10n.operationsSafetyNoteAction,
+          fieldLabel: l10n.operationsSafetyNoteLabel,
+          submitLabel: l10n.operationsSaveNoteAction,
+          kind: _noteKindSafety,
+          controller: controller,
+        ),
+      ),
+      AppActionItem(
+        label: l10n.operationsEvidenceNoteAction,
+        leadingIcon: Icons.attach_file_outlined,
+        enabled: !state.isMutating,
+        onPressed: () => _showNoteDialog(
+          context,
+          title: l10n.operationsEvidenceNoteAction,
+          fieldLabel: l10n.operationsEvidenceNoteLabel,
+          submitLabel: l10n.operationsSaveNoteAction,
+          kind: _noteKindEvidence,
+          controller: controller,
+        ),
+      ),
+      AppActionItem(
+        label: l10n.operationsHandoverNoteAction,
+        leadingIcon: Icons.swap_horiz_outlined,
+        enabled: !state.isMutating,
+        onPressed: () => _showNoteDialog(
+          context,
+          title: l10n.operationsHandoverNoteAction,
+          fieldLabel: l10n.operationsHandoverNoteLabel,
+          submitLabel: l10n.operationsSaveNoteAction,
+          kind: _noteKindHandover,
+          controller: controller,
+        ),
+      ),
+      if (nextKind != _OperationsNextActionKind.closeout)
+        AppActionItem(
+          label: l10n.operationsCloseoutNoteAction,
+          leadingIcon: Icons.verified_outlined,
+          enabled: !state.isMutating,
+          onPressed: () => _showNoteDialog(
+            context,
+            title: l10n.operationsCloseoutNoteAction,
+            fieldLabel: l10n.operationsCloseoutNoteLabel,
+            submitLabel: l10n.operationsSaveNoteAction,
+            kind: _noteKindCloseout,
+            controller: controller,
+          ),
+        ),
+    ];
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return AppQuickActions(
       title: l10n.operationsActionsTitle,
       leadingIcon: Icons.handyman_outlined,
-      extraActions: <Widget>[
-            AppButton.secondary(
-              label: l10n.operationsAssignAction,
-              leadingIcon: Icons.assignment_ind_outlined,
-              enabled: !state.isMutating && !item.isTerminal,
-              onPressed: () => _showAssignDialog(context, ref),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsUpdateStatusAction,
-              leadingIcon: Icons.fact_check_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showStatusDialog(context, ref, item),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsAddServiceLogAction,
-              leadingIcon: Icons.build_outlined,
-              enabled: !state.isMutating && _hasValue(item.assetId),
-              onPressed: () => _showServiceLogDialog(context, ref, state),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsPartsVendorAction,
-              leadingIcon: Icons.local_shipping_outlined,
-              enabled: !state.isMutating && !item.isTerminal,
-              onPressed: () => _showNoteDialog(
-                context,
-                title: l10n.operationsPartsVendorAction,
-                fieldLabel: l10n.operationsPartsVendorNoteLabel,
-                submitLabel: l10n.operationsSaveNoteAction,
-                kind: _noteKindPartsVendor,
-                controller: controller,
-              ),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsSafetyNoteAction,
-              leadingIcon: Icons.health_and_safety_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showNoteDialog(
-                context,
-                title: l10n.operationsSafetyNoteAction,
-                fieldLabel: l10n.operationsSafetyNoteLabel,
-                submitLabel: l10n.operationsSaveNoteAction,
-                kind: _noteKindSafety,
-                controller: controller,
-              ),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsEvidenceNoteAction,
-              leadingIcon: Icons.attach_file_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showNoteDialog(
-                context,
-                title: l10n.operationsEvidenceNoteAction,
-                fieldLabel: l10n.operationsEvidenceNoteLabel,
-                submitLabel: l10n.operationsSaveNoteAction,
-                kind: _noteKindEvidence,
-                controller: controller,
-              ),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsHandoverNoteAction,
-              leadingIcon: Icons.swap_horiz_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showNoteDialog(
-                context,
-                title: l10n.operationsHandoverNoteAction,
-                fieldLabel: l10n.operationsHandoverNoteLabel,
-                submitLabel: l10n.operationsSaveNoteAction,
-                kind: _noteKindHandover,
-                controller: controller,
-              ),
-            ),
-            AppButton.secondary(
-              label: l10n.operationsCloseoutNoteAction,
-              leadingIcon: Icons.verified_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showNoteDialog(
-                context,
-                title: l10n.operationsCloseoutNoteAction,
-                fieldLabel: l10n.operationsCloseoutNoteLabel,
-                submitLabel: l10n.operationsSaveNoteAction,
-                kind: _noteKindCloseout,
-                controller: controller,
-              ),
-            ),
-      ],
+      actions: actions,
     );
   }
 }
@@ -1302,42 +1224,52 @@ class _OperationsNextActionButton extends ConsumerWidget {
   final Future<void> Function(BuildContext context, OperationsWorkItem item)
   onOpenDetail;
 
-  bool get _enabled {
-    return switch (item.normalizedStatus) {
-      'CANCELLED' => true,
-      'COMPLETED' => canMutate,
-      _ => canMutate && !item.isTerminal,
-    };
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final String label = _nextActionLabel(l10n, item);
+    final _OperationsNextActionKind kind = _nextActionKind(
+      item,
+      canMutate: canMutate,
+    );
     final OperationsWorkspaceState? workspaceState = _operationsStateFromAsync(
       ref.watch(operationsWorkspaceControllerProvider),
     );
     final bool isMutating = workspaceState?.isMutating ?? false;
-    final bool enabled = _enabled && !isMutating;
 
-    if (item.normalizedStatus == 'CANCELLED') {
+    if (kind == _OperationsNextActionKind.none) {
+      return Text(
+        l10n.operationsNextActionCancelled,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    final String label = _nextActionLabelForKind(l10n, kind, item);
+    if (kind == _OperationsNextActionKind.review) {
       return AppButton.tertiary(
         label: label,
-        enabled: enabled,
-        onPressed: enabled
-            ? () => unawaited(onOpenDetail(context, item))
-            : null,
+        enabled: !isMutating,
+        onPressed: isMutating
+            ? null
+            : () => unawaited(onOpenDetail(context, item)),
       );
     }
 
     return AppButton.secondary(
       label: label,
-      enabled: enabled,
-      onPressed: enabled ? () => unawaited(_handlePressed(context, ref)) : null,
+      enabled: !isMutating,
+      onPressed: isMutating
+          ? null
+          : () => unawaited(_handlePressed(context, ref, kind)),
     );
   }
 
-  Future<void> _handlePressed(BuildContext context, WidgetRef ref) async {
+  Future<void> _handlePressed(
+    BuildContext context,
+    WidgetRef ref,
+    _OperationsNextActionKind kind,
+  ) async {
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
@@ -1347,40 +1279,23 @@ class _OperationsNextActionButton extends ConsumerWidget {
         ) ??
         state;
 
-    switch (item.normalizedStatus) {
-      case 'OPEN':
-        final AppFailure? selectFailure = await controller.selectItem(item);
-        if (!context.mounted) {
-          return;
-        }
-        if (selectFailure != null) {
-          _showFailureIfNeeded(context, selectFailure);
-          return;
-        }
+    final AppFailure? selectFailure = await controller.selectItem(item);
+    if (!context.mounted) {
+      return;
+    }
+    if (selectFailure != null) {
+      _showFailureIfNeeded(context, selectFailure);
+      return;
+    }
+
+    switch (kind) {
+      case _OperationsNextActionKind.assign:
         await _showAssignDialog(context, ref);
-      case 'IN_PROGRESS':
-        final AppFailure? selectFailure = await controller.selectItem(item);
-        if (!context.mounted) {
-          return;
-        }
-        if (selectFailure != null) {
-          _showFailureIfNeeded(context, selectFailure);
-          return;
-        }
-        if (_hasValue(item.assetId)) {
-          await _showServiceLogDialog(context, ref, workspaceState);
-        } else {
-          await _showStatusDialog(context, ref, item);
-        }
-      case 'COMPLETED':
-        final AppFailure? selectFailure = await controller.selectItem(item);
-        if (!context.mounted) {
-          return;
-        }
-        if (selectFailure != null) {
-          _showFailureIfNeeded(context, selectFailure);
-          return;
-        }
+      case _OperationsNextActionKind.serviceLog:
+        await _showServiceLogDialog(context, ref, workspaceState);
+      case _OperationsNextActionKind.updateStatus:
+        await _showStatusDialog(context, ref, item);
+      case _OperationsNextActionKind.closeout:
         await _showNoteDialog(
           context,
           title: context.l10n.operationsCloseoutNoteAction,
@@ -1389,9 +1304,8 @@ class _OperationsNextActionButton extends ConsumerWidget {
           kind: _noteKindCloseout,
           controller: controller,
         );
-      case 'CANCELLED':
-        await onOpenDetail(context, item);
-      default:
+      case _OperationsNextActionKind.review:
+      case _OperationsNextActionKind.none:
         await onOpenDetail(context, item);
     }
   }
@@ -2035,64 +1949,42 @@ Future<void> _showOperationsReportDialog(
   );
 }
 
-Future<void> _showRequestReportDialog(
-  BuildContext context,
-  OperationsWorkspaceState state,
-  OperationsWorkItem item,
-) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _OperationsReportDialog(state: state, item: item),
-  );
-}
-
 class _OperationsReportDialog extends StatelessWidget {
-  const _OperationsReportDialog({required this.state, this.item});
+  const _OperationsReportDialog({required this.state});
 
   final OperationsWorkspaceState state;
-  final OperationsWorkItem? item;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final OperationsWorkItem? request = item;
 
     return AppDialog(
       title: Text(l10n.operationsReportTitle),
       icon: const Icon(Icons.summarize_outlined),
       scrollable: true,
       maxWidth: 760,
-      content: AppFormSection(
-        children: <Widget>[
-          AppReportSummaryGrid(
-            records: <AppReportSummaryItem>[
-              AppReportSummaryItem(
-                label: l10n.operationsAllRequestsSummaryLabel,
-                value:
-                    '${state.workItems.totalItemCount ?? state.workItems.items.length}',
-                icon: Icons.inventory_2_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.operationsOpenSummaryLabel,
-                value: '${state.openCount}',
-                icon: Icons.pending_actions_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.operationsInProgressSummaryLabel,
-                value: '${state.inProgressCount}',
-                icon: Icons.engineering_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.operationsAssetsSummaryLabel,
-                value: '${state.assetCount}',
-                icon: Icons.precision_manufacturing_outlined,
-              ),
-            ],
+      content: AppReportSummaryGrid(
+        records: <AppReportSummaryItem>[
+          AppReportSummaryItem(
+            label: l10n.operationsAllRequestsSummaryLabel,
+            value:
+                '${state.workItems.totalItemCount ?? state.workItems.items.length}',
+            icon: Icons.inventory_2_outlined,
           ),
-          AppReportPreviewPanel(
-            title: l10n.operationsReportPreviewTitle,
-            selectable: true,
-            child: Text(_reportText(context, state, request)),
+          AppReportSummaryItem(
+            label: l10n.operationsOpenSummaryLabel,
+            value: '${state.openCount}',
+            icon: Icons.pending_actions_outlined,
+          ),
+          AppReportSummaryItem(
+            label: l10n.operationsInProgressSummaryLabel,
+            value: '${state.inProgressCount}',
+            icon: Icons.engineering_outlined,
+          ),
+          AppReportSummaryItem(
+            label: l10n.operationsAssetsSummaryLabel,
+            value: '${state.assetCount}',
+            icon: Icons.precision_manufacturing_outlined,
           ),
         ],
       ),
@@ -2309,13 +2201,31 @@ AppSearchBarFilterValue _operationsFilterValue(OperationsWorkItemQuery query) {
   );
 }
 
-bool _hasOperationsFilters(OperationsWorkItemQuery query) {
-  return _hasValue(query.status) ||
+bool _hasOperationsFilters(
+  OperationsWorkItemQuery query,
+  OperationsDeskSection section,
+) {
+  final bool statusFromFilters =
+      section == OperationsDeskSection.allRequests && _hasValue(query.status);
+  return statusFromFilters ||
       _hasValue(query.priority) ||
       _hasValue(query.facilityId) ||
       _hasValue(query.assetId) ||
       query.reportedFrom != null ||
       query.reportedTo != null;
+}
+
+String? _statusForSectionFilter(
+  OperationsDeskSection section,
+  AppSearchBarFilterValue value,
+) {
+  return switch (section) {
+    OperationsDeskSection.open => 'OPEN',
+    OperationsDeskSection.inProgress => 'IN_PROGRESS',
+    OperationsDeskSection.completed => 'COMPLETED',
+    OperationsDeskSection.allRequests ||
+    OperationsDeskSection.assets => value.option(_operationsStatusFilterKey),
+  };
 }
 
 List<AppSearchBarFilterChoice> _statusFilterChoices(AppLocalizations l10n) {
@@ -2453,17 +2363,61 @@ IconData _statusIcon(String? status) {
   };
 }
 
-String _nextActionLabel(AppLocalizations l10n, OperationsWorkItem item) {
+enum _OperationsNextActionKind {
+  assign,
+  serviceLog,
+  updateStatus,
+  closeout,
+  review,
+  none,
+}
+
+_OperationsNextActionKind _nextActionKind(
+  OperationsWorkItem item, {
+  required bool canMutate,
+}) {
+  if (!canMutate) {
+    return item.normalizedStatus == 'CANCELLED'
+        ? _OperationsNextActionKind.none
+        : _OperationsNextActionKind.review;
+  }
   return switch (item.normalizedStatus) {
-    'OPEN' => l10n.operationsNextActionAssign,
-    'IN_PROGRESS' =>
-      _hasValue(item.assetId)
-          ? l10n.operationsNextActionServiceLog
-          : l10n.operationsNextActionUpdateStatus,
-    'COMPLETED' => l10n.operationsNextActionCloseout,
-    'CANCELLED' => l10n.operationsNextActionCancelled,
-    _ => l10n.operationsNextActionReview,
+    'OPEN' => _OperationsNextActionKind.assign,
+    'IN_PROGRESS' => _hasValue(item.assetId)
+        ? _OperationsNextActionKind.serviceLog
+        : _OperationsNextActionKind.updateStatus,
+    'COMPLETED' => _OperationsNextActionKind.closeout,
+    'CANCELLED' => _OperationsNextActionKind.none,
+    _ => _OperationsNextActionKind.review,
   };
+}
+
+String _nextActionLabelForKind(
+  AppLocalizations l10n,
+  _OperationsNextActionKind kind,
+  OperationsWorkItem item,
+) {
+  return switch (kind) {
+    _OperationsNextActionKind.assign => l10n.operationsNextActionAssign,
+    _OperationsNextActionKind.serviceLog => l10n.operationsNextActionServiceLog,
+    _OperationsNextActionKind.updateStatus =>
+      l10n.operationsNextActionUpdateStatus,
+    _OperationsNextActionKind.closeout => l10n.operationsNextActionCloseout,
+    _OperationsNextActionKind.review => l10n.operationsNextActionReview,
+    _OperationsNextActionKind.none => l10n.operationsNextActionCancelled,
+  };
+}
+
+String _nextActionLabel(
+  AppLocalizations l10n,
+  OperationsWorkItem item, {
+  bool canMutate = true,
+}) {
+  return _nextActionLabelForKind(
+    l10n,
+    _nextActionKind(item, canMutate: canMutate),
+    item,
+  );
 }
 
 String _issueLabel(AppLocalizations l10n, OperationsWorkItem item) {

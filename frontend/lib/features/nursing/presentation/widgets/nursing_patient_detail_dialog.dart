@@ -19,11 +19,11 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_escalat
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_print_summary_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';

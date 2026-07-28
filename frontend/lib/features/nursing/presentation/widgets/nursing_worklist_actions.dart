@@ -13,7 +13,6 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handove
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';

@@ -64,17 +64,23 @@ AppAccessPolicy _opdWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      user: const AuthUserProfile(roles: <String>['RECEPTIONIST', 'NURSE']),
       permissions: <AppPermission>{
         AppPermissions.patientRead,
         AppPermissions.patientWrite,
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
         AppModuleEntitlement(
           code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'billing-payments',
           licenseStatus: 'ACTIVE',
         ),
       ],
@@ -235,10 +241,12 @@ void main() {
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.text('Next action'), findsWidgets);
+    expect(find.text('Check in'), findsOneWidget);
+    expect(find.text('Record vitals'), findsWidgets);
   });
 
   testWidgets('switching tabs filters by category and updates URL', (
@@ -258,7 +266,7 @@ void main() {
     expect(find.text('Tina Triage'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Queue').first);
     await tester.pumpAndSettle();
@@ -267,7 +275,7 @@ void main() {
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Ann Arrival'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Triage').first);
     await tester.pumpAndSettle();
@@ -276,7 +284,7 @@ void main() {
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Active').first);
     await tester.pumpAndSettle();
@@ -285,7 +293,7 @@ void main() {
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.text('Tina Triage'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('All worklist').first);
     await tester.pumpAndSettle();
@@ -296,7 +304,7 @@ void main() {
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
   });
 
   testWidgets('deep link section=triage selects Triage tab', (
@@ -315,7 +323,7 @@ void main() {
     expect(find.text('Quinn Queue'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
   });
 
   testWidgets('search filters within the active tab subset', (
@@ -337,7 +345,9 @@ void main() {
     expect(find.text('Ann Arrival'), findsOneWidget);
   });
 
-  testWidgets('mobile layout renders list rows', (WidgetTester tester) async {
+  testWidgets('mobile layout renders list rows with next-action trailing', (
+    WidgetTester tester,
+  ) async {
     await _pumpOpdWorkspace(
       tester,
       repository: repository,
@@ -347,7 +357,8 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Ann Arrival'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.text('Check in'), findsOneWidget);
 
     await tester.tap(find.text('Quinn Queue'));
     await tester.pumpAndSettle();
@@ -423,5 +434,113 @@ void main() {
         idempotencyKey: any(named: 'idempotencyKey'),
       ),
     );
+  });
+
+  testWidgets('arrival Check in next-action opens encounter dialog directly', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Check in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
+    expect(find.text('Queue'), findsNothing);
+    expect(find.byType(AppDialog), findsWidgets);
+  });
+
+  testWidgets('active flow next-action opens vitals dialog directly', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.getOpdFlow(any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(
+        OpdFlowDetail(summary: _activeFlow),
+      ),
+    );
+
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Record vitals').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('FLOW ACTIONS'), findsNothing);
+    expect(find.textContaining('Vitals'), findsWidgets);
+  });
+
+  testWidgets('flow row omit keeps Pay consultation out of hub', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.getOpdFlow(any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(
+        OpdFlowDetail(summary: _activeFlow),
+      ),
+    );
+
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Alex Active'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('FLOW ACTIONS'), findsOneWidget);
+    expect(find.text('Next · Record vitals'), findsNothing);
+    expect(find.text('Record vitals'), findsNothing);
+  });
+
+  testWidgets('unauthorized user has no Start walk-in or next-action writes', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/opd',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/opd',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: OpdWorkspacePage());
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          opdRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            AppAccessPolicy.fromSession(
+              AuthSession(
+                tokens: SessionTokens(accessToken: 'access-token'),
+                user: const AuthUserProfile(roles: <String>['BILLING']),
+                permissions: <AppPermission>{AppPermissions.billingRead},
+                moduleEntitlements: const <AppModuleEntitlement>[],
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    expect(find.text('Check in'), findsNothing);
+    expect(find.text('Record vitals'), findsNothing);
+    expect(find.text('Refresh'), findsNothing);
   });
 }

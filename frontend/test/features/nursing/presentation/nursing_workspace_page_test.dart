@@ -379,8 +379,7 @@ void main() {
 
     expect(find.byType(DataTable), findsNothing);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    debugDumpApp();
-    expect(find.textContaining('Routine'), findsWidgets);
+    expect(find.text('Routine Patient'), findsOneWidget);
     expect(find.byTooltip('Record vitals'), findsWidgets);
   });
 

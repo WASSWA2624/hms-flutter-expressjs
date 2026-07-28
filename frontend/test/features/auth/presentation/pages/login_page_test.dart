@@ -38,6 +38,20 @@ void main() {
     },
   );
 
+  testWidgets('keeps wrong password message visible after login fails', (
+    WidgetTester tester,
+  ) async {
+    const repository = _FailingLoginRepository(
+      failure: AppFailure.unauthorized(code: 'auth.wrong_password'),
+    );
+
+    await _pumpLogin(tester, repository);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+    await _submitLogin(tester);
+
+    expect(find.text(l10n.authWrongPasswordMessage), findsOneWidget);
+  });
+
   testWidgets('clears stale sibling failure on fresh visit', (
     WidgetTester tester,
   ) async {
@@ -45,14 +59,11 @@ void main() {
       failure: AppFailure.unauthorized(code: 'auth.wrong_password'),
     );
     await _pumpLogin(tester, repository);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
     await _submitLogin(tester);
 
-    expect(
-      find.text('The password is incorrect for this account.'),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.authWrongPasswordMessage), findsOneWidget);
 
-    final l10n = tester.element(find.byType(LoginPage)).l10n;
     await tester.tap(find.text(l10n.authForgotPasswordActionLabel));
     await tester.pumpAndSettle();
     expect(find.text('forgot'), findsOneWidget);
@@ -61,10 +72,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(
-      find.text('The password is incorrect for this account.'),
-      findsNothing,
-    );
+    expect(find.text(l10n.authWrongPasswordMessage), findsNothing);
   });
 
   testWidgets('Forgot password and Create account open their routes', (
@@ -107,30 +115,10 @@ void main() {
     );
 
     await _pumpLogin(tester, repository);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
     await _submitLogin(tester);
 
-    expect(
-      find.text(
-        'No account exists for that email or phone. Check the details or create an account.',
-      ),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('keeps wrong password message visible after login fails', (
-    WidgetTester tester,
-  ) async {
-    const repository = _FailingLoginRepository(
-      failure: AppFailure.unauthorized(code: 'auth.wrong_password'),
-    );
-
-    await _pumpLogin(tester, repository);
-    await _submitLogin(tester);
-
-    expect(
-      find.text('The password is incorrect for this account.'),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.authAccountNotFoundMessage), findsOneWidget);
   });
 
   testWidgets('pending account opens verify-email', (WidgetTester tester) async {
@@ -197,7 +185,6 @@ ProviderContainer _createContainer(AuthRepository repository) {
 Future<void> _pumpLogin(
   WidgetTester tester,
   AuthRepository repository, {
-  ProviderContainer? container,
   ThemeData? theme,
   Size size = const Size(1200, 800),
 }) async {
@@ -218,64 +205,61 @@ Future<void> _pumpLogin(
               return LoginPage(from: state.uri.queryParameters['from']);
             },
           ),
-          GoRoute(
-            path: '/forgot-password',
-            builder: (BuildContext context, _) {
-              return Scaffold(
-                body: Column(
-                  children: <Widget>[
-                    const Text('forgot'),
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: const Text('back-login'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          GoRoute(
-            path: '/register',
-            builder: (_, _) => const Scaffold(body: Text('register')),
-          ),
-          GoRoute(
-            path: '/verify-email',
-            builder: (_, GoRouterState state) {
-              final email = state.uri.queryParameters['email'] ?? '';
-              final reason = state.uri.queryParameters['reason'] ?? '';
-              return Scaffold(body: Text('verify:$reason:$email'));
-            },
-          ),
         ],
       ),
       GoRoute(
+        path: '/forgot-password',
+        builder: (BuildContext context, _) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text('forgot'),
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text('back-login'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (_, _) => const Scaffold(body: Center(child: Text('register'))),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (_, GoRouterState state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          final reason = state.uri.queryParameters['reason'] ?? '';
+          return Scaffold(
+            body: Center(child: Text('verify:$reason:$email')),
+          );
+        },
+      ),
+      GoRoute(
         path: '/',
-        builder: (_, _) => const Scaffold(body: Text('home')),
+        builder: (_, _) => const Scaffold(body: Center(child: Text('home'))),
       ),
     ],
   );
 
-  final Widget app = MaterialApp.router(
-    routerConfig: router,
-    theme: theme ?? AppTheme.light,
-    darkTheme: AppTheme.dark,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: const Locale('en'),
-  );
-
-  if (container != null) {
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: app),
-    );
-  } else {
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: _createContainer(repository),
-        child: app,
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: _createContainer(repository),
+      child: MaterialApp.router(
+        routerConfig: router,
+        theme: theme ?? AppTheme.light,
+        darkTheme: AppTheme.dark,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
       ),
-    );
-  }
+    ),
+  );
   await tester.pumpAndSettle();
 }
 

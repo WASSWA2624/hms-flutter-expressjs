@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 /// Stage-aware next-action kinds for the nursing worklist.
@@ -49,12 +48,7 @@ String nursingResolveNextActionLabel(
     NursingNextActionKind.handover => l10n.nursingActionCreateHandover,
     NursingNextActionKind.transfer => l10n.nursingActionAcknowledgeTransfer,
     NursingNextActionKind.discharge => l10n.nursingActionDischargeClearance,
-    NursingNextActionKind.vitals =>
-      scope == NursingQueueScope.all ||
-          scope == NursingQueueScope.assignedWard ||
-          scope == NursingQueueScope.urgent
-      ? l10n.nursingActionRecordVitals
-      : nursingPrimaryActionLabel(l10n, scope),
+    NursingNextActionKind.vitals => l10n.nursingActionRecordVitals,
   };
 }
 
@@ -68,11 +62,6 @@ IconData nursingResolveNextActionIcon(
     NursingNextActionKind.handover => Icons.swap_horiz_outlined,
     NursingNextActionKind.transfer => Icons.transfer_within_a_station_outlined,
     NursingNextActionKind.discharge => Icons.fact_check_outlined,
-    NursingNextActionKind.vitals =>
-      scope == NursingQueueScope.all ||
-          scope == NursingQueueScope.assignedWard ||
-          scope == NursingQueueScope.urgent
-      ? Icons.monitor_heart_outlined
-      : nursingPrimaryActionIcon(scope),
+    NursingNextActionKind.vitals => Icons.monitor_heart_outlined,
   };
 }

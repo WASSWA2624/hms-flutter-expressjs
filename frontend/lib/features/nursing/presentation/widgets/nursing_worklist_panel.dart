@@ -9,7 +9,6 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
@@ -127,11 +126,6 @@ class NursingWorklistPanel extends ConsumerWidget {
             if (subtitle.isNotEmpty)
               AppListTableMobileMeta(label: subtitle),
           ],
-          trailing: NursingNextActionCell(
-            item: item,
-            scope: scope,
-            compact: true,
-          ),
         );
       },
     );
