@@ -535,10 +535,13 @@ void main() {
     );
     expect(find.text(l10n.radiologyNextActionConfirmBilling), findsWidgets);
 
+    await tester.ensureVisible(
+      find.text(l10n.radiologyNextActionConfirmBilling).first,
+    );
     await tester.tap(find.text(l10n.radiologyNextActionConfirmBilling).first);
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.radiologyDetailTitle), findsOneWidget);
+    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
     expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
     expect(find.text(l10n.radiologyAssignAction), findsNothing);
     verify(() => repository.getWorkflow(any())).called(greaterThan(0));
@@ -556,10 +559,8 @@ void main() {
       ),
     );
 
-    final AppLocalizations l10n = AppLocalizations.of(
-      tester.element(find.byType(AppTabStrip)),
-    );
-    expect(find.text(l10n.radiologyDetailTitle), findsOneWidget);
+    expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+    expect(find.text('Olivia Ordered'), findsWidgets);
     verify(() => repository.getWorkflow(any())).called(greaterThan(0));
   });
 

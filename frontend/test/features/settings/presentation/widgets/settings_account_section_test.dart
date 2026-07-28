@@ -7,12 +7,13 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/profile/data/repositories/user_profile_repository_impl.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
-import 'package:hosspi_hms/features/profile/presentation/controllers/user_profile_controller.dart';
-import 'package:hosspi_hms/features/profile/presentation/state/user_profile_state.dart';
+import 'package:hosspi_hms/features/profile/domain/repositories/user_profile_repository.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -126,7 +127,6 @@ void main() {
       size: const Size(390, 844),
     );
 
-    // Labels collapse on narrow widths; tooltip / semantics remain.
     expect(find.byTooltip('Change password'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
   });
@@ -143,18 +143,6 @@ Future<void> _pumpAccountSection(
   final AppAccessPolicy policy = AppAccessPolicy.fromSession(
     session,
   ).copyWithPermissions(permissions);
-  final UserProfileState profileState = UserProfileState(
-    view: UserProfileView(
-      session: session,
-      record: const UserProfileRecord(
-        id: 'profile-1',
-        userId: 'user-1',
-        firstName: 'Alex',
-        lastName: 'Demo',
-        gender: 'UNKNOWN',
-      ),
-    ),
-  );
 
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -168,8 +156,11 @@ Future<void> _pumpAccountSection(
         initialSessionStateProvider.overrideWithValue(
           SessionState.authenticated(session: session),
         ),
-        userProfileControllerProvider.overrideWith(
-          () => _FakeUserProfileController(profileState),
+        secureSessionStorageProvider.overrideWithValue(
+          _TestSecureSessionStorage(),
+        ),
+        userProfileRepositoryProvider.overrideWithValue(
+          _FakeUserProfileRepository(session),
         ),
       ],
       child: MaterialApp(
@@ -196,6 +187,7 @@ AuthSession _session(List<AppPermission> permissions) {
   return AuthSession(
     tokens: SessionTokens(accessToken: 'access-token'),
     permissions: permissions,
+    isAuthorizationHydrated: true,
     user: const AuthUserProfile(
       id: 'user-1',
       displayId: 'USR-1',
@@ -212,25 +204,55 @@ AuthSession _session(List<AppPermission> permissions) {
   );
 }
 
-final class _FakeUserProfileController extends UserProfileController {
-  _FakeUserProfileController(this._profileState);
+final class _FakeUserProfileRepository implements UserProfileRepository {
+  const _FakeUserProfileRepository(this.session);
 
-  final UserProfileState _profileState;
-
-  @override
-  Future<Result<UserProfileState>> build() async {
-    return Result<UserProfileState>.success(_profileState);
-  }
+  final AuthSession session;
 
   @override
-  Future<void> refresh() async {
-    state = AsyncData<Result<UserProfileState>>(
-      Result<UserProfileState>.success(_profileState),
+  Future<Result<UserProfileView>> loadCurrentProfile(
+    AuthSession session,
+  ) async {
+    return Result<UserProfileView>.success(
+      UserProfileView(
+        session: this.session,
+        record: const UserProfileRecord(
+          id: 'profile-1',
+          userId: 'user-1',
+          firstName: 'Alex',
+          lastName: 'Demo',
+          gender: 'UNKNOWN',
+        ),
+      ),
     );
   }
 
   @override
-  Future<bool> saveProfile(UserProfileDraft draft) async {
-    return true;
+  Future<Result<UserProfileRecord>> updateProfile(
+    String profileId,
+    UserProfileDraft draft,
+  ) async {
+    return Result<UserProfileRecord>.success(
+      UserProfileRecord(
+        id: profileId,
+        userId: 'user-1',
+        firstName: draft.firstName,
+        middleName: draft.middleName,
+        lastName: draft.lastName,
+        gender: draft.gender,
+      ),
+    );
   }
+}
+
+final class _TestSecureSessionStorage implements SecureSessionStorage {
+  @override
+  Future<SessionTokens?> readTokens() async =>
+      SessionTokens(accessToken: 'access-token');
+
+  @override
+  Future<void> writeTokens(SessionTokens tokens) async {}
+
+  @override
+  Future<void> clear() async {}
 }
