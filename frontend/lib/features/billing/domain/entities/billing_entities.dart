@@ -148,9 +148,9 @@ final class BillingWorkspaceQuery {
   String get signature =>
       '$search|${queue.name}|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus|$action';
 
+  /// Advanced list filters only (queue is owned by the tab strip).
   bool get hasActiveFilters {
-    return queue != BillingQueueType.all ||
-        patientId.trim().isNotEmpty ||
+    return patientId.trim().isNotEmpty ||
         invoiceNumber.trim().isNotEmpty ||
         encounterId.trim().isNotEmpty ||
         sourceModule.trim().isNotEmpty ||

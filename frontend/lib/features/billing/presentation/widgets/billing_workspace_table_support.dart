@@ -115,9 +115,6 @@ String? billingNextActionLabel(
   if (item.canRequestVoid) {
     return l10n.billingRequestVoidAction;
   }
-  if (item.canFinalizeEncounterBilling) {
-    return l10n.billingFinalizeEncounterAction;
-  }
   if (item.isInvoice && !billingWorkItemIsCancelled(item)) {
     return l10n.billingSendAction;
   }
@@ -428,11 +425,8 @@ int _billingNextActionSortKey(BillingWorkItem item) {
   if (item.canRequestVoid) {
     return 9;
   }
-  if (item.canFinalizeEncounterBilling) {
-    return 10;
-  }
   if (item.isInvoice && !billingWorkItemIsCancelled(item)) {
-    return 11;
+    return 10;
   }
   return 99;
 }

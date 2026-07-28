@@ -29,12 +29,24 @@ class AuthRequiredPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final String? fromPath = GoRouterState.of(
+      context,
+    ).uri.queryParameters['from'];
 
     return _RouteStatusPage(
       icon: Icons.lock_outline,
       title: l10n.routeAuthRequiredTitle,
       body: l10n.routeAuthRequiredBody,
-      actionLabel: l10n.commonGoHomeActionLabel,
+      detail: fromPath,
+      actionLabel: l10n.authLoginActionLabel,
+      onAction: () {
+        if (fromPath == null || fromPath.isEmpty) {
+          context.go(AppRoutes.login.location());
+          return;
+        }
+        final Uri fromUri = Uri.tryParse(fromPath) ?? Uri(path: fromPath);
+        context.go(AppRoutes.login.locationWithFrom(fromUri));
+      },
     );
   }
 }
@@ -109,6 +121,7 @@ class _RouteStatusPage extends StatelessWidget {
     required this.body,
     required this.actionLabel,
     this.detail,
+    this.onAction,
   });
 
   final IconData icon;
@@ -116,6 +129,7 @@ class _RouteStatusPage extends StatelessWidget {
   final String body;
   final String actionLabel;
   final String? detail;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -127,9 +141,11 @@ class _RouteStatusPage extends StatelessWidget {
       detail: detail,
       action: AppButton.primary(
         label: actionLabel,
-        onPressed: () {
-          context.go(AppRoutes.home.location());
-        },
+        onPressed:
+            onAction ??
+            () {
+              context.go(AppRoutes.home.location());
+            },
       ),
     );
   }

@@ -45,7 +45,6 @@ class BillingDetailBody extends ConsumerWidget {
     this.onApprovePreAuthorization,
     this.onDenyPreAuthorization,
     this.onViewLedger,
-    this.onFinalizeEncounter,
     super.key,
   });
 
@@ -65,7 +64,6 @@ class BillingDetailBody extends ConsumerWidget {
   final VoidCallback? onApprovePreAuthorization;
   final VoidCallback? onDenyPreAuthorization;
   final VoidCallback? onViewLedger;
-  final VoidCallback? onFinalizeEncounter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -127,7 +125,6 @@ class BillingDetailBody extends ConsumerWidget {
             onReconcileClaim: onReconcileClaim,
             onApprovePreAuthorization: onApprovePreAuthorization,
             onDenyPreAuthorization: onDenyPreAuthorization,
-            onFinalizeEncounter: onFinalizeEncounter,
           ),
           SizedBox(height: theme.spacing.md),
         ],
@@ -298,7 +295,6 @@ class _BillingActionPanel extends StatelessWidget {
     this.onReconcileClaim,
     this.onApprovePreAuthorization,
     this.onDenyPreAuthorization,
-    this.onFinalizeEncounter,
   });
 
   final BillingWorkItem item;
@@ -316,7 +312,6 @@ class _BillingActionPanel extends StatelessWidget {
   final VoidCallback? onReconcileClaim;
   final VoidCallback? onApprovePreAuthorization;
   final VoidCallback? onDenyPreAuthorization;
-  final VoidCallback? onFinalizeEncounter;
 
   @override
   Widget build(BuildContext context) {
@@ -359,22 +354,10 @@ class _BillingActionPanel extends StatelessWidget {
         AppActionItem(
           label: l10n.billingSendAction,
           leadingIcon: Icons.send_outlined,
-          enabled: !isSaving,
+          enabled: onSend != null && !isSaving,
           onPressed: onSend,
         ),
       ]);
-      if (item.canFinalizeEncounterBilling) {
-        actions.insert(
-          0,
-          AppActionItem(
-            label: l10n.billingFinalizeEncounterAction,
-            leadingIcon: Icons.task_alt_outlined,
-            enabled: !isSaving,
-            variant: AppActionVariant.primary,
-            onPressed: onFinalizeEncounter,
-          ),
-        );
-      }
     }
 
     if (item.isApproval && canApprove) {

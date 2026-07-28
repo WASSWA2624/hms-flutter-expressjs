@@ -174,6 +174,7 @@ final class BillingWorkspaceController
       current.copyWith(
         query: BillingWorkspaceQuery(
           search: current.query.search,
+          queue: current.query.queue,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
