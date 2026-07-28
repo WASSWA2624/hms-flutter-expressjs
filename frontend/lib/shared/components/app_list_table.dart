@@ -537,6 +537,7 @@ class AppListTableColumn<T> {
     this.sortComparator,
     this.headerBuilder,
     this.preferredWidth,
+    this.fixedWidth,
   });
 
   final String? id;
@@ -550,6 +551,9 @@ class AppListTableColumn<T> {
 
   /// Optional default width before user resize; clamped like saved widths.
   final double? preferredWidth;
+
+  /// Exact non-resizable width; bypasses the resize minimum clamp.
+  final double? fixedWidth;
 
   String get key => id ?? label;
 
@@ -807,6 +811,9 @@ class AppListTable<T> extends StatefulWidget {
     this.columnWidthStorageKey,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
+    this.showRowNumbers = true,
+    this.padEmptyRows,
+    this.surfaceHeader,
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
     this.goToTopLabel = _defaultGoToTopLabel,
@@ -862,6 +869,17 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnWidthStorageKey;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
+
+  /// When false, hides the leading `#` index column (desktop and mobile).
+  final bool showRowNumbers;
+
+  /// When set, overrides empty spacer-row padding. Defaults to padding only for
+  /// non-infinite, non-shrink-wrapped tables without a [surfaceHeader].
+  final bool? padEmptyRows;
+
+  /// Optional chrome rendered inside the table surface above the rows; scrolls
+  /// with table content when the table scrolls vertically.
+  final Widget? surfaceHeader;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
   final String goToTopLabel;
@@ -1070,6 +1088,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     AppListTableColumn<T> column, {
     required bool compact,
   }) {
+    final double? fixed = column.fixedWidth;
+    if (fixed != null) {
+      return fixed;
+    }
     final double? saved = _columnWidths[column.key];
     if (saved != null) {
       return saved.clamp(_minResizableColumnWidth, 640);
@@ -1513,12 +1535,69 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       isLoading: widget.isLoading,
       visibleItems: visibleItems,
     )) {
-      return widget.loadingBuilder?.call(context) ??
+      final Widget loading =
+          widget.loadingBuilder?.call(context) ??
           const _DefaultListTableLoading();
+      final Widget? surfaceHeader = widget.surfaceHeader;
+      if (surfaceHeader == null) {
+        return loading;
+      }
+      return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final ThemeData theme = Theme.of(context);
+          final ColorScheme colorScheme = theme.colorScheme;
+          final bool canExpand =
+              !widget.shrinkWrap && constraints.hasBoundedHeight;
+          return Material(
+            color: colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                surfaceHeader,
+                if (canExpand) Expanded(child: loading) else loading,
+              ],
+            ),
+          );
+        },
+      );
     }
 
     if (visibleItems.isEmpty && widget.emptyBuilder != null) {
-      return widget.emptyBuilder!(context);
+      final Widget empty = widget.emptyBuilder!(context);
+      final Widget? surfaceHeader = widget.surfaceHeader;
+      if (surfaceHeader == null) {
+        return empty;
+      }
+      return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final ThemeData theme = Theme.of(context);
+          final ColorScheme colorScheme = theme.colorScheme;
+          final bool canExpand =
+              !widget.shrinkWrap && constraints.hasBoundedHeight;
+          return Material(
+            color: colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                surfaceHeader,
+                if (canExpand) Expanded(child: empty) else empty,
+              ],
+            ),
+          );
+        },
+      );
     }
 
     return LayoutBuilder(
@@ -1541,9 +1620,17 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             physics: effectivePhysics,
             rowColorBuilder: widget.rowColorBuilder,
             rowNumberOffset: rowNumberOffset,
+            showRowNumbers: widget.showRowNumbers,
+            surfaceHeader: widget.surfaceHeader,
             goToTopLabel: widget.goToTopLabel,
           );
         }
+
+        final bool padEmptyRows =
+            widget.padEmptyRows ??
+            (!_usesInfinitePagination &&
+                !effectiveShrinkWrap &&
+                widget.surfaceHeader == null);
 
         return _DesktopListTable<T>(
           items: visibleItems,
@@ -1558,9 +1645,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           sortAscending: _sortAscending,
           onSort: _sortByColumn,
           rowNumberOffset: rowNumberOffset,
+          showRowNumbers: widget.showRowNumbers,
           enableColumnResize: widget.enableColumnResize,
           scrollVertically: hasBoundedHeight,
-          padEmptyRows: !_usesInfinitePagination,
+          padEmptyRows: padEmptyRows,
+          surfaceHeader: widget.surfaceHeader,
           goToTopLabel: widget.goToTopLabel,
           columnWidthFor: (AppListTableColumn<T> column) {
             return _columnWidthFor(column, compact: compact);
@@ -1669,7 +1758,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     for (final AppListTableColumn<T> column in visibleColumns) {
       columnsWidth += _columnWidthFor(column, compact: compact);
     }
-    return math.max(constraints.maxWidth, _rowNumberColumnWidth + columnsWidth);
+    final double rowNumberWidth = widget.showRowNumbers
+        ? _rowNumberColumnWidth
+        : 0;
+    return math.max(constraints.maxWidth, rowNumberWidth + columnsWidth);
   }
 
   List<T> _filteredItems(
@@ -2264,6 +2356,8 @@ class _MobileListTable<T> extends StatelessWidget {
     required this.physics,
     required this.rowColorBuilder,
     this.rowNumberOffset = 0,
+    this.showRowNumbers = true,
+    this.surfaceHeader,
     this.goToTopLabel = _defaultGoToTopLabel,
   });
 
@@ -2275,30 +2369,39 @@ class _MobileListTable<T> extends StatelessWidget {
   final ScrollPhysics? physics;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final int rowNumberOffset;
+  final bool showRowNumbers;
+  final Widget? surfaceHeader;
   final String goToTopLabel;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return _GoToTopHost(
       label: goToTopLabel,
       headerExtent: 56,
       builder: (BuildContext context, Key headerKey) {
         return ListView.separated(
-          itemCount: items.length,
+          itemCount: items.length + (surfaceHeader == null ? 0 : 1),
           shrinkWrap: shrinkWrap,
           physics: physics,
           itemBuilder: (BuildContext context, int index) {
-            final T item = items[index];
+            if (surfaceHeader != null && index == 0) {
+              return KeyedSubtree(key: headerKey, child: surfaceHeader!);
+            }
+            final int itemIndex = surfaceHeader == null ? index : index - 1;
+            final T item = items[itemIndex];
             Widget row = KeyedSubtree(
               key: appListTableUniqueRowKey<T>(
-                index: index,
+                index: itemIndex,
                 itemKeyBuilder: itemKeyBuilder,
                 item: item,
               ),
-              child: _NumberedMobileListItem(
-                number: rowNumberOffset + index + 1,
-                child: itemBuilder(context, item),
-              ),
+              child: showRowNumbers
+                  ? _NumberedMobileListItem(
+                      number: rowNumberOffset + itemIndex + 1,
+                      child: itemBuilder(context, item),
+                    )
+                  : itemBuilder(context, item),
             );
 
             if (onRowSelected != null) {
@@ -2314,13 +2417,18 @@ class _MobileListTable<T> extends StatelessWidget {
               row = ColoredBox(color: rowColor, child: row);
             }
 
-            if (index == 0) {
+            if (surfaceHeader == null && itemIndex == 0) {
               row = KeyedSubtree(key: headerKey, child: row);
             }
             return row;
           },
           separatorBuilder: (BuildContext context, int index) {
-            final ThemeData theme = Theme.of(context);
+            if (surfaceHeader != null && index == 0) {
+              return Divider(
+                height: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              );
+            }
             return Divider(
               height: 1,
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -2440,9 +2548,11 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.sortAscending,
     required this.onSort,
     this.rowNumberOffset = 0,
+    this.showRowNumbers = true,
     this.enableColumnResize = true,
     this.scrollVertically = false,
     this.padEmptyRows = true,
+    this.surfaceHeader,
     this.goToTopLabel = _defaultGoToTopLabel,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
@@ -2460,12 +2570,14 @@ class _DesktopListTable<T> extends StatefulWidget {
   final bool sortAscending;
   final ValueChanged<AppListTableColumn<T>> onSort;
   final int rowNumberOffset;
+  final bool showRowNumbers;
   final bool enableColumnResize;
   /// When true, vertical scroll is nested inside horizontal scroll so the
   /// bottom horizontal scrollbar stays fixed above the table footer.
   final bool scrollVertically;
   /// When false, do not pad the table with blank numbered spacer rows.
   final bool padEmptyRows;
+  final Widget? surfaceHeader;
   final String goToTopLabel;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
@@ -2510,6 +2622,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final int minRowCount = widget.padEmptyRows
         ? _minTableRowCount
         : widget.items.length;
+    final bool showRowNumbers = widget.showRowNumbers;
 
     _resolveTableStyles(theme);
 
@@ -2524,26 +2637,25 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         label: widget.goToTopLabel,
         headerExtent: _headingRowHeight,
         builder: (BuildContext context, Key headerKey) {
-          final Widget table = KeyedSubtree(
-            key: headerKey,
-            child: DataTable(
-              showCheckboxColumn: false,
-              horizontalMargin: horizontalMargin,
-              columnSpacing: columnSpacing,
-              headingRowHeight: _headingRowHeight,
-              dataRowMinHeight: rowMinHeight,
-              dataRowMaxHeight: rowMaxHeight,
-              headingRowColor: _cachedHeadingRowColor,
-              dividerThickness: theme.appTokens.dividerThickness,
-              headingTextStyle: _cachedHeadingTextStyle,
-              dataTextStyle: _cachedDataTextStyle,
-              border: TableBorder(
-                verticalInside: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-                  width: theme.appTokens.dividerThickness,
-                ),
+          final Widget table = DataTable(
+            showCheckboxColumn: false,
+            horizontalMargin: horizontalMargin,
+            columnSpacing: columnSpacing,
+            headingRowHeight: _headingRowHeight,
+            dataRowMinHeight: rowMinHeight,
+            dataRowMaxHeight: rowMaxHeight,
+            headingRowColor: _cachedHeadingRowColor,
+            dividerThickness: theme.appTokens.dividerThickness,
+            headingTextStyle: _cachedHeadingTextStyle,
+            dataTextStyle: _cachedDataTextStyle,
+            border: TableBorder(
+              verticalInside: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+                width: theme.appTokens.dividerThickness,
               ),
-              columns: <DataColumn>[
+            ),
+            columns: <DataColumn>[
+              if (showRowNumbers)
                 DataColumn(
                   numeric: true,
                   label: SizedBox(
@@ -2555,37 +2667,42 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                     ),
                   ),
                 ),
-                for (final AppListTableColumn<T> column in widget.columns)
-                  DataColumn(
-                    numeric: column.numeric,
-                    tooltip: column.tooltip,
-                    label: _DataColumnHeader<T>(
-                      column: column,
-                      isSorted: widget.sortColumnKey == column.key,
-                      sortAscending: widget.sortAscending,
-                      onSort: widget.onSort,
-                      width: widget.columnWidthFor(column),
-                      enableResize: widget.enableColumnResize,
-                      onWidthChanged: widget.onColumnWidthChanged == null
-                          ? null
-                          : (double width) {
-                              widget.onColumnWidthChanged!(column.key, width);
-                            },
-                    ),
+              for (final AppListTableColumn<T> column in widget.columns)
+                DataColumn(
+                  numeric: column.numeric,
+                  tooltip: column.tooltip,
+                  label: _DataColumnHeader<T>(
+                    column: column,
+                    isSorted: widget.sortColumnKey == column.key,
+                    sortAscending: widget.sortAscending,
+                    onSort: widget.onSort,
+                    width: widget.columnWidthFor(column),
+                    enableResize:
+                        widget.enableColumnResize && column.fixedWidth == null,
+                    onWidthChanged:
+                        widget.onColumnWidthChanged == null ||
+                            column.fixedWidth != null
+                        ? null
+                        : (double width) {
+                            widget.onColumnWidthChanged!(column.key, width);
+                          },
                   ),
-              ],
-              rows: <DataRow>[
-                for (var index = 0; index < widget.items.length; index += 1)
-                  _dataRow(context, index),
-                for (
-                  var index = widget.items.length;
-                  index < minRowCount;
-                  index += 1
-                )
-                  _emptyRow(context, index),
-              ],
-            ),
+                ),
+            ],
+            rows: <DataRow>[
+              for (var index = 0; index < widget.items.length; index += 1)
+                _dataRow(context, index),
+              for (
+                var index = widget.items.length;
+                index < minRowCount;
+                index += 1
+              )
+                _emptyRow(context, index),
+            ],
           );
+
+          final Widget? surfaceHeader = widget.surfaceHeader;
+          final bool scrollWithHeader = surfaceHeader != null;
 
           if (widget.scrollVertically) {
             return LayoutBuilder(
@@ -2594,6 +2711,40 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                   widget.minWidth,
                   constraints.maxWidth,
                 );
+                final Widget horizontalTable = Scrollbar(
+                  controller: _horizontalController,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  notificationPredicate: (ScrollNotification notification) {
+                    return notification.metrics.axis == Axis.horizontal;
+                  },
+                  child: SingleChildScrollView(
+                    controller: _horizontalController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: tableWidth, child: table),
+                  ),
+                );
+
+                if (scrollWithHeader) {
+                  return Scrollbar(
+                    controller: _verticalController,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _verticalController,
+                      child: KeyedSubtree(
+                        key: headerKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            surfaceHeader,
+                            horizontalTable,
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 return Scrollbar(
                   controller: _horizontalController,
                   thumbVisibility: true,
@@ -2612,7 +2763,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                         thumbVisibility: true,
                         child: SingleChildScrollView(
                           controller: _verticalController,
-                          child: table,
+                          child: KeyedSubtree(key: headerKey, child: table),
                         ),
                       ),
                     ),
@@ -2622,7 +2773,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             );
           }
 
-          return Scrollbar(
+          final Widget horizontalTable = Scrollbar(
             controller: _horizontalController,
             thumbVisibility: true,
             notificationPredicate: (ScrollNotification notification) {
@@ -2637,6 +2788,19 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               ),
             ),
           );
+
+          if (scrollWithHeader) {
+            return KeyedSubtree(
+              key: headerKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[surfaceHeader, horizontalTable],
+              ),
+            );
+          }
+
+          return KeyedSubtree(key: headerKey, child: horizontalTable);
         },
       ),
     );
@@ -2703,22 +2867,23 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               widget.onRowSelected!(item);
             },
       cells: <DataCell>[
-        DataCell(
-          _DesktopRowKeyboardActivator(
-            enabled: widget.onRowSelected != null,
-            onActivate: () => widget.onRowSelected?.call(item),
-            child: Align(
-              child: SizedBox(
-                width: _rowNumberColumnWidth,
-                child: Text(
-                  (widget.rowNumberOffset + index + 1).toString(),
-                  textAlign: TextAlign.center,
-                  style: _resolveRowNumberStyle(Theme.of(context)),
+        if (widget.showRowNumbers)
+          DataCell(
+            _DesktopRowKeyboardActivator(
+              enabled: widget.onRowSelected != null,
+              onActivate: () => widget.onRowSelected?.call(item),
+              child: Align(
+                child: SizedBox(
+                  width: _rowNumberColumnWidth,
+                  child: Text(
+                    (widget.rowNumberOffset + index + 1).toString(),
+                    textAlign: TextAlign.center,
+                    style: _resolveRowNumberStyle(Theme.of(context)),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         for (final AppListTableColumn<T> column in widget.columns)
           DataCell(
             _AppListTableCell(
@@ -2742,18 +2907,19 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       key: ValueKey<int>(index),
       color: stripe == null ? null : WidgetStatePropertyAll<Color>(stripe),
       cells: <DataCell>[
-        DataCell(
-          Align(
-            child: SizedBox(
-              width: _rowNumberColumnWidth,
-              child: Text(
-                (widget.rowNumberOffset + index + 1).toString(),
-                textAlign: TextAlign.center,
-                style: _resolveRowNumberStyle(theme),
+        if (widget.showRowNumbers)
+          DataCell(
+            Align(
+              child: SizedBox(
+                width: _rowNumberColumnWidth,
+                child: Text(
+                  (widget.rowNumberOffset + index + 1).toString(),
+                  textAlign: TextAlign.center,
+                  style: _resolveRowNumberStyle(theme),
+                ),
               ),
             ),
           ),
-        ),
         for (final AppListTableColumn<T> column in widget.columns)
           DataCell(SizedBox(width: widget.columnWidthFor(column))),
       ],

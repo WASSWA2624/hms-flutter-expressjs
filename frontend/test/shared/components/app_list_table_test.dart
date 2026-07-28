@@ -654,6 +654,36 @@ void main() {
     );
   });
 
+  testWidgets('AppListTable can hide row numbers and scroll surface header', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          showRowNumbers: false,
+          padEmptyRows: false,
+          surfaceHeader: const Padding(
+            padding: EdgeInsets.all(8),
+            child: Text('Surface header'),
+          ),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.text('#'), findsNothing);
+    expect(find.text('Surface header'), findsOneWidget);
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
+  });
+
   testWidgets('AppListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {

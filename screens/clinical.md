@@ -382,34 +382,34 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
 
 ### Add diagnosis (`ClinicalDiagnosisActionDialog`)
 
-Dialog opens maximized by default. Diagnosis type uses radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips).
+Dialog opens maximized by default. Diagnosis type uses borderless radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips). Transfer panes use `AppListTable` as the primary surface (no outer title/match-count chrome on available; selected keeps count + Deselect).
 
-- **Diagnosis type** (Primary / Secondary / Differential radios)
+- **Diagnosis type** (Primary / Secondary / Differential borderless radios)
   - Location: Dialog body.
   - Opens modal: No.
   - Immediate result: Sets batch diagnosis type (default Primary).
   - Condition: Enabled when not saving.
 
 - **Search diagnosis**
-  - Location: Available diagnoses pane.
+  - Location: Available pane table surface header.
   - Opens modal: No.
   - Immediate result: Filters / reloads facility diagnosis catalog.
   - Condition: Enabled when not saving.
 
 - **Add** (available pane)
-  - Location: Available diagnoses pane toolbar.
+  - Location: Available pane table surface header (with search).
   - Opens modal: No.
   - Immediate result: Moves checked available rows to selected (skips duplicates).
   - Condition: ≥1 checked available row; not saving.
 
 - **Deselect** (selected pane)
-  - Location: Selected diagnoses pane toolbar.
+  - Location: Selected pane table surface header (with selection count).
   - Opens modal: No.
   - Immediate result: Moves checked selected rows back to available.
   - Condition: ≥1 checked selected row; not saving.
 
 - **Try again** (catalog load failure)
-  - Location: Available diagnoses empty/error state.
+  - Location: Available pane empty/error state.
   - Opens modal: No.
   - Immediate result: Retries facility catalog load.
   - Condition: Catalog load failure; not saving.

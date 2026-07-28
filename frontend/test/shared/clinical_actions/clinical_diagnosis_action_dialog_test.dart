@@ -86,14 +86,31 @@ void main() {
     expect(find.text('Favorites'), findsNothing);
     expect(find.text('Global catalog'), findsNothing);
     expect(find.byType(AppRadioGroup<String>), findsOneWidget);
+    final AppRadioGroup<String> typeGroup = tester.widget(
+      find.byType(AppRadioGroup<String>),
+    );
+    expect(typeGroup.presentation, AppRadioGroupPresentation.borderless);
     expect(find.text('Primary'), findsWidgets);
     expect(find.text('Secondary'), findsOneWidget);
     expect(find.text('Differential'), findsOneWidget);
     expect(find.text('Malaria'), findsOneWidget);
     expect(find.text('Typhoid fever'), findsOneWidget);
-    expect(find.text('Available diagnoses'), findsOneWidget);
-    expect(find.text('Selected diagnoses'), findsOneWidget);
+    expect(find.text('Available diagnoses'), findsNothing);
+    expect(find.textContaining('matches'), findsNothing);
+    expect(find.text('Selected diagnoses'), findsNothing);
+    expect(find.text('0 selected'), findsOneWidget);
     expect(find.text('Deselect'), findsOneWidget);
+    expect(find.text('#'), findsNothing);
+
+    final Finder tables = find.byType(AppListTable<ClinicalActionCatalogOption>);
+    expect(tables, findsNWidgets(2));
+    final AppListTable<ClinicalActionCatalogOption> availableTable = tester
+        .widget(tables.first);
+    expect(availableTable.showRowNumbers, isFalse);
+    expect(
+      availableTable.columns.first.fixedWidth,
+      isNotNull,
+    );
   });
 
   testWidgets('transfers checked diagnoses and submits selected type', (

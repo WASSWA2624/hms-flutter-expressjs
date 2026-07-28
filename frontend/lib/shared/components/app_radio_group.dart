@@ -16,6 +16,15 @@ enum AppRadioGroupLayout {
   wrap,
 }
 
+/// Visual treatment for each radio option.
+enum AppRadioGroupPresentation {
+  /// Bordered, filled option cards (default).
+  card,
+
+  /// Control + label only; no per-option border or fill.
+  borderless,
+}
+
 class AppRadioOption<T> {
   const AppRadioOption({
     required this.value,
@@ -48,6 +57,7 @@ class AppRadioGroup<T> extends StatelessWidget {
     this.enabled = true,
     this.contentPadding,
     this.layout = AppRadioGroupLayout.vertical,
+    this.presentation = AppRadioGroupPresentation.card,
     this.wrapColumns,
     this.itemMinWidth = 240,
     super.key,
@@ -65,6 +75,7 @@ class AppRadioGroup<T> extends StatelessWidget {
   final bool enabled;
   final EdgeInsetsGeometry? contentPadding;
   final AppRadioGroupLayout layout;
+  final AppRadioGroupPresentation presentation;
 
   /// Fixed wrap column count when set; otherwise width-driven (1 on narrow,
   /// up to 2 when space allows for [itemMinWidth]).
@@ -151,6 +162,7 @@ class AppRadioGroup<T> extends StatelessWidget {
           selected: field.value == option.value,
           enabled: canChange && option.enabled,
           hasError: hasError,
+          presentation: presentation,
           contentPadding: contentPadding,
           onSelected: canChange && option.enabled
               ? () {
@@ -172,7 +184,9 @@ class AppRadioGroup<T> extends StatelessWidget {
         ],
       ),
       AppRadioGroupLayout.horizontal => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: presentation == AppRadioGroupPresentation.borderless
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: <Widget>[
           for (int i = 0; i < tiles.length; i++) ...<Widget>[
             if (i > 0) SizedBox(width: gap),
@@ -230,6 +244,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
     required this.selected,
     required this.enabled,
     required this.hasError,
+    required this.presentation,
     required this.onSelected,
     this.contentPadding,
   });
@@ -238,6 +253,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
   final bool selected;
   final bool enabled;
   final bool hasError;
+  final AppRadioGroupPresentation presentation;
   final VoidCallback? onSelected;
   final EdgeInsetsGeometry? contentPadding;
 
@@ -248,6 +264,98 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
     final String? description = option.description?.trim();
     final bool showDescription =
         description != null && description.isNotEmpty;
+    final bool borderless =
+        presentation == AppRadioGroupPresentation.borderless;
+
+    final EdgeInsetsGeometry padding =
+        contentPadding ??
+        (borderless
+            ? EdgeInsets.symmetric(vertical: theme.spacing.xs / 2)
+            : EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.sm,
+              ));
+
+    final Widget labelBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          option.label,
+          style: (borderless
+                  ? theme.textTheme.bodyMedium
+                  : theme.textTheme.titleSmall)
+              ?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: borderless ? 1.2 : null,
+                color: enabled
+                    ? colors.onSurface
+                    : colors.onSurface.withValues(alpha: 0.6),
+              ),
+        ),
+        if (showDescription) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    final Widget content = Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: borderless && !showDescription
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
+        children: <Widget>[
+          if (!borderless)
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs / 2),
+              child: Radio<T>(
+                value: option.value,
+                enabled: enabled,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            )
+          else
+            Radio<T>(
+              value: option.value,
+              enabled: enabled,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(child: labelBlock),
+          if (option.secondary != null) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            IconTheme.merge(
+              data: IconThemeData(
+                color: selected ? colors.primary : colors.onSurfaceVariant,
+                size: 22,
+              ),
+              child: option.secondary!,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (borderless) {
+      return Opacity(
+        opacity: enabled ? 1 : 0.55,
+        child: InkWell(
+          onTap: onSelected,
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+          child: content,
+        ),
+      );
+    }
 
     final Color borderColor;
     if (!enabled) {
@@ -270,12 +378,6 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
     }
 
     final BorderRadius radius = BorderRadius.circular(theme.radius.md);
-    final EdgeInsetsGeometry padding =
-        contentPadding ??
-        EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.sm,
-        );
 
     return Opacity(
       opacity: enabled ? 1 : 0.55,
@@ -292,62 +394,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
         child: InkWell(
           onTap: onSelected,
           borderRadius: radius,
-          child: Padding(
-            padding: padding,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.only(top: theme.spacing.xs / 2),
-                  child: Radio<T>(
-                    value: option.value,
-                    enabled: enabled,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        option.label,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: enabled
-                              ? colors.onSurface
-                              : colors.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      if (showDescription) ...<Widget>[
-                        SizedBox(height: theme.spacing.xs),
-                        Text(
-                          description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (option.secondary != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  IconTheme.merge(
-                    data: IconThemeData(
-                      color: selected
-                          ? colors.primary
-                          : colors.onSurfaceVariant,
-                      size: 22,
-                    ),
-                    child: option.secondary!,
-                  ),
-                ],
-              ],
-            ),
-          ),
+          child: content,
         ),
       ),
     );
