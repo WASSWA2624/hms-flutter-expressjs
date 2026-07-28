@@ -15013,8 +15013,32 @@ abstract class AppLocalizations {
   /// Clinical diagnosis search field hint.
   ///
   /// In en, this message translates to:
-  /// **'Search by diagnosis name, code, type, status, or source'**
+  /// **'Search by diagnosis name, code, type, or status'**
   String get clinicalDiagnosisSearchHint;
+
+  /// Clinical diagnosis action that moves checked selected diagnoses back to available.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect'**
+  String get clinicalDiagnosisDeselectAction;
+
+  /// Clinical diagnosis available facility catalog pane title.
+  ///
+  /// In en, this message translates to:
+  /// **'Available diagnoses'**
+  String get clinicalDiagnosisAvailableTitle;
+
+  /// Empty state when the facility has no diagnosis catalog offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'No facility diagnoses have been added.'**
+  String get clinicalDiagnosisNoFacilityOptions;
+
+  /// Column label for diagnosis name in the add diagnosis transfer tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get clinicalDiagnosisNameColumnLabel;
 
   /// Clinical catalog layer filter for all sources.
   ///

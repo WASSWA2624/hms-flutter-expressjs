@@ -10346,9 +10346,25 @@
   "@clinicalDiagnosisSearchLabel": {
     "description": "Clinical diagnosis search field label."
   },
-  "clinicalDiagnosisSearchHint": "Search by diagnosis name, code, type, status, or source",
+  "clinicalDiagnosisSearchHint": "Search by diagnosis name, code, type, or status",
   "@clinicalDiagnosisSearchHint": {
     "description": "Clinical diagnosis search field hint."
+  },
+  "clinicalDiagnosisDeselectAction": "Deselect",
+  "@clinicalDiagnosisDeselectAction": {
+    "description": "Clinical diagnosis action that moves checked selected diagnoses back to available."
+  },
+  "clinicalDiagnosisAvailableTitle": "Available diagnoses",
+  "@clinicalDiagnosisAvailableTitle": {
+    "description": "Clinical diagnosis available facility catalog pane title."
+  },
+  "clinicalDiagnosisNoFacilityOptions": "No facility diagnoses have been added.",
+  "@clinicalDiagnosisNoFacilityOptions": {
+    "description": "Empty state when the facility has no diagnosis catalog offerings."
+  },
+  "clinicalDiagnosisNameColumnLabel": "Name",
+  "@clinicalDiagnosisNameColumnLabel": {
+    "description": "Column label for diagnosis name in the add diagnosis transfer tables."
   },
   "clinicalCatalogSourceAll": "All sources",
   "@clinicalCatalogSourceAll": {

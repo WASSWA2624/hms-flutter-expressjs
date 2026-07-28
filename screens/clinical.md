@@ -382,28 +382,42 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
 
 ### Add diagnosis (`ClinicalDiagnosisActionDialog`)
 
-- **Catalog source chips** (All / Favorites / Facility / Global)
-  - Location: Catalog layer selector.
+Dialog opens maximized by default. Diagnosis type uses radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips).
+
+- **Diagnosis type** (Primary / Secondary / Differential radios)
+  - Location: Dialog body.
   - Opens modal: No.
-  - Immediate result: Reloads diagnosis catalog for selected source.
+  - Immediate result: Sets batch diagnosis type (default Primary).
   - Condition: Enabled when not saving.
 
-- **Add** (catalog panel)
-  - Location: Catalog select panel.
+- **Search diagnosis**
+  - Location: Available diagnoses pane.
   - Opens modal: No.
-  - Immediate result: Adds highlighted catalog diagnosis to selection.
-  - Condition: Selection present and not duplicate; not saving.
+  - Immediate result: Filters / reloads facility diagnosis catalog.
+  - Condition: Enabled when not saving.
 
-- **Delete** (selected diagnoses panel)
-  - Location: Selected diagnoses manager (`clinicalLabRequestDeleteSelectionAction`).
+- **Add** (available pane)
+  - Location: Available diagnoses pane toolbar.
   - Opens modal: No.
-  - Immediate result: Removes focused selected diagnosis.
-  - Condition: A selected diagnosis is focused; not saving.
+  - Immediate result: Moves checked available rows to selected (skips duplicates).
+  - Condition: ≥1 checked available row; not saving.
+
+- **Deselect** (selected pane)
+  - Location: Selected diagnoses pane toolbar.
+  - Opens modal: No.
+  - Immediate result: Moves checked selected rows back to available.
+  - Condition: ≥1 checked selected row; not saving.
+
+- **Try again** (catalog load failure)
+  - Location: Available diagnoses empty/error state.
+  - Opens modal: No.
+  - Immediate result: Retries facility catalog load.
+  - Condition: Catalog load failure; not saving.
 
 - **Cancel** / **Add diagnosis**
   - Location: Footer.
   - Opens modal: No.
-  - Immediate result: Dismiss / submit diagnoses.
+  - Immediate result: Dismiss / submit selected diagnoses with chosen type for the active encounter.
   - Condition: Primary enabled when at least one diagnosis selected and not saving.
 
 ### Request lab / Update lab order (`ClinicalLabOrderActionDialog`)

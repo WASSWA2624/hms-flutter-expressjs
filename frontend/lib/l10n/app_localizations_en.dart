@@ -8141,7 +8141,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalDiagnosisSearchHint =>
-      'Search by diagnosis name, code, type, status, or source';
+      'Search by diagnosis name, code, type, or status';
+
+  @override
+  String get clinicalDiagnosisDeselectAction => 'Deselect';
+
+  @override
+  String get clinicalDiagnosisAvailableTitle => 'Available diagnoses';
+
+  @override
+  String get clinicalDiagnosisNoFacilityOptions =>
+      'No facility diagnoses have been added.';
+
+  @override
+  String get clinicalDiagnosisNameColumnLabel => 'Name';
 
   @override
   String get clinicalCatalogSourceAll => 'All sources';
