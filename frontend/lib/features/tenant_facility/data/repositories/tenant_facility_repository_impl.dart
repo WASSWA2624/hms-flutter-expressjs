@@ -30,11 +30,13 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? facilityId,
     String? tenantId,
     bool includeDeleted = false,
+    bool includeStructure = false,
   }) async {
     final workspaceResult = await _loadSetupFromWorkspace(
       facilityId: facilityId,
       tenantId: tenantId,
       includeDeleted: includeDeleted,
+      includeStructure: includeStructure,
     );
     if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(
       :final value,
@@ -52,6 +54,11 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           failure.category != AppFailureCategory.forbidden) {
         return Result<FacilitySetupSnapshot>.failure(failure);
       }
+    }
+
+    // Context-only bootstrap: avoid the multi-endpoint structure waterfall.
+    if (!includeStructure) {
+      return _loadSetupContextOnly(facilityId: facilityId, tenantId: tenantId);
     }
 
     return _loadSetupComposed(
@@ -329,6 +336,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? facilityId,
     String? tenantId,
     bool includeDeleted = false,
+    bool includeStructure = false,
   }) {
     return _apiClient.get<FacilitySetupSnapshot>(
       ApiEndpoints.nested(
@@ -343,9 +351,60 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
             case final String selectedFacilityId)
           'facility_id': selectedFacilityId,
         'include_deleted': includeDeleted ? 'true' : null,
+        'include_structure': includeStructure ? 'true' : null,
       }),
       decoder: (Object? data) {
         return FacilitySetupWorkspaceDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  Future<Result<FacilitySetupSnapshot>> _loadSetupContextOnly({
+    String? facilityId,
+    String? tenantId,
+  }) async {
+    final tenantsResult = await _listTenants();
+    return tenantsResult.when(
+      success: (List<TenantProfile> tenants) async {
+        final TenantProfile? tenant = _selectTenant(tenants, tenantId);
+        if (tenant == null) {
+          return const Result<FacilitySetupSnapshot>.success(
+            FacilitySetupSnapshot(),
+          );
+        }
+
+        final facilitiesResult = await _listFacilities(tenant.id);
+        return facilitiesResult.when(
+          success: (List<FacilityProfile> facilities) {
+            final FacilityProfile? selectedFacility = _selectFacility(
+              facilities,
+              facilityId,
+            );
+            return Result<FacilitySetupSnapshot>.success(
+              FacilitySetupSnapshot(
+                tenant: tenant,
+                facility: selectedFacility,
+                facilities: facilities,
+              ),
+            );
+          },
+          failure: (AppFailure failure) {
+            if (_isForbidden(failure)) {
+              return Result<FacilitySetupSnapshot>.success(
+                FacilitySetupSnapshot(tenant: tenant),
+              );
+            }
+            return Result<FacilitySetupSnapshot>.failure(failure);
+          },
+        );
+      },
+      failure: (AppFailure failure) {
+        if (_isForbidden(failure)) {
+          return const Result<FacilitySetupSnapshot>.success(
+            FacilitySetupSnapshot(),
+          );
+        }
+        return Result<FacilitySetupSnapshot>.failure(failure);
       },
     );
   }

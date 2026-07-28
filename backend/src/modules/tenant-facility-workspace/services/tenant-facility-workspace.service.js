@@ -465,19 +465,35 @@ const getSetup = async (filters = {}, user = {}) => {
 
   const tenant = tenants[0] || null;
   const selectedFacility = selectFacility(facilities, requestedFacilityId);
-  // Load structure/contact rows for the facility shown in setup — not only the
-  // session-scoped facility. Tenant admins often have null facility scope while
-  // the UI still auto-selects the first facility.
-  const facilityRecords = await repository.findFacilityRecords(
-    {
-      tenant_id: scope.tenant_id,
-      facility_id: selectedFacility?.id || scope.facility_id || null,
-    },
-    {
-      includeDeleted:
-        filters.include_deleted === true || filters.include_deleted === 'true',
-    }
-  );
+  // Desk tabs load structure lists themselves. Default bootstrap is context-only
+  // (tenant/facility/facilities) so users/roles/catalog are not blocked on
+  // departments/units/wards/rooms/beds. Pass include_structure=true for checklist.
+  const includeStructure =
+    filters.include_structure === true ||
+    filters.include_structure === 'true' ||
+    filters.includeStructure === true ||
+    filters.includeStructure === 'true';
+  const facilityRecords = includeStructure
+    ? await repository.findFacilityRecords(
+        {
+          tenant_id: scope.tenant_id,
+          facility_id: selectedFacility?.id || scope.facility_id || null,
+        },
+        {
+          includeDeleted:
+            filters.include_deleted === true ||
+            filters.include_deleted === 'true',
+        }
+      )
+    : {
+        departments: [],
+        units: [],
+        wards: [],
+        rooms: [],
+        beds: [],
+        contacts: [],
+        addresses: [],
+      };
   const contactAddress = buildContactAddress(
     facilityRecords.contacts,
     facilityRecords.addresses

@@ -7,6 +7,7 @@ abstract interface class TenantFacilityRepository {
     String? facilityId,
     String? tenantId,
     bool includeDeleted = false,
+    bool includeStructure = false,
   });
 
   Future<Result<FacilityProfile>> getFacility(String id);

@@ -75,7 +75,8 @@ final class TenantFacilitySetupController
         .loadSetup(
           facilityId: _selectedFacilityId,
           tenantId: _selectedTenantId,
-          includeDeleted: true,
+          includeDeleted: false,
+          includeStructure: false,
         )
         .then((Result<FacilitySetupSnapshot> result) {
           if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
@@ -100,7 +101,8 @@ final class TenantFacilitySetupController
           .loadSetup(
             facilityId: _selectedFacilityId,
             tenantId: _selectedTenantId,
-            includeDeleted: true,
+            includeDeleted: false,
+            includeStructure: false,
           );
       if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
         _selectedFacilityId ??= value.facility?.id;
@@ -814,7 +816,7 @@ final class TenantFacilitySetupSubmissionController
   Future<bool> _submit<T>(
     Future<Result<T>> Function() action, {
     _SnapshotUpdate<T>? updateSnapshot,
-    bool refreshSetup = true,
+    bool refreshSetup = false,
   }) async {
     if (state.isSubmitting) {
       return false;
