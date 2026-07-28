@@ -18,7 +18,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Detail Quick Action matching row next-action (vitals / medication / handover / transfer / discharge / escalate) | Same write | **Omitted** from detail via `omitNextActionKind` — next-action is the sole primary for that goal |
 | Detail actions shown disabled when ineligible (transfer / discharge) | No-op chrome | **Removed** — ineligible writes omitted; `permissionActions` hide when denied |
 | Deep link `panel=` opened detail shell then required hunting for the action | Intermediate shell | **Removed** — panel deep links open the focused mutation dialog directly |
-| Mobile list without next-action trailing | Same stage write as desktop column | **Fixed** — `NursingNextActionCell` on `AppListTableMobileItem.trailing` |
+| Mobile list without next-action trailing | Same stage write as desktop column | **Fixed** — compact `NursingNextActionCell` on `AppListTableMobileItem.trailing` (tooltip + semantic label) |
+| Dead tab-strip `nursingPrimaryActionLabel` / `Icon` helpers | Parallel primary write API with no UI | **Removed** — row next-action is the sole primary |
 
 ---
 
@@ -108,8 +109,8 @@ Tab-strip primary write, **Add note**, and **Refresh** were removed.
 - [x] Unauthorized user: next-action writes and detail write actions absent; Open ICU still available when ICU active. *(widget: `unauthorized policy hides next-action writes`)*
 - [x] All-tab routine patient: only **Record vitals** next-action; detail has no Record vitals duplicate. *(widget)*
 - [x] Medication-due patient: only **Administer medication** next-action; detail omits Administer medication. *(widget)*
-- [ ] Urgent critical patient: only **Escalate** next-action; detail omits Escalate.
+- [x] Urgent critical patient: only **Escalate** next-action; detail omits Escalate. *(widget)*
 - [x] Deep link `/nursing?id=…&panel=vitals` opens vitals dialog without an empty detail first. *(widget)*
 - [x] No Refresh, Add note, or primary write control on the tab strip; worklist still updates after a successful mutation. *(widget; dead `nursingPrimaryAction*` helpers removed)*
 - [x] Mobile list shows next-action trailing; tapping it completes the same write as desktop. *(widget)*
-- [ ] Loading / empty / validation / error snackbars still surface on simplified paths.
+- [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared nursing helpers)*

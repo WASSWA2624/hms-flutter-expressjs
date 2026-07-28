@@ -373,22 +373,15 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
-
-    await tester.scrollUntilVisible(
-      find.text('Ann Arrival'),
-      200,
-      scrollable: find.byType(Scrollable).first,
+    expect(find.text('Quinn Queue'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabToolbarPrimary),
+        matching: find.text('Start OPD encounter'),
+      ),
+      findsOneWidget,
     );
-    await tester.pumpAndSettle();
-    expect(find.text('Ann Arrival'), findsOneWidget);
-    expect(find.text('Start OPD encounter'), findsWidgets);
 
-    await tester.scrollUntilVisible(
-      find.text('Quinn Queue'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Quinn Queue'));
     await tester.pumpAndSettle();
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
@@ -470,12 +463,12 @@ void main() {
     (WidgetTester tester) async {
       await _pumpOpdWorkspace(tester, repository: repository);
 
-      // Prefer the row next-action over the toolbar primary with the same label.
+      // Prefer the worklist next-action over the toolbar primary with the same label.
       final Finder arrivalNextAction = find.descendant(
-        of: find.byKey(const ValueKey<String>('opd-appointment-1')),
+        of: find.byType(AppListTable<dynamic>),
         matching: find.text('Start OPD encounter'),
       );
-      await tester.ensureVisible(arrivalNextAction);
+      expect(arrivalNextAction, findsOneWidget);
       await tester.tap(arrivalNextAction);
       await tester.pumpAndSettle();
 

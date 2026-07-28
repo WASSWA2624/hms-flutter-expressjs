@@ -533,6 +533,36 @@ void main() {
     );
   });
 
+  testWidgets('detail omits next-action duplicate for urgent critical patient', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.textContaining('Urgent').first);
+    await _pumpAfterAction(tester);
+    await tester.tap(find.text('Urgent Patient'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionEscalate),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionAddNote),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('panel deep link opens vitals without detail shell', (
     WidgetTester tester,
   ) async {

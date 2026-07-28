@@ -20,6 +20,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Detail **status banner** restating next-action label | Restate next step | **Removed** — status tile on detail; next-action stays in the table |
 | Advanced **Status** filter on Open / In progress / Completed tabs | Same status filter as tab | **Removed** on status-scoped tabs — tabs own status; All requests keeps status filter |
 | Unauthorized create / write next-actions shown disabled | No access | **Omitted** — create absent; write next-actions become **Review request** |
+| Mobile list without next-action trailing (detail omitted matching write) | Primary write unreachable on phone | **Fixed** — same next-action control as desktop column, trailing on mobile rows (icon-only + tooltip under 600px) |
 
 ---
 
@@ -77,7 +78,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Condition: Always when rows exist.
 
 - **Next action** (status/capability-aware label)
-  - Location: `next_action` column (always visible on desktop).
+  - Location: `next_action` column (always visible on desktop); mobile list item **trailing** (same control; icon-only with tooltip under 600px).
   - Opens modal: Assign / service log / status / closeout form when that is next; **Review request** opens detail; cancelled shows non-button copy.
   - Immediate result: Sole primary write for the row, or opens detail when read-only.
   - Condition: Write next-actions require `_mutationRequirement`; unauthorized writes become **Review request**.
@@ -117,13 +118,14 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 ## Manual checks (Req 7)
 
-- [ ] Next action on open request opens Assign (not detail first).
-- [ ] Next action on in-progress without asset opens Update status; with asset opens Add service log.
-- [ ] Next action on completed opens Closeout note; detail does not also show Closeout note.
-- [ ] Row select opens detail; detail omits the label that matches that row’s next-action.
-- [ ] Detail has no status banner and no Report shortcut.
-- [ ] Report summary has metrics only (no preview shell).
-- [ ] Create is primary on Completed; Report is secondary; no toolbar Refresh.
-- [ ] Without write capability, create primary and write next-actions are absent (Review request only).
-- [ ] Status filter is absent on Open / In progress / Completed advanced filters.
+- [x] Next action on open request opens Assign (not detail first).
+- [x] Next action on in-progress without asset opens Update status; with asset opens Add service log.
+- [x] Next action on completed opens Closeout note; detail does not also show Closeout note.
+- [x] Row select opens detail; detail omits the label that matches that row’s next-action.
+- [x] Detail has no status banner and no Report shortcut.
+- [x] Report summary has metrics only (no preview shell).
+- [x] Create is primary on Completed; Report is secondary; no toolbar Refresh.
+- [x] Without write capability, create primary and write next-actions are absent (Review request only).
+- [x] Status filter is absent on Open / In progress / Completed advanced filters.
+- [x] Mobile list exposes next-action trailing; tap opens Assign without detail first.
 - [ ] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render.

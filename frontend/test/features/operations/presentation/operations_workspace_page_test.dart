@@ -191,11 +191,12 @@ Future<GoRouter> _pumpOperationsWorkspace(
   OperationsWorkspaceQuery? initialQuery,
   String initialLocation = '/operations',
   AppAccessPolicy? accessPolicy,
+  Size physicalSize = const Size(1440, 900),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
 
-  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -622,5 +623,39 @@ void main() {
     expect(find.text('Assign technician or team'), findsNothing);
     expect(find.text('Review request'), findsWidgets);
     expect(find.text('Report'), findsOneWidget);
+  });
+
+  testWidgets('mobile list shows next-action trailing', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(
+      tester,
+      repository: repository,
+      physicalSize: const Size(390, 844),
+    );
+
+    expect(find.byType(DataTable), findsNothing);
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
+    expect(find.byTooltip('Assign technician or team'), findsOneWidget);
+  });
+
+  testWidgets('mobile next-action opens assign without opening detail first', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.triageRequest(any(), any())).thenAnswer(
+      (_) async => const Result<OperationsWorkItem>.success(_openRequest),
+    );
+
+    await _pumpOperationsWorkspace(
+      tester,
+      repository: repository,
+      physicalSize: const Size(390, 844),
+    );
+
+    await tester.tap(find.byTooltip('Assign technician or team'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assign'), findsWidgets);
+    expect(find.text('Request detail'), findsNothing);
   });
 }
