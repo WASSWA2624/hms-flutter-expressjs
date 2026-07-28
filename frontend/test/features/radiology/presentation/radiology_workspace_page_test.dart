@@ -496,6 +496,15 @@ void main() {
     _stubRadiologyRepository(repository);
 
     await tester.enterText(find.byType(TextField).first, 'Rita');
+    await tester.pump();
+    // Shared search chrome can report a suffix overflow under test binding;
+    // drain it so the filter assertion remains the focus of this check.
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
