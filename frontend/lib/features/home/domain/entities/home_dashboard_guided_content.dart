@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
@@ -125,6 +126,63 @@ List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
           resource: 'messages',
           action: 'open',
         ),
+      ),
+    ],
+    // Dashboard.md §1 — security / audit / integrations (permission-gated).
+    AppRole.superAdmin => <HomeAlertItem>[
+      const HomeAlertItem(
+        id: 'security_alerts',
+        label: 'Security alerts',
+        severity: 'HIGH',
+        count: 0,
+        target: HomeRouteTarget(
+          moduleSlug: 'settings',
+          resource: 'break-glass',
+          action: 'list',
+        ),
+        requiredPermissions: <AppPermission>[
+          AppPermissions.complianceRead,
+          AppPermissions.breakGlassReview,
+        ],
+      ),
+      const HomeAlertItem(
+        id: 'audit_summary',
+        label: 'Audit summary',
+        severity: 'INFO',
+        count: 0,
+        target: HomeRouteTarget(
+          moduleSlug: 'reports',
+          resource: 'compliance',
+          action: 'list',
+        ),
+        requiredPermissions: <AppPermission>[AppPermissions.complianceRead],
+      ),
+      const HomeAlertItem(
+        id: 'integration_status',
+        label: 'Integration status',
+        severity: 'MEDIUM',
+        count: 0,
+        target: HomeRouteTarget(
+          moduleSlug: 'integrations',
+          resource: 'connections',
+          action: 'list',
+        ),
+        requiredPermissions: <AppPermission>[AppPermissions.integrationRead],
+      ),
+    ],
+    // Dashboard.md §2 — compliance alerts.
+    AppRole.tenantAdmin => <HomeAlertItem>[
+      const HomeAlertItem(
+        id: 'compliance_alerts',
+        label: 'Compliance alerts',
+        severity: 'WARNING',
+        count: 0,
+        target: HomeRouteTarget(
+          moduleSlug: 'reports',
+          resource: 'compliance',
+          action: 'list',
+        ),
+        requiredPermissions: <AppPermission>[AppPermissions.complianceRead],
       ),
     ],
     _ => const <HomeAlertItem>[],
@@ -363,16 +421,17 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
     ],
     AppRole.superAdmin => <HomeQueueItem>[
       const HomeQueueItem(
-        id: 'guided_tenant_setup',
-        label: 'Tenant and facility setup',
+        id: 'guided_platform_queue',
+        label: 'Platform overview',
         moduleSlug: 'settings',
         status: 'OPEN',
         severity: 'info',
         target: HomeRouteTarget(
           moduleSlug: 'settings',
-          resource: 'tenant-facility-context',
-          action: 'open',
+          resource: 'tenants',
+          action: 'list',
         ),
+        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
       ),
     ],
     _ => const <HomeQueueItem>[],

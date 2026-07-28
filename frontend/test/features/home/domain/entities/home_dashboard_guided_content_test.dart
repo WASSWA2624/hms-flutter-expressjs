@@ -52,5 +52,48 @@ void main() {
         containsAll(<String>['ipd', 'billing']),
       );
     });
+
+    test('system admin surfaces security, audit, and integration alerts', () {
+      final alerts = guidedFallbackAlerts(
+        homeProfileForRole(AppRole.superAdmin),
+      );
+
+      expect(
+        alerts.map((item) => item.id),
+        containsAll(<String>[
+          'security_alerts',
+          'audit_summary',
+          'integration_status',
+        ]),
+      );
+    });
+
+    test('tenant admin surfaces compliance alerts', () {
+      final alerts = guidedFallbackAlerts(
+        homeProfileForRole(AppRole.tenantAdmin),
+      );
+
+      expect(
+        alerts.map((item) => item.id),
+        contains('compliance_alerts'),
+      );
+    });
+  });
+
+  group('guidedFallbackQueueHints platform', () {
+    test('super admin uses platform queue id (system:admin)', () {
+      final hints = guidedFallbackQueueHints(
+        homeProfileForRole(AppRole.superAdmin),
+      );
+
+      expect(
+        hints.map((item) => item.id),
+        contains('guided_platform_queue'),
+      );
+      expect(
+        hints.map((item) => item.id),
+        isNot(contains('guided_tenant_setup')),
+      );
+    });
   });
 }

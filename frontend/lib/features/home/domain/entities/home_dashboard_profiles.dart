@@ -567,8 +567,15 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'OPD alerts',
         requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
-      // Gap: pending_payments (billing:read) / admissions (patient:write) —
-      // no dedicated reception KPI payloads yet (Dashboard.md §8).
+      // Dashboard.md §8 Pending Payments — reuse live billing pending balances.
+      HomeStatusCardTemplate(
+        id: 'pending_balance_amount',
+        label: 'Pending payments',
+        format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      // Gap: admissions (patient:write) as a named reception KPI — use
+      // active_admissions via expand when patient:write + clinical pack data exist.
     ],
     quickActionIds: <String>[
       'register_patient',
@@ -600,6 +607,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'registrations_today': HomeMetricRouteTarget(),
       'emergency_cases_today': HomeMetricRouteTarget(),
       'opd_notifications_attention': HomeMetricRouteTarget(),
+      'pending_balance_amount': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
+      ),
     },
   ),
   AppRole.billing: HomeDashboardProfile(
@@ -1573,9 +1583,11 @@ HomeDashboardProfile expandHomeProfileForPermissions(
   }
 
   final int primaryWindow = math.max(1, base.maxStatusCards);
+  final List<HomeStatusCardTemplate> prioritizedCrossDomain =
+      _prioritizeCrossDomainCards(crossDomainCards.values);
   final List<HomeStatusCardTemplate> ordered = <HomeStatusCardTemplate>[
     ...base.statusCards.take(primaryWindow),
-    ...crossDomainCards.values,
+    ...prioritizedCrossDomain,
     ...sameDomainCards.values,
     ...base.statusCards.skip(primaryWindow),
   ];
@@ -1589,6 +1601,38 @@ HomeDashboardProfile expandHomeProfileForPermissions(
     metricActionTargets: metricActions,
     maxStatusCards: math.min(6, math.max(base.maxStatusCards, ordered.length)),
   );
+}
+
+/// Prefer canonical domain KPIs (e.g. billing pack revenue) over aliases from
+/// other personas so the 4–6 card window surfaces the strongest grant signal.
+List<HomeStatusCardTemplate> _prioritizeCrossDomainCards(
+  Iterable<HomeStatusCardTemplate> cards,
+) {
+  const Map<String, int> preferredOrder = <String, int>{
+    // Billing (Dashboard.md §9) — prefer over facility/reception aliases.
+    'collections_today': 0,
+    'overdue_balance_amount': 1,
+    'open_balances': 2,
+    'pending_balance_amount': 3,
+    'invoices_today': 4,
+    'overdue_invoices': 5,
+    'billing_exceptions': 6,
+    // Clinical / lab extras when granted onto non-clinical bases.
+    'assigned': 10,
+    'results_pending_review': 11,
+    'orders_today': 12,
+    'critical_results': 13,
+  };
+  final List<HomeStatusCardTemplate> sorted = cards.toList(growable: false);
+  sorted.sort((HomeStatusCardTemplate left, HomeStatusCardTemplate right) {
+    final int leftRank = preferredOrder[left.id] ?? 100;
+    final int rightRank = preferredOrder[right.id] ?? 100;
+    if (leftRank != rightRank) {
+      return leftRank.compareTo(rightRank);
+    }
+    return left.id.compareTo(right.id);
+  });
+  return sorted;
 }
 
 HomeDashboardProfile homeProfileForRole(AppRole? role) {

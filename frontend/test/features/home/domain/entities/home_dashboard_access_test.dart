@@ -527,6 +527,114 @@ void main() {
     );
 
     test(
+      'security_alerts require compliance:read and break_glass:review (all-of)',
+      () {
+        final AppAccessPolicy complianceOnly = _policy(
+          roles: <String>['CUSTOM'],
+          permissions: <AppPermission>[AppPermissions.complianceRead],
+        );
+        final AppAccessPolicy both = _policy(
+          roles: <String>['CUSTOM'],
+          permissions: <AppPermission>[
+            AppPermissions.complianceRead,
+            AppPermissions.breakGlassReview,
+          ],
+        );
+        final HomeDashboard dashboard = HomeDashboard(
+          state: HomeDashboardLoadState.ready,
+          profile: homeProfileForRole(AppRole.superAdmin),
+          context: const HomeDashboardContext(),
+          statusCards: const <HomeStatusCard>[],
+          trend: HomeDashboardTrend.empty,
+          distribution: HomeDashboardDistribution.empty,
+          quickActionIds: const <String>[],
+          shortcutIds: const <String>[],
+          queuePreview: const <HomeQueueItem>[],
+          alerts: const <HomeAlertItem>[
+            HomeAlertItem(
+              id: 'security_alerts',
+              label: 'Security',
+              severity: 'HIGH',
+              count: 1,
+            ),
+            HomeAlertItem(
+              id: 'audit_summary',
+              label: 'Audit',
+              severity: 'INFO',
+              count: 1,
+            ),
+          ],
+          activity: const <HomeActivityItem>[],
+          tenantOptions: const <HomeTenantOption>[],
+        );
+
+        expect(
+          filterHomeDashboardForAccess(
+            dashboard,
+            complianceOnly,
+          ).alerts.map((HomeAlertItem alert) => alert.id),
+          <String>['audit_summary'],
+        );
+        expect(
+          filterHomeDashboardForAccess(
+            dashboard,
+            both,
+          ).alerts.map((HomeAlertItem alert) => alert.id),
+          containsAll(<String>['security_alerts', 'audit_summary']),
+        );
+      },
+    );
+
+    test(
+      'reception without billing:read hides pending_balance_amount',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['RECEPTIONIST'],
+          permissions: <AppPermission>[
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.emergencyRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.receptionist,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(ids, contains('appointments_today'));
+        expect(ids, contains('registrations_today'));
+        expect(ids, isNot(contains('pending_balance_amount')));
+      },
+    );
+
+    test(
+      'reception with billing:read keeps pending payments KPI',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['RECEPTIONIST'],
+          permissions: <AppPermission>[
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.billingRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.receptionist,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+
+        expect(_cardIds(filtered), contains('pending_balance_amount'));
+      },
+    );
+
+    test(
       'guided queues/alerts use catalog permissions (tenant setup not profile:read)',
       () {
         final AppAccessPolicy clinicalOnly = _policy(

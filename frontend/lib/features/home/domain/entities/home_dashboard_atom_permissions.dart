@@ -84,6 +84,7 @@ abstract final class HomeDashboardAtomPermissions {
         'no_show_pressure': <AppPermission>[AppPermissions.patientRead],
         'registrations_today': <AppPermission>[AppPermissions.patientWrite],
         'pending_payments': <AppPermission>[AppPermissions.billingRead],
+        // pending_balance_amount is on billing + reception templates (billing:read).
         // Gap: admissions (write) as a named reception KPI — use active_admissions
         // when patient:write is granted via profile overlay if added later.
 

@@ -724,6 +724,8 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'no_show_pressure', label: 'No-show follow-ups', value: metrics.noShowPressure || 0, required_permissions: ['patient:read'] },
       { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0, required_permissions: ['patient:write'] },
       { id: 'emergency_cases_today', label: 'Emergency intake today', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
+      // Dashboard.md §8 Pending Payments — live billing pending balances.
+      { id: 'pending_balance_amount', label: 'Pending payments', value: metrics.pendingBalanceAmount || 0, format: 'currency', required_permissions: ['billing:read'] },
     ];
   }
 

@@ -231,6 +231,53 @@ void main() {
       expect(emergency?.route, AppRoutes.emergency);
     });
 
+    test('receptionist pending payments navigates to billing when granted', () {
+      final HomeDashboardProfile profile = homeProfileForRole(
+        AppRole.receptionist,
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['RECEPTIONIST'],
+          ),
+          permissions: const <AppPermission>[
+            AppPermissions.patientRead,
+            AppPermissions.billingRead,
+          ],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      final HomeMetricNavigation? pending = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'pending_balance_amount',
+          label: 'Pending payments',
+          value: 4,
+          requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+        ),
+        policy: policy,
+      );
+
+      expect(pending?.route, AppRoutes.billing);
+      expect(pending?.queryParameters, <String, String>{
+        'queue': 'pendingPayment',
+      });
+    });
+
     test('homeHrMetricAccessAllowed gates HR modal actions', () {
       final AppAccessPolicy allowed = _policyForRoles(<String>['HR']);
       final AppAccessPolicy denied = AppAccessPolicy.fromSession(

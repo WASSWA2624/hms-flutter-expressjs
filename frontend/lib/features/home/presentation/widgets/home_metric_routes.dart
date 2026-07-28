@@ -147,6 +147,8 @@ AppRouteData? _clinicalMetricRoute({
       'emergency_cases_today'
           when policy.grants(AppPermissions.emergencyRead) =>
         AppRoutes.emergency,
+      'pending_balance_amount' when policy.grants(AppPermissions.billingRead) =>
+        AppRoutes.billing,
       _ => null,
     };
   }
