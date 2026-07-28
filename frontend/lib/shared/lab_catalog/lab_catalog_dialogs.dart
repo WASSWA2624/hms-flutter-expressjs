@@ -3071,19 +3071,11 @@ class LabPanelTestPicker extends StatelessWidget {
       onPressed: onAdd,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppFormSection(
+      title: l10n.labPanelTestsLabel,
       children: <Widget>[
-        Text(
-          l10n.labPanelTestsLabel,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
         if (compact) ...<Widget>[
           selectField,
-          SizedBox(height: theme.spacing.sm),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: addButton,
@@ -3100,7 +3092,6 @@ class LabPanelTestPicker extends StatelessWidget {
               ),
             ],
           ),
-        SizedBox(height: theme.spacing.sm),
         if (selectedTests.isEmpty)
           AppMutedText(l10n.labPanelNoSelectedTests)
         else
@@ -3128,15 +3119,13 @@ class LabPanelTestPicker extends StatelessWidget {
               ],
             ),
           ),
-        if (errorText != null && errorText!.trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
+        if (errorText != null && errorText!.trim().isNotEmpty)
           Text(
             errorText!,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),
           ),
-        ],
       ],
     );
   }

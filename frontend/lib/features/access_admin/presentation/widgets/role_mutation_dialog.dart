@@ -953,16 +953,9 @@ class _RoleTargetMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppFormSection(
+      title: label,
       children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 220),
           child: Material(
@@ -1002,10 +995,8 @@ class _RoleTargetMultiSelect extends StatelessWidget {
             ),
           ),
         ),
-        if (emptySelectionError != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
+        if (emptySelectionError != null)
           AppFieldErrorText(errorText: emptySelectionError),
-        ],
       ],
     );
   }

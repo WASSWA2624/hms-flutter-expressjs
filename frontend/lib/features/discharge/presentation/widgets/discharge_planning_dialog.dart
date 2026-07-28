@@ -381,62 +381,52 @@ class _ClearanceChecklist extends StatelessWidget {
           item.state == DischargeClearanceState.pending,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.dischargeChecklistTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          l10n.dischargeChecklistBody,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppWorkflowStepper(
-          semanticLabel: l10n.dischargeClearanceProgressTitle,
-          showDescriptions: false,
-          steps: <AppWorkflowStepItem>[
-            for (var index = 0; index < items.length; index += 1)
-              AppWorkflowStepItem(
-                id: items[index].code.name,
-                label: dischargeClearanceLabel(context, items[index].code),
-                icon: dischargeClearanceIcon(items[index].code),
-                state: switch (items[index].state) {
-                  DischargeClearanceState.complete =>
-                    AppWorkflowStepState.completed,
-                  DischargeClearanceState.unavailable =>
-                    AppWorkflowStepState.unavailable,
-                  DischargeClearanceState.pending =>
-                    index == firstPendingIndex
-                        ? AppWorkflowStepState.current
-                        : AppWorkflowStepState.upcoming,
-                },
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final DischargeClearanceItem item in items)
-              SizedBox(
-                width: 220,
-                child: DischargeClearanceTile(
-                  item: item,
-                  titleMaxLines: 2,
-                  showReference: false,
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargeChecklistTitle,
+      description: l10n.dischargeChecklistBody,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppWorkflowStepper(
+            semanticLabel: l10n.dischargeClearanceProgressTitle,
+            showDescriptions: false,
+            steps: <AppWorkflowStepItem>[
+              for (var index = 0; index < items.length; index += 1)
+                AppWorkflowStepItem(
+                  id: items[index].code.name,
+                  label: dischargeClearanceLabel(context, items[index].code),
+                  icon: dischargeClearanceIcon(items[index].code),
+                  state: switch (items[index].state) {
+                    DischargeClearanceState.complete =>
+                      AppWorkflowStepState.completed,
+                    DischargeClearanceState.unavailable =>
+                      AppWorkflowStepState.unavailable,
+                    DischargeClearanceState.pending =>
+                      index == firstPendingIndex
+                          ? AppWorkflowStepState.current
+                          : AppWorkflowStepState.upcoming,
+                  },
                 ),
-              ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: <Widget>[
+              for (final DischargeClearanceItem item in items)
+                SizedBox(
+                  width: 220,
+                  child: DischargeClearanceTile(
+                    item: item,
+                    titleMaxLines: 2,
+                    showReference: false,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -461,38 +451,28 @@ class _PendingOrdersSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final List<IpdPendingOrder> orders = detail.ipd.pendingDischargeOrders;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.dischargePendingOrdersTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          l10n.dischargePendingOrdersBody,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        for (final IpdPendingOrder order in orders)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.pending_actions_outlined, size: 20),
-            title: Text(order.label ?? order.kind ?? order.id),
-            subtitle: Text(order.status ?? ''),
-            trailing: AppButton.tertiary(
-              label: l10n.patientsActiveWorkContinueAction,
-              enabled: enabled,
-              onPressed: () => onResolve(_routeForPendingOrder(order)),
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargePendingOrdersTitle,
+      description: l10n.dischargePendingOrdersBody,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final IpdPendingOrder order in orders)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.pending_actions_outlined, size: 20),
+              title: Text(order.label ?? order.kind ?? order.id),
+              subtitle: Text(order.status ?? ''),
+              trailing: AppButton.tertiary(
+                label: l10n.patientsActiveWorkContinueAction,
+                enabled: enabled,
+                onPressed: () => onResolve(_routeForPendingOrder(order)),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -525,60 +505,67 @@ class _RelatedRecordsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SizedBox(height: theme.spacing.md),
-        if (detail.hasOpenPharmacyOrders) ...<Widget>[
-          Text(
-            l10n.dischargeMedicinesSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+        if (detail.hasOpenPharmacyOrders)
+          AppWorkspaceDetailPanel(
+            title: l10n.dischargeMedicinesSectionTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final DischargeRelatedRecord record
+                    in detail.pharmacyOrders.where(
+                      (DischargeRelatedRecord item) =>
+                          item.isOpenPharmacyOrder,
+                    ))
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.medication_outlined, size: 20),
+                    title: Text(
+                      (record.title ?? '').trim().isNotEmpty
+                          ? record.title!.trim()
+                          : record.kind,
+                    ),
+                    subtitle: Text(record.status ?? ''),
+                    trailing: AppButton.tertiary(
+                      label: l10n.patientsActiveWorkContinueAction,
+                      enabled: enabled,
+                      onPressed: () => onResolve(AppRoutes.pharmacy.path),
+                    ),
+                  ),
+              ],
             ),
           ),
-          for (final DischargeRelatedRecord record
-              in detail.pharmacyOrders.where(
-                (DischargeRelatedRecord item) => item.isOpenPharmacyOrder,
-              ))
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.medication_outlined, size: 20),
-              title: Text(
-                (record.title ?? '').trim().isNotEmpty
-                    ? record.title!.trim()
-                    : record.kind,
-              ),
-              subtitle: Text(record.status ?? ''),
-              trailing: AppButton.tertiary(
-                label: l10n.patientsActiveWorkContinueAction,
-                enabled: enabled,
-                onPressed: () => onResolve(AppRoutes.pharmacy.path),
-              ),
-            ),
-        ],
-        if (detail.hasOpenInvoices) ...<Widget>[
-          Text(
-            l10n.dischargeBillingSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+        if (detail.hasOpenPharmacyOrders && detail.hasOpenInvoices)
+          SizedBox(height: theme.spacing.md),
+        if (detail.hasOpenInvoices)
+          AppWorkspaceDetailPanel(
+            title: l10n.dischargeBillingSectionTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final DischargeRelatedRecord record
+                    in detail.invoices.where(
+                      (DischargeRelatedRecord item) => item.isOpenInvoice,
+                    ))
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.receipt_long_outlined, size: 20),
+                    title: Text(
+                      (record.title ?? '').trim().isNotEmpty
+                          ? record.title!.trim()
+                          : record.kind,
+                    ),
+                    subtitle: Text(
+                      record.status ?? record.billingStatus ?? '',
+                    ),
+                    trailing: AppButton.tertiary(
+                      label: l10n.patientsActiveWorkContinueAction,
+                      enabled: enabled,
+                      onPressed: () => onResolve(AppRoutes.billing.path),
+                    ),
+                  ),
+              ],
             ),
           ),
-          for (final DischargeRelatedRecord record in detail.invoices.where(
-            (DischargeRelatedRecord item) => item.isOpenInvoice,
-          ))
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.receipt_long_outlined, size: 20),
-              title: Text(
-                (record.title ?? '').trim().isNotEmpty
-                    ? record.title!.trim()
-                    : record.kind,
-              ),
-              subtitle: Text(record.status ?? record.billingStatus ?? ''),
-              trailing: AppButton.tertiary(
-                label: l10n.patientsActiveWorkContinueAction,
-                enabled: enabled,
-                onPressed: () => onResolve(AppRoutes.billing.path),
-              ),
-            ),
-        ],
       ],
     );
   }
@@ -601,53 +588,43 @@ class _ResolveLinksSection extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final String admissionId = detail.summary.displayId ?? detail.summary.id;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.dischargeCrossModuleLinksTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargeCrossModuleLinksTitle,
+      child: Wrap(
+        spacing: theme.spacing.sm,
+        runSpacing: theme.spacing.sm,
+        children: <Widget>[
+          AppButton.tertiary(
+            label: l10n.dischargeOpenNursingAction,
+            leadingIcon: Icons.health_and_safety_outlined,
+            enabled: enabled,
+            onPressed: () => onResolve(AppRoutes.nursing.path),
           ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
+          AppButton.tertiary(
+            label: l10n.dischargeOpenPharmacyAction,
+            leadingIcon: Icons.medication_outlined,
+            enabled: enabled,
+            onPressed: () => onResolve(AppRoutes.pharmacy.path),
+          ),
+          AppButton.tertiary(
+            label: l10n.dischargeOpenBillingAction,
+            leadingIcon: Icons.receipt_long_outlined,
+            enabled: enabled,
+            onPressed: () => onResolve(AppRoutes.billing.path),
+          ),
+          if (admissionId.isNotEmpty)
             AppButton.tertiary(
-              label: l10n.dischargeOpenNursingAction,
-              leadingIcon: Icons.health_and_safety_outlined,
+              label: l10n.dischargeOpenIpdAction,
+              leadingIcon: Icons.local_hotel_outlined,
               enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.nursing.path),
-            ),
-            AppButton.tertiary(
-              label: l10n.dischargeOpenPharmacyAction,
-              leadingIcon: Icons.medication_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.pharmacy.path),
-            ),
-            AppButton.tertiary(
-              label: l10n.dischargeOpenBillingAction,
-              leadingIcon: Icons.receipt_long_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.billing.path),
-            ),
-            if (admissionId.isNotEmpty)
-              AppButton.tertiary(
-                label: l10n.dischargeOpenIpdAction,
-                leadingIcon: Icons.local_hotel_outlined,
-                enabled: enabled,
-                onPressed: () => onResolve(
-                  AppRoutes.ipd.location(
-                    queryParameters: <String, String>{'id': admissionId},
-                  ),
+              onPressed: () => onResolve(
+                AppRoutes.ipd.location(
+                  queryParameters: <String, String>{'id': admissionId},
                 ),
               ),
-          ],
-        ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 }

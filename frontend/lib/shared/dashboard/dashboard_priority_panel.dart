@@ -168,12 +168,9 @@ class DashboardAlertsPanel extends StatelessWidget {
 
     return DecoratedBox(
       decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
-        child: _DashboardAlertsPanelContent(
-          title: data.alertsTitle!,
-          items: data.alertItems,
-        ),
+      child: _DashboardAlertsPanelContent(
+        title: data.alertsTitle!,
+        items: data.alertItems,
       ),
     );
   }
@@ -313,9 +310,18 @@ class _DashboardAlertsPanel extends StatelessWidget {
 
     return _DashboardSectionShell(
       decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
-        child: _DashboardAlertsPanelContent(title: title, items: items),
+      child: AppSectionPanel(
+        title: title,
+        leadingIcon: Icons.warning_amber_rounded,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        children: <Widget>[
+          if (items.isEmpty)
+            const _DashboardQuietState()
+          else
+            _DashboardWorklistGroup(items: items.take(3).toList()),
+        ],
       ),
     );
   }
@@ -332,28 +338,13 @@ class _DashboardAlertsPanelContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSectionPanel(
+      title: title,
+      leadingIcon: Icons.warning_amber_rounded,
+      density: AppContentPanelDensity.spacious,
+      backgroundColor: Colors.transparent,
+      borderColor: Colors.transparent,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 20,
-              color: theme.statusColors.warning,
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
         if (items.isEmpty)
           const _DashboardQuietState()
         else

@@ -100,39 +100,11 @@ class AppTimeline extends StatelessWidget {
       );
     }
 
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (title != null || description != null)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (title != null)
-                  Text(
-                    title!,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                if (description != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    description!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        if (ordered.isEmpty)
-          AppStateView(
+    final String? resolvedTitle = title?.trim().isNotEmpty == true
+        ? title
+        : null;
+    final Widget body = ordered.isEmpty
+        ? AppStateView(
             variant: AppStateViewVariant.empty,
             title: emptyTitle ?? '',
             body: emptyBody ?? '',
@@ -141,16 +113,28 @@ class AppTimeline extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             textAlign: TextAlign.center,
           )
-        else
-          for (var index = 0; index < ordered.length; index += 1)
-            _TimelineNode(
-              item: ordered[index],
-              isLast: index == ordered.length - 1,
-              dense: dense,
-              missingTimestampLabel: missingTimestampLabel,
-            ),
-      ],
-    );
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (var index = 0; index < ordered.length; index += 1)
+                _TimelineNode(
+                  item: ordered[index],
+                  isLast: index == ordered.length - 1,
+                  dense: dense,
+                  missingTimestampLabel: missingTimestampLabel,
+                ),
+            ],
+          );
+
+    if (resolvedTitle != null) {
+      return AppWorkspaceDetailPanel(
+        title: resolvedTitle,
+        description: description,
+        child: body,
+      );
+    }
+
+    return body;
   }
 
   List<AppTimelineItem> _orderedItems() {

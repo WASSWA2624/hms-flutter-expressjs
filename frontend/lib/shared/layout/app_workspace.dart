@@ -1147,43 +1147,59 @@ class AppWorkspaceActivityList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final String? resolvedTitle = title?.trim().isNotEmpty == true
+        ? title
+        : null;
+    final String? resolvedDescription = description?.trim().isNotEmpty == true
+        ? description
+        : null;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
+    final Widget body = items.isEmpty
+        ? AppStateView(
+            variant: AppStateViewVariant.empty,
+            title: emptyTitle ?? '',
+            body: emptyBody ?? '',
+            action: emptyAction,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            textAlign: TextAlign.center,
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (var index = 0; index < items.length; index += 1) ...<Widget>[
+                _ActivityRow(item: items[index]),
+                if (index < items.length - 1) const Divider(height: 1),
+              ],
+            ],
+          );
+
+    // Titled activity sections share the app collapsible section chrome.
+    if (resolvedTitle != null) {
+      return AppWorkspaceDetailPanel(
+        title: resolvedTitle,
+        description: resolvedDescription,
+        child: body,
+      );
+    }
+
+    // Untitled lists are nested inside an outer panel; keep body-only chrome.
+    if (resolvedDescription != null) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (title != null || description != null)
-            Padding(
-              padding: EdgeInsets.all(theme.spacing.lg),
-              child: _ActivityHeader(title: title, description: description),
+          Text(
+            resolvedDescription,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-          if (title != null || description != null) const Divider(height: 1),
-          if (items.isEmpty)
-            Padding(
-              padding: EdgeInsets.all(theme.spacing.lg),
-              child: AppStateView(
-                variant: AppStateViewVariant.empty,
-                title: emptyTitle ?? '',
-                body: emptyBody ?? '',
-                action: emptyAction,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                textAlign: TextAlign.center,
-              ),
-            )
-          else
-            for (var index = 0; index < items.length; index += 1) ...<Widget>[
-              _ActivityRow(item: items[index]),
-              if (index < items.length - 1) const Divider(height: 1),
-            ],
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          body,
         ],
-      ),
-    );
+      );
+    }
+
+    return body;
   }
 }
 
@@ -2027,37 +2043,6 @@ class _WideFilterBar extends StatelessWidget {
       runSpacing: theme.spacing.sm,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: children,
-    );
-  }
-}
-
-class _ActivityHeader extends StatelessWidget {
-  const _ActivityHeader({required this.title, required this.description});
-
-  final String? title;
-  final String? description;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        if (title != null && title!.isNotEmpty)
-          Text(title!, style: theme.textTheme.titleMedium),
-        if (description != null && description!.isNotEmpty) ...<Widget>[
-          if (title != null && title!.isNotEmpty)
-            SizedBox(height: theme.spacing.xs),
-          Text(
-            description!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

@@ -1226,6 +1226,7 @@ class _HrActivityPanel extends StatelessWidget {
     final List<HrTimelineItem> items = state.overview.timeline.take(6).toList();
 
     return AppWorkspaceActivityList(
+      title: l10n.hrActivityTitle,
       description: l10n.hrActivityDescription,
       emptyTitle: l10n.hrNoActivityTitle,
       emptyBody: l10n.hrNoActivityBody,

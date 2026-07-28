@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const AccessRequirement _patientBillingWorkbenchRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.billingWrite],
@@ -35,83 +36,80 @@ class PatientBillingContextPanel extends StatelessWidget {
     final List<PatientSummaryRecord> invoices = detail.workspace.invoices;
     final List<PatientSummaryRecord> payments = detail.workspace.payments;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.patientsBillingSectionTitle,
-                style: theme.textTheme.titleSmall,
+    final Widget? openBillingAction = allowBillingNavigation
+        ? AppAccessActionGate(
+            requirement: _patientBillingWorkbenchRequirement,
+            builder: (BuildContext context, bool canCashier) {
+              if (!canCashier) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.secondary(
+                label: l10n.patientsOpenBillingWorkbenchAction,
+                leadingIcon: Icons.receipt_long_outlined,
+                onPressed: () => context.go(
+                  AppRoutes.billing.location(
+                    queryParameters: <String, String>{
+                      'patientId':
+                          detail.patient.publicId ?? detail.patient.id,
+                    },
+                  ),
+                ),
+              );
+            },
+          )
+        : null;
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.patientsBillingSectionTitle,
+      actions: openBillingAction == null
+          ? const <Widget>[]
+          : <Widget>[openBillingAction],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.patientsInvoicesSectionTitle,
+            style: theme.textTheme.labelLarge,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          if (invoices.isEmpty)
+            Text(
+              l10n.patientsNoInvoices,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            ...invoices.map(
+              (PatientSummaryRecord invoice) => _BillingSummaryTile(
+                record: invoice,
+                locale: locale,
+                leadingIcon: Icons.receipt_outlined,
               ),
             ),
-            if (allowBillingNavigation)
-              AppAccessActionGate(
-                requirement: _patientBillingWorkbenchRequirement,
-                builder: (BuildContext context, bool canCashier) {
-                  if (!canCashier) {
-                    return const SizedBox.shrink();
-                  }
-                  return AppButton.secondary(
-                    label: l10n.patientsOpenBillingWorkbenchAction,
-                    leadingIcon: Icons.receipt_long_outlined,
-                    onPressed: () => context.go(
-                      AppRoutes.billing.location(
-                        queryParameters: <String, String>{
-                          'patientId':
-                              detail.patient.publicId ?? detail.patient.id,
-                        },
-                      ),
-                    ),
-                  );
-                },
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.patientsPaymentsSectionTitle,
+            style: theme.textTheme.labelLarge,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          if (payments.isEmpty)
+            Text(
+              l10n.patientsNoPayments,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Text(
-          l10n.patientsInvoicesSectionTitle,
-          style: theme.textTheme.labelLarge,
-        ),
-        SizedBox(height: theme.spacing.xs),
-        if (invoices.isEmpty)
-          Text(
-            l10n.patientsNoInvoices,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            )
+          else
+            ...payments.map(
+              (PatientSummaryRecord payment) => _BillingSummaryTile(
+                record: payment,
+                locale: locale,
+                leadingIcon: Icons.payments_outlined,
+              ),
             ),
-          )
-        else
-          ...invoices.map(
-            (PatientSummaryRecord invoice) => _BillingSummaryTile(
-              record: invoice,
-              locale: locale,
-              leadingIcon: Icons.receipt_outlined,
-            ),
-          ),
-        SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.patientsPaymentsSectionTitle,
-          style: theme.textTheme.labelLarge,
-        ),
-        SizedBox(height: theme.spacing.xs),
-        if (payments.isEmpty)
-          Text(
-            l10n.patientsNoPayments,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          ...payments.map(
-            (PatientSummaryRecord payment) => _BillingSummaryTile(
-              record: payment,
-              locale: locale,
-              leadingIcon: Icons.payments_outlined,
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

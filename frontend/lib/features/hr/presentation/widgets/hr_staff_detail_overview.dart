@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.d
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_info_sheet.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 class HrStaffDetailOverview extends StatelessWidget {
   const HrStaffDetailOverview({required this.profile, super.key});
@@ -22,43 +23,26 @@ class HrStaffDetailOverview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          l10n.hrStaffOverviewSectionTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppInfoSheetGrid(
-          emptyValue: emptyValue,
-          spacing: theme.spacing.lg,
-          runSpacing: theme.spacing.sm,
-          items: _overviewItems(l10n, context, emptyValue),
-        ),
-        if (hasLinkedUser) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          Row(
-            children: <Widget>[
-              Icon(
-                Icons.link_outlined,
-                size: theme.appTokens.listIconSize,
-                color: theme.colorScheme.primary,
-              ),
-              SizedBox(width: theme.spacing.xs),
-              Text(
-                l10n.hrLinkedUserLabel,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          AppInfoSheetGrid(
+        AppWorkspaceDetailPanel(
+          title: l10n.hrStaffOverviewSectionTitle,
+          child: AppInfoSheetGrid(
             emptyValue: emptyValue,
             spacing: theme.spacing.lg,
             runSpacing: theme.spacing.sm,
-            items: _linkedUserItems(l10n, emptyValue),
+            items: _overviewItems(l10n, context, emptyValue),
+          ),
+        ),
+        if (hasLinkedUser) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          AppWorkspaceDetailPanel(
+            title: l10n.hrLinkedUserLabel,
+            titleIcon: Icons.link_outlined,
+            child: AppInfoSheetGrid(
+              emptyValue: emptyValue,
+              spacing: theme.spacing.lg,
+              runSpacing: theme.spacing.sm,
+              items: _linkedUserItems(l10n, emptyValue),
+            ),
           ),
         ],
       ],

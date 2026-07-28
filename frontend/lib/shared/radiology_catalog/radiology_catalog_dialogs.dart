@@ -646,20 +646,14 @@ class _RadiologyEnableFacilityOfferingDialogState
               return Padding(
                 padding: EdgeInsets.only(bottom: theme.spacing.lg),
                 child: AppFormSection(
-                  children: <Widget>[
-                    Text(
-                      item.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (item.code != null && item.code!.isNotEmpty)
-                      AppMutedText(
-                        <String?>[
+                  title: item.name,
+                  description: item.code != null && item.code!.isNotEmpty
+                      ? <String?>[
                           item.code,
                           item.modality,
-                        ].whereType<String>().join(' · '),
-                      ),
+                        ].whereType<String>().join(' · ')
+                      : item.modality,
+                  children: <Widget>[
                     AppCurrencyAmountField(
                       amountController: controller,
                       currency: currency,
@@ -885,7 +879,6 @@ class _RadiologyEnableOfferingPriceDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final RadiologyCatalogProcedure item = widget.item;
 
     return AppDialog(
@@ -897,24 +890,18 @@ class _RadiologyEnableOfferingPriceDialogState
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          title: item.name,
+          description: item.code != null && item.code!.isNotEmpty
+              ? <String?>[
+                  item.code,
+                  item.modality,
+                ].whereType<String>().join(' · ')
+              : item.modality,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
                 context: context,
                 failure: _failure!,
-              ),
-            Text(
-              item.name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (item.code != null && item.code!.isNotEmpty)
-              AppMutedText(
-                <String?>[
-                  item.code,
-                  item.modality,
-                ].whereType<String>().join(' · '),
               ),
             AppCurrencyAmountField(
               amountController: _priceController,
@@ -1027,7 +1014,6 @@ class _RadiologyEditFacilityOfferingDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
     return AppDialog(
       title: Text(l10n.radiologyEditOfferingDialogTitle),
@@ -1038,18 +1024,13 @@ class _RadiologyEditFacilityOfferingDialogState
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          title: widget.item.name,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
                 context: context,
                 failure: _failure!,
               ),
-            Text(
-              widget.item.name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
             AppCurrencyAmountField(
               amountController: _priceController,
               currency: _currency,

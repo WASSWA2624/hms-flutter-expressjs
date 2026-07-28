@@ -1653,22 +1653,18 @@ class _LabConfigurationsDialogState
                   ),
                 ],
               ),
-            const Divider(height: 24),
-            Text(
-              l10n.labQcLogsAction,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: theme.spacing.xs),
-            AppMutedText(l10n.labQcLogsSectionBody),
-            SizedBox(height: theme.spacing.sm),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: AppButton.tertiary(
-                label: l10n.labQcLogsAction,
-                leadingIcon: Icons.fact_check_outlined,
-                onPressed: () => _openQcDialog(context, state),
+            SizedBox(height: theme.spacing.md),
+            AppWorkspaceDetailPanel(
+              title: l10n.labQcLogsAction,
+              description: l10n.labQcLogsSectionBody,
+              titleIcon: Icons.fact_check_outlined,
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppButton.tertiary(
+                  label: l10n.labQcLogsAction,
+                  leadingIcon: Icons.fact_check_outlined,
+                  onPressed: () => _openQcDialog(context, state),
+                ),
               ),
             ),
           ],

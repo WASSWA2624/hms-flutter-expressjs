@@ -1962,44 +1962,27 @@ class _StudiesSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 if (imagingView && latestReport != null) ...<Widget>[
-                  Theme(
-                    data: theme.copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      title: Text(
-                        l10n.radiologyStudiesReportPreviewTitle,
-                        style: theme.textTheme.titleSmall,
+                  AppWorkspaceDetailPanel(
+                    title: l10n.radiologyStudiesReportPreviewTitle,
+                    titleIcon: Icons.description_outlined,
+                    initiallyExpanded: false,
+                    child: AppClinicalResultsPreview(
+                      title: l10n.radiologyGeneratedReportPreviewTitle,
+                      status: _clinicalResultStatusForRadiology(latestReport),
+                      isEmpty: (latestReport.reportText ?? '').trim().isEmpty,
+                      emptyBody: l10n.radiologyEmptyReportBody,
+                      printEligible: appClinicalResultsPrintEligible(
+                        authorized: true,
+                        hasPrintableReleasedContent:
+                            latestReport.isReleased &&
+                            (latestReport.reportText ?? '').trim().isNotEmpty,
                       ),
-                      leading: Icon(
-                        Icons.description_outlined,
-                        color: theme.colorScheme.primary,
-                      ),
-                      children: <Widget>[
-                        AppClinicalResultsPreview(
+                      child: AppClinicalResultEntryView(
+                        entry: _radiologyPreviewEntry(
+                          result: latestReport,
                           title: l10n.radiologyGeneratedReportPreviewTitle,
-                          status: _clinicalResultStatusForRadiology(
-                            latestReport,
-                          ),
-                          isEmpty: (latestReport.reportText ?? '')
-                              .trim()
-                              .isEmpty,
-                          emptyBody: l10n.radiologyEmptyReportBody,
-                          printEligible: appClinicalResultsPrintEligible(
-                            authorized: true,
-                            hasPrintableReleasedContent:
-                                latestReport.isReleased &&
-                                (latestReport.reportText ?? '')
-                                    .trim()
-                                    .isNotEmpty,
-                          ),
-                          child: AppClinicalResultEntryView(
-                            entry: _radiologyPreviewEntry(
-                              result: latestReport,
-                              title: l10n.radiologyGeneratedReportPreviewTitle,
-                            ),
-                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   SizedBox(height: theme.spacing.md),

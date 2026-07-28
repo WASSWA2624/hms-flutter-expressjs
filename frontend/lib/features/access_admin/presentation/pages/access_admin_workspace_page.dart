@@ -890,15 +890,13 @@ class _DetailContent extends ConsumerWidget {
             value: '${item.userCount}',
           ),
           SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.accessAdminRolePermissionsLabel,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppPermissionGroupedView(
-            permissions: rolePermissionOptions,
-            initiallyExpandAll: rolePermissionOptions.length <= 24,
-            emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
+          AppWorkspaceDetailPanel(
+            title: l10n.accessAdminRolePermissionsLabel,
+            child: AppPermissionGroupedView(
+              permissions: rolePermissionOptions,
+              initiallyExpandAll: rolePermissionOptions.length <= 24,
+              emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
+            ),
           ),
         ] else if (isPermission) ...<Widget>[
           _DetailRow(

@@ -174,7 +174,7 @@ class PatientDetailDialog extends ConsumerWidget {
               referenceData:
                   state?.referenceData ?? const PatientReferenceData(),
             ),
-            const Divider(),
+            SizedBox(height: Theme.of(context).spacing.md),
             if (!hideClinicalSections) ...<Widget>[
               PatientDetailActiveWorkPanel(
                 detail: detail,
@@ -182,7 +182,7 @@ class PatientDetailDialog extends ConsumerWidget {
                     _continuePatientActiveWork(context, ref, detail, item),
               ),
               if (collectPatientActiveWorkItems(detail).isNotEmpty)
-                const Divider(),
+                SizedBox(height: Theme.of(context).spacing.md),
               PatientDetailQuickActions(
                 detail: detail,
                 onAction: (PatientQuickAction action) =>
@@ -193,7 +193,7 @@ class PatientDetailDialog extends ConsumerWidget {
                       action,
                     ),
               ),
-              const Divider(),
+              SizedBox(height: Theme.of(context).spacing.md),
             ],
             if (pharmacyReader) ...<Widget>[
               PatientPharmacyContextPanel(detail: detail),

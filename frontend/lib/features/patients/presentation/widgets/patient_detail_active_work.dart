@@ -34,20 +34,21 @@ class PatientDetailActiveWorkPanel extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(l10n.patientsActiveWorkTitle, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.sm),
-        for (final PatientActiveWorkItem item in items)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.xs),
-            child: _PatientActiveWorkRow(
-              item: item,
-              onContinue: () => onContinue(item),
+    return AppWorkspaceDetailPanel(
+      title: l10n.patientsActiveWorkTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final PatientActiveWorkItem item in items)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.xs),
+              child: _PatientActiveWorkRow(
+                item: item,
+                onContinue: () => onContinue(item),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
