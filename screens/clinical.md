@@ -382,10 +382,10 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
 
 ### Add diagnosis (`ClinicalDiagnosisActionDialog`)
 
-Dialog opens maximized by default. Diagnosis type uses borderless radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips). Transfer panes use dense `AppListTable` surfaces (compact search, checkbox-tight select column, expanded Name column, no outer title/match-count chrome on available; selected keeps count + Deselect).
+Dialog opens maximized by default. Diagnosis type uses dense borderless radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips). Transfer panes use dense `AppListTable` surfaces with search + transfer actions on both sides; Name columns are not sortable; row click toggles check.
 
 - **Diagnosis type** (Primary / Secondary / Differential borderless radios)
-  - Location: Dialog body.
+  - Location: Dialog body (inline with label on wide layouts).
   - Opens modal: No.
   - Immediate result: Sets batch diagnosis type (default Primary).
   - Condition: Enabled when not saving.
@@ -396,17 +396,29 @@ Dialog opens maximized by default. Diagnosis type uses borderless radios (Primar
   - Immediate result: Filters / reloads facility diagnosis catalog.
   - Condition: Enabled when not saving.
 
-- **Add selections** (available pane)
-  - Location: Available pane table surface header (with search).
+- **Add selected diagnosis** (available pane)
+  - Location: Available pane table surface header (with search; dense height matched to field).
   - Opens modal: No.
   - Immediate result: Moves checked available rows to selected (skips duplicates).
   - Condition: ≥1 checked available row; not saving.
 
-- **Deselect** (selected pane)
-  - Location: Selected pane table surface header (with selection count).
+- **Search selected diagnosis**
+  - Location: Selected pane table surface header (dense field, hint-only).
+  - Opens modal: No.
+  - Immediate result: Client-side filters the selected list.
+  - Condition: Enabled when not saving.
+
+- **Remove selected diagnosis** (selected pane)
+  - Location: Selected pane table surface header (with search).
   - Opens modal: No.
   - Immediate result: Moves checked selected rows back to available.
   - Condition: ≥1 checked selected row; not saving.
+
+- **Row click / checkbox column**
+  - Location: Available and selected transfer tables.
+  - Opens modal: No.
+  - Immediate result: Toggles that row’s checked state (multi-select before transfer).
+  - Condition: Enabled when not saving.
 
 - **Try again** (catalog load failure)
   - Location: Available pane empty/error state.

@@ -42,10 +42,12 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   static const String _selectColumnKey = 'select';
   static const String _nameColumnKey = 'name';
 
-  late final TextEditingController _searchController;
+  late final TextEditingController _availableSearchController;
+  late final TextEditingController _selectedSearchController;
   Timer? _searchDebounce;
   String _diagnosisType = 'PRIMARY';
-  String _searchQuery = '';
+  String _availableSearchQuery = '';
+  String _selectedSearchQuery = '';
   int _searchRequest = 0;
   List<ClinicalActionCatalogOption> _catalogOptions =
       const <ClinicalActionCatalogOption>[];
@@ -61,7 +63,8 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _availableSearchController = TextEditingController();
+    _selectedSearchController = TextEditingController();
     _searchRequest += 1;
     unawaited(_loadDiagnosisCatalog('', _searchRequest));
   }
@@ -69,7 +72,8 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _searchController.dispose();
+    _availableSearchController.dispose();
+    _selectedSearchController.dispose();
     super.dispose();
   }
 
@@ -77,11 +81,17 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool wideRadios =
+    final bool wideLayout =
         AppBreakpoints.of(context).index >= AppBreakpoint.md.index;
     final List<ClinicalActionCatalogOption> available = _availableDiagnoses();
-    final List<ClinicalActionCatalogOption> visibleAvailable =
-        _filterBySearch(available);
+    final List<ClinicalActionCatalogOption> visibleAvailable = _filterBySearch(
+      available,
+      _availableSearchQuery,
+    );
+    final List<ClinicalActionCatalogOption> visibleSelected = _filterBySearch(
+      _selectedDiagnoses,
+      _selectedSearchQuery,
+    );
 
     return AppDialog(
       title: Text(l10n.clinicalAddDiagnosisAction),
@@ -102,35 +112,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
               context: context,
               failure: _catalogFailure!,
             ),
-          AppRadioGroup<String>(
-            value: _diagnosisType,
-            labelText: l10n.opdDiagnosisTypeLabel,
-            enabled: !_isSaving,
-            presentation: AppRadioGroupPresentation.borderless,
-            layout: wideRadios
-                ? AppRadioGroupLayout.horizontal
-                : AppRadioGroupLayout.wrap,
-            options: <AppRadioOption<String>>[
-              for (final String type in _diagnosisTypes)
-                AppRadioOption<String>(
-                  value: type,
-                  label: clinicalActionApiLabel(type),
-                ),
-            ],
-            validator: (String? value) {
-              if (value == null || value.trim().isEmpty) {
-                return l10n.opdDiagnosisTypeLabel;
-              }
-              return null;
-            },
-            onChanged: (String? value) {
-              if (value == null) {
-                return;
-              }
-              setState(() => _diagnosisType = value);
-            },
+          _buildDiagnosisTypeRow(
+            context: context,
+            l10n: l10n,
+            theme: theme,
+            wideLayout: wideLayout,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           Expanded(
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
@@ -139,7 +127,9 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                   context: context,
                   items: visibleAvailable,
                   checkedIds: _checkedAvailableIds,
-                  showSearch: true,
+                  searchController: _availableSearchController,
+                  searchLabel: l10n.clinicalDiagnosisSearchLabel,
+                  onSearchChanged: _scheduleAvailableSearch,
                   actionLabel: l10n.clinicalDiagnosisAddSelectionsAction,
                   actionIcon: Icons.add,
                   onAction: _addCheckedDiagnoses,
@@ -162,7 +152,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                           _searchRequest += 1;
                           unawaited(
                             _loadDiagnosisCatalog(
-                              _searchQuery,
+                              _availableSearchQuery,
                               _searchRequest,
                             ),
                           );
@@ -170,20 +160,19 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                 );
                 final Widget selectedPanel = _buildTransferPanel(
                   context: context,
-                  countLabel: l10n.clinicalDiagnosisSelectedCount(
-                    _selectedDiagnoses.length,
-                  ),
-                  items: List<ClinicalActionCatalogOption>.of(
-                    _selectedDiagnoses,
-                  ),
+                  items: visibleSelected,
                   checkedIds: _checkedSelectedIds,
-                  showSearch: false,
+                  searchController: _selectedSearchController,
+                  searchLabel: l10n.clinicalDiagnosisSelectedSearchLabel,
+                  onSearchChanged: _onSelectedSearchChanged,
                   actionLabel: l10n.clinicalDiagnosisDeselectAction,
                   actionIcon: Icons.remove,
                   onAction: _deselectCheckedDiagnoses,
                   actionEnabled:
                       !_isSaving && _checkedSelectedIds.isNotEmpty,
-                  emptyLabel: l10n.clinicalDiagnosisNoSelection,
+                  emptyLabel: _selectedDiagnoses.isEmpty
+                      ? l10n.clinicalDiagnosisNoSelection
+                      : l10n.clinicalDiagnosisNoCatalogOptions,
                   isLoading: false,
                 );
 
@@ -226,18 +215,74 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     );
   }
 
+  Widget _buildDiagnosisTypeRow({
+    required BuildContext context,
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required bool wideLayout,
+  }) {
+    final AppRadioGroup<String> radios = AppRadioGroup<String>(
+      value: _diagnosisType,
+      labelText: wideLayout ? null : l10n.opdDiagnosisTypeLabel,
+      semanticLabel: l10n.opdDiagnosisTypeLabel,
+      enabled: !_isSaving,
+      dense: true,
+      presentation: AppRadioGroupPresentation.borderless,
+      layout: wideLayout
+          ? AppRadioGroupLayout.horizontal
+          : AppRadioGroupLayout.wrap,
+      options: <AppRadioOption<String>>[
+        for (final String type in _diagnosisTypes)
+          AppRadioOption<String>(
+            value: type,
+            label: clinicalActionApiLabel(type),
+          ),
+      ],
+      validator: (String? value) {
+        if (value == null || value.trim().isEmpty) {
+          return l10n.opdDiagnosisTypeLabel;
+        }
+        return null;
+      },
+      onChanged: (String? value) {
+        if (value == null) {
+          return;
+        }
+        setState(() => _diagnosisType = value);
+      },
+    );
+
+    if (!wideLayout) {
+      return radios;
+    }
+
+    return Row(
+      children: <Widget>[
+        Text(
+          l10n.opdDiagnosisTypeLabel,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(width: theme.spacing.md),
+        Expanded(child: radios),
+      ],
+    );
+  }
+
   Widget _buildTransferPanel({
     required BuildContext context,
     required List<ClinicalActionCatalogOption> items,
     required Set<String> checkedIds,
-    required bool showSearch,
+    required TextEditingController searchController,
+    required String searchLabel,
+    required ValueChanged<String> onSearchChanged,
     required String actionLabel,
     required IconData actionIcon,
     required VoidCallback onAction,
     required bool actionEnabled,
     required String emptyLabel,
     required bool isLoading,
-    String? countLabel,
     VoidCallback? onRetry,
   }) {
     final AppLocalizations l10n = context.l10n;
@@ -252,34 +297,22 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       ),
       child: Row(
         children: <Widget>[
-          if (showSearch)
-            Expanded(
-              child: AppTextField(
-                controller: _searchController,
-                hintText: l10n.clinicalDiagnosisSearchLabel,
-                semanticLabel: l10n.clinicalDiagnosisSearchLabel,
-                useFloatingLabel: false,
-                isDense: true,
-                enabled: !_isSaving,
-                onChanged: _scheduleSearch,
-              ),
-            )
-          else if (countLabel != null)
-            Expanded(
-              child: Text(
-                countLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          else
-            const Spacer(),
-          if (showSearch) SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: AppTextField(
+              controller: searchController,
+              hintText: searchLabel,
+              semanticLabel: searchLabel,
+              useFloatingLabel: false,
+              isDense: true,
+              enabled: !_isSaving,
+              onChanged: onSearchChanged,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
           AppButton.primary(
             label: actionLabel,
             leadingIcon: actionIcon,
+            dense: true,
             enabled: actionEnabled,
             onPressed: onAction,
           ),
@@ -297,6 +330,11 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       forceCompact: true,
       isLoading: isLoading,
       surfaceHeader: toolbar,
+      onRowSelected: _isSaving
+          ? null
+          : (ClinicalActionCatalogOption item) {
+              _toggleChecked(checkedIds, item.apiId);
+            },
       itemKeyBuilder: (ClinicalActionCatalogOption item) =>
           ValueKey<String>(item.apiId),
       columns: _transferColumns(
@@ -325,24 +363,23 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       mobileItemBuilder:
           (BuildContext context, ClinicalActionCatalogOption item) {
             final bool checked = checkedIds.contains(item.apiId);
-            return AppListTableMobileItem(
-              leading: Checkbox(
-                value: checked,
-                onChanged: _isSaving
-                    ? null
-                    : (bool? value) {
-                        _setChecked(
-                          checkedIds,
-                          item.apiId,
-                          value ?? false,
-                        );
-                      },
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            return InkWell(
+              onTap: _isSaving
+                  ? null
+                  : () => _toggleChecked(checkedIds, item.apiId),
+              child: AppListTableMobileItem(
+                leading: IgnorePointer(
+                  child: Checkbox(
+                    value: checked,
+                    onChanged: (_) {},
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                title: _diagnosisTitle(item),
+                caption: _diagnosisSubtitle(item),
+                showAvatar: false,
               ),
-              title: _diagnosisTitle(item),
-              caption: _diagnosisSubtitle(item),
-              showAvatar: false,
             );
           },
     );
@@ -406,15 +443,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
         },
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Center(
-            child: Checkbox(
-              value: checkedIds.contains(item.apiId),
-              onChanged: _isSaving
-                  ? null
-                  : (bool? value) {
-                      _setChecked(checkedIds, item.apiId, value ?? false);
-                    },
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            child: IgnorePointer(
+              child: Checkbox(
+                value: checkedIds.contains(item.apiId),
+                onChanged: (_) {},
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
           );
         },
@@ -422,14 +457,6 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       AppListTableColumn<ClinicalActionCatalogOption>(
         id: _nameColumnKey,
         label: l10n.clinicalDiagnosisNameColumnLabel,
-        sortComparator:
-            (
-              ClinicalActionCatalogOption left,
-              ClinicalActionCatalogOption right,
-            ) => appListTableCompareText(
-              _diagnosisTitle(left),
-              _diagnosisTitle(right),
-            ),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           final String subtitle = _diagnosisSubtitle(item);
           return Column(
@@ -471,8 +498,9 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
 
   List<ClinicalActionCatalogOption> _filterBySearch(
     List<ClinicalActionCatalogOption> options,
+    String query,
   ) {
-    final List<String> tokens = _searchQuery
+    final List<String> tokens = query
         .trim()
         .toLowerCase()
         .split(RegExp(r'\s+'))
@@ -506,11 +534,11 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     return l10n.clinicalDiagnosisNoCatalogOptions;
   }
 
-  void _scheduleSearch(String value) {
+  void _scheduleAvailableSearch(String value) {
     _searchDebounce?.cancel();
     final String query = value.trim();
     setState(() {
-      _searchQuery = query;
+      _availableSearchQuery = query;
       _checkedAvailableIds.clear();
     });
     _searchDebounce = Timer(_searchDebounceDuration, () {
@@ -519,6 +547,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       }
       _searchRequest += 1;
       unawaited(_loadDiagnosisCatalog(query, _searchRequest));
+    });
+  }
+
+  void _onSelectedSearchChanged(String value) {
+    setState(() {
+      _selectedSearchQuery = value.trim();
+      _checkedSelectedIds.clear();
     });
   }
 
@@ -560,12 +595,12 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     );
   }
 
-  void _setChecked(Set<String> checkedIds, String id, bool checked) {
+  void _toggleChecked(Set<String> checkedIds, String id) {
     setState(() {
-      if (checked) {
-        checkedIds.add(id);
-      } else {
+      if (checkedIds.contains(id)) {
         checkedIds.remove(id);
+      } else {
+        checkedIds.add(id);
       }
     });
   }

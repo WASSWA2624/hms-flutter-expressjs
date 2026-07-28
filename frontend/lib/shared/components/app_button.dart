@@ -23,6 +23,7 @@ class AppButton extends StatelessWidget {
     this.tooltip,
     this.autofocus = false,
     this.iconOnly = false,
+    this.dense = false,
     this.color,
     this.iconWidget,
     this.labelWidget,
@@ -44,6 +45,7 @@ class AppButton extends StatelessWidget {
     this.tooltip,
     this.autofocus = false,
     this.iconOnly = false,
+    this.dense = false,
     this.color,
     this.iconWidget,
     this.labelWidget,
@@ -62,6 +64,7 @@ class AppButton extends StatelessWidget {
     this.tooltip,
     this.autofocus = false,
     this.iconOnly = false,
+    this.dense = false,
     this.color,
     this.iconWidget,
     this.labelWidget,
@@ -80,6 +83,7 @@ class AppButton extends StatelessWidget {
     this.tooltip,
     this.autofocus = false,
     this.iconOnly = false,
+    this.dense = false,
     this.color,
     this.iconWidget,
     this.labelWidget,
@@ -98,6 +102,9 @@ class AppButton extends StatelessWidget {
   final String? tooltip;
   final bool autofocus;
   final bool iconOnly;
+
+  /// Reduces padding and min height so the button can align with dense fields.
+  final bool dense;
   final Color? color;
   final Widget? iconWidget;
 
@@ -229,12 +236,16 @@ class AppButton extends StatelessWidget {
     final EdgeInsetsGeometry padding = iconOnly
         ? EdgeInsets.all(spacing.xs)
         : EdgeInsets.symmetric(
-            horizontal: compact ? spacing.md : spacing.lg,
-            vertical: spacing.sm,
+            horizontal: dense
+                ? spacing.sm
+                : compact
+                ? spacing.md
+                : spacing.lg,
+            vertical: dense ? spacing.xs : spacing.sm,
           );
     final double minimumDimension = math.max(
-      theme.appTokens.minInteractiveDimension,
-      theme.appTokens.listIconSize + spacing.lg,
+      dense ? 36 : theme.appTokens.minInteractiveDimension,
+      theme.appTokens.listIconSize + (dense ? spacing.sm : spacing.lg),
     );
 
     return ButtonStyle(
@@ -246,7 +257,10 @@ class AppButton extends StatelessWidget {
       minimumSize: WidgetStatePropertyAll<Size>(
         iconOnly
             ? Size.square(minimumDimension)
-            : Size(spacing.none, theme.appTokens.minInteractiveDimension),
+            : Size(
+                spacing.none,
+                dense ? 36 : theme.appTokens.minInteractiveDimension,
+              ),
       ),
       padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
       shape: WidgetStatePropertyAll<OutlinedBorder>(

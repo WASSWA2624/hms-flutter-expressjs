@@ -90,6 +90,7 @@ void main() {
       find.byType(AppRadioGroup<String>),
     );
     expect(typeGroup.presentation, AppRadioGroupPresentation.borderless);
+    expect(typeGroup.dense, isTrue);
     expect(find.text('Primary'), findsWidgets);
     expect(find.text('Secondary'), findsOneWidget);
     expect(find.text('Differential'), findsOneWidget);
@@ -98,10 +99,15 @@ void main() {
     expect(find.text('Available diagnoses'), findsNothing);
     expect(find.textContaining('matches'), findsNothing);
     expect(find.text('Selected diagnoses'), findsNothing);
-    expect(find.text('0 selected'), findsOneWidget);
-    expect(find.text('Deselect'), findsOneWidget);
-    expect(find.text('Add selections'), findsOneWidget);
+    expect(find.text('0 selected'), findsNothing);
+    expect(find.text('Deselect'), findsNothing);
+    expect(find.text('Add selections'), findsNothing);
+    expect(find.text('Add selected diagnosis'), findsOneWidget);
+    expect(find.text('Remove selected diagnosis'), findsOneWidget);
+    expect(find.text('Search selected diagnosis'), findsOneWidget);
     expect(find.text('#'), findsNothing);
+    expect(find.byIcon(Icons.swap_vert), findsNothing);
+    expect(find.byIcon(Icons.arrow_upward), findsNothing);
 
     final Finder tables = find.byType(AppListTable<ClinicalActionCatalogOption>);
     expect(tables, findsNWidgets(2));
@@ -110,9 +116,10 @@ void main() {
     expect(availableTable.showRowNumbers, isFalse);
     expect(availableTable.forceCompact, isTrue);
     expect(availableTable.columns.first.fixedWidth, 32);
+    expect(availableTable.columns.last.isSortable, isFalse);
   });
 
-  testWidgets('transfers checked diagnoses and submits selected type', (
+  testWidgets('row click toggles selection and transfers diagnoses', (
     WidgetTester tester,
   ) async {
     String? submittedType;
@@ -131,23 +138,14 @@ void main() {
           },
     );
 
-    final Finder availableTable = find
-        .byType(AppListTable<ClinicalActionCatalogOption>)
-        .first;
-    final Finder availableCheckboxes = find.descendant(
-      of: availableTable,
-      matching: find.byType(Checkbox),
-    );
-
-    // Index 0 is the header select-all checkbox; index 1 is the first row.
-    await tester.tap(availableCheckboxes.at(1));
+    await tester.tap(find.text('Malaria'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Add selections'));
+    await tester.tap(find.widgetWithText(AppButton, 'Add selected diagnosis'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 selected'), findsOneWidget);
     expect(find.text('Malaria'), findsOneWidget);
+    expect(find.text('No diagnoses selected'), findsNothing);
 
     await tester.tap(find.text('Secondary'));
     await tester.pumpAndSettle();
@@ -160,34 +158,26 @@ void main() {
     expect(submitted!.single.name, 'Malaria');
   });
 
-  testWidgets('Deselect moves checked selected diagnoses back', (
+  testWidgets('Remove selected diagnosis moves checked rows back', (
     WidgetTester tester,
   ) async {
     await openDialog(tester);
 
-    final Finder availableTable = find
-        .byType(AppListTable<ClinicalActionCatalogOption>)
-        .first;
-    await tester.tap(
-      find.descendant(of: availableTable, matching: find.byType(Checkbox)).at(1),
-    );
+    await tester.tap(find.text('Malaria'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, 'Add selections'));
+    await tester.tap(find.widgetWithText(AppButton, 'Add selected diagnosis'));
     await tester.pumpAndSettle();
-
-    expect(find.text('1 selected'), findsOneWidget);
 
     final Finder selectedTable = find
         .byType(AppListTable<ClinicalActionCatalogOption>)
         .last;
+    await tester.tap(find.descendant(of: selectedTable, matching: find.text('Malaria')));
+    await tester.pumpAndSettle();
     await tester.tap(
-      find.descendant(of: selectedTable, matching: find.byType(Checkbox)).at(1),
+      find.widgetWithText(AppButton, 'Remove selected diagnosis'),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, 'Deselect'));
-    await tester.pumpAndSettle();
 
-    expect(find.text('0 selected'), findsOneWidget);
     expect(find.text('No diagnoses selected'), findsOneWidget);
   });
 }

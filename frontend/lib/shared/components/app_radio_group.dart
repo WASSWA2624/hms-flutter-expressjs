@@ -58,6 +58,7 @@ class AppRadioGroup<T> extends StatelessWidget {
     this.contentPadding,
     this.layout = AppRadioGroupLayout.vertical,
     this.presentation = AppRadioGroupPresentation.card,
+    this.dense = false,
     this.wrapColumns,
     this.itemMinWidth = 240,
     super.key,
@@ -76,6 +77,9 @@ class AppRadioGroup<T> extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final AppRadioGroupLayout layout;
   final AppRadioGroupPresentation presentation;
+
+  /// Reduces label/option spacing for tight inline toolbars.
+  final bool dense;
 
   /// Fixed wrap column count when set; otherwise width-driven (1 on narrow,
   /// up to 2 when space allows for [itemMinWidth]).
@@ -118,11 +122,14 @@ class AppRadioGroup<T> extends StatelessWidget {
               if (labelText != null) ...<Widget>[
                 Text(
                   labelText!,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: (dense
+                          ? theme.textTheme.labelLarge
+                          : theme.textTheme.titleSmall)
+                      ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-                SizedBox(height: theme.spacing.sm),
+                SizedBox(height: dense ? theme.spacing.xs : theme.spacing.sm),
               ],
               optionsBody,
               if (field.errorText != null) ...<Widget>[
@@ -154,7 +161,7 @@ class AppRadioGroup<T> extends StatelessWidget {
     required bool canChange,
     required bool hasError,
   }) {
-    final double gap = theme.spacing.sm;
+    final double gap = dense ? theme.spacing.xs : theme.spacing.sm;
     final List<Widget> tiles = <Widget>[
       for (final AppRadioOption<T> option in options)
         _AppRadioOptionTile<T>(
@@ -163,6 +170,7 @@ class AppRadioGroup<T> extends StatelessWidget {
           enabled: canChange && option.enabled,
           hasError: hasError,
           presentation: presentation,
+          dense: dense,
           contentPadding: contentPadding,
           onSelected: canChange && option.enabled
               ? () {
@@ -245,6 +253,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
     required this.enabled,
     required this.hasError,
     required this.presentation,
+    required this.dense,
     required this.onSelected,
     this.contentPadding,
   });
@@ -254,6 +263,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
   final bool enabled;
   final bool hasError;
   final AppRadioGroupPresentation presentation;
+  final bool dense;
   final VoidCallback? onSelected;
   final EdgeInsetsGeometry? contentPadding;
 
@@ -270,10 +280,12 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
     final EdgeInsetsGeometry padding =
         contentPadding ??
         (borderless
-            ? EdgeInsets.symmetric(vertical: theme.spacing.xs / 2)
+            ? EdgeInsets.symmetric(
+                vertical: dense ? 0 : theme.spacing.xs / 2,
+              )
             : EdgeInsets.symmetric(
                 horizontal: theme.spacing.sm,
-                vertical: theme.spacing.sm,
+                vertical: dense ? theme.spacing.xs : theme.spacing.sm,
               ));
 
     final Widget labelBlock = Column(

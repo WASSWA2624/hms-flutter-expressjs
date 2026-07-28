@@ -15016,17 +15016,23 @@ abstract class AppLocalizations {
   /// **'Search by diagnosis name, code, type, or status'**
   String get clinicalDiagnosisSearchHint;
 
-  /// Clinical diagnosis action that moves checked selected diagnoses back to available.
+  /// Clinical diagnosis action that removes checked selected diagnoses from the selected list.
   ///
   /// In en, this message translates to:
-  /// **'Deselect'**
+  /// **'Remove selected diagnosis'**
   String get clinicalDiagnosisDeselectAction;
 
   /// Clinical diagnosis action that moves checked available diagnoses into the selected list.
   ///
   /// In en, this message translates to:
-  /// **'Add selections'**
+  /// **'Add selected diagnosis'**
   String get clinicalDiagnosisAddSelectionsAction;
+
+  /// Search field label for filtering already selected diagnoses.
+  ///
+  /// In en, this message translates to:
+  /// **'Search selected diagnosis'**
+  String get clinicalDiagnosisSelectedSearchLabel;
 
   /// Clinical diagnosis available facility catalog pane title.
   ///

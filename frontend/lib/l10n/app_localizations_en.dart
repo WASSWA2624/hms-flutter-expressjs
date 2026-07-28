@@ -8144,10 +8144,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search by diagnosis name, code, type, or status';
 
   @override
-  String get clinicalDiagnosisDeselectAction => 'Deselect';
+  String get clinicalDiagnosisDeselectAction => 'Remove selected diagnosis';
 
   @override
-  String get clinicalDiagnosisAddSelectionsAction => 'Add selections';
+  String get clinicalDiagnosisAddSelectionsAction => 'Add selected diagnosis';
+
+  @override
+  String get clinicalDiagnosisSelectedSearchLabel =>
+      'Search selected diagnosis';
 
   @override
   String get clinicalDiagnosisAvailableTitle => 'Available diagnoses';

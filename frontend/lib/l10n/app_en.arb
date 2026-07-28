@@ -10350,13 +10350,17 @@
   "@clinicalDiagnosisSearchHint": {
     "description": "Clinical diagnosis search field hint."
   },
-  "clinicalDiagnosisDeselectAction": "Deselect",
+  "clinicalDiagnosisDeselectAction": "Remove selected diagnosis",
   "@clinicalDiagnosisDeselectAction": {
-    "description": "Clinical diagnosis action that moves checked selected diagnoses back to available."
+    "description": "Clinical diagnosis action that removes checked selected diagnoses from the selected list."
   },
-  "clinicalDiagnosisAddSelectionsAction": "Add selections",
+  "clinicalDiagnosisAddSelectionsAction": "Add selected diagnosis",
   "@clinicalDiagnosisAddSelectionsAction": {
     "description": "Clinical diagnosis action that moves checked available diagnoses into the selected list."
+  },
+  "clinicalDiagnosisSelectedSearchLabel": "Search selected diagnosis",
+  "@clinicalDiagnosisSelectedSearchLabel": {
+    "description": "Search field label for filtering already selected diagnoses."
   },
   "clinicalDiagnosisAvailableTitle": "Available diagnoses",
   "@clinicalDiagnosisAvailableTitle": {
