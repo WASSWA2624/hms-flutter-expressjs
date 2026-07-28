@@ -502,6 +502,61 @@ void main() {
   );
 
   testWidgets(
+    'Start case next-action opens confirm dialog, not Update stage form',
+    (WidgetTester tester) async {
+      _stubCases(repository, cases: const <TheaterCase>[_readyScheduledCase]);
+      when(() => repository.updateStage(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final Map<String, Object?> payload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return Result<TheaterCase>.success(
+          TheaterCase(
+            id: _readyScheduledCase.id,
+            displayId: _readyScheduledCase.displayId,
+            patientDisplayName: _readyScheduledCase.patientDisplayName,
+            status: payload['status'] as String? ?? 'IN_PROGRESS',
+            workflowStage:
+                payload['workflow_stage'] as String? ?? 'SIGN_IN',
+            checklistTotal: 2,
+            checklistCompleted: 2,
+          ),
+        );
+      });
+      await _pumpTheaterWorkspace(tester, repository: repository);
+
+      final Finder startCase = find.widgetWithText(AppButton, 'Start case');
+      await tester.ensureVisible(startCase);
+      await tester.tap(startCase);
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('CASE DETAIL'), findsNothing);
+      expect(find.text('UPDATE THEATER STAGE'), findsNothing);
+      expect(
+        find.text(
+          'Moves the case into theater at sign-in and records the start time.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Start case'), findsWidgets);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Start case').last);
+      await _pumpAfterAction(tester);
+
+      final List<dynamic> captured = verify(
+        () => repository.updateStage(any(), captureAny()),
+      ).captured;
+      expect(captured, isNotEmpty);
+      final Map<String, Object?> payload =
+          captured.last as Map<String, Object?>;
+      expect(payload['workflow_stage'], 'SIGN_IN');
+      expect(payload['status'], 'IN_PROGRESS');
+      expect(payload['started_at'], isA<String>());
+    },
+  );
+
+  testWidgets(
     'advanced filters omit status/stage on Scheduled; All cases keeps them',
     (WidgetTester tester) async {
       final GoRouter router = await _pumpTheaterWorkspace(

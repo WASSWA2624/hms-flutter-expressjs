@@ -19,6 +19,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Advanced filters **Status** / **Stage** on Scheduled / In theater / Recovery | Same pin as tabs | **Removed** on those tabs — tabs own status/stage; **All cases** keeps both |
 | Mobile list without next-action trailing | Same stage write as desktop column | **Fixed** — `_TheaterNextActionButton` on `AppListTableMobileItem.trailing` |
 | Detail write actions on cancelled / completed cases | No-op chrome | **Removed** — Quick Actions absent for terminal cases |
+| **Start case** next-action opened full **Update stage** form | Same start write; restated stage/status | **Removed** — confirm-only start (`SIGN_IN` / `IN_PROGRESS`); **Update stage** stays for manual edits in detail |
+| Source panel field label repeating panel title | Same source info | **Removed** — panel title + source value text only |
 
 ---
 
@@ -73,8 +75,8 @@ Tab-strip **Refresh** was removed.
 
 - **Next action** (stage label)
   - Location: `next_action` column; mobile `AppListTableMobileItem.trailing`.
-  - Opens modal: Matching mutation dialog (update readiness / start case→stage / anesthesia / post-op / handover).
-  - Immediate result: Selects case then opens mutation dialog directly (no empty detail shell). Persists via controller; snackbar; board refresh.
+  - Opens modal: Matching mutation dialog (update readiness / start case confirm / anesthesia / post-op / handover).
+  - Immediate result: Selects case then opens mutation dialog directly (no empty detail shell). **Start case** confirms sign-in / in-theater without the Update stage form. Persists via controller; snackbar; board refresh.
   - Condition: Write; unauthorized next-action absent (read-only shows label text). Terminal cancelled / completed show status text only.
 
 ### Detail dialog
@@ -108,10 +110,11 @@ Tab-strip **Refresh** was removed.
 - [x] Unauthorized user: Schedule case, next-action writes, and detail write actions absent; no Refresh toolbar. *(widget)*
 - [x] Not-ready case: only **Update readiness** next-action; detail has no Update readiness duplicate. *(widget)*
 - [x] Ready scheduled case: **Start case** next-action; detail omits Update stage. *(widget)*
+- [x] **Start case** opens confirm dialog (not Update stage); confirm persists `SIGN_IN` / `IN_PROGRESS`. *(widget)*
 - [x] No Refresh control on the tab strip; Schedule case remains the sole primary for writers. *(widget)*
 - [x] Advanced filters omit Status / Stage on Scheduled; All cases keeps them. *(widget)*
 - [x] Mobile list shows next-action trailing. *(widget)*
 - [x] Deep link `/theater?id=…&panel=checklist` opens readiness dialog without an empty detail first. *(widget)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared helpers)*
 
-Widget tests in `frontend/test/features/theater/presentation/theater_workspace_page_test.dart` cover toolbar merges, deep-link focused action, next-action omit, read-only absence, advanced-filter omissions, and mobile trailing.
+Widget tests in `frontend/test/features/theater/presentation/theater_workspace_page_test.dart` cover toolbar merges, deep-link focused action, next-action omit, start-case confirm, read-only absence, advanced-filter omissions, and mobile trailing.

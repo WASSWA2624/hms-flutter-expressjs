@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
@@ -34,13 +33,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
   final _codeFocusNode = FocusNode();
-  bool _isSubmitting = false;
-  bool _isResending = false;
-  bool _isVerified = false;
-  bool _awaitingPlatformApproval = false;
   bool _codeResent = false;
+  bool _isResending = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
-  AppFailure? _failure;
 
   @override
   void initState() {
@@ -49,6 +44,17 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     if (initialCode != null && RegExp(r'^\d{6}$').hasMatch(initialCode)) {
       _codeController.text = initialCode;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      // Fresh visit: drop sibling-route failure / reset shells from shared auth state.
+      final AuthController auth = ref.read(authControllerProvider.notifier);
+      auth.clearFailure();
+      auth.clearIdentifyTenants();
+      auth.clearPasswordResetSubmitted();
+      auth.clearEmailVerificationCompleted();
+    });
   }
 
   @override
@@ -63,13 +69,11 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     final theme = Theme.of(context);
     final email = _normalizedEmail;
     final l10n = context.l10n;
+    final state = ref.watch(authControllerProvider);
+    final bool busy = state.isSubmitting;
 
     return AuthPageFrame(
-      title: _isVerified
-          ? (_awaitingPlatformApproval
-                ? l10n.authEmailVerifiedTitle
-                : l10n.authEmailVerifiedTitle)
-          : l10n.authVerifyEmailTitle,
+      title: l10n.authVerifyEmailTitle,
       subtitle: _bodyText(l10n, email),
       maxWidth: 460,
       child: Form(
@@ -89,64 +93,55 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (_failure != null) ...<Widget>[
+            if (state.failure != null) ...<Widget>[
               AppFormInformationBanner.failure(
                 context: context,
-                failure: _failure!,
+                failure: state.failure!,
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (_isVerified) ...<Widget>[
-              if (!_awaitingPlatformApproval)
-                AuthPrimaryButton(
-                  label: l10n.authLoginActionLabel,
-                  leadingIcon: Icons.login_rounded,
-                  onPressed: () => context.go(AppRoutes.login.location()),
+            AppTextField(
+              controller: _codeController,
+              labelText: l10n.authVerificationCodeLabel,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              validator: AppValidators.compose<String>([
+                AppValidators.requiredText(l10n.validationRequired),
+                AppValidators.minLength(
+                  6,
+                  l10n.authVerificationCodeInvalidMessage,
+                  allowEmpty: false,
                 ),
-            ] else ...<Widget>[
-              AppTextField(
-                controller: _codeController,
-                labelText: l10n.authVerificationCodeLabel,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                validator: AppValidators.compose<String>([
-                  AppValidators.requiredText(l10n.validationRequired),
-                  AppValidators.minLength(
-                    6,
-                    l10n.authVerificationCodeInvalidMessage,
-                    allowEmpty: false,
-                  ),
-                ]),
-                isRequired: true,
-                onChanged: (_) => _clearFormFeedback(),
-                onFocusChanged: _handleFieldFocusChanged,
-                focusNode: _codeFocusNode,
-                enabled: !_isSubmitting && !_isResending,
-                onFieldSubmitted: (_) => _verifyCode(),
-              ),
-              SizedBox(height: theme.spacing.lg),
-              AuthPrimaryButton(
-                label: l10n.authVerifyEmailActionLabel,
-                leadingIcon: Icons.mark_email_read_outlined,
-                isLoading: _isSubmitting,
-                onPressed: _isResending ? null : _verifyCode,
-              ),
-              SizedBox(height: theme.spacing.sm),
-              AppButton.secondary(
-                label: l10n.authSendNewCodeActionLabel,
-                leadingIcon: Icons.refresh,
-                isLoading: _isResending,
-                fullWidth: true,
-                onPressed: email == null || _isSubmitting ? null : _resendCode,
-              ),
-            ],
+              ]),
+              isRequired: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _codeFocusNode,
+              enabled: !busy,
+              onFieldSubmitted: (_) => _verifyCode(),
+            ),
+            SizedBox(height: theme.spacing.lg),
+            AuthPrimaryButton(
+              label: l10n.authVerifyEmailActionLabel,
+              leadingIcon: Icons.mark_email_read_outlined,
+              isLoading: busy && !_isResending,
+              onPressed: _isResending ? null : _verifyCode,
+            ),
+            SizedBox(height: theme.spacing.sm),
+            AppButton.secondary(
+              label: l10n.authSendNewCodeActionLabel,
+              leadingIcon: Icons.refresh,
+              isLoading: _isResending,
+              fullWidth: true,
+              onPressed: email == null || busy ? null : _resendCode,
+            ),
             AuthTextLink(
               label: l10n.authBackToLoginActionLabel,
-              onPressed: _isSubmitting || _isResending
+              onPressed: busy
                   ? null
                   : () => context.go(AppRoutes.login.location()),
             ),
@@ -165,12 +160,6 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   }
 
   String _bodyText(AppLocalizations l10n, String? email) {
-    if (_isVerified) {
-      return _awaitingPlatformApproval
-          ? l10n.authEmailVerifiedAwaitingApprovalBody
-          : l10n.authEmailVerifiedBody;
-    }
-
     if (widget.reason == 'pending' && email != null) {
       return l10n.authPendingVerificationBody(email);
     }
@@ -183,42 +172,24 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   }
 
   Future<void> _verifyCode() async {
-    _clearFormFeedback();
+    ref.read(authControllerProvider.notifier).clearFailure();
+    setState(() => _codeResent = false);
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
       _enableValidationRefresh();
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-      _codeResent = false;
-    });
-
-    final result = await ref
-        .read(authRepositoryProvider)
+    final bool completed = await ref
+        .read(authControllerProvider.notifier)
         .verifyEmail(token: _codeController.text, email: _normalizedEmail);
-
-    if (!mounted) {
+    if (!mounted || !completed) {
       return;
     }
 
-    result.when(
-      success: (_) {
-        setState(() {
-          _isSubmitting = false;
-          _isVerified = true;
-          _awaitingPlatformApproval = true;
-        });
-      },
-      failure: (failure) {
-        setState(() {
-          _isSubmitting = false;
-          _failure = failure;
-        });
-      },
-    );
+    // Skip the intermediate "email verified" hub: next step is sign-in readiness.
+    // Awaiting-approval copy is shown once on /login.
+    context.go(AppRoutes.login.location());
   }
 
   Future<void> _resendCode() async {
@@ -229,34 +200,22 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
 
     setState(() {
       _isResending = true;
-      _failure = null;
       _codeResent = false;
       _formKey = GlobalKey<FormState>();
       _autovalidateMode = AutovalidateMode.disabled;
     });
 
-    final result = await ref
-        .read(authRepositoryProvider)
+    final bool sent = await ref
+        .read(authControllerProvider.notifier)
         .resendEmailVerification(email: email);
-
     if (!mounted) {
       return;
     }
 
-    result.when(
-      success: (_) {
-        setState(() {
-          _isResending = false;
-          _codeResent = true;
-        });
-      },
-      failure: (failure) {
-        setState(() {
-          _isResending = false;
-          _failure = failure;
-        });
-      },
-    );
+    setState(() {
+      _isResending = false;
+      _codeResent = sent;
+    });
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {
@@ -267,14 +226,12 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   }
 
   void _clearFormFeedback() {
-    if (_failure == null && !_codeResent) {
+    ref.read(authControllerProvider.notifier).clearFailure();
+    if (!_codeResent) {
       return;
     }
 
-    setState(() {
-      _failure = null;
-      _codeResent = false;
-    });
+    setState(() => _codeResent = false);
   }
 
   void _enableValidationRefresh() {

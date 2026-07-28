@@ -727,9 +727,9 @@ class _TheaterCaseDetailBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _DetailLine(
-                label: l10n.theaterSourceContextLabel,
-                value: _sourceContextLabel(l10n, theaterCase),
+              Text(
+                _sourceContextLabel(l10n, theaterCase)!,
+                style: theme.textTheme.bodyMedium,
               ),
               if (theaterCase.procedureName != null)
                 _DetailLine(
@@ -1312,6 +1312,32 @@ Future<void> _showStageDialog(
     return;
   }
   _showMutationResult(context, failure);
+}
+
+/// Minimal start path: confirm sign-in / in-theater without re-picking stage.
+Future<void> _showStartCaseDialog(BuildContext context, WidgetRef ref) async {
+  final AppLocalizations l10n = context.l10n;
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppConfirmActionDialog(
+      title: l10n.theaterStartCaseAction,
+      body: l10n.theaterStartCaseBody,
+      submitLabel: l10n.theaterStartCaseAction,
+      icon: const Icon(Icons.play_arrow_outlined),
+      submitLeadingIcon: Icons.play_arrow_outlined,
+      onConfirm: () => ref
+          .read(theaterWorkspaceControllerProvider.notifier)
+          .updateStage(<String, Object?>{
+            'workflow_stage': 'SIGN_IN',
+            'status': 'IN_PROGRESS',
+            'started_at': DateTime.now().toUtc().toIso8601String(),
+          }),
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
+  }
 }
 
 Future<void> _showHandoverDialog(BuildContext context, WidgetRef ref) async {

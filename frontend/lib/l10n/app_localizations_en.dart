@@ -2478,6 +2478,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterStartCaseAction => 'Start case';
 
   @override
+  String get theaterStartCaseBody =>
+      'Moves the case into theater at sign-in and records the start time.';
+
+  @override
   String get theaterChecklistTitle => 'Readiness checklist';
 
   @override

@@ -37,11 +37,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         return;
       }
       // Fresh visit: drop sibling-route failure / reset shells from shared auth state.
-      // Surface password-reset success once (from /reset-password) without a hub page.
+      // Surface one-shot success from /reset-password or /verify-email without a hub page.
       final AuthController auth = ref.read(authControllerProvider.notifier);
-      final bool showResetCompleted = ref
-          .read(authControllerProvider)
-          .passwordResetCompleted;
+      final authState = ref.read(authControllerProvider);
+      final bool showResetCompleted = authState.passwordResetCompleted;
+      final bool showEmailVerified = authState.emailVerificationCompleted;
       auth.clearFailure();
       auth.clearIdentifyTenants();
       auth.clearPasswordResetSubmitted();
@@ -53,6 +53,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             content: Text(
               '${l10n.authResetPasswordCompletedTitle}. '
               '${l10n.authResetPasswordCompletedBody}',
+            ),
+          ),
+        );
+      } else if (showEmailVerified) {
+        auth.clearEmailVerificationCompleted();
+        final l10n = context.l10n;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.authEmailVerifiedTitle}. '
+              '${l10n.authEmailVerifiedAwaitingApprovalBody}',
             ),
           ),
         );

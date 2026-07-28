@@ -17,6 +17,7 @@ final class AuthControllerState {
     this.passwordChanged = false,
     this.passwordResetSubmitted = false,
     this.passwordResetCompleted = false,
+    this.emailVerificationCompleted = false,
     this.identifyTenants = const <AuthTenantOption>[],
   });
 
@@ -26,6 +27,7 @@ final class AuthControllerState {
   final bool passwordChanged;
   final bool passwordResetSubmitted;
   final bool passwordResetCompleted;
+  final bool emailVerificationCompleted;
   final List<AuthTenantOption> identifyTenants;
 
   AuthControllerState copyWith({
@@ -36,6 +38,7 @@ final class AuthControllerState {
     bool? passwordChanged,
     bool? passwordResetSubmitted,
     bool? passwordResetCompleted,
+    bool? emailVerificationCompleted,
     List<AuthTenantOption>? identifyTenants,
     bool clearIdentifyTenants = false,
   }) {
@@ -49,6 +52,8 @@ final class AuthControllerState {
           passwordResetSubmitted ?? this.passwordResetSubmitted,
       passwordResetCompleted:
           passwordResetCompleted ?? this.passwordResetCompleted,
+      emailVerificationCompleted:
+          emailVerificationCompleted ?? this.emailVerificationCompleted,
       identifyTenants: clearIdentifyTenants
           ? const <AuthTenantOption>[]
           : identifyTenants ?? this.identifyTenants,
@@ -92,6 +97,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     }
 
     state = state.copyWith(passwordResetCompleted: false);
+  }
+
+  void clearEmailVerificationCompleted() {
+    if (!state.emailVerificationCompleted) {
+      return;
+    }
+
+    state = state.copyWith(emailVerificationCompleted: false);
   }
 
   Future<bool> login({
@@ -314,6 +327,60 @@ final class AuthController extends Notifier<AuthControllerState> {
           clearFailure: true,
           passwordResetCompleted: true,
         );
+        return true;
+      },
+      failure: (AppFailure failure) {
+        state = state.copyWith(isSubmitting: false, failure: failure);
+        return false;
+      },
+    );
+  }
+
+  Future<bool> verifyEmail({required String token, String? email}) async {
+    if (state.isSubmitting) {
+      return false;
+    }
+
+    state = state.copyWith(
+      isSubmitting: true,
+      clearFailure: true,
+      emailVerificationCompleted: false,
+    );
+
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyEmail(token: token, email: email);
+
+    return result.when(
+      success: (_) {
+        state = state.copyWith(
+          isSubmitting: false,
+          clearFailure: true,
+          emailVerificationCompleted: true,
+        );
+        return true;
+      },
+      failure: (AppFailure failure) {
+        state = state.copyWith(isSubmitting: false, failure: failure);
+        return false;
+      },
+    );
+  }
+
+  Future<bool> resendEmailVerification({required String email}) async {
+    if (state.isSubmitting) {
+      return false;
+    }
+
+    state = state.copyWith(isSubmitting: true, clearFailure: true);
+
+    final result = await ref
+        .read(authRepositoryProvider)
+        .resendEmailVerification(email: email);
+
+    return result.when(
+      success: (_) {
+        state = state.copyWith(isSubmitting: false, clearFailure: true);
         return true;
       },
       failure: (AppFailure failure) {

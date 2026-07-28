@@ -418,7 +418,8 @@ Future<void> _runTheaterNextAction(
     case TheaterNextActionKind.updateReadiness:
       await _showChecklistDialog(context, ref);
     case TheaterNextActionKind.startCase:
-      await _showStageDialog(context, ref, active);
+      // Confirm-only: do not open Update stage (would restate status/stage).
+      await _showStartCaseDialog(context, ref);
     case TheaterNextActionKind.anesthesia:
       await _showAnesthesiaDialog(context, ref, active);
     case TheaterNextActionKind.postOp:

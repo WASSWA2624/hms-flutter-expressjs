@@ -1623,33 +1623,34 @@ class _DetailActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppQuickActions(
-      title: _SubscriptionsText.quickActions,
-      extraActions: <Widget>[
-        if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
-          AppButton.secondary(
-            label: _SubscriptionsText.editSubscription,
-            leadingIcon: Icons.edit_outlined,
-            enabled: !state.isSaving,
-            onPressed: () =>
-                _showEditSubscriptionDialog(context, ref, state, item),
-          ),
+    final List<Widget> actions = <Widget>[
+      if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
+        AppButton.secondary(
+          label: _SubscriptionsText.editSubscription,
+          leadingIcon: Icons.edit_outlined,
+          enabled: !state.isSaving,
+          onPressed: () =>
+              _showEditSubscriptionDialog(context, ref, state, item),
+        ),
+        if (item.canRenewSubscription)
           AppButton.secondary(
             label: _SubscriptionsText.renew,
             leadingIcon: Icons.event_repeat_outlined,
-            enabled: item.canRenewSubscription && !state.isSaving,
+            enabled: !state.isSaving,
             onPressed: () => _showRenewalDialog(context, ref),
           ),
+        if (state.lookups.plans.isNotEmpty)
           AppButton.secondary(
             label: _SubscriptionsText.changePlan,
             leadingIcon: Icons.swap_horiz_outlined,
-            enabled: !state.isSaving && state.lookups.plans.isNotEmpty,
+            enabled: !state.isSaving,
             onPressed: () => _showPlanChangeDialog(context, ref, state),
           ),
+        if (item.canActivateSubscription)
           AppButton.secondary(
             label: _SubscriptionsText.activate,
             leadingIcon: Icons.play_circle_outline,
-            enabled: item.canActivateSubscription && !state.isSaving,
+            enabled: !state.isSaving,
             onPressed: () => _submitAndNotify(
               context,
               ref
@@ -1657,48 +1658,56 @@ class _DetailActions extends ConsumerWidget {
                   .activateSelectedSubscription(),
             ),
           ),
+        if (item.canCancelSubscription)
           AppButton.secondary(
             label: _SubscriptionsText.cancelSubscription,
             leadingIcon: Icons.block_outlined,
-            enabled: item.canCancelSubscription && !state.isSaving,
+            enabled: !state.isSaving,
             onPressed: () => _showCancelSubscriptionDialog(context, ref),
           ),
-        ],
-        if (item.resource == SubscriptionResource.moduleSubscriptions)
-          AppButton.secondary(
-            label: item.isActive == true
-                ? _SubscriptionsText.disableModule
-                : _SubscriptionsText.enableModule,
-            leadingIcon: item.isActive == true
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-            enabled: item.canToggleModule && !state.isSaving,
-            onPressed: () => _showToggleModuleDialog(context, ref, item),
-          ),
-        if (item.resource == SubscriptionResource.licenses)
-          AppButton.secondary(
-            label: _SubscriptionsText.updateLicense,
-            leadingIcon: Icons.key_outlined,
-            enabled: !state.isSaving,
-            onPressed: () =>
-                _showLicenseDialog(context, ref, state, initial: item),
-          ),
-        if (item.resource ==
-            SubscriptionResource.subscriptionInvoices) ...<Widget>[
+      ],
+      if (item.resource == SubscriptionResource.moduleSubscriptions &&
+          item.canToggleModule)
+        AppButton.secondary(
+          label: item.isActive == true
+              ? _SubscriptionsText.disableModule
+              : _SubscriptionsText.enableModule,
+          leadingIcon: item.isActive == true
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          enabled: !state.isSaving,
+          onPressed: () => _showToggleModuleDialog(context, ref, item),
+        ),
+      if (item.resource == SubscriptionResource.licenses)
+        AppButton.secondary(
+          label: _SubscriptionsText.updateLicense,
+          leadingIcon: Icons.key_outlined,
+          enabled: !state.isSaving,
+          onPressed: () =>
+              _showLicenseDialog(context, ref, state, initial: item),
+        ),
+      if (item.resource == SubscriptionResource.subscriptionInvoices) ...<Widget>[
+        if (item.canCollectInvoice)
           AppButton.secondary(
             label: _SubscriptionsText.collectInvoice,
             leadingIcon: Icons.payments_outlined,
-            enabled: item.canCollectInvoice && !state.isSaving,
+            enabled: !state.isSaving,
             onPressed: () => _showCollectInvoiceDialog(context, ref),
           ),
-          AppButton.secondary(
-            label: _SubscriptionsText.retryInvoice,
-            leadingIcon: Icons.replay_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _showRetryInvoiceDialog(context, ref),
-          ),
-        ],
+        AppButton.secondary(
+          label: _SubscriptionsText.retryInvoice,
+          leadingIcon: Icons.replay_outlined,
+          enabled: !state.isSaving,
+          onPressed: () => _showRetryInvoiceDialog(context, ref),
+        ),
       ],
+    ];
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return AppQuickActions(
+      title: _SubscriptionsText.quickActions,
+      extraActions: actions,
     );
   }
 }
@@ -1712,69 +1721,129 @@ class _DetailFields extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppInfoTileGrid(
       emptyValue: _SubscriptionsText.notRecorded,
-      items: <AppInfoTileData>[
-        AppInfoTileData(
-          label: _SubscriptionsText.tenant,
-          value: item.tenantLabel ?? item.tenantId,
-          icon: Icons.business_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.plan,
-          value: item.planLabel ?? item.name,
-          icon: Icons.workspace_premium_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.module,
-          value: item.moduleLabel ?? item.moduleSlug,
-          icon: Icons.extension_outlined,
-        ),
-        if (item.resource ==
-            SubscriptionResource.subscriptionPlans) ...<AppInfoTileData>[
-          AppInfoTileData(
-            label: _SubscriptionsText.monthlyPriceUsd,
-            value: _money(context, item.resolvedMonthlyPrice, item.currency),
-            icon: Icons.payments_outlined,
-          ),
-          AppInfoTileData(
-            label: _SubscriptionsText.annualPriceUsd,
-            value: _money(context, item.resolvedAnnualPrice, item.currency),
-            icon: Icons.calendar_month_outlined,
-          ),
-        ] else ...<AppInfoTileData>[
-          AppInfoTileData(
-            label: _SubscriptionsText.billingCycle,
-            value: _statusLabel(item.billingCycle),
-            icon: Icons.calendar_month_outlined,
-          ),
-          AppInfoTileData(
-            label: _SubscriptionsText.amount,
-            value: _amountOrLimit(context, item),
-            icon: Icons.payments_outlined,
-          ),
-        ],
-        AppInfoTileData(
-          label: _SubscriptionsText.fitStatus,
-          value: _statusLabel(item.fitStatus),
-          icon: Icons.monitor_heart_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.startDate,
-          value: _date(context, item.startDate),
-          icon: Icons.play_arrow_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.endDate,
-          value: _date(context, item.endDate ?? item.expiresAt),
-          icon: Icons.event_busy_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.updated,
-          value: _date(context, item.updatedAt),
-          icon: Icons.update_outlined,
-        ),
-      ],
+      items: _detailFieldItems(context, item),
     );
   }
+}
+
+List<AppInfoTileData> _detailFieldItems(
+  BuildContext context,
+  SubscriptionItem item,
+) {
+  final AppInfoTileData tenant = AppInfoTileData(
+    label: _SubscriptionsText.tenant,
+    value: item.tenantLabel ?? item.tenantId,
+    icon: Icons.business_outlined,
+  );
+  final AppInfoTileData plan = AppInfoTileData(
+    label: _SubscriptionsText.plan,
+    value: item.planLabel ?? item.name,
+    icon: Icons.workspace_premium_outlined,
+  );
+  final AppInfoTileData updated = AppInfoTileData(
+    label: _SubscriptionsText.updated,
+    value: _date(context, item.updatedAt),
+    icon: Icons.update_outlined,
+  );
+
+  return switch (item.resource) {
+    SubscriptionResource.subscriptions => <AppInfoTileData>[
+      tenant,
+      plan,
+      AppInfoTileData(
+        label: _SubscriptionsText.billingCycle,
+        value: _statusLabel(item.billingCycle),
+        icon: Icons.calendar_month_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.amount,
+        value: _amountOrLimit(context, item),
+        icon: Icons.payments_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.fitStatus,
+        value: _statusLabel(item.fitStatus),
+        icon: Icons.monitor_heart_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.startDate,
+        value: _date(context, item.startDate),
+        icon: Icons.play_arrow_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.endDate,
+        value: _date(context, item.endDate ?? item.expiresAt),
+        icon: Icons.event_busy_outlined,
+      ),
+      updated,
+    ],
+    SubscriptionResource.moduleSubscriptions => <AppInfoTileData>[
+      tenant,
+      plan,
+      AppInfoTileData(
+        label: _SubscriptionsText.module,
+        value: item.moduleLabel ?? item.moduleSlug,
+        icon: Icons.extension_outlined,
+      ),
+      updated,
+    ],
+    SubscriptionResource.subscriptionInvoices => <AppInfoTileData>[
+      tenant,
+      plan,
+      AppInfoTileData(
+        label: _SubscriptionsText.amount,
+        value: _amountOrLimit(context, item),
+        icon: Icons.payments_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.billingCycle,
+        value: _statusLabel(item.billingCycle),
+        icon: Icons.calendar_month_outlined,
+      ),
+      updated,
+    ],
+    SubscriptionResource.licenses => <AppInfoTileData>[
+      tenant,
+      AppInfoTileData(
+        label: _SubscriptionsText.licenseType,
+        value: _statusLabel(item.licenseType),
+        icon: Icons.key_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.startDate,
+        value: _date(context, item.startDate ?? item.issuedAt),
+        icon: Icons.play_arrow_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.endDate,
+        value: _date(context, item.endDate ?? item.expiresAt),
+        icon: Icons.event_busy_outlined,
+      ),
+      updated,
+    ],
+    SubscriptionResource.modules => <AppInfoTileData>[
+      AppInfoTileData(
+        label: _SubscriptionsText.module,
+        value: item.moduleLabel ?? item.name ?? item.code,
+        icon: Icons.extension_outlined,
+      ),
+      updated,
+    ],
+    SubscriptionResource.subscriptionPlans => <AppInfoTileData>[
+      plan,
+      AppInfoTileData(
+        label: _SubscriptionsText.monthlyPriceUsd,
+        value: _money(context, item.resolvedMonthlyPrice, item.currency),
+        icon: Icons.payments_outlined,
+      ),
+      AppInfoTileData(
+        label: _SubscriptionsText.annualPriceUsd,
+        value: _money(context, item.resolvedAnnualPrice, item.currency),
+        icon: Icons.calendar_month_outlined,
+      ),
+      updated,
+    ],
+  };
 }
 
 class _TimelinePanel extends StatelessWidget {
@@ -2585,6 +2654,7 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
   String? _tenantId;
   String? _planId;
   String _status = _SubscriptionStatuses.active;
+  bool _statusIsCancelled = false;
 
   @override
   void initState() {
@@ -2592,7 +2662,13 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
     final SubscriptionItem? initial = widget.initial;
     _tenantId = initial?.tenantId ?? widget.initialTenantId;
     _planId = initial?.planId;
-    _status = initial?.status ?? _SubscriptionStatuses.active;
+    final String initialStatus =
+        initial?.status ?? _SubscriptionStatuses.active;
+    _statusIsCancelled =
+        initialStatus.trim().toUpperCase() == _SubscriptionStatuses.cancelled;
+    _status = _statusIsCancelled
+        ? _SubscriptionStatuses.cancelled
+        : initialStatus;
     _startDate = initial?.startDate;
     _endDate = initial?.endDate;
   }
@@ -2600,6 +2676,7 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
   @override
   Widget build(BuildContext context) {
     final bool isEdit = widget.initial != null;
+    final ThemeData theme = Theme.of(context);
     return AppDialog(
       title: widget.dialogTitle,
       icon: widget.dialogIcon,
@@ -2629,17 +2706,28 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
               ),
               onChanged: (String? value) => setState(() => _planId = value),
             ),
-          AppSelectField<String>(
-            value: _status,
-            labelText: _SubscriptionsText.status,
-            allowClear: false,
-            options: _subscriptionStatusOptions(),
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _status = value);
-              }
-            },
-          ),
+          if (_statusIsCancelled)
+            AppContentPanel(
+              density: AppContentPanelDensity.compact,
+              child: Text(
+                _SubscriptionsText.cancelledStatusEditHint,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            AppSelectField<String>(
+              value: _status,
+              labelText: _SubscriptionsText.status,
+              allowClear: false,
+              options: _subscriptionStatusOptions(includeCancelled: false),
+              onChanged: (String? value) {
+                if (value != null) {
+                  setState(() => _status = value);
+                }
+              },
+            ),
           _subscriptionDateField(
             context: context,
             labelText: _SubscriptionsText.startDate,
@@ -2673,7 +2761,9 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
             SubscriptionDraft(
               tenantId: _tenantId!,
               planId: planId,
-              status: _status,
+              status: _statusIsCancelled
+                  ? _SubscriptionStatuses.cancelled
+                  : _status,
               startDate: _datePayload(_startDate),
               endDate: _datePayload(_endDate),
             ),
@@ -4138,24 +4228,27 @@ List<AppSelectOption<String>> _billingCycleOptions() {
   ];
 }
 
-List<AppSelectOption<String>> _subscriptionStatusOptions() {
-  return const <AppSelectOption<String>>[
-    AppSelectOption<String>(
+List<AppSelectOption<String>> _subscriptionStatusOptions({
+  bool includeCancelled = true,
+}) {
+  return <AppSelectOption<String>>[
+    const AppSelectOption<String>(
       value: _SubscriptionStatuses.active,
       label: _SubscriptionsText.active,
     ),
-    AppSelectOption<String>(
+    const AppSelectOption<String>(
       value: _SubscriptionStatuses.trial,
       label: _SubscriptionsText.trial,
     ),
-    AppSelectOption<String>(
+    const AppSelectOption<String>(
       value: _SubscriptionStatuses.pastDue,
       label: _SubscriptionsText.pastDue,
     ),
-    AppSelectOption<String>(
-      value: _SubscriptionStatuses.cancelled,
-      label: _SubscriptionsText.cancelled,
-    ),
+    if (includeCancelled)
+      const AppSelectOption<String>(
+        value: _SubscriptionStatuses.cancelled,
+        label: _SubscriptionsText.cancelled,
+      ),
   ];
 }
 
@@ -4832,6 +4925,8 @@ abstract final class _SubscriptionsText {
   static const String cancelSubscription = 'Cancel subscription';
   static const String cancelSubscriptionBody =
       'Cancel this subscription? The tenant loses access according to plan rules.';
+  static const String cancelledStatusEditHint =
+      'Status is Cancelled. Use Activate to restore access; this form only updates dates.';
   static const String enableModule = 'Enable module';
   static const String disableModule = 'Disable module';
   static const String collectInvoice = 'Collect invoice';

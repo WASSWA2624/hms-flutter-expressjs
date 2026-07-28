@@ -3229,6 +3229,10 @@
   "@theaterStartCaseAction": {
     "description": "Next-action label for starting a ready scheduled case."
   },
+  "theaterStartCaseBody": "Moves the case into theater at sign-in and records the start time.",
+  "@theaterStartCaseBody": {
+    "description": "Confirmation body for starting a ready scheduled theater case."
+  },
   "theaterChecklistTitle": "Readiness checklist",
   "@theaterChecklistTitle": {
     "description": "Title for theater readiness checklist."

@@ -4798,6 +4798,12 @@ abstract class AppLocalizations {
   /// **'Start case'**
   String get theaterStartCaseAction;
 
+  /// Confirmation body for starting a ready scheduled theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Moves the case into theater at sign-in and records the start time.'**
+  String get theaterStartCaseBody;
+
   /// Title for theater readiness checklist.
   ///
   /// In en, this message translates to:

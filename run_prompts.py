@@ -1,7 +1,7 @@
 """Run each prompt file in prompts/ as a separate Cursor agent chat.
 
 Discovers all .md prompts under prompts/ recursively (excluding prompts/.cursor).
-Runs up to 5 prompts at a time with model=auto. After each prompt finishes
+Runs up to 3 prompts at a time with model=auto. After each prompt finishes
 successfully, commits and pushes any resulting changes to GitHub.
 """
 
@@ -313,52 +313,9 @@ async def run_prompt(
                         "message": last_error,
                     }
 
-                # Keep git failures from re-running a finished agent.
-                try:
-                    async with git_lock:
-                        git_info = await asyncio.to_thread(_commit_and_push, key)
-                except Exception as err:
-                    last_error = _error_text(err)
-                    if attempt < MAX_ATTEMPTS and (
-                        _is_retryable(err) or _is_index_lock_error(last_error)
-                    ):
-                        wait_s = 2 ** (attempt - 1)
-                        print(
-                            f"[RETRY] {key} git attempt {attempt}/{MAX_ATTEMPTS}: "
-                            f"{last_error} (sleep {wait_s}s)",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        await asyncio.sleep(wait_s)
-                        try:
-                            async with git_lock:
-                                git_info = await asyncio.to_thread(
-                                    _commit_and_push, key
-                                )
-                        except Exception as retry_err:
-                            last_error = _error_text(retry_err)
-                            print(
-                                f"[ERROR] {key}: {last_error}",
-                                file=sys.stderr,
-                                flush=True,
-                            )
-                            return {
-                                "file": key,
-                                "status": "error",
-                                "message": last_error,
-                            }
-                    else:
-                        print(
-                            f"[ERROR] {key}: {last_error}",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        return {
-                            "file": key,
-                            "status": "error",
-                            "message": last_error,
-                        }
-
+                # Agent succeeded — git retries live inside _commit_and_push.
+                async with git_lock:
+                    git_info = await asyncio.to_thread(_commit_and_push, key)
                 async with finished_lock:
                     finished.add(key)
                     _save_finished(finished)
