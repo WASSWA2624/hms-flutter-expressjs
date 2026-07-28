@@ -2563,7 +2563,7 @@ class _DepartmentSetupSectionState
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter;
+  String? _statusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -2676,12 +2676,38 @@ class _DepartmentSetupSectionState
   Future<void> _onFiltersChanged(AppSearchBarFilterValue value) async {
     final String? previousTenant = _tenantFilterId;
     _applyServerFilters(value);
+    _statusFilter = value.option('status');
+    _pageRequest = _pageRequest.first();
     final bool tenantChanged = previousTenant != _tenantFilterId;
     if (tenantChanged) {
       await _reloadFacilityOptions();
       _syncFacilityFilterToOptions();
     }
     await _reload(silent: true);
+  }
+
+  void _onSearchChanged(String raw) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final String next = raw.trim();
+      if (next == _searchQuery) {
+        return;
+      }
+      _searchQuery = next;
+      _pageRequest = _pageRequest.first();
+      unawaited(_reload(silent: true));
+    });
+  }
+
+  Future<void> _onPageChanged(AppPageRequest request) async {
+    _pageRequest = request;
+    await _reload(silent: true);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _reloadFacilityOptions() async {
@@ -2703,7 +2729,7 @@ class _DepartmentSetupSectionState
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<FacilityProfile>> result = await repository
-        .listFacilities(request: _listRequest, tenantId: tenantId);
+        .listFacilities(request: _lookupOptionsRequest, tenantId: tenantId);
     if (!mounted) {
       return;
     }
@@ -2774,28 +2800,28 @@ class _DepartmentSetupSectionState
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityDepartmentsShowsTenantFilter(scope)
         ? repository.listTenants(
-            request: _listRequest,
-            includeDeleted: true,
+            request: _lookupOptionsRequest,
           )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityDepartmentsShowsFacilityFilter(scope)
         ? repository.listFacilities(
-            request: _listRequest,
+            request: _lookupOptionsRequest,
             tenantId: scope == TenantFacilityDepartmentsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
-            includeDeleted: true,
           )
         : null;
+    final bool includeDeleted = _statusFilter != 'active';
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
         repository.listDepartments(
-          request: _listRequest,
+          request: _pageRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
+          search: _searchQuery.isEmpty ? null : _searchQuery,
           type: _typeFilter,
           isActive: _isActiveFilter,
-          includeDeleted: true,
+          includeDeleted: includeDeleted,
         );
 
     final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
@@ -2842,10 +2868,19 @@ class _DepartmentSetupSectionState
             facility.id: facility.name,
         };
 
+        List<DepartmentProfile> departments = page.items;
+        if (_statusFilter == 'deleted') {
+          departments = departments
+              .where((DepartmentProfile item) => item.isDeleted)
+              .toList(growable: false);
+        }
         setState(() {
           _loading = false;
           _failure = null;
-          _departments = page.items;
+          _departments = departments;
+          _totalItemCount = _statusFilter == 'deleted'
+              ? departments.length
+              : (page.totalItemCount ?? departments.length);
           _tenantOptions = tenants;
           _facilityOptions = facilities;
           _tenantNamesById = tenantNames;
@@ -3283,7 +3318,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter;
+  String? _statusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -3461,7 +3496,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<FacilityProfile>> result = await repository
-        .listFacilities(request: _listRequest, tenantId: tenantId);
+        .listFacilities(request: _lookupOptionsRequest, tenantId: tenantId);
     if (!mounted) {
       return;
     }
@@ -3535,30 +3570,28 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityUnitsShowsTenantFilter(scope)
         ? repository.listTenants(
-            request: _listRequest,
-            includeDeleted: true,
+            request: _lookupOptionsRequest,
           )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityUnitsShowsFacilityFilter(scope)
         ? repository.listFacilities(
-            request: _listRequest,
+            request: _lookupOptionsRequest,
             tenantId: scope == TenantFacilityUnitsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
-            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
         repository.listDepartments(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
     final Future<Result<AppPage<UnitProfile>>> unitsFuture = repository
         .listUnits(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           departmentId: scopedDepartmentId,
@@ -4069,7 +4102,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter;
+  String? _statusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -4261,7 +4294,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<FacilityProfile>> result = await repository
-        .listFacilities(request: _listRequest, tenantId: tenantId);
+        .listFacilities(request: _lookupOptionsRequest, tenantId: tenantId);
     if (!mounted) {
       return;
     }
@@ -4336,30 +4369,28 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityWardsShowsTenantFilter(scope)
         ? repository.listTenants(
-            request: _listRequest,
-            includeDeleted: true,
+            request: _lookupOptionsRequest,
           )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityWardsShowsFacilityFilter(scope)
         ? repository.listFacilities(
-            request: _listRequest,
+            request: _lookupOptionsRequest,
             tenantId: scope == TenantFacilityWardsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
-            includeDeleted: true,
           )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
         repository.listDepartments(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
         .listWards(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           departmentId: scopedDepartmentId,
@@ -4881,7 +4912,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter;
+  String? _statusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -5061,7 +5092,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<FacilityProfile>> result = await repository
-        .listFacilities(request: _listRequest, tenantId: tenantId);
+        .listFacilities(request: _lookupOptionsRequest, tenantId: tenantId);
     if (!mounted) {
       return;
     }
@@ -5135,8 +5166,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityRoomsShowsTenantFilter(scope)
         ? repository.listTenants(
-            request: _listRequest,
-            includeDeleted: true,
+            request: _lookupOptionsRequest,
           )
         : null;
     final bool loadFacilities =
@@ -5146,7 +5176,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         loadFacilities
         ? repository.listFacilities(
-            request: _listRequest,
+            request: _lookupOptionsRequest,
             tenantId: scope == TenantFacilityRoomsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
@@ -5155,14 +5185,14 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
         : null;
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
         .listWards(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
     final Future<Result<AppPage<RoomProfile>>> roomsFuture = repository
         .listRooms(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           wardId: scopedWardId,
@@ -5681,7 +5711,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   String _searchQuery = '';
-  String? _statusFilter;
+  String? _statusFilter = 'active';
   Timer? _searchDebounce;
 
   bool _loading = true;
@@ -5907,7 +5937,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<FacilityProfile>> result = await repository
-        .listFacilities(request: _listRequest, tenantId: tenantId);
+        .listFacilities(request: _lookupOptionsRequest, tenantId: tenantId);
     if (!mounted) {
       return;
     }
@@ -5982,14 +6012,13 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
         tenantFacilityBedsShowsTenantFilter(scope)
         ? repository.listTenants(
-            request: _listRequest,
-            includeDeleted: true,
+            request: _lookupOptionsRequest,
           )
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
         tenantFacilityBedsShowsFacilityFilter(scope)
         ? repository.listFacilities(
-            request: _listRequest,
+            request: _lookupOptionsRequest,
             tenantId: scope == TenantFacilityBedsListScope.platform
                 ? _tenantFilterId
                 : scopedTenantId,
@@ -5998,20 +6027,20 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
         : null;
     final Future<Result<AppPage<WardProfile>>> wardsFuture = repository
         .listWards(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
     final Future<Result<AppPage<RoomProfile>>> roomsFuture = repository
         .listRooms(
-          request: _listRequest,
+          request: _lookupOptionsRequest,
           tenantId: scopedTenantId,
           facilityId: scopedFacilityId,
           includeDeleted: true,
         );
     final Future<Result<AppPage<BedProfile>>> bedsFuture = repository.listBeds(
-      request: _listRequest,
+      request: _lookupOptionsRequest,
       tenantId: scopedTenantId,
       facilityId: scopedFacilityId,
       wardId: _wardFilterId,
@@ -8045,10 +8074,6 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
 
     // Bounded peer set only — backend confirm_similar remains authoritative.
     await appendMatches(null);
-    final String trimmedName = name.trim();
-    if (trimmedName.isNotEmpty) {
-      await appendMatches(trimmedName);
-    }
 
     return departments;
   }

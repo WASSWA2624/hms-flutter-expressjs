@@ -342,7 +342,14 @@ describe('Tenant Repository', () => {
         deleted_at: null
       });
       prisma.$transaction.mockImplementation(async (callback) => {
+        const emptyMany = jest.fn().mockResolvedValue([]);
+        const emptyUpdateMany = jest.fn().mockResolvedValue({ count: 0 });
         const tx = {
+          bed: { findMany: emptyMany, updateMany: emptyUpdateMany },
+          room: { findMany: emptyMany, updateMany: emptyUpdateMany },
+          unit: { findMany: emptyMany, updateMany: emptyUpdateMany },
+          ward: { findMany: emptyMany, updateMany: emptyUpdateMany },
+          department: { findMany: emptyMany, updateMany: emptyUpdateMany },
           facility: {
             findMany: jest.fn().mockResolvedValue(mockFacilities),
             updateMany: jest.fn().mockResolvedValue({ count: 1 })},
