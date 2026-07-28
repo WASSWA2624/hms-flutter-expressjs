@@ -14197,7 +14197,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biomedicalDisposeTransferAction => 'Dispose or transfer';
 
   @override
-  String get biomedicalPrintReportAction => 'Preview report';
+  String get biomedicalPrintReportAction => 'Print report';
 
   @override
   String get biomedicalRegisterAssetDialogTitle => 'Register equipment';

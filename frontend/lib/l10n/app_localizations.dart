@@ -26269,10 +26269,10 @@ abstract class AppLocalizations {
   /// **'Dispose or transfer'**
   String get biomedicalDisposeTransferAction;
 
-  /// Action label for previewing biomedical report.
+  /// Action label for printing biomedical report.
   ///
   /// In en, this message translates to:
-  /// **'Preview report'**
+  /// **'Print report'**
   String get biomedicalPrintReportAction;
 
   /// Dialog title for registering equipment.

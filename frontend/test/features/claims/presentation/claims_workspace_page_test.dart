@@ -317,7 +317,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).columns.length, 5);
   });
@@ -454,8 +454,13 @@ void main() {
     );
     expect(find.byType(AppListTable<ClaimsQueueItem>), findsNothing);
     // Sole entry points live on the panel — not duplicated on the tab strip.
-    expect(find.byTooltip('Add company'), findsNothing);
-    expect(find.byTooltip('Add scheme'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('Add company'),
+      ),
+      findsNothing,
+    );
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.textContaining('Add company'), findsOneWidget);
     expect(find.textContaining('Add scheme'), findsOneWidget);
@@ -573,7 +578,7 @@ void main() {
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('Record response'), findsWidgets);
-      expect(find.text('Sync status'), findsOneWidget);
+      expect(find.text('Sync insurer status'), findsOneWidget);
       // Parallel always-on shortcuts removed from the detail surface.
       expect(find.text('Submit claim'), findsNothing);
       expect(find.text('Close claim'), findsNothing);

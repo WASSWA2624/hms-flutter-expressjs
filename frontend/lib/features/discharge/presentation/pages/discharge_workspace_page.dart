@@ -29,7 +29,6 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 const AccessRequirement _dischargeClinicalWriteRequirement = AccessRequirement(
   anyRoles: <AppRole>[
@@ -147,7 +146,6 @@ class _DischargeWorkspaceContentState
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _columnVisibilityController;
   late DischargeDeskSection _section;
-  IpdAdmissionSummary? _selectedAdmission;
 
   @override
   void initState() {
@@ -173,7 +171,6 @@ class _DischargeWorkspaceContentState
       final DischargeDeskSection? parsed = _sectionFromQuery(nextSection ?? '');
       if (parsed != null && parsed != _section) {
         _section = parsed;
-        _selectedAdmission = null;
       }
     }
   }
@@ -294,169 +291,6 @@ class _DischargeWorkspaceContentState
     };
   }
 
-  String _primaryActionLabel(
-    AppLocalizations l10n,
-    DischargeDeskSection section,
-  ) {
-    return switch (section) {
-      DischargeDeskSection.all => l10n.dischargeStartPlanAction,
-      DischargeDeskSection.planned => l10n.dischargeManageClearanceAction,
-      DischargeDeskSection.pendingClearance =>
-        l10n.dischargeManageClearanceAction,
-      DischargeDeskSection.completed => l10n.dischargePrintSummaryAction,
-      DischargeDeskSection.followUps => '',
-    };
-  }
-
-  static IconData? _primaryActionIcon(DischargeDeskSection section) {
-    return switch (section) {
-      DischargeDeskSection.followUps => null,
-      DischargeDeskSection.all => Icons.edit_note_outlined,
-      DischargeDeskSection.planned => Icons.fact_check_outlined,
-      DischargeDeskSection.pendingClearance => Icons.fact_check_outlined,
-      DischargeDeskSection.completed => Icons.print_outlined,
-    };
-  }
-
-  IpdAdmissionSummary? _resolveSelectedAdmission(
-    List<IpdAdmissionSummary> rows,
-  ) {
-    final IpdAdmissionSummary? selected = _selectedAdmission;
-    if (selected == null) {
-      return null;
-    }
-    for (final IpdAdmissionSummary item in rows) {
-      if (item.id == selected.id) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  Future<void> _handlePrimaryAction(
-    DischargeWorkspaceState state,
-    List<IpdAdmissionSummary> rows,
-  ) async {
-    final IpdAdmissionSummary? admission =
-        _resolveSelectedAdmission(rows) ?? (rows.isEmpty ? null : rows.first);
-    if (admission == null) {
-      return;
-    }
-    setState(() => _selectedAdmission = admission);
-
-    final bool openClearance =
-        _section == DischargeDeskSection.planned ||
-        _section == DischargeDeskSection.pendingClearance;
-    await _openDischargeDetailDialog(
-      context,
-      ref,
-      state,
-      admission,
-      openClearance: openClearance,
-    );
-  }
-
-  Future<void> _handleCompletedPrintAction(
-    DischargeWorkspaceState state,
-    List<IpdAdmissionSummary> rows,
-  ) async {
-    final IpdAdmissionSummary? admission =
-        _resolveSelectedAdmission(rows) ?? (rows.isEmpty ? null : rows.first);
-    if (admission == null) {
-      return;
-    }
-    setState(() => _selectedAdmission = admission);
-
-    final DischargeWorkspaceController controller = ref.read(
-      dischargeWorkspaceControllerProvider.notifier,
-    );
-    final AppFailure? failure = await controller.selectAdmission(admission);
-    if (!mounted) {
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-    if (failure != null) {
-      return;
-    }
-
-    final DischargeAdmissionDetail? detail = _readDischargeState(
-      ref,
-    )?.selectedDetail;
-    if (detail == null) {
-      return;
-    }
-    if (detail.hasSummary) {
-      await _printDischargeSummary(context, ref, detail);
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    await _openDischargeDetailDialog(context, ref, state, admission);
-  }
-
-  Widget? _buildPrimaryAction(
-    AppLocalizations l10n,
-    DischargeWorkspaceState state,
-    List<IpdAdmissionSummary> rows,
-  ) {
-    if (_section.isFollowUps) {
-      return null;
-    }
-    if (_section == DischargeDeskSection.completed) {
-      return AppTabToolbarPrimary(
-        label: _primaryActionLabel(l10n, _section),
-        icon: _primaryActionIcon(_section),
-        onPressed: rows.isEmpty
-            ? null
-            : () {
-                unawaited(_handleCompletedPrintAction(state, rows));
-              },
-      );
-    }
-
-    return AppAccessActionGate(
-      requirement: _dischargeClinicalWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppTabToolbarPrimary(
-          label: _primaryActionLabel(l10n, _section),
-          icon: _primaryActionIcon(_section),
-          enabled: isAllowed && rows.isNotEmpty,
-          onPressed: isAllowed && rows.isNotEmpty
-              ? () {
-                  unawaited(_handlePrimaryAction(state, rows));
-                }
-              : null,
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    DischargeWorkspaceState state,
-    DischargeWorkspaceController controller,
-  ) {
-    return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () {
-                unawaited(() async {
-                  final AppFailure? failure = await controller.refresh();
-                  if (!mounted) {
-                    return;
-                  }
-                  _showFailureIfNeeded(context, failure);
-                }());
-              },
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -506,15 +340,12 @@ class _DischargeWorkspaceContentState
                   if (section.name == tabId) {
                     setState(() {
                       _section = section;
-                      _selectedAdmission = null;
                     });
                     _updateUrlForSection(section);
                     break;
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state, rows),
-              secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
@@ -536,7 +367,6 @@ class _DischargeWorkspaceContentState
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onRowSelected: (IpdAdmissionSummary item) {
-                setState(() => _selectedAdmission = item);
                 unawaited(
                   _openDischargeDetailDialog(context, ref, state, item),
                 );
@@ -651,9 +481,8 @@ Future<void> _openDischargeDetailDialog(
   BuildContext context,
   WidgetRef ref,
   DischargeWorkspaceState fallbackState,
-  IpdAdmissionSummary admission, {
-  bool openClearance = false,
-}) async {
+  IpdAdmissionSummary admission,
+) async {
   final DischargeWorkspaceController controller = ref.read(
     dischargeWorkspaceControllerProvider.notifier,
   );
@@ -691,15 +520,6 @@ Future<void> _openDischargeDetailDialog(
       ],
     ),
   );
-
-  if (openClearance && context.mounted) {
-    await _openDischargePlanningDialog(
-      context,
-      ref,
-      detail,
-      title: Text(l10n.dischargeManageClearanceTitle),
-    );
-  }
 }
 
 DischargeWorkspaceState? _readDischargeState(WidgetRef ref) {
@@ -726,14 +546,16 @@ class _DischargeDetailContent extends ConsumerWidget {
     final DischargeWorkspaceController controller = ref.read(
       dischargeWorkspaceControllerProvider.notifier,
     );
-    final String completeDischargeLabel = clinicalDispositionActionLabel(
-      l10n,
-      sourceQueue: 'IPD',
-      status: detail.summary.admissionStatus,
-      stage: detail.summary.stage,
-      location: detail.summary.location,
-      hasAdmission: true,
-    );
+    final String continueDischargeLabel = detail.hasSummary
+        ? clinicalDispositionActionLabel(
+            l10n,
+            sourceQueue: 'IPD',
+            status: detail.summary.admissionStatus,
+            stage: detail.summary.stage,
+            location: detail.summary.location,
+            hasAdmission: true,
+          )
+        : l10n.dischargeStartPlanAction;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -782,35 +604,25 @@ class _DischargeDetailContent extends ConsumerWidget {
             ),
           ],
           actions: <Widget>[
-            AppButton.secondary(
-              label: detail.hasSummary
-                  ? l10n.dischargeEditSummaryAction
-                  : l10n.dischargeStartPlanAction,
-              leadingIcon: Icons.edit_note_outlined,
-              isLoading: state.isSaving,
-              onPressed: () => _openDischargePlanningDialog(
-                context,
-                ref,
-                detail,
-                title: Text(
-                  detail.hasSummary
-                      ? l10n.dischargeEditSummaryAction
-                      : l10n.dischargeStartPlanAction,
-                ),
+            if (!detail.isCompleted)
+              AppAccessActionGate(
+                requirement: _dischargeClinicalWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppButton.primary(
+                    label: continueDischargeLabel,
+                    leadingIcon: detail.hasSummary
+                        ? Icons.exit_to_app_outlined
+                        : Icons.edit_note_outlined,
+                    isLoading: state.isSaving,
+                    onPressed: () => _openDischargePlanningDialog(
+                      context,
+                      ref,
+                      detail,
+                      title: Text(continueDischargeLabel),
+                    ),
+                  );
+                },
               ),
-            ),
-            AppButton.secondary(
-              label: l10n.dischargeManageClearanceAction,
-              leadingIcon: Icons.fact_check_outlined,
-              isLoading: state.isSaving,
-              enabled: detail.hasSummary && !detail.isCompleted,
-              onPressed: () => _openDischargePlanningDialog(
-                context,
-                ref,
-                detail,
-                title: Text(l10n.dischargeManageClearanceTitle),
-              ),
-            ),
             AppButton.secondary(
               label: l10n.dischargeRequestBillingAction,
               leadingIcon: Icons.receipt_long_outlined,
@@ -822,21 +634,6 @@ class _DischargeDetailContent extends ConsumerWidget {
               leadingIcon: Icons.medication_outlined,
               isLoading: state.isSaving,
               onPressed: () => _openPharmacyDialog(context, controller, state),
-            ),
-            AppButton.primary(
-              label: completeDischargeLabel,
-              leadingIcon: Icons.exit_to_app_outlined,
-              isLoading: state.isSaving,
-              enabled:
-                  detail.hasSummary &&
-                  !detail.isCompleted &&
-                  detail.blockingItems.isEmpty,
-              onPressed: () => _openDischargePlanningDialog(
-                context,
-                ref,
-                detail,
-                title: Text(completeDischargeLabel),
-              ),
             ),
           ],
         ),
@@ -975,7 +772,6 @@ class _ClearanceChecklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final List<DischargeClearanceItem> items = detail.clearanceItems;
     final int firstPendingIndex = items.indexWhere(
       (DischargeClearanceItem item) =>
@@ -985,48 +781,27 @@ class _ClearanceChecklist extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.dischargeClearanceProgressTitle,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+      child: AppWorkflowStepper(
+        semanticLabel: l10n.dischargeClearanceProgressTitle,
+        showDescriptions: false,
+        steps: <AppWorkflowStepItem>[
+          for (var index = 0; index < items.length; index += 1)
+            AppWorkflowStepItem(
+              id: items[index].code.name,
+              label: dischargeClearanceLabel(context, items[index].code),
+              icon: dischargeClearanceIcon(items[index].code),
+              helpText: items[index].reference,
+              state: switch (items[index].state) {
+                DischargeClearanceState.complete =>
+                  AppWorkflowStepState.completed,
+                DischargeClearanceState.unavailable =>
+                  AppWorkflowStepState.unavailable,
+                DischargeClearanceState.pending =>
+                  index == firstPendingIndex
+                      ? AppWorkflowStepState.current
+                      : AppWorkflowStepState.upcoming,
+              },
             ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppWorkflowStepper(
-            semanticLabel: l10n.dischargeClearanceProgressTitle,
-            showDescriptions: false,
-            steps: <AppWorkflowStepItem>[
-              for (var index = 0; index < items.length; index += 1)
-                AppWorkflowStepItem(
-                  id: items[index].code.name,
-                  label: dischargeClearanceLabel(context, items[index].code),
-                  icon: dischargeClearanceIcon(items[index].code),
-                  helpText: items[index].reference,
-                  state: switch (items[index].state) {
-                    DischargeClearanceState.complete =>
-                      AppWorkflowStepState.completed,
-                    DischargeClearanceState.unavailable =>
-                      AppWorkflowStepState.unavailable,
-                    DischargeClearanceState.pending =>
-                      index == firstPendingIndex
-                          ? AppWorkflowStepState.current
-                          : AppWorkflowStepState.upcoming,
-                  },
-                ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              for (final DischargeClearanceItem item in items)
-                SizedBox(width: 230, child: DischargeClearanceTile(item: item)),
-            ],
-          ),
         ],
       ),
     );

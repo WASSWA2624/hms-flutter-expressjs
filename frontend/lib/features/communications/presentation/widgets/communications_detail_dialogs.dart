@@ -44,7 +44,6 @@ Future<void> showCommunicationsNotificationDetailDialog(
         context,
         ref,
         state,
-        notification,
         canWrite,
       ),
     ),
@@ -75,7 +74,6 @@ Future<void> showCommunicationsDeliveryDetailDialog(
       scrollable: true,
       maxWidth: 960,
       content: CommunicationsDeliveryDetailContent(delivery: delivery),
-      actions: _deliveryDialogActions(context, delivery),
     ),
   );
 }
@@ -359,13 +357,15 @@ class CommunicationsLinkedRecordAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? path = communicationsInternalPath(targetPath);
+    if (path == null) {
+      return const SizedBox.shrink();
+    }
     return Align(
       alignment: Alignment.centerLeft,
       child: AppButton.secondary(
         label: context.l10n.communicationsOpenLinkedRecordAction,
         leadingIcon: Icons.open_in_new_outlined,
-        enabled: path != null,
-        onPressed: path == null ? null : () => context.go(path),
+        onPressed: () => context.go(path),
       ),
     );
   }
@@ -404,70 +404,30 @@ List<Widget> _notificationDialogActions(
   BuildContext context,
   WidgetRef ref,
   CommunicationsWorkspaceState state,
-  NotificationItem item,
   bool canWrite,
 ) {
+  // Mark read/unread lives only on the row next-action (sole primary for that
+  // goal). Detail keeps Archive as the secondary destructive path.
+  if (!canWrite) {
+    return const <Widget>[];
+  }
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
   );
   return <Widget>[
-    if (canWrite && !item.isRead)
-      AppButton.secondary(
-        label: context.l10n.communicationsMarkReadAction,
-        leadingIcon: Icons.mark_email_read_outlined,
-        enabled: !state.isSaving,
-        onPressed: () => showCommunicationsConfirmAction(
-          context,
-          title: context.l10n.communicationsMarkReadDialogTitle,
-          body: context.l10n.communicationsMarkNotificationReadDialogBody,
-          submitLabel: context.l10n.communicationsMarkReadAction,
-          icon: const Icon(Icons.mark_email_read_outlined),
-          onConfirm: controller.markSelectedNotificationRead,
-        ),
+    AppButton.secondary(
+      label: context.l10n.communicationsArchiveAction,
+      leadingIcon: Icons.archive_outlined,
+      enabled: !state.isSaving,
+      onPressed: () => showCommunicationsConfirmAction(
+        context,
+        title: context.l10n.communicationsArchiveDialogTitle,
+        body: context.l10n.communicationsArchiveNotificationDialogBody,
+        submitLabel: context.l10n.communicationsArchiveAction,
+        icon: const Icon(Icons.archive_outlined),
+        onConfirm: controller.archiveSelectedNotification,
       ),
-    if (canWrite && item.isRead)
-      AppButton.secondary(
-        label: context.l10n.communicationsMarkUnreadAction,
-        leadingIcon: Icons.mark_email_unread_outlined,
-        enabled: !state.isSaving,
-        onPressed: () => showCommunicationsConfirmAction(
-          context,
-          title: context.l10n.communicationsMarkUnreadDialogTitle,
-          body: context.l10n.communicationsMarkNotificationUnreadDialogBody,
-          submitLabel: context.l10n.communicationsMarkUnreadAction,
-          icon: const Icon(Icons.mark_email_unread_outlined),
-          onConfirm: controller.markSelectedNotificationUnread,
-        ),
-      ),
-    if (canWrite)
-      AppButton.secondary(
-        label: context.l10n.communicationsArchiveAction,
-        leadingIcon: Icons.archive_outlined,
-        enabled: !state.isSaving,
-        onPressed: () => showCommunicationsConfirmAction(
-          context,
-          title: context.l10n.communicationsArchiveDialogTitle,
-          body: context.l10n.communicationsArchiveNotificationDialogBody,
-          submitLabel: context.l10n.communicationsArchiveAction,
-          icon: const Icon(Icons.archive_outlined),
-          onConfirm: controller.archiveSelectedNotification,
-        ),
-      ),
-  ];
-}
-
-List<Widget> _deliveryDialogActions(
-  BuildContext context,
-  NotificationDelivery item,
-) {
-  final String? path = communicationsInternalPath(item.targetPath);
-  return <Widget>[
-    if (path != null)
-      AppButton.secondary(
-        label: context.l10n.communicationsOpenLinkedRecordAction,
-        leadingIcon: Icons.open_in_new_outlined,
-        onPressed: () => context.go(path),
-      ),
+    ),
   ];
 }
 

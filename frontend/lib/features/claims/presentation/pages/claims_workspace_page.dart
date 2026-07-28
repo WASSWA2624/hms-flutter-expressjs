@@ -691,16 +691,21 @@ class _ClaimsQueuePanel extends ConsumerWidget {
                 ),
               ]
             : const <AppSearchBarFilterGroup>[],
-        filterValue: _claimsFilterValue(state.query),
-        hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
-        onFilterChanged: (AppSearchBarFilterValue value) async {
-          final AppFailure? failure = await controller.applyFilter(
-            _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
-          );
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
+        filterValue: section == ClaimsDeskSection.settled
+            ? _claimsFilterValue(state.query)
+            : AppSearchBarFilterValue.empty,
+        hasActiveFilters: section == ClaimsDeskSection.settled &&
+            state.query.filter != ClaimsQueueFilter.all,
+        onFilterChanged: section == ClaimsDeskSection.settled
+            ? (AppSearchBarFilterValue value) async {
+                final AppFailure? failure = await controller.applyFilter(
+                  _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
+                );
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              }
+            : null,
       ),
       previousPageLabel: l10n.claimsPreviousPageLabel,
       nextPageLabel: l10n.claimsNextPageLabel,

@@ -194,15 +194,6 @@ class _CommunicationsWorkspaceContentState
     await showCommunicationsNewDirectMessageDialog(context, ref);
   }
 
-  Future<void> _refreshWorkspace() async {
-    final AppFailure? failure = await ref
-        .read(communicationsWorkspaceControllerProvider.notifier)
-        .refresh();
-    if (mounted && context.mounted) {
-      _showFailureIfNeeded(context, failure);
-    }
-  }
-
   void _scheduleDeepLinkDialog(
     CommunicationsWorkspaceState state, [
     CommunicationsWorkspaceState? previousState,
@@ -283,25 +274,16 @@ class _CommunicationsWorkspaceContentState
     CommunicationsWorkspaceState state,
     bool canWrite,
   ) {
-    return switch (state.query.panel) {
-      CommunicationsPanel.inbox when canWrite => AppTabToolbarPrimary(
-        label: l10n.communicationsNewMessageAction,
-        icon: Icons.add_comment_outlined,
-        onPressed: () => _openNewConversation(context, ref),
-      ),
-      CommunicationsPanel.inbox ||
-      CommunicationsPanel.notifications ||
-      CommunicationsPanel.deliveries ||
-      CommunicationsPanel.templates => AppTabToolbarPrimary(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        enabled: !state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () => unawaited(_refreshWorkspace()),
-      ),
-    };
+    // Tab-strip Refresh was removed as redundant — workspace refreshes after
+    // mutations / realtime / scaffold Try again.
+    if (state.query.panel != CommunicationsPanel.inbox || !canWrite) {
+      return null;
+    }
+    return AppTabToolbarPrimary(
+      label: l10n.communicationsNewMessageAction,
+      icon: Icons.add_comment_outlined,
+      onPressed: () => _openNewConversation(context, ref),
+    );
   }
 
   List<Widget> _buildSecondaryActions(
@@ -318,15 +300,6 @@ class _CommunicationsWorkspaceContentState
         label: l10n.communicationsNewGroupAction,
         icon: Icons.group_add_outlined,
         onPressed: () => showCommunicationsNewGroupDialog(context, ref),
-      ),
-      AppTabToolbarAction(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        enabled: !state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () => unawaited(_refreshWorkspace()),
       ),
     ];
   }
@@ -1121,25 +1094,20 @@ Future<void> _handleNotificationNextAction(
     communicationsWorkspaceControllerProvider.notifier,
   );
   controller.selectNotification(item);
-  final Future<AppFailure?> Function() action = item.isRead
-      ? controller.markSelectedNotificationUnread
-      : controller.markSelectedNotificationRead;
-  await showCommunicationsConfirmAction(
-    context,
-    title: item.isRead
-        ? context.l10n.communicationsMarkUnreadDialogTitle
-        : context.l10n.communicationsMarkReadDialogTitle,
-    body: item.isRead
-        ? context.l10n.communicationsMarkNotificationUnreadDialogBody
-        : context.l10n.communicationsMarkNotificationReadDialogBody,
-    submitLabel: _notificationNextActionLabel(context, item, true),
-    icon: Icon(
-      item.isRead
-          ? Icons.mark_email_unread_outlined
-          : Icons.mark_email_read_outlined,
-    ),
-    onConfirm: action,
-  );
+  // Mark read/unread is non-destructive — skip confirm (Req 4).
+  final AppFailure? failure = item.isRead
+      ? await controller.markSelectedNotificationUnread()
+      : await controller.markSelectedNotificationRead();
+  if (!context.mounted) {
+    return;
+  }
+  if (failure == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.communicationsActionSavedMessage)),
+    );
+    return;
+  }
+  _showFailureIfNeeded(context, failure);
 }
 
 class _DeliveryNextActionCell extends ConsumerWidget {

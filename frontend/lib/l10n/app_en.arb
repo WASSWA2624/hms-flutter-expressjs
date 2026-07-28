@@ -18251,9 +18251,9 @@
   "@biomedicalDisposeTransferAction": {
     "description": "Action label for equipment disposal or transfer."
   },
-  "biomedicalPrintReportAction": "Preview report",
+  "biomedicalPrintReportAction": "Print report",
   "@biomedicalPrintReportAction": {
-    "description": "Action label for previewing biomedical report."
+    "description": "Action label for printing biomedical report."
   },
   "biomedicalRegisterAssetDialogTitle": "Register equipment",
   "@biomedicalRegisterAssetDialogTitle": {

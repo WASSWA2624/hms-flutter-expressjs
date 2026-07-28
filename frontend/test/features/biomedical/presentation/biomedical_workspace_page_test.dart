@@ -282,6 +282,19 @@ void main() {
     await _pumpBiomedicalWorkspace(tester, repository: repository);
 
     expect(find.byTooltip('Register asset'), findsOneWidget);
+    expect(find.byTooltip('Create work order'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Overdue PM'), findsNothing);
+    expect(find.byTooltip('Open work orders'), findsNothing);
+    expect(find.byTooltip('Critical downtime'), findsNothing);
+    expect(find.byTooltip('Active recalls'), findsNothing);
+    expect(find.byTooltip('Report fault'), findsNothing);
+
+    await tester.tap(find.text('Overview').first);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.text('Preventive').first);
     await tester.pumpAndSettle();
@@ -298,13 +311,102 @@ void main() {
     expect(find.byTooltip('Create work order'), findsNothing);
     expect(find.byTooltip('Schedule maintenance'), findsNothing);
     expect(find.byTooltip('Record calibration'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsWidgets);
+    expect(find.byTooltip('Report fault'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.text('Analytics').first);
     await tester.pumpAndSettle();
     expect(find.byTooltip('Register asset'), findsNothing);
     expect(find.byTooltip('Create work order'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsWidgets);
+    expect(find.byTooltip('Report fault'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
+  });
+
+  testWidgets('unauthorized write policy hides mutation primaries', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    _stubWorkspace(repository);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/biomedical',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biomedical',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: BiomedicalWorkspacePage());
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          biomedicalRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            AppAccessPolicy.fromSession(
+              AuthSession(
+                tokens: SessionTokens(accessToken: 'access-token'),
+                user: const AuthUserProfile(roles: <String>['BIOMED_VIEWER']),
+                permissions: <AppPermission>{
+                  AppPermissions.biomedRead,
+                  AppPermissions.operationsRead,
+                },
+                moduleEntitlements: const <AppModuleEntitlement>[
+                  AppModuleEntitlement(
+                    code: 'biomedical-engineering-suite',
+                    licenseStatus: 'ACTIVE',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsNothing);
+    expect(find.byTooltip('Report fault'), findsNothing);
+
+    await tester.tap(find.text('Support').first);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Report fault'), findsNothing);
+  });
+
+  testWidgets('detail omits decorative related badges and preview shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBiomedicalWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Defibrillator'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    // Related-section titles were badge-only restatements of quick actions.
+    expect(find.text('Lifecycle'), findsNothing);
+    expect(find.text('Maintenance'), findsNothing);
+    expect(find.text('Preview report'), findsNothing);
+    expect(find.text('Print report'), findsOneWidget);
   });
 
   testWidgets('preventive tab shows next due and next action columns', (
@@ -416,6 +518,5 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Registry'), findsWidgets);
-    expect(find.text('Work orders'), findsWidgets);
   });
 }

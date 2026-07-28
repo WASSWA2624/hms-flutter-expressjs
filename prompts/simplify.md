@@ -1,4 +1,4 @@
-# Simplify UX Flows — Target Screen: `/reception`
+# Simplify UX Flows — Target Screen: `/claims`
 
 Audit the target screen for duplicate actions, redundant surfaces, and extra steps; then remove or merge them so each task takes the fewest clear steps a novice can follow. Follow `prompts/.cursor/prompt.mdc`. To reuse, change only the target screen in the title.
 

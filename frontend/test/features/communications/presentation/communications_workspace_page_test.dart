@@ -54,6 +54,15 @@ const NotificationItem _notification = NotificationItem(
   notificationType: 'LAB_ALERT',
 );
 
+final NotificationItem _readNotification = NotificationItem(
+  id: 'notification-1',
+  title: 'Critical lab result',
+  message: 'Potassium critically high',
+  priority: 'HIGH',
+  notificationType: 'LAB_ALERT',
+  readAt: DateTime.utc(2026, 5, 20, 9),
+);
+
 const NotificationDelivery _delivery = NotificationDelivery(
   id: 'delivery-1',
   status: 'FAILED',
@@ -252,7 +261,7 @@ void main() {
     expect(find.text('Critical lab follow-up'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
     expect(find.byTooltip('New group'), findsOneWidget);
-    expect(_tabToolbarRefresh(), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsNothing);
     expect(find.text('Unread threads'), findsNothing);
     expect(find.text('Failed deliveries'), findsNothing);
   });
@@ -270,7 +279,7 @@ void main() {
 
     expect(find.byTooltip('New message'), findsNothing);
     expect(find.byTooltip('New group'), findsNothing);
-    expect(_tabToolbarRefresh(), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsNothing);
     expect(find.text('Critical lab result'), findsWidgets);
   });
 
@@ -285,7 +294,7 @@ void main() {
 
     expect(find.byTooltip('New message'), findsNothing);
     expect(find.byTooltip('New group'), findsNothing);
-    expect(_tabToolbarRefresh(), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsNothing);
     expect(_tab('Messages'), findsOneWidget);
   });
 
@@ -349,7 +358,7 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
-    expect(_tabToolbarRefresh(), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsNothing);
   });
 
   testWidgets('notifications tab exposes Filters and Settings labels', (
@@ -366,7 +375,7 @@ void main() {
     expect(find.text('Table settings'), findsNothing);
   });
 
-  testWidgets('tapping a notification row opens the detail dialog', (
+  testWidgets('tapping a notification row opens detail with Archive only', (
     WidgetTester tester,
   ) async {
     await _pumpCommunicationsWorkspace(tester, repository: repository);
@@ -378,8 +387,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsWidgets);
-    expect(find.text('Mark read'), findsWidgets);
     expect(find.text('Archive'), findsWidgets);
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Mark read'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Mark unread'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('notification Mark read is row next-action without confirm', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.markNotificationRead('notification-1')).thenAnswer(
+      (_) async => Result<NotificationItem>.success(_readNotification),
+    );
+    when(() => repository.getNotificationMetrics()).thenAnswer(
+      (_) async => const Result<NotificationMetrics>.success(
+        NotificationMetrics(
+          total: 1,
+          unread: 0,
+          attentionRequired: 0,
+          failedDeliveries: 1,
+        ),
+      ),
+    );
+
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Notifications'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mark read'), findsWidgets);
+
+    await tester.tap(find.text('Mark read').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mark as read'), findsNothing);
+    verify(() => repository.markNotificationRead('notification-1')).called(1);
+    expect(find.text('Communication action saved.'), findsOneWidget);
   });
 
   testWidgets('deliveries table shows next action entry', (
@@ -392,6 +446,21 @@ void main() {
 
     expect(find.text('View error'), findsWidgets);
     expect(find.text('nurse@example.com'), findsWidgets);
+  });
+
+  testWidgets('delivery detail omits duplicate Open linked footer', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Deliveries'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_tableRowInkWell().first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsWidgets);
+    expect(find.text('Open linked record'), findsNothing);
   });
 
   testWidgets('read-only notification dialog hides write actions', (
