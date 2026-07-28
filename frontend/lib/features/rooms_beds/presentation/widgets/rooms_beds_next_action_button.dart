@@ -27,39 +27,6 @@ class RoomsBedsNextActionCallbacks {
   final RoomsBedsNextActionCallback onOpenDetail;
 }
 
-bool roomsBedsNextActionIsNavigation(RoomsBedsNextActionKind kind) {
-  return kind == RoomsBedsNextActionKind.openHousekeeping ||
-      kind == RoomsBedsNextActionKind.openOperations;
-}
-
-bool roomsBedsNextActionIsWrite(RoomsBedsNextActionKind kind) {
-  return switch (kind) {
-    RoomsBedsNextActionKind.assign ||
-    RoomsBedsNextActionKind.release ||
-    RoomsBedsNextActionKind.completeTransfer ||
-    RoomsBedsNextActionKind.markAvailable => true,
-    RoomsBedsNextActionKind.openHousekeeping ||
-    RoomsBedsNextActionKind.openOperations ||
-    RoomsBedsNextActionKind.viewDetail => false,
-  };
-}
-
-bool roomsBedsNextActionIsAuthorized({
-  required RoomsBedsNextActionKind kind,
-  required bool canAdminBeds,
-  required bool canIpdWrite,
-}) {
-  return switch (kind) {
-    RoomsBedsNextActionKind.assign ||
-    RoomsBedsNextActionKind.release ||
-    RoomsBedsNextActionKind.completeTransfer => canIpdWrite,
-    RoomsBedsNextActionKind.markAvailable => canAdminBeds,
-    RoomsBedsNextActionKind.openHousekeeping ||
-    RoomsBedsNextActionKind.openOperations ||
-    RoomsBedsNextActionKind.viewDetail => true,
-  };
-}
-
 bool roomsBedsNextActionIsEnabled({
   required RoomsBedsNextActionKind kind,
   required BedBoardItem item,

@@ -60,14 +60,67 @@ void main() {
       expect(find.text('Preferences'), findsOneWidget);
       expect(find.text('Accessibility'), findsOneWidget);
       expect(find.text('Account and security'), findsOneWidget);
-      expect(find.text('Administration boundaries'), findsOneWidget);
-      expect(find.text('Tenant and facility setup'), findsOneWidget);
+      // Workspace owns tenant/facility setup; Administration stays absent for HR.
+      expect(find.text('Administration boundaries'), findsNothing);
+      expect(find.text('Tenant and facility setup'), findsNothing);
       expect(find.text('Administrative setup workspace'), findsOneWidget);
-      expect(find.text('Department'), findsWidgets);
-      expect(find.text('Unit'), findsWidgets);
       expect(find.text('Subscriptions'), findsNothing);
       expect(find.text('Users and access'), findsNothing);
-      expect(find.text('User and security settings'), findsNothing);
+
+      await tester.tap(find.text('Administrative setup workspace'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Department'), findsWidgets);
+      expect(find.text('Unit'), findsWidgets);
+      expect(find.text('Quick actions'), findsNothing);
+      expect(find.text('Context summary'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'workspace-authorized admin keeps Subscriptions only under Administration',
+    (WidgetTester tester) async {
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['SUPER_ADMIN'],
+        ),
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(session);
+
+      await pumpLocalizedWidget(
+        tester,
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(policy),
+            initialSessionStateProvider.overrideWithValue(
+              SessionState.authenticated(session: session),
+            ),
+            settingsWorkspaceRepositoryProvider.overrideWithValue(
+              _FakeSettingsWorkspaceRepository(
+                workspace: _hrWorkspace(),
+                referenceData: _referenceData(),
+              ),
+            ),
+          ],
+          child: const SettingsPage(initialQuery: SettingsPageQuery()),
+        ),
+        size: const Size(1280, 1400),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Administration boundaries'), findsOneWidget);
+      expect(find.text('Administrative setup workspace'), findsOneWidget);
+
+      await tester.tap(find.text('Administration boundaries'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Subscriptions'), findsOneWidget);
+      expect(find.text('Tenant and facility setup'), findsNothing);
+      expect(find.text('Users and access'), findsNothing);
     },
   );
 }

@@ -222,7 +222,10 @@ void main() {
     test('allows protected routes with an authenticated session', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(tenantId: 'tenant-1'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['nurse'],
+        ),
       );
       final AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(session: session),
@@ -251,8 +254,15 @@ void main() {
     });
 
     test('allows authenticated users with required permissions', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['nurse'],
+        ),
+      );
       final AppRouteGuards guards = AppRouteGuards(
-        sessionState: const SessionState.authenticated(),
+        sessionState: SessionState.authenticated(session: session),
         routes: <AppRouteData>[permissionRoute],
       );
 

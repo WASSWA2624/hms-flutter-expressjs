@@ -253,6 +253,27 @@ final class ClaimsWorkspaceController
     );
   }
 
+  /// Selects a queue row for stage writes without a detail fetch.
+  ///
+  /// Next-action forms only need the embedded authorization / claim ids;
+  /// [selectItem] remains for opening the full detail dialog.
+  void focusItem(ClaimsQueueItem item) {
+    final ClaimsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(
+      current.copyWith(
+        selectedDetail: ClaimsQueueDetail(
+          item: item,
+          authorization: item.authorization,
+          claim: item.claim,
+        ),
+        clearLastFailure: true,
+      ),
+    );
+  }
+
   Future<AppFailure?> requestPreAuthorization({
     required String coveragePlanId,
   }) async {

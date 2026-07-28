@@ -120,6 +120,7 @@ class _RoomsBedsWorkspaceContentState
   late final AppListTableColumnVisibilityController<BedBoardItem>
   _tableColumnController;
   late RoomsBedsSection _section;
+  String? _openedRouteBedId;
 
   @override
   void initState() {
@@ -128,6 +129,7 @@ class _RoomsBedsWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<BedBoardItem>();
     _section = widget.state.query.section;
+    _scheduleOpenRoutedBed();
   }
 
   @override
@@ -140,6 +142,35 @@ class _RoomsBedsWorkspaceContentState
     if (oldWidget.state.query.section != widget.state.query.section) {
       _section = widget.state.query.section;
     }
+    _scheduleOpenRoutedBed();
+  }
+
+  void _scheduleOpenRoutedBed() {
+    final String? routeBedId = widget.state.query.bedId;
+    final BedBoardItem? selected = widget.state.selectedBed;
+    if (routeBedId == null ||
+        selected == null ||
+        selected.id != routeBedId ||
+        _openedRouteBedId == routeBedId) {
+      return;
+    }
+    _openedRouteBedId = routeBedId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+      unawaited(
+        _openBedDetailDialog(
+          context,
+          ref,
+          widget.state,
+          selected,
+          canAdminBeds: _canAdminBeds(accessPolicy),
+          canIpdWrite: accessPolicy.grants(AppPermissions.clinicalWrite),
+        ),
+      );
+    });
   }
 
   @override
@@ -310,7 +341,7 @@ class _RoomsBedsWorkspaceContentState
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
                 enableDateFilter: false,
                 allFieldsLabel: l10n.roomsBedsAllFilterLabel,
-                filterGroups: _filterGroups(l10n, state),
+                filterGroups: _filterGroups(l10n, state, section: _section),
                 filterValue: _filterValue(state.query, section: _section),
                 hasActiveFilters: _hasActiveFilters(state.query, _section),
                 onFilterChanged: (AppSearchBarFilterValue value) async {
@@ -451,27 +482,9 @@ class _RoomsBedsWorkspaceContentState
                     : () => unawaited(_openAddBedDialog(controller, state)),
               )
             : null,
-      RoomsBedsSection.occupied => AppTabToolbarPrimary(
-        label: l10n.navigationIpdShortLabel,
-        icon: Icons.bed_outlined,
-        semanticLabel: l10n.navigationIpdShortLabel,
-        tooltip: l10n.navigationIpdLabel,
-        onPressed: () => context.go(AppRoutes.ipd.location()),
-      ),
-      RoomsBedsSection.turnover => AppTabToolbarPrimary(
-        label: l10n.roomsBedsOpenHousekeepingAction,
-        icon: Icons.cleaning_services_outlined,
-        semanticLabel: l10n.roomsBedsOpenHousekeepingAction,
-        tooltip: l10n.roomsBedsOpenHousekeepingAction,
-        onPressed: () => context.go(AppRoutes.housekeeping.location()),
-      ),
-      RoomsBedsSection.outOfService => AppTabToolbarPrimary(
-        label: l10n.roomsBedsOpenOperationsAction,
-        icon: Icons.handyman_outlined,
-        semanticLabel: l10n.roomsBedsOpenOperationsAction,
-        tooltip: l10n.roomsBedsOpenOperationsAction,
-        onPressed: () => context.go(AppRoutes.operations.location()),
-      ),
+      RoomsBedsSection.occupied ||
+      RoomsBedsSection.turnover ||
+      RoomsBedsSection.outOfService => null,
     };
   }
 
@@ -682,11 +695,11 @@ class _BedDetailContent extends ConsumerWidget {
             spacing: Theme.of(context).spacing.sm,
             runSpacing: Theme.of(context).spacing.sm,
             children: <Widget>[
-              if (canAdminBeds && !item.isOccupied)
+              if (canAdminBeds && item.isAvailable)
                 AppButton.secondary(
                   label: l10n.roomsBedsReserveAction,
                   leadingIcon: Icons.event_available_outlined,
-                  enabled: !state.isSaving && item.isAvailable,
+                  enabled: !state.isSaving,
                   onPressed: () => _updateBedStatus(
                     context,
                     controller,
@@ -1426,8 +1439,9 @@ bool _hasActiveFilters(RoomsBedsQuery query, RoomsBedsSection section) {
 
 List<AppSearchBarFilterGroup> _filterGroups(
   AppLocalizations l10n,
-  RoomsBedsWorkspaceState state,
-) {
+  RoomsBedsWorkspaceState state, {
+  required RoomsBedsSection section,
+}) {
   return <AppSearchBarFilterGroup>[
     AppSearchBarFilterGroup(
       key: _facilityFilterKey,
@@ -1447,9 +1461,7 @@ List<AppSearchBarFilterGroup> _filterGroups(
       allLabel: l10n.roomsBedsAllRoomsLabel,
       choices: _roomChoices(state.referenceData.rooms),
     ),
-    if (state.query.section == RoomsBedsSection.all ||
-        // Section tab owns status scope; status filter only on All beds.
-        false)
+    if (section == RoomsBedsSection.all)
       AppSearchBarFilterGroup(
         key: _statusFilterKey,
         label: l10n.roomsBedsStatusFilterLabel,

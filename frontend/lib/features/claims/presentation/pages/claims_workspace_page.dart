@@ -746,6 +746,14 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             ),
           ],
           showAvatar: false,
+          // Same stage write as the desktop next-action column (sole primary).
+          trailing: section == ClaimsDeskSection.settled
+              ? null
+              : _ClaimsNextActionButton(
+                  item: item,
+                  section: section,
+                  state: state,
+                ),
         );
       },
     );
@@ -1103,8 +1111,13 @@ class _ClaimsNextActionButton extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: _writeRequirementForItem(item),
       builder: (BuildContext context, bool isAllowed) {
+        final bool isNarrow = MediaQuery.sizeOf(context).width < 600;
         return AppButton.tertiary(
           label: label,
+          icon: isNarrow ? Icons.play_arrow_outlined : null,
+          tooltip: isNarrow ? label : null,
+          // Icon-only on narrow mobile trailing so the control stays tappable.
+          showLabel: !isNarrow,
           enabled: isAllowed,
           onPressed: isAllowed
               ? () => unawaited(
@@ -1137,21 +1150,21 @@ Future<void> _handleClaimsNextAction(
   final ClaimsWorkspaceController controller = ref.read(
     claimsWorkspaceControllerProvider.notifier,
   );
-  final AppFailure? selectFailure = await controller.selectItem(item);
-  if (!context.mounted || selectFailure != null) {
-    if (context.mounted) {
-      _showFailureIfNeeded(context, selectFailure);
-    }
+  // Stage writes only need embedded ids — skip the detail fetch shell.
+  controller.focusItem(item);
+  if (!context.mounted) {
     return;
   }
 
   final AppLocalizations l10n = context.l10n;
+  final ClaimsQueueDetail focused = ClaimsQueueDetail(
+    item: item,
+    authorization: item.authorization,
+    claim: item.claim,
+  );
 
   if (item.isAuthorization) {
-    final ClaimsQueueDetail? detail = _readClaimsState(ref)?.selectedDetail;
-    if (detail != null) {
-      await _openAuthorizationStatusDialog(context, controller, detail);
-    }
+    await _openAuthorizationStatusDialog(context, controller, focused);
     return;
   }
 
@@ -1277,6 +1290,8 @@ class _ClaimsDetailContent extends ConsumerWidget {
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
     );
+    final List<AppPermissionActionItem> detailActions =
+        _detailPermissionActions(context, controller, state, detail);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1323,17 +1338,15 @@ class _ClaimsDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.lg),
-        AppQuickActions(
-          title: l10n.claimsDetailTitle,
-          presentation: AppQuickActionsPresentation.detailPanel,
-          permissionActions: _detailPermissionActions(
-            context,
-            controller,
-            state,
-            detail,
+        // Status-primary writes live on row next-action; detail keeps Sync only.
+        if (detailActions.isNotEmpty) ...<Widget>[
+          AppQuickActions(
+            title: l10n.claimsDetailTitle,
+            presentation: AppQuickActionsPresentation.detailPanel,
+            permissionActions: detailActions,
           ),
-        ),
-        SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.lg),
+        ],
         _BillingImpactPanel(detail: detail),
         SizedBox(height: theme.spacing.lg),
         _RequiredDocumentsPanel(detail: detail),
@@ -2169,22 +2182,11 @@ List<AppPermissionActionItem> _detailPermissionActions(
   ClaimsWorkspaceState state,
   ClaimsQueueDetail detail,
 ) {
+  // Status-primary mutations match row next-action — omit from detail.
+  // Sync is detail-only (no next-action equivalent).
   final AppLocalizations l10n = context.l10n;
   if (detail.isAuthorization) {
-    return <AppPermissionActionItem>[
-      AppPermissionActionItem(
-        requirement: claimsWorkspaceWriteRequirement,
-        label: l10n.claimsUpdateStatusAction,
-        icon: Icons.fact_check_outlined,
-        variant: AppButtonVariant.primary,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(
-            _openAuthorizationStatusDialog(context, controller, detail),
-          );
-        },
-      ),
-    ];
+    return const <AppPermissionActionItem>[];
   }
 
   final String status = detail.item.status.toUpperCase();
@@ -2192,81 +2194,7 @@ List<AppPermissionActionItem> _detailPermissionActions(
     return const <AppPermissionActionItem>[];
   }
 
-  final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
-
-  switch (status) {
-    case 'REJECTED':
-      actions.add(
-        AppPermissionActionItem(
-          requirement: claimsWorkspaceWriteRequirement,
-          label: l10n.claimsResubmitClaimAction,
-          icon: Icons.outbox_outlined,
-          variant: AppButtonVariant.primary,
-          isLoading: state.isSaving,
-          onPressed: () {
-            unawaited(_openSubmitClaimDialog(context, controller));
-          },
-        ),
-      );
-    case 'SUBMITTED':
-    case 'PARTIAL':
-      actions.add(
-        AppPermissionActionItem(
-          requirement: claimsWorkspaceWriteRequirement,
-          label: l10n.claimsRecordResponseAction,
-          icon: Icons.fact_check_outlined,
-          variant: AppButtonVariant.primary,
-          isLoading: state.isSaving,
-          onPressed: () {
-            unawaited(
-              _openClaimResponseDialog(
-                context,
-                controller,
-                initialStatus: 'APPROVED',
-                title: l10n.claimsRecordResponseDialogTitle,
-                submitLabel: l10n.claimsRecordResponseSubmitAction,
-              ),
-            );
-          },
-        ),
-      );
-    case 'APPROVED':
-      actions.add(
-        AppPermissionActionItem(
-          requirement: claimsFinancialApproveRequirement,
-          label: l10n.claimsCloseClaimAction,
-          icon: Icons.task_alt_outlined,
-          variant: AppButtonVariant.primary,
-          isLoading: state.isSaving,
-          onPressed: () {
-            unawaited(
-              _openClaimResponseDialog(
-                context,
-                controller,
-                initialStatus: 'PAID',
-                title: l10n.claimsCloseClaimDialogTitle,
-                submitLabel: l10n.claimsCloseClaimSubmitAction,
-              ),
-            );
-          },
-        ),
-      );
-    default:
-      actions.add(
-        AppPermissionActionItem(
-          requirement: claimsWorkspaceWriteRequirement,
-          label: l10n.claimsSubmitClaimAction,
-          icon: Icons.outbox_outlined,
-          variant: AppButtonVariant.primary,
-          isLoading: state.isSaving,
-          onPressed: () {
-            unawaited(_openSubmitClaimDialog(context, controller));
-          },
-        ),
-      );
-  }
-
-  actions.add(
+  return <AppPermissionActionItem>[
     AppPermissionActionItem(
       requirement: claimsWorkspaceWriteRequirement,
       label: l10n.claimsSyncClaimStatusAction,
@@ -2284,9 +2212,7 @@ List<AppPermissionActionItem> _detailPermissionActions(
         }());
       },
     ),
-  );
-
-  return actions;
+  ];
 }
 
 const String _claimsQueueFilterKey = 'queue';

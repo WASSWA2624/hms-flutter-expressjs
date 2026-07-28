@@ -190,29 +190,12 @@ bool roomsBedsNextActionIsAuthorized({
     RoomsBedsNextActionKind.assign ||
     RoomsBedsNextActionKind.release ||
     RoomsBedsNextActionKind.completeTransfer => canIpdWrite,
-    RoomsBedsNextActionKind.markAvailable ||
+    RoomsBedsNextActionKind.markAvailable => canAdminBeds,
+    // Cross-module navigation stays available to anyone on the board.
     RoomsBedsNextActionKind.openHousekeeping ||
-    RoomsBedsNextActionKind.openOperations => canAdminBeds,
+    RoomsBedsNextActionKind.openOperations ||
     RoomsBedsNextActionKind.viewDetail => true,
   };
-}
-
-/// Authorized board primary; falls back to view-detail when the stage write is
-/// unauthorized so disabled lock chrome never appears for missing permissions.
-RoomsBedsNextActionKind roomsBedsResolvedNextActionKind({
-  required BedBoardItem item,
-  required bool canAdminBeds,
-  required bool canIpdWrite,
-}) {
-  final RoomsBedsNextActionKind kind = roomsBedsPrimaryNextActionKind(item);
-  if (roomsBedsNextActionIsAuthorized(
-    kind: kind,
-    canAdminBeds: canAdminBeds,
-    canIpdWrite: canIpdWrite,
-  )) {
-    return kind;
-  }
-  return RoomsBedsNextActionKind.viewDetail;
 }
 
 String roomsBedsNextActionKindLabel(
@@ -235,17 +218,11 @@ String roomsBedsNextActionKindLabel(
 
 String roomsBedsPrimaryNextActionLabel(
   AppLocalizations l10n,
-  BedBoardItem item, {
-  bool canAdminBeds = true,
-  bool canIpdWrite = true,
-}) {
+  BedBoardItem item,
+) {
   return roomsBedsNextActionKindLabel(
     l10n,
-    roomsBedsResolvedNextActionKind(
-      item: item,
-      canAdminBeds: canAdminBeds,
-      canIpdWrite: canIpdWrite,
-    ),
+    roomsBedsPrimaryNextActionKind(item),
   );
 }
 

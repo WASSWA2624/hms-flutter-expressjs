@@ -7,19 +7,11 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
-import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
-import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
 import 'package:hosspi_hms/features/settings/presentation/state/settings_workspace_state.dart';
-import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
@@ -99,7 +91,7 @@ class _SettingsWorkspaceContent extends StatelessWidget {
       );
     }
 
-    if (workspace.moduleGroups.isEmpty && workspace.summaryCards.isEmpty) {
+    if (workspace.moduleGroups.isEmpty) {
       return AppStateView(
         variant: AppStateViewVariant.empty,
         title: l10n.settingsWorkspaceEmptyTitle,
@@ -112,15 +104,11 @@ class _SettingsWorkspaceContent extends StatelessWidget {
       );
     }
 
-    // One scroll surface: context → readiness → modules (Open/Create sole entries).
+    // One scroll surface: context → filters → modules (Open/Create sole entries).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _SettingsContextSelector(state: state),
-        if (workspace.checklist.items.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          _SettingsChecklistPanel(workspace: workspace),
-        ],
         SizedBox(height: theme.spacing.md),
         _SettingsWorkspaceFilters(state: state),
         SizedBox(height: theme.spacing.md),
@@ -297,100 +285,6 @@ class _SettingsWorkspaceFilters extends ConsumerWidget {
   }
 }
 
-class _SettingsChecklistPanel extends StatelessWidget {
-  const _SettingsChecklistPanel({required this.workspace});
-
-  final SettingsWorkspace workspace;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return AppSectionPanel(
-      title: l10n.settingsWorkspaceChecklistTitle,
-      description:
-          '${workspace.checklist.completedCount}/${workspace.checklist.totalCount} ${l10n.settingsWorkspaceConfiguredLabel}',
-      leadingIcon: Icons.playlist_add_check_outlined,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final SettingsChecklistItem item in workspace.checklist.items)
-              _SettingsChecklistChip(item: item),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsChecklistChip extends StatelessWidget {
-  const _SettingsChecklistChip({required this.item});
-
-  final SettingsChecklistItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String entityKey = item.labelKey.split('.').last;
-    final String label = _labelForKey(l10n, item.labelKey);
-
-    return Semantics(
-      label:
-          '$label — ${item.completed ? l10n.settingsWorkspaceConfiguredStatus : l10n.settingsWorkspaceEmptyStatus}',
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(theme.radius.sm),
-          border: Border.all(
-            color: item.completed
-                ? theme.statusColors.success.withValues(alpha: 0.4)
-                : colorScheme.outlineVariant,
-          ),
-          color: item.completed
-              ? theme.statusColors.success.withValues(alpha: 0.06)
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              _checklistEntityIcon(entityKey),
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Icon(
-              item.completed
-                  ? Icons.check_circle
-                  : Icons.radio_button_unchecked,
-              size: 16,
-              color: item.completed
-                  ? theme.statusColors.success
-                  : colorScheme.outlineVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SettingsModuleGroupsPanel extends StatelessWidget {
   const _SettingsModuleGroupsPanel({required this.groups});
 
@@ -486,28 +380,17 @@ class _SettingsModuleRow extends StatelessWidget {
             spacing: theme.spacing.xs,
             runSpacing: theme.spacing.xs,
             children: <Widget>[
-              AppButton.tertiary(
-                label: canOpen
-                    ? l10n.settingsWorkspaceOpenAction
-                    : l10n.settingsWorkspaceRouteUnavailableLabel,
-                leadingIcon: canOpen ? Icons.open_in_new : Icons.block_outlined,
-                enabled: canOpen,
-                tooltip: canOpen
-                    ? null
-                    : l10n.settingsWorkspaceRouteUnavailableBody,
-                onPressed: canOpen ? () => context.go(route) : null,
-              ),
-              if (module.canCreate)
+              if (canOpen)
                 AppButton.tertiary(
-                  label: canCreate
-                      ? l10n.settingsWorkspaceCreateAction
-                      : l10n.settingsWorkspaceRouteUnavailableLabel,
-                  leadingIcon: canCreate ? Icons.add : Icons.block_outlined,
-                  enabled: canCreate,
-                  tooltip: canCreate
-                      ? null
-                      : l10n.settingsWorkspaceRouteUnavailableBody,
-                  onPressed: canCreate ? () => context.go(createRoute) : null,
+                  label: l10n.settingsWorkspaceOpenAction,
+                  leadingIcon: Icons.open_in_new,
+                  onPressed: () => context.go(route),
+                ),
+              if (canCreate)
+                AppButton.tertiary(
+                  label: l10n.settingsWorkspaceCreateAction,
+                  leadingIcon: Icons.add,
+                  onPressed: () => context.go(createRoute),
                 ),
             ],
           ),
@@ -515,17 +398,6 @@ class _SettingsModuleRow extends StatelessWidget {
       ),
     );
   }
-}
-
-String _summaryValue(AppLocalizations l10n, SettingsSummaryCard card) {
-  return '${card.configuredModules}/${card.totalModules} ${l10n.settingsWorkspaceConfiguredLabel} • ${card.attentionModules} ${l10n.settingsWorkspaceAttentionLabel}';
-}
-
-String _quickActionLabel(AppLocalizations l10n, SettingsQuickAction action) {
-  if (action.labelKey == 'settings.workspace.quickActions.createModule') {
-    return '${l10n.settingsWorkspaceCreateAction} ${_labelForKey(l10n, action.moduleLabelKey)}';
-  }
-  return _labelForKey(l10n, action.labelKey);
 }
 
 String _moduleReason(AppLocalizations l10n, SettingsModuleItem module) {
@@ -554,14 +426,6 @@ AppWorkspaceStatusTone _toneForModule(SettingsModuleState state) {
     SettingsModuleState.configured => AppWorkspaceStatusTone.success,
     SettingsModuleState.attention => AppWorkspaceStatusTone.warning,
     SettingsModuleState.empty => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-IconData _statusIcon(String state) {
-  return switch (state) {
-    'ready' || 'configured' => Icons.check_circle_outline,
-    'attention' => Icons.warning_amber_outlined,
-    _ => Icons.pending_actions_outlined,
   };
 }
 
@@ -632,158 +496,6 @@ String _labelForKey(AppLocalizations l10n, String key) {
     'settings.tabs.oauth-account' => l10n.settingsWorkspaceModuleOauthAccount,
     _ => l10n.settingsWorkspaceUnknownLabel,
   };
-}
-
-IconData _checklistEntityIcon(String entityKey) {
-  return switch (entityKey) {
-    'tenant' => Icons.business_outlined,
-    'facility' => Icons.local_hospital_outlined,
-    'department' => Icons.folder_outlined,
-    'ward' => Icons.home_outlined,
-    'bed' => Icons.bed_outlined,
-    'user' => Icons.person_outline,
-    'role' => Icons.shield_outlined,
-    'permission' => Icons.key_outlined,
-    _ => Icons.layers_outlined,
-  };
-}
-
-Future<void> _handleChecklistOpen(
-  BuildContext context,
-  WidgetRef ref,
-  SettingsChecklistItem item,
-  VoidCallback onRefresh,
-) async {
-  final String entityKey = item.labelKey.split('.').last;
-  bool? result;
-
-  switch (entityKey) {
-    case 'tenant':
-      result = await showManageTenantsDialog(context, ref);
-    case 'facility':
-      result = await showManageFacilitiesDialog(context, ref);
-    case 'user':
-      result = await showManageUsersDialog(context, ref);
-    case 'role' || 'permission':
-      result = await showManageRolesPermissionsDialog(context, ref);
-    default:
-      final String? route = _mappedSettingsRoute(item.route);
-      if (route != null && context.mounted) {
-        context.go(route);
-      }
-      return;
-  }
-
-  if (result == true) {
-    onRefresh();
-  }
-}
-
-Future<void> _handleQuickCreateAction(
-  BuildContext context,
-  WidgetRef ref,
-  SettingsQuickAction action,
-  VoidCallback onRefresh,
-) async {
-  final String entityKey = action.moduleLabelKey.split('.').last;
-
-  switch (entityKey) {
-    case 'tenant':
-      final TenantProfile? saved = await showTenantFacilityTenantFormDialog(
-        context,
-        forceCreate: true,
-      );
-      if (saved != null) onRefresh();
-    case 'facility':
-      final FacilityProfile? saved = await showTenantFacilityFacilityFormDialog(
-        context,
-        requireTenantPicker: true,
-        managementMode: true,
-      );
-      if (saved != null) onRefresh();
-    case 'department':
-      await _openCreateWithSnapshot(
-        context,
-        ref,
-        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
-            showTenantFacilityDepartmentFormDialog(ctx, snapshot),
-        onRefresh,
-      );
-    case 'ward':
-      await _openCreateWithSnapshot(
-        context,
-        ref,
-        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
-            showTenantFacilityWardFormDialog(ctx, snapshot),
-        onRefresh,
-      );
-    case 'bed':
-      await _openCreateWithSnapshot(
-        context,
-        ref,
-        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
-            showTenantFacilityBedFormDialog(ctx, snapshot),
-        onRefresh,
-      );
-    case 'user':
-      final bool? saved = await showAccessAdminCreateUserDialog(context, ref);
-      if (saved == true) onRefresh();
-    case 'role':
-      final AccessAdminItem? created =
-          await showAccessAdminCreateRoleDialog(context, ref);
-      if (created != null) onRefresh();
-    case 'permission':
-      await showAccessAdminWorkspaceDialog(
-        context,
-        initialPanel: AccessAdminPanel.permissions,
-      );
-      onRefresh();
-    default:
-      final String? route = _mappedSettingsRoute(action.route);
-      if (route != null && context.mounted) {
-        context.go(route);
-      }
-  }
-}
-
-Future<void> _openCreateWithSnapshot(
-  BuildContext context,
-  WidgetRef ref,
-  Future<void> Function(BuildContext, FacilitySetupSnapshot) openDialog,
-  VoidCallback onRefresh,
-) async {
-  final Result<FacilitySetupSnapshot> result = await ref.read(
-    tenantFacilitySetupControllerProvider.future,
-  );
-
-  final FacilitySetupSnapshot? snapshot = result.when(
-    success: (FacilitySetupSnapshot s) => s,
-    failure: (_) => null,
-  );
-
-  if (snapshot == null || !context.mounted) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.settingsWorkspaceErrorTitle)),
-      );
-    }
-    return;
-  }
-
-  await openDialog(context, snapshot);
-  onRefresh();
-}
-
-String _dateLabel(DateTime? value) {
-  if (value == null) {
-    return '';
-  }
-  return value
-      .toLocal()
-      .toIso8601String()
-      .replaceFirst('T', ' ')
-      .split('.')
-      .first;
 }
 
 String? _mappedSettingsRoute(String? backendRoute) {

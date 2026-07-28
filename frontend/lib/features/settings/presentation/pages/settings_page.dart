@@ -90,16 +90,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _onSectionTapped(String sectionId) {
-    final String? newSection = _expandedSectionId == sectionId
-        ? null
-        : sectionId;
-    setState(() {
-      _expandedSectionId = newSection;
-    });
-    if (newSection != null) {
-      final SettingsPageQuery newQuery = SettingsPageQuery(tab: newSection);
-      context.go(newQuery.location());
+    // Keep one section selected — collapsing leaves an empty intermediate shell.
+    if (_expandedSectionId == sectionId) {
+      return;
     }
+    setState(() {
+      _expandedSectionId = sectionId;
+    });
+    context.go(SettingsPageQuery(tab: sectionId).location());
   }
 
   void _onAccountPanelChanged(String panel) {

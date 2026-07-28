@@ -334,10 +334,10 @@ void main() {
       );
     });
 
-    test('reserved resolves to assign', () {
+    test('reserved resolves to markAvailable', () {
       expect(
         roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.reserved)),
-        RoomsBedsNextActionKind.assign,
+        RoomsBedsNextActionKind.markAvailable,
       );
     });
 
