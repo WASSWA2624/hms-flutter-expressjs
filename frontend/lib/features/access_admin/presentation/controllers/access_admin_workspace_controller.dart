@@ -106,8 +106,11 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> applyPanel(AccessAdminPanel panel) {
-    final AccessAdminResource resource = _defaultResourceForPanel(panel);
-    return applyResource(resource, panel: panel);
+    final AccessAdminPanel resolved = panel == AccessAdminPanel.overview
+        ? AccessAdminPanel.directory
+        : panel;
+    final AccessAdminResource resource = _defaultResourceForPanel(resolved);
+    return applyResource(resource, panel: resolved);
   }
 
   Future<AppFailure?> applyResource(

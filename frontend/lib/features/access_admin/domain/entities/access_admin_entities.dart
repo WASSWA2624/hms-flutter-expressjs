@@ -16,7 +16,15 @@ enum AccessAdminPanel {
 
   static AccessAdminPanel fromServer(String? value) {
     final String normalized = (value ?? '').trim().toLowerCase();
+    // Overview historically duplicated Directory (same users worklist, no
+    // distinct surface); coerce deep links to Directory.
+    if (normalized == overview.serverValue) {
+      return AccessAdminPanel.directory;
+    }
     for (final AccessAdminPanel panel in values) {
+      if (panel == AccessAdminPanel.overview) {
+        continue;
+      }
       if (panel.serverValue == normalized) {
         return panel;
       }

@@ -1,8 +1,8 @@
 """Run each prompt file in prompts/ as a separate Cursor agent chat.
 
 Discovers all .md prompts under prompts/ recursively (excluding prompts/.cursor).
-Runs them sequentially with model=auto. After each prompt finishes successfully,
-commits and pushes any resulting changes to GitHub.
+Runs up to 5 prompts at a time with model=auto. After each prompt finishes
+successfully, commits and pushes any resulting changes to GitHub.
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ from cursor_sdk import (
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = Path(__file__).parent
 STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
-# Sequential: each prompt commits/pushes against the shared workspace.
-MAX_CONCURRENCY = 1
+# How many prompt agents may run in parallel against the shared workspace.
+MAX_CONCURRENCY = 5
 MAX_ATTEMPTS = 3
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
@@ -162,6 +162,7 @@ async def run_prompt(
     semaphore: asyncio.Semaphore,
     finished: set[str],
     finished_lock: asyncio.Lock,
+    git_lock: asyncio.Lock,
 ) -> dict:
     """Run a single prompt file in a Cursor agent, then commit and push."""
     async with semaphore:
@@ -190,7 +191,8 @@ async def run_prompt(
                 if status != "finished":
                     return {"file": key, "status": status}
 
-                git_info = await asyncio.to_thread(_commit_and_push, key)
+                async with git_lock:
+                    git_info = await asyncio.to_thread(_commit_and_push, key)
                 async with finished_lock:
                     finished.add(key)
                     _save_finished(finished)
@@ -303,6 +305,7 @@ async def main(argv: list[str] | None = None):
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
     finished_lock = asyncio.Lock()
+    git_lock = asyncio.Lock()
     results: list[dict] = [
         {"file": name, "status": "finished"} for name in sorted(finished)
     ]
@@ -312,10 +315,12 @@ async def main(argv: list[str] | None = None):
         client_timeout=BRIDGE_TIMEOUT_SECONDS,
         max_retries=2,
     ) as client:
-        # Sequential gather via semaphore so each commit/push sees a clean workspace.
+        # Up to MAX_CONCURRENCY agents in parallel; git ops are serialized.
         pending_results = await asyncio.gather(
             *(
-                run_prompt(file, client, semaphore, finished, finished_lock)
+                run_prompt(
+                    file, client, semaphore, finished, finished_lock, git_lock
+                )
                 for file in pending
             )
         )

@@ -173,14 +173,6 @@ class _AccessAdminWorkspaceContentState
             _AccessAdminPanelTabBar(
               state: state,
               controller: controller,
-              canWrite: canWrite,
-              secondaryActions: <Widget>[
-                AppTabToolbarAction(
-                  label: context.l10n.commonRefreshActionLabel,
-                  icon: Icons.refresh,
-                  onPressed: controller.refresh,
-                ),
-              ],
               primaryAction: _primaryAction(
                 context,
                 state,
@@ -346,37 +338,17 @@ class _AccessAdminWorkspaceContentState
             ),
             actions: <Widget>[
               if (canWrite &&
-                  selected.resource == AccessAdminResource.roles) ...<Widget>[
+                  selected.resource == AccessAdminResource.roles &&
+                  !selected.isSystemCritical)
                 AppButton.secondary(
-                  label: context.l10n.accessAdminEditRoleAction,
-                  leadingIcon: Icons.edit_outlined,
+                  label: context.l10n.accessAdminDeleteRoleAction,
+                  leadingIcon: Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error,
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    unawaited(() async {
-                      final AccessAdminItem? updated =
-                          await openAccessAdminEditRoleDialog(
-                        context,
-                        ref,
-                        current ?? widget.state,
-                        selected,
-                      );
-                      if (updated != null && context.mounted) {
-                        await _openDetailDialog(context, updated, canWrite);
-                      }
-                    }());
+                    unawaited(_confirmDeleteRole(context, selected));
                   },
                 ),
-                if (!selected.isSystemCritical)
-                  AppButton.secondary(
-                    label: context.l10n.accessAdminDeleteRoleAction,
-                    leadingIcon: Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.error,
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop();
-                      unawaited(_confirmDeleteRole(context, selected));
-                    },
-                  ),
-              ],
               AppButton.secondary(
                 label: context.l10n.commonCloseActionLabel,
                 onPressed: () => Navigator.of(dialogContext).pop(),
@@ -423,147 +395,14 @@ class _AccessAdminWorkspaceContentState
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) async {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController emailController = TextEditingController();
-    final TextEditingController firstNameController = TextEditingController();
-    final TextEditingController lastNameController = TextEditingController();
-    final TextEditingController phoneController = TextEditingController();
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-    String status = 'ACTIVE';
-
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(context.l10n.accessAdminCreateUserAction),
-        icon: const Icon(Icons.person_add_alt_1_outlined),
-        content: Form(
-          key: formKey,
-          child: Column(
-            children: <Widget>[
-              AppTextField(
-                controller: firstNameController,
-                labelText: context.l10n.accessAdminFirstNameLabel,
-                isRequired: true,
-                validator: (String? value) => (value ?? '').trim().isEmpty
-                    ? context.l10n.validationRequired
-                    : null,
-              ),
-              SizedBox(height: Theme.of(context).spacing.md),
-              AppTextField(
-                controller: lastNameController,
-                labelText: context.l10n.accessAdminLastNameLabel,
-              ),
-              SizedBox(height: Theme.of(context).spacing.md),
-              AppTextField(
-                controller: emailController,
-                labelText: context.l10n.accessAdminEmailLabel,
-                validator: (String? value) => (value ?? '').contains('@')
-                    ? null
-                    : context.l10n.validationRequired,
-              ),
-              SizedBox(height: Theme.of(context).spacing.md),
-              AppTextField(
-                controller: titleController,
-                labelText: context.l10n.accessAdminPositionLabel,
-                validator: (String? value) => (value ?? '').trim().isEmpty
-                    ? context.l10n.validationRequired
-                    : null,
-              ),
-              SizedBox(height: Theme.of(context).spacing.md),
-              AppTextField(
-                controller: passwordController,
-                labelText: context.l10n.accessAdminPasswordLabel,
-                obscureText: true,
-                validator: (String? value) => (value ?? '').length >= 8
-                    ? null
-                    : context.l10n.accessAdminPasswordHint,
-              ),
-              SizedBox(height: Theme.of(context).spacing.md),
-              AppSelectField<String>(
-                labelText: context.l10n.accessAdminStatusLabel,
-                value: status,
-                options: state.data.lookups.userStatuses
-                    .map(
-                      (String value) =>
-                          AppSelectOption<String>(value: value, label: value),
-                    )
-                    .toList(growable: false),
-                onChanged: (String? value) {
-                  if (value != null) status = value;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: context.l10n.commonCancelActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-          ),
-          AppButton.primary(
-            label: context.l10n.commonSaveActionLabel,
-            onPressed: () async {
-              if (formKey.currentState?.validate() != true) return;
-              final String? tenantId =
-                  state.query.tenantId ??
-                  state.data.lookups.tenants.firstOrNull?.id;
-              if (tenantId == null) {
-                _showSnack(
-                  context,
-                  context.l10n.accessAdminTenantContextRequiredBody,
-                );
-                return;
-              }
-              final AppFailure? failure = await ref
-                  .read(accessAdminWorkspaceControllerProvider.notifier)
-                  .createUser(
-                    AccessAdminUserDraft(
-                      tenantId: tenantId,
-                      facilityId: state.query.facilityId,
-                      firstName: firstNameController.text.trim(),
-                      lastName: lastNameController.text.trim().isEmpty
-                          ? null
-                          : lastNameController.text.trim(),
-                      email: emailController.text.trim(),
-                      phone: phoneController.text.trim(),
-                      positionTitle: titleController.text.trim(),
-                      password: passwordController.text,
-                      status: status,
-                    ),
-                  );
-              if (!dialogContext.mounted) return;
-              if (failure == null) {
-                Navigator.of(dialogContext).pop();
-              } else {
-                _showSnack(dialogContext, context.l10n.failureMessage(failure));
-              }
-            },
-          ),
-        ],
-      ),
-    );
-
-    emailController.dispose();
-    firstNameController.dispose();
-    lastNameController.dispose();
-    phoneController.dispose();
-    titleController.dispose();
-    passwordController.dispose();
+    await openAccessAdminCreateUserDialog(context, ref, state);
   }
 
   Future<void> _showCreateRoleDialog(
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) async {
-    final AccessAdminItem? created = await openAccessAdminCreateRoleDialog(
-      context,
-      ref,
-      state,
-    );
-    if (created != null && context.mounted) {
-      await ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
-    }
+    await openAccessAdminCreateRoleDialog(context, ref, state);
   }
 
   void _showSnack(BuildContext context, String message) {
@@ -577,15 +416,11 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
   const _AccessAdminPanelTabBar({
     required this.state,
     required this.controller,
-    required this.canWrite,
-    this.secondaryActions = const <Widget>[],
     this.primaryAction,
   });
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
-  final bool canWrite;
-  final List<Widget> secondaryActions;
   final Widget? primaryAction;
 
   @override
@@ -594,9 +429,15 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
     final List<AccessAdminPanel> panels = AccessAdminPanel.values
         .where(
           (AccessAdminPanel panel) =>
-              panel != AccessAdminPanel.registrations || isSuperAdmin,
+              panel != AccessAdminPanel.overview &&
+              (panel != AccessAdminPanel.registrations || isSuperAdmin),
         )
         .toList(growable: false);
+
+    final AccessAdminPanel selectedPanel =
+        state.query.panel == AccessAdminPanel.overview
+        ? AccessAdminPanel.directory
+        : state.query.panel;
 
     return AppTabStrip(
       tabs: <AppTabItem>[
@@ -607,11 +448,10 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
             label: _panelLabel(context, panel),
           ),
       ],
-      selectedId: state.query.panel.serverValue,
+      selectedId: selectedPanel.serverValue,
       onTabTapped: state.isSaving
           ? (_) {}
           : (String tabId) => _onTabTapped(context, tabId),
-      secondaryActions: secondaryActions,
       primaryAction: primaryAction,
     );
   }
@@ -631,7 +471,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
 
   static IconData _panelIcon(AccessAdminPanel panel) {
     return switch (panel) {
-      AccessAdminPanel.overview => Icons.dashboard_outlined,
+      AccessAdminPanel.overview ||
       AccessAdminPanel.directory => Icons.people_outline,
       AccessAdminPanel.roles => Icons.badge_outlined,
       AccessAdminPanel.permissions => Icons.key_outlined,
@@ -643,7 +483,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
 
   static String _panelLabel(BuildContext context, AccessAdminPanel panel) {
     return switch (panel) {
-      AccessAdminPanel.overview => context.l10n.accessAdminPanelOverview,
+      AccessAdminPanel.overview ||
       AccessAdminPanel.directory => context.l10n.accessAdminPanelDirectory,
       AccessAdminPanel.roles => context.l10n.accessAdminPanelRoles,
       AccessAdminPanel.permissions => context.l10n.accessAdminPanelPermissions,
@@ -1015,7 +855,10 @@ class _DetailContent extends ConsumerWidget {
               style: theme.textTheme.bodySmall,
             ),
           ),
-        if (canWrite && (isRegistration || isUserLike)) ...<Widget>[
+        if (canWrite &&
+            (isRegistration ||
+                (item.isDemo &&
+                    state.data.permissions.canResetDemoPasswords))) ...<Widget>[
           SizedBox(height: theme.spacing.lg),
           Wrap(
             spacing: theme.spacing.sm,
@@ -1034,50 +877,13 @@ class _DetailContent extends ConsumerWidget {
     final List<Widget> actions = <Widget>[];
 
     if (item.resource == AccessAdminResource.registrationFollowUps) {
-      actions.add(
-        AppButton.primary(
-          label: context.l10n.accessAdminActivateRegistrationAction,
-          onPressed: () => unawaited(controller.activateRegistration(item)),
-        ),
-      );
+      // Activate stays on the list next-action; detail only offers Reject.
       actions.add(
         AppButton.secondary(
           label: context.l10n.accessAdminRejectRegistrationAction,
           onPressed: () => unawaited(controller.rejectRegistration(item)),
         ),
       );
-    }
-
-    if (item.resource == AccessAdminResource.users ||
-        item.resource == AccessAdminResource.demoUsers) {
-      if (item.status == 'ACTIVE') {
-        actions.add(
-          AppButton.secondary(
-            label: context.l10n.accessAdminDeactivateAction,
-            onPressed: () => unawaited(
-              controller.setUserStatus(item, 'INACTIVE').then((
-                AppFailure? failure,
-              ) {
-                if (failure != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.failureMessage(failure)),
-                    ),
-                  );
-                }
-              }),
-            ),
-          ),
-        );
-      } else {
-        actions.add(
-          AppButton.secondary(
-            label: context.l10n.accessAdminActivateAction,
-            onPressed: () =>
-                unawaited(controller.setUserStatus(item, 'ACTIVE')),
-          ),
-        );
-      }
     }
 
     if (item.isDemo && state.data.permissions.canResetDemoPasswords) {
