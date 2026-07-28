@@ -947,116 +947,6 @@ homeActionLibrary = <String, HomeActionDefinition>{
     route: AppRoutes.profile,
     requiredPermissions: <AppPermission>[AppPermissions.profileRead],
   ),
-  'new_patient': HomeActionDefinition(
-    id: 'new_patient',
-    label: 'Register patient',
-    icon: Icons.person_add_alt_1_outlined,
-    route: AppRoutes.patients,
-    allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
-    requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
-    requiredModules: <String>['patients'],
-  ),
-  'appointment': HomeActionDefinition(
-    id: 'appointment',
-    label: 'Book appointment',
-    icon: Icons.event_available_outlined,
-    route: AppRoutes.opd,
-    allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
-    requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
-    requiredModules: <String>['scheduling'],
-  ),
-  'lab_order': HomeActionDefinition(
-    id: 'lab_order',
-    label: 'Order lab test',
-    icon: Icons.biotech_outlined,
-    route: AppRoutes.lab,
-    allowedRoles: <AppRole>[AppRole.doctor],
-    requiredPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-    requiredModules: <String>['lab'],
-  ),
-  'radiology_order': HomeActionDefinition(
-    id: 'radiology_order',
-    label: 'Order imaging',
-    icon: Icons.camera_outdoor_outlined,
-    route: AppRoutes.radiology,
-    allowedRoles: <AppRole>[AppRole.doctor],
-    requiredPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-    requiredModules: <String>['radiology'],
-  ),
-  'invoice': HomeActionDefinition(
-    id: 'invoice',
-    label: 'Create invoice',
-    icon: Icons.receipt_long_outlined,
-    route: AppRoutes.billing,
-    allowedRoles: <AppRole>[AppRole.billing],
-    requiredPermissions: <AppPermission>[AppPermissions.billingWrite],
-    requiredModules: <String>['billing'],
-  ),
-  'sale': HomeActionDefinition(
-    id: 'sale',
-    label: 'Pharmacy sale',
-    icon: Icons.medication_liquid_outlined,
-    route: AppRoutes.pharmacy,
-    allowedRoles: <AppRole>[AppRole.pharmacist],
-    requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
-    requiredModules: <String>['pharmacy'],
-  ),
-  'staff_profile': HomeActionDefinition(
-    id: 'staff_profile',
-    label: 'Add staff profile',
-    icon: Icons.badge_outlined,
-    route: AppRoutes.hr,
-    allowedRoles: <AppRole>[
-      AppRole.hr,
-      AppRole.tenantAdmin,
-      AppRole.facilityAdmin,
-    ],
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.hrWrite,
-      AppPermissions.tenantAdmin,
-      AppPermissions.facilityAdmin,
-    ],
-    requiredModules: <String>['hr'],
-  ),
-  'report_maintenance_issue': HomeActionDefinition(
-    id: 'report_maintenance_issue',
-    label: 'Create maintenance request',
-    icon: Icons.handyman_outlined,
-    route: AppRoutes.operations,
-    allowedRoles: <AppRole>[AppRole.operations, AppRole.facilityAdmin],
-    requiredPermissions: <AppPermission>[AppPermissions.operationsWrite],
-    requiredModules: <String>['operations'],
-  ),
-  'cleaning_task': HomeActionDefinition(
-    id: 'cleaning_task',
-    label: 'Create cleaning task',
-    icon: Icons.cleaning_services_outlined,
-    route: AppRoutes.housekeeping,
-    allowedRoles: <AppRole>[AppRole.housekeepingManager, AppRole.operations],
-    requiredPermissions: <AppPermission>[AppPermissions.operationsWrite],
-    requiredModules: <String>['housekeeping'],
-  ),
-  'mortuary_case': HomeActionDefinition(
-    id: 'mortuary_case',
-    label: 'Open mortuary case',
-    icon: Icons.inventory_2_outlined,
-    route: AppRoutes.mortuary,
-    allowedRoles: <AppRole>[AppRole.mortuaryStaff, AppRole.mortuaryManager],
-    requiredPermissions: <AppPermission>[AppPermissions.mortuaryWrite],
-    requiredModules: <String>['mortuary'],
-  ),
-  'release_authorisation': HomeActionDefinition(
-    id: 'release_authorisation',
-    label: 'Review release authorization',
-    icon: Icons.verified_user_outlined,
-    route: AppRoutes.mortuary,
-    allowedRoles: <AppRole>[AppRole.mortuaryManager],
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.mortuaryRelease,
-      AppPermissions.mortuaryApprove,
-    ],
-    requiredModules: <String>['mortuary'],
-  ),
 };
 
 const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
@@ -1231,16 +1121,50 @@ const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
       ),
     };
 
+/// Legacy / alternate API action ids mapped to the single primary definition.
+const Map<String, String> homeActionCanonicalIds = <String, String>{
+  'new_patient': 'register_patient',
+  'appointment': 'book_appointment',
+  'lab_order': 'order_lab',
+  'radiology_order': 'order_radiology',
+  'invoice': 'create_invoice',
+  'sale': 'record_pharmacy_sale',
+  'staff_profile': 'add_staff_profile',
+  'report_maintenance_issue': 'create_maintenance_request',
+  'cleaning_task': 'create_cleaning_task',
+  'mortuary_case': 'open_mortuary_case',
+  'release_authorisation': 'review_release_authorization',
+  'manage_users_roles': 'manage_users',
+  'manage_staff_access': 'manage_users',
+  'open_profile': 'update_own_profile',
+  'view_my_care': 'update_own_profile',
+};
+
+String homeCanonicalActionId(String id) => homeActionCanonicalIds[id] ?? id;
+
+HomeActionDefinition? homeResolveAction(String id) {
+  final String canonical = homeCanonicalActionId(id);
+  return homeActionLibrary[canonical] ?? homeActionLibrary[id];
+}
+
 List<HomeActionDefinition> homeVisibleActions(
   List<String> ids,
   AppAccessPolicy policy, {
   int? maxCount,
 }) {
-  final List<HomeActionDefinition> actions = ids
-      .map((String id) => homeActionLibrary[id])
-      .whereType<HomeActionDefinition>()
-      .where((HomeActionDefinition action) => action.isAllowed(policy))
-      .toList(growable: false);
+  final Set<String> seen = <String>{};
+  final List<HomeActionDefinition> actions = <HomeActionDefinition>[];
+  for (final String id in ids) {
+    final String canonical = homeCanonicalActionId(id);
+    if (!seen.add(canonical)) {
+      continue;
+    }
+    final HomeActionDefinition? action = homeResolveAction(id);
+    if (action == null || !action.isAllowed(policy)) {
+      continue;
+    }
+    actions.add(action);
+  }
   if (maxCount == null || maxCount <= 0) {
     return actions;
   }
@@ -1279,13 +1203,26 @@ List<HomeShortcutDefinition> homeVisibleShortcuts(
 
 List<HomeActionDefinition> homeVisibleEmptyActions(
   List<String> ids,
-  AppAccessPolicy policy,
-) {
-  return ids
-      .map((String id) => homeActionLibrary[id])
-      .whereType<HomeActionDefinition>()
-      .where((HomeActionDefinition action) => action.isAllowed(policy))
-      .toList(growable: false);
+  AppAccessPolicy policy, {
+  Iterable<String> excludeActionIds = const <String>[],
+}) {
+  final Set<String> excluded = excludeActionIds
+      .map(homeCanonicalActionId)
+      .toSet();
+  final Set<String> seen = <String>{};
+  final List<HomeActionDefinition> actions = <HomeActionDefinition>[];
+  for (final String id in ids) {
+    final String canonical = homeCanonicalActionId(id);
+    if (excluded.contains(canonical) || !seen.add(canonical)) {
+      continue;
+    }
+    final HomeActionDefinition? action = homeResolveAction(id);
+    if (action == null || !action.isAllowed(policy)) {
+      continue;
+    }
+    actions.add(action);
+  }
+  return actions;
 }
 
 HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {
@@ -1461,7 +1398,7 @@ void homeInvokeAction(
   HomeActionDefinition action, {
   HomeDashboardRequest request = HomeDashboardRequest.empty,
 }) {
-  if (action.id == 'add_staff_profile' || action.id == 'staff_profile') {
+  if (action.id == 'add_staff_profile') {
     unawaited(
       showHrStaffOnboardingDialog(context, ref).then((bool? saved) {
         homeOnDashboardDialogClosed(ref, request, saved);
@@ -1549,7 +1486,7 @@ void homeInvokeAction(
     );
     return;
   }
-  if (action.id == 'manage_users' || action.id == 'manage_users_roles') {
+  if (action.id == 'manage_users') {
     unawaited(
       showManageUsersDialog(context, ref).then((bool? saved) {
         homeOnDashboardDialogClosed(ref, request, saved);

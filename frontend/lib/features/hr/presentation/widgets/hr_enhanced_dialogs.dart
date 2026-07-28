@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -9,7 +7,6 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_preview_breakdown.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
@@ -145,15 +142,6 @@ Future<void> showHrModuleAccessDialog(
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.hrManageAccessAction,
-          onPressed: () {
-            Navigator.of(context).maybePop();
-            unawaited(showHrAccessWorkspaceDialog(context));
-          },
-        ),
-      ],
     ),
   );
 }

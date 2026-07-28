@@ -113,10 +113,10 @@ void main() {
         expect(profile.quickActionIds, <String>[
           'register_patient',
           'book_appointment',
-          'check_in_patient',
           'route_patient',
         ]);
         expect(profile.shortcutIds, <String>[
+          'reception',
           'patients',
           'opd',
           'emergency',

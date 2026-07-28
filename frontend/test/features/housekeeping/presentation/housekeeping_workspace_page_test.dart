@@ -35,6 +35,30 @@ const HousekeepingWorkItem _taskItem = HousekeepingWorkItem(
   assigneeLabel: 'Asha Cleaner',
 );
 
+const HousekeepingWorkItem _assignedPendingTask = HousekeepingWorkItem(
+  id: 'HK-TASK-2',
+  displayId: 'HT-002',
+  resource: HousekeepingResource.tasks,
+  title: 'Clean ward 3C',
+  status: 'PENDING',
+  roomLabel: 'Room 3C',
+  facilityLabel: 'Main Campus',
+  assigneeId: 'STAFF-1',
+  assigneeLabel: 'Asha Cleaner',
+);
+
+const HousekeepingWorkItem _inProgressTask = HousekeepingWorkItem(
+  id: 'HK-TASK-3',
+  displayId: 'HT-003',
+  resource: HousekeepingResource.tasks,
+  title: 'Clean ward 4D',
+  status: 'IN_PROGRESS',
+  roomLabel: 'Room 4D',
+  facilityLabel: 'Main Campus',
+  assigneeId: 'STAFF-1',
+  assigneeLabel: 'Asha Cleaner',
+);
+
 const HousekeepingWorkItem _scheduleItem = HousekeepingWorkItem(
   id: 'HK-SCH-1',
   displayId: 'HS-001',
@@ -108,9 +132,29 @@ AppAccessPolicy _housekeepingWritePolicy() {
   );
 }
 
-List<HousekeepingWorkItem> _itemsForQuery(HousekeepingWorkspaceQuery query) {
+AppAccessPolicy _housekeepingReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['VIEWER']),
+      permissions: <AppPermission>{AppPermissions.operationsRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'facilities-maintenance',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+List<HousekeepingWorkItem> _itemsForQuery(
+  HousekeepingWorkspaceQuery query, {
+  List<HousekeepingWorkItem>? taskItems,
+}) {
   return switch (query.resource) {
-    HousekeepingResource.tasks => const <HousekeepingWorkItem>[_taskItem],
+    HousekeepingResource.tasks =>
+      taskItems ?? const <HousekeepingWorkItem>[_taskItem],
     HousekeepingResource.schedules => const <HousekeepingWorkItem>[
       _scheduleItem,
     ],
@@ -120,13 +164,19 @@ List<HousekeepingWorkItem> _itemsForQuery(HousekeepingWorkspaceQuery query) {
   };
 }
 
-void _stubWorkspace(_MockHousekeepingRepository repository) {
+void _stubWorkspace(
+  _MockHousekeepingRepository repository, {
+  List<HousekeepingWorkItem>? taskItems,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer((
     Invocation invocation,
   ) async {
     final HousekeepingWorkspaceQuery query =
         invocation.positionalArguments.single as HousekeepingWorkspaceQuery;
-    final List<HousekeepingWorkItem> items = _itemsForQuery(query);
+    final List<HousekeepingWorkItem> items = _itemsForQuery(
+      query,
+      taskItems: taskItems,
+    );
     final String search = query.search.trim().toLowerCase();
     final List<HousekeepingWorkItem> filtered = search.isEmpty
         ? items
@@ -163,10 +213,12 @@ Future<_Harness> _pumpHousekeepingWorkspace(
   String initialSearch = '',
   String initialLocation = '/housekeeping',
   Size viewport = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
+  List<HousekeepingWorkItem>? taskItems,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(repository, taskItems: taskItems);
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -203,7 +255,9 @@ Future<_Harness> _pumpHousekeepingWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_housekeepingWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _housekeepingWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -397,6 +451,137 @@ void main() {
     expect(find.text('ASSIGN HOUSEKEEPING TASK'), findsOneWidget);
   });
 
+  testWidgets('next action starts assigned pending task without confirm', (
+    WidgetTester tester,
+  ) async {
+    when(
+      () => repository.updateTask(any(), any()),
+    ).thenAnswer((_) async => const Result<void>.success(null));
+
+    await _pumpHousekeepingWorkspace(
+      tester,
+      repository: repository,
+      taskItems: const <HousekeepingWorkItem>[_assignedPendingTask],
+    );
+
+    await tester.tap(find.text('Start cleaning'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('START CLEANING'), findsNothing);
+    expect(find.text('Mark this housekeeping task as in progress.'), findsNothing);
+    verify(
+      () => repository.updateTask(
+        'HK-TASK-2',
+        any(
+          that: predicate<Map<String, Object?>>(
+            (Map<String, Object?> payload) =>
+                payload['status'] == 'IN_PROGRESS',
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('next action completes in-progress task without confirm', (
+    WidgetTester tester,
+  ) async {
+    when(
+      () => repository.updateTask(any(), any()),
+    ).thenAnswer((_) async => const Result<void>.success(null));
+
+    await _pumpHousekeepingWorkspace(
+      tester,
+      repository: repository,
+      taskItems: const <HousekeepingWorkItem>[_inProgressTask],
+    );
+
+    await tester.tap(find.text('Complete cleaning'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('COMPLETE CLEANING'), findsNothing);
+    verify(
+      () => repository.updateTask(
+        'HK-TASK-3',
+        any(
+          that: predicate<Map<String, Object?>>(
+            (Map<String, Object?> payload) =>
+                payload['status'] == 'COMPLETED',
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('detail omits assign when it is the row next action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHousekeepingWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Clean ward 2B'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(find.text('Mark ready'), findsNothing);
+    expect(find.text('Readiness'), findsNothing);
+    // Assign is the next-action primary — not duplicated in detail.
+    expect(
+      find.descendant(of: find.byType(AppDialog), matching: find.text('Assign')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: find.byType(AppDialog), matching: find.text('Cancel')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppDialog), matching: find.text('Start')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unauthorized create and write next-actions are absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHousekeepingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _housekeepingReadOnlyPolicy(),
+    );
+
+    expect(find.byTooltip('Create task'), findsNothing);
+    expect(find.text('Assign staff or team'), findsNothing);
+    expect(find.text('View details'), findsWidgets);
+  });
+
+  testWidgets('maintenance next action opens triage; detail omits triage', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHousekeepingWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/housekeeping?section=maintenance',
+      initialSection: HousekeepingSection.maintenance,
+    );
+
+    await tester.tap(find.text('Fix leaking tap'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Triage'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Complete request'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('search submits applySearch to repository', (
     WidgetTester tester,
   ) async {
@@ -438,8 +623,8 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(AppListItemRow), findsWidgets);
-    expect(find.text('Clean ward 2B'), findsOneWidget);
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
+    expect(find.textContaining('Clean ward 2B'), findsOneWidget);
     expect(find.text('Assign staff or team'), findsWidgets);
     expect(_tabLabel('Tasks'), findsOneWidget);
   });

@@ -248,6 +248,7 @@ class _HrStaffDirectoryDialogContent extends ConsumerWidget {
           .read(hrWorkspaceControllerProvider.notifier)
           .changeStaffPage,
       onStaffSelected: onStaffSelected,
+      onStaffNextAction: onStaffSelected,
       statusFilter: statusFilter,
     );
   }

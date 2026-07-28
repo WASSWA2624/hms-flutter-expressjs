@@ -65,30 +65,18 @@ void main() {
     test('tenant admin profile uses facility governance actions only', () {
       final profile = homeProfileForRole(AppRole.tenantAdmin);
 
-      expect(
-        profile.quickActionIds,
-        containsAll(<String>[
-          'create_facility',
-          'create_role',
-          'create_user',
-          'add_staff_profile',
-          'manage_facilities',
-          'manage_roles_access',
-          'manage_users_roles',
-          'manage_users',
-        ]),
-      );
-      expect(profile.quickActionIds, isNot(contains('manage_subscription')));
-      expect(profile.quickActionIds.take(4), <String>[
+      expect(profile.quickActionIds, <String>[
         'create_facility',
         'create_role',
         'create_user',
         'add_staff_profile',
       ]);
+      expect(profile.quickActionIds, isNot(contains('manage_subscription')));
+      expect(profile.quickActionIds, isNot(contains('manage_users_roles')));
+      expect(profile.quickActionIds, isNot(contains('manage_users')));
       expect(profile.emptyActionIds, <String>[
         'manage_facilities',
         'manage_roles_access',
-        'manage_users_roles',
         'manage_users',
       ]);
       expect(
@@ -114,6 +102,35 @@ void main() {
       ]) {
         expect(profile.quickActionIds, isNot(contains(actionId)));
       }
+    });
+
+    test('facility admin and receptionist omit check-in duplicate of book', () {
+      final facility = homeProfileForRole(AppRole.facilityAdmin);
+      final receptionist = homeProfileForRole(AppRole.receptionist);
+
+      expect(facility.quickActionIds, <String>[
+        'register_patient',
+        'book_appointment',
+      ]);
+      expect(facility.quickActionIds, isNot(contains('check_in_patient')));
+      expect(facility.emptyActionIds, isEmpty);
+      expect(receptionist.quickActionIds, <String>[
+        'register_patient',
+        'book_appointment',
+        'route_patient',
+      ]);
+      expect(receptionist.quickActionIds, isNot(contains('check_in_patient')));
+    });
+
+    test('patient profile keeps one profile entry and contact', () {
+      final patient = homeProfileForRole(AppRole.patient);
+
+      expect(patient.quickActionIds, <String>[
+        'update_own_profile',
+        'contact_facility',
+      ]);
+      expect(patient.quickActionIds, isNot(contains('view_my_care')));
+      expect(patient.emptyActionIds, isEmpty);
     });
 
     test('patient and fallback profiles stay self-service only', () {

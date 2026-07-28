@@ -63,6 +63,15 @@ void main() {
       expect(query.panel, EmergencyDetailPanelFocus.none);
     });
 
+    test('accepts workflow encounterId as the case deep-link', () {
+      final EmergencyWorkspaceQuery query = EmergencyWorkspaceQuery.fromUri(
+        Uri.parse('/emergency?encounterId=EME000099&panel=triage'),
+      );
+
+      expect(query.caseId, 'EME000099');
+      expect(query.panel, EmergencyDetailPanelFocus.triage);
+    });
+
     test('treats blank values as absent and reports no targeting', () {
       final EmergencyWorkspaceQuery query = EmergencyWorkspaceQuery.fromUri(
         Uri.parse('/emergency?id=%20%20&panel=%20%20'),

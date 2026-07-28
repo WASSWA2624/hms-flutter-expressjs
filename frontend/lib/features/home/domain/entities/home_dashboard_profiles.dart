@@ -30,16 +30,17 @@ const Map<AppRole, int> _homeRoleRanks = <AppRole, int>{
   AppRole.nurse: 12,
   AppRole.doctor: 13,
   AppRole.hr: 14,
-  AppRole.unitManager: 15,
-  AppRole.wardManager: 16,
-  AppRole.icuManager: 17,
-  AppRole.theatreManager: 18,
-  AppRole.housekeepingManager: 19,
-  AppRole.biomedManager: 20,
-  AppRole.mortuaryManager: 21,
-  AppRole.facilityAdmin: 22,
-  AppRole.tenantAdmin: 23,
-  AppRole.superAdmin: 24,
+  AppRole.integrationAdmin: 15,
+  AppRole.unitManager: 16,
+  AppRole.wardManager: 17,
+  AppRole.icuManager: 18,
+  AppRole.theatreManager: 19,
+  AppRole.housekeepingManager: 20,
+  AppRole.biomedManager: 21,
+  AppRole.mortuaryManager: 22,
+  AppRole.facilityAdmin: 23,
+  AppRole.tenantAdmin: 24,
+  AppRole.superAdmin: 25,
 };
 
 const Map<AppRole, HomeDashboardProfile>
@@ -71,10 +72,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     quickActionIds: <String>[
       'create_tenant',
       'create_facility',
-      'manage_tenants',
-      'manage_facilities',
-      'manage_roles_access',
-      'manage_users',
       'create_role',
       'create_user',
     ],
@@ -121,10 +118,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'create_role',
       'create_user',
       'add_staff_profile',
-      'manage_facilities',
-      'manage_roles_access',
-      'manage_users_roles',
-      'manage_users',
     ],
     shortcutIds: <String>[
       'tenant_facility_setup',
@@ -135,7 +128,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyActionIds: <String>[
       'manage_facilities',
       'manage_roles_access',
-      'manage_users_roles',
       'manage_users',
     ],
   ),
@@ -161,10 +153,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     quickActionIds: <String>[
       'register_patient',
       'book_appointment',
-      'check_in_patient',
     ],
     shortcutIds: <String>['opd', 'patients'],
-    emptyActionIds: <String>['register_patient', 'book_appointment'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.doctor: HomeDashboardProfile(
     id: 'doctor',
@@ -202,10 +193,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'radiology',
       'ipd',
     ],
-    emptyActionIds: <String>[
-      'order_lab',
-      'write_clinical_note',
-    ],
+    emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'assigned': HomeMetricRouteTarget(),
       'in_progress': HomeMetricRouteTarget(),
@@ -257,7 +245,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'icu',
       'clinical',
     ],
-    emptyActionIds: <String>['record_vitals', 'create_handover'],
+    emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'inpatient_flow': HomeMetricRouteTarget(),
       'med_admin_today': HomeMetricRouteTarget(),
@@ -291,11 +279,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'flag_critical_lab',
     ],
     shortcutIds: <String>['lab'],
-    emptyActionIds: <String>[
-      'receive_sample',
-      'enter_lab_result',
-      'flag_critical_lab',
-    ],
+    emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'scope': 'all'},
@@ -338,7 +322,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'run_report',
     ],
     shortcutIds: <String>['radiology', 'reports'],
-    emptyActionIds: <String>['start_imaging_study'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.pharmacist: HomeDashboardProfile(
     id: 'pharmacist',
@@ -407,7 +391,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     quickActionIds: <String>[
       'register_patient',
       'book_appointment',
-      'check_in_patient',
       'route_patient',
     ],
     shortcutIds: <String>[
@@ -535,7 +518,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'update_bed_readiness',
     ],
     shortcutIds: <String>['operations'],
-    emptyActionIds: <String>['create_maintenance_request'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.hr: HomeDashboardProfile(
     id: 'hr',
@@ -630,7 +613,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>['start_cleaning_task', 'complete_cleaning_task'],
     shortcutIds: <String>['housekeeping', 'reports'],
-    emptyActionIds: <String>['start_cleaning_task'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.ambulanceOperator: HomeDashboardProfile(
     id: 'ambulance_operator',
@@ -648,7 +631,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
     shortcutIds: <String>['emergency', 'reports'],
-    emptyActionIds: <String>['dispatch_ambulance'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.unitManager: HomeDashboardProfile(
     id: 'unit_manager',
@@ -676,7 +659,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'run_report',
     ],
     shortcutIds: <String>['hr', 'nursing', 'ipd', 'reports'],
-    emptyActionIds: <String>['publish_roster', 'run_report'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.wardManager: HomeDashboardProfile(
     id: 'ward_manager',
@@ -714,7 +697,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'hr',
       'reports',
     ],
-    emptyActionIds: <String>['create_handover', 'publish_roster'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.icuManager: HomeDashboardProfile(
     id: 'icu_manager',
@@ -754,7 +737,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'hr',
       'reports',
     ],
-    emptyActionIds: <String>['record_vitals', 'run_report'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.theatreManager: HomeDashboardProfile(
     id: 'theatre_manager',
@@ -793,7 +776,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'hr',
       'reports',
     ],
-    emptyActionIds: <String>['run_report'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.housekeepingManager: HomeDashboardProfile(
     id: 'housekeeping_manager',
@@ -839,7 +822,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'hr',
       'reports',
     ],
-    emptyActionIds: <String>['create_cleaning_task'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.biomedManager: HomeDashboardProfile(
     id: 'biomed_manager',
@@ -869,7 +852,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'run_report',
     ],
     shortcutIds: <String>['biomedical', 'reports'],
-    emptyActionIds: <String>['report_equipment_issue'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryStaff: HomeDashboardProfile(
     id: 'mortuary_staff',
@@ -909,7 +892,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'add_mortuary_billable_event',
     ],
     shortcutIds: <String>['mortuary'],
-    emptyActionIds: <String>['open_mortuary_case', 'record_custody_event'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryManager: HomeDashboardProfile(
     id: 'mortuary_manager',
@@ -951,10 +934,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'run_report',
     ],
     shortcutIds: <String>['mortuary', 'reports'],
-    emptyActionIds: <String>[
-      'review_release_authorization',
-      'open_mortuary_case',
-    ],
+    emptyActionIds: const <String>[],
   ),
   AppRole.patient: HomeDashboardProfile(
     id: 'patient',
@@ -978,9 +958,26 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         format: 'percent',
       ),
     ],
-    quickActionIds: <String>['update_own_profile', 'view_my_care'],
+    quickActionIds: <String>['update_own_profile', 'contact_facility'],
     shortcutIds: <String>[],
-    emptyActionIds: <String>['update_own_profile', 'contact_facility'],
+    emptyActionIds: const <String>[],
+  ),
+  AppRole.integrationAdmin: HomeDashboardProfile(
+    id: 'integration_admin',
+    role: AppRole.integrationAdmin,
+    roleLabel: 'Integration administrator',
+    homeTitle: 'Integrations',
+    emptyMessage: 'No integration work is pending. Open Integrations to manage connections.',
+    maxStatusCards: 3,
+    statusCards: <HomeStatusCardTemplate>[
+      HomeStatusCardTemplate(id: 'active_integrations', label: 'Active'),
+      HomeStatusCardTemplate(id: 'failed_deliveries', label: 'Failures'),
+      HomeStatusCardTemplate(id: 'pending_webhooks', label: 'Webhooks'),
+      HomeStatusCardTemplate(id: 'api_keys_expiring', label: 'Keys'),
+    ],
+    quickActionIds: const <String>[],
+    shortcutIds: <String>['integrations', 'reports', 'settings'],
+    emptyActionIds: const <String>[],
   ),
   AppRole.other: HomeDashboardProfile(
     id: 'other',
@@ -998,7 +995,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
     shortcutIds: <String>['profile', 'settings'],
-    emptyActionIds: <String>['update_own_profile'],
+    emptyActionIds: const <String>[],
   ),
 };
 

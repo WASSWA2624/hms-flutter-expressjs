@@ -79,7 +79,6 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
 
     if (isLoading) {
       return Row(
-        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           SizedBox.square(
@@ -90,22 +89,40 @@ class _AuthPrimaryButtonContent extends StatelessWidget {
             ),
           ),
           SizedBox(width: spacing.sm),
-          Text(label, style: labelStyle),
+          Flexible(
+            child: Text(
+              label,
+              style: labelStyle,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ],
       );
     }
 
     if (leadingIcon == null) {
-      return Text(label, style: labelStyle);
+      return Text(
+        label,
+        style: labelStyle,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      );
     }
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Icon(leadingIcon, size: 18, color: onPrimary),
         SizedBox(width: spacing.sm),
-        Text(label, style: labelStyle),
+        Flexible(
+          child: Text(
+            label,
+            style: labelStyle,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
   }

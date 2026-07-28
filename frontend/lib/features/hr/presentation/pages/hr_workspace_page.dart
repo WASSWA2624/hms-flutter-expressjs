@@ -7,9 +7,12 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
@@ -294,12 +297,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                 }
               },
               primaryAction: _buildPrimaryActionButton(l10n, state),
-              secondaryActions: _buildSecondaryActionWidgets(
-                context,
-                l10n,
-                state,
-                controller,
-              ),
+              secondaryActions: _buildSecondaryActionWidgets(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -316,65 +314,63 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
   }
 
-  Widget _buildPrimaryActionButton(
+  Widget? _buildPrimaryActionButton(
     AppLocalizations l10n,
     HrWorkspaceState state,
   ) {
+    // Access creates live on the embedded Access panel; payroll runs from staff
+    // detail so the strip never guesses a staff member.
     return switch (_section) {
-      HrDeskSection.staffDirectory => AppTabToolbarPrimary(
-        label: l10n.hrAddStaffAction,
-        icon: Icons.person_add_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () => showHrStaffOnboardingDialog(context, ref),
+      HrDeskSection.staffDirectory => AppAccessActionGate(
+        requirement: hrWriteRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.hrAddStaffAction,
+            icon: Icons.person_add_outlined,
+            enabled: isAllowed && !state.isRefreshing,
+            onPressed: !isAllowed || state.isRefreshing
+                ? null
+                : () => showHrStaffOnboardingDialog(context, ref),
+          );
+        },
       ),
-      HrDeskSection.leaveRequests => AppTabToolbarPrimary(
-        label: l10n.hrRequestLeaveAction,
-        icon: Icons.event_busy_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () => showHrRequestLeaveDialog(context, ref),
+      HrDeskSection.leaveRequests => AppAccessActionGate(
+        requirement: hrWriteRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.hrRequestLeaveAction,
+            icon: Icons.event_busy_outlined,
+            enabled: isAllowed && !state.isRefreshing,
+            onPressed: !isAllowed || state.isRefreshing
+                ? null
+                : () => showHrRequestLeaveDialog(context, ref),
+          );
+        },
       ),
-      HrDeskSection.shiftRoster => AppTabToolbarPrimary(
-        label: l10n.hrShiftTemplateAction,
-        icon: Icons.view_week_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () => showHrManageScheduleTemplatesDialog(context, ref),
+      HrDeskSection.shiftRoster => AppAccessActionGate(
+        requirement: hrRosterWriteRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.hrShiftTemplateAction,
+            icon: Icons.view_week_outlined,
+            enabled: isAllowed && !state.isRefreshing,
+            onPressed: !isAllowed || state.isRefreshing
+                ? null
+                : () => showHrManageScheduleTemplatesDialog(context, ref),
+          );
+        },
       ),
-      HrDeskSection.payroll => AppTabToolbarPrimary(
-        label: l10n.hrRunPayrollAction,
-        icon: Icons.payments_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () {
-                final HrStaffProfile? staff =
-                    state.selectedStaff?.profile ??
-                    (state.staff.items.isNotEmpty
-                        ? state.staff.items.first
-                        : null);
-                if (staff == null) {
-                  return;
-                }
-                unawaited(showHrPayrollWizardDialog(context, ref, staff));
-              },
-      ),
-      HrDeskSection.access => AppTabToolbarPrimary(
-        label: l10n.hrManageAccessAction,
-        icon: Icons.manage_accounts_outlined,
-        onPressed: state.isRefreshing
-            ? null
-            : () => showHrAccessWorkspaceDialog(context),
-      ),
+      HrDeskSection.payroll || HrDeskSection.access => null,
     };
   }
 
   List<Widget> _buildSecondaryActionWidgets(
-    BuildContext context,
     AppLocalizations l10n,
     HrWorkspaceState state,
-    HrWorkspaceController controller,
   ) {
+    // Refresh / cross-module housekeeping & fault shortcuts were removed —
+    // workspace data refreshes after mutations and scaffold retry; those tools
+    // remain in app navigation.
     return <Widget>[
       AppTabToolbarAction(
         label: l10n.hrActivityTitle,
@@ -383,27 +379,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             ? null
             : () => _showActivityDialog(context),
       ),
-      AppWorkspaceRefreshAction(
-        label: l10n.commonRefreshActionLabel,
-        isLoading: state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () {
-                unawaited(
-                  controller.refresh().then((AppFailure? failure) {
-                    if (context.mounted && failure != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.failureMessage(failure))),
-                      );
-                    }
-                  }),
-                );
-              },
-      ),
-      AppGlobalHousekeepingRequestAction(
-        label: l10n.workspaceGlobalHousekeepingRequestAction,
-      ),
-      AppGlobalFaultReportAction(label: l10n.workspaceGlobalFaultReportAction),
     ];
   }
 
@@ -419,6 +394,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         onPageChanged: controller.changeStaffPage,
         onStaffSelected: (HrStaffProfile item) {
           unawaited(_openStaffDetailDialog(context, item));
+        },
+        onStaffNextAction: (HrStaffProfile item) {
+          unawaited(_handleStaffNextAction(context, item));
         },
       ),
       HrDeskSection.leaveRequests => _HrWorkQueueTable(
@@ -466,6 +444,34 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     await showHrStaffDetailDialog(context, ref);
   }
 
+  /// Minimal path for the labeled staff next-action: assign placement when
+  /// missing, otherwise open the staff detail surface.
+  Future<void> _handleStaffNextAction(
+    BuildContext context,
+    HrStaffProfile staff,
+  ) async {
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectStaff(staff);
+    if (failure != null || !context.mounted) {
+      if (context.mounted) {
+        showHrMutationSnackBar(context, failure ?? AppFailure.validation());
+      }
+      return;
+    }
+
+    if ((staff.departmentId ?? staff.departmentDisplayId ?? '').trim().isEmpty) {
+      await showHrAssignDepartmentDialog(context, ref);
+      return;
+    }
+    if ((staff.position ?? '').trim().isEmpty) {
+      await showHrAssignPositionDialog(context, ref, staff);
+      return;
+    }
+    await showHrStaffDetailDialog(context, ref);
+  }
+
   Future<void> _showActivityDialog(BuildContext context) async {
     final AppLocalizations l10n = context.l10n;
     await showAppDialog<void>(
@@ -497,6 +503,7 @@ class _HrStaffDirectory extends ConsumerWidget {
     required this.columnVisibilityController,
     required this.onPageChanged,
     required this.onStaffSelected,
+    required this.onStaffNextAction,
     this.statusFilter,
   });
 
@@ -506,6 +513,7 @@ class _HrStaffDirectory extends ConsumerWidget {
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<HrStaffProfile> onStaffSelected;
+  final ValueChanged<HrStaffProfile> onStaffNextAction;
   final String? statusFilter;
 
   @override
@@ -611,7 +619,7 @@ class _HrStaffDirectory extends ConsumerWidget {
       columns: _staffDefaultColumns(
         context,
         l10n,
-        onStaffSelected: onStaffSelected,
+        onStaffNextAction: onStaffNextAction,
       ),
       columnChoices: _staffColumnChoices(context, l10n),
       mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
@@ -897,10 +905,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
           title: l10n.hrAssignmentsSectionTitle,
           icon: Icons.account_tree_outlined,
           emptyText: l10n.hrNoAssignmentsLabel,
-          emptyActionLabel: l10n.hrAssignDepartmentAction,
-          onEmptyAction: profile.isSeparated || state.isMutating
-              ? null
-              : () => showHrAssignDepartmentDialog(context, ref),
           rows: <_RecordLine>[
             for (final HrStaffAssignment assignment in detail.assignments)
               _RecordLine(
@@ -955,9 +959,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
           child: HrAvailabilityCalendar(
             availabilities: detail.availabilities,
             leaves: detail.leaves,
-            onRecordAvailability: profile.isSeparated || state.isMutating
-                ? null
-                : () => showHrRecordAvailabilityDialog(context, ref),
             onDayTap: (int day) {
               HrStaffAvailability? availability;
               for (final HrStaffAvailability item in detail.availabilities) {
@@ -981,10 +982,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
           title: l10n.hrShiftsSectionTitle,
           icon: Icons.calendar_view_week_outlined,
           emptyText: l10n.hrNoShiftsLabel,
-          emptyActionLabel: l10n.hrAssignShiftAction,
-          onEmptyAction: profile.isSeparated || state.isMutating
-              ? null
-              : () => _showShiftAssignmentDialog(context, ref),
           rows: <_RecordLine>[
             for (final HrShiftAssignment assignment in detail.shiftAssignments)
               _RecordLine(
@@ -1010,15 +1007,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
           title: l10n.hrCompensationSectionTitle,
           icon: Icons.price_change_outlined,
           emptyText: l10n.hrNoCompensationLabel,
-          emptyActionLabel: l10n.hrCompensationAction,
-          onEmptyAction: profile.isSeparated || state.isMutating
-              ? null
-              : () => showHrCompensationDialog(
-                  context,
-                  ref,
-                  profile,
-                  detail.compensations,
-                ),
           rows: <_RecordLine>[
             for (final HrStaffCompensation compensation
                 in detail.compensations.where(
@@ -1131,8 +1119,10 @@ class _HrWorkQueueTable extends ConsumerWidget {
       hrWorkspaceControllerProvider.notifier,
     );
     final HrQueue queue = state.workItemsQuery.queue;
-    void onRowAction(HrWorkItem item) =>
+    void onRowSelected(HrWorkItem item) =>
         _showWorkItemDialog(context, ref, item);
+    void onNextAction(HrWorkItem item) =>
+        unawaited(_handleWorkItemNextAction(context, ref, item));
 
     return AppListTable<HrWorkItem>(
       page: state.workItems,
@@ -1179,7 +1169,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
-      onRowSelected: onRowAction,
+      onRowSelected: onRowSelected,
       previousPageLabel: l10n.hrPreviousQueuePageLabel,
       nextPageLabel: l10n.hrNextQueuePageLabel,
       pageLabelBuilder: (AppPage<HrWorkItem> page) {
@@ -1194,7 +1184,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
         title: l10n.hrNoQueueItemsTitle,
         body: l10n.hrNoQueueItemsBody,
       ),
-      columns: _workQueueColumns(context, queue, onRowAction: onRowAction),
+      columns: _workQueueColumns(context, queue, onNextAction: onNextAction),
       columnChoices: _workQueueColumnChoices(context, queue),
       mobileItemBuilder: (BuildContext context, HrWorkItem item) {
         return AppListTableMobileItem(
@@ -1542,6 +1532,44 @@ Future<void> _showWorkItemDialog(
       content: _WorkItemActions(item: item),
     ),
   );
+}
+
+/// Opens the queue-row primary mutation without the intermediate detail shell.
+Future<void> _handleWorkItemNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  HrWorkItem item,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  switch (item.queue) {
+    case HrQueue.leaveRequests:
+      await _submitReason(
+        context,
+        title: l10n.hrApproveLeaveDialogTitle,
+        submitLabel: l10n.hrApproveLeaveAction,
+        requiredReason: false,
+        onSubmit: (String? reason) =>
+            controller.approveLeave(item, reason: reason),
+      );
+    case HrQueue.swapRequests:
+      await _submitReason(
+        context,
+        title: l10n.hrApproveSwapDialogTitle,
+        submitLabel: l10n.hrApproveSwapAction,
+        requiredReason: false,
+        onSubmit: (String? reason) =>
+            controller.approveSwap(item, reason: reason),
+      );
+    case HrQueue.rosterDrafts:
+      await _showRosterPublishDialog(context, controller, item);
+    case HrQueue.unassignedShifts || HrQueue.overdueShifts:
+      await _showOverrideShiftDialog(context, ref, item);
+    case HrQueue.payrollDrafts:
+      await _showProcessPayrollDialog(context, controller, item);
+  }
 }
 
 class _WorkItemActions extends ConsumerWidget {
@@ -2200,7 +2228,7 @@ bool _staffSearchMatcher(
 List<AppListTableColumn<HrStaffProfile>> _staffDefaultColumns(
   BuildContext context,
   AppLocalizations l10n, {
-  required ValueChanged<HrStaffProfile> onStaffSelected,
+  required ValueChanged<HrStaffProfile> onStaffNextAction,
 }) {
   return <AppListTableColumn<HrStaffProfile>>[
     AppListTableColumn<HrStaffProfile>(
@@ -2255,9 +2283,24 @@ List<AppListTableColumn<HrStaffProfile>> _staffDefaultColumns(
       label: l10n.hrNextActionColumnLabel,
       alwaysVisible: true,
       cellBuilder: (BuildContext context, HrStaffProfile item) {
-        return AppButton.tertiary(
-          label: _staffNextAction(context, item),
-          onPressed: () => onStaffSelected(item),
+        final String label = _staffNextAction(context, item);
+        final bool needsWrite = label != l10n.hrNextActionReviewProfile;
+        final Widget button = AppButton.tertiary(
+          label: label,
+          onPressed: () => onStaffNextAction(item),
+        );
+        if (!needsWrite) {
+          return button;
+        }
+        return AppAccessActionGate(
+          requirement: hrWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.tertiary(
+              label: label,
+              enabled: isAllowed,
+              onPressed: isAllowed ? () => onStaffNextAction(item) : null,
+            );
+          },
         );
       },
     ),
@@ -2391,7 +2434,7 @@ bool _workItemSearchMatcher(
 List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   BuildContext context,
   HrQueue queue, {
-  required void Function(HrWorkItem item) onRowAction,
+  required void Function(HrWorkItem item) onNextAction,
 }) {
   final AppLocalizations l10n = context.l10n;
   final List<AppListTableColumn<HrWorkItem>> dataColumns = switch (queue) {
@@ -2426,7 +2469,7 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
   return <AppListTableColumn<HrWorkItem>>[
     ...dataColumns,
     _workItemStatusColumn(l10n),
-    _workItemNextActionColumn(l10n, context, onRowAction: onRowAction),
+    _workItemNextActionColumn(l10n, context, onNextAction: onNextAction),
   ];
 }
 
@@ -2664,16 +2707,30 @@ AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
 AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
   AppLocalizations l10n,
   BuildContext context, {
-  required void Function(HrWorkItem item) onRowAction,
+  required void Function(HrWorkItem item) onNextAction,
 }) {
   return AppListTableColumn<HrWorkItem>(
     id: 'next_action',
     label: l10n.hrNextActionColumnLabel,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, HrWorkItem item) {
-      return AppButton.tertiary(
-        label: _workItemNextAction(context, item),
-        onPressed: () => onRowAction(item),
+      final AccessRequirement requirement = switch (item.queue) {
+        HrQueue.leaveRequests => hrWriteRequirement,
+        HrQueue.swapRequests => hrRosterApproveRequirement,
+        HrQueue.rosterDrafts => hrRosterPublishRequirement,
+        HrQueue.unassignedShifts ||
+        HrQueue.overdueShifts => hrRosterWriteRequirement,
+        HrQueue.payrollDrafts => hrPayrollRequirement,
+      };
+      return AppAccessActionGate(
+        requirement: requirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppButton.tertiary(
+            label: _workItemNextAction(context, item),
+            enabled: isAllowed,
+            onPressed: isAllowed ? () => onNextAction(item) : null,
+          );
+        },
       );
     },
   );

@@ -99,6 +99,14 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            if (state.passwordResetSubmitted && !_usesLinkToken) ...<Widget>[
+              AppFormInformationBanner.message(
+                title: l10n.authForgotPasswordSubmittedTitle,
+                message: l10n.authForgotPasswordSubmittedBody,
+                variant: AppFormInformationVariant.success,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
             if (state.failure != null) ...<Widget>[
               AppFormInformationBanner.failure(
                 context: context,

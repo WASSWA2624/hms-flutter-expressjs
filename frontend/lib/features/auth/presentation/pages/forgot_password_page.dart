@@ -25,6 +25,19 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      // Fresh visit: drop sticky success / tenant shells from a prior attempt.
+      ref.read(authControllerProvider.notifier).clearPasswordResetSubmitted();
+      ref.read(authControllerProvider.notifier).clearIdentifyTenants();
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _emailFocusNode.dispose();
@@ -36,34 +49,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     final l10n = context.l10n;
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
-
-    if (state.passwordResetSubmitted) {
-      return AuthPageFrame(
-        title: l10n.authForgotPasswordSubmittedTitle,
-        subtitle: l10n.authForgotPasswordSubmittedBody,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AuthPrimaryButton(
-              label: l10n.authResetPasswordWithCodeActionLabel,
-              leadingIcon: Icons.pin_outlined,
-              onPressed: () => context.go(
-                AppRoutes.resetPassword.location(
-                  queryParameters: <String, String>{
-                    if (_emailController.text.trim().isNotEmpty)
-                      'email': _emailController.text.trim().toLowerCase(),
-                  },
-                ),
-              ),
-            ),
-            AuthTextLink(
-              label: l10n.authBackToLoginActionLabel,
-              onPressed: () => context.go(AppRoutes.login.location()),
-            ),
-          ],
-        ),
-      );
-    }
+    final bool needsTenantChoice = state.identifyTenants.length > 1;
 
     return AuthPageFrame(
       title: l10n.authForgotPasswordTitle,
@@ -90,13 +76,13 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               invalidEmailMessage: l10n.authEmailInvalidMessage,
               requiredMessage: l10n.validationRequired,
               isRequired: true,
-              onChanged: (_) => _clearFormFeedback(),
+              onChanged: (_) => _onEmailChanged(),
               onFocusChanged: _handleFieldFocusChanged,
               focusNode: _emailFocusNode,
               enabled: !state.isSubmitting,
               onFieldSubmitted: (_) => _submit(),
             ),
-            if (state.identifyTenants.length > 1) ...<Widget>[
+            if (needsTenantChoice) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
               Text(
                 l10n.authForgotPasswordTenantPrompt,
@@ -106,19 +92,18 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               for (final AuthTenantOption tenant in state.identifyTenants)
                 Padding(
                   padding: EdgeInsets.only(bottom: theme.spacing.sm),
-                  child: AppButton.secondary(
+                  child: AuthPrimaryButton(
                     label: tenant.tenantName.isEmpty
                         ? tenant.tenantId
                         : tenant.tenantName,
-                    fullWidth: true,
+                    leadingIcon: Icons.apartment_outlined,
                     isLoading: state.isSubmitting,
                     onPressed: state.isSubmitting
                         ? null
                         : () => _submit(tenantId: tenant.tenantId),
                   ),
                 ),
-            ],
-            if (state.identifyTenants.length <= 1) ...<Widget>[
+            ] else ...<Widget>[
               SizedBox(height: theme.spacing.lg),
               AuthPrimaryButton(
                 label: l10n.authForgotPasswordSubmitLabel,
@@ -147,9 +132,28 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       return;
     }
 
-    await ref
+    final bool submitted = await ref
         .read(authControllerProvider.notifier)
         .requestPasswordReset(email: _emailController.text, tenantId: tenantId);
+    if (!mounted || !submitted) {
+      return;
+    }
+
+    // Skip the intermediate "check email" hub: next required input is the
+    // reset form (code + new password). Success copy is shown there.
+    final String email = _emailController.text.trim().toLowerCase();
+    context.go(
+      AppRoutes.resetPassword.location(
+        queryParameters: <String, String>{
+          if (email.isNotEmpty) 'email': email,
+        },
+      ),
+    );
+  }
+
+  void _onEmailChanged() {
+    _clearFormFeedback();
+    ref.read(authControllerProvider.notifier).clearIdentifyTenants();
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {

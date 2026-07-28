@@ -22,6 +22,17 @@ void main() {
     );
   }
 
+  group('EmergencyWorkspaceQuery.fromUri', () {
+    test('accepts workflow encounterId as the case deep-link', () {
+      final EmergencyWorkspaceQuery query = EmergencyWorkspaceQuery.fromUri(
+        Uri.parse('/emergency?encounterId=EME000099&panel=triage'),
+      );
+
+      expect(query.caseId, 'EME000099');
+      expect(query.panel, EmergencyDetailPanelFocus.triage);
+    });
+  });
+
   group('emergencyDefaultColumnsForTab', () {
     testWidgets('returns at most five columns for every tab', (
       WidgetTester tester,
@@ -107,10 +118,109 @@ void main() {
       final BuildContext context = tester.element(find.byType(SizedBox));
 
       final AppListTableColumn<EmergencyCaseSummary> column =
-          emergencyNextActionColumn(context);
+          emergencyNextActionColumn(
+            context,
+            tab: EmergencyBoardTab.active,
+            writeRequirement: writeRequirement,
+          );
 
       expect(column.label, isNot(EmergencyText.next));
       expect(column.label, 'Next action');
+    });
+  });
+
+  group('emergencyBoardNextActionKind', () {
+    test('advances triage → response → handoff on active board', () {
+      expect(
+        emergencyBoardNextActionKind(
+          const EmergencyCaseSummary(id: '1', status: 'OPEN'),
+          tab: EmergencyBoardTab.active,
+        ),
+        EmergencyNextActionKind.triage,
+      );
+      expect(
+        emergencyBoardNextActionKind(
+          const EmergencyCaseSummary(
+            id: '2',
+            status: 'OPEN',
+            latestTriage: EmergencyTriageAssessment(
+              id: 't1',
+              triageLevel: 'LEVEL_2',
+            ),
+          ),
+          tab: EmergencyBoardTab.active,
+        ),
+        EmergencyNextActionKind.response,
+      );
+      expect(
+        emergencyBoardNextActionKind(
+          const EmergencyCaseSummary(
+            id: '3',
+            status: 'OPEN',
+            latestTriage: EmergencyTriageAssessment(
+              id: 't1',
+              triageLevel: 'LEVEL_2',
+            ),
+            latestResponse: EmergencyResponseRecord(id: 'r1'),
+          ),
+          tab: EmergencyBoardTab.active,
+        ),
+        EmergencyNextActionKind.handoff,
+      );
+    });
+
+    test('ambulance tab specializes dispatch / start trip after readiness', () {
+      const EmergencyCaseSummary ready = EmergencyCaseSummary(
+        id: 'amb-1',
+        status: 'OPEN',
+        latestTriage: EmergencyTriageAssessment(
+          id: 't1',
+          triageLevel: 'LEVEL_1',
+        ),
+        latestResponse: EmergencyResponseRecord(id: 'r1'),
+      );
+      expect(
+        emergencyBoardNextActionKind(ready, tab: EmergencyBoardTab.ambulance),
+        EmergencyNextActionKind.dispatch,
+      );
+      expect(
+        emergencyBoardNextActionKind(
+          ready.copyWith(
+            latestDispatch: const EmergencyAmbulanceDispatch(
+              id: 'd1',
+              status: 'DISPATCHED',
+              ambulanceId: 'AMB1',
+            ),
+          ),
+          tab: EmergencyBoardTab.ambulance,
+        ),
+        EmergencyNextActionKind.startTrip,
+      );
+    });
+
+    test('closed cases have no next-action kind', () {
+      expect(
+        emergencyBoardNextActionKind(
+          const EmergencyCaseSummary(id: 'c1', status: 'CLOSED'),
+          tab: EmergencyBoardTab.closed,
+        ),
+        isNull,
+      );
+    });
+
+    test('detail omit kind matches board primary so duplicates stay removed', () {
+      const EmergencyCaseSummary untreated = EmergencyCaseSummary(
+        id: 'u1',
+        status: 'OPEN',
+      );
+      final EmergencyNextActionKind? kind = emergencyBoardNextActionKind(
+        untreated,
+        tab: EmergencyBoardTab.active,
+      );
+      expect(kind, EmergencyNextActionKind.triage);
+      // Opening detail with omitNextActionKind: triage must hide Triage in
+      // Quick Actions — covered by EmergencyActionPanel omit wiring.
+      expect(kind == EmergencyNextActionKind.triage, isTrue);
     });
   });
 

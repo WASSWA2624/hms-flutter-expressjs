@@ -178,10 +178,7 @@ class _HousekeepingWorkspaceContentState
                 if (capabilities.canReport)
                   AppReportActionButton.preview(
                     label: l10n.housekeepingReportSummaryAction,
-                    enabled: capabilities.canReport,
-                    onPressed: capabilities.canReport
-                        ? () => _showReportPreviewDialog(context, state)
-                        : null,
+                    onPressed: () => _showReportPreviewDialog(context, state),
                   ),
               ],
               primaryAction: _primaryActionButton(l10n, capabilities, state),
@@ -212,36 +209,37 @@ class _HousekeepingWorkspaceContentState
     );
   }
 
-  Widget _primaryActionButton(
+  Widget? _primaryActionButton(
     AppLocalizations l10n,
     _HousekeepingCapabilities capabilities,
     HousekeepingWorkspaceState state,
   ) {
     return switch (_section) {
-      HousekeepingSection.tasks => AppTabToolbarPrimary(
-        label: l10n.housekeepingCreateTaskAction,
-        icon: Icons.add_task_outlined,
-        enabled: capabilities.canManage && !state.isSaving,
-        onPressed: capabilities.canManage
-            ? () => _showTaskDialog(context, ref, state)
-            : null,
-      ),
-      HousekeepingSection.schedules => AppTabToolbarPrimary(
-        label: l10n.housekeepingCreateScheduleAction,
-        icon: Icons.event_repeat_outlined,
-        enabled: capabilities.canManage && !state.isSaving,
-        onPressed: capabilities.canManage
-            ? () => _showScheduleDialog(context, ref, state)
-            : null,
-      ),
-      HousekeepingSection.maintenance => AppTabToolbarPrimary(
-        label: l10n.housekeepingRequestMaintenanceAction,
-        icon: Icons.build_circle_outlined,
-        enabled: capabilities.canUpdateTasks && !state.isSaving,
-        onPressed: capabilities.canUpdateTasks
-            ? () => _showMaintenanceRequestDialog(context, ref, state)
-            : null,
-      ),
+      HousekeepingSection.tasks => capabilities.canManage
+          ? AppTabToolbarPrimary(
+              label: l10n.housekeepingCreateTaskAction,
+              icon: Icons.add_task_outlined,
+              enabled: !state.isSaving,
+              onPressed: () => _showTaskDialog(context, ref, state),
+            )
+          : null,
+      HousekeepingSection.schedules => capabilities.canManage
+          ? AppTabToolbarPrimary(
+              label: l10n.housekeepingCreateScheduleAction,
+              icon: Icons.event_repeat_outlined,
+              enabled: !state.isSaving,
+              onPressed: () => _showScheduleDialog(context, ref, state),
+            )
+          : null,
+      HousekeepingSection.maintenance => capabilities.canUpdateTasks
+          ? AppTabToolbarPrimary(
+              label: l10n.housekeepingRequestMaintenanceAction,
+              icon: Icons.build_circle_outlined,
+              enabled: !state.isSaving,
+              onPressed: () =>
+                  _showMaintenanceRequestDialog(context, ref, state),
+            )
+          : null,
     };
   }
 }
@@ -402,6 +400,10 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
             },
           ],
           showAvatar: false,
+          trailing: _HousekeepingNextActionCell(
+            item: item,
+            capabilities: capabilities,
+          ),
         );
       },
     );
@@ -696,8 +698,16 @@ AppListTableColumn<HousekeepingWorkItem> _housekeepingNextActionColumn(
     alwaysVisible: true,
     sortComparator: (HousekeepingWorkItem left, HousekeepingWorkItem right) {
       return appListTableCompareText(
-        _nextActionLabel(l10n, left, capabilities),
-        _nextActionLabel(l10n, right, capabilities),
+        _nextActionLabel(
+          l10n,
+          _nextActionKind(left, capabilities),
+          item: left,
+        ),
+        _nextActionLabel(
+          l10n,
+          _nextActionKind(right, capabilities),
+          item: right,
+        ),
       );
     },
     cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
@@ -713,97 +723,35 @@ class _HousekeepingNextActionCell extends ConsumerWidget {
   const _HousekeepingNextActionCell({
     required this.item,
     required this.capabilities,
-    this.compact = false,
   });
 
   final HousekeepingWorkItem item;
   final _HousekeepingCapabilities capabilities;
-  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final String label = _nextActionLabel(l10n, item, capabilities);
-    final bool enabled = label != l10n.housekeepingNextActionNoAction;
-    final VoidCallback? onPressed = enabled
-        ? () {
-            unawaited(
-              _handleHousekeepingNextAction(context, ref, item, capabilities),
-            );
-          }
-        : null;
-
-    if (compact) {
-      return _HousekeepingCompactNextActionButton(
-        label: label,
-        onPressed: onPressed,
+    final _HousekeepingNextActionKind kind = _nextActionKind(
+      item,
+      capabilities,
+    );
+    if (kind == _HousekeepingNextActionKind.none) {
+      return Text(
+        l10n.housekeepingNextActionNoAction,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       );
     }
 
-    return AppButton.tertiary(label: label, onPressed: onPressed);
-  }
-}
-
-class _HousekeepingCompactNextActionButton extends StatelessWidget {
-  const _HousekeepingCompactNextActionButton({
-    required this.label,
-    required this.onPressed,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Color primaryColor = theme.colorScheme.primary;
-    final bool enabled = onPressed != null;
-
-    return Semantics(
-      button: true,
-      enabled: enabled,
+    final String label = _nextActionLabel(l10n, kind, item: item);
+    return AppButton.tertiary(
       label: label,
-      child: Tooltip(
-        message: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onPressed,
-          child: MouseRegion(
-            cursor: enabled
-                ? SystemMouseCursors.click
-                : SystemMouseCursors.basic,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.arrow_forward_outlined,
-                    size: 14,
-                    color: enabled
-                        ? primaryColor
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: enabled
-                            ? primaryColor
-                            : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      onPressed: () {
+        unawaited(
+          _handleHousekeepingNextAction(context, ref, item, capabilities),
+        );
+      },
     );
   }
 }
@@ -853,7 +801,7 @@ bool _matchesHousekeepingSearch(
     _dateTimeLabel(context, item.endDate),
     _dateTimeLabel(context, item.reportedAt),
     _statusLabel(l10n, item),
-    _nextActionLabel(l10n, item, capabilities),
+    _nextActionLabel(l10n, _nextActionKind(item, capabilities), item: item),
   ];
 
   return values.whereType<String>().any(
@@ -867,80 +815,41 @@ Future<void> _handleHousekeepingNextAction(
   HousekeepingWorkItem item,
   _HousekeepingCapabilities capabilities,
 ) async {
-  if (item.isSchedule) {
-    await _openTaskDetailDialog(context, ref, item, capabilities);
-    return;
-  }
-
-  if (item.isMaintenanceRequest) {
-    if (_isMaintenanceTerminal(item)) {
-      return;
-    }
-    if (capabilities.canManage) {
-      await _showTriageDialog(context, ref, item);
-      return;
-    }
-    await _openTaskDetailDialog(context, ref, item, capabilities);
-    return;
-  }
-
-  if (!item.isTask || item.isTerminal) {
-    return;
-  }
-
-  final String status = _normalizedStatus(item);
-  if (status == 'PENDING' && item.assigneeId == null) {
-    if (capabilities.canManage) {
+  final _HousekeepingNextActionKind kind = _nextActionKind(
+    item,
+    capabilities,
+  );
+  switch (kind) {
+    case _HousekeepingNextActionKind.assign:
       await _showAssignDialog(context, ref, item);
       return;
-    }
-    await _openTaskDetailDialog(context, ref, item, capabilities);
-    return;
-  }
-
-  if (status == 'PENDING') {
-    if (capabilities.canUpdateTasks) {
-      await _confirmTaskAction(
+    case _HousekeepingNextActionKind.start:
+      await _mutateHousekeeping(
         context,
         ref,
-        item,
-        title: context.l10n.housekeepingStartDialogTitle,
-        body: context.l10n.housekeepingStartDialogBody,
-        submitLabel: context.l10n.housekeepingStartAction,
-        submit: () {
-          return ref
-              .read(housekeepingWorkspaceControllerProvider.notifier)
-              .startTask(item);
-        },
+        () => ref
+            .read(housekeepingWorkspaceControllerProvider.notifier)
+            .startTask(item),
       );
       return;
-    }
-    await _openTaskDetailDialog(context, ref, item, capabilities);
-    return;
-  }
-
-  if (status == 'IN_PROGRESS') {
-    if (capabilities.canUpdateTasks) {
-      await _confirmTaskAction(
+    case _HousekeepingNextActionKind.complete:
+      await _mutateHousekeeping(
         context,
         ref,
-        item,
-        title: context.l10n.housekeepingCompleteDialogTitle,
-        body: context.l10n.housekeepingCompleteDialogBody,
-        submitLabel: context.l10n.housekeepingCompleteAction,
-        submit: () {
-          return ref
-              .read(housekeepingWorkspaceControllerProvider.notifier)
-              .completeTask(item);
-        },
+        () => ref
+            .read(housekeepingWorkspaceControllerProvider.notifier)
+            .completeTask(item),
       );
       return;
-    }
-    await _openTaskDetailDialog(context, ref, item, capabilities);
-    return;
+    case _HousekeepingNextActionKind.triage:
+      await _showTriageDialog(context, ref, item);
+      return;
+    case _HousekeepingNextActionKind.review:
+      await _openTaskDetailDialog(context, ref, item, capabilities);
+      return;
+    case _HousekeepingNextActionKind.none:
+      return;
   }
-
-  await _openTaskDetailDialog(context, ref, item, capabilities);
 }
 
 Future<void> _openTaskDetailDialog(
@@ -1127,6 +1036,11 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
                 value: _dateTimeLabel(context, _primaryDate(item)),
                 icon: Icons.schedule_outlined,
               ),
+              AppInfoTileData(
+                label: l10n.housekeepingStatusColumnLabel,
+                value: _statusLabel(l10n, item),
+                icon: _statusIcon(item),
+              ),
             ],
           ),
           SizedBox(height: Theme.of(context).spacing.md),
@@ -1134,11 +1048,6 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
             item: item,
             isSaving: state.isSaving,
             capabilities: capabilities,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppReportPreviewPanel(
-            title: l10n.housekeepingReadinessTitle,
-            child: _ReadinessPreview(item: item),
           ),
         ],
       ),
@@ -1160,145 +1069,137 @@ class _DetailActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final _HousekeepingNextActionKind nextKind = _nextActionKind(
+      item,
+      capabilities,
+    );
+    final String status = _normalizedStatus(item);
+    final List<AppActionItem> actions = <AppActionItem>[
+      if (item.isTask &&
+          capabilities.canManage &&
+          !item.isTerminal &&
+          nextKind != _HousekeepingNextActionKind.assign)
+        AppActionItem(
+          label: l10n.housekeepingAssignAction,
+          leadingIcon: Icons.assignment_ind_outlined,
+          enabled: !isSaving,
+          onPressed: () => _showAssignDialog(context, ref, item),
+        ),
+      if (item.isTask &&
+          capabilities.canUpdateTasks &&
+          status == 'PENDING' &&
+          nextKind != _HousekeepingNextActionKind.start)
+        AppActionItem(
+          label: l10n.housekeepingStartAction,
+          leadingIcon: Icons.play_arrow_outlined,
+          enabled: !isSaving,
+          variant: AppActionVariant.primary,
+          onPressed: () => unawaited(
+            _mutateHousekeeping(
+              context,
+              ref,
+              () => ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .startTask(item),
+            ),
+          ),
+        ),
+      if (item.isTask &&
+          capabilities.canUpdateTasks &&
+          status == 'IN_PROGRESS' &&
+          nextKind != _HousekeepingNextActionKind.complete)
+        AppActionItem(
+          label: l10n.housekeepingCompleteAction,
+          leadingIcon: Icons.task_alt_outlined,
+          enabled: !isSaving,
+          variant: AppActionVariant.primary,
+          onPressed: () => unawaited(
+            _mutateHousekeeping(
+              context,
+              ref,
+              () => ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .completeTask(item),
+            ),
+          ),
+        ),
+      if (item.isTask && capabilities.canManage && !item.isTerminal)
+        AppActionItem(
+          label: l10n.housekeepingCancelAction,
+          leadingIcon: Icons.cancel_outlined,
+          enabled: !isSaving,
+          onPressed: () => _confirmTaskAction(
+            context,
+            ref,
+            item,
+            title: l10n.housekeepingCancelDialogTitle,
+            body: l10n.housekeepingCancelDialogBody,
+            submitLabel: l10n.housekeepingCancelAction,
+            submit: () {
+              return ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .cancelTask(item);
+            },
+          ),
+        ),
+      if (item.isMaintenanceRequest &&
+          capabilities.canManage &&
+          !_isMaintenanceTerminal(item) &&
+          nextKind != _HousekeepingNextActionKind.triage)
+        AppActionItem(
+          label: l10n.housekeepingTriageAction,
+          leadingIcon: AppActionIcons.triage,
+          enabled: !isSaving,
+          variant: AppActionVariant.primary,
+          onPressed: () => _showTriageDialog(context, ref, item),
+        ),
+      if (item.isMaintenanceRequest &&
+          capabilities.canManage &&
+          !_isMaintenanceTerminal(item))
+        AppActionItem(
+          label: l10n.housekeepingCompleteRequestAction,
+          leadingIcon: Icons.task_alt_outlined,
+          enabled: !isSaving,
+          onPressed: () => unawaited(
+            _mutateHousekeeping(
+              context,
+              ref,
+              () => ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .completeMaintenanceRequest(item),
+            ),
+          ),
+        ),
+      if (item.isMaintenanceRequest &&
+          capabilities.canManage &&
+          !_isMaintenanceTerminal(item))
+        AppActionItem(
+          label: l10n.housekeepingCancelRequestAction,
+          leadingIcon: Icons.cancel_outlined,
+          enabled: !isSaving,
+          onPressed: () => _confirmTaskAction(
+            context,
+            ref,
+            item,
+            title: l10n.housekeepingCancelRequestDialogTitle,
+            body: l10n.housekeepingCancelRequestDialogBody,
+            submitLabel: l10n.housekeepingCancelRequestAction,
+            submit: () {
+              return ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .cancelMaintenanceRequest(item);
+            },
+          ),
+        ),
+    ];
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
-      actions: <AppActionItem>[
-        if (item.isTask)
-          AppActionItem(
-            label: l10n.housekeepingAssignAction,
-            leadingIcon: Icons.assignment_ind_outlined,
-            enabled: capabilities.canManage && !isSaving && !item.isTerminal,
-            onPressed: () => _showAssignDialog(context, ref, item),
-          ),
-        if (item.isTask)
-          AppActionItem(
-            label: l10n.housekeepingStartAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            enabled:
-                capabilities.canUpdateTasks &&
-                !isSaving &&
-                _normalizedStatus(item) == 'PENDING',
-            variant: AppActionVariant.primary,
-            onPressed: () => _confirmTaskAction(
-              context,
-              ref,
-              item,
-              title: l10n.housekeepingStartDialogTitle,
-              body: l10n.housekeepingStartDialogBody,
-              submitLabel: l10n.housekeepingStartAction,
-              submit: () {
-                return ref
-                    .read(housekeepingWorkspaceControllerProvider.notifier)
-                    .startTask(item);
-              },
-            ),
-          ),
-        if (item.isTask)
-          AppActionItem(
-            label: l10n.housekeepingCompleteAction,
-            leadingIcon: Icons.task_alt_outlined,
-            enabled:
-                capabilities.canUpdateTasks &&
-                !isSaving &&
-                _normalizedStatus(item) == 'IN_PROGRESS',
-            variant: AppActionVariant.primary,
-            onPressed: () => _confirmTaskAction(
-              context,
-              ref,
-              item,
-              title: l10n.housekeepingCompleteDialogTitle,
-              body: l10n.housekeepingCompleteDialogBody,
-              submitLabel: l10n.housekeepingCompleteAction,
-              submit: () {
-                return ref
-                    .read(housekeepingWorkspaceControllerProvider.notifier)
-                    .completeTask(item);
-              },
-            ),
-          ),
-        if (item.isTask)
-          AppActionItem(
-            label: l10n.housekeepingCancelAction,
-            leadingIcon: Icons.cancel_outlined,
-            enabled: capabilities.canManage && !isSaving && !item.isTerminal,
-            onPressed: () => _confirmTaskAction(
-              context,
-              ref,
-              item,
-              title: l10n.housekeepingCancelDialogTitle,
-              body: l10n.housekeepingCancelDialogBody,
-              submitLabel: l10n.housekeepingCancelAction,
-              submit: () {
-                return ref
-                    .read(housekeepingWorkspaceControllerProvider.notifier)
-                    .cancelTask(item);
-              },
-            ),
-          ),
-        if (item.isTask)
-          AppActionItem(
-            label: l10n.housekeepingMarkReadyAction,
-            leadingIcon: Icons.hotel_outlined,
-            enabled: false,
-            tooltip: l10n.housekeepingBackendGapTooltip,
-            onPressed: null,
-          ),
-        if (item.isMaintenanceRequest)
-          AppActionItem(
-            label: l10n.housekeepingTriageAction,
-            leadingIcon: AppActionIcons.triage,
-            enabled:
-                capabilities.canManage &&
-                !isSaving &&
-                !_isMaintenanceTerminal(item),
-            variant: AppActionVariant.primary,
-            onPressed: () => _showTriageDialog(context, ref, item),
-          ),
-        if (item.isMaintenanceRequest)
-          AppActionItem(
-            label: l10n.housekeepingCompleteRequestAction,
-            leadingIcon: Icons.task_alt_outlined,
-            enabled:
-                capabilities.canManage &&
-                !isSaving &&
-                !_isMaintenanceTerminal(item),
-            onPressed: () => _confirmTaskAction(
-              context,
-              ref,
-              item,
-              title: l10n.housekeepingCompleteRequestDialogTitle,
-              body: l10n.housekeepingCompleteRequestDialogBody,
-              submitLabel: l10n.housekeepingCompleteRequestAction,
-              submit: () {
-                return ref
-                    .read(housekeepingWorkspaceControllerProvider.notifier)
-                    .completeMaintenanceRequest(item);
-              },
-            ),
-          ),
-        if (item.isMaintenanceRequest)
-          AppActionItem(
-            label: l10n.housekeepingCancelRequestAction,
-            leadingIcon: Icons.cancel_outlined,
-            enabled:
-                capabilities.canManage &&
-                !isSaving &&
-                !_isMaintenanceTerminal(item),
-            onPressed: () => _confirmTaskAction(
-              context,
-              ref,
-              item,
-              title: l10n.housekeepingCancelRequestDialogTitle,
-              body: l10n.housekeepingCancelRequestDialogBody,
-              submitLabel: l10n.housekeepingCancelRequestAction,
-              submit: () {
-                return ref
-                    .read(housekeepingWorkspaceControllerProvider.notifier)
-                    .cancelMaintenanceRequest(item);
-              },
-            ),
-          ),
-      ],
+      actions: actions,
     );
   }
 }
@@ -1306,34 +1207,6 @@ class _DetailActions extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 // Helper widgets
 // ---------------------------------------------------------------------------
-
-class _ReadinessPreview extends StatelessWidget {
-  const _ReadinessPreview({required this.item});
-
-  final HousekeepingWorkItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        _HousekeepingStatusBadge(item: item),
-        SizedBox(height: theme.spacing.sm),
-        Text(
-          item.isTask
-              ? l10n.housekeepingTaskReadinessBody
-              : item.isSchedule
-              ? l10n.housekeepingScheduleReadinessBody
-              : l10n.housekeepingMaintenanceReadinessBody,
-          style: theme.textTheme.bodyMedium,
-        ),
-      ],
-    );
-  }
-}
 
 class _CopyableTaskCell extends StatelessWidget {
   const _CopyableTaskCell({required this.title, required this.identifier});
@@ -1911,54 +1784,55 @@ Future<void> _showReportPreviewDialog(
     title: Text(l10n.housekeepingReportSummaryTitle),
     icon: const Icon(Icons.assessment_outlined),
     maxWidth: 760,
-    content: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        AppReportSummaryGrid(
-          records: <AppReportSummaryItem>[
-            AppReportSummaryItem(
-              label: l10n.housekeepingPendingTasksSummaryLabel,
-              value: AppFormatters.compactNumber(
-                state.overview.summaryValue('pending_tasks'),
-                locale,
-              ),
-              icon: Icons.cleaning_services_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.housekeepingCompletedTodaySummaryLabel,
-              value: AppFormatters.compactNumber(
-                state.overview.summaryValue('completed_today'),
-                locale,
-              ),
-              icon: Icons.task_alt_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.housekeepingOpenRequestsSummaryLabel,
-              value: AppFormatters.compactNumber(
-                state.overview.summaryValue('open_requests'),
-                locale,
-              ),
-              icon: Icons.build_circle_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.housekeepingOverdueRequestsSummaryLabel,
-              value: AppFormatters.compactNumber(
-                state.overview.summaryValue('overdue_requests'),
-                locale,
-              ),
-              icon: Icons.warning_amber_outlined,
-            ),
-          ],
+    content: AppReportSummaryGrid(
+      records: <AppReportSummaryItem>[
+        AppReportSummaryItem(
+          label: l10n.housekeepingPendingTasksSummaryLabel,
+          value: AppFormatters.compactNumber(
+            state.overview.summaryValue('pending_tasks'),
+            locale,
+          ),
+          icon: Icons.cleaning_services_outlined,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        AppReportPreviewPanel(
-          title: l10n.housekeepingReportPreviewTitle,
-          child: Text(l10n.housekeepingReportPreviewBody),
+        AppReportSummaryItem(
+          label: l10n.housekeepingCompletedTodaySummaryLabel,
+          value: AppFormatters.compactNumber(
+            state.overview.summaryValue('completed_today'),
+            locale,
+          ),
+          icon: Icons.task_alt_outlined,
+        ),
+        AppReportSummaryItem(
+          label: l10n.housekeepingOpenRequestsSummaryLabel,
+          value: AppFormatters.compactNumber(
+            state.overview.summaryValue('open_requests'),
+            locale,
+          ),
+          icon: Icons.build_circle_outlined,
+        ),
+        AppReportSummaryItem(
+          label: l10n.housekeepingOverdueRequestsSummaryLabel,
+          value: AppFormatters.compactNumber(
+            state.overview.summaryValue('overdue_requests'),
+            locale,
+          ),
+          icon: Icons.warning_amber_outlined,
         ),
       ],
     ),
   );
+}
+
+Future<void> _mutateHousekeeping(
+  BuildContext context,
+  WidgetRef ref,
+  Future<AppFailure?> Function() submit,
+) async {
+  final AppFailure? failure = await submit();
+  if (!context.mounted) {
+    return;
+  }
+  _showMutationResult(context, failure);
 }
 
 void _showMutationResult(BuildContext context, AppFailure? failure) {
@@ -2164,40 +2038,65 @@ IconData _statusIcon(HousekeepingWorkItem item) {
 
 String _nextActionLabel(
   AppLocalizations l10n,
+  _HousekeepingNextActionKind kind, {
+  HousekeepingWorkItem? item,
+}) {
+  return switch (kind) {
+    _HousekeepingNextActionKind.assign => l10n.housekeepingNextActionAssign,
+    _HousekeepingNextActionKind.start => l10n.housekeepingNextActionStart,
+    _HousekeepingNextActionKind.complete => l10n.housekeepingNextActionComplete,
+    _HousekeepingNextActionKind.triage => l10n.housekeepingNextActionTriage,
+    _HousekeepingNextActionKind.review => item?.isSchedule == true
+        ? l10n.housekeepingNextActionReviewSchedule
+        : l10n.housekeepingNextActionView,
+    _HousekeepingNextActionKind.none => l10n.housekeepingNextActionNoAction,
+  };
+}
+
+_HousekeepingNextActionKind _nextActionKind(
   HousekeepingWorkItem item,
   _HousekeepingCapabilities capabilities,
 ) {
   if (item.isSchedule) {
-    return l10n.housekeepingNextActionReviewSchedule;
+    return _HousekeepingNextActionKind.review;
   }
   if (item.isMaintenanceRequest) {
     if (_isMaintenanceTerminal(item)) {
-      return l10n.housekeepingNextActionNoAction;
+      return _HousekeepingNextActionKind.none;
     }
     return capabilities.canManage
-        ? l10n.housekeepingNextActionTriage
-        : l10n.housekeepingNextActionView;
+        ? _HousekeepingNextActionKind.triage
+        : _HousekeepingNextActionKind.review;
   }
   if (!item.isTask || item.isTerminal) {
-    return l10n.housekeepingNextActionNoAction;
+    return _HousekeepingNextActionKind.none;
   }
   final String status = _normalizedStatus(item);
   if (status == 'PENDING' && item.assigneeId == null) {
     return capabilities.canManage
-        ? l10n.housekeepingNextActionAssign
-        : l10n.housekeepingNextActionView;
+        ? _HousekeepingNextActionKind.assign
+        : _HousekeepingNextActionKind.review;
   }
   if (status == 'PENDING') {
     return capabilities.canUpdateTasks
-        ? l10n.housekeepingNextActionStart
-        : l10n.housekeepingNextActionView;
+        ? _HousekeepingNextActionKind.start
+        : _HousekeepingNextActionKind.review;
   }
   if (status == 'IN_PROGRESS') {
     return capabilities.canUpdateTasks
-        ? l10n.housekeepingNextActionComplete
-        : l10n.housekeepingNextActionView;
+        ? _HousekeepingNextActionKind.complete
+        : _HousekeepingNextActionKind.review;
   }
-  return l10n.housekeepingNextActionView;
+  return _HousekeepingNextActionKind.review;
+}
+
+enum _HousekeepingNextActionKind {
+  assign,
+  start,
+  complete,
+  triage,
+  review,
+  none,
 }
 
 String _locationLabel(AppLocalizations l10n, HousekeepingWorkItem item) {

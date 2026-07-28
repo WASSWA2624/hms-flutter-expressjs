@@ -181,6 +181,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
       profile,
       policy,
       request: request,
+      excludeActionIds: actions.map((HomeActionDefinition a) => a.id),
     ),
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,
@@ -320,8 +321,13 @@ List<DashboardQuickActionData> homeDashboardEmptyActions(
   HomeDashboardProfile profile,
   AppAccessPolicy policy, {
   HomeDashboardRequest request = HomeDashboardRequest.empty,
+  Iterable<String> excludeActionIds = const <String>[],
 }) {
-  return homeVisibleEmptyActions(profile.emptyActionIds, policy)
+  return homeVisibleEmptyActions(
+    profile.emptyActionIds,
+    policy,
+    excludeActionIds: excludeActionIds,
+  )
       .map(
         (HomeActionDefinition action) => DashboardQuickActionData(
           label: action.label,

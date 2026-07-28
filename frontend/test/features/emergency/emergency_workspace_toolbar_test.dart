@@ -60,19 +60,14 @@ void main() {
   });
 
   group('Emergency toolbar matrix', () {
-    test('Refresh is required on every tab including Closed', () {
-      // Refresh is always emitted via secondaryActions; Closed has no primary.
+    test('Quick arrival is the only strip primary; Refresh is absent', () {
+      // Refresh was removed — board syncs after mutations / realtime / retry.
       for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
         final bool hasPrimary = emergencyShowsQuickArrival(tab);
-        const bool hasSecondaryRefresh = true;
-        expect(
-          hasPrimary || hasSecondaryRefresh,
-          isTrue,
-          reason: '${tab.name} must expose at least one toolbar control',
-        );
         if (tab == EmergencyBoardTab.closed) {
           expect(hasPrimary, isFalse);
-          expect(hasSecondaryRefresh, isTrue);
+        } else {
+          expect(hasPrimary, isTrue);
         }
       }
     });

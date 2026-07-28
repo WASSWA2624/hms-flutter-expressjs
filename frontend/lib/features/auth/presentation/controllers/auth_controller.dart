@@ -70,6 +70,22 @@ final class AuthController extends Notifier<AuthControllerState> {
     state = state.copyWith(clearFailure: true);
   }
 
+  void clearIdentifyTenants() {
+    if (state.identifyTenants.isEmpty) {
+      return;
+    }
+
+    state = state.copyWith(clearIdentifyTenants: true);
+  }
+
+  void clearPasswordResetSubmitted() {
+    if (!state.passwordResetSubmitted) {
+      return;
+    }
+
+    state = state.copyWith(passwordResetSubmitted: false);
+  }
+
   Future<bool> login({
     required String identifier,
     required String password,

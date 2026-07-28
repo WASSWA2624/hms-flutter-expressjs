@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
@@ -1221,25 +1220,9 @@ class EmergencyActionPanel extends ConsumerWidget {
           requirement: writeRequirement,
           label: EmergencyText.completeTrip,
           icon: Icons.flag_outlined,
-          confirmTitle: 'Complete ambulance trip',
-          confirmBody:
-              'This records ambulance arrival for the active emergency trip.',
-          confirmSubmitLabel: 'Complete trip',
-          mutate: () async {
-            final AppFailure? failure = await _controller(
-              context,
-            ).completeTrip();
-            return failure;
-          },
-          onSuccess: () {
-            if (context.mounted) {
-              showFailureIfNeeded(
-                context,
-                null,
-                successMessage: 'Complete trip done',
-              );
-            }
-          },
+          onPressed: () => unawaited(
+            _confirmCompleteTrip(context),
+          ),
         ),
       if (isOpen && omit != EmergencyNextActionKind.handoff)
         AppPermissionActionItem(
@@ -1497,6 +1480,30 @@ class EmergencyActionPanel extends ConsumerWidget {
     }
   }
 
+  Future<void> _confirmCompleteTrip(BuildContext context) async {
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AppConfirmActionDialog(
+        title: 'Complete ambulance trip',
+        body: 'This records ambulance arrival for the active emergency trip.',
+        submitLabel: 'Complete trip',
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final AppFailure? failure = await _controller(context).completeTrip();
+    if (context.mounted) {
+      showFailureIfNeeded(
+        context,
+        failure,
+        successMessage: 'Complete trip done',
+      );
+    }
+  }
+
   EmergencyWorkspaceController _controller(BuildContext context) {
     return ProviderScope.containerOf(
       context,
@@ -1735,8 +1742,9 @@ Future<void> openEmergencyDetailDialog(
   WidgetRef ref,
   EmergencyWorkspaceState fallbackState,
   EmergencyCaseSummary summary,
-  AccessRequirement writeRequirement,
-) async {
+  AccessRequirement writeRequirement, {
+  EmergencyNextActionKind? omitNextActionKind,
+}) async {
   final EmergencyWorkspaceController controller = ref.read(
     emergencyWorkspaceControllerProvider.notifier,
   );
@@ -1765,9 +1773,223 @@ Future<void> openEmergencyDetailDialog(
         state: state,
         writeRequirement: writeRequirement,
         isDialog: true,
+        omitNextActionKind: omitNextActionKind,
       ),
     ),
   );
+}
+
+/// Opens the stage mutation dialog for a deep-linked [panel] without an empty
+/// detail shell in between.
+Future<void> openEmergencyFocusedAction(
+  BuildContext context,
+  WidgetRef ref,
+  EmergencyWorkspaceState fallbackState,
+  EmergencyCaseSummary summary,
+  EmergencyDetailPanelFocus panel,
+  AccessRequirement writeRequirement,
+) async {
+  final EmergencyNextActionKind? kind = switch (panel) {
+    EmergencyDetailPanelFocus.triage => EmergencyNextActionKind.triage,
+    EmergencyDetailPanelFocus.response => EmergencyNextActionKind.response,
+    EmergencyDetailPanelFocus.ambulance =>
+      emergencyBoardNextActionKind(summary, tab: EmergencyBoardTab.ambulance) ??
+          EmergencyNextActionKind.dispatch,
+    EmergencyDetailPanelFocus.handoff => EmergencyNextActionKind.handoff,
+    EmergencyDetailPanelFocus.none => null,
+  };
+  if (kind == null) {
+    await openEmergencyDetailDialog(
+      context,
+      ref,
+      fallbackState,
+      summary,
+      writeRequirement,
+    );
+    return;
+  }
+
+  final EmergencyWorkspaceState? state = readEmergencyState(ref);
+  await runEmergencyNextAction(
+    context: context,
+    ref: ref,
+    item: summary,
+    kind: kind,
+    referenceData: state?.referenceData ?? fallbackState.referenceData,
+    fallbackDetail: state?.selectedDetail ?? fallbackState.selectedDetail,
+  );
+}
+
+Future<void> runEmergencyNextAction({
+  required BuildContext context,
+  required WidgetRef ref,
+  required EmergencyCaseSummary item,
+  required EmergencyNextActionKind kind,
+  required EmergencyReferenceData referenceData,
+  EmergencyCaseDetail? fallbackDetail,
+}) async {
+  final EmergencyWorkspaceController controller = ref.read(
+    emergencyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? selectFailure = await controller.selectCase(item);
+  if (!context.mounted) {
+    return;
+  }
+  if (selectFailure != null) {
+    showFailureIfNeeded(context, selectFailure);
+    return;
+  }
+
+  final EmergencyWorkspaceState? state = readEmergencyState(ref);
+  final EmergencyCaseDetail? detail =
+      state?.selectedDetail ?? fallbackDetail;
+  final EmergencyReferenceData refs =
+      state?.referenceData ?? referenceData;
+
+  switch (kind) {
+    case EmergencyNextActionKind.triage:
+      final AppLocalizations l10n = context.l10n;
+      final bool? changed = await showAppTriageActionDialog<bool>(
+        context: context,
+        builder: (_) => AppTriageActionDialog(
+          title: l10n.emergencyTriageDialogTitle,
+          semanticLabel: l10n.emergencyTriageDialogSemanticLabel,
+          cancelLabel: l10n.commonCancelActionLabel,
+          submitLabel: l10n.emergencySaveTriageAction,
+          requiredMessage: l10n.validationRequired,
+          triageLevelLabel: l10n.patientsTriageLevelLabel,
+          triageLevelOptions: triageActionOptions(triageOptions(l10n)),
+          initialTriageLevel: normalizedOption(
+            detail?.latestTriage?.triageLevel ?? item.latestTriage?.triageLevel,
+            fallback: 'LEVEL_2',
+          ),
+          notesSectionTitle: l10n.patientsNotesSectionTitle,
+          notesLabel: l10n.emergencyTriageNotesLabel,
+          initialNotes: detail?.latestTriage?.notes ?? item.latestTriage?.notes,
+          onSubmit: (AppTriageActionInput input) {
+            return controller.recordTriage(
+              triageLevel: input.triageLevel ?? 'LEVEL_2',
+              notes: input.notes,
+            );
+          },
+        ),
+      );
+      if (changed == true && context.mounted) {
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: l10n.emergencyTriageRecordedMessage,
+        );
+      }
+    case EmergencyNextActionKind.response:
+      final bool? saved = await showEmergencyResponseDialog(
+        context: context,
+        onSubmit: (String notes) => controller.markResponse(notes: notes),
+      );
+      if (saved == true && context.mounted) {
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: context.l10n.emergencyResponseMarkedMessage,
+        );
+      }
+    case EmergencyNextActionKind.dispatch:
+      final bool? saved = await showEmergencyDispatchDialog(
+        context: context,
+        referenceData: refs,
+        onSubmit: (DispatchInput input) {
+          return controller.dispatchAmbulance(
+            ambulanceId: input.ambulanceId,
+            status: input.status,
+          );
+        },
+      );
+      if (saved == true && context.mounted) {
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: context.l10n.emergencyDispatchSucceededMessage,
+        );
+      }
+    case EmergencyNextActionKind.startTrip:
+      String? ambulanceId =
+          detail?.latestDispatch?.ambulanceId ??
+          item.latestDispatch?.ambulanceId;
+      if (ambulanceId == null && refs.availableAmbulances.length == 1) {
+        ambulanceId = refs.availableAmbulances.first.id;
+      }
+      if (ambulanceId == null) {
+        final bool? saved = await showEmergencyDispatchDialog(
+          context: context,
+          referenceData: refs,
+          purpose: DispatchDialogPurpose.selectAmbulance,
+          initialStatus: 'EN_ROUTE',
+          onSubmit: (DispatchInput input) {
+            return controller.startAmbulanceTrip(
+              ambulanceId: input.ambulanceId,
+            );
+          },
+        );
+        if (saved == true && context.mounted) {
+          showFailureIfNeeded(
+            context,
+            null,
+            successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+          );
+        }
+        return;
+      }
+      final AppFailure? failure = await controller.startAmbulanceTrip(
+        ambulanceId: ambulanceId,
+      );
+      if (context.mounted) {
+        showFailureIfNeeded(
+          context,
+          failure,
+          successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+        );
+      }
+    case EmergencyNextActionKind.completeTrip:
+      final bool? confirmed = await showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AppConfirmActionDialog(
+          title: 'Complete ambulance trip',
+          body:
+              'This records ambulance arrival for the active emergency trip.',
+          submitLabel: 'Complete trip',
+        ),
+      );
+      if (confirmed != true || !context.mounted) {
+        return;
+      }
+      final AppFailure? failure = await controller.completeTrip();
+      if (context.mounted) {
+        showFailureIfNeeded(
+          context,
+          failure,
+          successMessage: 'Complete trip done',
+        );
+      }
+    case EmergencyNextActionKind.handoff:
+      final bool? saved = await showEmergencyHandoffDialog(
+        context: context,
+        onSubmit: (HandoffInput input) {
+          return controller.handoff(
+            destination: input.destination,
+            notes: input.notes,
+            closeCase: input.closeCase,
+          );
+        },
+      );
+      if (saved == true && context.mounted) {
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: context.l10n.emergencyHandoffRecordedMessage,
+        );
+      }
+  }
 }
 
 EmergencyWorkspaceState? readEmergencyState(WidgetRef ref) {
