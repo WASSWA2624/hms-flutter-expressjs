@@ -319,4 +319,79 @@ void main() {
     verifyNever(() => ipd.startAdmission(any()));
     verifyNever(() => clinical.createAdmission(any()));
   });
+
+  test('recordEncounterVitals posts OPD record-vitals payload', () async {
+    final _MockClinicalRepository clinical = _MockClinicalRepository();
+    final _MockOpdRepository opd = _MockOpdRepository();
+    final _MockIpdRepository ipd = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(
+      clinical: clinical,
+      opd: opd,
+      ipd: ipd,
+    );
+
+    const OpdFlowDetail flowDetail = OpdFlowDetail(
+      summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001'),
+    );
+    when(() => opd.getOpdFlow(any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(flowDetail),
+    );
+    when(() => opd.recordVitals(any(), any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(flowDetail),
+    );
+
+    await container.read(clinicalWorkspaceControllerProvider.future);
+    final ClinicalWorkspaceController controller = container.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+
+    const ClinicalWorklistEntry entry = ClinicalWorklistEntry(
+      id: 'encounter-1',
+      sourceQueue: 'OPD',
+      encounterId: 'enc-1',
+      encounterPublicId: 'ENC000001',
+      opdFlowApiId: 'OPD000001',
+      status: 'OPEN',
+      stage: 'WAITING_VITALS',
+      nextStep: 'RECORD_VITALS',
+    );
+    await controller.selectEntry(entry);
+
+    final AppFailure? failure = await controller.recordEncounterVitals(
+      vitals: <Map<String, Object?>>[
+        <String, Object?>{
+          'vital_type': 'TEMPERATURE',
+          'value': 37.1,
+          'unit': 'C',
+        },
+      ],
+    );
+    expect(failure, isNull);
+
+    final List<Object?> captured = verify(
+      () => opd.recordVitals('OPD000001', captureAny()),
+    ).captured;
+    final Map<String, Object?> payload = captured.single as Map<String, Object?>;
+    expect(payload['vitals'], isA<List<Object?>>());
+    expect(payload.containsKey('update_existing'), isFalse);
+
+    final AppFailure? updateFailure = await controller.recordEncounterVitals(
+      vitals: <Map<String, Object?>>[
+        <String, Object?>{
+          'vital_type': 'HEART_RATE',
+          'value': 80,
+          'unit': 'bpm',
+        },
+      ],
+      updateExisting: true,
+    );
+    expect(updateFailure, isNull);
+    final List<Object?> updateCaptured = verify(
+      () => opd.recordVitals('OPD000001', captureAny()),
+    ).captured;
+    expect(
+      (updateCaptured.last as Map<String, Object?>)['update_existing'],
+      isTrue,
+    );
+  });
 }

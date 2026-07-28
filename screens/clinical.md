@@ -125,7 +125,8 @@ Resolution order:
   | Code (canonical) | Visible label (en) | Mode |
   | --- | --- | --- |
   | `PAY_CONSULTATION` / `PAY_SERVICE` | Pay consultation | Dialog mode → falls back to Billing route (no opener registered from clinical) |
-  | `RECORD_VITALS` / `NURSING_ASSESSMENT` | Record vitals | Route → Nursing |
+  | `RECORD_VITALS` | Record vitals | Inline clinical dialog (`ClinicalVitalsActionDialog`) when action column is used on `/clinical` |
+  | `NURSING_ASSESSMENT` | Record vitals | Route → Nursing |
   | `ASSIGN_DOCTOR` | Assign doctor (or **Change doctor** when remapped with assigned staff) | Dialog → **Assign doctor** |
   | `DOCTOR_REVIEW` | Clinical notes | Route → Clinical encounter |
   | `REVIEW_RESULTS` | Review results | Route → Clinical |
@@ -250,6 +251,13 @@ All clinical write actions below use write gate; disabled when not allowed (exce
   - Opens modal: Yes — **Add patient clinical note** (`ClinicalFreeTextActionDialog`).
   - Immediate result: Opens note dialog; on success snackbar.
   - Condition: Write gate.
+
+- **Record vitals** / **Edit vitals**
+  - Location: Encounter quick actions (label switches to Edit when handoff already has vitals).
+  - Opens modal: Yes — **Record/Edit vitals** (`ClinicalVitalsActionDialog` on `AppRecordVitalsDialog`).
+  - Immediate result: Writes OPD `record-vitals` for the encounter flow; refreshes triage handoff.
+  - Condition: Write gate; non-terminal; encounter has `opdFlowApiId`.
+  - Worklist: When next step is `RECORD_VITALS`, the Action column opens this dialog in clinical (does not route to Nursing).
 
 - **Add diagnosis**
   - Location: Encounter quick actions.
@@ -710,6 +718,6 @@ When planned, additional resolve actions:
 
 ## Notes on non-button surfaces
 
-- Status badges, triage handoff, vitals grid, results chronology, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above).
+- Status badges, triage handoff, vitals grid, results chronology, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above). Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
 - Copyable patient/encounter/admission identifiers in context tiles expose copy affordances from shared `AppCopyableIdentifier` / field `copyable: true` (not separate labeled page actions).
 - Empty clinical worklist has no primary empty-state button (state panel only).

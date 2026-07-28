@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -865,6 +866,40 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final String encounterId = item.apiEncounterId.trim();
+    final String nextActionCode = WorkflowActionRegistry.instance.canonicalize(
+      item.nextStep ?? item.stage ?? item.status ?? '',
+    );
+    if (nextActionCode == 'RECORD_VITALS' &&
+        (item.opdFlowApiId?.trim().isNotEmpty ?? false) &&
+        !item.isTerminal) {
+      return AppAccessActionGate(
+        requirement: _ClinicalWorkspaceContentState._writeRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return _ClinicalCompactFallbackAction(
+            label: l10n.opdRecordVitalsAction,
+            icon: Icons.monitor_heart_outlined,
+            enabled: isAllowed,
+            onPressed: isAllowed
+                ? () async {
+                    final ClinicalWorkspaceController controller = ref.read(
+                      clinicalWorkspaceControllerProvider.notifier,
+                    );
+                    final AppFailure? selectFailure = await controller
+                        .selectEntry(item);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (selectFailure != null) {
+                      _showFailureIfNeeded(context, selectFailure);
+                      return;
+                    }
+                    await _openVitalsDialog(context, controller);
+                  }
+                : null,
+          );
+        },
+      );
+    }
     if (encounterId.isNotEmpty) {
       final WorkflowActionContext actionContext = WorkflowActionContext(
         encounterId: encounterId,
@@ -1771,6 +1806,23 @@ class _ClinicalActionBar extends ConsumerWidget {
               onPressed: () => _openNoteDialog(context, controller),
             ),
             AppActionItem(
+              label:
+                  (bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false)
+                  ? l10n.opdEditVitalsAction
+                  : l10n.opdRecordVitalsAction,
+              leadingIcon: Icons.monitor_heart_outlined,
+              enabled:
+                  isAllowed &&
+                  !bundle.entry.isTerminal &&
+                  (bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false),
+              onPressed: () => _openVitalsDialog(
+                context,
+                controller,
+                hasExistingVitals:
+                    bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false,
+              ),
+            ),
+            AppActionItem(
               label: l10n.clinicalAddDiagnosisAction,
               leadingIcon: Icons.rule_outlined,
               enabled: isAllowed,
@@ -2302,6 +2354,51 @@ Future<void> _openNoteDialog(
         minLines: 5,
         maxLines: 6,
         onSubmit: controller.addClinicalNote,
+      ),
+    ),
+  );
+}
+
+Future<void> _openVitalsDialog(
+  BuildContext context,
+  ClinicalWorkspaceController controller, {
+  bool hasExistingVitals = false,
+}) async {
+  final Result<OpdFlowDetail> detailResult = await controller
+      .loadSelectedOpdFlowDetail();
+  if (!context.mounted) {
+    return;
+  }
+
+  OpdFlowDetail? detail;
+  AppFailure? loadFailure;
+  detailResult.when(
+    success: (OpdFlowDetail value) => detail = value,
+    failure: (AppFailure failure) => loadFailure = failure,
+  );
+
+  if (detail == null) {
+    _showFailureIfNeeded(context, loadFailure ?? AppFailure.validation());
+    return;
+  }
+
+  final bool editing =
+      hasExistingVitals || detail!.vitalMeasurements.isNotEmpty;
+
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalVitalsActionDialog(
+        detail: detail,
+        editing: editing,
+        onSubmit: (List<Map<String, Object?>> vitals) {
+          return controller.recordEncounterVitals(
+            vitals: vitals,
+            updateExisting: editing,
+          );
+        },
       ),
     ),
   );

@@ -352,6 +352,35 @@ final class ClinicalWorkspaceController
     );
   }
 
+  Future<Result<OpdFlowDetail>> loadSelectedOpdFlowDetail() async {
+    final String? opdFlowApiId = _selectedEntry?.opdFlowApiId?.trim();
+    if (opdFlowApiId == null || opdFlowApiId.isEmpty) {
+      return Result<OpdFlowDetail>.failure(AppFailure.validation());
+    }
+    return _opdRepository.getOpdFlow(opdFlowApiId);
+  }
+
+  Future<AppFailure?> recordEncounterVitals({
+    required List<Map<String, Object?>> vitals,
+    bool updateExisting = false,
+  }) {
+    final String? opdFlowApiId = _selectedEntry?.opdFlowApiId?.trim();
+    if (opdFlowApiId == null ||
+        opdFlowApiId.isEmpty ||
+        vitals.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelectedEncounter(
+      () => _opdRepository
+          .recordVitals(opdFlowApiId, <String, Object?>{
+            'vitals': vitals,
+            if (updateExisting) 'update_existing': true,
+          })
+          .then((Result<OpdFlowDetail> result) => result.map<void>((_) {})),
+    );
+  }
+
   Future<AppFailure?> addDiagnosis({
     required String diagnosisType,
     required List<ClinicalCatalogOption> diagnoses,
