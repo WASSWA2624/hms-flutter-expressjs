@@ -361,7 +361,7 @@ class _FacilityCatalogConfigPanelState
     _diagnosisSearchController.addListener(_onDiagnosisSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(_warmAllTabs());
+        unawaited(_ensureTabLoaded(_activeTab, prefetchSiblings: false));
       }
     });
   }
@@ -374,7 +374,7 @@ class _FacilityCatalogConfigPanelState
       _radiologyHydrated = false;
       _labHydrated = false;
       _diagnosisHydrated = false;
-      unawaited(_warmAllTabs(force: true));
+      unawaited(_ensureTabLoaded(_activeTab, force: true, prefetchSiblings: false));
     }
   }
 
@@ -1172,18 +1172,10 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Future<void> _warmAllTabs({bool force = false}) async {
-    await Future.wait(<Future<void>>[
-      _loadRadiologyItems(force: force),
-      _loadLabItems(force: force),
-      _loadDiagnosisItems(force: force),
-    ]);
-  }
-
   Future<void> _ensureTabLoaded(
     _CatalogDeskTab tab, {
     bool force = false,
-    bool prefetchSiblings = true,
+    bool prefetchSiblings = false,
   }) async {
     await switch (tab) {
       _CatalogDeskTab.radiology => _loadRadiologyItems(force: force),

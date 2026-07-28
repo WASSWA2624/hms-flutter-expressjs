@@ -147,6 +147,9 @@ class _RoomDetailsDialogState extends ConsumerState<_RoomDetailsDialog> {
     }
     for (final WardProfile ward in snapshot.wards) {
       if (ward.id == wardId) {
+        if (ward.isDeleted) {
+          return '${ward.name} (${context.l10n.tenantFacilityStructureDeletedStatus})';
+        }
         return ward.name;
       }
     }

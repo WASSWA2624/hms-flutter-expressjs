@@ -174,24 +174,16 @@ void main() {
     test('unit labels never fall back to raw UUIDs', () {
       final String sectionSource = unitSectionSource().replaceAll('\r\n', '\n');
       expect(
-        sectionSource.contains("return _facilityNamesById[facilityId] ?? '—';"),
+        sectionSource.contains('tenantFacilityRelatedNameLabel('),
         isTrue,
       );
-      expect(
-        sectionSource.contains("return _tenantNamesById[tenantId] ?? '—';"),
-        isTrue,
-      );
-      expect(
-        sectionSource.contains(
-          "_departmentName(snapshot, departmentId) ??\n        '—';",
-        ),
-        isTrue,
-      );
-      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
       expect(
         sectionSource.contains('tenantFacilityHumanFriendlyDisplayId'),
         isTrue,
       );
+      expect(sectionSource.contains('nameDetailBuilder:'), isTrue);
+      expect(sectionSource.contains('?? facilityId'), isFalse);
+      expect(sectionSource.contains('?? tenantId'), isFalse);
     });
 
     test('role-aware create pickers and required department', () {

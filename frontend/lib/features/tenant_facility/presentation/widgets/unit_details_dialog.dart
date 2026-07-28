@@ -159,6 +159,9 @@ class _UnitDetailsDialogState extends ConsumerState<_UnitDetailsDialog> {
     }
     for (final DepartmentProfile department in snapshot.departments) {
       if (department.id == departmentId) {
+        if (department.isDeleted) {
+          return '${department.name} (${context.l10n.tenantFacilityStructureDeletedStatus})';
+        }
         return department.name;
       }
     }

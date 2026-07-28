@@ -413,7 +413,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         failure: (_) => throw StateError('unreachable'),
       );
       all.addAll(page);
-      if (page.length < pageSize) {
+      if (page.length < pageSize || pageIndex >= 4) {
         break;
       }
       pageIndex += 1;
@@ -578,7 +578,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         failure: (_) => throw StateError('unreachable'),
       );
       all.addAll(page);
-      if (page.length < pageSize) {
+      if (page.length < pageSize || pageIndex >= 4) {
         break;
       }
       pageIndex += 1;

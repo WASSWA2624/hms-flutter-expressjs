@@ -61,11 +61,13 @@ class TenantFacilitySetupPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final setup = ref.watch(tenantFacilitySetupControllerProvider);
+    final AsyncValue<Result<FacilitySetupSnapshot>> setup = ref.watch(
+      tenantFacilitySetupControllerProvider,
+    );
 
     ref.listen<int>(
       tenantFacilitySetupSubmissionProvider.select(
-        (state) => state.successVersion,
+        (TenantFacilitySetupSubmissionState state) => state.successVersion,
       ),
       (int? previous, int next) {
         if (previous == null || next <= previous || !context.mounted) {
@@ -470,6 +472,8 @@ class _SetupBody extends ConsumerStatefulWidget {
 
 class _SetupBodyState extends ConsumerState<_SetupBody> {
   TenantFacilitySetupDeskSection? _section;
+  final Set<TenantFacilitySetupDeskSection> _mountedSections =
+      <TenantFacilitySetupDeskSection>{};
 
   List<TenantFacilitySetupDeskSection> get _visibleSections {
     return tenantFacilityVisibleSetupDeskSections(
@@ -497,6 +501,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     _section = TenantFacilitySetupDeskSection.fromQuery(
       widget.initialQuery?.section ?? '',
     );
+    _mountedSections.add(_currentSection);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -519,7 +524,10 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
           widget.initialQuery?.section ?? '',
         );
     if (fromRoute != null && fromRoute != _section) {
-      setState(() => _section = fromRoute);
+      setState(() {
+        _section = fromRoute;
+        _mountedSections.add(fromRoute);
+      });
     }
   }
 
@@ -556,7 +564,10 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     if (section == _currentSection) {
       return;
     }
-    setState(() => _section = section);
+    setState(() {
+      _section = section;
+      _mountedSections.add(section);
+    });
     _updateUrlForSection(section);
   }
 
@@ -574,6 +585,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         body: l10n.tenantFacilitySetupBody,
       );
     }
+
+    final int currentIndex = sections.indexOf(current);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -602,7 +615,21 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
           },
         ),
         SizedBox(height: theme.spacing.sm),
-        Expanded(child: _buildTabBody(current)),
+        Expanded(
+          child: IndexedStack(
+            index: currentIndex < 0 ? 0 : currentIndex,
+            sizing: StackFit.expand,
+            children: <Widget>[
+              for (final TenantFacilitySetupDeskSection section in sections)
+                _mountedSections.contains(section)
+                    ? _SetupTabKeepAlive(
+                        key: ValueKey<String>('setup-tab-${section.name}'),
+                        child: _buildTabBody(section),
+                      )
+                    : const SizedBox.shrink(),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -645,16 +672,13 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       ),
       TenantFacilitySetupDeskSection.clinicalCatalog =>
           _buildClinicalCatalogBody(snapshot),
-      TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
-        onMutated: (_) => _refreshSetup(),
-      ),
-      TenantFacilitySetupDeskSection.permissions => ManageRolesPermissionsPanel(
-        panel: AccessAdminPanel.permissions,
-        onMutated: (_) => _refreshSetup(),
-      ),
-      TenantFacilitySetupDeskSection.users => ManageUsersPanel(
-        onMutated: (_) => _refreshSetup(),
-      ),
+      TenantFacilitySetupDeskSection.roles =>
+        const ManageRolesPermissionsPanel(),
+      TenantFacilitySetupDeskSection.permissions =>
+        const ManageRolesPermissionsPanel(
+          panel: AccessAdminPanel.permissions,
+        ),
+      TenantFacilitySetupDeskSection.users => const ManageUsersPanel(),
     };
   }
 
@@ -672,6 +696,27 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       ),
       enabled: widget.canManageFacility || widget.canManageTenant,
     );
+  }
+}
+
+class _SetupTabKeepAlive extends StatefulWidget {
+  const _SetupTabKeepAlive({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_SetupTabKeepAlive> createState() => _SetupTabKeepAliveState();
+}
+
+class _SetupTabKeepAliveState extends State<_SetupTabKeepAlive>
+    with AutomaticKeepAliveClientMixin<_SetupTabKeepAlive> {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 
@@ -2511,9 +2556,15 @@ class _DepartmentSetupSection extends ConsumerStatefulWidget {
 
 class _DepartmentSetupSectionState
     extends ConsumerState<_DepartmentSetupSection> {
-  static const AppPageRequest _listRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+  static const AppPageRequest _lookupOptionsRequest = AppPageRequest(
+    pageSize: PlatformAdminListConfig.pageSize,
   );
+
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
+  int _totalItemCount = 0;
+  String _searchQuery = '';
+  String? _statusFilter;
+  Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
@@ -3225,9 +3276,15 @@ class _UnitSetupSection extends ConsumerStatefulWidget {
 }
 
 class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
-  static const AppPageRequest _listRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+  static const AppPageRequest _lookupOptionsRequest = AppPageRequest(
+    pageSize: PlatformAdminListConfig.pageSize,
   );
+
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
+  int _totalItemCount = 0;
+  String _searchQuery = '';
+  String? _statusFilter;
+  Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
@@ -4005,9 +4062,15 @@ class _WardSetupSection extends ConsumerStatefulWidget {
 }
 
 class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
-  static const AppPageRequest _listRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+  static const AppPageRequest _lookupOptionsRequest = AppPageRequest(
+    pageSize: PlatformAdminListConfig.pageSize,
   );
+
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
+  int _totalItemCount = 0;
+  String _searchQuery = '';
+  String? _statusFilter;
+  Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
@@ -4811,9 +4874,15 @@ class _RoomSetupSection extends ConsumerStatefulWidget {
 }
 
 class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
-  static const AppPageRequest _listRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+  static const AppPageRequest _lookupOptionsRequest = AppPageRequest(
+    pageSize: PlatformAdminListConfig.pageSize,
   );
+
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
+  int _totalItemCount = 0;
+  String _searchQuery = '';
+  String? _statusFilter;
+  Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
@@ -5605,9 +5674,15 @@ class _BedSetupSection extends ConsumerStatefulWidget {
 }
 
 class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
-  static const AppPageRequest _listRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+  static const AppPageRequest _lookupOptionsRequest = AppPageRequest(
+    pageSize: PlatformAdminListConfig.pageSize,
   );
+
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
+  int _totalItemCount = 0;
+  String _searchQuery = '';
+  String? _statusFilter;
+  Timer? _searchDebounce;
 
   bool _loading = true;
   AppFailure? _failure;
@@ -7268,7 +7343,7 @@ class _DepartmentFormDialog extends ConsumerStatefulWidget {
 
 class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
   static const AppPageRequest _lookupRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+    pageSize: PlatformAdminListConfig.pageSize,
   );
 
   final _formKey = GlobalKey<FormState>();
@@ -7968,9 +8043,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       );
     }
 
-    // Always load the full facility peer set first. Search-only loading misses
-    // near-matches that do not contain the typed query as a literal substring
-    // (for example "Emergancy" vs "Emergency").
+    // Bounded peer set only — backend confirm_similar remains authoritative.
     await appendMatches(null);
     final String trimmedName = name.trim();
     if (trimmedName.isNotEmpty) {
@@ -8002,7 +8075,7 @@ class _UnitFormDialog extends ConsumerStatefulWidget {
 
 class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
   static const AppPageRequest _lookupRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+    pageSize: PlatformAdminListConfig.pageSize,
   );
 
   final _formKey = GlobalKey<FormState>();
@@ -8721,7 +8794,7 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
       );
     }
 
-    // Always load the full facility peer set first for cross-department
+    // Bounded peer set only — backend confirm_similar remains authoritative.
     // matches (e.g., moving a unit between departments).
     await appendMatches();
     // Tighter check restricted to the target department.
@@ -8760,7 +8833,7 @@ class _WardFormDialog extends ConsumerStatefulWidget {
 
 class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
   static const AppPageRequest _lookupRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+    pageSize: PlatformAdminListConfig.pageSize,
   );
 
   final _formKey = GlobalKey<FormState>();
@@ -9518,7 +9591,7 @@ class _RoomFormDialog extends ConsumerStatefulWidget {
 
 class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
   static const AppPageRequest _lookupRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+    pageSize: PlatformAdminListConfig.pageSize,
   );
 
   final _formKey = GlobalKey<FormState>();
@@ -10241,7 +10314,7 @@ class _BedFormDialog extends ConsumerStatefulWidget {
 
 class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
   static const AppPageRequest _lookupRequest = AppPageRequest(
-    pageSize: AppPageRequest.maxPageSize,
+    pageSize: PlatformAdminListConfig.pageSize,
   );
 
   final _formKey = GlobalKey<FormState>();

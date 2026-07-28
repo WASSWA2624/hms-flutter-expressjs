@@ -184,7 +184,7 @@ void main() {
         sectionSource.contains("id: 'tenant'"),
         isFalse,
       );
-      expect(sectionSource.contains("?? '—'"), isTrue);
+      expect(sectionSource.contains('tenantFacilityRelatedNameLabel('), isTrue);
       expect(sectionSource.contains('?? facilityId'), isFalse);
       expect(sectionSource.contains('?? tenantId'), isFalse);
       expect(sectionSource.contains('??\n        departmentId'), isFalse);

@@ -80,7 +80,7 @@ void main() {
       );
 
       expect(tenantFacilityNextIncompleteWizardStep(snapshot), isNull);
-      expect(snapshot.completedChecklistItems, 8);
+      expect(snapshot.completedChecklistItems, 7);
       for (final TenantFacilitySetupWizardStep step
           in TenantFacilitySetupWizardStep.values) {
         expect(tenantFacilityWizardStepCompleted(snapshot, step), isTrue);
@@ -640,6 +640,49 @@ void main() {
           TenantFacilitySetupDeskSection.permissions,
         ),
         isNull,
+      );
+    });
+  });
+
+  group('tenantFacilityRelatedNameLabel', () {
+    test('flags deleted related names and rejects opaque ids', () {
+      expect(
+        tenantFacilityRelatedNameLabel(
+          'Emergency',
+          isDeleted: true,
+          deletedLabel: 'Deleted',
+        ),
+        'Emergency (Deleted)',
+      );
+      expect(
+        tenantFacilityRelatedNameLabel(
+          'Emergency',
+          isDeleted: false,
+          deletedLabel: 'Deleted',
+        ),
+        'Emergency',
+      );
+      expect(
+        tenantFacilityRelatedNameLabel(
+          '550e8400-e29b-41d4-a716-446655440000',
+          isDeleted: false,
+          deletedLabel: 'Deleted',
+        ),
+        '—',
+      );
+      expect(
+        tenantFacilityLooksLikeOpaqueId('550e8400-e29b-41d4-a716-446655440000'),
+        isTrue,
+      );
+      expect(
+        tenantFacilityHumanFriendlyDisplayId(
+          '550e8400-e29b-41d4-a716-446655440000',
+        ),
+        isNull,
+      );
+      expect(
+        tenantFacilityHumanFriendlyDisplayId('WRD-1001'),
+        'WRD-1001',
       );
     });
   });

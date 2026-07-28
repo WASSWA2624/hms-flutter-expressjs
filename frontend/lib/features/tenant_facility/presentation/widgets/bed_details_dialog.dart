@@ -160,6 +160,9 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
     if (snapshot != null) {
       for (final WardProfile ward in snapshot.wards) {
         if (ward.id == _bed.wardId) {
+          if (ward.isDeleted) {
+            return '${ward.name} (${context.l10n.tenantFacilityStructureDeletedStatus})';
+          }
           return ward.name;
         }
       }
@@ -180,6 +183,9 @@ class _BedDetailsDialogState extends ConsumerState<_BedDetailsDialog> {
     if (snapshot != null) {
       for (final RoomProfile room in snapshot.rooms) {
         if (room.id == roomId) {
+          if (room.isDeleted) {
+            return '${room.name} (${context.l10n.tenantFacilityStructureDeletedStatus})';
+          }
           return room.name;
         }
       }
