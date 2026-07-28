@@ -1,5 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 
 typedef HomeJsonMap = Map<String, Object?>;
@@ -56,6 +58,7 @@ final class HomeDashboardDto {
         .map(
           (HomeStatusCardDto dto) => dto.toEntity(
             fallbackLabel: _fallbackStatusLabel(profile, dto.id),
+            profile: profile,
           ),
         )
         .where((HomeStatusCard card) => card.id.isNotEmpty)
@@ -142,6 +145,9 @@ final class HomeTrendDto {
       title: _string(json['title']) ?? 'Dashboard trend',
       subtitle: _string(json['subtitle']) ?? '',
       points: points,
+      requiredPermissions: _permissions(json['required_permissions']).isNotEmpty
+          ? _permissions(json['required_permissions'])
+          : HomeDashboardAtomPermissions.charts,
     );
   }
 }
@@ -184,6 +190,9 @@ final class HomeDistributionDto {
       subtitle: _string(json['subtitle']) ?? '',
       total: total,
       segments: segments,
+      requiredPermissions: _permissions(json['required_permissions']).isNotEmpty
+          ? _permissions(json['required_permissions'])
+          : HomeDashboardAtomPermissions.charts,
     );
   }
 }
@@ -224,7 +233,25 @@ final class HomeStatusCardDto {
 
   String get id => _string(json['id']) ?? '';
 
-  HomeStatusCard toEntity({String? fallbackLabel}) {
+  HomeStatusCard toEntity({
+    String? fallbackLabel,
+    HomeDashboardProfile? profile,
+  }) {
+    final List<AppPermission> fromApi = _permissions(
+      json['required_permissions'],
+    );
+    List<AppPermission> required = fromApi;
+    if (required.isEmpty && profile != null) {
+      for (final HomeStatusCardTemplate template in profile.statusCards) {
+        if (template.id == id) {
+          required = template.effectiveRequiredPermissions;
+          break;
+        }
+      }
+    }
+    if (required.isEmpty) {
+      required = HomeDashboardAtomPermissions.forStatusCard(id);
+    }
     return HomeStatusCard(
       id: id,
       label: _string(json['label']) ?? fallbackLabel ?? _fallbackLabel(id),
@@ -232,6 +259,7 @@ final class HomeStatusCardDto {
       secondaryValue: _num(json['secondary_value']),
       hint: _string(json['hint']),
       format: _string(json['format']) ?? 'number',
+      requiredPermissions: required,
     );
   }
 }
@@ -260,6 +288,7 @@ final class HomeQueueItemDto {
       subtitle: subtitle,
       occurredAt: _date(json['occurred_at']),
       target: HomeRouteTargetDto(_map(json['target'])).toEntity(),
+      requiredPermissions: _permissions(json['required_permissions']),
     );
   }
 }
@@ -277,6 +306,7 @@ final class HomeAlertItemDto {
       severity: _string(json['severity']) ?? 'info',
       count: _int(json['count']) ?? 0,
       target: HomeRouteTargetDto(_map(json['target'])).toEntity(),
+      requiredPermissions: _permissions(json['required_permissions']),
     );
   }
 }
@@ -301,6 +331,7 @@ final class HomeActivityItemDto {
       status: _string(json['status']),
       occurredAt: _date(json['occurred_at']),
       target: HomeRouteTargetDto(_map(json['target'])).toEntity(),
+      requiredPermissions: _permissions(json['required_permissions']),
     );
   }
 }
@@ -429,6 +460,17 @@ List<String> _strings(Object? value) {
     return const <String>[];
   }
   return value.map(_string).whereType<String>().toSet().toList(growable: false);
+}
+
+List<AppPermission> _permissions(Object? value) {
+  if (value is! Iterable<Object?>) {
+    return const <AppPermission>[];
+  }
+  return value
+      .map(_string)
+      .whereType<String>()
+      .map(AppPermission.new)
+      .toList(growable: false);
 }
 
 List<String> _quickActionIds(

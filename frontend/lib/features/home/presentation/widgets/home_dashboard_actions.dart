@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
@@ -83,14 +84,27 @@ final class HomeShortcutDefinition {
     required this.label,
     required this.icon,
     required this.route,
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
   final String label;
   final IconData icon;
   final AppRouteData route;
+  final List<AppPermission> requiredPermissions;
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    if (requiredPermissions.isNotEmpty) {
+      return requiredPermissions;
+    }
+    return HomeDashboardAtomPermissions.forShortcut(id);
+  }
 
   bool isAllowed(AppAccessPolicy policy) {
+    final List<AppPermission> required = effectiveRequiredPermissions;
+    if (required.isEmpty || !policy.grantsAll(required)) {
+      return false;
+    }
     return canAccessShellRoute(route, policy);
   }
 }

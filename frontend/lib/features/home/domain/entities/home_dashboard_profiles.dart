@@ -57,16 +57,23 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'tenants_active',
         label: 'Tenants',
         format: 'ratio',
+        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
       ),
-      HomeStatusCardTemplate(id: 'facilities_active', label: 'Facilities'),
+      HomeStatusCardTemplate(
+        id: 'facilities_active',
+        label: 'Facilities',
+        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+      ),
       HomeStatusCardTemplate(
         id: 'subscriptions_health',
         label: 'Subscriptions',
         format: 'ratio',
+        requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
       ),
       HomeStatusCardTemplate(
         id: 'module_entitlement_issues',
         label: 'Entitlements',
+        requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
       ),
     ],
     quickActionIds: <String>[
@@ -100,17 +107,24 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'facilities_active',
         label: 'Facilities',
         format: 'ratio',
+        requiredPermissions: <AppPermission>[AppPermissions.tenantAdmin],
       ),
-      HomeStatusCardTemplate(id: 'active_users', label: 'Users'),
+      HomeStatusCardTemplate(
+        id: 'active_users',
+        label: 'Users',
+        requiredPermissions: <AppPermission>[AppPermissions.tenantAdmin],
+      ),
       HomeStatusCardTemplate(
         id: 'module_adoption',
         label: 'Adoption',
         format: 'percent',
+        requiredPermissions: <AppPermission>[AppPermissions.reportsRead],
       ),
       HomeStatusCardTemplate(
         id: 'subscription_health',
         label: 'Subscription',
         format: 'percent',
+        requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
       ),
     ],
     quickActionIds: <String>[
@@ -267,11 +281,31 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No lab work is pending.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'orders_today', label: 'Orders'),
-      HomeStatusCardTemplate(id: 'in_process', label: 'In process'),
-      HomeStatusCardTemplate(id: 'pending_results', label: 'Results queue'),
-      HomeStatusCardTemplate(id: 'critical_results', label: 'Critical'),
-      HomeStatusCardTemplate(id: 'completed_orders', label: 'Completed'),
+      HomeStatusCardTemplate(
+        id: 'orders_today',
+        label: 'Orders',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'in_process',
+        label: 'In process',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_results',
+        label: 'Results queue',
+        requiredPermissions: <AppPermission>[AppPermissions.labWrite],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_results',
+        label: 'Critical',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'completed_orders',
+        label: 'Completed',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
     ],
     quickActionIds: <String>[
       'receive_sample',
@@ -309,11 +343,28 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'orders_today',
         label: 'Radiology orders today',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
       ),
-      HomeStatusCardTemplate(id: 'in_process', label: 'Studies in process'),
-      HomeStatusCardTemplate(id: 'draft_reports', label: 'Draft reports'),
-      HomeStatusCardTemplate(id: 'final_reports', label: 'Final reports'),
-      HomeStatusCardTemplate(id: 'completed_orders', label: 'Completed'),
+      HomeStatusCardTemplate(
+        id: 'in_process',
+        label: 'Studies in process',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'draft_reports',
+        label: 'Draft reports',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'final_reports',
+        label: 'Final reports',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'completed_orders',
+        label: 'Completed',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
     ],
     quickActionIds: <String>[
       'start_imaging_study',
@@ -333,11 +384,32 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         'No pending orders. Check stock levels or review today\'s dispensing activity.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'orders_today', label: 'Orders'),
-      HomeStatusCardTemplate(id: 'pending_dispense', label: 'Pending'),
-      HomeStatusCardTemplate(id: 'dispensed_today', label: 'Dispensed'),
-      HomeStatusCardTemplate(id: 'low_stock', label: 'Low stock'),
-      HomeStatusCardTemplate(id: 'critical_stock', label: 'Critical stock'),
+      HomeStatusCardTemplate(
+        id: 'orders_today',
+        label: 'Orders',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_dispense',
+        label: 'Pending',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
+      ),
+      HomeStatusCardTemplate(
+        id: 'dispensed_today',
+        label: 'Dispensed',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'low_stock',
+        label: 'Low stock',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_stock',
+        label: 'Critical stock',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      // Gap: billing_pending — no pharmacy billing-pending metric source yet.
     ],
     quickActionIds: <String>[
       'dispense_medication',
@@ -451,6 +523,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'refunds_today',
         label: 'Refunds',
         format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingWrite],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_approvals',
+        label: 'Approvals',
+        requiredPermissions: <AppPermission>[AppPermissions.financialApprove],
       ),
     ],
     quickActionIds: <String>[
@@ -492,6 +570,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'queue': 'pendingPayment'},
       ),
       'refunds_today': HomeMetricRouteTarget(),
+      'pending_approvals': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'needsApproval'},
+      ),
     },
   ),
   AppRole.operations: HomeDashboardProfile(
@@ -670,7 +751,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'ward_census', label: 'Ward census'),
-      HomeStatusCardTemplate(id: 'occupied_beds', label: 'Occupied'),
+      HomeStatusCardTemplate(
+        id: 'occupied_beds',
+        label: 'Occupied',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
       HomeStatusCardTemplate(
         id: 'pending_nursing_tasks',
         label: 'Pending nursing tasks',

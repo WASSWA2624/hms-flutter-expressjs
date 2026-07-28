@@ -1,4 +1,6 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 
 enum HomeDashboardLoadState { ready, tenantContextRequired }
 
@@ -218,6 +220,7 @@ final class HomeDashboardProfile {
             label: template.label,
             value: 0,
             format: template.format,
+            requiredPermissions: template.effectiveRequiredPermissions,
           ),
         )
         .toList(growable: false);
@@ -229,11 +232,22 @@ final class HomeStatusCardTemplate {
     required this.id,
     required this.label,
     this.format = 'number',
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
   final String label;
   final String format;
+
+  /// Explicit all-of permissions. When empty, resolve via catalog by [id].
+  final List<AppPermission> requiredPermissions;
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    return HomeDashboardAtomPermissions.resolveStatusCard(
+      id: id,
+      declared: requiredPermissions,
+    );
+  }
 }
 
 final class HomeDashboardContext {
@@ -264,6 +278,7 @@ final class HomeStatusCard {
     this.secondaryValue,
     this.hint,
     this.format = 'number',
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
@@ -273,7 +288,37 @@ final class HomeStatusCard {
   final String? hint;
   final String format;
 
+  /// All-of permissions. Prefer API metadata; else catalog / profile template.
+  final List<AppPermission> requiredPermissions;
+
   int get numericValue => value.round();
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    return HomeDashboardAtomPermissions.resolveStatusCard(
+      id: id,
+      declared: requiredPermissions,
+    );
+  }
+
+  HomeStatusCard copyWith({
+    String? id,
+    String? label,
+    num? value,
+    num? secondaryValue,
+    String? hint,
+    String? format,
+    List<AppPermission>? requiredPermissions,
+  }) {
+    return HomeStatusCard(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      value: value ?? this.value,
+      secondaryValue: secondaryValue ?? this.secondaryValue,
+      hint: hint ?? this.hint,
+      format: format ?? this.format,
+      requiredPermissions: requiredPermissions ?? this.requiredPermissions,
+    );
+  }
 }
 
 final class HomeDashboardTrend {
@@ -281,17 +326,20 @@ final class HomeDashboardTrend {
     required this.title,
     required this.subtitle,
     required this.points,
+    this.requiredPermissions = HomeDashboardAtomPermissions.charts,
   });
 
   static const empty = HomeDashboardTrend(
     title: '',
     subtitle: '',
     points: <HomeTrendPoint>[],
+    requiredPermissions: <AppPermission>[],
   );
 
   final String title;
   final String subtitle;
   final List<HomeTrendPoint> points;
+  final List<AppPermission> requiredPermissions;
 
   bool get hasData {
     return points.any((HomeTrendPoint point) => point.value > 0);
@@ -318,6 +366,7 @@ final class HomeDashboardDistribution {
     required this.subtitle,
     required this.total,
     required this.segments,
+    this.requiredPermissions = HomeDashboardAtomPermissions.charts,
   });
 
   static const empty = HomeDashboardDistribution(
@@ -325,12 +374,14 @@ final class HomeDashboardDistribution {
     subtitle: '',
     total: 0,
     segments: <HomeDistributionSegment>[],
+    requiredPermissions: <AppPermission>[],
   );
 
   final String title;
   final String subtitle;
   final num total;
   final List<HomeDistributionSegment> segments;
+  final List<AppPermission> requiredPermissions;
 
   bool get hasData {
     return total > 0 ||
@@ -362,6 +413,7 @@ final class HomeQueueItem {
     this.subtitle,
     this.occurredAt,
     this.target,
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
@@ -372,6 +424,19 @@ final class HomeQueueItem {
   final String? subtitle;
   final DateTime? occurredAt;
   final HomeRouteTarget? target;
+  final List<AppPermission> requiredPermissions;
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    if (requiredPermissions.isNotEmpty) {
+      return requiredPermissions;
+    }
+    return HomeDashboardAtomPermissions.forQueueItem(
+      id: id,
+      moduleSlug: moduleSlug.isNotEmpty
+          ? moduleSlug
+          : target?.moduleSlug,
+    );
+  }
 }
 
 final class HomeAlertItem {
@@ -381,6 +446,7 @@ final class HomeAlertItem {
     required this.severity,
     required this.count,
     this.target,
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
@@ -388,6 +454,17 @@ final class HomeAlertItem {
   final String severity;
   final int count;
   final HomeRouteTarget? target;
+  final List<AppPermission> requiredPermissions;
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    if (requiredPermissions.isNotEmpty) {
+      return requiredPermissions;
+    }
+    return HomeDashboardAtomPermissions.forAlert(
+      id: id,
+      moduleSlug: target?.moduleSlug,
+    );
+  }
 }
 
 final class HomeActivityItem {
@@ -398,6 +475,7 @@ final class HomeActivityItem {
     this.status,
     this.occurredAt,
     this.target,
+    this.requiredPermissions = const <AppPermission>[],
   });
 
   final String id;
@@ -406,6 +484,19 @@ final class HomeActivityItem {
   final String? status;
   final DateTime? occurredAt;
   final HomeRouteTarget? target;
+  final List<AppPermission> requiredPermissions;
+
+  List<AppPermission> get effectiveRequiredPermissions {
+    if (requiredPermissions.isNotEmpty) {
+      return requiredPermissions;
+    }
+    return HomeDashboardAtomPermissions.forActivity(
+      id: id,
+      moduleSlug: moduleSlug.isNotEmpty
+          ? moduleSlug
+          : target?.moduleSlug,
+    );
+  }
 }
 
 final class HomeRouteTarget {

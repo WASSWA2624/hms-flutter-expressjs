@@ -222,7 +222,7 @@ void main() {
         policy: policy,
       );
 
-      expect(meetings?.route, AppRoutes.opd);
+      expect(meetings?.route, AppRoutes.reception);
       expect(meetings?.queryParameters, <String, String>{
         'section': 'appointments',
       });

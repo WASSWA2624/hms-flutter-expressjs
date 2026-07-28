@@ -260,6 +260,7 @@ final class HomeDashboardOptimisticPatch {
                 : (card.secondaryValue ?? card.value) + secondaryDelta,
             hint: card.hint,
             format: card.format,
+            requiredPermissions: card.requiredPermissions,
           );
         })
         .toList(growable: false);
@@ -277,6 +278,7 @@ final class HomeDashboardOptimisticPatch {
             severity: alert.severity,
             count: (alert.count + countDelta).clamp(0, 1 << 30),
             target: alert.target,
+            requiredPermissions: alert.requiredPermissions,
           );
         })
         .toList(growable: false);

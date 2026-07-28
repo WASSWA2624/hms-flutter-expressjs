@@ -26,6 +26,10 @@ HomeMetricNavigation? homeMetricNavigation({
   required HomeStatusCard card,
   required AppAccessPolicy policy,
 }) {
+  if (!policy.grantsAll(card.effectiveRequiredPermissions) ||
+      card.effectiveRequiredPermissions.isEmpty) {
+    return null;
+  }
   if (profile.metricActionTargets.containsKey(card.id)) {
     return null;
   }
@@ -64,6 +68,10 @@ HomeMetricAction? homeMetricAction({
   required HomeStatusCard card,
   required AppAccessPolicy policy,
 }) {
+  if (!policy.grantsAll(card.effectiveRequiredPermissions) ||
+      card.effectiveRequiredPermissions.isEmpty) {
+    return null;
+  }
   final HomeMetricActionTarget? target = profile.metricActionTargets[card.id];
   if (target == null) {
     return null;

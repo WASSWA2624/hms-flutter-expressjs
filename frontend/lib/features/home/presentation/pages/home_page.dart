@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
@@ -82,14 +83,18 @@ class _HomeDashboardContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
     final policy = ref.watch(appAccessPolicyProvider);
-    final profile = dashboard.profile;
+    final HomeDashboard authorized = filterHomeDashboardForAccess(
+      dashboard,
+      policy,
+    );
+    final profile = authorized.profile;
     final actions = homeVisibleActions(
-      dashboard.quickActionIds,
+      authorized.quickActionIds,
       policy,
       maxCount: profile.maxQuickActions,
     );
     final shortcuts = homeShortcutsExcludingQuickActions(
-      homeVisibleShortcuts(dashboard.shortcutIds, policy),
+      homeVisibleShortcuts(authorized.shortcutIds, policy),
       actions,
       profile,
     );
@@ -97,13 +102,21 @@ class _HomeDashboardContent extends ConsumerWidget {
     final DashboardPriorityPanelData priorityData = homeDashboardPriorityData(
       context: context,
       ref: ref,
-      dashboard: dashboard,
+      dashboard: authorized,
       actions: actions,
       shortcuts: shortcuts,
       policy: policy,
       l10n: l10n,
       request: request,
     );
+    final bool hasPrioritySurface =
+        priorityData.showQueue ||
+        priorityData.showAlerts ||
+        priorityData.showResults ||
+        priorityData.showFollowUps ||
+        priorityData.showShortcuts ||
+        priorityData.emptyMessage.isNotEmpty ||
+        priorityData.emptyActions.isNotEmpty;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -112,17 +125,18 @@ class _HomeDashboardContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            if (dashboard.isTenantContextRequired)
+            if (authorized.isTenantContextRequired)
               HomeTenantContextPanel(
-                tenantOptions: dashboard.tenantOptions,
+                tenantOptions: authorized.tenantOptions,
                 request: request,
               )
             else
               RoleDashboardScaffold(
-                layout: homeRoleDashboardLayout(
-                  profile,
-                  trend: dashboard.trend,
-                  distribution: dashboard.distribution,
+                layout: homeRoleDashboardLayoutAfterFilter(
+                  profile: profile,
+                  dashboard: authorized,
+                  hasQuickActions: actions.isNotEmpty,
+                  hasPrioritySurface: hasPrioritySurface,
                 ),
                 spacing: spacing,
                 leadingPanel: profile.alertsBeforeMetrics
@@ -130,7 +144,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                         data: homeDashboardAlertsPanelData(
                           context: context,
                           ref: ref,
-                          dashboard: dashboard,
+                          dashboard: authorized,
                           policy: policy,
                         ),
                       )
@@ -139,7 +153,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                   cards: homeDashboardMetrics(
                     context: context,
                     ref: ref,
-                    dashboard: dashboard,
+                    dashboard: authorized,
                     policy: policy,
                     compact: profile.compactMetrics,
                   ),
@@ -170,7 +184,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                   builder: (BuildContext context, BoxConstraints constraints) {
                     return DashboardChartsRow(
                       data: homeDashboardChartsData(
-                        dashboard: dashboard,
+                        dashboard: authorized,
                         l10n: l10n,
                       ),
                       twoColumns: constraints.maxWidth >= 980,

@@ -27,7 +27,7 @@ void main() {
       );
       expect(
         scoped.firstWhere((card) => card.id == 'assigned').label,
-        'Assigned',
+        'Assigned today',
       );
       expect(scoped.firstWhere((card) => card.id == 'assigned').value, 4);
     });

@@ -29,6 +29,9 @@ List<HomeStatusCard> scopeHomeStatusCards({
           secondaryValue: fromApi?.secondaryValue,
           hint: fromApi?.hint,
           format: template.format,
+          requiredPermissions: fromApi?.requiredPermissions.isNotEmpty == true
+              ? fromApi!.requiredPermissions
+              : template.effectiveRequiredPermissions,
         );
       })
       .toList(growable: false);

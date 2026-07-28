@@ -565,6 +565,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: metrics.tenantsActive || 0,
         secondary_value: tenantsTotal,
         format: 'ratio',
+        required_permissions: ['system:admin'],
       },
       {
         id: 'facilities_active',
@@ -572,6 +573,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: metrics.facilitiesActive ?? metrics.facilitiesTotal ?? 0,
         secondary_value: metrics.facilitiesTotal ?? metrics.facilitiesActive ?? 0,
         format: 'ratio',
+        required_permissions: ['system:admin'],
       },
       {
         id: 'subscriptions_health',
@@ -579,6 +581,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: tenantsWithSubscription,
         secondary_value: tenantsTotal,
         format: 'ratio',
+        required_permissions: ['subscriptions:read'],
         hint:
           tenantsWithoutSubscription > 0
             ? `${tenantsWithoutSubscription} tenant${tenantsWithoutSubscription === 1 ? '' : 's'} without subscription`
@@ -590,6 +593,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         id: 'module_entitlement_issues',
         label: 'Entitlements',
         value: metrics.moduleEntitlementIssues || 0,
+        required_permissions: ['system:admin'],
       },
     ];
   }
@@ -604,6 +608,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         value: facilitiesActive,
         secondary_value: facilitiesTotal,
         format: 'ratio',
+        required_permissions: ['tenant:admin'],
         hint:
           facilitiesTotal === 0
             ? 'Create at least one facility to get started'
@@ -615,111 +620,116 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
         id: 'active_users',
         label: 'Users',
         value: metrics.activeUsers || metrics.usersTotal || 0,
+        required_permissions: ['tenant:admin'],
       },
       {
         id: 'module_adoption',
         label: 'Adoption',
         value: metrics.moduleAdoption || 0,
         format: 'percent',
+        required_permissions: ['reports:read'],
       },
       {
         id: 'subscription_health',
         label: 'Subscription',
         value: metrics.subscriptionHealth || 0,
         format: 'percent',
+        required_permissions: ['subscriptions:read'],
       },
     ];
   }
 
   if (packId === ROLE_PACKS.FACILITY_ADMIN) {
     return [
-      { id: 'patient_flow_today', label: 'Patient flow today', value: metrics.patientsToday || metrics.appointmentsToday || 0 },
-      { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0 },
-      { id: 'active_admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0 },
-      { id: 'bed_occupancy', label: 'Occupied beds', value: metrics.occupiedBeds || 0 },
-      { id: 'billing_exceptions', label: 'Billing exceptions', value: metrics.openInvoices || 0 },
-      { id: 'operational_blockers', label: 'Operational blockers', value: metrics.openMaintenance || 0 },
+      { id: 'patient_flow_today', label: 'Patient flow today', value: metrics.patientsToday || metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+      { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+      { id: 'active_admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0, required_permissions: ['patient:read'] },
+      { id: 'bed_occupancy', label: 'Occupied beds', value: metrics.occupiedBeds || 0, required_permissions: ['patient:read'] },
+      { id: 'billing_exceptions', label: 'Billing exceptions', value: metrics.openInvoices || 0, required_permissions: ['billing:read'] },
+      { id: 'operational_blockers', label: 'Operational blockers', value: metrics.openMaintenance || 0, required_permissions: ['operations:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.DOCTOR) {
     return [
-      { id: 'assigned', label: 'Assigned today', value: metrics.assigned || 0 },
-      { id: 'in_progress', label: 'Consultations in progress', value: metrics.inProgress || 0 },
+      { id: 'assigned', label: 'Assigned today', value: metrics.assigned || 0, required_permissions: ['clinical:read'] },
+      { id: 'in_progress', label: 'Consultations in progress', value: metrics.inProgress || 0, required_permissions: ['clinical:read'] },
       {
         id: 'results_pending_review',
         label: 'Results to review',
         value: metrics.resultsPendingReview || 0,
+        required_permissions: ['lab:read'],
       },
-      { id: 'follow_ups_due', label: 'Follow-ups due', value: metrics.followUpsDue || 0 },
-      { id: 'completed', label: 'Completed today', value: metrics.completed || 0 },
+      { id: 'follow_ups_due', label: 'Follow-ups due', value: metrics.followUpsDue || 0, required_permissions: ['clinical:read'] },
+      { id: 'completed', label: 'Completed today', value: metrics.completed || 0, required_permissions: ['clinical:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.NURSE) {
     return [
-      { id: 'inpatient_flow', label: 'Active inpatients', value: metrics.activeAdmissions || 0 },
-      { id: 'med_admin_today', label: 'Medication administrations today', value: metrics.medAdminToday || 0 },
-      { id: 'transfer_queue', label: 'Transfer queue', value: metrics.transferQueue || 0 },
-      { id: 'critical_labs', label: 'Critical lab signals', value: metrics.criticalLabs || 0 },
-      { id: 'discharge_pressure', label: 'Discharge pressure', value: metrics.activeAdmissions || 0 },
-      { id: 'appointments_today', label: 'OPD queue', value: metrics.appointmentsToday || 0 },
-      { id: 'emergency_cases_today', label: 'Emergency cases today', value: metrics.emergencyCasesToday || 0 },
-      { id: 'theatre_cases_today', label: 'Theatre cases in progress', value: metrics.theatreCasesToday || 0 },
-      { id: 'radiology_pending', label: 'Imaging results pending', value: metrics.radiologyPending || 0 },
+      { id: 'inpatient_flow', label: 'Active inpatients', value: metrics.activeAdmissions || 0, required_permissions: ['clinical:read'] },
+      { id: 'med_admin_today', label: 'Medication administrations today', value: metrics.medAdminToday || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'transfer_queue', label: 'Transfer queue', value: metrics.transferQueue || 0, required_permissions: ['patient:read'] },
+      { id: 'critical_labs', label: 'Critical lab signals', value: metrics.criticalLabs || 0, required_permissions: ['lab:read'] },
+      { id: 'discharge_pressure', label: 'Discharge pressure', value: metrics.activeAdmissions || 0, required_permissions: ['clinical:read'] },
+      { id: 'appointments_today', label: 'OPD queue', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+      { id: 'emergency_cases_today', label: 'Emergency cases today', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
+      { id: 'theatre_cases_today', label: 'Theatre cases in progress', value: metrics.theatreCasesToday || 0, required_permissions: ['clinical:read'] },
+      { id: 'radiology_pending', label: 'Imaging results pending', value: metrics.radiologyPending || 0, required_permissions: ['radiology:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.LAB_TECH) {
     return [
-      { id: 'orders_today', label: 'Lab orders today', value: metrics.ordersToday || 0 },
-      { id: 'in_process', label: 'Orders in process', value: metrics.inProcess || 0 },
-      { id: 'pending_results', label: 'Results queue', value: metrics.pending || 0 },
-      { id: 'critical_results', label: 'Critical results', value: metrics.critical || 0 },
-      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0 },
+      { id: 'orders_today', label: 'Lab orders today', value: metrics.ordersToday || 0, required_permissions: ['lab:read'] },
+      { id: 'in_process', label: 'Orders in process', value: metrics.inProcess || 0, required_permissions: ['lab:read'] },
+      { id: 'pending_results', label: 'Results queue', value: metrics.pending || 0, required_permissions: ['lab:write'] },
+      { id: 'critical_results', label: 'Critical results', value: metrics.critical || 0, required_permissions: ['lab:read'] },
+      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0, required_permissions: ['lab:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.RADIOLOGY_TECH) {
     return [
-      { id: 'orders_today', label: 'Radiology orders today', value: metrics.ordersToday || 0 },
-      { id: 'in_process', label: 'Studies in process', value: metrics.inProcess || 0 },
-      { id: 'draft_reports', label: 'Draft reports', value: metrics.pending || 0 },
-      { id: 'final_reports', label: 'Final reports', value: metrics.final || 0 },
-      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0 },
+      { id: 'orders_today', label: 'Radiology orders today', value: metrics.ordersToday || 0, required_permissions: ['radiology:read'] },
+      { id: 'in_process', label: 'Studies in process', value: metrics.inProcess || 0, required_permissions: ['radiology:read'] },
+      { id: 'draft_reports', label: 'Draft reports', value: metrics.pending || 0, required_permissions: ['radiology:read'] },
+      { id: 'final_reports', label: 'Final reports', value: metrics.final || 0, required_permissions: ['radiology:read'] },
+      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0, required_permissions: ['radiology:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.PHARMACIST) {
     return [
-      { id: 'orders_today', label: 'Orders', value: metrics.ordersToday || 0 },
-      { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0 },
-      { id: 'dispensed_today', label: 'Dispensed', value: metrics.dispensedToday || 0 },
-      { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0 },
-      { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0 },
+      { id: 'orders_today', label: 'Orders', value: metrics.ordersToday || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0, required_permissions: ['pharmacy:write'] },
+      { id: 'dispensed_today', label: 'Dispensed', value: metrics.dispensedToday || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0, required_permissions: ['pharmacy:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.RECEPTIONIST) {
     return [
-      { id: 'appointments_today', label: 'Meetings today', value: metrics.appointmentsToday || 0 },
-      { id: 'desk_queue', label: 'Appointment desk queue', value: metrics.appointmentDeskQueue || 0 },
-      { id: 'turnaround_pressure', label: 'In-progress turnaround', value: metrics.turnaroundPressure || 0 },
-      { id: 'no_show_pressure', label: 'No-show follow-ups', value: metrics.noShowPressure || 0 },
-      { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0 },
-      { id: 'emergency_cases_today', label: 'Emergency intake today', value: metrics.emergencyCasesToday || 0 },
+      { id: 'appointments_today', label: 'Meetings today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+      { id: 'desk_queue', label: 'Appointment desk queue', value: metrics.appointmentDeskQueue || 0, required_permissions: ['patient:read'] },
+      { id: 'turnaround_pressure', label: 'In-progress turnaround', value: metrics.turnaroundPressure || 0, required_permissions: ['patient:read'] },
+      { id: 'no_show_pressure', label: 'No-show follow-ups', value: metrics.noShowPressure || 0, required_permissions: ['patient:read'] },
+      { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0, required_permissions: ['patient:write'] },
+      { id: 'emergency_cases_today', label: 'Emergency intake today', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.BILLING) {
     return [
-      { id: 'collections_today', label: 'Collections today', value: metrics.collectionsToday || 0, format: 'currency' },
-      { id: 'overdue_balance_amount', label: 'Overdue amount', value: metrics.overdueBalanceAmount || 0, format: 'currency' },
-      { id: 'pending_balance_amount', label: 'Pending balances', value: metrics.pendingBalanceAmount || 0, format: 'currency' },
-      { id: 'invoices_today', label: 'Invoices issued today', value: metrics.invoicesToday || 0 },
-      { id: 'overdue_invoices', label: 'Overdue invoices', value: metrics.overdueInvoices || 0 },
-      { id: 'open_balances', label: 'Open balances', value: metrics.openBalances || 0 },
-      { id: 'refunds_today', label: 'Refunds today', value: metrics.refundsToday || 0, format: 'currency' },
+      { id: 'collections_today', label: 'Collections today', value: metrics.collectionsToday || 0, format: 'currency', required_permissions: ['billing:read'] },
+      { id: 'overdue_balance_amount', label: 'Overdue amount', value: metrics.overdueBalanceAmount || 0, format: 'currency', required_permissions: ['billing:read'] },
+      { id: 'pending_balance_amount', label: 'Pending balances', value: metrics.pendingBalanceAmount || 0, format: 'currency', required_permissions: ['billing:read'] },
+      { id: 'invoices_today', label: 'Invoices issued today', value: metrics.invoicesToday || 0, required_permissions: ['billing:read'] },
+      { id: 'overdue_invoices', label: 'Overdue invoices', value: metrics.overdueInvoices || 0, required_permissions: ['billing:read'] },
+      { id: 'open_balances', label: 'Open balances', value: metrics.openBalances || 0, required_permissions: ['billing:read'] },
+      { id: 'refunds_today', label: 'Refunds today', value: metrics.refundsToday || 0, format: 'currency', required_permissions: ['billing:write'] },
+      { id: 'pending_approvals', label: 'Pending approvals', value: metrics.pendingApprovals || 0, required_permissions: ['financial:approve'] },
     ];
   }
 
@@ -871,12 +881,12 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.PATIENT_SAFE) {
     return [
-      { id: 'my_upcoming_appointments', label: 'My upcoming appointments', value: metrics.myUpcomingAppointments || 0 },
-      { id: 'my_open_bills', label: 'My open bills', value: metrics.myOpenBills || 0 },
-      { id: 'my_prescriptions', label: 'My prescriptions', value: metrics.myPrescriptions || 0 },
-      { id: 'my_released_results', label: 'My released results', value: metrics.myReleasedResults || 0 },
-      { id: 'my_messages', label: 'My messages', value: metrics.myMessages || 0 },
-      { id: 'my_profile_status', label: 'My profile status', value: metrics.myProfileStatus || 0, format: 'percent' },
+      { id: 'my_upcoming_appointments', label: 'My upcoming appointments', value: metrics.myUpcomingAppointments || 0, required_permissions: ['patient:read'] },
+      { id: 'my_open_bills', label: 'My open bills', value: metrics.myOpenBills || 0, required_permissions: ['billing:read'] },
+      { id: 'my_prescriptions', label: 'My prescriptions', value: metrics.myPrescriptions || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'my_released_results', label: 'My released results', value: metrics.myReleasedResults || 0, required_permissions: ['lab:read'] },
+      { id: 'my_messages', label: 'My messages', value: metrics.myMessages || 0, required_permissions: ['communications:read'] },
+      { id: 'my_profile_status', label: 'My profile status', value: metrics.myProfileStatus || 0, format: 'percent', required_permissions: ['profile:read'] },
     ];
   }
 
