@@ -271,22 +271,58 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No nursing tasks are assigned right now.',
     maxStatusCards: 5,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'inpatient_flow', label: 'Inpatients'),
-      HomeStatusCardTemplate(id: 'med_admin_today', label: 'Med admin'),
-      HomeStatusCardTemplate(id: 'transfer_queue', label: 'Transfers'),
-      HomeStatusCardTemplate(id: 'critical_labs', label: 'Critical labs'),
-      HomeStatusCardTemplate(id: 'discharge_pressure', label: 'Discharge'),
+      HomeStatusCardTemplate(
+        id: 'inpatient_flow',
+        label: 'Inpatients',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'med_admin_today',
+        label: 'Med admin',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'transfer_queue',
+        label: 'Transfers',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_labs',
+        label: 'Critical labs',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'discharge_pressure',
+        label: 'Discharge',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
-      HomeStatusCardTemplate(id: 'appointments_today', label: 'OPD queue'),
+      HomeStatusCardTemplate(
+        id: 'appointments_today',
+        label: 'OPD queue',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
       HomeStatusCardTemplate(
         id: 'emergency_cases_today',
         label: 'Emergency cases',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
       ),
-      HomeStatusCardTemplate(id: 'theatre_cases_today', label: 'Theatre cases'),
-      HomeStatusCardTemplate(id: 'radiology_pending', label: 'Imaging pending'),
+      HomeStatusCardTemplate(
+        id: 'theatre_cases_today',
+        label: 'Theatre cases',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'radiology_pending',
+        label: 'Imaging pending',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
+      // Gap: vitals_due / nursing_tasks / shift_schedule — no dedicated KPI
+      // payloads yet (Dashboard.md §5).
     ],
     quickActionIds: <String>[
       'record_vitals',
@@ -494,19 +530,43 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         'No desk queue items right now. Use quick links for registry, OPD, emergency, or follow-ups.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'appointments_today', label: 'Meetings'),
-      HomeStatusCardTemplate(id: 'desk_queue', label: 'Desk queue'),
-      HomeStatusCardTemplate(id: 'turnaround_pressure', label: 'In progress'),
-      HomeStatusCardTemplate(id: 'no_show_pressure', label: 'Follow-ups'),
-      HomeStatusCardTemplate(id: 'registrations_today', label: 'Registrations'),
+      HomeStatusCardTemplate(
+        id: 'appointments_today',
+        label: 'Meetings',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'desk_queue',
+        label: 'Desk queue',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'turnaround_pressure',
+        label: 'In progress',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'no_show_pressure',
+        label: 'Follow-ups',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'registrations_today',
+        label: 'Registrations',
+        requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
+      ),
       HomeStatusCardTemplate(
         id: 'emergency_cases_today',
         label: 'Emergency intake',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
       ),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
+      // Gap: pending_payments (billing:read) / admissions (patient:write) —
+      // no dedicated reception KPI payloads yet (Dashboard.md §8).
     ],
     quickActionIds: <String>[
       'register_patient',
@@ -646,16 +706,39 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Operations',
     emptyMessage: 'No operations items need action right now.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'occupied_beds', label: 'Occupied'),
-      HomeStatusCardTemplate(id: 'total_beds', label: 'Total beds'),
-      HomeStatusCardTemplate(id: 'maintenance_open', label: 'Maintenance'),
-      HomeStatusCardTemplate(id: 'low_stock_pressure', label: 'Low stock'),
-      HomeStatusCardTemplate(id: 'housekeeping_backlog', label: 'Housekeeping'),
+      HomeStatusCardTemplate(
+        id: 'occupied_beds',
+        label: 'Occupied',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'total_beds',
+        label: 'Total beds',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'maintenance_open',
+        label: 'Maintenance',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'low_stock_pressure',
+        label: 'Low stock',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'housekeeping_backlog',
+        label: 'Housekeeping',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
       HomeStatusCardTemplate(
         id: 'facility_readiness',
         label: 'Readiness',
         format: 'percent',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
       ),
+      // Gap: security_incidents / utilities_status — no live KPI source yet.
+      // Daily operations KPIs chart gated via reports:read on trend/distribution.
     ],
     quickActionIds: <String>[
       'create_maintenance_request',
@@ -672,14 +755,48 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Workforce',
     emptyMessage: 'No HR tasks are pending.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'active_staff', label: 'Staff'),
-      HomeStatusCardTemplate(id: 'shifts_today', label: 'Shifts'),
-      HomeStatusCardTemplate(id: 'pending_leaves', label: 'Leave'),
-      HomeStatusCardTemplate(id: 'on_leave_today', label: 'On leave'),
-      HomeStatusCardTemplate(id: 'unassigned_shifts', label: 'Unassigned'),
-      HomeStatusCardTemplate(id: 'attended_today', label: 'Attended'),
-      HomeStatusCardTemplate(id: 'missed_shifts_today', label: 'Missed'),
-      HomeStatusCardTemplate(id: 'payroll_pending', label: 'Payroll'),
+      HomeStatusCardTemplate(
+        id: 'active_staff',
+        label: 'Staff',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'shifts_today',
+        label: 'Shifts',
+        requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_leaves',
+        label: 'Leave',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'on_leave_today',
+        label: 'On leave',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'unassigned_shifts',
+        label: 'Unassigned',
+        requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'attended_today',
+        label: 'Attended',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'missed_shifts_today',
+        label: 'Missed',
+        requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'payroll_pending',
+        label: 'Payroll',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      // Gap: roster_approvals (roster:approve) / department_staffing (unit:read)
+      // — no dedicated HR KPI payloads yet (Dashboard.md §11).
     ],
     quickActionIds: <String>[],
     shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports'],
@@ -727,15 +844,36 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No biomedical work is pending.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'open_work_orders', label: 'Work orders'),
-      HomeStatusCardTemplate(id: 'open_incidents', label: 'Incidents'),
-      HomeStatusCardTemplate(id: 'active_downtime', label: 'Downtime'),
-      HomeStatusCardTemplate(id: 'critical_service_risk', label: 'Risk'),
-      HomeStatusCardTemplate(id: 'high_priority', label: 'Priority'),
+      HomeStatusCardTemplate(
+        id: 'open_work_orders',
+        label: 'Work orders',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedWrite],
+      ),
+      HomeStatusCardTemplate(
+        id: 'open_incidents',
+        label: 'Incidents',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'active_downtime',
+        label: 'Downtime',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_service_risk',
+        label: 'Risk',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'high_priority',
+        label: 'Priority',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
+      ),
       HomeStatusCardTemplate(
         id: 'assets_operational',
         label: 'Operational',
         format: 'percent',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
       ),
     ],
     quickActionIds: <String>['acknowledge_work_order', 'update_work_order'],
@@ -750,11 +888,31 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No cleaning tasks are assigned right now.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'pending_tasks', label: 'Pending'),
-      HomeStatusCardTemplate(id: 'in_progress_tasks', label: 'In progress'),
-      HomeStatusCardTemplate(id: 'overdue_tasks', label: 'Overdue'),
-      HomeStatusCardTemplate(id: 'completed_today', label: 'Done today'),
-      HomeStatusCardTemplate(id: 'throughput', label: 'Throughput'),
+      HomeStatusCardTemplate(
+        id: 'pending_tasks',
+        label: 'Pending',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'in_progress_tasks',
+        label: 'In progress',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'overdue_tasks',
+        label: 'Overdue',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'completed_today',
+        label: 'Done today',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'throughput',
+        label: 'Throughput',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
     ],
     quickActionIds: <String>['start_cleaning_task', 'complete_cleaning_task'],
     shortcutIds: <String>['housekeeping', 'reports'],
@@ -768,11 +926,31 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No ambulance dispatches are active.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'dispatches_today', label: 'Dispatches'),
-      HomeStatusCardTemplate(id: 'active_trips', label: 'Active trips'),
-      HomeStatusCardTemplate(id: 'critical_cases', label: 'Emergencies'),
-      HomeStatusCardTemplate(id: 'fleet_available', label: 'Available'),
-      HomeStatusCardTemplate(id: 'fleet_out', label: 'Out of service'),
+      HomeStatusCardTemplate(
+        id: 'dispatches_today',
+        label: 'Dispatches',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'active_trips',
+        label: 'Active trips',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_cases',
+        label: 'Emergencies',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'fleet_available',
+        label: 'Available',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'fleet_out',
+        label: 'Out of service',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
     shortcutIds: <String>['emergency', 'reports'],
@@ -1096,16 +1274,36 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'my_upcoming_appointments',
         label: 'Appointments',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
-      HomeStatusCardTemplate(id: 'my_open_bills', label: 'Bills'),
-      HomeStatusCardTemplate(id: 'my_prescriptions', label: 'Rx'),
-      HomeStatusCardTemplate(id: 'my_released_results', label: 'Results'),
-      HomeStatusCardTemplate(id: 'my_messages', label: 'Messages'),
+      HomeStatusCardTemplate(
+        id: 'my_open_bills',
+        label: 'Bills',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'my_prescriptions',
+        label: 'Rx',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'my_released_results',
+        label: 'Results',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'my_messages',
+        label: 'Messages',
+        requiredPermissions: <AppPermission>[AppPermissions.communicationsRead],
+      ),
       HomeStatusCardTemplate(
         id: 'my_profile_status',
         label: 'Profile',
         format: 'percent',
+        requiredPermissions: <AppPermission>[AppPermissions.profileRead],
       ),
+      // Gap: medical_history (clinical:read) / radiology_reports
+      // (radiology:read) — no dedicated portal KPI payloads yet.
     ],
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
     shortcutIds: <String>[],
@@ -1119,10 +1317,26 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No integration work is pending. Open Integrations to manage connections.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'active_integrations', label: 'Active'),
-      HomeStatusCardTemplate(id: 'failed_deliveries', label: 'Failures'),
-      HomeStatusCardTemplate(id: 'pending_webhooks', label: 'Webhooks'),
-      HomeStatusCardTemplate(id: 'api_keys_expiring', label: 'Keys'),
+      HomeStatusCardTemplate(
+        id: 'active_integrations',
+        label: 'Active',
+        requiredPermissions: <AppPermission>[AppPermissions.integrationRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'failed_deliveries',
+        label: 'Failures',
+        requiredPermissions: <AppPermission>[AppPermissions.integrationRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_webhooks',
+        label: 'Webhooks',
+        requiredPermissions: <AppPermission>[AppPermissions.integrationRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'api_keys_expiring',
+        label: 'Keys',
+        requiredPermissions: <AppPermission>[AppPermissions.integrationRead],
+      ),
     ],
     quickActionIds: const <String>[],
     shortcutIds: <String>['integrations', 'reports', 'settings'],
@@ -1137,10 +1351,26 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         'Your account has limited access. Contact an administrator if you need more modules.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'profile_status', label: 'Profile status'),
-      HomeStatusCardTemplate(id: 'assigned_links', label: 'Assigned links'),
-      HomeStatusCardTemplate(id: 'unread_messages', label: 'Unread messages'),
-      HomeStatusCardTemplate(id: 'facility_notices', label: 'Facility notices'),
+      HomeStatusCardTemplate(
+        id: 'profile_status',
+        label: 'Profile status',
+        requiredPermissions: <AppPermission>[AppPermissions.profileRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'assigned_links',
+        label: 'Assigned links',
+        requiredPermissions: <AppPermission>[AppPermissions.profileRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'unread_messages',
+        label: 'Unread messages',
+        requiredPermissions: <AppPermission>[AppPermissions.communicationsRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'facility_notices',
+        label: 'Facility notices',
+        requiredPermissions: <AppPermission>[AppPermissions.profileRead],
+      ),
     ],
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
     shortcutIds: <String>['profile', 'settings'],
@@ -1172,12 +1402,15 @@ HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
 }
 
 /// Prefer canonical roles; for custom roles, infer a dashboard from permissions.
+///
+/// Ranked roles keep layout chrome. [expandHomeProfileForPermissions] unions
+/// grantable atoms from other domains so extra grants (e.g. doctor +
+/// `billing:read`) surface without inventing a new [AppRole]. Visibility still
+/// requires `grantsAll` via [filterHomeDashboardForAccess] / action libraries.
 HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   final HomeDashboardProfile fromRoles = homeProfileForRoles(policy.roles);
   if (fromRoles.role != AppRole.other) {
-    // Ranked role chooses layout chrome; [filterHomeDashboardForAccess] is the
-    // visibility gate. Do not swap the whole profile when grants diverge.
-    return fromRoles;
+    return expandHomeProfileForPermissions(fromRoles, policy);
   }
 
   final Set<AppPermission> permissions = policy.permissions;
@@ -1206,8 +1439,7 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
     );
   }
 
-  // Pick a layout base from the primary domain; [expandHomeProfileForPermissions]
-  // unions grantable atoms from other domains (no separate persona apps).
+  // Pick a layout base from the primary domain; expand unions grantable atoms.
   final HomeDashboardProfile inferred;
   if (has(AppPermissions.clinicalWrite) || has(AppPermissions.clinicalRead)) {
     inferred = homeDashboardProfiles[AppRole.doctor]!;

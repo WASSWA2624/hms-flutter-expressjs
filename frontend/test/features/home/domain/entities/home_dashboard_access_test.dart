@@ -348,5 +348,94 @@ void main() {
         expect(ids, isNot(contains('pending_approvals')));
       },
     );
+
+    test(
+      'ranked doctor + billing:read unions revenue KPIs without new role',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['DOCTOR'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+            AppPermissions.billingRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(profile.role, AppRole.doctor);
+        expect(ids, contains('assigned'));
+        expect(ids, contains('collections_today'));
+        expect(ids, isNot(contains('pending_approvals')));
+        expect(ids, isNot(contains('pending_dispense')));
+      },
+    );
+
+    test(
+      'ranked doctor + reports:read keeps clinical cards and chart surfaces',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['DOCTOR'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+            AppPermissions.reportsRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+
+        expect(profile.role, AppRole.doctor);
+        expect(_cardIds(filtered), contains('assigned'));
+        expect(filtered.trend.hasData, isTrue);
+        expect(filtered.distribution.hasData, isTrue);
+      },
+    );
+
+    test('empty required permissions deny KPI cards', () {
+      final AppAccessPolicy policy = _policy(
+        roles: <String>['CUSTOM'],
+        permissions: <AppPermission>[AppPermissions.clinicalRead],
+      );
+      final HomeDashboard dashboard = HomeDashboard(
+        state: HomeDashboardLoadState.ready,
+        profile: homeProfileForRole(AppRole.doctor),
+        context: const HomeDashboardContext(),
+        statusCards: const <HomeStatusCard>[
+          HomeStatusCard(
+            id: 'unknown_ungated_metric',
+            label: 'Should hide',
+            value: 99,
+          ),
+          HomeStatusCard(
+            id: 'assigned',
+            label: 'Assigned',
+            value: 2,
+            requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+          ),
+        ],
+        trend: HomeDashboardTrend.empty,
+        distribution: HomeDashboardDistribution.empty,
+        quickActionIds: const <String>[],
+        shortcutIds: const <String>[],
+        queuePreview: const <HomeQueueItem>[],
+        alerts: const <HomeAlertItem>[],
+        activity: const <HomeActivityItem>[],
+        tenantOptions: const <HomeTenantOption>[],
+      );
+
+      final HomeDashboard filtered = filterHomeDashboardForAccess(
+        dashboard,
+        policy,
+      );
+      expect(_cardIds(filtered), <String>{'assigned'});
+    });
   });
 }
