@@ -15,12 +15,14 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Fake **Notifications** tab (count only; tap no-op) + unused summary payload | Jump to attention queues | **Removed** tab — actionable **queue chips** under the strip (claims pattern) |
 | Overview **Past due** metric vs Past due invoices chip | Apply past-due queue | **Removed** metric — chip is the sole entry |
 | Overview metrics + worklist on every panel | Same subscriptions list as Operations | **Scoped** — cohort / usage / recommendations only on **Overview**; worklists on other panels |
-| Overview + Operations both defaulting to subscriptions worklist | Browse / activate subscriptions | **Overview** monitors only; **Operations** owns the worklist + **Activate subscription** |
+| Overview + Operations both defaulting to subscriptions worklist | Browse / create subscriptions | **Overview** monitors only; **Operations** owns the worklist + **New subscription** |
 | Advanced filters **Resource** group vs panel / nested resource tabs | Switch resource | **Removed** from filters — panels + nested **Plans / Modules** and **Subscriptions / Module subscriptions** tabs own navigation |
 | Dead **Active subscriptions** notification (`onSelected` empty) | None | **Removed** |
 | Plan detail **Add modules** + **Edit plan** module checkboxes | Edit included modules | **Merged** — **Manage modules** on detail (write-only); create form still collects modules; edit plan form omits module list |
 | **Edit subscription** plan field + **Change plan** | Change plan | **Merged** — edit keeps status / dates; **Change plan** is the sole plan-change path |
 | Invoice **Print invoice** snackbar-only shell | No backend report | **Removed** — client-only shell never called the API |
+| Cancel dialog **Reason** field (discarded before API cancel) | Restate cancel intent | **Removed** — confirm-only destructive dialog; payload unchanged |
+| Toolbar **Activate subscription** label vs create goal | Create subscription | **Renamed** sole create entry to **New subscription** (detail **Activate** remains for pending rows) |
 | Unauthorized **Manage modules** / create toolbar | Mutations | **Unauthorized UI absent** — omitted without `subscriptionsWrite` |
 
 ---
@@ -41,9 +43,9 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Immediate result: Creates plan; snackbar; refresh.
   - Condition: `subscriptionsWrite`; omitted on Overview and when unauthorized.
 
-- **Activate subscription** (primary, Subscriptions resource)
+- **New subscription** (primary, Subscriptions resource)
   - Location: Tab-strip primary on Operations.
-  - Opens modal: Yes — activate / assign form.
+  - Opens modal: Yes — create / assign form.
   - Immediate result: Creates subscription; snackbar; refresh.
   - Condition: `subscriptionsWrite` and tenants available.
 
@@ -55,7 +57,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 ### Queue chips (attention)
 
 - **Pending changes / Past due invoices / Denied modules / Expiring licenses / Approaching limits**
-  - Location: Chip row under tab strip (`ActionChip`).
+  - Location: Chip row under tab strip (`FilterChip`).
   - Opens modal: No.
   - Immediate result: `applyQueue` → switches panel / resource / queue; URL updated.
   - Condition: Chip renders only when count &gt; 0 and matching queue summary exists.
@@ -98,7 +100,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 ### Detail dialog actions (write-authorized)
 
-- Subscriptions: **Edit subscription** (status / dates), **Renew**, **Change plan**, **Activate**, **Cancel subscription**.
+- Subscriptions: **Edit subscription** (status / dates), **Renew**, **Change plan**, **Activate** (pending rows), **Cancel subscription** (confirm-only).
 - Module subscriptions: **Enable / Disable module**.
 - Licenses: **Update license**.
 - Invoices: **Collect invoice**, **Retry invoice** (no print shell).
@@ -118,7 +120,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - **Notifications** tab is absent; queue chips are the sole attention entry.
   - Overview shows cohort metrics without worklist / past-due card / create primary.
   - Catalog nested **Plans / Modules** tabs exist; advanced filters omit **Resource**.
-  - Operations owns **Activate subscription**; nested module-subscriptions tab present.
+  - Operations owns **New subscription**; nested module-subscriptions tab present.
   - Read-only users see no create / edit / manage-modules controls.
   - Invoice detail omits **Print invoice**.
   - Edit subscription form omits **Plan**; **Change plan** remains on detail.
+  - Cancel uses confirm-only dialog without a discarded reason field.
