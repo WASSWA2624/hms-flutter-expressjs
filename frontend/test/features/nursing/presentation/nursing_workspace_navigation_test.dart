@@ -163,6 +163,38 @@ void main() {
     });
   });
 
+  group('nursingResolveNextActionKind', () {
+    test('escalates urgent critical patients', () {
+      const NursingPatientSummary urgentPatient = NursingPatientSummary(
+        id: 'adm-urgent',
+        admissionId: 'adm-urgent',
+        hasCriticalAlert: true,
+      );
+      expect(
+        nursingResolveNextActionKind(
+          urgentPatient,
+          NursingQueueScope.urgent,
+        ),
+        NursingNextActionKind.escalate,
+      );
+    });
+
+    test('resolves medication due from task type on all scope', () {
+      const NursingPatientSummary medicationPatient = NursingPatientSummary(
+        id: 'adm-med',
+        admissionId: 'adm-med',
+        medicationDueCount: 2,
+      );
+      expect(
+        nursingResolveNextActionKind(
+          medicationPatient,
+          NursingQueueScope.all,
+        ),
+        NursingNextActionKind.medication,
+      );
+    });
+  });
+
   group('nursingResolveNextActionLabel', () {
     late AppLocalizations l10n;
 

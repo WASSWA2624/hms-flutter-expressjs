@@ -107,8 +107,10 @@ OpdWorkspaceSection _parseOpdSection(String raw) {
 /// Parsed deep-link parameters for the OPD workspace route (`/opd?id=&panel=`).
 ///
 /// `section` selects a worklist tab (e.g. `arrivals`, `queue`, `triage`).
-/// `flowId` deep-links to a specific OPD encounter (opens its action dialog).
-/// `panel` pre-selects a worklist filter (e.g. `vitals`, `doctor`, `lab`).
+/// `flowId` deep-links to a specific OPD encounter.
+/// With `panel`, opens the focused stage mutation dialog directly; without
+/// `panel`, opens Flow Actions with the stage next-action omitted.
+/// `panel` alone pre-selects a worklist filter (e.g. `vitals`, `doctor`, `lab`).
 /// `search` pre-fills the worklist search box.
 @immutable
 final class OpdWorkspaceQuery {

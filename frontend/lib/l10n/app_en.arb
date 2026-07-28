@@ -9662,9 +9662,9 @@
   "@routeNotFoundBody": {
     "description": "Body shown when a route cannot be matched."
   },
-  "authLoginTitle": "Sign in",
+  "authLoginTitle": "Welcome back",
   "@authLoginTitle": {
-    "description": "Authentication login page title."
+    "description": "Authentication login page title (distinct from the Sign in submit control)."
   },
   "authLoginBody": "Use your facility account to open the HMS workspace.",
   "@authLoginBody": {

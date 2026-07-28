@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart'
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_board_next_action.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -227,7 +228,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
-    expect(find.text('Admission detail'), findsNothing);
+    expect(find.text('ADMISSION DETAIL'), findsNothing);
   });
 
   testWidgets('detail omits assign-bed when it is the row next-action', (
@@ -239,7 +240,7 @@ void main() {
     await tester.tap(find.text('Pat Pending'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Admission detail'), findsOneWidget);
+    expect(find.text('ADMISSION DETAIL'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(AppQuickActions),
@@ -281,7 +282,7 @@ void main() {
     );
 
     expect(find.text('Manage transfer'), findsOneWidget);
-    expect(find.text('Admission detail'), findsNothing);
+    expect(find.text('ADMISSION DETAIL'), findsNothing);
   });
 
   test('ipdBoardNextActionKind maps stage and nextStep', () {

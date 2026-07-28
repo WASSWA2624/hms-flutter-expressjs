@@ -7617,7 +7617,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeNotFoundBody => 'This route is not available.';
 
   @override
-  String get authLoginTitle => 'Sign in';
+  String get authLoginTitle => 'Welcome back';
 
   @override
   String get authLoginBody =>

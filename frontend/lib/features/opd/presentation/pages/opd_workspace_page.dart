@@ -6,10 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -20,12 +18,9 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
-import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({this.initialQuery, super.key});
@@ -195,11 +190,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     OpdWorkspaceState state,
   ) {
     final AppLocalizations l10n = context.l10n;
-    final bool isRefreshing =
-        state.isRefreshingAppointments ||
-        state.isRefreshingQueue ||
-        state.isRefreshingFlows ||
-        state.isRefreshingTriageQueue;
 
     final Widget primary = switch (section) {
       OpdWorkspaceSection.followUps => const SizedBox.shrink(),
@@ -224,40 +214,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       ),
     };
 
-    final List<Widget> secondary = switch (section) {
-      OpdWorkspaceSection.followUps => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.commonRefreshActionLabel,
-          icon: Icons.refresh,
-          onPressed: () {
-            unawaited(
-              refreshScopedFollowUps(
-                ref,
-                const FollowUpWorklistScope(encounterType: 'OPD'),
-              ),
-            );
-          },
-        ),
-      ],
-      OpdWorkspaceSection.all ||
-      OpdWorkspaceSection.arrivals ||
-      OpdWorkspaceSection.queue ||
-      OpdWorkspaceSection.triage ||
-      OpdWorkspaceSection.active => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.commonRefreshActionLabel,
-          icon: Icons.refresh,
-          isLoading: isRefreshing,
-          onPressed: () {
-            unawaited(
-              ref.read(opdWorkspaceControllerProvider.notifier).refresh(),
-            );
-          },
-        ),
-      ],
-    };
-
-    return (primary: primary, secondary: secondary);
+    return (primary: primary, secondary: const <Widget>[]);
   }
 
   void _setFilter(_OpdTableFilter filter) {
@@ -331,20 +288,41 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       _setFilter(panelFilter.copyWith(search: query.search));
     }
     if (query.flowId.isNotEmpty) {
-      await _openFlowById(query.flowId);
+      await _openFlowById(query.flowId, panel: query.panel);
     }
   }
 
-  Future<void> _openFlowById(String identifier) async {
+  Future<void> _openFlowById(String identifier, {String panel = ''}) async {
     final OpdFlowSummary? flow = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .resolveFlowById(identifier);
     if (!mounted || flow == null) {
       return;
     }
+
+    final OpdBoardNextActionKind? panelKind = opdBoardNextActionKindFromPanel(
+      panel,
+    );
+    if (panelKind != null && panelKind != OpdBoardNextActionKind.none) {
+      final bool? changed = await runOpdBoardNextAction(
+        context: context,
+        ref: ref,
+        flow: flow,
+        kind: panelKind,
+      );
+      if (changed == true && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      }
+      return;
+    }
+
+    final String omitKey = resolveOpdFlowNextActionKey(flow);
     final bool? changed = await showFlowActionsDialog(
       context: context,
       flow: flow,
+      omitNextActionKey: omitKey,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
@@ -2360,6 +2338,7 @@ class _OpdMainTable extends ConsumerWidget {
                   label: _queueStatusLabel(context, item),
                 ),
               ],
+              trailing: _OpdNextActionCell(item: item, state: state),
             ),
         itemKeyBuilder: (_OpdTableItem item) =>
             ValueKey<String>('opd-${item.stableKey}'),
@@ -2374,15 +2353,49 @@ Future<void> _openOpdTableItemActions(
   _OpdTableItem item, {
   required OpdWorkspaceState state,
 }) async {
-  final bool? changed = await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => _OpdPatientActionsDialog(item: item, state: state),
-  );
-  if (changed == true && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+  final OpdFlowSummary? flow = item.flow;
+  if (flow != null) {
+    final String omitKey = resolveOpdFlowNextActionKey(flow);
+    final bool? changed = await showFlowActionsDialog(
+      context: context,
+      flow: flow,
+      omitNextActionKey: omitKey,
+    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
+    return;
+  }
+
+  final OpdQueueEntry? queueEntry = item.queueEntry;
+  if (queueEntry != null) {
+    final bool? changed = await showQueueActionsDialog(
+      context: context,
+      entry: queueEntry,
+    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
+    return;
+  }
+
+  final OpdAppointment? appointment = item.appointment;
+  if (appointment != null) {
+    final bool? changed = await showOpdAppointmentActionsDialog(
+      context: context,
+      appointment: appointment,
+      workspaceState: state,
+      omitPrimaryAction: true,
+    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
   }
 }
 
@@ -2407,59 +2420,104 @@ class _OpdNextActionCell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final OpdFlowSummary? flow = item.flow;
-    final String encounterId =
-        flow?.publicId ?? flow?.id ?? item.encounterId ?? item.id;
-
-    if (encounterId.trim().isNotEmpty) {
-      return WorkflowActionButton(
-        encounterId: encounterId,
-        patientId:
-            flow?.patientId ??
-            item.appointment?.patientId ??
-            item.queueEntry?.patientId,
-        queueEntryId: item.queueEntry?.id,
-        stage: flow?.stage ?? item.status,
-        nextStep: item.nextStep,
-        displayNextStep: flow?.displayNextStep,
-        assignedStaffId: flow?.providerUserId,
-        sourceModule: 'opd',
-        compact: true,
+    if (flow != null) {
+      final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(flow);
+      if (kind == OpdBoardNextActionKind.none) {
+        return const SizedBox.shrink();
+      }
+      return OpdBoardNextActionCell(
+        kind: kind,
+        flow: flow,
+        onPressed: () => unawaited(_runFlowNextAction(context, ref, flow, kind)),
       );
     }
 
-    return _opdFallbackNextActionButton(context, item);
+    final OpdAppointment? appointment = item.appointment;
+    if (appointment != null) {
+      final OpdFlowSummary? linkedFlow = findActiveOpdFlowForAppointment(
+        appointment: appointment,
+        flows: <OpdFlowSummary>[
+          ...state.flows.items,
+          ...state.triageQueue.items,
+        ],
+      );
+      final OpdAppointmentPrimaryAction primary =
+          resolveOpdAppointmentPrimaryAction(
+            appointment: appointment,
+            linkedFlow: linkedFlow,
+          );
+      final String? label = opdAppointmentPrimaryActionLabel(
+        context.l10n,
+        primary,
+      );
+      if (label == null) {
+        return const SizedBox.shrink();
+      }
+      final OpdBoardNextActionKind kind =
+          primary == OpdAppointmentPrimaryAction.continueEncounter
+          ? OpdBoardNextActionKind.continueAppointmentEncounter
+          : OpdBoardNextActionKind.checkInAppointment;
+      return OpdBoardNextActionCell(
+        kind: kind,
+        labelOverride: label,
+        onPressed: () => unawaited(
+          _runAppointmentNextAction(context, ref, appointment, primary),
+        ),
+      );
+    }
+
+    // Queue rows: row select opens the hub; next-action is label-only guidance.
+    final String label = _nextStepLabel(context, item);
+    if (label == context.l10n.profileUnknownValue) {
+      return const SizedBox.shrink();
+    }
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
   }
 
-  Widget _opdFallbackNextActionButton(
+  Future<void> _runFlowNextAction(
     BuildContext context,
-    _OpdTableItem item,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdAppointment? appointment = item.appointment;
-    final bool terminal = _isCompletedStatus(item.status);
-
-    if (appointment != null) {
-      final String status = (appointment.status ?? '').toUpperCase();
-      final bool canCheckIn =
-          !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
-      if (canCheckIn) {
-        return AppButton.secondary(
-          label: l10n.opdCheckInAction,
-          onPressed: () =>
-              _openOpdTableItemActions(context, item, state: state),
-        );
-      }
+    WidgetRef ref,
+    OpdFlowSummary flow,
+    OpdBoardNextActionKind kind,
+  ) async {
+    final bool? changed = await runOpdBoardNextAction(
+      context: context,
+      ref: ref,
+      flow: flow,
+      kind: kind,
+    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
+  }
 
-    final String label = _nextStepLabel(context, item);
-    if (label != l10n.profileUnknownValue) {
-      return AppButton.secondary(
-        label: label,
-        onPressed: () => _openOpdTableItemActions(context, item, state: state),
-      );
+  Future<void> _runAppointmentNextAction(
+    BuildContext context,
+    WidgetRef ref,
+    OpdAppointment appointment,
+    OpdAppointmentPrimaryAction primary,
+  ) async {
+    final bool? changed = await runOpdAppointmentNextAction(
+      context: context,
+      ref: ref,
+      appointment: appointment,
+      state: state,
+      primaryAction: primary,
+    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
-
-    return const SizedBox.shrink();
   }
 }
 
@@ -2564,238 +2622,6 @@ String _categoryLabel(BuildContext context, String category) {
     _opdCategoryActiveFlow => l10n.opdActiveFlowSummaryLabel,
     _ => _apiLabel(category),
   };
-}
-
-class _OpdPatientActionsDialog extends ConsumerStatefulWidget {
-  const _OpdPatientActionsDialog({required this.item, required this.state});
-
-  final _OpdTableItem item;
-  final OpdWorkspaceState state;
-
-  @override
-  ConsumerState<_OpdPatientActionsDialog> createState() =>
-      _OpdPatientActionsDialogState();
-}
-
-class _OpdPatientActionsDialogState
-    extends ConsumerState<_OpdPatientActionsDialog> {
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final OpdFlowSummary? flow = widget.item.flow;
-    if (flow != null) {
-      return FlowActionsDialog(flow: flow);
-    }
-    final OpdQueueEntry? queueEntry = widget.item.queueEntry;
-    if (queueEntry != null) {
-      return QueueActionsDialog(entry: queueEntry);
-    }
-
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(widget.item.title),
-      icon: const Icon(Icons.medical_services_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      maxWidth: 860,
-      content: AppFormSection(
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdStatusColumnLabel,
-                value: opdStageDisplayLabel(l10n, widget.item.status),
-              ),
-              AppInfoTileData(
-                label: l10n.opdVisitTypeColumnLabel,
-                value: widget.item.visitType ?? l10n.profileUnknownValue,
-              ),
-              AppInfoTileData(
-                label: l10n.opdProviderColumnLabel,
-                value: widget.item.provider ?? opdUnknownProviderLabel,
-              ),
-              AppInfoTileData(
-                label: l10n.opdTimeColumnLabel,
-                value: _formatDateTime(context, widget.item.time),
-              ),
-            ],
-            emptyValue: l10n.profileUnknownValue,
-          ),
-          AppQuickActions(
-            title: l10n.patientsQuickActionsTitle,
-            permissionActions: _actions(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<AppPermissionActionItem> _actions(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdAppointment? appointment = widget.item.appointment;
-    final bool terminal = _isCompletedStatus(widget.item.status);
-    final String inactiveReason = l10n.opdInactiveEncounterActionReason;
-    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
-
-    AppPermissionActionItem action({
-      required AccessRequirement requirement,
-      required String label,
-      required IconData icon,
-      required VoidCallback? onPressed,
-      AppButtonVariant variant = AppButtonVariant.secondary,
-      bool enabled = true,
-      String? tooltip,
-    }) {
-      final bool isEnabled = enabled && !_isSaving && onPressed != null;
-      return AppPermissionActionItem(
-        requirement: requirement,
-        label: label,
-        icon: icon,
-        fullWidth: true,
-        variant: variant,
-        enabled: isEnabled,
-        tooltip: isEnabled ? null : tooltip ?? inactiveReason,
-        onPressed: isEnabled ? onPressed : null,
-      );
-    }
-
-    if (appointment != null) {
-      final String status = (appointment.status ?? '').toUpperCase();
-      final bool canCheckIn =
-          !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
-      actions.addAll(<AppPermissionActionItem>[
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdCheckInAction,
-          icon: Icons.login_outlined,
-          variant: AppButtonVariant.primary,
-          enabled: canCheckIn,
-          tooltip: terminal ? l10n.opdStatusColumnLabel : null,
-          onPressed: _openAppointmentCheckIn,
-        ),
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdQueueAction,
-          icon: Icons.queue_outlined,
-          enabled:
-              !terminal &&
-              status != 'IN_PROGRESS' &&
-              appointment.patientId != null,
-          onPressed: () => _run(
-            () => ref
-                .read(opdWorkspaceControllerProvider.notifier)
-                .assignAppointmentToQueue(appointment),
-          ),
-        ),
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdRescheduleAction,
-          icon: AppActionIcons.reschedule,
-          enabled: !terminal,
-          onPressed: () async {
-            final bool? changed = await showOpdRescheduleAppointmentDialog(
-              context: context,
-              appointment: appointment,
-            );
-            if (changed == true && context.mounted) {
-              Navigator.of(context).pop(true);
-            }
-          },
-        ),
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdCancelAction,
-          icon: AppActionIcons.delete,
-          enabled: !terminal && status != 'CANCELLED',
-          onPressed: () async {
-            final bool? changed = await showOpdCancelAppointmentDialog(
-              context: context,
-              appointment: appointment,
-            );
-            if (changed == true && context.mounted) {
-              Navigator.of(context).pop(true);
-            }
-          },
-        ),
-      ]);
-    }
-
-    return actions;
-  }
-
-  Future<void> _openAppointmentCheckIn() async {
-    final OpdAppointment? appointment = widget.item.appointment;
-    if (appointment == null) {
-      return;
-    }
-    OpdFlowSummary? activeEncounterToOpen;
-    final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
-      context: context,
-      dialog: buildOpdWorkspaceEncounterDialog(
-        ref: ref,
-        state: widget.state,
-        initialAppointment: appointment,
-        initialAppointmentId: appointment.apiId,
-        defaultArrivalMode: 'ONLINE_APPOINTMENT',
-        defaultProviderId: appointment.providerUserId,
-        includeEncounterLifecycleCallbacks: false,
-        onExistingActiveEncounter: (OpdFlowSummary flow) {
-          activeEncounterToOpen = flow;
-        },
-      ),
-    );
-    if (!mounted || dialogResult == null) {
-      return;
-    }
-    final OpdFlowSummary? activeEncounter =
-        dialogResult.action == OpdEncounterDialogAction.continueWorkflow
-        ? dialogResult.flow
-        : activeEncounterToOpen;
-    if (activeEncounter == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    final bool? activeChanged = await showFlowActionsDialog(
-      context: context,
-      flow: activeEncounter,
-    );
-    if (mounted) {
-      Navigator.of(context).pop(activeChanged == true);
-    }
-  }
-
-  Future<void> _run(Future<AppFailure?> Function() action) async {
-    if (_isSaving) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await action();
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
 }
 
 bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {

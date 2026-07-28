@@ -555,23 +555,13 @@ class _MortuaryWorklist extends StatelessWidget {
         <AppListTableColumn<MortuaryWorkspaceItem>>[
           for (final _MortuaryTableColumnId column
               in _mortuaryDefaultColumnsForPanel(panel))
-            _mortuaryDataColumn(
-              context,
-              panel: panel,
-              column: column,
-              onItemSelected: onItemSelected,
-            ),
+            _mortuaryDataColumn(context, panel: panel, column: column),
         ];
     final List<AppListTableColumn<MortuaryWorkspaceItem>> columnChoices =
         <AppListTableColumn<MortuaryWorkspaceItem>>[
           for (final _MortuaryTableColumnId column
               in _mortuaryAllColumnsForPanel(panel))
-            _mortuaryDataColumn(
-              context,
-              panel: panel,
-              column: column,
-              onItemSelected: onItemSelected,
-            ),
+            _mortuaryDataColumn(context, panel: panel, column: column),
         ];
 
     return AppListTable<MortuaryWorkspaceItem>(
@@ -692,7 +682,6 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
   BuildContext context, {
   required String panel,
   required _MortuaryTableColumnId column,
-  required ValueChanged<MortuaryWorkspaceItem> onItemSelected,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<MortuaryWorkspaceItem>(
@@ -1628,16 +1617,6 @@ String _datePresetLabel(AppLocalizations l10n, String id) {
   };
 }
 
-IconData _summaryIcon(String id) {
-  return switch (id) {
-    'identification_pending' => Icons.badge_outlined,
-    'in_storage' => Icons.inventory_2_outlined,
-    'release_ready' => Icons.outbox_outlined,
-    'unsettled_billing' => Icons.receipt_long_outlined,
-    _ => Icons.assignment_outlined,
-  };
-}
-
 IconData _panelIcon(String id) {
   return switch (id) {
     mortuaryPanelIntake => Icons.inbox_outlined,
@@ -1960,36 +1939,6 @@ List<Widget> _withMortuaryDetailSectionSpacing(
 ) {
   return appWorkspaceDetailSectionSpacing(context, sections);
 }
-
-const AccessRequirement _writeRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryWrite],
-  requiresFacilityContext: true,
-);
-
-const AccessRequirement _storageRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryManageStorage],
-  requiresFacilityContext: true,
-);
-
-const AccessRequirement _postMortemRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryPostMortemRequest],
-  requiresFacilityContext: true,
-);
-
-const AccessRequirement _billingRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryBillingEvent],
-  requiresFacilityContext: true,
-);
-
-const AccessRequirement _approveRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryApprove],
-  requiresFacilityContext: true,
-);
-
-const AccessRequirement _releaseRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.mortuaryRelease],
-  requiresFacilityContext: true,
-);
 
 const AccessRequirement _exportRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[

@@ -14,6 +14,7 @@ Authenticated visitors are redirected to `/` by route guards (auth entry routes)
 
 | Duplicate / redundant surface | Outcome | Merge / removal |
 | --- | --- | --- |
+| Page title **Sign in** + primary **Sign in** | Same label on chrome and the only submit control | **Split** — title is **Welcome back**; single primary remains **Sign in** |
 | Decorative `Divider` between **Forgot password?** and **Create account** | Split the same secondary-link stack into fake sections | **Removed** — one secondary stack under **Sign in** |
 | Stale `authController` failure / identify / reset-submitted shells from sibling auth routes | Misleading banner on a fresh login visit | **Removed** — mount clears failure, identify tenants, and password-reset submitted |
 | Parallel Sign in controls | Same submit goal | **Kept** one `AuthPrimaryButton` only (keyboard submit uses the same path) |

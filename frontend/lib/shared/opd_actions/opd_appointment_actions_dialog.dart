@@ -26,6 +26,7 @@ Future<bool?> showOpdAppointmentActionsDialog({
   required OpdAppointment appointment,
   OpdWorkspaceState? workspaceState,
   AccessRequirement actionRequirement = opdFrontDeskActionRequirement,
+  bool omitPrimaryAction = false,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -34,6 +35,7 @@ Future<bool?> showOpdAppointmentActionsDialog({
       appointment: appointment,
       workspaceState: workspaceState,
       actionRequirement: actionRequirement,
+      omitPrimaryAction: omitPrimaryAction,
     ),
   );
 }
@@ -51,6 +53,7 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
     this.actionRequirement = opdFrontDeskActionRequirement,
     this.allowClinicalActions = true,
     this.allowVitalsActions = true,
+    this.omitPrimaryAction = false,
     super.key,
   });
 
@@ -67,6 +70,10 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
 
   /// When false, Record/Edit vitals quick actions are omitted.
   final bool allowVitalsActions;
+
+  /// When true, omits Check in / Continue encounter so the worklist next-action
+  /// remains the sole primary for that goal.
+  final bool omitPrimaryAction;
 
   @override
   ConsumerState<OpdAppointmentActionsDialog> createState() =>
@@ -187,7 +194,8 @@ class _OpdAppointmentActionsDialogState
                     enabled: !_isSaving,
                     onPressed: _openCancel,
                   ),
-                if (canContinueEncounter) ...<AppPermissionActionItem>[
+                if (canContinueEncounter && !widget.omitPrimaryAction)
+                  ...<AppPermissionActionItem>[
                   AppPermissionActionItem(
                     requirement: widget.actionRequirement,
                     label: l10n.opdContinueEncounterAction,
@@ -212,7 +220,7 @@ class _OpdAppointmentActionsDialogState
                     onPressed: _openCheckIn,
                   ),
                 ],
-                if (canStartEncounter)
+                if (canStartEncounter && !widget.omitPrimaryAction)
                   AppPermissionActionItem(
                     requirement: widget.actionRequirement,
                     label: l10n.opdCheckInAction,

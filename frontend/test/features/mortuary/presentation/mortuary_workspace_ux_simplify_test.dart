@@ -32,7 +32,7 @@ const MortuaryWorkspaceItem _caseItem = MortuaryWorkspaceItem(
   deceasedProfileLabel: 'Amina K.',
 );
 
-AppAccessPolicy _mortuaryReadPolicy() {
+AppAccessPolicy _readPolicy({bool includeExport = false}) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -42,7 +42,7 @@ AppAccessPolicy _mortuaryReadPolicy() {
       ),
       permissions: <AppPermission>{
         AppPermissions.mortuaryRead,
-        AppPermissions.mortuaryWrite,
+        if (includeExport) AppPermissions.mortuaryExport,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
@@ -154,16 +154,10 @@ void _stubWorkspace(_MockMortuaryRepository repository) {
   );
 }
 
-class _Harness {
-  const _Harness({required this.repository, required this.router});
-
-  final _MockMortuaryRepository repository;
-  final GoRouter router;
-}
-
-Future<_Harness> _pumpMortuaryWorkspace(
+Future<void> _pumpMortuary(
   WidgetTester tester, {
   required _MockMortuaryRepository repository,
+  AppAccessPolicy? policy,
   MortuaryRouteQuery? initialQuery,
   String initialLocation = '/mortuary',
   Size viewport = const Size(1440, 900),
@@ -202,7 +196,9 @@ Future<_Harness> _pumpMortuaryWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_mortuaryReadPolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          policy ?? _readPolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -214,13 +210,6 @@ Future<_Harness> _pumpMortuaryWorkspace(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
-  return _Harness(repository: repository, router: router);
-}
-
-AppListTable<MortuaryWorkspaceItem> _table(WidgetTester tester) {
-  return tester.widget<AppListTable<MortuaryWorkspaceItem>>(
-    find.byType(AppListTable<MortuaryWorkspaceItem>),
-  );
 }
 
 void main() {
@@ -235,155 +224,89 @@ void main() {
     repository = _MockMortuaryRepository();
   });
 
-  testWidgets('renders tab strip with all six panel tabs', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
+  testWidgets('tab strip has no Refresh control', (WidgetTester tester) async {
+    await _pumpMortuary(tester, repository: repository);
 
-    expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
-    expect(find.text('Overview'), findsWidgets);
-    expect(find.text('Intake'), findsWidgets);
-    expect(find.text('Storage'), findsWidgets);
-    expect(find.text('Custody'), findsWidgets);
-    expect(find.text('Release'), findsWidgets);
-    expect(find.text('Reports'), findsWidgets);
-  });
-
-  testWidgets('tab strip has no mutation primary or Refresh', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    expect(
-      find.descendant(
-        of: find.byType(AppTabStrip),
-        matching: find.text('Receive case'),
-      ),
-      findsNothing,
-    );
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
   });
 
-  testWidgets('intake tab has no disabled receive-case primary', (
+  testWidgets('tab strip has no queue or in-storage shortcut chips', (
     WidgetTester tester,
   ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
+    await _pumpMortuary(tester, repository: repository);
 
-    await tester.tap(find.text('Intake').first);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Identification pending'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('In storage'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Release ready'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Unsettled billing'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('queue filter remains available via Filters dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMortuary(tester, repository: repository);
+
+    await tester.tap(find.text('Filters'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.descendant(
-        of: find.byType(AppTabStrip),
-        matching: find.text('Receive case'),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppTabStrip),
-        matching: find.text('Assign storage'),
-      ),
-      findsNothing,
-    );
+    expect(find.text('Queue'), findsWidgets);
+    expect(find.text('Identification pending'), findsWidgets);
   });
 
-  testWidgets('storage tab has no disabled assign-storage primary', (
+  testWidgets('row select is the sole path into case detail', (
     WidgetTester tester,
   ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    await tester.tap(find.text('Storage').first);
-    await tester.pumpAndSettle();
-
-    expect(
-      find.descendant(
-        of: find.byType(AppTabStrip),
-        matching: find.text('Assign storage'),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppTabStrip),
-        matching: find.text('Receive case'),
-      ),
-      findsNothing,
-    );
-  });
-
-  testWidgets('table chrome exposes Filters and Settings only', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    expect(find.text('Filters'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
-    expect(_table(tester).columnVisibilityLabel, 'Settings');
-    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
-    expect(_table(tester).columnVisibilityStorageKey, 'mortuary_overview');
-    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
-    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
-    expect(_table(tester).columns.length, 5);
-    expect(
-      _table(tester).columns.any(
-        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
-            column.id == 'next_action' && column.alwaysVisible,
-      ),
-      isTrue,
-    );
-    expect(find.text('Deceased'), findsOneWidget);
-    expect(find.text('Case'), findsOneWidget);
-    expect(find.text('Source'), findsOneWidget);
-    expect(find.text('Status'), findsOneWidget);
-    expect(find.text('Next action'), findsOneWidget);
-    expect(
-      _table(tester).columns.any(
-        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
-            column.id == 'storage',
-      ),
-      isFalse,
-    );
-    expect(
-      _table(tester).columns.any(
-        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
-            column.id == 'date',
-      ),
-      isFalse,
-    );
-  });
-
-  testWidgets('storage tab shows five panel-specific default columns', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    await tester.tap(find.text('Storage').first);
-    await tester.pumpAndSettle();
-
-    expect(_table(tester).columnVisibilityStorageKey, 'mortuary_storage');
-    expect(_table(tester).columns.length, 5);
-    expect(
-      _table(tester).columns.map(
-        (AppListTableColumn<MortuaryWorkspaceItem> column) => column.id,
-      ),
-      <String>['deceased', 'storage', 'status', 'date', 'next_action'],
-    );
-    expect(
-      _table(tester).columns.any(
-        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
-            column.id == 'source',
-      ),
-      isFalse,
-    );
-  });
-
-  testWidgets('row select opens detail dialog', (WidgetTester tester) async {
-    await _pumpMortuaryWorkspace(
+    await _pumpMortuary(
       tester,
       repository: repository,
+      viewport: const Size(390, 844),
+    );
+
+    await tester.tap(find.text('Assign storage'));
+    await tester.pumpAndSettle();
+    expect(find.text('Case detail'), findsNothing);
+
+    await tester.tap(find.text('Amina K.'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('Actions unavailable'), findsNothing);
+    expect(find.text('Receive case'), findsNothing);
+    expect(find.text('Confirm release'), findsNothing);
+  });
+
+  testWidgets('unauthorized user has no print documents control', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMortuary(
+      tester,
+      repository: repository,
+      policy: _readPolicy(),
       viewport: const Size(390, 844),
     );
 
@@ -391,132 +314,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Case detail'), findsOneWidget);
-    expect(find.text('Actions unavailable'), findsNothing);
-    verify(
-      () => repository.getItem(
-        resource: any(named: 'resource'),
-        id: any(named: 'id'),
-        baseQuery: any(named: 'baseQuery'),
-      ),
-    ).called(1);
+    expect(find.text('Print documents'), findsNothing);
   });
 
-  testWidgets('next action is guidance text, not a detail button', (
+  testWidgets('authorized export user sees print documents', (
     WidgetTester tester,
   ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    expect(find.text('Assign storage'), findsOneWidget);
-    expect(
-      find.ancestor(
-        of: find.text('Assign storage'),
-        matching: find.byType(TextButton),
-      ),
-      findsNothing,
-    );
-
-    await tester.tap(find.text('Assign storage'));
-    await tester.pumpAndSettle();
-    expect(find.text('Case detail'), findsNothing);
-  });
-
-  testWidgets('mobile viewport shows next action guidance and deceased', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(
+    await _pumpMortuary(
       tester,
       repository: repository,
+      policy: _readPolicy(includeExport: true),
       viewport: const Size(390, 844),
     );
 
-    expect(find.text('Assign storage'), findsOneWidget);
-    expect(find.text('Amina K.'), findsOneWidget);
-    expect(find.text('In Storage'), findsWidgets);
-  });
-
-  testWidgets('filter dialog excludes panel filter group', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(tester, repository: repository);
-
-    await tester.tap(find.text('Filters'));
+    await tester.tap(find.text('Amina K.'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Resource'), findsWidgets);
-    expect(find.text('Queue'), findsWidgets);
-    expect(find.text('Panel'), findsNothing);
+    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('Print documents'), findsOneWidget);
   });
 
-  testWidgets('switching tabs updates URL panel query', (
+  testWidgets('deep link queue applies without toolbar shortcut', (
     WidgetTester tester,
   ) async {
-    final _Harness harness = await _pumpMortuaryWorkspace(
+    await _pumpMortuary(
       tester,
       repository: repository,
+      initialLocation: '/mortuary?queue=IDENTIFICATION_PENDING',
+      initialQuery: MortuaryRouteQuery.fromUri(
+        Uri.parse('/mortuary?queue=IDENTIFICATION_PENDING'),
+      ),
     );
-
-    await tester.tap(find.text('Storage').first);
-    await tester.pumpAndSettle();
-
-    expect(harness.router.state.uri.queryParameters['panel'], 'storage');
 
     final List<MortuaryWorkspaceQuery> queries = verify(
       () => repository.getWorkspace(captureAny()),
     ).captured.cast<MortuaryWorkspaceQuery>();
     expect(
       queries.any(
-        (MortuaryWorkspaceQuery q) => q.panel == mortuaryPanelStorage,
+        (MortuaryWorkspaceQuery q) =>
+            q.queue == mortuaryQueueIdentificationPending,
       ),
       isTrue,
     );
-  });
-
-  testWidgets('deep link panel=release selects Release tab', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/mortuary?panel=release',
-      initialQuery: MortuaryRouteQuery.fromUri(
-        Uri.parse('/mortuary?panel=release'),
-      ),
-    );
-
-    final AppTabStrip strip = tester.widget<AppTabStrip>(
-      find.byType(AppTabStrip),
-    );
-    expect(strip.selectedId, mortuaryPanelRelease);
     expect(
       find.descendant(
         of: find.byType(AppTabStrip),
-        matching: find.text('Approve release'),
+        matching: find.text('Identification pending'),
       ),
       findsNothing,
     );
-
-    final List<MortuaryWorkspaceQuery> queries = verify(
-      () => repository.getWorkspace(captureAny()),
-    ).captured.cast<MortuaryWorkspaceQuery>();
-    expect(
-      queries.any(
-        (MortuaryWorkspaceQuery q) => q.panel == mortuaryPanelRelease,
-      ),
-      isTrue,
-    );
-  });
-
-  testWidgets('AppTabStrip renders on narrow mobile viewport', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMortuaryWorkspace(
-      tester,
-      repository: repository,
-      viewport: const Size(390, 844),
-    );
-
-    expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Overview'), findsWidgets);
-    expect(find.text('Reports'), findsWidgets);
   });
 }

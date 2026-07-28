@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -248,7 +249,7 @@ void main() {
     expect(find.byTooltip(l10n.nursingActionRecordVitals), findsWidgets);
   });
 
-  testWidgets('renders tab strip and default primary action', (
+  testWidgets('renders tab strip without duplicate toolbar writes', (
     WidgetTester tester,
   ) async {
     await _pumpNursingWorkspace(tester, repository: repository);
@@ -260,8 +261,8 @@ void main() {
     expect(find.textContaining('Medication due'), findsWidgets);
     expect(find.byTooltip('Record vitals'), findsWidgets);
     expect(find.byTooltip('Shift context'), findsOneWidget);
-    expect(find.byTooltip('Add note'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Add note'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Routine Patient'), findsOneWidget);
     expect(find.text('Med Due Patient'), findsOneWidget);
   });
@@ -290,12 +291,12 @@ void main() {
     await _pumpAfterAction(tester);
 
     expect(harness.router.state.uri.queryParameters['scope'], 'urgent');
-    expect(find.byTooltip('Record vitals'), findsWidgets);
+    expect(find.byTooltip('Escalate'), findsWidgets);
     expect(find.text('Urgent Patient'), findsOneWidget);
     expect(find.text('Routine Patient'), findsNothing);
   });
 
-  testWidgets('medication due tab updates primary action and columns', (
+  testWidgets('medication due tab updates next-action and columns', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpNursingWorkspace(
@@ -367,7 +368,7 @@ void main() {
     );
   });
 
-  testWidgets('mobile breakpoint uses list tiles instead of data table', (
+  testWidgets('mobile breakpoint shows next-action trailing', (
     WidgetTester tester,
   ) async {
     await _pumpNursingWorkspace(
@@ -378,7 +379,9 @@ void main() {
 
     expect(find.byType(DataTable), findsNothing);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Routine Patient'), findsOneWidget);
+    debugDumpApp();
+    expect(find.textContaining('Routine'), findsWidgets);
+    expect(find.byTooltip('Record vitals'), findsWidgets);
   });
 
   testWidgets('tapping a row opens the nursing detail dialog', (
@@ -393,5 +396,97 @@ void main() {
     verify(
       () => repository.loadPatientDetail(any()),
     ).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('detail omits next-action duplicate for routine patient', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.text('Routine Patient'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    // Row next-action remains the sole Quick Action for vitals; checklist may
+    // still expose Record vitals as progressive disclosure.
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionRecordVitals),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionAddNote),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('panel deep link opens vitals without detail shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/nursing?id=ADM-ROUTINE&panel=vitals',
+      initialQuery: NursingWorkspaceQuery.fromUri(
+        Uri.parse('/nursing?id=ADM-ROUTINE&panel=vitals'),
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    final Finder dialog = find.byType(AppDialog);
+    expect(dialog, findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: dialog.first,
+        matching: find.text(l10n.nursingActionRecordVitals),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(AppQuickActions), findsNothing);
+    verify(
+      () => repository.loadPatientDetail(any()),
+    ).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('id deep link opens patient detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/nursing?id=ADM-ROUTINE',
+      initialQuery: NursingWorkspaceQuery.fromUri(
+        Uri.parse('/nursing?id=ADM-ROUTINE'),
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionAddNote),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text(l10n.nursingActionRecordVitals),
+      ),
+      findsNothing,
+    );
   });
 }

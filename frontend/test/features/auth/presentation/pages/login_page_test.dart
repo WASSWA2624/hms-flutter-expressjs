@@ -14,7 +14,6 @@ import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
-import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -42,23 +41,26 @@ void main() {
   testWidgets('clears stale sibling failure on fresh visit', (
     WidgetTester tester,
   ) async {
-    const failure = AppFailure.unauthorized(code: 'auth.wrong_password');
-    final container = _createContainer(
-      const _FailingLoginRepository(failure: failure),
+    const repository = _FailingLoginRepository(
+      failure: AppFailure.unauthorized(code: 'auth.wrong_password'),
+    );
+    await _pumpLogin(tester, repository);
+    await _submitLogin(tester);
+
+    expect(
+      find.text('The password is incorrect for this account.'),
+      findsOneWidget,
     );
 
-    final bool failed = !(await container
-        .read(authControllerProvider.notifier)
-        .login(identifier: 'nurse@example.com', password: 'wrong'));
-    expect(failed, isTrue);
-    expect(container.read(authControllerProvider).failure?.code, failure.code);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+    await tester.tap(find.text(l10n.authForgotPasswordActionLabel));
+    await tester.pumpAndSettle();
+    expect(find.text('forgot'), findsOneWidget);
 
-    await _pumpLogin(
-      tester,
-      const _FailingLoginRepository(failure: failure),
-      container: container,
-    );
+    await tester.tap(find.text('back-login'));
+    await tester.pumpAndSettle();
 
+    expect(find.byType(LoginPage), findsOneWidget);
     expect(
       find.text('The password is incorrect for this account.'),
       findsNothing,
@@ -178,7 +180,7 @@ void main() {
 
 ProviderContainer _createContainer(AuthRepository repository) {
   final container = ProviderContainer(
-    overrides: <Override>[
+    overrides: [
       authRepositoryProvider.overrideWithValue(repository),
       initialSessionStateProvider.overrideWithValue(
         const SessionState.ready(),

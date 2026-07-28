@@ -28,6 +28,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_consultation_payment_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_disposition_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_clinical_services.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_flow_next_action_key.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_follow_up_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_print_summary_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
@@ -107,6 +108,7 @@ Future<bool?> showFlowActionsDialog({
   bool allowBillingActions = true,
   bool allowVitalsActions = true,
   bool allowClinicalActions = true,
+  String? omitNextActionKey,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -116,6 +118,7 @@ Future<bool?> showFlowActionsDialog({
       allowBillingActions: allowBillingActions,
       allowVitalsActions: allowVitalsActions,
       allowClinicalActions: allowClinicalActions,
+      omitNextActionKey: omitNextActionKey,
     ),
   );
 }
@@ -126,6 +129,7 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
     this.allowBillingActions = true,
     this.allowVitalsActions = true,
     this.allowClinicalActions = true,
+    this.omitNextActionKey,
     super.key,
   });
 
@@ -139,6 +143,10 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   /// panel are omitted while Follow up, Correct stage, and Print summary remain.
   /// The workflow stepper stays read-only guidance.
   final bool allowClinicalActions;
+
+  /// When set, omits the matching stage next-action from Quick Actions so the
+  /// worklist next-action column remains the sole primary for that goal.
+  final String? omitNextActionKey;
 
   @override
   ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
@@ -424,11 +432,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       );
     }
 
-    final bool hasAssignedProvider =
-        _isNonEmpty(flow.providerUserId) ||
-        _isNonEmpty(flow.providerDisplayName) ||
-        _isNonEmpty(flow.assignedStaffDisplayName);
-    final bool hasPendingAdmission = _flowHasPendingAdmission(flow, detail);
+    final bool hasPendingAdmission = opdFlowHasPendingAdmission(flow, detail);
     final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
     final bool clinicalStage = _isClinicalReviewStage(stage);
     final bool servicePendingStage = _isServicePendingStage(stage);
@@ -442,38 +446,11 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         }.contains(displayCode);
     final bool canAdjustBilling =
         consultationPaid || consultationPaymentRequired;
-    final String nextActionKey = switch (displayCode) {
-      'PAYMENT_DUE' => canPayNow ? 'billing' : 'correct_stage',
-      'VITALS_NEEDED' => 'vitals',
-      'DOCTOR_NEEDED' => 'assign_doctor',
-      'WITH_DOCTOR' => 'doctor_review',
-      'LAB_PENDING' ||
-      'SAMPLE_PENDING' ||
-      'IN_LAB' ||
-      'IMAGING_PENDING' ||
-      'REPORT_PENDING' ||
-      'PHARMACY_PENDING' => 'handoff',
-      'RESULTS_READY' ||
-      'REPORT_READY' ||
-      'MEDICINES_DISPENSED' ||
-      'DECISION_NEEDED' => 'disposition',
-      'ADMISSION_PENDING' => 'admission_handoff',
-      _ => switch (stage) {
-        'WAITING_CONSULTATION_PAYMENT' =>
-          canPayNow ? 'billing' : 'correct_stage',
-        'WAITING_VITALS' => 'vitals',
-        'WAITING_DOCTOR_ASSIGNMENT' =>
-          hasAssignedProvider ? 'doctor_review' : 'assign_doctor',
-        'WAITING_DOCTOR_REVIEW' => 'doctor_review',
-        'WAITING_DISPOSITION' =>
-          hasPendingAdmission ? 'admission_handoff' : 'disposition',
-        'LAB_REQUESTED' ||
-        'RADIOLOGY_REQUESTED' ||
-        'LAB_AND_RADIOLOGY_REQUESTED' ||
-        'PHARMACY_REQUESTED' => 'handoff',
-        _ => 'correct_stage',
-      },
-    };
+    final String nextActionKey = resolveOpdFlowNextActionKey(
+      flow,
+      detail: detail,
+    );
+    final String? omitKey = widget.omitNextActionKey?.trim();
 
     final Map<String, AppPermissionActionItem Function()> actionFactories =
         <String, AppPermissionActionItem Function()>{
@@ -671,6 +648,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       if (!shouldIncludeAction(key)) {
         continue;
       }
+      if (omitKey != null && omitKey.isNotEmpty && key == omitKey) {
+        continue;
+      }
       final AppPermissionActionItem Function()? factory = actionFactories[key];
       if (factory == null) {
         continue;
@@ -774,7 +754,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     final OpdFlowDetail? updatedDetail = _workspaceState(ref)?.selectedFlow;
     final OpdFlowSummary updatedFlow = updatedDetail?.summary ?? flow;
-    final bool admissionPending = _flowHasPendingAdmission(
+    final bool admissionPending = opdFlowHasPendingAdmission(
       updatedFlow,
       updatedDetail,
     );
@@ -1947,27 +1927,6 @@ bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
 
 String _normalizedStage(String? stage) {
   return (stage ?? '').trim().toUpperCase();
-}
-
-/// Whether the OPD encounter has a live inpatient admission attached.
-///
-/// True for the `ADMISSION_PENDING` display code, the terminal `ADMITTED`
-/// stage, or any linked admission record that has not been discharged or
-/// cancelled. Used to surface the OPD→IPD handoff action.
-bool _flowHasPendingAdmission(OpdFlowSummary? flow, OpdFlowDetail? detail) {
-  final String displayCode = (flow?.displayCode ?? '').trim().toUpperCase();
-  if (displayCode == 'ADMISSION_PENDING') {
-    return true;
-  }
-  if (_normalizedStage(flow?.stage) == 'ADMITTED') {
-    return true;
-  }
-  final List<OpdRelatedRecord> admissions =
-      detail?.admissions ?? const <OpdRelatedRecord>[];
-  return admissions.any((OpdRelatedRecord record) {
-    final String status = (record.status ?? '').trim().toUpperCase();
-    return status != 'DISCHARGED' && status != 'CANCELLED';
-  });
 }
 
 /// Resolves the best identifier to deep-link the inpatient workspace to the

@@ -7,7 +7,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -24,6 +23,7 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_di
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_print_summary_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -32,7 +32,9 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class NursingPatientDetailDialog extends ConsumerWidget {
-  const NursingPatientDetailDialog({super.key});
+  const NursingPatientDetailDialog({this.omitNextActionKind, super.key});
+
+  final NursingNextActionKind? omitNextActionKind;
 
   static const AccessRequirement writeRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[
@@ -73,15 +75,22 @@ class NursingPatientDetailDialog extends ConsumerWidget {
               body: l10n.nursingNoSelectionBody,
               icon: Icons.bed_outlined,
             )
-          : _NursingPatientDetailContent(detail: detail),
+          : _NursingPatientDetailContent(
+              detail: detail,
+              omitNextActionKind: omitNextActionKind,
+            ),
     );
   }
 }
 
 class _NursingPatientDetailContent extends StatelessWidget {
-  const _NursingPatientDetailContent({required this.detail});
+  const _NursingPatientDetailContent({
+    required this.detail,
+    this.omitNextActionKind,
+  });
 
   final NursingPatientDetail detail;
+  final NursingNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +178,10 @@ class _NursingPatientDetailContent extends StatelessWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        _NursingActionBar(detail: detail),
+        _NursingActionBar(
+          detail: detail,
+          omitNextActionKind: omitNextActionKind,
+        ),
         SizedBox(height: theme.spacing.md),
         _NursingAdmissionChecklistPanel(detail: detail),
         SizedBox(height: theme.spacing.md),
@@ -217,9 +229,10 @@ class _NursingPatientDetailContent extends StatelessWidget {
 }
 
 class _NursingActionBar extends ConsumerWidget {
-  const _NursingActionBar({required this.detail});
+  const _NursingActionBar({required this.detail, this.omitNextActionKind});
 
   final NursingPatientDetail detail;
+  final NursingNextActionKind? omitNextActionKind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -231,96 +244,105 @@ class _NursingActionBar extends ConsumerWidget {
     final NursingPatientSummary summary = detail.enrichedSummary;
     final bool icuActive =
         (summary.icuStatus ?? '').trim().toUpperCase() == 'ACTIVE';
+    final NursingNextActionKind? omit = omitNextActionKind;
+    const AccessRequirement writeRequirement =
+        NursingPatientDetailDialog.writeRequirement;
 
-    return AppAccessActionGate(
-      requirement: NursingPatientDetailDialog.writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
-        title: l10n.nursingActionsTitle,
-        presentation: AppQuickActionsPresentation.detailPanel,
-        actions: <AppActionItem>[
-          AppActionItem(
+    return AppQuickActions(
+      title: l10n.nursingActionsTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      permissionActions: <AppPermissionActionItem>[
+        if (omit != NursingNextActionKind.handover)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionCreateHandover,
-            leadingIcon: Icons.swap_horiz_outlined,
-            enabled: isAllowed,
+            icon: Icons.swap_horiz_outlined,
             onPressed: () => _openHandoverDialog(context),
           ),
-          AppActionItem(
+        if (omit != NursingNextActionKind.vitals)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionRecordVitals,
-            leadingIcon: Icons.monitor_heart_outlined,
-            enabled: isAllowed,
+            icon: Icons.monitor_heart_outlined,
             onPressed: () => _openVitalsDialog(context),
           ),
-          AppActionItem(
-            label: l10n.nursingActionAddNote,
-            leadingIcon: Icons.note_add_outlined,
-            enabled: isAllowed,
-            onPressed: () => _openNoteDialog(context),
-          ),
-          AppActionItem(
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionAddNote,
+          icon: Icons.note_add_outlined,
+          onPressed: () => _openNoteDialog(context),
+        ),
+        if (omit != NursingNextActionKind.medication)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionAdministerMedication,
-            leadingIcon: Icons.medication_outlined,
-            enabled: isAllowed,
+            icon: Icons.medication_outlined,
             onPressed: () => _openMedicationDialog(context, detail),
           ),
-          AppActionItem(
-            label: l10n.clinicalPrescribeAction,
-            leadingIcon: Icons.add_circle_outline,
-            enabled: isAllowed,
-            onPressed: () => _openPrescriptionDialog(context, controller),
-          ),
-          AppActionItem(
-            label: l10n.nursingActionOrderLab,
-            leadingIcon: Icons.science_outlined,
-            enabled: isAllowed,
-            onPressed: () => _openLabOrderDialog(context, controller),
-          ),
-          AppActionItem(
-            label: l10n.nursingActionOrderRadiology,
-            leadingIcon: Icons.radio_outlined,
-            enabled: isAllowed,
-            onPressed: () => _openRadiologyOrderDialog(context, controller),
-          ),
-          AppActionItem(
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.clinicalPrescribeAction,
+          icon: Icons.add_circle_outline,
+          onPressed: () => _openPrescriptionDialog(context, controller),
+        ),
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionOrderLab,
+          icon: Icons.science_outlined,
+          onPressed: () => _openLabOrderDialog(context, controller),
+        ),
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionOrderRadiology,
+          icon: Icons.radio_outlined,
+          onPressed: () => _openRadiologyOrderDialog(context, controller),
+        ),
+        if (omit != NursingNextActionKind.escalate)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionEscalate,
-            leadingIcon: Icons.report_problem_outlined,
-            enabled: isAllowed,
+            icon: Icons.report_problem_outlined,
             onPressed: () => _openEscalationDialog(context),
           ),
-          AppActionItem(
+        if (detail.activeTransfer != null &&
+            omit != NursingNextActionKind.transfer)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionAcknowledgeTransfer,
-            leadingIcon: Icons.transfer_within_a_station_outlined,
-            enabled: isAllowed && detail.activeTransfer != null,
+            icon: Icons.transfer_within_a_station_outlined,
             onPressed: () => _openTransferDialog(context, detail),
           ),
-          AppActionItem(
+        if (summary.isDischargePending &&
+            omit != NursingNextActionKind.discharge)
+          AppPermissionActionItem(
+            requirement: writeRequirement,
             label: l10n.nursingActionDischargeClearance,
-            leadingIcon: Icons.fact_check_outlined,
-            enabled: isAllowed && summary.isDischargePending,
+            icon: Icons.fact_check_outlined,
             onPressed: () => _openDischargeClearanceDialog(context, detail),
           ),
-          if (icuActive)
-            AppActionItem(
-              label: l10n.nursingActionOpenIcu,
-              leadingIcon: Icons.monitor_heart_outlined,
-              onPressed: () => _openIcuWorkspace(context, summary),
-            ),
-          AppActionItem(
-            label: l10n.nursingActionPrintSummary,
-            leadingIcon: Icons.print_outlined,
-            enabled: isAllowed,
-            onPressed: () => _openPrintSummaryDialog(context, detail),
+        if (icuActive)
+          AppPermissionActionItem(
+            requirement: const AccessRequirement(),
+            label: l10n.nursingActionOpenIcu,
+            icon: Icons.monitor_heart_outlined,
+            onPressed: () => _openIcuWorkspace(context, summary),
           ),
-          for (final NursingHandover handover in detail.handovers)
-            if (handover.isPending)
-              AppActionItem(
-                label: l10n.nursingActionAcceptHandover,
-                leadingIcon: Icons.done_all_outlined,
-                enabled: isAllowed,
-                onPressed: () =>
-                    _openAcceptHandoverDialog(context, controller, handover),
-              ),
-        ],
-      ),
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionPrintSummary,
+          icon: Icons.print_outlined,
+          onPressed: () => _openPrintSummaryDialog(context, detail),
+        ),
+        for (final NursingHandover handover in detail.handovers)
+          if (handover.isPending)
+            AppPermissionActionItem(
+              requirement: writeRequirement,
+              label: l10n.nursingActionAcceptHandover,
+              icon: Icons.done_all_outlined,
+              onPressed: () =>
+                  _openAcceptHandoverDialog(context, controller, handover),
+            ),
+      ],
     );
   }
 }

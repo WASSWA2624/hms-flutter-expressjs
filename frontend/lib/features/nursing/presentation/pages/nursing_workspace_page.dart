@@ -5,21 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_panel.dart';
@@ -166,35 +157,22 @@ class _NursingWorkspaceContentState
     if (!mounted || summary == null) {
       return;
     }
-    unawaited(
-      showAppDialog<void>(
-        context: context,
-        builder: (BuildContext dialogContext) =>
-            const NursingPatientDetailDialog(),
-      ),
-    );
+
     final NursingDetailPanel? panel = NursingDetailPanel.fromValue(query.panel);
-    if (panel == null || panel == NursingDetailPanel.checklist) {
+    // Panel-focused deep links open the mutation dialog directly (no empty
+    // detail shell). Bare admission links open detail with the stage
+    // next-action omitted so it is not duplicated inside Quick Actions.
+    if (panel != null && panel != NursingDetailPanel.checklist) {
+      await openNursingFocusedAction(context, ref, summary, panel);
       return;
     }
-    final NursingPatientDetail? detail = nursingSelectedDetailFromState(
-      ref.read(nursingWorkspaceControllerProvider),
+
+    await openNursingPatientDetailDialog(
+      context,
+      ref,
+      summary,
+      omitNextActionKind: nursingResolveNextActionKind(summary, _scope),
     );
-    if (detail == null || !mounted) {
-      return;
-    }
-    switch (panel) {
-      case NursingDetailPanel.vitals:
-        await _openVitalsDialog();
-      case NursingDetailPanel.medication:
-        await _openMedicationDialog(detail);
-      case NursingDetailPanel.handover:
-        await _openHandoverDialog();
-      case NursingDetailPanel.discharge:
-        await _openDischargeClearanceDialog(detail);
-      case NursingDetailPanel.checklist:
-        break;
-    }
   }
 
   void _updateUrlForScope(NursingQueueScope scope) {
@@ -220,45 +198,6 @@ class _NursingWorkspaceContentState
     ref.read(nursingWorkspaceControllerProvider.notifier).applyScope(scope);
   }
 
-  void _executePrimaryAction() {
-    switch (_scope) {
-      case NursingQueueScope.medicationDue:
-        final NursingPatientDetail? detail = nursingSelectedDetailFromState(
-          ref.read(nursingWorkspaceControllerProvider),
-        );
-        if (detail != null) {
-          _openMedicationDialog(detail);
-        }
-      case NursingQueueScope.handoverPending:
-        _openHandoverDialog();
-      case NursingQueueScope.transferPending:
-        final NursingPatientDetail? detail = nursingSelectedDetailFromState(
-          ref.read(nursingWorkspaceControllerProvider),
-        );
-        if (detail != null) {
-          nursingShowActionResult(
-            context,
-            showAppDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (_) => NursingTransferDialog(detail: detail),
-            ),
-          );
-        }
-      case NursingQueueScope.dischargePending:
-        final NursingPatientDetail? detail = nursingSelectedDetailFromState(
-          ref.read(nursingWorkspaceControllerProvider),
-        );
-        if (detail != null) {
-          _openDischargeClearanceDialog(detail);
-        }
-      case NursingQueueScope.all:
-      case NursingQueueScope.assignedWard:
-      case NursingQueueScope.urgent:
-        _openVitalsDialog();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -267,7 +206,6 @@ class _NursingWorkspaceContentState
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
-    final bool isRefreshing = state.isRefreshing || state.isRefreshingDetail;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -282,17 +220,6 @@ class _NursingWorkspaceContentState
               tabs: nursingTabItems(l10n, state),
               selectedId: nursingScopeToQueryValue(_scope),
               onTabTapped: _onTabTapped,
-              primaryAction: AppAccessActionGate(
-                requirement: nursingWriteRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppTabToolbarPrimary(
-                    label: nursingPrimaryActionLabel(l10n, _scope),
-                    icon: nursingPrimaryActionIcon(_scope),
-                    enabled: isAllowed && !state.isSaving,
-                    onPressed: isAllowed ? _executePrimaryAction : null,
-                  );
-                },
-              ),
               secondaryActions: <Widget>[
                 AppTabToolbarAction(
                   label: l10n.nursingShiftContextTitle,
@@ -300,36 +227,6 @@ class _NursingWorkspaceContentState
                   tooltip: l10n.nursingShiftContextTitle,
                   semanticLabel: l10n.nursingShiftContextTitle,
                   onPressed: _openShiftContextDialog,
-                ),
-                AppAccessActionGate(
-                  requirement: nursingWriteRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppTabToolbarAction(
-                      label: l10n.nursingActionAddNote,
-                      icon: Icons.note_add_outlined,
-                      tooltip: l10n.nursingActionAddNote,
-                      semanticLabel: l10n.nursingActionAddNote,
-                      enabled: isAllowed && !state.isSaving,
-                      onPressed: isAllowed ? _openNoteDialog : null,
-                    );
-                  },
-                ),
-                AppTabToolbarAction(
-                  label: l10n.commonRefreshActionLabel,
-                  icon: Icons.refresh,
-                  tooltip: l10n.commonRefreshActionLabel,
-                  semanticLabel: l10n.commonRefreshActionLabel,
-                  enabled: !isRefreshing,
-                  isLoading: isRefreshing,
-                  onPressed: isRefreshing
-                      ? null
-                      : () async {
-                          final AppFailure? failure = await controller
-                              .refresh();
-                          if (context.mounted) {
-                            nursingShowFailureIfNeeded(context, failure);
-                          }
-                        },
                 ),
               ],
             ),
@@ -369,7 +266,7 @@ class _NursingWorkspaceContentState
                         dateFrom: value.dateFrom,
                         dateTo: value.dateTo,
                       )
-                      .then((AppFailure? failure) {
+                      .then((failure) {
                         if (context.mounted) {
                           nursingShowFailureIfNeeded(context, failure);
                         }
@@ -388,63 +285,6 @@ class _NursingWorkspaceContentState
       context: context,
       builder: (BuildContext dialogContext) =>
           const NursingShiftContextDialog(),
-    );
-  }
-
-  Future<void> _openVitalsDialog() async {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const NursingVitalsDialog(),
-      ),
-    );
-  }
-
-  Future<void> _openNoteDialog() async {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const NursingNoteDialog(),
-      ),
-    );
-  }
-
-  Future<void> _openMedicationDialog(NursingPatientDetail detail) async {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => NursingMedicationDialog(detail: detail),
-      ),
-    );
-  }
-
-  Future<void> _openHandoverDialog() async {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const NursingHandoverDialog(),
-      ),
-    );
-  }
-
-  Future<void> _openDischargeClearanceDialog(
-    NursingPatientDetail detail,
-  ) async {
-    await nursingShowActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => NursingDischargeClearanceDialog(detail: detail),
-      ),
     );
   }
 }

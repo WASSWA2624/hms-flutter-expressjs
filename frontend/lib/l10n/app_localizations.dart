@@ -14062,10 +14062,10 @@ abstract class AppLocalizations {
   /// **'This route is not available.'**
   String get routeNotFoundBody;
 
-  /// Authentication login page title.
+  /// Authentication login page title (distinct from the Sign in submit control).
   ///
   /// In en, this message translates to:
-  /// **'Sign in'**
+  /// **'Welcome back'**
   String get authLoginTitle;
 
   /// Authentication login page supporting text.
