@@ -73,5 +73,64 @@ void main() {
       ).called(1);
       verify(() => repository.listWorkItems(any())).called(greaterThan(1));
     });
+
+    test('applyScope clears status when leaving referrals / today', () async {
+      final _MockPhysiotherapyRepository repository =
+          _MockPhysiotherapyRepository();
+      const TherapyWorkItem item = TherapyWorkItem(
+        id: 'TH-001',
+        encounterId: 'ENC-001',
+        status: 'ACTIVE_PLAN',
+      );
+
+      when(() => repository.listWorkItems(any())).thenAnswer(
+        (_) async => const Result<AppPage<TherapyWorkItem>>.success(
+          AppPage<TherapyWorkItem>(
+            items: <TherapyWorkItem>[item],
+            request: AppPageRequest(pageSize: 25),
+          ),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          physiotherapyRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(physiotherapyWorkspaceControllerProvider.future);
+
+      await container
+          .read(physiotherapyWorkspaceControllerProvider.notifier)
+          .applyWorklistFilters(
+            scope: PhysiotherapyQueueScope.referrals,
+            filters: const PhysiotherapyWorklistFilters(status: 'REFERRAL'),
+          );
+
+      PhysiotherapyWorkspaceState? state = container
+          .read(physiotherapyWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (PhysiotherapyWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.query.filters.status, 'REFERRAL');
+
+      await container
+          .read(physiotherapyWorkspaceControllerProvider.notifier)
+          .applyScope(PhysiotherapyQueueScope.activePlans);
+
+      state = container
+          .read(physiotherapyWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (PhysiotherapyWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.query.scope, PhysiotherapyQueueScope.activePlans);
+      expect(state?.query.filters.status, isNull);
+    });
   });
 }

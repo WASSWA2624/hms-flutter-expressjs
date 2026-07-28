@@ -627,6 +627,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     final Locale locale = Localizations.localeOf(context);
     final AppSearchBarFilterValue filterValue = _filterValueFromQuery(
       state.query,
+      section,
     );
 
     return AppListTable<TherapyWorkItem>(
@@ -708,7 +709,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         datePickerButtonLabel: l10n.patientsDatePickerAction,
         invalidDateMessage: l10n.appDateInvalidMessage,
         currentDate: DateTime.now(),
-        filterGroups: _filterGroups(l10n),
+        filterGroups: _filterGroups(l10n, section),
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
             key: 'therapist',
@@ -724,7 +725,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           controller.applyWorklistFilters(
             search: searchController.text,
             scope: section,
-            filters: _filtersFromValue(value),
+            filters: _filtersFromValue(value, section),
           );
         },
       ),
@@ -886,8 +887,10 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           records: detail.followUps,
           icon: Icons.notification_add_outlined,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        _UnavailableWorkflowsPanel(detail: detail),
+        if (detail.hasUnavailableWorkflows) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          _UnavailableWorkflowsPanel(detail: detail),
+        ],
       ],
     );
   }
@@ -1350,10 +1353,6 @@ class _OverviewPanel extends StatelessWidget {
             value: _sourceLabel(l10n, item.source),
           ),
           _InfoRow(
-            label: l10n.physiotherapyStatusLabel,
-            value: _statusLabel(l10n, item.status),
-          ),
-          _InfoRow(
             label: l10n.physiotherapyAttendanceLabel,
             value: _attendanceLabel(l10n, item.attendanceStatus),
           ),
@@ -1368,10 +1367,6 @@ class _OverviewPanel extends StatelessWidget {
           _InfoRow(
             label: l10n.physiotherapyInstructionsLabel,
             value: _value(item.instructions, l10n),
-          ),
-          _InfoRow(
-            label: l10n.physiotherapyBillingAuthorizationLabel,
-            value: _billingLabel(l10n, item.billingStatus),
           ),
         ],
       ),
@@ -2001,7 +1996,10 @@ List<AppSearchBarFieldChoice> _searchFields(AppLocalizations l10n) {
   ];
 }
 
-List<AppSearchBarFilterGroup> _filterGroups(AppLocalizations l10n) {
+List<AppSearchBarFilterGroup> _filterGroups(
+  AppLocalizations l10n,
+  PhysiotherapyQueueScope section,
+) {
   return <AppSearchBarFilterGroup>[
     AppSearchBarFilterGroup(
       key: 'source',
@@ -2030,28 +2028,19 @@ List<AppSearchBarFilterGroup> _filterGroups(AppLocalizations l10n) {
         ),
       ],
     ),
-    AppSearchBarFilterGroup(
-      key: 'status',
-      label: l10n.physiotherapyStatusLabel,
-      allLabel: l10n.physiotherapyFilterAll,
-      choices: <AppSearchBarFilterChoice>[
-        for (final String value in <String>[
-          'REFERRAL',
-          'ACCEPTED',
-          'ASSESSMENT',
-          'TODAY',
-          'IN_TREATMENT',
-          'ACTIVE_PLAN',
-          'FOLLOW_UP_DUE',
-          'MISSED',
-          'COMPLETED',
-        ])
-          AppSearchBarFilterChoice(
-            value: value,
-            label: _statusLabel(l10n, value),
-          ),
-      ],
-    ),
+    if (physiotherapyScopeAllowsStatusFilter(section))
+      AppSearchBarFilterGroup(
+        key: 'status',
+        label: l10n.physiotherapyStatusLabel,
+        allLabel: l10n.physiotherapyFilterAll,
+        choices: <AppSearchBarFilterChoice>[
+          for (final String value in physiotherapyStatusFilterValues(section))
+            AppSearchBarFilterChoice(
+              value: value,
+              label: _statusLabel(l10n, value),
+            ),
+        ],
+      ),
     AppSearchBarFilterGroup(
       key: 'attendance',
       label: l10n.physiotherapyAttendanceLabel,
@@ -2066,7 +2055,9 @@ List<AppSearchBarFilterGroup> _filterGroups(AppLocalizations l10n) {
 
 AppSearchBarFilterValue _filterValueFromQuery(
   PhysiotherapyWorklistQuery query,
+  PhysiotherapyQueueScope section,
 ) {
+  final bool includeStatus = physiotherapyScopeAllowsStatusFilter(section);
   return AppSearchBarFilterValue(
     field: query.filters.searchField,
     dateFrom: query.filters.dateFrom,
@@ -2078,7 +2069,7 @@ AppSearchBarFilterValue _filterValueFromQuery(
     options: <String, String>{
       if ((query.filters.source ?? '').trim().isNotEmpty)
         'source': query.filters.source!.trim(),
-      if ((query.filters.status ?? '').trim().isNotEmpty)
+      if (includeStatus && (query.filters.status ?? '').trim().isNotEmpty)
         'status': query.filters.status!.trim(),
       if ((query.filters.attendance ?? '').trim().isNotEmpty)
         'attendance': query.filters.attendance!.trim(),
@@ -2086,11 +2077,16 @@ AppSearchBarFilterValue _filterValueFromQuery(
   );
 }
 
-PhysiotherapyWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
+PhysiotherapyWorklistFilters _filtersFromValue(
+  AppSearchBarFilterValue value,
+  PhysiotherapyQueueScope section,
+) {
   return PhysiotherapyWorklistFilters(
     searchField: value.field,
     source: value.option('source'),
-    status: value.option('status'),
+    status: physiotherapyScopeAllowsStatusFilter(section)
+        ? value.option('status')
+        : null,
     attendance: value.option('attendance'),
     therapist: value.text('therapist'),
     dateFrom: value.dateFrom,

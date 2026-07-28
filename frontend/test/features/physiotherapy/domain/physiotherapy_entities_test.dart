@@ -95,6 +95,54 @@ void main() {
     });
   });
 
+  group('physiotherapyScopeAllowsStatusFilter', () {
+    test('allows status only on referrals, today, and all', () {
+      expect(
+        physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope.referrals),
+        isTrue,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope.today),
+        isTrue,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope.all),
+        isTrue,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(
+          PhysiotherapyQueueScope.activePlans,
+        ),
+        isFalse,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(
+          PhysiotherapyQueueScope.followUpDue,
+        ),
+        isFalse,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope.missed),
+        isFalse,
+      );
+      expect(
+        physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope.completed),
+        isFalse,
+      );
+    });
+
+    test('referrals status choices are early-journey only', () {
+      expect(
+        physiotherapyStatusFilterValues(PhysiotherapyQueueScope.referrals),
+        <String>['REFERRAL', 'ACCEPTED', 'ASSESSMENT'],
+      );
+      expect(
+        physiotherapyStatusFilterValues(PhysiotherapyQueueScope.activePlans),
+        isEmpty,
+      );
+    });
+  });
+
   group('physiotherapyItemMatchesScope', () {
     const TherapyWorkItem referralItem = TherapyWorkItem(
       id: 'TH-001',

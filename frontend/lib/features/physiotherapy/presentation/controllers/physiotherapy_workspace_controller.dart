@@ -77,10 +77,17 @@ final class PhysiotherapyWorkspaceController
     if (current == null) {
       return refresh();
     }
+    // Tabs own queue scope; drop status filters that would restate or conflict
+    // with the newly selected tab (status UI is only on referrals / today).
+    final PhysiotherapyWorklistFilters nextFilters =
+        physiotherapyScopeAllowsStatusFilter(scope)
+            ? current.query.filters
+            : current.query.filters.copyWith(clearStatus: true);
     _emit(
       current.copyWith(
         query: current.query.copyWith(
           scope: scope,
+          filters: nextFilters,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,

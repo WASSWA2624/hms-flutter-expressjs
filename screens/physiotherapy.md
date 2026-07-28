@@ -16,7 +16,11 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Tab-strip primary (Schedule session / Record session / Mark attendance / …) depends on prior selection | Same stage write as row | **Removed** — row **Next action** is the labeled minimal path |
 | Detail Quick Action matching row next-action (accept / assessment / schedule / session / attendance / follow-up / print) | Same write | **Omitted** from detail via `omitNextActionKind` — next-action is the sole primary for that goal |
 | Detail actions shown disabled when ineligible (schedule without patient id / attendance without appointment) | No-op chrome | **Removed** — ineligible writes omitted |
-| Advanced filter **Queue / scope** mirroring tab strip | Same scope switch as tabs | **Removed** — tabs own `PhysiotherapyQueueScope`; filters keep source / status / attendance / therapist / dates |
+| Advanced filter **Queue / scope** mirroring tab strip | Same scope switch as tabs | **Removed** — tabs own `PhysiotherapyQueueScope` |
+| Advanced filter **Status** on Active plans / Follow-up due / Missed / Completed | Same stage pin as tab | **Removed** on those tabs — tabs own stage; Referrals keeps sub-stage status; Today keeps status (date-scoped mix) |
+| Stale status filter after leaving Referrals / Today | Empty / conflicting results | **Cleared** in `applyScope` when target tab omits status UI |
+| Overview **Status** / **Billing** rows restating patient header | Restate badge / billing field | **Removed** — `AppPatientDetails` owns status + billing; overview keeps source / attendance / plan / goals / instructions |
+| Empty **Backend gaps** panel with only generic copy | No distinct decision | **Hidden** unless `hasUnavailableWorkflows` |
 | Mobile list without next-action trailing | Same stage write as desktop column | **Fixed** — compact `TherapyNextActionButton` on `AppListTableMobileItem.trailing` |
 
 ---
@@ -28,7 +32,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - **Referrals / Today / Active plans / Follow-up due / Missed / Completed**
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
-  - Immediate result: Switches `_section`, updates URL `?section=…`, reloads worklist.
+  - Immediate result: Switches `_section`, updates URL `?section=…`, reloads worklist; clears status filter when the tab omits status UI.
   - Condition: Always when workspace loads.
   - Counts: From workspace state; Missed danger; Referrals / Active plans / Follow-up due warning; Today / Completed info.
 
@@ -52,7 +56,7 @@ Tab-strip primary write and **Refresh** were removed.
   - Location: `AppListTable` / `AppSearchBar` chrome.
   - Opens modal: Advanced filters; Table Settings dialog.
   - Immediate result: Search / filters / column visibility for the active section.
-  - Condition: Always when worklist loads. Advanced filters omit queue scope (tabs own scope).
+  - Condition: Always when worklist loads. Advanced filters omit queue scope; status only on Referrals / Today; keep source / attendance / therapist / dates.
 
 ### Empty / no-results
 
@@ -89,11 +93,17 @@ Tab-strip primary write and **Refresh** were removed.
   - Immediate result: Mutates selected therapy item; snackbar; refresh where needed.
   - Condition: Write / read gate; action omitted when it equals `omitNextActionKind`; schedule only with patient id; attendance only with appointment; unauthorized / ineligible writes absent.
 
-- **Overview / session / plan / notes / follow-up / backend-gap panels**
+- **Overview / session / plan / notes / follow-up panels**
   - Location: Detail body.
   - Opens modal: No.
-  - Immediate result: Progressive disclosure of therapy history and unavailable workflows.
+  - Immediate result: Progressive disclosure of therapy history (overview omits status/billing already on the patient header).
   - Condition: Always when detail is open.
+
+- **Backend gaps panel**
+  - Location: Detail body.
+  - Opens modal: No.
+  - Immediate result: Lists unavailable workflows from detail.
+  - Condition: Only when `hasUnavailableWorkflows`.
 
 ### Deep links
 
@@ -107,6 +117,7 @@ Tab-strip primary write and **Refresh** were removed.
 - [x] Today row: only **Record session** next-action; detail omits Record session. *(widget)*
 - [x] No Refresh or primary write control on the tab strip. *(widget)*
 - [x] Advanced filters omit queue scope group. *(widget)*
+- [x] Advanced filters omit status on Active plans / Missed / Completed; Referrals keeps status. *(widget)*
 - [x] Mobile list shows next-action trailing. *(widget)*
 - [x] Next-action opens mutation dialog without an empty detail first. *(widget)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared helpers)*

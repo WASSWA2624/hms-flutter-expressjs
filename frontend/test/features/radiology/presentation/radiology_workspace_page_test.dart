@@ -325,7 +325,7 @@ void main() {
     expect(find.byTooltip('Request imaging'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsOneWidget);
     expect(find.byTooltip('Orders view'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(
@@ -396,7 +396,7 @@ void main() {
     expect(find.text('Finn Finalized'), findsOneWidget);
   });
 
-  testWidgets('toolbar actions change with the active tab', (
+  testWidgets('toolbar keeps stable create and configurations on every tab', (
     WidgetTester tester,
   ) async {
     final GoRouter router = await _pumpRadiologyWorkspace(
@@ -406,7 +406,7 @@ void main() {
 
     expect(find.byTooltip('Request imaging'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Orders view'), findsOneWidget);
 
     await tester.tap(find.textContaining('Reporting').first);
@@ -414,22 +414,22 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'reporting');
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Released').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'released');
-    expect(find.byTooltip('Configurations'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('All orders').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'all');
     expect(find.byTooltip('Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
   });
 
@@ -455,8 +455,8 @@ void main() {
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
   });
 
   testWidgets('view toggle switches between patients and orders labels', (
@@ -510,7 +510,7 @@ void main() {
     expect(find.text('Olivia Ordered'), findsNothing);
   });
 
-  testWidgets('read-only users keep view toggle and refresh toolbar actions', (
+  testWidgets('read-only users keep view toggle; write actions absent', (
     WidgetTester tester,
   ) async {
     await _pumpRadiologyWorkspace(
@@ -522,7 +522,45 @@ void main() {
     expect(find.byTooltip('Request imaging'), findsNothing);
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Orders view'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
+  });
+
+  testWidgets('next action opens order detail without route-only loop', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRadiologyWorkspace(tester, repository: repository);
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.radiologyNextActionConfirmBilling), findsWidgets);
+
+    await tester.tap(find.text(l10n.radiologyNextActionConfirmBilling).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.radiologyDetailTitle), findsOneWidget);
+    expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
+    expect(find.text(l10n.radiologyAssignAction), findsNothing);
+    verify(() => repository.getWorkflow(any())).called(greaterThan(0));
+  });
+
+  testWidgets('deep link orderId opens order detail dialog directly', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRadiologyWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/radiology?orderId=RO-ORDERED',
+      initialQuery: RadiologyWorkspaceQuery.fromUri(
+        Uri.parse('/radiology?orderId=RO-ORDERED'),
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.radiologyDetailTitle), findsOneWidget);
+    verify(() => repository.getWorkflow(any())).called(greaterThan(0));
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (

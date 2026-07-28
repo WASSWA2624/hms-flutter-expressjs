@@ -1,12 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
-import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
 typedef RadiologyDetailDialogOpener =
     Future<void> Function(
@@ -20,27 +15,6 @@ typedef RadiologyDetailDialogOpener =
 
 typedef RadiologyNextActionLabelResolver =
     String Function(BuildContext context, RadiologyOrder order);
-
-String? radiologyWorkflowNextStepCode(RadiologyOrder order) {
-  if (order.normalizedStatus == 'CANCELLED') {
-    return null;
-  }
-  if (!order.hasBillingGate) {
-    return null;
-  }
-  if (order.hasDraftResult || order.hasFinalResult) {
-    return null;
-  }
-  if (order.normalizedStatus == 'IN_PROCESS' && order.studyCount == 0) {
-    return null;
-  }
-  return switch (order.normalizedStatus) {
-    'ORDERED' => 'RADIOLOGY_REQUESTED',
-    'IN_PROCESS' => 'IMAGING_PENDING',
-    'COMPLETED' => 'REPORT_PENDING',
-    _ => 'REPORT_PENDING',
-  };
-}
 
 class RadiologyNextActionCell extends ConsumerWidget {
   const RadiologyNextActionCell({
@@ -67,31 +41,6 @@ class RadiologyNextActionCell extends ConsumerWidget {
     final String label = resolveLabel(context, order);
     if (order.normalizedStatus == 'CANCELLED') {
       return _RadiologyNextActionText(label: label);
-    }
-
-    final String? encounterId = order.encounterId?.trim();
-    final String? nextStep = radiologyWorkflowNextStepCode(order);
-    if (encounterId != null &&
-        encounterId.isNotEmpty &&
-        nextStep != null &&
-        WorkflowActionRegistry.instance.isRegistered(nextStep)) {
-      return WorkflowActionButton(
-        encounterId: encounterId,
-        patientId: order.patientId,
-        orderId: order.id,
-        stage: order.status,
-        nextStep: nextStep,
-        displayNextStep: nextStep,
-        sourceModule: 'radiology',
-        compact: compact,
-        onBeforeNavigate: () {
-          unawaited(
-            ref
-                .read(radiologyWorkspaceControllerProvider.notifier)
-                .selectOrder(order),
-          );
-        },
-      );
     }
 
     return _RadiologyCompactNextActionButton(

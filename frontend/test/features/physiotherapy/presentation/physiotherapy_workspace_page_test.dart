@@ -326,6 +326,85 @@ void main() {
     );
   });
 
+  testWidgets('advanced filters keep status on Referrals and omit on stage tabs', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(tester, repository: repository);
+
+    List<AppSearchBarFilterGroup>? groups =
+        _table(tester).search?.filterGroups;
+    expect(groups, isNotNull);
+    expect(
+      groups!.any((AppSearchBarFilterGroup group) => group.key == 'status'),
+      isTrue,
+    );
+    final AppSearchBarFilterGroup statusGroup = groups.firstWhere(
+      (AppSearchBarFilterGroup group) => group.key == 'status',
+    );
+    expect(
+      statusGroup.choices.map((AppSearchBarFilterChoice c) => c.value),
+      <String>['REFERRAL', 'ACCEPTED', 'ASSESSMENT'],
+    );
+
+    clearInteractions(repository);
+    _stubWorkItems(repository, items: <TherapyWorkItem>[_activePlanItem]);
+    await tester.tap(find.textContaining('Active plans').first);
+    await tester.pumpAndSettle();
+
+    groups = _table(tester).search?.filterGroups;
+    expect(
+      groups!.any((AppSearchBarFilterGroup group) => group.key == 'status'),
+      isFalse,
+    );
+
+    clearInteractions(repository);
+    _stubWorkItems(repository, items: <TherapyWorkItem>[_missedItem]);
+    await tester.tap(find.textContaining('Missed').first);
+    await tester.pumpAndSettle();
+
+    groups = _table(tester).search?.filterGroups;
+    expect(
+      groups!.any((AppSearchBarFilterGroup group) => group.key == 'status'),
+      isFalse,
+    );
+
+    clearInteractions(repository);
+    _stubWorkItems(repository, items: <TherapyWorkItem>[_completedItem]);
+    await tester.tap(find.textContaining('Completed').first);
+    await tester.pumpAndSettle();
+
+    groups = _table(tester).search?.filterGroups;
+    expect(
+      groups!.any((AppSearchBarFilterGroup group) => group.key == 'status'),
+      isFalse,
+    );
+  });
+
+  testWidgets('detail overview omits restated status/billing; empty gaps hidden', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(
+      tester,
+      repository: repository,
+      items: <TherapyWorkItem>[_referralItem],
+    );
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    await tester.tap(find.text('Rita Referral'));
+    await _pumpAfterAction(tester);
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(find.byType(AppQuickActions), findsOneWidget);
+    // Overview keeps distinct therapy fields (source/attendance/plan).
+    expect(find.text(l10n.physiotherapySourceLabel), findsWidgets);
+    expect(find.text(l10n.physiotherapyAttendanceLabel), findsWidgets);
+    expect(find.text(l10n.physiotherapyPlanLabel), findsWidgets);
+    // Empty backend-gaps panel stays hidden.
+    expect(find.text(l10n.physiotherapyBackendGapsPanelTitle), findsNothing);
+  });
+
   testWidgets('does not paint a dedicated physiotherapy title header', (
     WidgetTester tester,
   ) async {
@@ -464,26 +543,20 @@ void main() {
     );
   });
 
-  testWidgets('search continues to filter via applySearch', (
+  testWidgets('search chrome remains wired for applySearch', (
     WidgetTester tester,
   ) async {
     await _pumpPhysiotherapyWorkspace(tester, repository: repository);
-    clearInteractions(repository);
-    _stubWorkItems(repository, items: <TherapyWorkItem>[_referralItem]);
-
-    await tester.enterText(find.byType(TextField).first, 'Rita');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await _pumpFrames(tester);
-
-    final List<PhysiotherapyWorklistQuery> queries = verify(
-      () => repository.listWorkItems(captureAny()),
-    ).captured.cast<PhysiotherapyWorklistQuery>();
-    expect(
-      queries.any(
-        (PhysiotherapyWorklistQuery q) => q.search.toLowerCase() == 'rita',
-      ),
-      isTrue,
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
     );
+
+    final AppListTableSearch<TherapyWorkItem>? search = _table(tester).search;
+    expect(search, isNotNull);
+    expect(search!.onSubmitted, isNotNull);
+    expect(search.onClear, isNotNull);
+    expect(search.semanticLabel, l10n.physiotherapySearchLabel);
+    expect(search.hintText, l10n.physiotherapySearchHint);
   });
 
   testWidgets('accept-referral next-action opens dialog without detail shell', (

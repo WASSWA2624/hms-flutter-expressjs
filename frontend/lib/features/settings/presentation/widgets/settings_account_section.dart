@@ -7,7 +7,9 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
@@ -29,7 +31,11 @@ class SettingsAccountSection extends ConsumerStatefulWidget {
   final String? initialPanel;
   final ValueChanged<String>? onPanelChanged;
 
+  /// Deep-link / redirect target for the profile surface (`/profile`).
   static const String profilePanel = 'profile';
+
+  /// Deep-link target that opens the change-password dialog on the profile
+  /// surface (no intermediate panel).
   static const String changePasswordPanel = 'change-password';
 
   @override
@@ -39,112 +45,59 @@ class SettingsAccountSection extends ConsumerStatefulWidget {
 
 class _SettingsAccountSectionState
     extends ConsumerState<SettingsAccountSection> {
-  late String _activePanel;
+  bool _changePasswordDeepLinkPending = false;
 
   @override
   void initState() {
     super.initState();
-    _activePanel = widget.initialPanel ?? SettingsAccountSection.profilePanel;
+    _scheduleChangePasswordDeepLink(widget.initialPanel);
   }
 
   @override
   void didUpdateWidget(covariant SettingsAccountSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialPanel != null &&
-        widget.initialPanel != oldWidget.initialPanel) {
-      _activePanel = widget.initialPanel!;
+    if (widget.initialPanel != oldWidget.initialPanel) {
+      _scheduleChangePasswordDeepLink(widget.initialPanel);
     }
   }
 
-  void _onPanelSelected(String panelId) {
-    if (panelId == _activePanel) return;
-    setState(() {
-      _activePanel = panelId;
+  void _scheduleChangePasswordDeepLink(String? panel) {
+    if (panel != SettingsAccountSection.changePasswordPanel) {
+      return;
+    }
+    if (_changePasswordDeepLinkPending) {
+      return;
+    }
+    _changePasswordDeepLinkPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_openChangePasswordFromDeepLink());
     });
-    widget.onPanelChanged?.call(panelId);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return AppScreenSection(
-      title: l10n.settingsAccountSectionTitle,
-      body: l10n.settingsAccountSectionBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              AppTabItem(
-                id: SettingsAccountSection.profilePanel,
-                icon: Icons.person_outline,
-                label: l10n.settingsProfileActionTitle,
-              ),
-              AppTabItem(
-                id: SettingsAccountSection.changePasswordPanel,
-                icon: Icons.lock_reset_outlined,
-                label: l10n.settingsChangePasswordActionTitle,
-              ),
-            ],
-            selectedId: _activePanel,
-            onTabTapped: _onPanelSelected,
-            primaryAction: _activePanel == SettingsAccountSection.profilePanel
-                ? const _ProfileEditAction()
-                : null,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          if (_activePanel == SettingsAccountSection.profilePanel)
-            const _ProfilePanel()
-          else
-            const _ChangePasswordPanel(),
-        ],
-      ),
-    );
+  Future<void> _openChangePasswordFromDeepLink() async {
+    if (!mounted) {
+      _changePasswordDeepLinkPending = false;
+      return;
+    }
+    // Clear the deep-link panel so rebuilds stay on the profile surface.
+    widget.onPanelChanged?.call(SettingsAccountSection.profilePanel);
+    await _changePassword(context);
+    _changePasswordDeepLinkPending = false;
   }
-}
 
-// ---------------------------------------------------------------------------
-// Profile edit action (shown in the tab strip row)
-// ---------------------------------------------------------------------------
-
-class _ProfileEditAction extends ConsumerWidget {
-  const _ProfileEditAction();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final AsyncValue<Result<UserProfileState>> profileState = ref.watch(
-      userProfileControllerProvider,
+  Future<void> _changePassword(BuildContext context) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ChangePasswordDialog(),
     );
 
-    final UserProfileRecord? record = profileState.maybeWhen(
-      data: (Result<UserProfileState> result) => result.when(
-        success: (UserProfileState state) => state.view.record,
-        failure: (_) => null,
-      ),
-      orElse: () => null,
-    );
-
-    if (record == null) return const SizedBox.shrink();
-
-    final bool isSaving = profileState.maybeWhen(
-      data: (Result<UserProfileState> result) => result.when(
-        success: (UserProfileState state) => state.isSaving,
-        failure: (_) => false,
-      ),
-      orElse: () => false,
-    );
-
-    return AppTabToolbarPrimary(
-      label: l10n.profileEditActionTitle,
-      icon: Icons.edit_outlined,
-      enabled: !isSaving,
-      onPressed: isSaving
-          ? null
-          : () => unawaited(_editProfile(context, ref, record)),
-    );
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
+      );
+      context.go(AppRoutes.login.location());
+    }
   }
 
   Future<void> _editProfile(
@@ -173,10 +126,77 @@ class _ProfileEditAction extends ConsumerWidget {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final AsyncValue<Result<UserProfileState>> profileState = ref.watch(
+      userProfileControllerProvider,
+    );
+
+    final UserProfileRecord? record = profileState.maybeWhen(
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) => state.view.record,
+        failure: (_) => null,
+      ),
+      orElse: () => null,
+    );
+
+    final bool isSaving = profileState.maybeWhen(
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) => state.isSaving,
+        failure: (_) => false,
+      ),
+      orElse: () => false,
+    );
+
+    final UserProfileRecord? editableRecord =
+        accessPolicy.grants(AppPermissions.profileUpdate) ? record : null;
+
+    return AppScreenSection(
+      title: l10n.settingsAccountSectionTitle,
+      body: l10n.settingsAccountSectionBody,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerRight,
+            child: Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                AppTabToolbarAction(
+                  label: l10n.settingsChangePasswordActionTitle,
+                  icon: Icons.lock_reset_outlined,
+                  onPressed: () => unawaited(_changePassword(context)),
+                ),
+                if (editableRecord != null)
+                  AppTabToolbarPrimary(
+                    label: l10n.profileEditActionTitle,
+                    icon: Icons.edit_outlined,
+                    enabled: !isSaving,
+                    onPressed: isSaving
+                        ? null
+                        : () => unawaited(
+                            _editProfile(context, ref, editableRecord),
+                          ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          const _ProfilePanel(),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Profile sub-panel
+// Profile panel
 // ---------------------------------------------------------------------------
 
 class _ProfilePanel extends ConsumerWidget {
@@ -243,11 +263,7 @@ class _ProfilePanelContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _ProfileSummary(
-          profile: profile,
-          permissionCount: permissions.length,
-          roleCount: roles.length,
-        ),
+        _ProfileSummary(profile: profile),
         SizedBox(height: theme.spacing.lg),
         _ProfileSectionGrid(
           sections: <Widget>[
@@ -330,66 +346,13 @@ class _ProfilePanelContent extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Change password sub-panel
-// ---------------------------------------------------------------------------
-
-class _ChangePasswordPanel extends StatelessWidget {
-  const _ChangePasswordPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          l10n.settingsChangePasswordActionBody,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        AppButton.primary(
-          label: l10n.settingsChangePasswordActionTitle,
-          leadingIcon: Icons.lock_reset_outlined,
-          onPressed: () => unawaited(_changePassword(context)),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _changePassword(BuildContext context) async {
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const ChangePasswordDialog(),
-    );
-
-    if (changed == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
-      );
-      context.go(AppRoutes.login.location());
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Profile summary
+// Profile summary (identity only — details live in sections below)
 // ---------------------------------------------------------------------------
 
 class _ProfileSummary extends StatelessWidget {
-  const _ProfileSummary({
-    required this.profile,
-    required this.permissionCount,
-    required this.roleCount,
-  });
+  const _ProfileSummary({required this.profile});
 
   final AuthUserProfile profile;
-  final int permissionCount;
-  final int roleCount;
 
   @override
   Widget build(BuildContext context) {
@@ -401,12 +364,6 @@ class _ProfileSummary extends StatelessWidget {
       if (profile.email != null) profile.email!,
       if (profile.effectiveTitle != null) profile.effectiveTitle!,
     ].join(' | ');
-    final List<String> badges = <String>{
-      if (profile.overallRole != null) profile.overallRole!,
-      if (profile.userType != null) profile.userType!,
-      l10n.profileRoleCountLabel(roleCount),
-      l10n.profilePermissionCountLabel(permissionCount),
-    }.toList(growable: false);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -452,15 +409,6 @@ class _ProfileSummary extends StatelessWidget {
                       ),
                     ),
                   ],
-                  SizedBox(height: theme.spacing.md),
-                  Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.sm,
-                    children: <Widget>[
-                      for (final String badge in badges)
-                        _ProfileBadge(label: badge),
-                    ],
-                  ),
                 ],
               ),
             ),

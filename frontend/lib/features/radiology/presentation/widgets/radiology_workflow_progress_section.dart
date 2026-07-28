@@ -46,18 +46,10 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
     final List<AppWorkflowStepAction> currentActions =
         <AppWorkflowStepAction>[];
 
-    if (canMutate && next.billingGateBlocked) {
-      currentActions.add(
-        AppWorkflowStepAction(
-          id: 'billing_gate',
-          label: l10n.radiologyBillingGateBlockedAction,
-          icon: Icons.payments_outlined,
-          requirement: _radiologyWorkflowMutationRequirement,
-          capabilityAllowed: false,
-          onPressed: null,
-        ),
-      );
-    } else if (canMutate && next.canAssign && onAssign != null) {
+    if (canMutate &&
+        !next.billingGateBlocked &&
+        next.canAssign &&
+        onAssign != null) {
       currentActions.add(
         AppWorkflowStepAction(
           id: 'assign',

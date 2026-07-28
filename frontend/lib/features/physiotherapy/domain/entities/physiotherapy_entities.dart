@@ -625,6 +625,47 @@ bool physiotherapyItemMatchesScope(
   };
 }
 
+/// Advanced **Status** filter is useful only where tabs do not already pin a
+/// single stage (referrals sub-stages; today mixes statuses by session date).
+bool physiotherapyScopeAllowsStatusFilter(PhysiotherapyQueueScope scope) {
+  return switch (scope) {
+    PhysiotherapyQueueScope.referrals ||
+    PhysiotherapyQueueScope.today ||
+    PhysiotherapyQueueScope.all => true,
+    PhysiotherapyQueueScope.activePlans ||
+    PhysiotherapyQueueScope.followUpDue ||
+    PhysiotherapyQueueScope.missed ||
+    PhysiotherapyQueueScope.completed => false,
+  };
+}
+
+/// Status values offered in advanced filters for the active tab.
+List<String> physiotherapyStatusFilterValues(PhysiotherapyQueueScope scope) {
+  return switch (scope) {
+    PhysiotherapyQueueScope.referrals => const <String>[
+      'REFERRAL',
+      'ACCEPTED',
+      'ASSESSMENT',
+    ],
+    PhysiotherapyQueueScope.today || PhysiotherapyQueueScope.all =>
+      const <String>[
+        'REFERRAL',
+        'ACCEPTED',
+        'ASSESSMENT',
+        'TODAY',
+        'IN_TREATMENT',
+        'ACTIVE_PLAN',
+        'FOLLOW_UP_DUE',
+        'MISSED',
+        'COMPLETED',
+      ],
+    PhysiotherapyQueueScope.activePlans ||
+    PhysiotherapyQueueScope.followUpDue ||
+    PhysiotherapyQueueScope.missed ||
+    PhysiotherapyQueueScope.completed => const <String>[],
+  };
+}
+
 int _newestFirst(PhysiotherapyRecord left, PhysiotherapyRecord right) {
   final DateTime? leftDate = left.activityAt;
   final DateTime? rightDate = right.activityAt;
