@@ -557,6 +557,8 @@ ReceptionDeskSection? receptionDeskSectionFromQuery(String raw) {
       return ReceptionDeskSection.highPriority;
     case 'in-progress':
     case 'active':
+    case 'active-visits':
+    case 'active_visits':
     case 'visits':
     case 'turnaround_pressure':
       return ReceptionDeskSection.activeVisits;

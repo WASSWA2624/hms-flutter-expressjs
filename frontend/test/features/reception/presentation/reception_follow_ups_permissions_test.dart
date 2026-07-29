@@ -518,6 +518,11 @@ void main() {
         ReceptionFollowUpsAtomPermissions.nestedWrite,
         same(receptionFollowUpsWriteRequirement),
       );
+      // Delete maps ∩ patient:delete but no hard-delete control mounts on tab.
+      expect(
+        ReceptionFollowUpsAtomPermissions.delete.allPermissions,
+        <AppPermission>[AppPermissions.patientDelete],
+      );
     });
 
     test(
@@ -537,6 +542,25 @@ void main() {
           ReceptionFollowUpsAtomPermissions.routeEntryUnion.isAllowed(
             noFacility,
           ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      '∩ denial: patient:write alone without patient:read still fails '
+      'route entry when last_office also absent',
+      () {
+        final AppAccessPolicy writeOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.patientWrite},
+        );
+        // Tab read ∪ needs patient:read | clinical:read.
+        expect(
+          ReceptionFollowUpsAtomPermissions.tab.isAllowed(writeOnly),
+          isFalse,
+        );
+        expect(
+          ReceptionFollowUpsAtomPermissions.write.isAllowed(writeOnly),
           isTrue,
         );
       },
@@ -813,5 +837,107 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'delete ∩ patient:delete control never mounts; nested cross-module n/a',
+      (WidgetTester tester) async {
+        await _pumpFollowUpsTab(
+          tester,
+          opdRepository: opdRepository,
+          followUpRepository: followUpRepository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.patientDelete,
+            },
+            roles: const <String>['RECEPTIONIST'],
+          ),
+        );
+
+        expect(find.text('Follow Up Patient'), findsOneWidget);
+        expect(find.textContaining('Delete'), findsNothing);
+        expect(find.textContaining('Void'), findsNothing);
+
+        await tester.tap(find.text('Follow Up Patient'));
+        await tester.pumpAndSettle();
+
+        // Nested cross-module panels are _(n/a)_ — detail is reception-only.
+        expect(find.text('Receive payment'), findsNothing);
+        expect(find.text('Start triage'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+        expect(find.text('Reschedule follow-up'), findsOneWidget);
+        expect(find.text('Mark completed'), findsOneWidget);
+      },
+    );
+
+    testWidgets('authorized loading chrome remains observable', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => followUpRepository.listScheduledFollowUps(
+          encounterType: any(named: 'encounterType'),
+        ),
+      ).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        return Result<List<ReceptionFollowUpEntry>>.success(
+          <ReceptionFollowUpEntry>[_followUp],
+        );
+      });
+      _stubOpd(opdRepository);
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/reception?section=follow-ups',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/reception',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ReceptionWorkspacePage(
+                  initialQuery: ReceptionWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            receptionFollowUpRepositoryProvider.overrideWithValue(
+              followUpRepository,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_readerPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      // OPD may settle first; Follow-ups async load still in flight.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(_tab('Follow-ups'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('Follow Up Patient'), findsOneWidget);
+    });
   });
 }

@@ -200,6 +200,19 @@ bool canViewReceptionActiveVisits(AppAccessPolicy policy) {
   return ReceptionActiveVisitsAtomPermissions.tab.isAllowed(policy);
 }
 
+/// Active visits next-action cells are read-only guidance labels (not mutation
+/// buttons). Mount whenever the tab is readable.
+bool receptionActiveVisitsShowsNextActionColumn(AppAccessPolicy policy) {
+  return ReceptionActiveVisitsAtomPermissions.nextActionLabel.isAllowed(policy);
+}
+
+/// Whether Active visits nested matrix write ∪ may mount (clinical / patient
+/// write). Flow Actions clinical / vitals / billing stay off from Reception;
+/// remaining front-desk stage actions keep source role gates.
+bool canWriteReceptionActiveVisitsNested(AppAccessPolicy policy) {
+  return ReceptionActiveVisitsAtomPermissions.nestedWrite.isAllowed(policy);
+}
+
 bool canViewReceptionPaymentGate(AppAccessPolicy policy) {
   return ReceptionPaymentGateAtomPermissions.tab.isAllowed(policy);
 }
@@ -406,8 +419,8 @@ abstract final class ReceptionDeskQueueAtomPermissions {
 /// | Next-action column (label only, not button) | read chrome | ([nextActionLabel]) |
 /// | Nested Flow Actions clinical / vitals / billing | update | off + source ([nestedBillingWrite] / …) |
 /// | Nested Flow Actions assign / follow-up / print / correct stage | update | source front-desk / reception |
-/// | Nested matrix write ∪ | update | ([nestedWrite]) |
-/// | Deep link `section=active` / `flowId=` | navigate | ([tab] / [rowSelect]) |
+/// | Nested matrix write ∪ | update | ([nestedWrite] / [canWriteReceptionActiveVisitsNested]) |
+/// | Deep link `section=active` / `active-visits` / `flowId=` | navigate | ([tab] / [rowSelect]) |
 /// | Route entry (workspace) | navigate | ([entry] / [routeEntryUnion]) |
 /// | Catalog route entry ∩ reception:read | navigate | ([catalogEntry]) |
 abstract final class ReceptionActiveVisitsAtomPermissions {

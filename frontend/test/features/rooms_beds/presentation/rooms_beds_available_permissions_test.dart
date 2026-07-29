@@ -247,7 +247,7 @@ Future<void> _pumpAvailable(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         roomsBedsRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(

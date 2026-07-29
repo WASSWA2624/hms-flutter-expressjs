@@ -152,6 +152,14 @@ void main() {
         ReceptionDeskSection.activeVisits,
       );
       expect(
+        receptionDeskSectionFromQuery('active-visits'),
+        ReceptionDeskSection.activeVisits,
+      );
+      expect(
+        receptionDeskSectionFromQuery('active_visits'),
+        ReceptionDeskSection.activeVisits,
+      );
+      expect(
         receptionDeskSectionFromQuery('in-progress'),
         ReceptionDeskSection.activeVisits,
       );

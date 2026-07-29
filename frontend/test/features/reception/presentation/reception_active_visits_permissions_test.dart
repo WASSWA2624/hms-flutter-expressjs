@@ -356,6 +356,13 @@ void main() {
       );
       expect(
         identical(
+          ReceptionActiveVisitsAtomPermissions.nextActionLabel,
+          receptionActiveVisitsRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ReceptionActiveVisitsAtomPermissions.nestedBillingWrite,
           opdBillingActionRequirement,
         ),

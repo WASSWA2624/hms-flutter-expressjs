@@ -785,6 +785,12 @@ class _ReceptionWorkspaceContentState
     );
   }
 
+  bool get _canShowActiveVisitsNextAction {
+    return receptionActiveVisitsShowsNextActionColumn(
+      ref.watch(appAccessPolicyProvider),
+    );
+  }
+
   List<ReceptionDeskSection> _visibleSections() {
     final policy = ref.watch(appAccessPolicyProvider);
     return <ReceptionDeskSection>[
@@ -827,7 +833,8 @@ class _ReceptionWorkspaceContentState
           _receptionPatientColumn(l10n),
           _receptionStartedAtColumn(l10n, locale),
           _receptionFlowStageStatusColumn(l10n),
-          _receptionFlowNextActionColumn(l10n),
+          if (_canShowActiveVisitsNextAction)
+            _receptionFlowNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.paymentGate:
         return <AppListTableColumn<_ReceptionDeskRow>>[
@@ -2006,6 +2013,14 @@ class _ReceptionWorkspaceContentState
 
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
     if (row.followUpEntry != null) {
+      if (!ReceptionFollowUpsAtomPermissions.rowSelect.isAllowed(
+            ref.read(appAccessPolicyProvider),
+          ) ||
+          !ReceptionFollowUpsAtomPermissions.detail.isAllowed(
+            ref.read(appAccessPolicyProvider),
+          )) {
+        return;
+      }
       final bool? changed = await showReceptionFollowUpDetailDialog(
         context: context,
         entry: row.followUpEntry!,
@@ -2087,6 +2102,11 @@ class _ReceptionWorkspaceContentState
       return;
     }
     if (row.flow != null) {
+      if (!ReceptionActiveVisitsAtomPermissions.rowSelect.isAllowed(
+        ref.read(appAccessPolicyProvider),
+      )) {
+        return;
+      }
       await _openFlowActions(row.flow!);
     }
   }
