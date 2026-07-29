@@ -124,7 +124,8 @@ AccessRequirement radiologySectionTabRequirement(RadiologyDeskSection section) {
 AccessRequirement radiologyStripCreateRequirement(RadiologyDeskSection section) {
   return switch (section) {
     RadiologyDeskSection.allOrders => RadiologyAllOrdersAtomPermissions.create,
-    RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.write,
+    // Follow-ups mounts no Request imaging chrome; keep create ∩ if ever reused.
+    RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.create,
     RadiologyDeskSection.worklist ||
     RadiologyDeskSection.reporting ||
     RadiologyDeskSection.released => radiologyRequestImagingRequirement,
@@ -139,7 +140,7 @@ AccessRequirement radiologyStripConfigureRequirement(
     RadiologyDeskSection.allOrders =>
       RadiologyAllOrdersAtomPermissions.configure,
     // Follow-ups mounts no Configurations chrome; keep write ∩ if ever reused.
-    RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.write,
+    RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.configure,
     RadiologyDeskSection.worklist ||
     RadiologyDeskSection.reporting ||
     RadiologyDeskSection.released => radiologyConfigurationsWriteRequirement,
@@ -335,9 +336,68 @@ bool canViewRadiologyAllOrdersTab(AppAccessPolicy policy) {
   return RadiologyAllOrdersAtomPermissions.tab.isAllowed(policy);
 }
 
-/// Follow-ups tab atom map on the radiology host (shared panel).
+/// Atom → requirement map for Radiology Follow-ups
+/// (`/radiology?section=follow-ups|follow_ups|followups`).
+///
+/// Inventory: shared Follow-ups worklist panel on the radiology host
+/// (`RadiologyDeskSection.followUps`). No Request imaging / Configurations /
+/// Orders↔Patients strip chrome on this section. Nested cross-module matrix
+/// rows are _(n/a)_ for strip chrome; request-from-clinical ∪ and billing-hold
+/// ∩ are documented for reuse. Clinical:read alone may enter `/radiology` via
+/// [entry] but not the Follow-ups tab or config/create.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Follow-ups strip tab / count | navigate | read ∩ `radiology:read` |
+/// | Search / Clear / Settings (columns) | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Row select → detail | read / navigate | read ∩ |
+/// | Detail Close | progressive disclosure | read ∩ |
+/// | Detail Mark completed | update | write ∩ `radiology:write` |
+/// | Detail Reschedule / Save follow-up | update | write ∩ |
+/// | Request imaging / Configurations (not mounted) | create / update | write ∩ |
+/// | Billing hold (narrative; not on panel) | data read | billing hold ∩ |
+/// | Request-from-clinical (cross-module; not strip) | create | clinical radiology ∪ |
+/// | Route entry (deep link) | navigate | ∪ radiology\|clinical\|billing |
 abstract final class RadiologyFollowUpsAtomPermissions {
   static const AccessRequirement tab = radiologyFollowUpsRequirement;
+  static const AccessRequirement listChrome = radiologyFollowUpsRequirement;
+  static const AccessRequirement search = radiologyFollowUpsRequirement;
+  static const AccessRequirement settings = radiologyFollowUpsRequirement;
+  static const AccessRequirement empty = radiologyFollowUpsRequirement;
+  static const AccessRequirement loading = radiologyFollowUpsRequirement;
+  static const AccessRequirement retry = radiologyFollowUpsRequirement;
+  /// Authorized success path after complete / reschedule (write-gated entry).
+  static const AccessRequirement success = radiologyFollowUpsWriteRequirement;
+  /// Authorized form validation feedback (nested reschedule dialog).
+  static const AccessRequirement validation = radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement rowSelect = radiologyFollowUpsRequirement;
+  static const AccessRequirement detail = radiologyFollowUpsRequirement;
+  static const AccessRequirement close = radiologyFollowUpsRequirement;
+  static const AccessRequirement create = radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement update = radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement delete = radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement configure =
+      radiologyConfigurationsWriteRequirement;
+  static const AccessRequirement reschedule = radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement markCompleted =
+      radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement saveFollowUp =
+      radiologyFollowUpsWriteRequirement;
   static const AccessRequirement write = radiologyFollowUpsWriteRequirement;
+  /// Nested cross-module — matrix _(n/a)_; documented for reuse only.
+  static const AccessRequirement requestFromClinical =
+      radiologyRequestFromClinicalWriteRequirement;
+  static const AccessRequirement billingHold =
+      radiologyBillingHoldReadRequirement;
+  static const AccessRequirement nestedWrite =
+      radiologyFollowUpsWriteRequirement;
+  static const AccessRequirement nestedRead = radiologyFollowUpsRequirement;
+  static const AccessRequirement entry = radiologyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement routeEntry =
+      radiologyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      radiologyWorkspaceCatalogEntryRequirement;
   static const AccessRequirement read = radiologyFollowUpsRequirement;
 }

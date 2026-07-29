@@ -456,11 +456,12 @@ void main() {
       );
     });
 
-    test('billing:read alone enters route but not Missed chrome', () {
+    test('billing:read alone does not enter catalog route; billing column still ∩', () {
+      // Catalog entry is ∩ physiotherapy:read (not prompt ∪ with billing:read).
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
-      expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
+      expect(canEnterPhysiotherapyWorkspace(billingOnly), isFalse);
       expect(
         PhysiotherapyMissedAtomPermissions.tab.isAllowed(billingOnly),
         isFalse,
@@ -470,6 +471,7 @@ void main() {
         isTrue,
       );
       expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+      expect(canViewPhysiotherapyMissed(billingOnly), isFalse);
     });
 
     test('full ∩ write set presents write atoms', () {
@@ -541,20 +543,28 @@ void main() {
       );
     });
 
-    test('route catalog entry matches AppRoutes physiotherapy ∪', () {
+    test('route catalog entry is ∩ physiotherapy:read (prompt ∪ mapping noted)', () {
+      // Prompt matrix lists AppRoutes ∪ clinical|patient|billing:read; catalog
+      // source of truth is ∩ physiotherapy:read + physiotherapy module.
       expect(
-        RouteAccessCatalog.physiotherapyEntry.anyPermissions.toSet(),
-        <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        },
+        RouteAccessCatalog.physiotherapyEntry.allPermissions.toSet(),
+        <AppPermission>{AppPermissions.physiotherapyRead},
+      );
+      expect(
+        RouteAccessCatalog.physiotherapyEntry.activeModules.toSet(),
+        <String>{'physiotherapy'},
       );
       expect(
         identical(
           PhysiotherapyMissedAtomPermissions.catalogEntry,
           RouteAccessCatalog.physiotherapyEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyMissedAtomPermissions.routeEntry,
+          physiotherapyWorkspaceEntryRequirement,
         ),
         isTrue,
       );
@@ -642,7 +652,7 @@ void main() {
       expect(find.byTooltip('Mark attendance'), findsNothing);
     });
 
-    testWidgets('billing-only route entry mounts no Missed chrome', (
+    testWidgets('billing-only policy mounts no Missed chrome', (
       WidgetTester tester,
     ) async {
       await _pumpMissedTab(

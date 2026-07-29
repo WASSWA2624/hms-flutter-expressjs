@@ -196,8 +196,8 @@ void main() {
         ),
         isTrue,
       );
-      // Mapping note: catalog entry currently matches AppRoutes ∪ (const-
-      // canonicalized with [physiotherapyWorkspaceEntryRequirement]).
+      // Mapping note: catalog/routeEntry ∩ physiotherapy:read; AppRoutes still
+      // lists ∪ clinical|patient|billing:read — keep catalog (source).
       expect(
         identical(
           PhysiotherapyFollowUpsAtomPermissions.routeEntry,
@@ -206,13 +206,12 @@ void main() {
         isTrue,
       );
       expect(
+        PhysiotherapyFollowUpsAtomPermissions.routeEntry.allPermissions,
+        <AppPermission>[AppPermissions.physiotherapyRead],
+      );
+      expect(
         PhysiotherapyFollowUpsAtomPermissions.routeEntry.anyPermissions,
-        containsAll(<AppPermission>[
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        ]),
+        isEmpty,
       );
       expect(
         identical(
@@ -353,33 +352,51 @@ void main() {
     });
 
     test(
-      'route entry ∪: billing:read satisfies routeEntryUnion, not Follow-ups tab',
+      'mapping note: AppRoutes ∪ billing:read alone does not satisfy catalog '
+      'routeEntry (physiotherapy:read); Follow-ups tab stays closed',
       () {
-        final AppAccessPolicy entryOnly = _policy(
+        final AppAccessPolicy billingOnly = _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
-          roles: const <String>['BILLING'],
+          roles: const <String>['CUSTOM_BILLING'],
         );
         expect(
           PhysiotherapyFollowUpsAtomPermissions.routeEntryUnion.isAllowed(
-            entryOnly,
+            billingOnly,
           ),
-          isTrue,
+          isFalse,
         );
         expect(
-          PhysiotherapyFollowUpsAtomPermissions.routeEntry.isAllowed(entryOnly),
-          isTrue,
+          PhysiotherapyFollowUpsAtomPermissions.routeEntry.isAllowed(
+            billingOnly,
+          ),
+          isFalse,
         );
         expect(
           PhysiotherapyFollowUpsAtomPermissions.catalogEntry.isAllowed(
-            entryOnly,
+            billingOnly,
+          ),
+          isFalse,
+        );
+        expect(
+          PhysiotherapyFollowUpsAtomPermissions.tab.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(canViewPhysiotherapyFollowUps(billingOnly), isFalse);
+
+        final AppAccessPolicy catalogEntry = _policy(
+          permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+          roles: const <String>['CUSTOM_PHYSIO_ENTRY'],
+        );
+        expect(
+          PhysiotherapyFollowUpsAtomPermissions.routeEntry.isAllowed(
+            catalogEntry,
           ),
           isTrue,
         );
         expect(
-          PhysiotherapyFollowUpsAtomPermissions.tab.isAllowed(entryOnly),
+          PhysiotherapyFollowUpsAtomPermissions.tab.isAllowed(catalogEntry),
           isFalse,
         );
-        expect(canViewPhysiotherapyFollowUps(entryOnly), isFalse);
       },
     );
 
@@ -420,6 +437,7 @@ void main() {
             AppPermissions.patientRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.physiotherapyRead,
           },
           facilityId: null,
         );
@@ -434,6 +452,12 @@ void main() {
         );
         expect(
           PhysiotherapyFollowUpsAtomPermissions.routeEntryUnion.isAllowed(
+            noFacility,
+          ),
+          isTrue,
+        );
+        expect(
+          PhysiotherapyFollowUpsAtomPermissions.catalogEntry.isAllowed(
             noFacility,
           ),
           isTrue,

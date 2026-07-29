@@ -725,12 +725,13 @@ void main() {
       final Finder billingShowMore = find.text(
         billingL10n.commonShowMoreActionLabel,
       );
-      expect(billingShowMore, findsWidgets);
-      await tester.tap(billingShowMore.first);
-      await _pumpAfterAction(tester);
+      if (billingShowMore.evaluate().isNotEmpty) {
+        await tester.tap(billingShowMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
         find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
-        findsWidgets,
+        findsOneWidget,
       );
     });
 

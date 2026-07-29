@@ -420,9 +420,27 @@ class _RadiologyWorkspaceContentState
     final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
-    final bool canWork = _workRequirement.isAllowed(accessPolicy);
+    final bool canRequest = canRequestRadiologyImaging(accessPolicy);
+    final bool canWork = canWriteRadiology(accessPolicy);
+    final bool canViewBilling = canViewRadiologyBillingHold(accessPolicy);
+    final List<RadiologyDeskSection> allowedSections =
+        radiologyAllowedSections(accessPolicy);
+    final RadiologyDeskSection effectiveSection =
+        allowedSections.contains(_section)
+        ? _section
+        : (radiologyFallbackSection(accessPolicy) ?? _section);
     final AppFailure? lastFailure = state.lastFailure;
+
+    if (effectiveSection != _section && allowedSections.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _section == effectiveSection) {
+          return;
+        }
+        setState(() => _section = effectiveSection);
+        _updateUrlForSection(effectiveSection);
+        _applyStageForSection(effectiveSection);
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -431,67 +449,81 @@ class _RadiologyWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppTabStrip(
-              tabs: <AppTabItem>[
-                for (final RadiologyDeskSection section
-                    in RadiologyDeskSection.values)
-                  AppTabItem(
-                    id: section.name,
-                    icon: _sectionIcon(section),
-                    label: _sectionLabel(l10n, section),
-                    count: section == RadiologyDeskSection.followUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(),
-                            ),
-                          )
-                        : _sectionCount(state, section),
-                    countTone: _sectionCountTone(section),
-                  ),
-              ],
-              selectedId: _section.name,
-              onTabTapped: (String tabId) {
-                for (final RadiologyDeskSection section
-                    in RadiologyDeskSection.values) {
-                  if (section.name == tabId) {
-                    setState(() => _section = section);
-                    _updateUrlForSection(section);
-                    _applyStageForSection(section);
-                    break;
+            if (allowedSections.isNotEmpty)
+              AppTabStrip(
+                tabs: <AppTabItem>[
+                  for (final RadiologyDeskSection section in allowedSections)
+                    AppTabItem(
+                      id: section.name,
+                      icon: _sectionIcon(section),
+                      label: _sectionLabel(l10n, section),
+                      count: section == RadiologyDeskSection.followUps
+                          ? ref.watch(
+                              followUpTabCountProvider(
+                                const FollowUpWorklistScope(),
+                              ),
+                            )
+                          : _sectionCount(state, section),
+                      countTone: _sectionCountTone(section),
+                    ),
+                ],
+                selectedId: effectiveSection.name,
+                onTabTapped: (String tabId) {
+                  for (final RadiologyDeskSection section in allowedSections) {
+                    if (section.name == tabId) {
+                      setState(() => _section = section);
+                      _updateUrlForSection(section);
+                      _applyStageForSection(section);
+                      break;
+                    }
                   }
-                }
-              },
-              primaryAction: _buildPrimaryAction(l10n, state, accessPolicy),
-              secondaryActions: _buildSecondaryActions(
-                l10n,
-                state,
-                accessPolicy,
+                },
+                primaryAction: _buildPrimaryAction(
+                  l10n,
+                  state,
+                  accessPolicy,
+                  section: effectiveSection,
+                ),
+                secondaryActions: _buildSecondaryActions(
+                  l10n,
+                  state,
+                  accessPolicy,
+                  section: effectiveSection,
+                ),
               ),
-            ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null && !_section.isFollowUps) ...<Widget>[
+            if (allowedSections.isEmpty)
+              AppWorkspaceStatePanel.empty(
+                title: l10n.radiologyNoOrdersTitle,
+                body: l10n.radiologyNoOrdersBody,
+                icon: Icons.inbox_outlined,
+              )
+            else if (lastFailure != null && !effectiveSection.isFollowUps) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
                 onRetry: controller.refresh,
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (_section.isFollowUps)
+            if (allowedSections.isNotEmpty && effectiveSection.isFollowUps)
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(),
                 storageKeyPrefix: 'radiology_follow_ups',
+                readRequirement: RadiologyFollowUpsAtomPermissions.tab,
+                writeRequirement: RadiologyFollowUpsAtomPermissions.write,
               )
-            else
+            else if (allowedSections.isNotEmpty)
               _RadiologyOrderBoard(
-              section: _section,
-              state: state,
-              canWork: canWork,
-              canRequest: canRequest,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              onSearchChanged: _scheduleSearch,
-              onSearchSubmitted: _applySearchNow,
-            ),
+                section: effectiveSection,
+                state: state,
+                canWork: canWork,
+                canRequest: canRequest,
+                canViewBilling: canViewBilling,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                onSearchChanged: _scheduleSearch,
+                onSearchSubmitted: _applySearchNow,
+              ),
           ],
         ),
       ),
@@ -505,6 +537,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     required this.state,
     required this.canWork,
     required this.canRequest,
+    required this.canViewBilling,
     required this.searchController,
     required this.columnVisibilityController,
     required this.onSearchChanged,
@@ -515,6 +548,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
   final RadiologyWorkspaceState state;
   final bool canWork;
   final bool canRequest;
+  final bool canViewBilling;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<RadiologyOrder>
   columnVisibilityController;
@@ -587,12 +621,13 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             allLabel: l10n.opdAllFieldsFilterLabel,
             choices: _radiologyPriorityFilterChoices(l10n),
           ),
-          AppSearchBarFilterGroup(
-            key: _radiologyBillingGateFilterKey,
-            label: l10n.radiologyBillingGateFilterLabel,
-            allLabel: l10n.opdAllFieldsFilterLabel,
-            choices: _radiologyBillingGateFilterChoices(l10n),
-          ),
+          if (canViewBilling)
+            AppSearchBarFilterGroup(
+              key: _radiologyBillingGateFilterKey,
+              label: l10n.radiologyBillingGateFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _radiologyBillingGateFilterChoices(l10n),
+            ),
         ],
         filterValue: _radiologyFilterValue(state.query),
         hasActiveFilters: _hasRadiologyFilters(state.query),
@@ -623,7 +658,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           if (nextPriority != state.query.priority) {
             failure ??= await controller.applyPriority(nextPriority);
           }
-          if (nextBillingGate != state.query.billingGate) {
+          if (canViewBilling && nextBillingGate != state.query.billingGate) {
             failure ??= await controller.applyBillingGate(nextBillingGate);
           }
           if (!_isSameFilterDate(nextDate, state.query.from)) {
@@ -646,6 +681,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             order,
             canWork: canWork,
             canRequest: canRequest,
+            canViewBilling: canViewBilling,
           ),
         );
       },
@@ -678,14 +714,19 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               state: state,
               canWork: canWork,
               canRequest: canRequest,
+              canViewBilling: canViewBilling,
             )
           : _orderViewWorklistColumns(
               context,
               state: state,
               canWork: canWork,
               canRequest: canRequest,
+              canViewBilling: canViewBilling,
             ),
-      columnChoices: _optionalRadiologyWorklistColumns(context),
+      columnChoices: _optionalRadiologyWorklistColumns(
+        context,
+        canViewBilling: canViewBilling,
+      ),
       mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
         final AppLocalizations l10n = context.l10n;
         final AppWorkspaceStatus status = _orderStatus(context, item);
@@ -716,6 +757,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             state: state,
             canWork: canWork,
             canRequest: canRequest,
+            canViewBilling: canViewBilling,
             resolveLabel: _nextActionLabel,
             openDetailDialog: _openRadiologyDetailDialog,
           ),
@@ -731,11 +773,13 @@ class _RadiologyOrderDetail extends ConsumerWidget {
     required this.state,
     required this.canWork,
     required this.canRequest,
+    required this.canViewBilling,
   });
 
   final RadiologyWorkspaceState state;
   final bool canWork;
   final bool canRequest;
+  final bool canViewBilling;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -764,6 +808,7 @@ class _RadiologyOrderDetail extends ConsumerWidget {
       workflow: workflow,
       canWork: canWork,
       canRequest: canRequest,
+      canViewBilling: canViewBilling,
     );
   }
 }
@@ -775,6 +820,7 @@ Future<void> _openRadiologyDetailDialog(
   RadiologyOrder order, {
   required bool canWork,
   required bool canRequest,
+  required bool canViewBilling,
 }) async {
   final RadiologyWorkspaceController controller = ref.read(
     radiologyWorkspaceControllerProvider.notifier,
@@ -804,6 +850,7 @@ Future<void> _openRadiologyDetailDialog(
         state: state,
         canWork: canWork,
         canRequest: canRequest,
+        canViewBilling: canViewBilling,
       ),
     ),
   );
@@ -826,12 +873,14 @@ class _RadiologyDetailBody extends ConsumerStatefulWidget {
     required this.workflow,
     required this.canWork,
     required this.canRequest,
+    required this.canViewBilling,
   });
 
   final RadiologyWorkspaceState state;
   final RadiologyWorkflow workflow;
   final bool canWork;
   final bool canRequest;
+  final bool canViewBilling;
 
   @override
   ConsumerState<_RadiologyDetailBody> createState() =>
@@ -914,12 +963,13 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
                 label: l10n.radiologyStudyLabel,
                 value: order.testDisplayName!,
               ),
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyPaymentLabel,
-              value: _billingGateLabel(context, order),
-              icon: Icons.receipt_long_outlined,
-              tone: _billingGateTone(order),
-            ),
+            if (widget.canViewBilling)
+              AppWorkspacePatientContextField(
+                label: l10n.radiologyPaymentLabel,
+                value: _billingGateLabel(context, order),
+                icon: Icons.receipt_long_outlined,
+                tone: _billingGateTone(order),
+              ),
           ],
           alerts: <AppWorkspaceStatus>[
             if (order.hasFinalResult)
@@ -1587,12 +1637,20 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
       title: l10n.radiologyReportSectionTitle,
       description: widget.imagingView ? null : l10n.radiologyReportSectionBody,
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.radiologyPrintReportAction,
-          leadingIcon: Icons.print_outlined,
-          onPressed: widget.state.isMutating
-              ? null
-              : () => _showRadiologyPrintDialog(context, widget.workflow),
+        AppAccessActionGate(
+          requirement: RadiologyAllOrdersAtomPermissions.printReport,
+          builder: (BuildContext context, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.tertiary(
+              label: l10n.radiologyPrintReportAction,
+              leadingIcon: Icons.print_outlined,
+              onPressed: widget.state.isMutating
+                  ? null
+                  : () => _showRadiologyPrintDialog(context, widget.workflow),
+            );
+          },
         ),
         if (showPanelDraftAction)
           AppButton.secondary(
@@ -3906,6 +3964,7 @@ List<AppListTableColumn<RadiologyOrder>> _patientViewWorklistColumns(
   required RadiologyWorkspaceState state,
   required bool canWork,
   required bool canRequest,
+  required bool canViewBilling,
 }) {
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyPatientNameColumn(context),
@@ -3917,6 +3976,7 @@ List<AppListTableColumn<RadiologyOrder>> _patientViewWorklistColumns(
       state: state,
       canWork: canWork,
       canRequest: canRequest,
+      canViewBilling: canViewBilling,
     ),
   ];
 }
@@ -3926,6 +3986,7 @@ List<AppListTableColumn<RadiologyOrder>> _orderViewWorklistColumns(
   required RadiologyWorkspaceState state,
   required bool canWork,
   required bool canRequest,
+  required bool canViewBilling,
 }) {
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.orders),
@@ -3937,13 +3998,15 @@ List<AppListTableColumn<RadiologyOrder>> _orderViewWorklistColumns(
       state: state,
       canWork: canWork,
       canRequest: canRequest,
+      canViewBilling: canViewBilling,
     ),
   ];
 }
 
 List<AppListTableColumn<RadiologyOrder>> _optionalRadiologyWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required bool canViewBilling,
+}) {
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyPatientIdColumn(context),
     _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.patients),
@@ -3952,7 +4015,7 @@ List<AppListTableColumn<RadiologyOrder>> _optionalRadiologyWorklistColumns(
     _radiologyBodyRegionColumn(context),
     _radiologyLateralityColumn(context),
     _radiologyEncounterColumn(context),
-    _radiologyBillingColumn(context),
+    if (canViewBilling) _radiologyBillingColumn(context),
     _radiologyOrderedAtColumn(context),
   ];
 }
@@ -4036,6 +4099,7 @@ AppListTableColumn<RadiologyOrder> _radiologyNextActionColumn(
   required RadiologyWorkspaceState state,
   required bool canWork,
   required bool canRequest,
+  required bool canViewBilling,
 }) {
   return AppListTableColumn<RadiologyOrder>(
     id: 'next_action',
@@ -4052,6 +4116,7 @@ AppListTableColumn<RadiologyOrder> _radiologyNextActionColumn(
         state: state,
         canWork: canWork,
         canRequest: canRequest,
+        canViewBilling: canViewBilling,
         resolveLabel: _nextActionLabel,
         openDetailDialog: _openRadiologyDetailDialog,
       );

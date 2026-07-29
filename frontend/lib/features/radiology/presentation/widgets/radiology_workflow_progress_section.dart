@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
+import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-const AccessRequirement _radiologyWorkflowMutationRequirement =
-    AccessRequirement(
-      anyPermissions: <AppPermission>[AppPermissions.radiologyWrite],
-      activeModules: <String>['radiology-workflows'],
-    );
+/// Workflow Assign / Start mutations — ∩ `radiology:write` + module.
+const AccessRequirement radiologyWorkflowMutationRequirement =
+    radiologyMutationRequirement;
 
 /// Maps backend order status + next_actions into the shared workflow stepper.
 class RadiologyWorkflowProgressSection extends ConsumerWidget {
@@ -55,7 +52,7 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
           id: 'assign',
           label: l10n.radiologyAssignAction,
           icon: Icons.event_available_outlined,
-          requirement: _radiologyWorkflowMutationRequirement,
+          requirement: radiologyWorkflowMutationRequirement,
           capabilityAllowed: next.canAssign,
           isLoading: isSaving,
           onPressed: isSaving ? null : onAssign,
@@ -68,7 +65,7 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
           id: 'start',
           label: l10n.radiologyStartImagingAction,
           icon: Icons.play_arrow_outlined,
-          requirement: _radiologyWorkflowMutationRequirement,
+          requirement: radiologyWorkflowMutationRequirement,
           capabilityAllowed: next.canStart,
           isLoading: isSaving,
           onPressed: isSaving ? null : onStart,

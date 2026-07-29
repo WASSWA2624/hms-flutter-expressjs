@@ -436,30 +436,85 @@ void main() {
       );
     });
 
-    test('billing:read alone enters route but not Follow-up due chrome', () {
-      final AppAccessPolicy billingOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.billingRead},
-        roles: const <String>['BILLING'],
+    test(
+      'mapping note: catalog route entry is ∩ physiotherapy:read '
+      '(prompt ∪ clinical|patient|billing:read maps to catalog)',
+      () {
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.routeEntry.allPermissions,
+          <AppPermission>[AppPermissions.physiotherapyRead],
+        );
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.routeEntry.anyPermissions,
+          isEmpty,
+        );
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.routeEntry.activeModules,
+          contains(physiotherapyModule),
+        );
+        expect(
+          identical(
+            PhysiotherapyFollowUpDueAtomPermissions.catalogEntry,
+            RouteAccessCatalog.physiotherapyEntry,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            PhysiotherapyFollowUpDueAtomPermissions.routeEntryUnion,
+            physiotherapyWorkspaceRouteUnionRequirement,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'billing:read alone does not enter route or Follow-up due chrome; '
+      'billing column still allowed',
+      () {
+        final AppAccessPolicy billingOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
+        );
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.routeEntry.isAllowed(
+            billingOnly,
+          ),
+          isFalse,
+        );
+        expect(canEnterPhysiotherapyWorkspace(billingOnly), isFalse);
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(
+          PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(
+            billingOnly,
+          ),
+          isTrue,
+        );
+        expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+        expect(canViewPhysiotherapyFollowUpDue(billingOnly), isFalse);
+      },
+    );
+
+    test('∩ physiotherapy:read + module satisfies route entry, not tab chrome', () {
+      final AppAccessPolicy physioReader = _policy(
+        permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+        roles: const <String>['CUSTOM_READER'],
       );
       expect(
         PhysiotherapyFollowUpDueAtomPermissions.routeEntry.isAllowed(
-          billingOnly,
+          physioReader,
         ),
         isTrue,
       );
-      expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
+      expect(canEnterPhysiotherapyWorkspace(physioReader), isTrue);
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(billingOnly),
+        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(physioReader),
         isFalse,
       );
-      expect(
-        PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(
-          billingOnly,
-        ),
-        isTrue,
-      );
-      expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
-      expect(canViewPhysiotherapyFollowUpDue(billingOnly), isFalse);
     });
 
     test('full ∩ write set presents write atoms', () {
@@ -530,33 +585,6 @@ void main() {
         canViewPhysiotherapyTab(
           withFacility,
           PhysiotherapyQueueScope.followUpDue,
-        ),
-        isTrue,
-      );
-    });
-
-    test('route entry ∪ matches AppRoutes physiotherapy matrix', () {
-      expect(
-        PhysiotherapyFollowUpDueAtomPermissions.routeEntryUnion.anyPermissions
-            .toSet(),
-        <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        },
-      );
-      expect(
-        identical(
-          PhysiotherapyFollowUpDueAtomPermissions.catalogEntry,
-          RouteAccessCatalog.physiotherapyEntry,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          PhysiotherapyFollowUpDueAtomPermissions.routeEntryUnion,
-          physiotherapyWorkspaceRouteUnionRequirement,
         ),
         isTrue,
       );

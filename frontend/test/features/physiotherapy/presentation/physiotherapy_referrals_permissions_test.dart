@@ -446,28 +446,83 @@ void main() {
       );
     });
 
-    test('billing:read alone enters route but not Referrals chrome', () {
-      final AppAccessPolicy billingOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.billingRead},
-        roles: const <String>['BILLING'],
+    test(
+      'mapping note: catalog route entry is ∩ physiotherapy:read '
+      '(prompt ∪ clinical|patient|billing:read maps to catalog)',
+      () {
+        expect(
+          PhysiotherapyReferralsAtomPermissions.routeEntry.allPermissions,
+          <AppPermission>[AppPermissions.physiotherapyRead],
+        );
+        expect(
+          PhysiotherapyReferralsAtomPermissions.routeEntry.anyPermissions,
+          isEmpty,
+        );
+        expect(
+          PhysiotherapyReferralsAtomPermissions.routeEntry.activeModules,
+          contains(physiotherapyModule),
+        );
+        expect(
+          identical(
+            PhysiotherapyReferralsAtomPermissions.catalogEntry,
+            RouteAccessCatalog.physiotherapyEntry,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            PhysiotherapyReferralsAtomPermissions.routeEntryUnion,
+            physiotherapyWorkspaceRouteUnionRequirement,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'billing:read alone does not enter route or Referrals chrome; '
+      'billing column still allowed',
+      () {
+        final AppAccessPolicy billingOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
+        );
+        expect(
+          PhysiotherapyReferralsAtomPermissions.routeEntry.isAllowed(
+            billingOnly,
+          ),
+          isFalse,
+        );
+        expect(canEnterPhysiotherapyWorkspace(billingOnly), isFalse);
+        expect(
+          PhysiotherapyReferralsAtomPermissions.tab.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(
+          PhysiotherapyReferralsAtomPermissions.billingColumn.isAllowed(
+            billingOnly,
+          ),
+          isTrue,
+        );
+        expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+        expect(canViewPhysiotherapyReferrals(billingOnly), isFalse);
+      },
+    );
+
+    test('∩ physiotherapy:read + module satisfies route entry, not tab chrome', () {
+      final AppAccessPolicy physioReader = _policy(
+        permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+        roles: const <String>['CUSTOM_READER'],
       );
       expect(
-        PhysiotherapyReferralsAtomPermissions.routeEntry.isAllowed(billingOnly),
+        PhysiotherapyReferralsAtomPermissions.routeEntry.isAllowed(physioReader),
         isTrue,
       );
-      expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
+      expect(canEnterPhysiotherapyWorkspace(physioReader), isTrue);
       expect(
-        PhysiotherapyReferralsAtomPermissions.tab.isAllowed(billingOnly),
+        PhysiotherapyReferralsAtomPermissions.tab.isAllowed(physioReader),
         isFalse,
       );
-      expect(
-        PhysiotherapyReferralsAtomPermissions.billingColumn.isAllowed(
-          billingOnly,
-        ),
-        isTrue,
-      );
-      expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
-      expect(canViewPhysiotherapyReferrals(billingOnly), isFalse);
     });
 
     test('full ∩ write set presents write atoms', () {
@@ -495,6 +550,7 @@ void main() {
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.patientRead,
+          AppPermissions.physiotherapyRead,
         },
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
@@ -515,6 +571,10 @@ void main() {
         PhysiotherapyReferralsAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
+      expect(
+        PhysiotherapyReferralsAtomPermissions.routeEntry.isAllowed(noModule),
+        isFalse,
+      );
       expect(canViewPhysiotherapyReferrals(noModule), isFalse);
     });
 
@@ -533,33 +593,6 @@ void main() {
         canViewPhysiotherapyTab(
           withFacility,
           PhysiotherapyQueueScope.referrals,
-        ),
-        isTrue,
-      );
-    });
-
-    test('route entry ∪ matches AppRoutes physiotherapy matrix', () {
-      expect(
-        PhysiotherapyReferralsAtomPermissions.routeEntryUnion.anyPermissions
-            .toSet(),
-        <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        },
-      );
-      expect(
-        identical(
-          PhysiotherapyReferralsAtomPermissions.catalogEntry,
-          RouteAccessCatalog.physiotherapyEntry,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          PhysiotherapyReferralsAtomPermissions.routeEntryUnion,
-          physiotherapyWorkspaceRouteUnionRequirement,
         ),
         isTrue,
       );

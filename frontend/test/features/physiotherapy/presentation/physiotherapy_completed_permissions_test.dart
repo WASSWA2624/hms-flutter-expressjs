@@ -273,22 +273,17 @@ void main() {
         ),
         isTrue,
       );
-      // Feature deep-link ∪ (prompt matrix); catalog shell may differ (source mapping).
-      expect(
-        PhysiotherapyCompletedAtomPermissions.routeEntry.anyPermissions,
-        containsAll(<AppPermission>[
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        ]),
-      );
       expect(
         identical(
           PhysiotherapyCompletedAtomPermissions.routeEntry,
-          PhysiotherapyCompletedAtomPermissions.catalogEntry,
+          RouteAccessCatalog.physiotherapyEntry,
         ),
-        isFalse,
+        isTrue,
+      );
+      // Source catalog ∩ physiotherapy:read (prompt ∪ clinical|patient|billing mapped).
+      expect(
+        PhysiotherapyCompletedAtomPermissions.routeEntry.allPermissions,
+        contains(AppPermissions.physiotherapyRead),
       );
     });
 
@@ -414,9 +409,10 @@ void main() {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      // Source route entry is ∩ physiotherapy:read (not clinical:write).
       expect(
         PhysiotherapyCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         PhysiotherapyCompletedAtomPermissions.tab.isAllowed(writeOnly),
@@ -495,7 +491,7 @@ void main() {
       );
     });
 
-    test('billing:read alone enters feature route ∪ but not Completed tab', () {
+    test('billing:read alone enters neither catalog shell nor Completed tab', () {
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
         modules: const <AppModuleEntitlement>[
@@ -509,9 +505,11 @@ void main() {
           ),
         ],
       );
+      // Prompt ∪ historically allowed billing:read route entry; source catalog
+      // is ∩ physiotherapy:read — note mapping.
       expect(
         PhysiotherapyCompletedAtomPermissions.routeEntry.isAllowed(billingOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         PhysiotherapyCompletedAtomPermissions.tab.isAllowed(billingOnly),
@@ -525,39 +523,26 @@ void main() {
       );
     });
 
-    test('catalog shell entry is distinct from feature route ∪', () {
+    test('catalog ∩ physiotherapy:read enters shell without tab chrome alone', () {
+      final AppAccessPolicy physioReader = _policy(
+        permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+      );
       expect(
-        identical(
-          PhysiotherapyCompletedAtomPermissions.catalogEntry,
-          RouteAccessCatalog.physiotherapyEntry,
+        PhysiotherapyCompletedAtomPermissions.routeEntry.isAllowed(
+          physioReader,
         ),
         isTrue,
       );
       expect(
-        identical(
-          PhysiotherapyCompletedAtomPermissions.routeEntry,
-          PhysiotherapyCompletedAtomPermissions.catalogEntry,
+        PhysiotherapyCompletedAtomPermissions.catalogEntry.isAllowed(
+          physioReader,
         ),
+        isTrue,
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.tab.isAllowed(physioReader),
         isFalse,
       );
-      final AppAccessPolicy physioReader = _policy(
-        permissions: <AppPermission>{AppPermissions.physiotherapyRead},
-      );
-      final bool catalogAllowsPhysioRead =
-          PhysiotherapyCompletedAtomPermissions.catalogEntry.isAllowed(
-            physioReader,
-          );
-      final bool tabAllowsPhysioRead =
-          PhysiotherapyCompletedAtomPermissions.tab.isAllowed(physioReader);
-      // Tab chrome never unlocks from physiotherapy:read alone (matrix ∪).
-      expect(tabAllowsPhysioRead, isFalse);
-      // When catalog is ∩ physiotherapy:read, shell entry is allowed.
-      if (PhysiotherapyCompletedAtomPermissions
-          .catalogEntry
-          .allPermissions
-          .contains(AppPermissions.physiotherapyRead)) {
-        expect(catalogAllowsPhysioRead, isTrue);
-      }
     });
 
     test('nested billing column absent without billing:read ∩ billing-payments', () {
@@ -792,8 +777,22 @@ void main() {
     );
 
     testWidgets(
-      'billing-only route entry collapses Completed strip (no routine banner)',
+      'physiotherapy:read-only / billing-only collapses Completed strip',
       (WidgetTester tester) async {
+        final AppAccessPolicy physioOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+        );
+
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: physioOnly,
+        );
+
+        expect(find.byType(AppTabStrip), findsNothing);
+        expect(find.byType(AppListTable<TherapyWorkItem>), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+
         final AppAccessPolicy billingOnly = _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
           modules: const <AppModuleEntitlement>[
@@ -807,15 +806,12 @@ void main() {
             ),
           ],
         );
-
         await _pumpCompletedTab(
           tester,
           repository: repository,
           accessPolicy: billingOnly,
         );
-
         expect(find.byType(AppTabStrip), findsNothing);
-        expect(find.byType(AppListTable<TherapyWorkItem>), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

@@ -11,6 +11,7 @@ typedef RadiologyDetailDialogOpener =
       RadiologyOrder order, {
       required bool canWork,
       required bool canRequest,
+      required bool canViewBilling,
     });
 
 typedef RadiologyNextActionLabelResolver =
@@ -22,6 +23,7 @@ class RadiologyNextActionCell extends ConsumerWidget {
     required this.state,
     required this.canWork,
     required this.canRequest,
+    required this.canViewBilling,
     required this.resolveLabel,
     required this.openDetailDialog,
     this.compact = true,
@@ -32,6 +34,7 @@ class RadiologyNextActionCell extends ConsumerWidget {
   final RadiologyWorkspaceState state;
   final bool canWork;
   final bool canRequest;
+  final bool canViewBilling;
   final RadiologyNextActionLabelResolver resolveLabel;
   final RadiologyDetailDialogOpener openDetailDialog;
   final bool compact;
@@ -53,6 +56,7 @@ class RadiologyNextActionCell extends ConsumerWidget {
         order,
         canWork: canWork,
         canRequest: canRequest,
+        canViewBilling: canViewBilling,
       ),
     );
   }

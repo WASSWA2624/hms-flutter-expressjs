@@ -215,7 +215,7 @@ PhysiotherapyQueueScope? physiotherapyFallbackScope(AppAccessPolicy policy) {
 /// | Detail billing authorization chip | nested read | ([billingChip]) |
 /// | Detail print instructions | read / export | ([printInstructions]) |
 /// | Nested Accept referral / mutation dialogs | create / update | write ∩ |
-/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∩ physiotherapy:read ([routeEntry]) |
 abstract final class PhysiotherapyReferralsAtomPermissions {
   static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -462,9 +462,10 @@ abstract final class PhysiotherapyActivePlansAtomPermissions {
 /// cross-module matrix rows are _(n/a)_ except billing status chips/columns
 /// ([billingColumn] / [billingChip] — ∩ `billing:read` + `billing-payments`).
 /// Detail complementary create/update/delete keep matrix ∩ `clinical:write` +
-/// module. Feature [routeEntry] keeps prompt ∪ (`clinical:read` |
-/// `clinical:write` | `patient:read` | `billing:read`); [catalogEntry] is
-/// unique shell ∩ `physiotherapy:read`. Tab chrome is not billing-only.
+/// module. Route / catalog entry is ∩ `physiotherapy:read` ([routeEntry] /
+/// [catalogEntry]); prompt ∪ `clinical:read` | `clinical:write` |
+/// `patient:read` | `billing:read` is mapped in tests. Tab chrome stays
+/// ∪ `clinical:read` | `patient:read` (no billing-only / physiotherapy:read-only).
 /// Therapy plans/sessions need `clinical:write`.
 ///
 /// | Atom | Kind | Gate |
@@ -480,8 +481,7 @@ abstract final class PhysiotherapyActivePlansAtomPermissions {
 /// | Detail billing authorization chip | nested read | ([billingChip]) |
 /// | Detail print instructions (when not row next-action) | read / export | ([printInstructions]) |
 /// | Nested mutation dialogs | create / update | write ∩ |
-/// | Feature route entry ∪ | navigate | clinical \| patient \| billing ([routeEntry]) |
-/// | Catalog shell entry ∩ | navigate | physiotherapy:read ([catalogEntry]) |
+/// | Route / catalog entry | navigate | ∩ physiotherapy:read ([routeEntry]) |
 abstract final class PhysiotherapyCompletedAtomPermissions {
   static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -553,10 +553,13 @@ abstract final class PhysiotherapyCompletedAtomPermissions {
 /// Due therapy follow-ups (`/physiotherapy?section=follow-up`). Nested
 /// cross-module matrix rows are _(n/a)_ except billing status chips/columns
 /// ([billingColumn] / [billingChip] — ∩ `billing:read` + `billing-payments`).
-/// Create/update/delete keep matrix ∩ `clinical:write` + module. Route entry ∪
-/// is [routeEntry] (includes `billing:read` alone for shell entry, not tab
-/// chrome). Next action on this tab is Schedule follow-up ([scheduleFollowUp]).
-/// Referrals intake may allow `patient:read` readers without write.
+/// Create/update/delete keep matrix ∩ `clinical:write` + module. Feature
+/// [routeEntry] / [catalogEntry] is ∩ `physiotherapy:read` (prompt matrix ∪
+/// `clinical:read` | `clinical:write` | `patient:read` | `billing:read` maps to
+/// catalog; note in tests). Tab chrome stays ∪ `clinical:read` | `patient:read`
+/// — no `billing:read` / `physiotherapy:read` alone. Next action on this tab is
+/// Schedule follow-up ([scheduleFollowUp]). Referrals intake may allow
+/// `patient:read` readers without write.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -571,7 +574,7 @@ abstract final class PhysiotherapyCompletedAtomPermissions {
 /// | Detail billing authorization chip | nested read | ([billingChip]) |
 /// | Detail print instructions | read / export | ([printInstructions]) |
 /// | Nested mutation dialogs | create / update | write ∩ |
-/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+/// | Feature / catalog route entry | navigate | physiotherapy:read ∩ ([routeEntry]) |
 abstract final class PhysiotherapyFollowUpDueAtomPermissions {
   static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -662,7 +665,7 @@ abstract final class PhysiotherapyFollowUpDueAtomPermissions {
 /// | Detail billing authorization chip | nested read | ([billingChip]) |
 /// | Detail print instructions | read / export | ([printInstructions]) |
 /// | Nested mutation dialogs (attendance, schedule…) | create / update | write ∩ |
-/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+/// | Route entry (deep link) | navigate | ∩ physiotherapy:read ([routeEntry]; prompt ∪ mapped) |
 abstract final class PhysiotherapyMissedAtomPermissions {
   static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -733,10 +736,11 @@ abstract final class PhysiotherapyMissedAtomPermissions {
 /// cross-module matrix rows are _(n/a)_ — billing chips / therapy plan writes
 /// are **not** reachable from this tab (those live on queue tabs / detail).
 /// Create / update / delete use matrix ∩ `clinical:write` via
-/// [physiotherapyFollowUpsWriteRequirement]. Route entry ∪ is [routeEntry] /
-/// [catalogEntry] (AppRoutes + [RouteAccessCatalog.physiotherapyEntry]). Tab
-/// chrome stays ∪ `clinical:read` | `patient:read` + module. Billing-only
-/// route entry does **not** satisfy Follow-ups chrome.
+/// [physiotherapyFollowUpsWriteRequirement]. Route entry is [routeEntry] /
+/// [catalogEntry] ∩ `physiotherapy:read` (catalog source); prompt/AppRoutes ∪
+/// `clinical|patient|billing:read` is noted in tests. Tab chrome stays ∪
+/// `clinical:read` | `patient:read` + module. Billing-only or
+/// `physiotherapy:read` alone does **not** satisfy Follow-ups chrome.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -751,7 +755,7 @@ abstract final class PhysiotherapyMissedAtomPermissions {
 /// | Save follow-up (nested reschedule dialog) | update | write ∩ ([saveFollowUp]) |
 /// | Hard delete / void | delete | write ∩ ([delete]) — not mounted |
 /// | Therapy plan / session / billing chip | nested | _(n/a)_ — not reachable |
-/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+/// | Route entry (deep link) | navigate | physiotherapy:read ([routeEntry] / [catalogEntry]) |
 abstract final class PhysiotherapyFollowUpsAtomPermissions {
   static const AccessRequirement tab = physiotherapyFollowUpsRequirement;
   static const AccessRequirement listChrome = physiotherapyFollowUpsRequirement;
@@ -805,4 +809,5 @@ abstract final class PhysiotherapyFollowUpsAtomPermissions {
       physiotherapyWorkspaceRouteUnionRequirement;
   static const AccessRequirement catalogEntry =
       RouteAccessCatalog.physiotherapyEntry;
-  static c
+  static const AccessRequirement read = physiotherapyFollowUpsRequirement;
+}
