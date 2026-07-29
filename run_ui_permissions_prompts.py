@@ -6,7 +6,7 @@ Processing rules:
 - Each prompt runs ITERATIONS times sequentially in its worker slot.
 - After a prompt finishes all ITERATIONS successfully, commit and push
   its results to GitHub.
-- Completed prompt iterations recorded in
+- Completed prompt files recorded in
   .run_ui_permissions_prompts_state.json are skipped on resume; pass
   --force to clear state and re-run everything.
 - Model is always "auto".
@@ -58,6 +58,38 @@ def _iteration_key(prompt_rel: str, iteration: int) -> str:
 def _prompt_complete_key(prompt_rel: str) -> str:
     """Label used when committing after all iterations finish."""
     return f"{prompt_rel}#{ITERATIONS}/{ITERATIONS}"
+
+
+def _is_iteration_finished(
+    prompt_rel: str, iteration: int, finished: set[str]
+) -> bool:
+    """True if this prompt iteration is recorded done in state.
+
+    Accepts:
+    - bare prompt path (file fully done; skip all iterations)
+    - current key path#iteration/ITERATIONS
+    - legacy keys path#iteration/<any total> after ITERATIONS changes
+    """
+    if prompt_rel in finished:
+        return True
+    if _iteration_key(prompt_rel, iteration) in finished:
+        return True
+    prefix = f"{prompt_rel}#{iteration}/"
+    return any(entry.startswith(prefix) for entry in finished)
+
+
+def _pending_iterations(prompt_rel: str, finished: set[str]) -> list[int]:
+    """Iteration numbers still needed for a prompt given finished state."""
+    return [
+        iteration
+        for iteration in range(1, ITERATIONS + 1)
+        if not _is_iteration_finished(prompt_rel, iteration, finished)
+    ]
+
+
+def _is_prompt_finished(prompt_rel: str, finished: set[str]) -> bool:
+    """True when every required iteration for the prompt is done."""
+    return not _pending_iterations(prompt_rel, finished)
 
 
 def _discover_folders() -> list[Path]:
@@ -112,9 +144,16 @@ def _save_finished(finished: set[str]) -> None:
     )
 
 
-def _mark_finished(finished: set[str], key: str) -> None:
-    """Record one completed iteration and persist state immediately."""
-    finished.add(key)
+def _mark_finished(finished: set[str], prompt_rel: str, iteration: int) -> None:
+    """Record one completed iteration and persist state immediately.
+
+    Stores the iteration key for resume mid-prompt. When all iterations for
+    the file are done, also stores the bare prompt path so state matches
+    file-level skip lists.
+    """
+    finished.add(_iteration_key(prompt_rel, iteration))
+    if _is_prompt_finished(prompt_rel, finished):
+        finished.add(prompt_rel)
     _save_finished(finished)
 
 
@@ -379,11 +418,7 @@ async def run_prompt(
     except ValueError:
         short = prompt_path.name
 
-    pending_iterations = [
-        iteration
-        for iteration in range(1, ITERATIONS + 1)
-        if _iteration_key(prompt_rel, iteration) not in finished
-    ]
+    pending_iterations = _pending_iterations(prompt_rel, finished)
 
     if not pending_iterations:
         return {
@@ -396,11 +431,7 @@ async def run_prompt(
 
     async with sem:
         # Refresh after waiting — another resume path may have recorded work.
-        pending_iterations = [
-            iteration
-            for iteration in range(1, ITERATIONS + 1)
-            if _iteration_key(prompt_rel, iteration) not in finished
-        ]
+        pending_iterations = _pending_iterations(prompt_rel, finished)
         if not pending_iterations:
             return {
                 "file": complete_key,
@@ -416,10 +447,13 @@ async def run_prompt(
         )
         iteration_results: list[dict] = []
         for iteration in pending_iterations:
-            key = _iteration_key(prompt_rel, iteration)
-            if key in finished:
+            if _is_iteration_finished(prompt_rel, iteration, finished):
                 iteration_results.append(
-                    {"file": key, "status": "finished", "skipped": True}
+                    {
+                        "file": _iteration_key(prompt_rel, iteration),
+                        "status": "finished",
+                        "skipped": True,
+                    }
                 )
                 continue
 
@@ -438,12 +472,11 @@ async def run_prompt(
                     "failed_iteration": result["file"],
                 }
 
-            _mark_finished(finished, result["file"])
+            _mark_finished(finished, prompt_rel, iteration)
 
         still_open = [
             _iteration_key(prompt_rel, iteration)
-            for iteration in range(1, ITERATIONS + 1)
-            if _iteration_key(prompt_rel, iteration) not in finished
+            for iteration in _pending_iterations(prompt_rel, finished)
         ]
         if still_open:
             return {
@@ -474,7 +507,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Run prompts/ui-permissions with Cursor model=auto. "
             f"Always up to {MAX_CONCURRENCY} prompts concurrent across folders; "
             f"each prompt runs {ITERATIONS} times then commit+push. "
-            "Resume skips completed iterations in "
+            "Resume skips completed prompt files / iterations in "
             ".run_ui_permissions_prompts_state.json."
         )
     )
@@ -557,7 +590,6 @@ async def main(argv: list[str] | None = None):
             "'cursor_...' example value."
         )
 
-    known = set(all_keys)
     if args.force:
         finished: set[str] = set()
         if STATE_FILE.exists():
@@ -565,19 +597,22 @@ async def main(argv: list[str] | None = None):
             _log("Cleared saved progress (--force).\n")
     else:
         # Keep the full state set so --folder / stop-restart never wipes
-        # finished iterations outside the current plan.
+        # finished prompts outside the current plan.
         finished = _load_finished()
         _save_finished(finished)
 
     pending_prompts = [
         prompt
         for prompt in prompts
-        if any(
-            _iteration_key(_prompt_rel(prompt), iteration) not in finished
-            for iteration in range(1, ITERATIONS + 1)
-        )
+        if not _is_prompt_finished(_prompt_rel(prompt), finished)
     ]
-    pending_keys = [k for k in all_keys if k not in finished]
+    pending_keys = [
+        key
+        for prompt in prompts
+        for iteration in range(1, ITERATIONS + 1)
+        for key in [_iteration_key(_prompt_rel(prompt), iteration)]
+        if not _is_iteration_finished(_prompt_rel(prompt), iteration, finished)
+    ]
     skipped = len(all_keys) - len(pending_keys)
 
     _log(
@@ -603,10 +638,7 @@ async def main(argv: list[str] | None = None):
             "skipped": True,
         }
         for prompt in prompts
-        if all(
-            _iteration_key(_prompt_rel(prompt), iteration) in finished
-            for iteration in range(1, ITERATIONS + 1)
-        )
+        if _is_prompt_finished(_prompt_rel(prompt), finished)
     ]
     git_lock = asyncio.Lock()
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
@@ -636,8 +668,14 @@ async def main(argv: list[str] | None = None):
             results.extend(batch_results)
     except (asyncio.CancelledError, KeyboardInterrupt):
         _save_finished(finished)
+        done_in_scope = sum(
+            1
+            for prompt in prompts
+            for iteration in range(1, ITERATIONS + 1)
+            if _is_iteration_finished(_prompt_rel(prompt), iteration, finished)
+        )
         _log(
-            f"\nStopped. Progress saved ({len(finished & known)}/"
+            f"\nStopped. Progress saved ({done_in_scope}/"
             f"{len(all_keys)} in-scope iterations done). "
             "Re-run to continue without repeating finished work.",
             err=True,
@@ -647,7 +685,12 @@ async def main(argv: list[str] | None = None):
     results.sort(key=lambda r: r["file"])
     this_run = [r for r in results if not r.get("skipped")]
     errors = [r for r in results if r["status"] != "finished"]
-    finished_count = sum(1 for k in all_keys if k in finished)
+    finished_count = sum(
+        1
+        for prompt in prompts
+        for iteration in range(1, ITERATIONS + 1)
+        if _is_iteration_finished(_prompt_rel(prompt), iteration, finished)
+    )
 
     _log("\nSummary")
     if this_run:
