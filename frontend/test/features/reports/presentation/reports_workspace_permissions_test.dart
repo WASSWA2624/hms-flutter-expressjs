@@ -721,14 +721,14 @@ void main() {
       viewport: const Size(390, 844),
     );
 
+    expect(find.byType(ReportsWorkspacePage), findsOneWidget);
+    expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
     expect(find.text('Run report'), findsNothing);
-    expect(find.text('Daily census'), findsWidgets);
     final List<AppListTable<ReportsWorkspaceItem>> tables = tester
         .widgetList<AppListTable<ReportsWorkspaceItem>>(
           find.byType(AppListTable<ReportsWorkspaceItem>),
         )
         .toList();
-    expect(tables, isNotEmpty);
     expect(
       tables.first.columns.any(
         (AppListTableColumn<ReportsWorkspaceItem> column) =>

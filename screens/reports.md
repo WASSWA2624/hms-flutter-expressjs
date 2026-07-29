@@ -106,6 +106,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 ### Schedules panel
 
 - Lists delivery schedules under non-compliance panels; row select and next-action follow the same rules; no duplicate search bar.
+- Schedule `next_action` mounts only with `reports:write` (create/update schedule); export keys do not add an empty column here.
 
 ### Timeline
 
