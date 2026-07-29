@@ -181,6 +181,9 @@ class _ReceptionFollowUpDetailDialogState
   }
 
   Future<void> _complete(BuildContext context) async {
+    if (!widget.writeRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+      return;
+    }
     setState(() {
       _isBusy = true;
       _failure = null;
@@ -206,6 +209,9 @@ class _ReceptionFollowUpDetailDialogState
   }
 
   Future<void> _reschedule(BuildContext context) async {
+    if (!widget.writeRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+      return;
+    }
     final bool? scheduled = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,

@@ -75,6 +75,12 @@ const List<AppModuleEntitlement> _inpatientModules = <AppModuleEntitlement>[
     code: roomsBedsInpatientBedManagementModule,
     licenseStatus: 'ACTIVE',
   ),
+  AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(
+    code: 'facilities-maintenance',
+    licenseStatus: 'ACTIVE',
+  ),
+  AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
 ];
 
 AppAccessPolicy _policy({

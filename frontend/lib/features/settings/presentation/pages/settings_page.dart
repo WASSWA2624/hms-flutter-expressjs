@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/accessibility/app_accessibility_controller.dart';
-import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
@@ -14,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
@@ -114,8 +114,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
-    final AppAccessibilityPreferences accessibility = ref.watch(
-      appAccessibilityProvider,
+    final bool reduceMotion = ref.watch(
+      appAccessibilityProvider.select(
+        (prefs) => prefs.reduceMotion,
+      ),
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool showSettingsWorkspace =
@@ -125,6 +127,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _configTenantRequirement.isAllowed(accessPolicy) ||
         _configFacilityRequirement.isAllowed(accessPolicy);
     final bool showAccount = profileReadRequirement.isAllowed(accessPolicy);
+    final bool showAccessibility = profileReadRequirement.isAllowed(
+      accessPolicy,
+    );
     // When the setup workspace is visible it owns tenant/facility and access
     // entry points; Administration only keeps destinations the workspace does
     // not cover (subscriptions).
@@ -176,56 +181,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ],
         ),
       ),
-      _AccordionEntry(
-        id: 'accessibility',
-        icon: Icons.accessibility_new_outlined,
-        title: l10n.settingsAccessibilitySectionTitle,
-        body: l10n.settingsAccessibilitySectionBody,
-        builder: (_) => Column(
-          children: <Widget>[
-            AppCheckboxField(
-              title: l10n.settingsReduceMotionLabel,
-              subtitle: l10n.settingsReduceMotionDescription,
-              value: accessibility.reduceMotion,
-              onChanged: (bool value) {
-                unawaited(_setReduceMotion(context, ref, value));
-              },
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppCheckboxField(
-              title: l10n.settingsBoldTextLabel,
-              subtitle: l10n.settingsBoldTextDescription,
-              value: accessibility.boldText,
-              onChanged: (bool value) {
-                unawaited(_setBoldText(context, ref, value));
-              },
-            ),
-            SizedBox(height: Theme.of(context).spacing.lg),
-            AppSelectField<AppTextScaleLevel>(
-              labelText: l10n.settingsTextScaleFieldLabel,
-              value: accessibility.textScaleLevel,
-              options: <AppSelectOption<AppTextScaleLevel>>[
-                AppSelectOption<AppTextScaleLevel>(
-                  value: AppTextScaleLevel.normal,
-                  label: l10n.settingsTextScaleNormal,
-                ),
-                AppSelectOption<AppTextScaleLevel>(
-                  value: AppTextScaleLevel.large,
-                  label: l10n.settingsTextScaleLarge,
-                ),
-                AppSelectOption<AppTextScaleLevel>(
-                  value: AppTextScaleLevel.extraLarge,
-                  label: l10n.settingsTextScaleExtraLarge,
-                ),
-              ],
-              onChanged: (AppTextScaleLevel? level) {
-                if (level == null) return;
-                unawaited(_setTextScaleLevel(context, ref, level));
-              },
-            ),
-          ],
+      if (showAccessibility)
+        _AccordionEntry(
+          id: 'accessibility',
+          icon: Icons.accessibility_new_outlined,
+          title: l10n.settingsAccessibilitySectionTitle,
+          body: l10n.settingsAccessibilitySectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsAccessibilitySection(),
         ),
-      ),
       if (showAccount)
         _AccordionEntry(
           id: 'account',
@@ -279,7 +243,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           sections: sections,
           expandedSectionId: expandedSectionId,
           onSectionTapped: _onSectionTapped,
-          reduceMotion: accessibility.reduceMotion,
+          reduceMotion: reduceMotion,
         ),
       ),
     );
@@ -294,61 +258,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await ref.read(appThemeModeProvider.notifier).setThemeMode(themeMode);
     } catch (_) {
       if (context.mounted) {
-        _showSaveError(context);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(context.l10n.settingsSaveErrorMessage)),
+          );
       }
     }
-  }
-
-  Future<void> _setReduceMotion(
-    BuildContext context,
-    WidgetRef ref,
-    bool value,
-  ) async {
-    try {
-      await ref.read(appAccessibilityProvider.notifier).setReduceMotion(value);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
-  }
-
-  Future<void> _setBoldText(
-    BuildContext context,
-    WidgetRef ref,
-    bool value,
-  ) async {
-    try {
-      await ref.read(appAccessibilityProvider.notifier).setBoldText(value);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
-  }
-
-  Future<void> _setTextScaleLevel(
-    BuildContext context,
-    WidgetRef ref,
-    AppTextScaleLevel level,
-  ) async {
-    try {
-      await ref
-          .read(appAccessibilityProvider.notifier)
-          .setTextScaleLevel(level);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
-  }
-
-  void _showSaveError(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(context.l10n.settingsSaveErrorMessage)),
-      );
   }
 }
 

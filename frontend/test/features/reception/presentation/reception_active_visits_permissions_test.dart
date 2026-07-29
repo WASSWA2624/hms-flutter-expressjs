@@ -491,6 +491,10 @@ void main() {
           isTrue,
         );
         expect(
+          canWriteReceptionActiveVisitsNested(clinicalWriter),
+          isTrue,
+        );
+        expect(
           ReceptionActiveVisitsAtomPermissions.nestedWrite.isAllowed(
             patientWriter,
           ),
@@ -500,8 +504,29 @@ void main() {
           ReceptionActiveVisitsAtomPermissions.nestedWrite.isAllowed(neither),
           isFalse,
         );
+        expect(canWriteReceptionActiveVisitsNested(neither), isFalse);
       },
     );
+
+    test('next-action column helper tracks tab read ∪', () {
+      final AppAccessPolicy reader = _readerPolicy();
+      final AppAccessPolicy denied = _policy(
+        permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+        roles: const <String>['RECEPTIONIST'],
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'scheduling-queue',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(receptionActiveVisitsShowsNextActionColumn(reader), isTrue);
+      expect(receptionActiveVisitsShowsNextActionColumn(denied), isFalse);
+    });
 
     test(
       '∪ allowance: source tab read accepts clinical:read without patient:read',
@@ -715,6 +740,47 @@ void main() {
       expect(router.state.uri.queryParameters['section'], 'active');
       expect(find.textContaining('Active visits'), findsWidgets);
     });
+
+    testWidgets(
+      'integration: section=active-visits alias selects Active visits',
+      (WidgetTester tester) async {
+        await _pumpActiveVisitsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          initialLocation: '/reception?section=active-visits',
+        );
+
+        expect(find.textContaining('Active visits'), findsWidgets);
+        expect(find.text('Alex Active'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'subscription strip UI: without scheduling-queue Active visits collapses',
+      (WidgetTester tester) async {
+        await _pumpActiveVisitsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(find.textContaining('Active visits'), findsNothing);
+        expect(find.text('Alex Active'), findsNothing);
+        expect(find.text('Register patient'), findsNothing);
+      },
+    );
 
     testWidgets(
       'denied Active visits deep link collapses tab; flowId does not open hub',

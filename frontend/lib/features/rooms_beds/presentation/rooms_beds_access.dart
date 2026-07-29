@@ -160,10 +160,7 @@ AccessRequirement roomsBedsSectionTabRequirement(RoomsBedsSection section) {
   };
 }
 
-bool canViewRoomsBedsSection(
-  AppAccessPolicy policy,
-  RoomsBedsSection section,
-) {
+bool canViewRoomsBedsSection(AppAccessPolicy policy, RoomsBedsSection section) {
   return roomsBedsSectionTabRequirement(section).isAllowed(policy);
 }
 
@@ -217,8 +214,7 @@ RoomsBedsSection? roomsBedsFallbackSection(AppAccessPolicy policy) {
 /// to ∪ clinical\|operations write.
 abstract final class RoomsBedsAllBedsAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
@@ -231,8 +227,7 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
       roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement nextAction =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;
@@ -289,8 +284,7 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
 /// Never show admin create to clinical-read-only.
 abstract final class RoomsBedsAvailableAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
@@ -366,8 +360,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
 /// `operations:write` + module.
 abstract final class RoomsBedsOccupiedAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
@@ -381,8 +374,7 @@ abstract final class RoomsBedsOccupiedAtomPermissions {
       roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement nextAction =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;
@@ -446,8 +438,7 @@ abstract final class RoomsBedsOccupiedAtomPermissions {
 /// `operations:write` + module. Never show admin create to clinical-read-only.
 abstract final class RoomsBedsTurnoverAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
@@ -460,8 +451,7 @@ abstract final class RoomsBedsTurnoverAtomPermissions {
   static const AccessRequirement validation = roomsBedsAdminRequirement;
   static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement nextAction =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;
@@ -533,8 +523,7 @@ abstract final class RoomsBedsTurnoverAtomPermissions {
 /// `operations:write` + module.
 abstract final class RoomsBedsOutOfServiceAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
@@ -547,8 +536,7 @@ abstract final class RoomsBedsOutOfServiceAtomPermissions {
   static const AccessRequirement validation = roomsBedsAdminRequirement;
   static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement nextAction =
-      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;

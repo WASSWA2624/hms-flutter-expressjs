@@ -125,15 +125,11 @@ AppAccessPolicy _policy({
 }
 
 AppAccessPolicy _readerPolicy() {
-  return _policy(
-    permissions: <AppPermission>{AppPermissions.clinicalRead},
-  );
+  return _policy(permissions: <AppPermission>{AppPermissions.clinicalRead});
 }
 
 AppAccessPolicy _operationsReaderPolicy() {
-  return _policy(
-    permissions: <AppPermission>{AppPermissions.operationsRead},
-  );
+  return _policy(permissions: <AppPermission>{AppPermissions.operationsRead});
 }
 
 AppAccessPolicy _facilityAdminPolicy() {
@@ -204,9 +200,7 @@ void _stubRepository(_MockRoomsBedsRepository repository) {
       <BedAssignmentRecord>[],
     );
   });
-  when(
-    () => repository.loadAdmissionContext(any()),
-  ).thenAnswer(
+  when(() => repository.loadAdmissionContext(any())).thenAnswer(
     (_) async => const Result<BedAdmissionContext>.success(
       BedAdmissionContext(admissionId: 'ADM-100'),
     ),
@@ -232,16 +226,14 @@ void _stubRepository(_MockRoomsBedsRepository repository) {
 Finder _toolbarPrimary(String label) => find.descendant(
   of: find.byType(AppTabStrip),
   matching: find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTabToolbarPrimary && widget.label == label,
+    (Widget widget) => widget is AppTabToolbarPrimary && widget.label == label,
   ),
 );
 
 Finder _toolbarAction(String label) => find.descendant(
   of: find.byType(AppTabStrip),
   matching: find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTabToolbarAction && widget.label == label,
+    (Widget widget) => widget is AppTabToolbarAction && widget.label == label,
   ),
 );
 
@@ -389,7 +381,10 @@ void main() {
   });
 
   test('read ∪ allowance: clinical or operations or facility admin', () {
-    expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_readerPolicy()), isTrue);
+    expect(
+      RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_readerPolicy()),
+      isTrue,
+    );
     expect(
       RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_operationsReaderPolicy()),
       isTrue,
@@ -410,7 +405,10 @@ void main() {
 
   test('admin ∪: unit:manage alone (with modules) unlocks create', () {
     final AppAccessPolicy unitManager = _unitManageOnlyPolicy();
-    expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(unitManager), isTrue);
+    expect(
+      RoomsBedsAllBedsAtomPermissions.create.isAllowed(unitManager),
+      isTrue,
+    );
     expect(canAdminRoomsBeds(unitManager), isTrue);
     expect(
       RoomsBedsAllBedsAtomPermissions.assign.isAllowed(unitManager),
@@ -418,24 +416,36 @@ void main() {
     );
   });
 
-  test('subscription strip: facility admin without inpatient module denied', () {
-    final AppAccessPolicy stripped = _adminWithoutModulePolicy();
-    expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(stripped), isFalse);
-    expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(stripped), isFalse);
-    expect(canAdminRoomsBeds(stripped), isFalse);
-  });
+  test(
+    'subscription strip: facility admin without inpatient module denied',
+    () {
+      final AppAccessPolicy stripped = _adminWithoutModulePolicy();
+      expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(stripped), isFalse);
+      expect(
+        RoomsBedsAllBedsAtomPermissions.create.isAllowed(stripped),
+        isFalse,
+      );
+      expect(canAdminRoomsBeds(stripped), isFalse);
+    },
+  );
 
   test('occupancy write ∪: clinical:write or operations:write', () {
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(_occupancyWriterPolicy()),
+      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(
+        _occupancyWriterPolicy(),
+      ),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(_operationsWriterPolicy()),
+      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(
+        _operationsWriterPolicy(),
+      ),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.create.isAllowed(_occupancyWriterPolicy()),
+      RoomsBedsAllBedsAtomPermissions.create.isAllowed(
+        _occupancyWriterPolicy(),
+      ),
       isFalse,
     );
   });
@@ -547,19 +557,18 @@ void main() {
     },
   );
 
-  testWidgets(
-    'operations:write ∪ also unlocks Assign without clinical:write',
-    (WidgetTester tester) async {
-      await _pumpAllBedsTab(
-        tester,
-        repository: repository,
-        accessPolicy: _operationsWriterPolicy(),
-      );
+  testWidgets('operations:write ∪ also unlocks Assign without clinical:write', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAllBedsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _operationsWriterPolicy(),
+    );
 
-      expect(find.text('Assign bed'), findsWidgets);
-      expect(_toolbarPrimary('Create room'), findsNothing);
-    },
-  );
+    expect(find.text('Assign bed'), findsWidgets);
+    expect(_toolbarPrimary('Create room'), findsNothing);
+  });
 
   testWidgets('authorized assign dialog mounts and submit syncs list', (
     WidgetTester tester,
@@ -591,7 +600,8 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(
-      () => repository.assignBed(admissionId: 'ADM-200', bedId: 'BED-AVAILABLE'),
+      () =>
+          repository.assignBed(admissionId: 'ADM-200', bedId: 'BED-AVAILABLE'),
     ).called(1);
     // Occupancy mutations sync board state in-memory (no second loadSetup).
     expect(find.byType(AppDialog), findsNothing);
@@ -599,20 +609,21 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('mobile viewport: read chrome present, create absent for reader', (
-    WidgetTester tester,
-  ) async {
-    await _pumpAllBedsTab(
-      tester,
-      repository: repository,
-      accessPolicy: _readerPolicy(),
-      physicalSize: const Size(390, 844),
-    );
+  testWidgets(
+    'mobile viewport: read chrome present, create absent for reader',
+    (WidgetTester tester) async {
+      await _pumpAllBedsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readerPolicy(),
+        physicalSize: const Size(390, 844),
+      );
 
-    expect(find.text('Bed A1'), findsWidgets);
-    expect(_toolbarPrimary('Create room'), findsNothing);
-    expect(find.bySemanticsLabel('Assign bed'), findsNothing);
-  });
+      expect(find.text('Bed A1'), findsWidgets);
+      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(find.bySemanticsLabel('Assign bed'), findsNothing);
+    },
+  );
 
   testWidgets('desktop dark theme: admin create remains visible', (
     WidgetTester tester,

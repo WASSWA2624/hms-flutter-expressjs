@@ -168,26 +168,24 @@ void _stubRepository(_MockRoomsBedsRepository repository) {
       <BedAssignmentRecord>[],
     );
   });
-  when(
-    () => repository.loadAdmissionContext(any()),
-  ).thenAnswer((_) async => const Result<BedAdmissionContext>.success(
-    BedAdmissionContext(admissionId: 'ADM-100'),
-  ));
+  when(() => repository.loadAdmissionContext(any())).thenAnswer(
+    (_) async => const Result<BedAdmissionContext>.success(
+      BedAdmissionContext(admissionId: 'ADM-100'),
+    ),
+  );
 }
 
 Finder _toolbarPrimary(String label) => find.descendant(
   of: find.byType(AppTabStrip),
   matching: find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTabToolbarPrimary && widget.label == label,
+    (Widget widget) => widget is AppTabToolbarPrimary && widget.label == label,
   ),
 );
 
 Finder _toolbarAction(String label) => find.descendant(
   of: find.byType(AppTabStrip),
   matching: find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is AppTabToolbarAction && widget.label == label,
+    (Widget widget) => widget is AppTabToolbarAction && widget.label == label,
   ),
 );
 

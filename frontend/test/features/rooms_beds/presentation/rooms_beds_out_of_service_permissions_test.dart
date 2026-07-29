@@ -723,6 +723,7 @@ void main() {
   testWidgets('empty out-of-service list state remains for authorized reader', (
     WidgetTester tester,
   ) async {
+    _stubRepository(repository);
     when(
       () => repository.loadSetup(facilityId: any(named: 'facilityId')),
     ).thenAnswer(
@@ -735,6 +736,7 @@ void main() {
       tester,
       repository: repository,
       accessPolicy: _readerPolicy(),
+      stubRepository: false,
     );
 
     expect(find.textContaining('No beds'), findsOneWidget);
