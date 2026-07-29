@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -17,6 +18,7 @@ import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/physiotherapy/data/repositories/physiotherapy_repository_impl.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/repositories/physiotherapy_repository.dart';
+import 'package:hosspi_hms/features/physiotherapy/presentation/controllers/physiotherapy_workspace_controller.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/physiotherapy_access.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/widgets/physiotherapy_workspace_widgets.dart';
@@ -34,11 +36,14 @@ class _MockPhysiotherapyRepository extends Mock
 const TherapyWorkItem _completedItem = TherapyWorkItem(
   id: 'TH-DONE',
   encounterId: 'ENC-DONE',
+  encounterPublicId: 'ENC-DONE-PUB',
   patientId: 'PAT-DONE',
+  patientPublicId: 'PAT-DONE-PUB',
   patientDisplayName: 'Cora Completed',
   status: 'COMPLETED',
   plan: 'Stretch protocol',
-  billingStatus: 'UNAVAILABLE',
+  billingStatus: 'AUTHORIZED',
+  therapistName: 'Dr. Therapist',
 );
 
 const TherapyWorkItem _completedAfterUpdate = TherapyWorkItem(
@@ -80,10 +85,16 @@ void _stubWorkItems(
   _MockPhysiotherapyRepository repository, {
   List<TherapyWorkItem> items = const <TherapyWorkItem>[_completedItem],
   PhysiotherapyDetail? detailOverride,
+  bool failLists = false,
 }) {
   when(() => repository.listWorkItems(any())).thenAnswer((
     Invocation invocation,
   ) async {
+    if (failLists) {
+      return const Result<AppPage<TherapyWorkItem>>.failure(
+        AppFailure.network(),
+      );
+    }
     final PhysiotherapyWorklistQuery query =
         invocation.positionalArguments.single as PhysiotherapyWorklistQuery;
     final List<TherapyWorkItem> filtered = items
@@ -151,10 +162,11 @@ Future<void> _pumpCompletedTab(
   ThemeMode themeMode = ThemeMode.light,
   List<TherapyWorkItem> items = const <TherapyWorkItem>[_completedItem],
   String initialLocation = '/physiotherapy?section=completed',
+  bool failLists = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkItems(repository, items: items);
+  _stubWorkItems(repository, items: items, failLists: failLists);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -610,6 +622,109 @@ void main() {
       );
       expect(canViewPhysiotherapyCompleted(noModule), isFalse);
     });
+
+    test('∩ denial: patient:write alone does not unlock therapy mutations', () {
+      final AppAccessPolicy patientWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.tab.isAllowed(patientWriter),
+        isTrue,
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.write.isAllowed(patientWriter),
+        isFalse,
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.updatePlan.isAllowed(
+          patientWriter,
+        ),
+        isFalse,
+      );
+      expect(canWritePhysiotherapy(patientWriter), isFalse);
+    });
+
+    test('ABAC session still evaluates Completed when facility is present', () {
+      final AppAccessPolicy withFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+        },
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.tab.isAllowed(withFacility),
+        isTrue,
+      );
+      expect(
+        canViewPhysiotherapyTab(
+          withFacility,
+          PhysiotherapyQueueScope.completed,
+        ),
+        isTrue,
+      );
+    });
+
+    test('nested cross-module write is n/a; billing is only nested read ∩', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+        },
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.billingChip.isAllowed(reader),
+        isFalse,
+      );
+
+      final AppAccessPolicy withBilling = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.billingRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: billingPaymentsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.billingChip.isAllowed(
+          withBilling,
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('Completed UI permission enforcement', () {
@@ -960,5 +1075,143 @@ void main() {
       expect(find.text('Cora Completed'), findsOneWidget);
       expect(find.text('Print instructions'), findsWidgets);
     });
+
+    testWidgets('billing chip absent without billing:read; present with ∩', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+      await tester.tap(find.text('Cora Completed'));
+      await _pumpFrames(tester);
+
+      final AppLocalizations readerL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder readerShowMore = find.text(
+        readerL10n.commonShowMoreActionLabel,
+      );
+      if (readerShowMore.evaluate().isNotEmpty) {
+        await tester.tap(readerShowMore.first);
+        await _pumpFrames(tester);
+      }
+      expect(
+        find.textContaining(readerL10n.physiotherapyBillingAuthorizationLabel),
+        findsNothing,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      final AppAccessPolicy withBilling = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.billingRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: billingPaymentsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: withBilling,
+      );
+      expect(
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
+        isTrue,
+      );
+
+      await tester.tap(find.text('Cora Completed'));
+      await _pumpFrames(tester);
+      final AppLocalizations billingL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder billingShowMore = find.text(
+        billingL10n.commonShowMoreActionLabel,
+      );
+      if (billingShowMore.evaluate().isNotEmpty) {
+        await tester.tap(billingShowMore.first);
+        await _pumpFrames(tester);
+      }
+      expect(
+        find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('error/retry remains observable for authorized readers', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        failLists: true,
+      );
+
+      expect(
+        find.byType(AsyncStateScaffold<PhysiotherapyWorkspaceState>),
+        findsOneWidget,
+      );
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets(
+      'authorized validation: Update plan form rejects empty plan',
+      (WidgetTester tester) async {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(find.text('Cora Completed'));
+        await _pumpFrames(tester);
+        await tester.tap(find.text('Update plan'));
+        await _pumpFrames(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+        await tester.enterText(find.byType(TextFormField).first, '');
+        await tester.tap(find.text('Save'));
+        await _pumpFrames(tester);
+
+        verifyNever(
+          () => repository.updatePlan(
+            item: any(named: 'item'),
+            plan: any(named: 'plan'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+      },
+    );
   });
 }
