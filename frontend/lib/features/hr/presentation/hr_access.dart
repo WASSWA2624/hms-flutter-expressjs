@@ -33,32 +33,24 @@ const AccessRequirement hrWriteRequirement = AccessRequirement(
 /// Alias — workspace write ∩ (leave approve / request / reject).
 const AccessRequirement hrWorkspaceWriteRequirement = hrWriteRequirement;
 
-/// Roster / shift create & update (source ∪ `hr:write` | `roster:write`).
+/// Roster / shift create & update (matrix ∩ `roster:write` + module).
 ///
-/// screens/hr.md and staff-detail roster actions keep this union.
+/// Shifts tab schedule templates / override / preview-generate and staff
+/// assign/swap use this helper. Template delete uses [hrWriteRequirement].
 const AccessRequirement hrRosterWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterWrite,
-  ],
+  allPermissions: <AppPermission>[AppPermissions.rosterWrite],
   activeModules: <String>[hrRostersModule],
 );
 
-/// Swap approve/reject (source ∪ `hr:write` | `roster:approve`).
+/// Swap approve/reject (matrix nested key ∩ `roster:approve` + module).
 const AccessRequirement hrRosterApproveRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterApprove,
-  ],
+  allPermissions: <AppPermission>[AppPermissions.rosterApprove],
   activeModules: <String>[hrRostersModule],
 );
 
-/// Roster publish (source ∪ `hr:write` | `roster:publish`).
+/// Roster publish (matrix nested key ∩ `roster:publish` + module).
 const AccessRequirement hrRosterPublishRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterPublish,
-  ],
+  allPermissions: <AppPermission>[AppPermissions.rosterPublish],
   activeModules: <String>[hrRostersModule],
 );
 
@@ -383,6 +375,26 @@ abstract final class HrShiftsAtomPermissions {
 }
 
 /// Payroll drafts tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Payroll drafts tab | navigate | read ∩ `hr:read` |
+/// | Tab-strip primary | — | _(none — Run payroll lives on staff detail)_ |
+/// | HR activity (secondary) | progressive disclosure | read ∩ |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | process ∩ / read ∩ |
+/// | Row select → work-item detail | read | read ∩ |
+/// | Next action Process payroll | approve | source [hrPayrollRequirement] |
+/// | Detail Preview payroll | read | preview ∩ `hr:read` |
+/// | Detail Process payroll | approve | source [hrPayrollRequirement] |
+/// | Nested preview dialog | read | preview ∩ |
+/// | Nested process dialog | approve | source [hrPayrollRequirement] |
+/// | Nested cross-module write (matrix ∪) | approve | [nestedWriteMatrix] — UI uses source ∩ |
+/// | Route entry (deep link) | navigate | catalog ∩ `hr:read` (AppRoutes ∪ noted) |
+///
+/// Source keeps process as `hr:write` ∩ `financial:approve` rather than matrix
+/// nested ∪ alone — note mapping in tests. Preview matches backend `hr:read`.
 abstract final class HrPayrollDraftsAtomPermissions {
   static const AccessRequirement tab = hrReadRequirement;
   static const AccessRequirement listChrome = hrReadRequirement;
@@ -417,7 +429,7 @@ abstract final class HrPayrollDraftsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Manage users and roles tab | navigate | read ∩ `hr:read` + ∪ admin |
+/// | Manage users and roles tab | navigate | read ∪ `hr:read` \| admin |
 /// | Panel toggle (Staff / Roles / Permissions) | progressive-disclosure | read |
 /// | Search / filters / columns / pagination | read chrome | read |
 /// | Empty / error / retry / tenant-required | read chrome | read |

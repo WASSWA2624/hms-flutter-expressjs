@@ -547,7 +547,8 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.text('run-1'), findsWidgets);
+    expect(find.textContaining('run-1'), findsWidgets);
+    expect(find.textContaining('2026-07'), findsWidgets);
     expect(find.text('Process payroll'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });

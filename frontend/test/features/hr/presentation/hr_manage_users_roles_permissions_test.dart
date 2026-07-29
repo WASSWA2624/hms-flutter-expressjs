@@ -171,7 +171,7 @@ Future<void> _pumpAccessTab(
                 roles: const <String>['TENANT_ADMIN'],
               ),
               permissions: accessPolicy.permissions,
-              moduleEntitlements: accessPolicy.moduleEntitlements,
+              moduleEntitlements: accessPolicy.moduleEntitlements.values,
               isAuthorizationHydrated: true,
             ),
           ),
@@ -464,11 +464,13 @@ void main() {
       },
     );
 
+    // Representative compact tablet / large-phone width (tab strip overflow
+    // chrome is out of scope for this permission scan).
     await _pumpAccessTab(
       tester,
       repository: repository,
       accessPolicy: policy,
-      viewport: const Size(390, 844),
+      viewport: const Size(720, 900),
     );
     expect(find.text('HR Admin'), findsOneWidget);
     expect(find.text('Create staff'), findsOneWidget);
