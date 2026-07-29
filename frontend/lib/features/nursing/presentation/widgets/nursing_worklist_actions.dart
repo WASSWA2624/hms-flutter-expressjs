@@ -4,7 +4,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
-import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_escalation_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';

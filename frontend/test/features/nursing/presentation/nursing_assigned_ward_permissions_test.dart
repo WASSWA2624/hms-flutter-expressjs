@@ -54,6 +54,7 @@ const NursingPatientSummary _medDuePatient = NursingPatientSummary(
   bedDisplayLabel: 'Bed 2',
   hasActiveBed: true,
   medicationDueCount: 2,
+  taskTypeCode: 'MEDICATION_DUE',
 );
 
 AppAccessPolicy _policy({
@@ -175,7 +176,6 @@ void _stubNursingRepository(
     _routinePatient,
     _medDuePatient,
   ],
-  NursingPatientDetail? detailOverride,
 }) {
   when(() => repository.listWardPatients(any())).thenAnswer((
     Invocation invocation,
@@ -211,9 +211,6 @@ void _stubNursingRepository(
   when(() => repository.loadPatientDetail(any())).thenAnswer((
     Invocation invocation,
   ) async {
-    if (detailOverride != null) {
-      return Result<NursingPatientDetail>.success(detailOverride);
-    }
     final NursingPatientSummary summary =
         invocation.positionalArguments.single as NursingPatientSummary;
     return Result<NursingPatientDetail>.success(
@@ -223,7 +220,7 @@ void _stubNursingRepository(
             ? const <MedicationReminder>[
                 MedicationReminder(
                   id: 'med-1',
-                  medicationLabel: 'Paracetamol',
+                  displayTitle: 'Paracetamol',
                   status: 'DUE',
                 ),
               ]
@@ -246,7 +243,7 @@ void _stubNursingRepository(
           NursingVitalSign(
             id: 'vital-1',
             vitalType: 'BP',
-            value: '120/80',
+            displayValue: '120/80',
           ),
         ],
       ),
@@ -254,13 +251,12 @@ void _stubNursingRepository(
   });
 }
 
-Future<void> _pumpAllTab(
+Future<void> _pumpAssignedWard(
   WidgetTester tester, {
   required _MockNursingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/nursing',
   List<NursingPatientSummary> board = const <NursingPatientSummary>[
     _routinePatient,
     _medDuePatient,
@@ -275,6 +271,7 @@ Future<void> _pumpAllTab(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
+  const String initialLocation = '/nursing?scope=assigned-ward';
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
     routes: <RouteBase>[
@@ -335,17 +332,20 @@ void main() {
     repository = _MockNursingRepository();
   });
 
-  group('NursingAllAtomPermissions helpers', () {
+  group('NursingAssignedWardAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
         identical(
-          NursingAllAtomPermissions.tab,
+          NursingAssignedWardAtomPermissions.tab,
           nursingWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
-        identical(NursingAllAtomPermissions.write, nursingWriteRequirement),
+        identical(
+          NursingAssignedWardAtomPermissions.write,
+          nursingWriteRequirement,
+        ),
         isTrue,
       );
       expect(
@@ -357,36 +357,36 @@ void main() {
       );
       expect(
         identical(
-          NursingAllAtomPermissions.administerMedication,
+          NursingAssignedWardAtomPermissions.administerMedication,
           nursingMedicationAdministerRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          NursingAllAtomPermissions.medicationsPanel,
+          NursingAssignedWardAtomPermissions.medicationsPanel,
           nursingMedicationsPanelRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          NursingAllAtomPermissions.shiftContext,
+          NursingAssignedWardAtomPermissions.shiftContext,
           nursingShiftContextRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          NursingAllAtomPermissions.routeEntry,
+          NursingAssignedWardAtomPermissions.routeEntry,
           RouteAccessCatalog.nursingEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          nursingBoardTabRequirement(NursingQueueScope.all),
-          NursingAllAtomPermissions.tab,
+          nursingBoardTabRequirement(NursingQueueScope.assignedWard),
+          NursingAssignedWardAtomPermissions.tab,
         ),
         isTrue,
       );
@@ -396,21 +396,27 @@ void main() {
       );
     });
 
-    test('mapping note: matrix ∩ clinical:write via clinicalWrite; source keep ∪ write', () {
-      expect(
-        NursingAllAtomPermissions.clinicalWrite.allPermissions,
-        <AppPermission>[AppPermissions.clinicalWrite],
-      );
-      expect(NursingAllAtomPermissions.write.anyPermissions, isNotEmpty);
-      expect(
-        NursingAllAtomPermissions.write.anyPermissions,
-        contains(AppPermissions.clinicalWrite),
-      );
-      expect(
-        NursingAllAtomPermissions.write.anyPermissions,
-        contains(AppPermissions.lastOfficeWrite),
-      );
-    });
+    test(
+      'mapping note: matrix ∩ clinical:write via clinicalWrite; source keep ∪ write',
+      () {
+        expect(
+          NursingAssignedWardAtomPermissions.clinicalWrite.allPermissions,
+          <AppPermission>[AppPermissions.clinicalWrite],
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.write.anyPermissions,
+          isNotEmpty,
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.write.anyPermissions,
+          contains(AppPermissions.clinicalWrite),
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.write.anyPermissions,
+          contains(AppPermissions.lastOfficeWrite),
+        );
+      },
+    );
 
     test('∩ denial: pharmacy:read alone does not grant administer', () {
       final AppAccessPolicy pharmacyOnly = _policy(
@@ -419,39 +425,58 @@ void main() {
           AppPermissions.pharmacyRead,
         },
       );
-      expect(NursingAllAtomPermissions.tab.isAllowed(pharmacyOnly), isTrue);
       expect(
-        NursingAllAtomPermissions.medicationsPanel.isAllowed(pharmacyOnly),
+        NursingAssignedWardAtomPermissions.tab.isAllowed(pharmacyOnly),
         isTrue,
       );
       expect(
-        NursingAllAtomPermissions.administerMedication.isAllowed(pharmacyOnly),
+        NursingAssignedWardAtomPermissions.medicationsPanel.isAllowed(
+          pharmacyOnly,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingAssignedWardAtomPermissions.administerMedication.isAllowed(
+          pharmacyOnly,
+        ),
         isFalse,
       );
       expect(canWriteNursing(pharmacyOnly), isFalse);
     });
 
-    test('∪ allowance: clinical:read alone grants All-tab read chrome', () {
+    test('∪ allowance: clinical:read alone grants Assigned ward read chrome', () {
       final AppAccessPolicy clinicalOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       final AppAccessPolicy patientOnly = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
-      expect(NursingAllAtomPermissions.tab.isAllowed(clinicalOnly), isTrue);
-      expect(NursingAllAtomPermissions.tab.isAllowed(patientOnly), isTrue);
-      expect(canReadNursing(clinicalOnly), isTrue);
-      expect(canReadNursing(patientOnly), isTrue);
+      expect(
+        NursingAssignedWardAtomPermissions.tab.isAllowed(clinicalOnly),
+        isTrue,
+      );
+      expect(
+        NursingAssignedWardAtomPermissions.tab.isAllowed(patientOnly),
+        isTrue,
+      );
+      expect(canViewNursingTab(clinicalOnly, NursingQueueScope.assignedWard), isTrue);
+      expect(canViewNursingTab(patientOnly, NursingQueueScope.assignedWard), isTrue);
     });
 
-    test('last_office:read alone does not unlock write or All-tab chrome', () {
+    test('last_office:read alone does not unlock write or tab chrome', () {
       final AppAccessPolicy lastOfficeRead = _policy(
         permissions: <AppPermission>{AppPermissions.lastOfficeRead},
         roles: const <String>['NURSE'],
       );
       expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
-      expect(NursingAllAtomPermissions.tab.isAllowed(lastOfficeRead), isFalse);
-      expect(NursingAllAtomPermissions.write.isAllowed(lastOfficeRead), isFalse);
+      expect(
+        NursingAssignedWardAtomPermissions.tab.isAllowed(lastOfficeRead),
+        isFalse,
+      );
+      expect(
+        NursingAssignedWardAtomPermissions.write.isAllowed(lastOfficeRead),
+        isFalse,
+      );
       expect(canWriteNursing(lastOfficeRead), isFalse);
     });
 
@@ -473,16 +498,19 @@ void main() {
           ),
         ],
       );
-      expect(NursingAllAtomPermissions.tab.isAllowed(noModule), isFalse);
-      expect(NursingAllAtomPermissions.write.isAllowed(noModule), isFalse);
+      expect(NursingAssignedWardAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(
+        NursingAssignedWardAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
     });
   });
 
-  group('Nursing All tab UI gates', () {
+  group('Nursing Assigned ward tab UI gates', () {
     testWidgets('read-only: worklist present; next-action writes absent', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -492,13 +520,13 @@ void main() {
       expect(find.byTooltip('Record vitals'), findsNothing);
       expect(find.byTooltip('Administer medication'), findsNothing);
       expect(find.byTooltip('Shift context'), findsNothing);
-      expect(find.textContaining('All'), findsWidgets);
+      expect(find.textContaining('Assigned'), findsWidgets);
     });
 
-    testWidgets('writer: Record vitals next-action present on All', (
+    testWidgets('writer: Record vitals next-action present on Assigned ward', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
@@ -511,7 +539,7 @@ void main() {
     testWidgets(
       'medication write ∩: administer next-action needs pharmacy:read',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpAssignedWard(
           tester,
           repository: repository,
           accessPolicy: _writerPolicy(),
@@ -519,7 +547,7 @@ void main() {
         );
         expect(find.byTooltip('Administer medication'), findsNothing);
 
-        await _pumpAllTab(
+        await _pumpAssignedWard(
           tester,
           repository: repository,
           accessPolicy: _medicationWriterPolicy(),
@@ -532,7 +560,7 @@ void main() {
     testWidgets('shift context mounts only with roster/hr read + module', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _shiftContextPolicy(),
@@ -543,7 +571,7 @@ void main() {
     testWidgets('detail: read-only hides write actions and meds panel', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -561,10 +589,10 @@ void main() {
       expect(find.text('Paracetamol'), findsNothing);
     });
 
-    testWidgets('detail: medication writer shows meds panel and administer', (
+    testWidgets('detail: medication writer shows meds panel and add note', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _medicationWriterPolicy(),
@@ -576,14 +604,13 @@ void main() {
 
       expect(find.text('Medications'), findsOneWidget);
       expect(find.text('Paracetamol'), findsOneWidget);
-      // Next-action omitted from detail; complementary administer may show.
       expect(find.text('Add note'), findsOneWidget);
     });
 
-    testWidgets('authorized empty + loading chrome remain observable', (
+    testWidgets('authorized empty chrome remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -597,7 +624,7 @@ void main() {
     testWidgets('mobile viewport: read-only hides compact next-action', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -611,7 +638,7 @@ void main() {
     testWidgets('desktop dark theme: writer next-action still mounts', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
@@ -622,10 +649,10 @@ void main() {
       expect(find.text('Routine Patient'), findsOneWidget);
     });
 
-    testWidgets('post-mutation: vitals dialog syncs via repository', (
+    testWidgets('post-mutation: vitals dialog opens for authorized write', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpAssignedWard(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
@@ -635,7 +662,6 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      // Dialog opened for authorized write path (validation / success chrome).
       expect(find.textContaining('Vital'), findsWidgets);
     });
   });

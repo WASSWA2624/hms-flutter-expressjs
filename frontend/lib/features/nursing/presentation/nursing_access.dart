@@ -85,6 +85,19 @@ const AccessRequirement nursingMedicationsPanelRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.pharmacyRead],
 );
 
+/// Matrix medication-due View ∩: `clinical:read` + `pharmacy:read` + module.
+///
+/// Tab strip keeps source workspace ∪ ([nursingWorkspaceReadRequirement]);
+/// this intersection gates med-due data chrome when both keys are required.
+const AccessRequirement nursingMedicationDueReadIntersectionRequirement =
+    AccessRequirement(
+      allPermissions: <AppPermission>[
+        AppPermissions.clinicalRead,
+        AppPermissions.pharmacyRead,
+      ],
+      activeModules: <String>[nursingInpatientBedModule],
+    );
+
 /// Administer medication — `pharmacy:read` ∩ (`clinical:write` | `pharmacy:write`)
 /// when both apply (source roles + nursing module).
 const AccessRequirement nursingMedicationAdministerRequirement =
@@ -176,6 +189,7 @@ AccessRequirement nursingBoardTabRequirement(NursingQueueScope scope) {
   return switch (scope) {
     NursingQueueScope.all => NursingAllAtomPermissions.tab,
     NursingQueueScope.assignedWard => NursingAssignedWardAtomPermissions.tab,
+    NursingQueueScope.medicationDue => NursingMedicationDueAtomPermissions.tab,
     NursingQueueScope.handoverPending =>
       NursingHandoverPendingAtomPermissions.tab,
     NursingQueueScope.transferPending =>
@@ -188,6 +202,10 @@ AccessRequirement nursingBoardTabRequirement(NursingQueueScope scope) {
 
 bool canViewNursingTab(AppAccessPolicy policy, NursingQueueScope scope) {
   return nursingBoardTabRequirement(scope).isAllowed(policy);
+}
+
+bool canViewNursingMedicationDue(AppAccessPolicy policy) {
+  return NursingMedicationDueAtomPermissions.tab.isAllowed(policy);
 }
 
 bool canViewNursingHandoverPending(AppAccessPolicy policy) {
@@ -495,7 +513,29 @@ abstract final class NursingHandoverPendingAtomPermissions {
 /// [nursingClinicalWriteRequirement]. Source inventory
 /// (`screens/nursing.md`) documents broader ∪ write keys for shared nursing
 /// chrome; this tab's stage write atoms prefer the matrix ∩. `last_office:read`
-/// alone must not unlock writes.
+/// alone must not unlock writes. Nested cross-module matrix rows are _(n/a)_.
+/// Medication panel uses ∩ `pharmacy:read`; administer uses medication write ∩.
+/// Shift context uses roster/ops read ∩ `hr-rosters`. Complementary detail
+/// writes (note / vitals / …) keep source [nursingWriteRequirement] ∪.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Transfer pending tab / count badge | navigate | read ∪ `clinical:read` \| `patient:read` |
+/// | Shift context | progressive disclosure | shift ∩ roster/ops + `hr-rosters` |
+/// | Search / Clear / Filters / Settings / columns | read chrome | read ∪ |
+/// | Transfer status column / filter | read | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical:write ∩ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Acknowledge transfer | update | clinical:write ∩ |
+/// | Detail complementary writes (note / vitals / …) | create / update | write source ∪ |
+/// | Detail Acknowledge transfer | update | clinical:write ∩ |
+/// | Detail Administer medication | update | medication write ∩ |
+/// | Detail medications panel | nested read | pharmacy:read ∩ |
+/// | Detail Open ICU | navigate | always when ICU active |
+/// | Detail Print summary | export | write source ∪ |
+/// | Transfer dialog | update | clinical:write ∩ |
+/// | Route entry (deep link) | navigate | catalog ∩ `nursing:read` ([routeEntry]) |
 abstract final class NursingTransferPendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;

@@ -18,7 +18,6 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -613,7 +612,9 @@ void main() {
       );
       expect(find.text(l10n.nursingMedicationsTitle), findsOneWidget);
       expect(find.text(l10n.dischargeBillingSectionTitle), findsOneWidget);
-      expect(find.text(l10n.nursingActionDischargeClearance), findsNothing);
+      // Checklist still exposes discharge clearance when write is allowed;
+      // Quick Actions omits the row next-action duplicate.
+      expect(find.text(l10n.nursingActionDischargeClearance), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
