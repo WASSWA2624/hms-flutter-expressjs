@@ -295,6 +295,14 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalAllAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalAllAtomPermissions.rowSelect,
         same(clinicalWorkspaceReadRequirement),
       );
@@ -309,6 +317,14 @@ void main() {
       expect(
         ClinicalAllAtomPermissions.requestLab,
         same(clinicalLabOrderWriteRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.requestRadiology,
+        same(clinicalRadiologyOrderWriteRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.prescribe,
+        same(clinicalPharmacyOrderWriteRequirement),
       );
       expect(
         ClinicalAllAtomPermissions.requestAdmission,
@@ -335,9 +351,16 @@ void main() {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      expect(canViewClinicalAll(writeOnly), isFalse);
       expect(ClinicalAllAtomPermissions.tab.isAllowed(writeOnly), isFalse);
       expect(ClinicalAllAtomPermissions.write.isAllowed(writeOnly), isTrue);
       expect(ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly), isTrue);
+
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(canViewClinicalAll(reader), isTrue);
+      expect(ClinicalAllAtomPermissions.write.isAllowed(reader), isFalse);
     });
 
     test('∪ allowance: lab:write + modules satisfies nested lab order write', () {
@@ -365,7 +388,7 @@ void main() {
       );
     });
 
-    test('∪ allowance: pharmacy:write / operations:write nested writes', () {
+    test('∪ allowance: pharmacy / radiology / operations nested writes', () {
       final AppAccessPolicy pharmacyWriter = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyWrite},
         modules: const <AppModuleEntitlement>[
@@ -385,6 +408,28 @@ void main() {
       );
       expect(
         ClinicalAllAtomPermissions.addNote.isAllowed(pharmacyWriter),
+        isFalse,
+      );
+
+      final AppAccessPolicy radiologyWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.radiologyWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'radiology-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.requestRadiology.isAllowed(radiologyWriter),
+        isTrue,
+      );
+      expect(
+        ClinicalAllAtomPermissions.addNote.isAllowed(radiologyWriter),
         isFalse,
       );
 
@@ -667,6 +712,7 @@ void main() {
         ClinicalAllAtomPermissions.requestAdmission.isAllowed(opsOnly),
         isTrue,
       );
+      expect(ClinicalAllAtomPermissions.addNote.isAllowed(opsOnly), isFalse);
 
       await _pumpAllTab(
         tester,
@@ -680,6 +726,51 @@ void main() {
       expect(find.text('Request admission'), findsWidgets);
       expect(find.text('Add clinical note'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
+      expect(find.text('Print summary'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: radiology:write shows Request radiology',
+    (WidgetTester tester) async {
+      final AppAccessPolicy radiologyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.radiologyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'radiology-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.requestRadiology.isAllowed(radiologyOnly),
+        isTrue,
+      );
+      expect(
+        ClinicalAllAtomPermissions.addNote.isAllowed(radiologyOnly),
+        isFalse,
+      );
+
+      await _pumpAllTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: radiologyOnly,
+      );
+
+      await tester.tap(find.text('All Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request radiology'), findsWidgets);
+      expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Print summary'), findsWidgets);
     },
   );
 

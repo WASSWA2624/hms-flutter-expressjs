@@ -201,14 +201,17 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 
 /// All tab atom → permission mapping (inventory + matrix).
 ///
-/// Outpatient clinical worklist (`?section=all` or default). Nested order
-/// writes use prompt narrative ∪ helpers rather than matrix nested _(n/a)_.
+/// Outpatient clinical worklist (`?section=all` or default). Matrix nested
+/// write rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
+/// radiology / pharmacy / admission. Discharge Open billing uses
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// `billing-payments`); dialog host reuses billing read requirement.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | All tab | navigate | read ∩ `clinical:read` |
+/// | All tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -227,7 +230,8 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | Route entry (deep link) | navigate | read ∪ write |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
-/// `clinical:write` alone. Nested order / admission rows document prompt ∪.
+/// `clinical:write` alone. Nested order / admission rows document prompt ∪
+/// (matrix nested write _(n/a)_).
 abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -235,6 +239,8 @@ abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
   static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
@@ -295,7 +301,7 @@ bool canViewClinicalAll(AppAccessPolicy policy) {
 /// | --- | --- | --- |
 /// | Follow-ups strip tab | navigate | read ∩ `clinical:read` + `encounters-vitals` |
 /// | Search / clear / Settings / columns | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Row select → Follow-up details | read | read ∩ |
 /// | Detail Close (read-only footer) | progressive disclosure | read ∩ |
 /// | Reschedule follow-up | update | write ∪ source |
@@ -311,6 +317,7 @@ abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement search = clinicalFollowUpsRequirement;
   static const AccessRequirement settings = clinicalFollowUpsRequirement;
   static const AccessRequirement empty = clinicalFollowUpsRequirement;
+  static const AccessRequirement loading = clinicalFollowUpsRequirement;
   static const AccessRequirement retry = clinicalFollowUpsRequirement;
   static const AccessRequirement rowSelect = clinicalFollowUpsRequirement;
   static const AccessRequirement detail = clinicalFollowUpsRequirement;

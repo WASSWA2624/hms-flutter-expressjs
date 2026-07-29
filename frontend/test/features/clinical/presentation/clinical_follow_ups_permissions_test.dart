@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -155,6 +157,8 @@ void main() {
       );
       expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(ClinicalFollowUpsAtomPermissions.search.isAllowed(reader), isTrue);
+      expect(ClinicalFollowUpsAtomPermissions.loading.isAllowed(reader), isTrue);
+      expect(ClinicalFollowUpsAtomPermissions.empty.isAllowed(reader), isTrue);
       expect(ClinicalFollowUpsAtomPermissions.detail.isAllowed(reader), isTrue);
       expect(ClinicalFollowUpsAtomPermissions.write.isAllowed(reader), isFalse);
       expect(ClinicalFollowUpsAtomPermissions.markCompleted.isAllowed(reader),
@@ -503,6 +507,92 @@ void main() {
     expect(find.text('No scheduled follow-ups'), findsOneWidget);
     expect(find.text('Mark completed'), findsNothing);
   });
+
+  testWidgets(
+    'authorized loading chrome remains observable on Follow-ups',
+    (WidgetTester tester) async {
+      final Completer<Result<List<ReceptionFollowUpEntry>>> listCompleter =
+          Completer<Result<List<ReceptionFollowUpEntry>>>();
+      when(
+        () => followUpRepository.listScheduledFollowUps(
+          encounterType: any(named: 'encounterType'),
+        ),
+      ).thenAnswer((_) => listCompleter.future);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/clinical?section=follow-ups',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/clinical',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ClinicalWorkspacePage(
+                  initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            ipdRepositoryProvider.overrideWithValue(ipdRepository),
+            receptionFollowUpRepositoryProvider.overrideWithValue(
+              followUpRepository,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{AppPermissions.clinicalRead},
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      // Clinical workspace stubs resolve; Follow-ups list stays pending.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      expect(_tab('Follow-ups'), findsOneWidget);
+      expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      expect(find.text('Mark completed'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      listCompleter.complete(
+        Result<List<ReceptionFollowUpEntry>>.success(
+          <ReceptionFollowUpEntry>[_followUp],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Follow Up Patient'), findsOneWidget);
+    },
+  );
 
   testWidgets('mobile viewport: authorized Follow-ups list remains usable', (
     WidgetTester tester,
