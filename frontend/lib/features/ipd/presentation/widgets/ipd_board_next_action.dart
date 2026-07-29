@@ -7,12 +7,11 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_access.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
@@ -34,38 +33,6 @@ enum IpdBoardNextActionKind {
   completeTheatreHandover,
   continueCare,
 }
-
-const List<AppRole> _ipdAdminActionRoles = <AppRole>[
-  AppRole.superAdmin,
-  AppRole.tenantAdmin,
-  AppRole.facilityAdmin,
-];
-
-const AccessRequirement ipdOperationalWriteRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._ipdAdminActionRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.operations,
-    AppRole.icuManager,
-  ],
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.operationsWrite,
-  ],
-  activeModules: <String>['inpatient-bed-management'],
-);
-
-const AccessRequirement ipdClinicalWriteRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._ipdAdminActionRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.icuManager,
-  ],
-  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-  activeModules: <String>['inpatient-bed-management'],
-);
 
 IpdBoardNextActionKind ipdBoardNextActionKind(IpdAdmissionSummary admission) {
   final String step = (admission.nextStep ?? '').toUpperCase();

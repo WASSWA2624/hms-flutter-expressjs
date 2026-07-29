@@ -61,6 +61,8 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['DOCTOR'],
+  String? tenantId = 'tenant-1',
+  String? facilityId = 'facility-1',
 }) {
   final bool needsClinical = permissions.any(
     (AppPermission permission) =>
@@ -71,6 +73,11 @@ AppAccessPolicy _policy({
     (AppPermission permission) =>
         permission == AppPermissions.emergencyRead ||
         permission == AppPermissions.emergencyWrite,
+  );
+  final bool needsOperations = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.operationsRead ||
+        permission == AppPermissions.operationsWrite,
   );
   final List<AppModuleEntitlement> resolvedModules =
       modules ??
@@ -89,6 +96,11 @@ AppAccessPolicy _policy({
             code: 'scheduling-queue',
             licenseStatus: 'ACTIVE',
           ),
+        if (needsOperations)
+          const AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
       ];
 
   return AppAccessPolicy.fromSession(
@@ -96,8 +108,8 @@ AppAccessPolicy _policy({
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
+        tenantId: tenantId,
+        facilityId: facilityId,
       ),
       permissions: permissions,
       moduleEntitlements: resolvedModules,
@@ -504,6 +516,33 @@ void main() {
       expect(icuAllowedSections(noModule), isEmpty);
     });
 
+    test(
+      'ABAC: missing facility still allows Discharge chrome '
+      '(row/own scope remains backend-authoritative)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(
+          IcuDischargeReadyAtomPermissions.tab.isAllowed(noFacility),
+          isTrue,
+        );
+        expect(
+          IcuDischargeReadyAtomPermissions.write.isAllowed(noFacility),
+          isTrue,
+        );
+        expect(
+          IcuDischargeReadyAtomPermissions.routeEntry.isAllowed(noFacility),
+          isTrue,
+        );
+      },
+    );
+
     test('nested cross-module rows are n/a; nestedWrite reuses write ∪', () {
       expect(
         IcuDischargeReadyAtomPermissions.nestedWrite,
@@ -765,6 +804,55 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Dana Discharge'), findsNothing);
       expect(find.text('Discharge readiness'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'panel=discharge denied falls back to read-only detail (no write dialog)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+
+      await _pumpDischargeReadyTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        initialLocation: '/icu?section=discharge&id=ADM-DR1&panel=discharge',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('ICU STAY'), findsOneWidget);
+      expect(find.text('MARK DISCHARGE READINESS'), findsNothing);
+      expect(find.text('Mark ready'), findsNothing);
+      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'panel=discharge authorized opens readiness dialog without empty detail shell',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+
+      await _pumpDischargeReadyTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        initialLocation: '/icu?section=discharge&id=ADM-DR1&panel=discharge',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('MARK DISCHARGE READINESS'), findsOneWidget);
+      expect(find.text('ICU STAY'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

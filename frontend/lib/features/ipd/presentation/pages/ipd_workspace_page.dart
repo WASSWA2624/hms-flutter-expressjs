@@ -10,13 +10,13 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_authorization_panel.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_access.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_board_next_action.dart';
@@ -35,20 +35,6 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-
-const AccessRequirement _ipdBedManageRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-  ],
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  activeModules: <String>['inpatient-bed-management'],
-);
 
 class IpdWorkspacePage extends ConsumerStatefulWidget {
   const IpdWorkspacePage({this.initialQuery, super.key});
@@ -269,7 +255,24 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     final ThemeData theme = Theme.of(context);
     final IpdWorkspaceState state = widget.state;
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canManageBeds = _ipdBedManageRequirement.isAllowed(policy);
+    final List<IpdWorkspaceSection> visibleSections = ipdAllowedSections(
+      policy,
+    );
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final IpdWorkspaceSection fallback =
+          ipdFallbackSection(policy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        _selectSection(fallback);
+      });
+    }
+    final bool canManageBeds = canManageIpdBeds(policy);
+    final bool showNextAction = ipdBoardShowsNextActionColumn(policy, _section);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -280,57 +283,27 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                AppTabItem(
-                  id: IpdWorkspaceSection.admissionQueue.name,
-                  icon: Icons.bed_outlined,
-                  label: l10n.ipdAdmissionQueueTabLabel,
-                  count: _tabCount(state.admissionQueueCount),
-                  countTone: AppTabCountTone.warning,
-                ),
-                AppTabItem(
-                  id: IpdWorkspaceSection.activePatients.name,
-                  icon: Icons.local_hospital_outlined,
-                  label: l10n.ipdActivePatientsTabLabel,
-                  count: _tabCount(state.activePatientCount),
-                ),
-                AppTabItem(
-                  id: IpdWorkspaceSection.transferPending.name,
-                  icon: Icons.swap_horiz,
-                  label: l10n.ipdTransfersTabLabel,
-                  count: _tabCount(state.transferPendingCount),
-                  countTone: AppTabCountTone.warning,
-                ),
-                AppTabItem(
-                  id: IpdWorkspaceSection.dischargePlanned.name,
-                  icon: Icons.fact_check_outlined,
-                  label: l10n.ipdDischargeTabLabel,
-                  count: _tabCount(state.dischargePlannedCount),
-                  countTone: AppTabCountTone.warning,
-                ),
-                AppTabItem(
-                  id: IpdWorkspaceSection.bedBoard.name,
-                  icon: Icons.grid_view_outlined,
-                  label: l10n.ipdBedBoardTab,
-                ),
-                AppTabItem(
-                  id: IpdWorkspaceSection.followUps.name,
-                  icon: Icons.phone_callback_outlined,
-                  label: l10n.opdFollowUpsTitle,
-                  count: ref.watch(
-                    followUpTabCountProvider(
-                      const FollowUpWorklistScope(encounterType: 'IPD'),
-                    ),
+                for (final IpdWorkspaceSection section in visibleSections)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: section.isFollowUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(encounterType: 'IPD'),
+                            ),
+                          )
+                        : _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
-                  countTone: AppTabCountTone.warning,
-                ),
               ],
               selectedId: _section.name,
               onTabTapped: (String id) {
-                final IpdWorkspaceSection section = IpdWorkspaceSection.values
-                    .firstWhere(
-                      (IpdWorkspaceSection s) => s.name == id,
-                      orElse: () => IpdWorkspaceSection.admissionQueue,
-                    );
+                final IpdWorkspaceSection section = visibleSections.firstWhere(
+                  (IpdWorkspaceSection s) => s.name == id,
+                  orElse: () => visibleSections.first,
+                );
                 _selectSection(section);
               },
               primaryAction: _buildPrimaryAction(l10n, state, canManageBeds),
@@ -366,11 +339,56 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                 section: _section,
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
+                showNextAction: showNextAction,
               ),
           ],
         ),
       ),
     );
+  }
+
+  static IconData _sectionIcon(IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue => Icons.bed_outlined,
+      IpdWorkspaceSection.activePatients => Icons.local_hospital_outlined,
+      IpdWorkspaceSection.transferPending => Icons.swap_horiz,
+      IpdWorkspaceSection.dischargePlanned => Icons.fact_check_outlined,
+      IpdWorkspaceSection.bedBoard => Icons.grid_view_outlined,
+      IpdWorkspaceSection.followUps => Icons.phone_callback_outlined,
+    };
+  }
+
+  static String _sectionLabel(AppLocalizations l10n, IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue => l10n.ipdAdmissionQueueTabLabel,
+      IpdWorkspaceSection.activePatients => l10n.ipdActivePatientsTabLabel,
+      IpdWorkspaceSection.transferPending => l10n.ipdTransfersTabLabel,
+      IpdWorkspaceSection.dischargePlanned => l10n.ipdDischargeTabLabel,
+      IpdWorkspaceSection.bedBoard => l10n.ipdBedBoardTab,
+      IpdWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
+    };
+  }
+
+  static int? _sectionCount(IpdWorkspaceState state, IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue => _tabCount(state.admissionQueueCount),
+      IpdWorkspaceSection.activePatients => _tabCount(state.activePatientCount),
+      IpdWorkspaceSection.transferPending =>
+        _tabCount(state.transferPendingCount),
+      IpdWorkspaceSection.dischargePlanned =>
+        _tabCount(state.dischargePlannedCount),
+      IpdWorkspaceSection.bedBoard || IpdWorkspaceSection.followUps => null,
+    };
+  }
+
+  static AppTabCountTone? _sectionCountTone(IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue ||
+      IpdWorkspaceSection.transferPending ||
+      IpdWorkspaceSection.dischargePlanned ||
+      IpdWorkspaceSection.followUps => AppTabCountTone.warning,
+      _ => null,
+    };
   }
 
   Widget? _buildPrimaryAction(
@@ -391,17 +409,15 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       );
     }
     return AppAccessActionGate(
-      requirement: ipdOperationalWriteRequirement,
+      requirement: IpdAdmissionQueueAtomPermissions.startAdmission,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.ipdStartAdmissionAction,
           icon: AppActionIcons.personAdd,
           tooltip: l10n.ipdStartAdmissionAction,
           semanticLabel: l10n.ipdStartAdmissionAction,
-          enabled: isAllowed && !state.isSaving,
-          onPressed: isAllowed
-              ? () => unawaited(_openStartAdmissionDialog(context))
-              : null,
+          enabled: !state.isSaving,
+          onPressed: () => unawaited(_openStartAdmissionDialog(context)),
         );
       },
     );
@@ -417,17 +433,15 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     }
     return <Widget>[
       AppAccessActionGate(
-        requirement: ipdOperationalWriteRequirement,
+        requirement: IpdAdmissionQueueAtomPermissions.startAdmission,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.ipdStartAdmissionAction,
             icon: AppActionIcons.personAdd,
             tooltip: l10n.ipdStartAdmissionAction,
             semanticLabel: l10n.ipdStartAdmissionAction,
-            enabled: isAllowed && !state.isSaving,
-            onPressed: isAllowed
-                ? () => unawaited(_openStartAdmissionDialog(context))
-                : null,
+            enabled: !state.isSaving,
+            onPressed: () => unawaited(_openStartAdmissionDialog(context)),
           );
         },
       ),
@@ -454,6 +468,7 @@ class _IpdBoardPanel extends ConsumerWidget {
     required this.section,
     required this.searchController,
     required this.columnVisibilityController,
+    this.showNextAction = true,
   });
 
   final IpdWorkspaceState state;
@@ -461,6 +476,7 @@ class _IpdBoardPanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
+  final bool showNextAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -470,7 +486,11 @@ class _IpdBoardPanel extends ConsumerWidget {
     );
 
     final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
-        _ipdAdmissionDefaultColumns(context, state);
+        _ipdAdmissionDefaultColumns(
+          context,
+          state,
+          showNextAction: showNextAction,
+        );
     final List<AppListTableColumn<IpdAdmissionSummary>> optionalColumns =
         _ipdAdmissionOptionalColumns(context);
 
@@ -558,8 +578,9 @@ class _IpdBoardPanel extends ConsumerWidget {
 
 List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionDefaultColumns(
   BuildContext context,
-  IpdWorkspaceState state,
-) {
+  IpdWorkspaceState state, {
+  bool showNextAction = true,
+}) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<IpdAdmissionSummary>>[
     AppListTableColumn<IpdAdmissionSummary>(
@@ -602,16 +623,17 @@ List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionDefaultColumns(
         );
       },
     ),
-    AppListTableColumn<IpdAdmissionSummary>(
-      id: 'next_action',
-      label: l10n.ipdNextActionColumnLabel,
-      alwaysVisible: true,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(left.nextStep, right.nextStep),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return IpdBoardNextActionCell(admission: item, state: state);
-      },
-    ),
+    if (showNextAction)
+      AppListTableColumn<IpdAdmissionSummary>(
+        id: 'next_action',
+        label: l10n.ipdNextActionColumnLabel,
+        alwaysVisible: true,
+        sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+            appListTableCompareText(left.nextStep, right.nextStep),
+        cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+          return IpdBoardNextActionCell(admission: item, state: state);
+        },
+      ),
   ];
 }
 

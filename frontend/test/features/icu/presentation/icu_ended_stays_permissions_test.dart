@@ -890,6 +890,54 @@ void main() {
     );
   });
 
+  testWidgets(
+    'panel=discharge denied falls back to read-only detail (no write dialog)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+
+      await _pumpEndedStaysTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        initialLocation: '/icu?section=ended&id=ADM-END1&panel=discharge',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('ICU STAY'), findsOneWidget);
+      expect(find.text('MARK DISCHARGE READINESS'), findsNothing);
+      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'panel=discharge authorized opens readiness dialog without empty detail shell',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+
+      await _pumpEndedStaysTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        initialLocation: '/icu?section=ended&id=ADM-END1&panel=discharge',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('MARK DISCHARGE READINESS'), findsOneWidget);
+      expect(find.text('ICU STAY'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('mobile + dark: read-only chrome hides write atoms', (
     WidgetTester tester,
   ) async {

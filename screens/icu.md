@@ -158,6 +158,93 @@ cross-module matrix rows _(n/a)_. Helpers: `IcuTransfersAtomPermissions`, `canVi
   - Same gates as shared detail inventory; Manage/Request omitted from Quick Actions when they are the row next-action.
   - Deep link `?id=&panel=transfer`: opens transfer dialog when write ∪; otherwise falls back to read-only detail.
 
+### Discharge ready tab (`?section=discharge`)
+
+Step-down / discharge-ready queue on the shared patient board. Stage next-action is **Mark readiness**
+(write ∪) or **Open discharge clearance** (navigate when already planned — no write). Write keeps
+source ∪ `clinical:write` | `emergency:write` + `icu-critical-care` (matrix ∩ `clinical:write`
+alone — keep source). Nested cross-module matrix rows _(n/a)_. Helpers:
+`IcuDischargeReadyAtomPermissions`, `canViewIcuDischargeReady`, `icuBoardShowsNextActionColumn`
+(Discharge keeps next-action column for navigate clearance). Tests:
+`frontend/test/features/icu/presentation/icu_discharge_ready_permissions_test.dart`.
+
+- **Discharge ready** (strip tab + count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Board scope `discharge`; stage next-action Mark readiness / Open clearance.
+  - Condition: Read ∪ `clinical:read` | `emergency:read` + `icu-critical-care`; tab omitted otherwise.
+
+- **Search / Clear / Filters / Settings / columns**
+  - Location: `AppListTable` / `AppSearchBar` chrome.
+  - Opens modal: Advanced filters; Table Settings.
+  - Immediate result: Client filters / search / column visibility for discharge-ready rows.
+  - Condition: Same read ∪. Next-action column stays mounted so Open clearance remains for readers.
+
+- **Empty / loading / error / Try again**
+  - Location: Board body / `AsyncStateScaffold` / empty panel.
+  - Opens modal: No.
+  - Immediate result: Authorized chrome states; retry reloads the board.
+  - Condition: Same read ∪.
+
+- **Next action Mark readiness**
+  - Location: `next_action` column; mobile trailing.
+  - Opens modal: Mark discharge readiness dialog.
+  - Immediate result: Persists readiness; snackbar; board refresh.
+  - Condition: Write ∪; absent when unauthorized (no disabled stubs).
+
+- **Next action Open discharge clearance**
+  - Location: `next_action` column; mobile trailing (planned rows).
+  - Opens modal: No — navigates to `/discharge`.
+  - Immediate result: Leaves ICU for discharge clearance workspace.
+  - Condition: Navigate (no write); available to readers.
+
+- **Row select → stay detail** / complementary writes / print / Open billing|IPD|clearance
+  - Same gates as shared detail inventory; Mark readiness omitted from Quick Actions when it is the
+    row next-action; Open clearance omitted when it is the row next-action.
+  - Deep link `?id=&panel=discharge`: opens readiness dialog when write ∪; otherwise falls back to
+    read-only detail.
+
+### Ended stays tab (`?section=ended`)
+
+Historical stays on the shared patient board; prefer read-only. Stage next-action is **Open IPD**
+(navigate, no write). Write keeps source ∪ `clinical:write` | `emergency:write` +
+`icu-critical-care` (matrix ∩ `clinical:write` alone — keep source). Ineligible stay mutations
+(End stay / Observation / Raise alert without active stay) stay absent via `canRecordIcuAction` /
+start-stay eligibility. Nested cross-module matrix rows _(n/a)_. Helpers:
+`IcuEndedStaysAtomPermissions`, `canViewIcuEndedStays`, `icuBoardShowsNextActionColumn` (Ended keeps
+next-action column so **Open IPD** remains for readers). Tests:
+`frontend/test/features/icu/presentation/icu_ended_stays_permissions_test.dart`.
+
+- **Ended stays** (strip tab + count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Board scope `ended`; ICU start column + navigate next-action.
+  - Condition: Read ∪ `clinical:read` | `emergency:read` + `icu-critical-care`; tab omitted otherwise.
+
+- **Search / Clear / Filters / Settings / columns**
+  - Location: `AppListTable` chrome.
+  - Opens modal: Advanced filters; Table Settings.
+  - Immediate result: Client filters / search / column visibility for ended stays.
+  - Condition: Same read ∪. Next-action column mounts for readers (navigate Open IPD).
+
+- **Empty / loading / error / Try again**
+  - Location: Board body / `AsyncStateScaffold` / empty panel.
+  - Opens modal: No.
+  - Immediate result: Authorized chrome states; retry reloads the workspace.
+  - Condition: Same read ∪.
+
+- **Next action Open IPD**
+  - Location: `next_action` column; mobile trailing.
+  - Opens modal: No — navigates to `/ipd`.
+  - Immediate result: Leaves ICU for IPD workspace.
+  - Condition: Navigate (no write); present for read-only and writers.
+
+- **Row select → stay detail** / complementary writes / print / Open billing|IPD|clearance
+  - Same gates as shared detail inventory; Open IPD omitted from Quick Actions when it is the row
+    next-action. Complementary writes mount only when write ∪ + eligibility pass (no disabled stubs).
+  - Deep link `?id=&panel=vitals|alerts|observations|orders|transfer|discharge`: opens focused
+    mutation dialog when write ∪; otherwise falls back to read-only detail.
+
 ### Follow-ups tab (`?section=follow-ups`)
 
 Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWorklistPanel` (ICU scope) with
@@ -216,6 +303,10 @@ Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWo
 - [ ] Critical tab alerted patient: only **Acknowledge alert** next-action; detail omits Acknowledge.
 - [ ] Deep link `/icu?id=…&panel=vitals` opens vitals dialog without an empty detail first.
 - [ ] Transfers: read-only sees list + Transfer column; Manage/Request absent; writer sees Manage/Request; `panel=transfer` denied falls back to detail.
+- [ ] Discharge ready: without `clinical:read` | `emergency:read` (or without `icu-critical-care`), tab absent.
+- [ ] Discharge ready: read-only sees list + Open clearance (planned); Mark readiness / detail writes absent; writer sees Mark readiness; `panel=discharge` denied falls back to detail.
+- [ ] Ended stays: without `clinical:read` | `emergency:read` (or without `icu-critical-care`), tab absent.
+- [ ] Ended stays: read-only sees list + Open IPD; End stay / detail writes absent; writer sees eligible complementary writes; `panel=discharge` denied falls back to detail.
 - [ ] No Refresh or Start ICU stay control on the tab strip; board still updates after a successful mutation.
 - [ ] Bed board: read-only staff see ward chips / occupancy / Open IPD; **Manage beds** absent without rooms-beds admin.
 - [ ] Bed board: facility admin + inpatient module sees **Manage beds**; clinical writer alone does not.
