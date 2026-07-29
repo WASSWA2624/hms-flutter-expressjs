@@ -96,6 +96,32 @@ Read-only sections: Identity, Storage, Custody, Viewing, Post-mortem, Release, B
 
 ---
 
+## Intake tab — permission mapping (`?panel=intake`)
+
+Atom map: `MortuaryIntakeAtomPermissions` in `frontend/lib/features/mortuary/presentation/mortuary_access.dart`. Unauthorized atoms do not mount (no disabled stubs / routine “no access” banners). Receive-case create/update/delete ∩ `mortuary:write`; nested cross-module read/write matrix rows are n/a. Fine-grained gates kept for helpers / future chrome; inventory removed no-op mutation buttons (including Receive case).
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Intake strip tab / count | navigate | ∩ `mortuary:read` (+ module + facility) |
+| Search / Clear / Filters / Settings / pagination | read chrome | ∩ `mortuary:read` |
+| Empty / loading / error / retry | read chrome | ∩ `mortuary:read` |
+| Success snackbar / validation (authorized) | visible feedback | ∩ `mortuary:write` |
+| Row select → detail | read / navigate | ∩ `mortuary:read` |
+| Next action (guidance text only) | read | ∩ `mortuary:read` |
+| Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | ∩ `mortuary:read` |
+| Detail Billing events | read | ∩ `mortuary:billing_event` + `billing:read` |
+| Detail Print documents | export | ∪ `mortuary:export` \| `reports:read` |
+| Receive case | create | ∩ `mortuary:write` — not mounted |
+| Assign storage | update | ∩ `mortuary:manage_storage` — not mounted |
+| Post-mortem request / approve / release | create / approve / update | fine-grained ∩ — not mounted |
+| Audit panel | read | ∩ `mortuary:audit` — not mounted |
+| Nested cross-module read / write | — | n/a (matrix) |
+| Route entry (deep link `/mortuary`) | navigate | ∪ `read`\|`write`\|`approve`\|`release`\|`audit` |
+
+Automated: `frontend/test/features/mortuary/presentation/mortuary_intake_permissions_test.dart`.
+
+---
+
 ## Custody tab — permission mapping (`?panel=custody`)
 
 Atom map: `MortuaryCustodyAtomPermissions` in `frontend/lib/features/mortuary/presentation/mortuary_access.dart`. Unauthorized atoms do not mount (no disabled stubs / routine “no access” banners). Nested write ∪ and fine-grained gates are kept for helpers / future chrome; inventory removed no-op mutation buttons.
@@ -121,6 +147,34 @@ Automated: `frontend/test/features/mortuary/presentation/mortuary_custody_permis
 
 ---
 
+## Release tab — permission mapping (`?panel=release`)
+
+Atom map: `MortuaryReleaseAtomPermissions` in `frontend/lib/features/mortuary/presentation/mortuary_access.dart`. Unauthorized atoms do not mount (no disabled stubs / routine “no access” banners). Matrix update is ∩ `mortuary:release`; create/delete stay ∩ `mortuary:write`; approve is ∩ `mortuary:approve`. Nested cross-module read/write matrix rows are n/a. Fine-grained gates kept for helpers / future chrome; inventory removed no-op mutation buttons.
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Release strip tab / count | navigate | ∩ `mortuary:read` (+ module + facility) |
+| Search / Clear / Filters / Settings / pagination | read chrome | ∩ `mortuary:read` |
+| Empty / loading / error / retry | read chrome | ∩ `mortuary:read` |
+| Success snackbar / validation (authorized release) | visible feedback | ∩ `mortuary:release` |
+| Row select → detail | read / navigate | ∩ `mortuary:read` |
+| Next action (guidance text only) | read | ∩ `mortuary:read` |
+| Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | ∩ `mortuary:read` |
+| Detail Billing events | read | ∩ `mortuary:billing_event` + `billing:read` |
+| Detail Print documents | export | ∪ `mortuary:export` \| `reports:read` |
+| Create release authorisation / receive-adjacent create | create | ∩ `mortuary:write` — not mounted |
+| Record body release | update | ∩ `mortuary:release` — not mounted |
+| Approve release | approve | ∩ `mortuary:approve` — not mounted |
+| Delete / void | delete | ∩ `mortuary:write` — not mounted |
+| Assign storage | update | ∩ `mortuary:manage_storage` — not mounted |
+| Audit panel | read | ∩ `mortuary:audit` — not mounted |
+| Nested cross-module read / write | — | n/a (matrix) |
+| Route entry (deep link `/mortuary`) | navigate | ∪ `read`\|`write`\|`approve`\|`release`\|`audit` |
+
+Automated: `frontend/test/features/mortuary/presentation/mortuary_release_permissions_test.dart`.
+
+---
+
 ## Manual checks (Req 7)
 
 - [ ] Tab strip has no Refresh, no disabled Receive case / Assign storage primaries, and no queue / In storage chips.
@@ -131,4 +185,4 @@ Automated: `frontend/test/features/mortuary/presentation/mortuary_custody_permis
 - [ ] Deep link `/mortuary?queue=IDENTIFICATION_PENDING` applies queue without toolbar chips.
 - [ ] Loading / empty / error-retry still render; mobile and desktop keep row select reachable; theme tokens only.
 
-Automated: `frontend/test/features/mortuary/presentation/mortuary_workspace_page_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_workspace_ux_simplify_test.dart`.
+Automated: `frontend/test/features/mortuary/presentation/mortuary_workspace_page_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_workspace_ux_simplify_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_custody_permissions_test.dart`.

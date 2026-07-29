@@ -6,8 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
@@ -162,9 +166,15 @@ class _NursingWorkspaceContentState
     // Panel-focused deep links open the mutation dialog directly (no empty
     // detail shell). Bare admission links open detail with the stage
     // next-action omitted so it is not duplicated inside Quick Actions.
+    // Unauthorized write panels fall back to detail (restricted deep link).
     if (panel != null && panel != NursingDetailPanel.checklist) {
-      await openNursingFocusedAction(context, ref, summary, panel);
-      return;
+      final AccessRequirement panelRequirement =
+          nursingFocusedPanelRequirement(panel);
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (panelRequirement.isAllowed(policy)) {
+        await openNursingFocusedAction(context, ref, summary, panel);
+        return;
+      }
     }
 
     await openNursingPatientDetailDialog(
@@ -206,6 +216,24 @@ class _NursingWorkspaceContentState
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<NursingQueueScope> visibleScopes = nursingAllowedScopes(policy);
+    if (visibleScopes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleScopes.contains(_scope)) {
+      final NursingQueueScope fallback =
+          nursingFallbackScope(policy) ?? visibleScopes.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleScopes.contains(_scope)) {
+          return;
+        }
+        setState(() => _scope = fallback);
+        _updateUrlForScope(fallback);
+        controller.applyScope(fallback);
+      });
+    }
+    final bool canShiftContext = canReadNursingShiftContext(policy);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -217,17 +245,18 @@ class _NursingWorkspaceContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppTabStrip(
-              tabs: nursingTabItems(l10n, state),
+              tabs: nursingTabItems(l10n, state, policy: policy),
               selectedId: nursingScopeToQueryValue(_scope),
               onTabTapped: _onTabTapped,
               secondaryActions: <Widget>[
-                AppTabToolbarAction(
-                  label: l10n.nursingShiftContextTitle,
-                  icon: Icons.assignment_ind_outlined,
-                  tooltip: l10n.nursingShiftContextTitle,
-                  semanticLabel: l10n.nursingShiftContextTitle,
-                  onPressed: _openShiftContextDialog,
-                ),
+                if (canShiftContext)
+                  AppTabToolbarAction(
+                    label: l10n.nursingShiftContextTitle,
+                    icon: Icons.assignment_ind_outlined,
+                    tooltip: l10n.nursingShiftContextTitle,
+                    semanticLabel: l10n.nursingShiftContextTitle,
+                    onPressed: _openShiftContextDialog,
+                  ),
               ],
             ),
             SizedBox(height: theme.spacing.sm),

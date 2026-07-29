@@ -651,6 +651,26 @@ void main() {
       },
     );
 
+    testWidgets(
+      'intersection denial: billing_event without billing:read omits panel',
+      (WidgetTester tester) async {
+        await _pumpReleaseTab(
+          tester,
+          repository: repository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.mortuaryRead,
+              AppPermissions.mortuaryBillingEvent,
+            },
+          ),
+        );
+        await _openDetail(tester);
+
+        expect(find.text('Billing'), findsNothing);
+        expect(find.text('Cold storage day 1'), findsNothing);
+      },
+    );
+
     testWidgets('full billing intersection mounts billing events panel', (
       WidgetTester tester,
     ) async {
@@ -819,6 +839,27 @@ void main() {
       expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
       expect(find.text('Release Patient'), findsWidgets);
       expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
+    });
+
+    testWidgets('desktop light theme mounts Release authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpReleaseTab(
+        tester,
+        repository: repository,
+        policy: _exportPolicy(),
+        themeMode: ThemeMode.light,
+        viewport: const Size(1440, 900),
+      );
+
+      expect(_tab('Release'), findsOneWidget);
+      await _openDetail(tester);
+      expect(find.text('Print documents'), findsOneWidget);
+      expect(
+        Theme.of(tester.element(find.text('Release').first)).brightness,
+        Brightness.light,
+      );
+      expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets('desktop dark theme mounts Release authorized chrome', (

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -82,6 +84,7 @@ AppAccessPolicy _policy({
       ),
       permissions: permissions,
       moduleEntitlements: modules,
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -172,7 +175,7 @@ void _stubWorkspace(
   );
 }
 
-Future<void> _pumpIntake(
+Future<GoRouter> _pumpIntake(
   WidgetTester tester, {
   required _MockMortuaryRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -180,10 +183,17 @@ Future<void> _pumpIntake(
   ThemeMode themeMode = ThemeMode.light,
   List<MortuaryWorkspaceItem> items = const <MortuaryWorkspaceItem>[_caseItem],
   String initialLocation = '/mortuary?panel=intake',
+  Result<MortuaryWorkspacePayload>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, items: items);
+  if (workspaceOverride != null) {
+    when(() => repository.getWorkspace(any())).thenAnswer(
+      (_) async => workspaceOverride,
+    );
+  } else {
+    _stubWorkspace(repository, items: items);
+  }
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -229,6 +239,7 @@ Future<void> _pumpIntake(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
 }
 
 AppListTable<MortuaryWorkspaceItem> _table(WidgetTester tester) {

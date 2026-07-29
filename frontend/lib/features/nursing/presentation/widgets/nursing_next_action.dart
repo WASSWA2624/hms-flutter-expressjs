@@ -43,10 +43,12 @@ NursingNextActionKind nursingResolveNextActionKind(
 AccessRequirement nursingNextActionRequirement(NursingNextActionKind kind) {
   return switch (kind) {
     NursingNextActionKind.medication => nursingMedicationWriteRequirement,
+    NursingNextActionKind.transfer =>
+      NursingTransferPendingAtomPermissions.nextActionTransfer,
+    NursingNextActionKind.discharge =>
+      NursingDischargePendingAtomPermissions.nextActionDischarge,
     NursingNextActionKind.vitals ||
     NursingNextActionKind.handover ||
-    NursingNextActionKind.transfer ||
-    NursingNextActionKind.discharge ||
     NursingNextActionKind.escalate => nursingWriteRequirement,
   };
 }

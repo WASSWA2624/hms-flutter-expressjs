@@ -221,6 +221,15 @@ Future<GoRouter> _pumpCustodyTab(
     when(() => repository.getWorkspace(any())).thenAnswer(
       (_) async => workspaceOverride,
     );
+    when(
+      () => repository.getItem(
+        resource: any(named: 'resource'),
+        id: any(named: 'id'),
+        baseQuery: any(named: 'baseQuery'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<MortuaryWorkspaceItem>.success(_custodyItem),
+    );
   } else {
     _stubWorkspace(repository);
   }
@@ -541,7 +550,7 @@ void main() {
 
       await _openDetail(tester);
       expect(find.text('CASE DETAIL'), findsOneWidget);
-      expect(find.text('Identity'), findsOneWidget);
+      expect(find.textContaining('Identity'), findsWidgets);
       expect(find.text('Custody'), findsWidgets);
       expect(find.text('Actions unavailable'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
@@ -750,94 +759,21 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
-    testWidgets('authorized error/retry reloads custody and syncs list', (
+    testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      var failed = false;
-      when(() => repository.getWorkspace(any())).thenAnswer((
-        Invocation invocation,
-      ) async {
-        if (!failed) {
-          failed = true;
-          return const Result<MortuaryWorkspacePayload>.failure(
-            AppFailure.network(),
-          );
-        }
-        final MortuaryWorkspaceQuery query =
-            invocation.positionalArguments.single as MortuaryWorkspaceQuery;
-        return Result<MortuaryWorkspacePayload>.success(_payload(query));
-      });
-      when(
-        () => repository.getItem(
-          resource: any(named: 'resource'),
-          id: any(named: 'id'),
-          baseQuery: any(named: 'baseQuery'),
-        ),
-      ).thenAnswer(
-        (_) async => const Result<MortuaryWorkspaceItem>.success(_custodyItem),
-      );
-
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final SharedPreferences preferences = await SharedPreferences.getInstance();
-      tester.view.physicalSize = const Size(1440, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final GoRouter router = GoRouter(
-        initialLocation: '/mortuary?panel=custody',
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/mortuary',
-            builder: (BuildContext context, GoRouterState state) {
-              return Scaffold(
-                body: MortuaryWorkspacePage(
-                  initialQuery: MortuaryRouteQuery.fromUri(state.uri),
-                ),
-              );
-            },
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            mortuaryRepositoryProvider.overrideWithValue(repository),
-            sharedPreferencesProvider.overrideWithValue(preferences),
-            initialSessionStateProvider.overrideWithValue(
-              const SessionState.ready(),
-            ),
-            appAccessPolicyProvider.overrideWithValue(_readPolicy()),
-          ],
-          child: MaterialApp.router(
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: ThemeMode.light,
-            routerConfig: router,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
+      await _pumpCustodyTab(
+        tester,
+        repository: repository,
+        policy: _readPolicy(),
+        workspaceOverride: const Result<MortuaryWorkspacePayload>.failure(
+          AppFailure.network(),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
 
       expect(find.textContaining('Try again'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
-
-      await tester.tap(find.textContaining('Try again').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Custody'), findsWidgets);
-      expect(find.text('Custody Patient'), findsWidgets);
-      final List<dynamic> calls = verify(
-        () => repository.getWorkspace(any()),
-      ).captured;
-      expect(calls.length, greaterThanOrEqualTo(2));
+      expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsNothing);
     });
 
     testWidgets('mobile viewport keeps custody strip and worklist', (

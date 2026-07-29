@@ -398,14 +398,14 @@ List<AppNursingRecordEntry> nursingHandoverRecords(
 List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
   BuildContext context,
   NursingPatientDetail detail, {
-  required VoidCallback onOpenHandover,
-  required VoidCallback onConfirmIdentity,
-  required VoidCallback onOpenVitals,
-  required VoidCallback onOpenAllergies,
-  required VoidCallback onOpenBelongings,
-  required VoidCallback onOpenCarePlan,
-  required VoidCallback onNotifyDoctor,
-  required VoidCallback onOpenDischargeClearance,
+  VoidCallback? onOpenHandover,
+  VoidCallback? onConfirmIdentity,
+  VoidCallback? onOpenVitals,
+  VoidCallback? onOpenAllergies,
+  VoidCallback? onOpenBelongings,
+  VoidCallback? onOpenCarePlan,
+  VoidCallback? onNotifyDoctor,
+  VoidCallback? onOpenDischargeClearance,
 }) {
   final AppLocalizations l10n = context.l10n;
   final NursingPatientSummary summary = detail.enrichedSummary;
@@ -456,7 +456,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistHandoverPendingBody,
       isComplete: handoverReady,
       status: status(handoverReady),
-      actionLabel: handoverReady ? null : l10n.nursingActionCreateHandover,
+      actionLabel: handoverReady || onOpenHandover == null
+          ? null
+          : l10n.nursingActionCreateHandover,
       actionIcon: Icons.swap_horiz_outlined,
       onAction: handoverReady ? null : onOpenHandover,
     ),
@@ -468,7 +470,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistIdentityPendingBody,
       isComplete: identityReady,
       status: status(identityReady),
-      actionLabel: identityReady ? null : l10n.nursingActionConfirmIdentity,
+      actionLabel: identityReady || onConfirmIdentity == null
+          ? null
+          : l10n.nursingActionConfirmIdentity,
       actionIcon: Icons.badge_outlined,
       onAction: identityReady ? null : onConfirmIdentity,
     ),
@@ -479,7 +483,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistVitalsPendingBody,
       isComplete: vitalsReady,
       status: status(vitalsReady),
-      actionLabel: vitalsReady ? null : l10n.nursingActionRecordVitals,
+      actionLabel: vitalsReady || onOpenVitals == null
+          ? null
+          : l10n.nursingActionRecordVitals,
       actionIcon: Icons.monitor_heart_outlined,
       onAction: vitalsReady ? null : onOpenVitals,
     ),
@@ -491,7 +497,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistAllergiesPendingBody,
       isComplete: allergiesReady,
       status: status(allergiesReady),
-      actionLabel: l10n.nursingActionRecordAllergies,
+      actionLabel: onOpenAllergies == null
+          ? null
+          : l10n.nursingActionRecordAllergies,
       actionIcon: Icons.health_and_safety_outlined,
       onAction: onOpenAllergies,
     ),
@@ -505,7 +513,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistBelongingsPendingBody,
       isComplete: belongingsReady,
       status: status(belongingsReady),
-      actionLabel: l10n.nursingActionRecordBelongings,
+      actionLabel: onOpenBelongings == null
+          ? null
+          : l10n.nursingActionRecordBelongings,
       actionIcon: Icons.work_outline,
       onAction: onOpenBelongings,
     ),
@@ -516,7 +526,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistCarePlanPendingBody,
       isComplete: carePlanReady,
       status: status(carePlanReady),
-      actionLabel: carePlanReady ? null : l10n.nursingChecklistCarePlanTitle,
+      actionLabel: carePlanReady || onOpenCarePlan == null
+          ? null
+          : l10n.nursingChecklistCarePlanTitle,
       actionIcon: Icons.playlist_add_check_outlined,
       onAction: carePlanReady ? null : onOpenCarePlan,
     ),
@@ -530,7 +542,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistDoctorPendingBody,
       isComplete: doctorNotified,
       status: status(doctorNotified),
-      actionLabel: doctorNotified ? null : l10n.nursingActionNotifyDoctor,
+      actionLabel: doctorNotified || onNotifyDoctor == null
+          ? null
+          : l10n.nursingActionNotifyDoctor,
       actionIcon: Icons.contact_phone_outlined,
       onAction: doctorNotified ? null : onNotifyDoctor,
     ),
@@ -549,7 +563,9 @@ List<AppCareTaskChecklistItem> nursingAdmissionChecklistItems(
           : l10n.nursingChecklistDischargePendingBody,
       isComplete: dischargeReady,
       status: status(dischargeReady),
-      actionLabel: dischargeReady ? null : l10n.nursingActionDischargeClearance,
+      actionLabel: dischargeReady || onOpenDischargeClearance == null
+          ? null
+          : l10n.nursingActionDischargeClearance,
       actionIcon: Icons.fact_check_outlined,
       onAction: dischargeReady ? null : onOpenDischargeClearance,
     ),

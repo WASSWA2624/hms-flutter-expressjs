@@ -43,70 +43,70 @@ NursingQueueScope? nursingScopeFromQueryValue(String? raw) {
 
 int? _tabCountOrNull(int value) => value > 0 ? value : null;
 
-List<AppTabItem> nursingTabItems(
-  AppLocalizations l10n,
-  NursingWorkspaceState state, {
-  AppAccessPolicy? policy,
-}) {
-  final List<NursingQueueScope> scopes = policy == null
-      ? NursingQueueScope.values
-      : nursingAllowedScopes(policy);
-  return <AppTabItem>[
-    for (final NursingQueueScope scope in scopes)
-      _tabItemForScope(l10n, state, scope),
-  ];
-}
-
-AppTabItem _tabItemForScope(
+AppTabItem? _tabItemForScope(
   AppLocalizations l10n,
   NursingWorkspaceState state,
   NursingQueueScope scope,
 ) {
   return switch (scope) {
     NursingQueueScope.all => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.all),
       icon: Icons.inventory_2_outlined,
       label: l10n.nursingScopeAllLabel,
       count: _tabCountOrNull(nursingPageTotal(state.worklist)),
     ),
     NursingQueueScope.assignedWard => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.assignedWard),
       icon: Icons.local_hospital_outlined,
       label: l10n.nursingScopeAssignedWardLabel,
       count: _tabCountOrNull(state.assignedWardCount),
     ),
     NursingQueueScope.urgent => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.urgent),
       icon: Icons.priority_high_outlined,
       label: l10n.nursingScopeUrgentLabel,
       count: _tabCountOrNull(state.urgentCount),
       countTone: AppTabCountTone.danger,
     ),
     NursingQueueScope.medicationDue => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.medicationDue),
       icon: Icons.medication_outlined,
       label: l10n.nursingScopeMedicationDueLabel,
       count: _tabCountOrNull(state.medicationDueCount),
       countTone: AppTabCountTone.warning,
     ),
     NursingQueueScope.handoverPending => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.handoverPending),
       icon: Icons.swap_horiz_outlined,
       label: l10n.nursingScopeHandoverPendingLabel,
       count: _tabCountOrNull(state.handoverPendingCount),
     ),
     NursingQueueScope.transferPending => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.transferPending),
       icon: Icons.transfer_within_a_station_outlined,
       label: l10n.nursingScopeTransferPendingLabel,
       count: _tabCountOrNull(state.transferPendingCount),
       countTone: AppTabCountTone.warning,
     ),
     NursingQueueScope.dischargePending => AppTabItem(
-      id: nursingScopeToQueryValue(scope),
+      id: nursingScopeToQueryValue(NursingQueueScope.dischargePending),
       icon: Icons.logout_outlined,
       label: l10n.nursingScopeDischargePendingLabel,
       count: _tabCountOrNull(state.dischargePendingCount),
     ),
   };
+}
+
+List<AppTabItem> nursingTabItems(
+  AppLocalizations l10n,
+  NursingWorkspaceState state, {
+  AppAccessPolicy? policy,
+}) {
+  final Iterable<NursingQueueScope> scopes = policy == null
+      ? nursingTabStripOrder
+      : nursingAllowedScopes(policy);
+  return <AppTabItem>[
+    for (final NursingQueueScope scope in scopes)
+      if (_tabItemForScope(l10n, state, scope) case final AppTabItem item) item,
+  ];
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_cell.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
@@ -10,61 +12,64 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 List<AppListTableColumn<NursingWorkItem>> nursingColumnsForScope(
   AppLocalizations l10n,
-  NursingQueueScope scope,
-) {
-  return switch (scope) {
+  NursingQueueScope scope, {
+  AppAccessPolicy? policy,
+}) {
+  final bool showNextAction =
+      policy == null || nursingBoardShowsNextActionColumn(policy, scope);
+  final List<AppListTableColumn<NursingWorkItem>> columns = switch (scope) {
     NursingQueueScope.urgent => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingPriorityColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.medicationDue => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingMedicationDueCountColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.handoverPending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingResponsibleNurseColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.transferPending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingTransferStatusColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.dischargePending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingDischargeStatusColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
     _ => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingTaskTypeColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingNextActionColumn(l10n, scope),
     ],
   };
+  if (showNextAction) {
+    columns.add(nursingNextActionColumn(l10n, scope));
+  }
+  return columns;
 }
 
 List<AppListTableColumn<NursingWorkItem>> nursingColumnChoicesForScope(
   AppLocalizations l10n,
-  NursingQueueScope scope,
-) {
+  NursingQueueScope scope, {
+  AppAccessPolicy? policy,
+}) {
   final Set<String> defaultIds = nursingColumnsForScope(
     l10n,
     scope,
+    policy: policy,
   ).map((AppListTableColumn<NursingWorkItem> c) => c.id ?? c.label).toSet();
 
   final List<AppListTableColumn<NursingWorkItem>> pool =
@@ -84,7 +89,7 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnChoicesForScope(
       ];
 
   return <AppListTableColumn<NursingWorkItem>>[
-    ...nursingColumnsForScope(l10n, scope),
+    ...nursingColumnsForScope(l10n, scope, policy: policy),
     for (final AppListTableColumn<NursingWorkItem> column in pool)
       if (!defaultIds.contains(column.id ?? column.label)) column,
   ];

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
@@ -42,6 +45,11 @@ class NursingWorklistPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
+    );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool showNextAction = nursingBoardShowsNextActionColumn(
+      policy,
+      scope,
     );
 
     return AppListTable<NursingWorkItem>(
@@ -99,8 +107,12 @@ class NursingWorklistPanel extends ConsumerWidget {
         body: l10n.nursingNoWorklistBody,
         icon: Icons.assignment_outlined,
       ),
-      columnChoices: nursingColumnChoicesForScope(l10n, scope),
-      columns: nursingColumnsForScope(l10n, scope),
+      columnChoices: nursingColumnChoicesForScope(
+        l10n,
+        scope,
+        policy: policy,
+      ),
+      columns: nursingColumnsForScope(l10n, scope, policy: policy),
       mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
         final String subtitle = nursingJoinDisplay(<String?>[
           item.locationLabel,
@@ -123,17 +135,18 @@ class NursingWorklistPanel extends ConsumerWidget {
                 label: nursingPriorityStatus(context, item).label,
               ),
             AppListTableMobileMeta(label: nursingSummaryStatus(item).label),
-            if (subtitle.isNotEmpty)
-              AppListTableMobileMeta(label: subtitle),
+            if (subtitle.isNotEmpty) AppListTableMobileMeta(label: subtitle),
           ],
           // Same stage write as the desktop next-action column (sole primary).
           // Compact avoids overflow beside title/meta on narrow viewports;
           // tooltip + semanticLabel keep the action labeled for novices/a11y.
-          trailing: NursingNextActionCell(
-            item: item,
-            scope: scope,
-            compact: true,
-          ),
+          trailing: showNextAction
+              ? NursingNextActionCell(
+                  item: item,
+                  scope: scope,
+                  compact: true,
+                )
+              : null,
         );
       },
     );

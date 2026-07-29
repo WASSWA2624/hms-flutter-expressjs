@@ -10,10 +10,12 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_escalation_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
@@ -36,23 +38,7 @@ class NursingPatientDetailDialog extends ConsumerWidget {
 
   final NursingNextActionKind? omitNextActionKind;
 
-  static const AccessRequirement writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.patientWrite,
-      AppPermissions.lastOfficeWrite,
-    ],
-    anyRoles: <AppRole>[
-      AppRole.nurse,
-      AppRole.wardManager,
-      AppRole.icuManager,
-      AppRole.theatreManager,
-      AppRole.facilityAdmin,
-      AppRole.tenantAdmin,
-      AppRole.superAdmin,
-    ],
-    activeModules: <String>['inpatient-bed-management'],
-  );
+  static const AccessRequirement writeRequirement = nursingWriteRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,7 +69,7 @@ class NursingPatientDetailDialog extends ConsumerWidget {
   }
 }
 
-class _NursingPatientDetailContent extends StatelessWidget {
+class _NursingPatientDetailContent extends ConsumerWidget {
   const _NursingPatientDetailContent({
     required this.detail,
     this.omitNextActionKind,
@@ -93,10 +79,13 @@ class _NursingPatientDetailContent extends StatelessWidget {
   final NursingNextActionKind? omitNextActionKind;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final NursingPatientSummary summary = detail.enrichedSummary;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteNursing(policy);
+    final bool canReadMeds = canReadNursingMedications(policy);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,24 +172,32 @@ class _NursingPatientDetailContent extends StatelessWidget {
           omitNextActionKind: omitNextActionKind,
         ),
         SizedBox(height: theme.spacing.md),
-        _NursingAdmissionChecklistPanel(detail: detail),
+        _NursingAdmissionChecklistPanel(detail: detail, canWrite: canWrite),
+        if (canViewNursingBillingClearance(policy)) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _NursingBillingClearancePanel(detail: detail),
+        ],
         SizedBox(height: theme.spacing.md),
         _NursingRecordPanel(
           title: l10n.nursingObservationsTitle,
           records: nursingVitalRecords(
             context,
             detail,
-            onEdit: (NursingVitalSign vital) =>
-                _openVitalsDialog(context, vital: vital),
+            onEdit: canWrite
+                ? (NursingVitalSign vital) =>
+                      _openVitalsDialog(context, vital: vital)
+                : null,
           ),
           emptyLabel: l10n.nursingNoRecordsLabel,
         ),
-        SizedBox(height: theme.spacing.md),
-        _NursingRecordPanel(
-          title: l10n.nursingMedicationsTitle,
-          records: nursingMedicationRecords(context, detail),
-          emptyLabel: l10n.nursingNoRecordsLabel,
-        ),
+        if (canReadMeds) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _NursingRecordPanel(
+            title: l10n.nursingMedicationsTitle,
+            records: nursingMedicationRecords(context, detail),
+            emptyLabel: l10n.nursingNoRecordsLabel,
+          ),
+        ],
         SizedBox(height: theme.spacing.md),
         _NursingRecordPanel(
           title: l10n.nursingNotesTitle,
@@ -274,7 +271,7 @@ class _NursingActionBar extends ConsumerWidget {
         ),
         if (omit != NursingNextActionKind.medication)
           AppPermissionActionItem(
-            requirement: writeRequirement,
+            requirement: nursingMedicationAdministerRequirement,
             label: l10n.nursingActionAdministerMedication,
             icon: Icons.medication_outlined,
             onPressed: () => _openMedicationDialog(context, detail),
@@ -307,7 +304,7 @@ class _NursingActionBar extends ConsumerWidget {
         if (detail.activeTransfer != null &&
             omit != NursingNextActionKind.transfer)
           AppPermissionActionItem(
-            requirement: writeRequirement,
+            requirement: NursingTransferPendingAtomPermissions.nextActionTransfer,
             label: l10n.nursingActionAcknowledgeTransfer,
             icon: Icons.transfer_within_a_station_outlined,
             onPressed: () => _openTransferDialog(context, detail),
@@ -315,20 +312,20 @@ class _NursingActionBar extends ConsumerWidget {
         if (summary.isDischargePending &&
             omit != NursingNextActionKind.discharge)
           AppPermissionActionItem(
-            requirement: writeRequirement,
+            requirement: NursingDischargePendingAtomPermissions.write,
             label: l10n.nursingActionDischargeClearance,
             icon: Icons.fact_check_outlined,
             onPressed: () => _openDischargeClearanceDialog(context, detail),
           ),
         if (icuActive)
           AppPermissionActionItem(
-            requirement: const AccessRequirement(),
+            requirement: NursingDischargePendingAtomPermissions.openIcu,
             label: l10n.nursingActionOpenIcu,
             icon: Icons.monitor_heart_outlined,
             onPressed: () => _openIcuWorkspace(context, summary),
           ),
         AppPermissionActionItem(
-          requirement: writeRequirement,
+          requirement: NursingDischargePendingAtomPermissions.printSummary,
           label: l10n.nursingActionPrintSummary,
           icon: Icons.print_outlined,
           onPressed: () => _openPrintSummaryDialog(context, detail),
@@ -385,10 +382,57 @@ class _NursingHandoverPanel extends StatelessWidget {
   }
 }
 
-class _NursingAdmissionChecklistPanel extends StatelessWidget {
-  const _NursingAdmissionChecklistPanel({required this.detail});
+class _NursingBillingClearancePanel extends StatelessWidget {
+  const _NursingBillingClearancePanel({required this.detail});
 
   final NursingPatientDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final NursingPatientSummary summary = detail.enrichedSummary;
+    final NursingDischargeSummary? discharge = detail.latestDischarge;
+    final String statusLabel = discharge?.status?.trim().isNotEmpty == true
+        ? nursingApiLabel(discharge!.status!)
+        : (summary.dischargeStatus == null ||
+              summary.dischargeStatus!.trim().isEmpty)
+        ? l10n.profileUnknownValue
+        : nursingApiLabel(summary.dischargeStatus!);
+    final String body = discharge?.summary?.trim().isNotEmpty == true
+        ? discharge!.summary!.trim()
+        : l10n.nursingChecklistDischargePendingBody;
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargeBillingSectionTitle,
+      child: AppNursingRecordList(
+        items: <AppNursingRecordEntry>[
+          AppNursingRecordEntry(
+            title: statusLabel,
+            subtitle: nursingDateTimeLabel(context, discharge?.dischargedAt),
+            body: body,
+            icon: Icons.receipt_long_outlined,
+            status: AppWorkspaceStatus(
+              label: statusLabel,
+              tone: nursingStatusTone(
+                discharge?.status ?? summary.dischargeStatus,
+              ),
+            ),
+          ),
+        ],
+        emptyLabel: l10n.nursingNoRecordsLabel,
+      ),
+    );
+  }
+}
+
+class _NursingAdmissionChecklistPanel extends StatelessWidget {
+  const _NursingAdmissionChecklistPanel({
+    required this.detail,
+    this.canWrite = true,
+  });
+
+  final NursingPatientDetail detail;
+  final bool canWrite;
 
   @override
   Widget build(BuildContext context) {
@@ -400,15 +444,22 @@ class _NursingAdmissionChecklistPanel extends StatelessWidget {
         items: nursingAdmissionChecklistItems(
           context,
           detail,
-          onOpenHandover: () => _openHandoverDialog(context),
-          onConfirmIdentity: () => _confirmIdentity(context),
-          onOpenVitals: () => _openVitalsDialog(context),
-          onOpenAllergies: () => _openAllergiesDialog(context),
-          onOpenBelongings: () => _openBelongingsDialog(context),
-          onOpenCarePlan: () => _openCarePlanDialog(context),
-          onNotifyDoctor: () => _openNotifyDoctorDialog(context),
-          onOpenDischargeClearance: () =>
-              _openDischargeClearanceDialog(context, detail),
+          onOpenHandover: canWrite ? () => _openHandoverDialog(context) : null,
+          onConfirmIdentity: canWrite ? () => _confirmIdentity(context) : null,
+          onOpenVitals: canWrite ? () => _openVitalsDialog(context) : null,
+          onOpenAllergies: canWrite
+              ? () => _openAllergiesDialog(context)
+              : null,
+          onOpenBelongings: canWrite
+              ? () => _openBelongingsDialog(context)
+              : null,
+          onOpenCarePlan: canWrite ? () => _openCarePlanDialog(context) : null,
+          onNotifyDoctor: canWrite
+              ? () => _openNotifyDoctorDialog(context)
+              : null,
+          onOpenDischargeClearance: canWrite
+              ? () => _openDischargeClearanceDialog(context, detail)
+              : null,
         ),
         emptyLabel: l10n.nursingNoRecordsLabel,
       ),

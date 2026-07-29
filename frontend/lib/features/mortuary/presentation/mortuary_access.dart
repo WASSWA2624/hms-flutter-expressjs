@@ -339,10 +339,11 @@ abstract final class MortuaryOverviewAtomPermissions {
 /// Atom → requirement map for Mortuary Intake (`/mortuary?panel=intake`).
 ///
 /// Inventory: `screens/mortuary.md` → Intake tab (cases worklist; receive-case
-/// create ∩ `mortuary:write` — no-op chrome removed). Read-only detail; Print
-/// documents when export ∪. Nested cross-module write matrix is n/a for this
-/// tab. Billing events use ∩ `mortuary:billing_event` + `billing:read`.
-/// Route entry ∪ is [routeEntry].
+/// create/update/delete ∩ `mortuary:write` — no-op mutation chrome removed).
+/// Read-only detail; Print documents when export ∪. Nested cross-module
+/// read/write matrix rows are n/a for this tab. Billing events use ∩
+/// `mortuary:billing_event` + `billing:read`. Route entry ∪ is [routeEntry].
+/// Export keeps source ∪ `mortuary:export` | `reports:read`.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -355,10 +356,12 @@ abstract final class MortuaryOverviewAtomPermissions {
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
-/// | Receive case | create | write ∩ ([create]) — not mounted |
+/// | Receive case | create | write ∩ ([create] / [receiveCase]) — not mounted |
+/// | Update / delete mutations | update / delete | write ∩ — not mounted |
 /// | Assign storage | update | manage_storage ∩ — not mounted |
 /// | Post-mortem request / approve / release | create / approve / update | fine-grained ∩ — not mounted |
 /// | Audit panel | read | audit ∩ — not mounted |
+/// | Nested cross-module read / write | — | n/a (matrix) |
 /// | Route entry (deep link) | navigate | ∪ read\|write\|approve\|release\|audit ([routeEntry]) |
 abstract final class MortuaryIntakeAtomPermissions {
   static const AccessRequirement tab = mortuaryWorkspaceReadRequirement;
