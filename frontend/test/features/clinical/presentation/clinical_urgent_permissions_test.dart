@@ -286,6 +286,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const IpdAdmissionQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
