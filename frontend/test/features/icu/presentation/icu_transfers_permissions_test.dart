@@ -800,6 +800,148 @@ void main() {
     },
   );
 
+  testWidgets(
+    'authorized updateTransfer syncs selected stay via write ∪',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      final IcuPatientSummary afterApprove = _openTransferPatient.copyWith(
+        transferStatus: 'APPROVED',
+      );
+
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        detail: _openTransferDetail,
+      );
+
+      when(() => repository.listIcuBoard(any())).thenAnswer((invocation) async {
+        final IcuBoardQuery query =
+            invocation.positionalArguments.single as IcuBoardQuery;
+        return Result<AppPage<IcuPatientSummary>>.success(
+          AppPage<IcuPatientSummary>(
+            items: <IcuPatientSummary>[afterApprove],
+            request: query.pageRequest,
+            totalItemCount: 1,
+          ),
+        );
+      });
+      when(() => repository.loadIcuDetail(any())).thenAnswer((_) async {
+        return Result<IcuPatientDetail>.success(
+          IcuPatientDetail(
+            summary: afterApprove,
+            activeStay: const IcuStaySummary(id: 'STAY-XFER-1'),
+            transferRequests: const <IcuTransferRequest>[
+              IcuTransferRequest(
+                id: 'TR-1',
+                status: 'APPROVED',
+                toWardName: 'Ward B',
+              ),
+            ],
+          ),
+        );
+      });
+
+      final Element element = tester.element(find.byType(IcuWorkspacePage));
+      final ProviderContainer container = ProviderScope.containerOf(element);
+      final IcuWorkspaceController controller = container.read(
+        icuWorkspaceControllerProvider.notifier,
+      );
+      final AppFailure? selectFailure = await controller.selectPatient(
+        _openTransferPatient,
+      );
+      expect(selectFailure, isNull);
+
+      final AppFailure? mutateFailure = await controller.updateTransfer(
+        transferRequestId: 'TR-1',
+        action: IcuTransferAction.approve,
+      );
+      expect(mutateFailure, isNull);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      verify(
+        () => repository.updateTransfer(
+          detail: any(named: 'detail'),
+          transferRequestId: 'TR-1',
+          action: IcuTransferAction.approve,
+          toBedId: any(named: 'toBedId'),
+        ),
+      ).called(1);
+
+      final IcuWorkspaceState? state = container
+          .read(icuWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (IcuWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.selectedDetail?.summary.transferStatus, 'APPROVED');
+      expect(
+        state?.board.items.any(
+          (IcuPatientSummary item) => item.transferStatus == 'APPROVED',
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'panel=transfer denied falls back to read-only detail (no write dialog)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        initialLocation: '/icu?section=transfers&id=ADMXFER1&panel=transfer',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('ICU STAY'), findsOneWidget);
+      expect(find.text('REQUEST TRANSFER'), findsNothing);
+      expect(find.text('Manage transfer'), findsNothing);
+      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'panel=transfer authorized opens transfer dialog without empty detail shell',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        items: const <IcuPatientSummary>[_noOpenTransferPatient],
+        initialLocation: '/icu?section=transfers&id=ADMXFER2&panel=transfer',
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('REQUEST TRANSFER'), findsOneWidget);
+      expect(find.text('ICU STAY'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('authorized empty state remains observable for readers', (
     WidgetTester tester,
   ) async {
@@ -890,6 +1032,52 @@ void main() {
     expect(find.textContaining('Transfers'), findsWidgets);
     expect(find.text('Manage transfer'), findsNothing);
     expect(find.text('Request transfer'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('mobile + writer: Manage transfer trailing mounts', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+    );
+
+    await _pumpTransfersTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      physicalSize: const Size(390, 844),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Transfer Tab Patient'), findsOneWidget);
+    expect(find.text('Manage transfer'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('desktop + light: Transfers write affordances remain for writer', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+    );
+
+    await _pumpTransfersTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      themeMode: ThemeMode.light,
+      physicalSize: const Size(1440, 900),
+    );
+
+    expect(find.text('Transfer Tab Patient'), findsOneWidget);
+    expect(find.text('Manage transfer'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
 

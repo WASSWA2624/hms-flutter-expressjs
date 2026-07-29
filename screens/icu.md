@@ -127,6 +127,37 @@ Patient-board strip toolbar actions (**Refresh**, **Start ICU stay**) were remov
   - Immediate result: Prints ICU stay summary.
   - Condition: Always when detail is open.
 
+### Transfers tab (`?section=transfers`)
+
+Transfer queue on the shared patient board. Stage next-action is **Manage transfer** (open request) or
+**Request transfer** (no open request) — both write ∪. Write keeps source ∪ `clinical:write` |
+`emergency:write` + `icu-critical-care` (matrix ∩ `clinical:write` alone — keep source). Nested
+cross-module matrix rows _(n/a)_. Helpers: `IcuTransfersAtomPermissions`, `canViewIcuTransfers`,
+`icuBoardShowsNextActionColumn` (Transfers hides next-action column for read-only). Tests:
+`frontend/test/features/icu/presentation/icu_transfers_permissions_test.dart`.
+
+- **Transfers** (strip tab + count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Board scope `transfer`; transfer status column + stage next-action.
+  - Condition: Read ∪ `clinical:read` | `emergency:read` + `icu-critical-care`; tab omitted otherwise.
+
+- **Search / Clear / Filters / Settings / Transfer column**
+  - Location: `AppListTable` chrome; transfer status column.
+  - Opens modal: Advanced filters; Table Settings.
+  - Immediate result: Client filters / column visibility; shows transfer status for readers.
+  - Condition: Same read ∪. Next-action column mounts only when write ∪ passes.
+
+- **Next action Manage transfer / Request transfer**
+  - Location: `next_action` column; mobile trailing.
+  - Opens modal: Manage transfer dialog or Request transfer dialog.
+  - Immediate result: Mutates transfer; snackbar; board refresh.
+  - Condition: Write ∪; absent when unauthorized (no disabled stubs).
+
+- **Row select → stay detail** / complementary writes / print / Open billing|IPD|clearance
+  - Same gates as shared detail inventory; Manage/Request omitted from Quick Actions when they are the row next-action.
+  - Deep link `?id=&panel=transfer`: opens transfer dialog when write ∪; otherwise falls back to read-only detail.
+
 ### Follow-ups tab (`?section=follow-ups`)
 
 Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWorklistPanel` (ICU scope) with
@@ -184,6 +215,7 @@ Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWo
 - [ ] Active tab patient without bed: only **Assign bed** next-action; detail has no Assign bed duplicate.
 - [ ] Critical tab alerted patient: only **Acknowledge alert** next-action; detail omits Acknowledge.
 - [ ] Deep link `/icu?id=…&panel=vitals` opens vitals dialog without an empty detail first.
+- [ ] Transfers: read-only sees list + Transfer column; Manage/Request absent; writer sees Manage/Request; `panel=transfer` denied falls back to detail.
 - [ ] No Refresh or Start ICU stay control on the tab strip; board still updates after a successful mutation.
 - [ ] Bed board: read-only staff see ward chips / occupancy / Open IPD; **Manage beds** absent without rooms-beds admin.
 - [ ] Bed board: facility admin + inpatient module sees **Manage beds**; clinical writer alone does not.

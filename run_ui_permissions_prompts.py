@@ -5,8 +5,9 @@ Processing rules:
   the current folder has finished all iterations.
 - Within a folder iteration, at most MAX_CONCURRENCY prompts run at once.
 - Each folder is iterated ITERATIONS times so every prompt runs that many times.
-- Completed prompt iterations recorded in .run_prompts_state.json are skipped
-  on resume; pass --force to clear state and re-run everything.
+- Completed prompt iterations recorded in
+  .run_ui_permissions_prompts_state.json are skipped on resume; pass --force
+  to clear state and re-run everything.
 - After each successful prompt run, commit and push to GitHub.
 - Model is always "auto".
 """
@@ -32,7 +33,7 @@ from cursor_sdk import (
 
 PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "ui-permissions"
-STATE_FILE = PROJECT_DIR / ".run_prompts_state.json"
+STATE_FILE = PROJECT_DIR / ".run_ui_permissions_prompts_state.json"
 ITERATIONS = 2
 MAX_CONCURRENCY = 5
 MAX_ATTEMPTS = 3
@@ -40,7 +41,7 @@ GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
 MODEL = "auto"
-GIT_EXCLUDES = (".run_prompts_state.json",)
+GIT_EXCLUDES = (".run_ui_permissions_prompts_state.json",)
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
@@ -383,7 +384,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Ignore .run_prompts_state.json and re-run all prompt iterations.",
+        help=(
+            "Ignore .run_ui_permissions_prompts_state.json and re-run "
+            "all prompt iterations."
+        ),
     )
     parser.add_argument(
         "--list",
@@ -590,8 +594,9 @@ async def main(argv: list[str] | None = None):
         sys.exit(1)
 
     _log(f"\nAll {len(all_keys)} runs complete.")
-    # Keep .run_prompts_state.json so a later start skips completed runs.
-    # Use --force (or delete the state file) to re-run everything.
+    # Keep .run_ui_permissions_prompts_state.json so a later start skips
+    # completed runs. Use --force (or delete the state file) to re-run
+    # everything.
 
 
 if __name__ == "__main__":

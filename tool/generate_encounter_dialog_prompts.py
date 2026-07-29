@@ -2041,8 +2041,8 @@ def main() -> None:
         "",
         "Prompt files live in [`../prompts/`](../prompts/) "
         "(named `NN-<dialog-slug>.md`). "
-        "`run_prompts.py` executes every `prompts/*.md` — keep this index here "
-        "so it is not mistaken for an implementation brief.",
+        "`run_ui_permissions_prompts.py` runs ui-permissions prompts — keep "
+        "this index here so it is not mistaken for an implementation brief.",
         "",
         "Each prompt is generated to be actionable, professional, contextual, "
         "specific, and complete against `prompt.md` (shells, reuse, loading/"

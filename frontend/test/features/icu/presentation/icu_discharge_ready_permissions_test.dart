@@ -976,9 +976,12 @@ void main() {
           .read(icuWorkspaceControllerProvider.notifier)
           .selectPatient(_pendingReadiness);
       expect(selectFailure, isNull);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      await openIcuReadinessDialog(element);
+      // Do not await — dialog future completes only when dismissed.
+      final Future<void> dialogFuture = openIcuReadinessDialog(element);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       // AppDialog uppercases plain Text titles.
@@ -994,6 +997,11 @@ void main() {
           dischargedAt: any(named: 'dischargedAt'),
         ),
       );
+
+      // Dismiss so the dialog future can complete cleanly.
+      await tester.tap(find.byTooltip('Close').first);
+      await tester.pumpAndSettle();
+      await dialogFuture;
     },
   );
 
