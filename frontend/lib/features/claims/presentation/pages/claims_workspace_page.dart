@@ -141,7 +141,13 @@ class _ClaimsWorkspaceContentState
         patientId: query.patientId,
       );
       if (item != null && mounted) {
-        await _openClaimsDetailDialog(context, ref, widget.state, item);
+        await _openClaimsDetailDialog(
+          context,
+          ref,
+          widget.state,
+          item,
+          section: _section,
+        );
       }
     }
     if (query.action == 'preauth' && mounted) {
@@ -765,7 +771,15 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         unawaited(controller.changePage(request));
       },
       onRowSelected: (ClaimsQueueItem item) {
-        unawaited(_openClaimsDetailDialog(context, ref, state, item));
+        unawaited(
+          _openClaimsDetailDialog(
+            context,
+            ref,
+            state,
+            item,
+            section: section,
+          ),
+        );
       },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.claimsEmptyQueueTitle,
@@ -1240,8 +1254,9 @@ Future<void> _openClaimsDetailDialog(
   BuildContext context,
   WidgetRef ref,
   ClaimsWorkspaceState fallbackState,
-  ClaimsQueueItem item,
-) async {
+  ClaimsQueueItem item, {
+  required ClaimsDeskSection section,
+}) async {
   final ClaimsWorkspaceController controller = ref.read(
     claimsWorkspaceControllerProvider.notifier,
   );
@@ -1259,6 +1274,10 @@ Future<void> _openClaimsDetailDialog(
     return;
   }
   final AppLocalizations l10n = context.l10n;
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool canPrint = claimsDetailPrintRequirement(section).isAllowed(
+    accessPolicy,
+  );
 
   await showAppDialog<void>(
     context: context,
@@ -1269,35 +1288,37 @@ Future<void> _openClaimsDetailDialog(
       maxWidth: 960,
       content: _ClaimsDetailContent(state: state, detail: detail),
       actions: <Widget>[
-        AppReportActionButton.print(
-          label: l10n.claimsPrintStatementAction,
-          onPressed: () async {
-            final String title = detail.isAuthorization
-                ? l10n.claimsAuthorizationStatementTitle
-                : l10n.claimsClaimStatementTitle;
-            await printFormTemplateDocument(
-              ref: ref,
-              context: context,
-              title: title,
-              patientContext: detail.item.patientDisplayId == null
-                  ? null
-                  : buildPrintFormPatientContext(
-                      l10n,
-                      patientName: detail.item.patientDisplayId!,
-                      patientId: detail.item.patientDisplayId,
-                    ),
-              contextReference: PrintFormContextReference(
-                label: detail.isAuthorization
-                    ? l10n.claimsAuthorizationStatementTitle
-                    : l10n.claimsClaimStatementTitle,
-                value: detail.item.displayId,
-              ),
-              bodyHtml: _claimsStatementHtml(context, detail),
-              footerNote: l10n.claimsReportFooter,
-              includeSignatures: true,
-            );
-          },
-        ),
+        // Settled: nested export ∪; other sections: read ∩ (inventory).
+        if (canPrint)
+          AppReportActionButton.print(
+            label: l10n.claimsPrintStatementAction,
+            onPressed: () async {
+              final String title = detail.isAuthorization
+                  ? l10n.claimsAuthorizationStatementTitle
+                  : l10n.claimsClaimStatementTitle;
+              await printFormTemplateDocument(
+                ref: ref,
+                context: context,
+                title: title,
+                patientContext: detail.item.patientDisplayId == null
+                    ? null
+                    : buildPrintFormPatientContext(
+                        l10n,
+                        patientName: detail.item.patientDisplayId!,
+                        patientId: detail.item.patientDisplayId,
+                      ),
+                contextReference: PrintFormContextReference(
+                  label: detail.isAuthorization
+                      ? l10n.claimsAuthorizationStatementTitle
+                      : l10n.claimsClaimStatementTitle,
+                  value: detail.item.displayId,
+                ),
+                bodyHtml: _claimsStatementHtml(context, detail),
+                footerNote: l10n.claimsReportFooter,
+                includeSignatures: true,
+              );
+            },
+          ),
       ],
     ),
   );

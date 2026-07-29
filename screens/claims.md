@@ -104,7 +104,7 @@ Settled and Insurance Setup have no tab-strip toolbar actions.
   - Location: Detail dialog actions.
   - Opens modal: Print flow.
   - Immediate result: Prints authorization or claim statement.
-  - Condition: Always when detail is open.
+  - Condition: Authorizations / Active Claims — when detail is open (read ∩). Settled — nested export ∪ (`reports:read` | `evidence:export`); omitted when unauthorized.
 
 ### Insurance Setup panel
 
@@ -134,4 +134,5 @@ Settled and Insurance Setup have no tab-strip toolbar actions.
 - [x] Close as paid does not show Payer response status select; Record response still does.
 - [x] Without write capability, Request authorization / next-action / Insurance Setup creates are absent.
 - [x] Mobile list exposes next-action trailing; tap opens mutation without detail first.
+- [x] Settled Print statement requires nested export ∪ (`reports:read` | `evidence:export`); omitted for billing:read alone.
 - [ ] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render on simplified surfaces.

@@ -106,9 +106,42 @@ bool canViewClaimsSection(AppAccessPolicy policy, ClaimsDeskSection section) {
   return canViewClaimsDeskSection(policy, section);
 }
 
-/// Print statement is read chrome (no separate export key on this tab).
+/// Print statement on Authorizations / Active Claims is read chrome
+/// (inventory: always when detail is open → [claimsWorkspaceReadRequirement]).
 bool canReadClaimsDocument(AppAccessPolicy policy) {
   return canReadClaims(policy);
+}
+
+/// Nested cross-module export / print on Settled (matrix ∪):
+/// `reports:read` | `evidence:export`.
+///
+/// Inventory says Print is always when detail is open; Settled matrix maps
+/// exports to this nested union — keep the matrix and note the mapping in tests.
+const AccessRequirement claimsNestedExportRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.reportsRead,
+    AppPermissions.evidenceExport,
+  ],
+  activeModules: <String>[claimsInsuranceClaimsModule],
+);
+
+/// Alias used by Settled atom map / prompts.
+const AccessRequirement claimsSettledExportRequirement =
+    claimsNestedExportRequirement;
+
+bool canExportClaimsSettledDocument(AppAccessPolicy policy) {
+  return claimsNestedExportRequirement.isAllowed(policy);
+}
+
+/// Print gate for the detail dialog opened from [section].
+AccessRequirement claimsDetailPrintRequirement(ClaimsDeskSection section) {
+  return switch (section) {
+    ClaimsDeskSection.settled => claimsNestedExportRequirement,
+    ClaimsDeskSection.authorizations ||
+    ClaimsDeskSection.activeClaims ||
+    ClaimsDeskSection.insuranceSetup =>
+      claimsWorkspaceReadRequirement,
+  };
 }
 
 /// Requirement for the labeled next-action on a queue item.
@@ -213,6 +246,41 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement closeAsPaid = claimsFinancialApproveRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;
+  static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;
+}
+
+/// Settled tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Settled tab | navigate | read ∩ `billing:read` |
+/// | Tab-strip primary / Refresh | _(absent — review-only)_ | — |
+/// | Summary chips | _(absent on Settled)_ | — |
+/// | Search / Clear / column Settings | read chrome | read ∩ |
+/// | Advanced Filters (Paid / Cancelled) | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Next action / Sync / Prepare / Request auth | _(absent)_ | — |
+/// | Print statement | export | nested ∪ `reports:read` \| `evidence:export` |
+/// | Create / update / delete (matrix verbs) | mutate | write ∩ (no Settled entry) |
+/// | Approve / close-as-paid | approve | financial:approve ∩ (Active Claims) |
+/// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
+///
+/// Inventory documents Print as always when detail is open; Settled matrix
+/// maps nested cross-module read/export to [export] (∪). Write/approve atoms
+/// reuse feature helpers for matrix completeness — Settled UI does not mount them.
+abstract final class ClaimsSettledAtomPermissions {
+  static const AccessRequirement tab = claimsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
+  static const AccessRequirement detail = claimsWorkspaceReadRequirement;
+  static const AccessRequirement create = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement update = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement delete = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement write = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = claimsFinancialApproveRequirement;
+  static const AccessRequirement export = claimsNestedExportRequirement;
+  static const AccessRequirement document = claimsNestedExportRequirement;
+  static const AccessRequirement nestedRead = claimsNestedExportRequirement;
   static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;
 }
 

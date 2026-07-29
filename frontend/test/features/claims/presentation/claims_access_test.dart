@@ -330,5 +330,120 @@ void main() {
         isTrue,
       );
     });
+
+    test('Settled atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.tab,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.export,
+          claimsNestedExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.write,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.routeEntry,
+          claimsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Settled nested export ∪ allows reports:read or evidence:export', () {
+      final AppAccessPolicy readerOnly = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy withReports = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.reportsRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+          AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+          AppModuleEntitlement(
+            code: 'reporting-analytics',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      final AppAccessPolicy reportsWithoutModule = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.reportsRead,
+        },
+      );
+      final AppAccessPolicy withEvidence = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(readerOnly), isFalse);
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(withReports), isTrue);
+      // reports:read is plan-gated by reporting-analytics via grants().
+      expect(
+        ClaimsSettledAtomPermissions.export.isAllowed(reportsWithoutModule),
+        isFalse,
+      );
+      expect(
+        ClaimsSettledAtomPermissions.export.isAllowed(withEvidence),
+        isTrue,
+      );
+      // Inventory said Print always when detail open; Settled matrix maps
+      // Print to nested export ∪ (not read ∩ alone).
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          readerOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.authorizations)
+            .isAllowed(readerOnly),
+        isTrue,
+      );
+    });
+
+    test('Settled next-action column never mounts', () {
+      final AppAccessPolicy writer = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+
+      expect(
+        claimsSectionShowsNextActionColumn(writer, ClaimsDeskSection.settled),
+        isFalse,
+      );
+    });
+
+    test('Settled tab ∩ denied without billing:read', () {
+      final AppAccessPolicy writeOnly = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingWrite},
+      );
+
+      expect(ClaimsSettledAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(
+        canViewClaimsDeskSection(writeOnly, ClaimsDeskSection.settled),
+        isFalse,
+      );
+    });
   });
 }
