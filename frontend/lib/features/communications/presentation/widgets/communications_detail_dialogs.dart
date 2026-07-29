@@ -142,10 +142,12 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
     if (!CommunicationsNotificationsAtomPermissions.detail.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
+    // Open linked: read ∩ + internal path (omit disabled empty control).
     final bool canOpenLinked =
         CommunicationsNotificationsAtomPermissions.openLinked.isAllowed(
           policy,
-        );
+        ) &&
+        communicationsInternalPath(notification.targetPath) != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

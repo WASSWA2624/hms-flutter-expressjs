@@ -476,9 +476,11 @@ class _NotificationsTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Search / Clear / Filters / Settings / pagination share read ∩ (inventory).
     if (!CommunicationsNotificationsAtomPermissions.listChrome.isAllowed(
-      policy,
-    )) {
+          policy,
+        ) ||
+        !CommunicationsNotificationsAtomPermissions.search.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
     final bool canWrite =
@@ -489,6 +491,10 @@ class _NotificationsTable extends ConsumerWidget {
         CommunicationsNotificationsAtomPermissions.rowSelect.isAllowed(policy);
     final bool canShowNextAction =
         CommunicationsNotificationsAtomPermissions.nextAction.isAllowed(policy);
+    final bool canFilter =
+        CommunicationsNotificationsAtomPermissions.filters.isAllowed(policy);
+    final bool canPaginate =
+        CommunicationsNotificationsAtomPermissions.pagination.isAllowed(policy);
     final AppLocalizations l10n = context.l10n;
 
     return AppListTable<NotificationItem>(
@@ -507,6 +513,7 @@ class _NotificationsTable extends ConsumerWidget {
         state,
         searchController,
         matcher: _notificationSearchMatcher,
+        showAdvancedFilterButton: canFilter,
       ),
       itemKeyBuilder: (NotificationItem item) => ValueKey<String>(item.id),
       previousPageLabel: l10n.communicationsPreviousPageLabel,
@@ -514,13 +521,15 @@ class _NotificationsTable extends ConsumerWidget {
       pageLabelBuilder: (AppPage<NotificationItem> page) {
         return _pageLabel(context, page);
       },
-      onPageChanged: (AppPageRequest request) {
-        unawaited(
-          ref
-              .read(communicationsWorkspaceControllerProvider.notifier)
-              .changePage(request),
-        );
-      },
+      onPageChanged: canPaginate
+          ? (AppPageRequest request) {
+              unawaited(
+                ref
+                    .read(communicationsWorkspaceControllerProvider.notifier)
+                    .changePage(request),
+              );
+            }
+          : null,
       onRowSelected: canSelectRow
           ? (NotificationItem item) {
               unawaited(
@@ -1085,6 +1094,7 @@ AppListTableSearch<T> _tableSearch<T>(
   CommunicationsWorkspaceState state,
   TextEditingController controller, {
   required AppListTableSearchMatcher<T> matcher,
+  bool showAdvancedFilterButton = true,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableSearch<T>(
@@ -1103,7 +1113,7 @@ AppListTableSearch<T> _tableSearch<T>(
           .read(communicationsWorkspaceControllerProvider.notifier)
           .applySearch('');
     },
-    showAdvancedFilterButton: true,
+    showAdvancedFilterButton: showAdvancedFilterButton,
     advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
     advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
     advancedFilterApplyLabel: l10n.communicationsApplyFiltersAction,

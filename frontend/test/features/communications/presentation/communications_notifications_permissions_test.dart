@@ -240,6 +240,20 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsNotificationsAtomPermissions.filters,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.pagination,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsNotificationsAtomPermissions.rowSelect,
           communicationsWorkspaceReadRequirement,
         ),
@@ -262,6 +276,13 @@ void main() {
       expect(
         identical(
           CommunicationsNotificationsAtomPermissions.openLinked,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.detail,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,
