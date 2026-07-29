@@ -812,6 +812,39 @@ void main() {
       expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     });
 
+    testWidgets('mobile light theme: writer Start + Record vitals mount', (
+      WidgetTester tester,
+    ) async {
+      await _pumpTriageTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Triage Patient'), findsOneWidget);
+      expect(find.text('Record vitals'), findsWidgets);
+      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    });
+
+    testWidgets(
+      'row select opens Flow Actions omitting Record vitals duplicate',
+      (WidgetTester tester) async {
+        await _pumpTriageTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Triage Patient'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('FLOW ACTIONS'), findsOneWidget);
+        expect(find.text('Record vitals'), findsNothing);
+      },
+    );
+
     testWidgets('post-mutation sync: vitals dialog opens for writer', (
       WidgetTester tester,
     ) async {

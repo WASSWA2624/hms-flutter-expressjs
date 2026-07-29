@@ -1177,7 +1177,7 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory: `{screen['inventory']}` (source of truth for reachable controls).
+- Screen inventory: `{screen['inventory']}` (read-only reference for reachable controls; do not modify).
 - Target tab: **{tab['label']}** (`{tab['section']}`). {tab.get('extra', '')}
 - Feature code: `{screen['feature']}`
 - Module entitlement: `{screen['module']}`

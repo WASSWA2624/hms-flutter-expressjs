@@ -821,7 +821,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),
-            matching: find.text('Open ICU'),
+            matching: find.text('Open ICU workspace'),
           ),
           findsOneWidget,
         );

@@ -295,7 +295,7 @@ Triage vitals/acuity (`?section=triage`). Gates: `OpdTriageAtomPermissions` — 
   - Location: `next_action` column (and mobile trailing).
   - Opens modal: Matching mutation dialog directly (no empty hub).
   - Immediate result: Persists; snackbar; refresh.
-  - Condition: Source vitals / reception; unauthorized next-action absent.
+  - Condition: Source vitals / reception; unauthorized next-action absent; next-action column hidden when no stage write is allowed.
 
 - **Deep link** `flowId` + `panel=vitals|doctor|…`
   - Location: Route query on Triage.
@@ -372,13 +372,13 @@ Shared follow-up worklist (`FollowUpWorklistPanel`, OPD scope). No **Start OPD e
   - Full writer presence; pay next-action needs billing:write + `billing-payments`; subscription strip without `scheduling-queue`; admission handoff needs inpatient module.
   - Deep link `panel=vitals` blocked for readers / opens for writers; authorized empty / error-retry; mobile light + desktop dark; post-mutation vitals dialog; row-select hub omits Record vitals duplicate.
 - Triage permission tests in `frontend/test/features/opd/presentation/opd_triage_permissions_test.dart` prove:
-  - ∪ read (`patient:read` | `clinical:read`) shows Triage chrome; ∩ / source denial hides Start / Record vitals.
+  - ∪ read (`patient:read` | `clinical:read`) shows Triage chrome; ∩ / source denial hides Start / Record vitals / next-action column.
   - Full writer presence; subscription strip without `scheduling-queue`; nested billing/admission absent without those modules.
-  - Authorized empty / error-retry; mobile + desktop dark; post-mutation vitals dialog; deep-link `panel=vitals` gated.
+  - Deep link `panel=vitals` blocked for readers / opens for writers; authorized empty / error-retry; mobile light + desktop dark; post-mutation vitals dialog; row-select hub omits Record vitals duplicate.
 - Queue permission tests in `frontend/test/features/opd/presentation/opd_queue_permissions_test.dart` prove:
   - ∪ read shows Queue chrome; ∩ denial / read-only hides Start / hub writes (Prioritize / Change status / Assign doctor).
-  - Full writer presence; no next-action column; subscription strip without `scheduling-queue`; nested billing/admission absent without those modules.
-  - Authorized empty / error-retry; mobile + desktop dark; post-mutation Start dialog; row-select opens Queue Actions.
+  - Full writer presence; no next-action column; subscription strip without `scheduling-queue` (unit + UI collapse); nested billing/admission absent without those modules / not on hub.
+  - Authorized loading / empty / error-retry / nested Change status validation; mobile light + desktop dark; post-mutation Start dialog; row-select opens Queue Actions.
 - Follow-ups permission tests in `frontend/test/features/opd/presentation/opd_follow_ups_permissions_test.dart` prove:
   - ∪ read (`patient:read` | `clinical:read`) shows Follow-ups chrome; Start OPD absent; ∩ denial hides Mark completed / Reschedule / Save follow-up.
   - Full write ∩ presence; complete syncs list; subscription strip without `scheduling-queue`; nested billing/admission absent without those rights.

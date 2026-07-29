@@ -28,27 +28,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockOperationsRepository extends Mock implements OperationsRepository {}
 
-const OperationsWorkItem _completedRequest = OperationsWorkItem(
-  id: 'MR-DONE',
-  displayId: 'MR-DONE',
-  status: 'COMPLETED',
-  assetLabel: 'HVAC Unit',
+const OperationsWorkItem _openRequest = OperationsWorkItem(
+  id: 'MR-OPEN',
+  displayId: 'MR-OPEN',
+  status: 'OPEN',
+  assetLabel: 'Generator',
   metadata: OperationsRequestMetadata(
-    issue: 'Filter replaced',
-    priority: 'LOW',
-    category: 'HVAC',
-  ),
-);
-
-const OperationsWorkItem _cancelledRequest = OperationsWorkItem(
-  id: 'MR-CXL',
-  displayId: 'MR-CXL',
-  status: 'CANCELLED',
-  assetLabel: 'Pump',
-  metadata: OperationsRequestMetadata(
-    issue: 'Cancelled leak check',
-    priority: 'NORMAL',
-    category: 'PLUMBING',
+    issue: 'Generator alarm',
+    priority: 'HIGH',
+    category: 'POWER_BACKUP',
   ),
 );
 
@@ -89,9 +77,7 @@ AppAccessPolicy _policy({
 
 void _stubRepository(
   _MockOperationsRepository repository, {
-  List<OperationsWorkItem> requests = const <OperationsWorkItem>[
-    _completedRequest,
-  ],
+  List<OperationsWorkItem> requests = const <OperationsWorkItem>[_openRequest],
   List<OperationsAsset> assets = const <OperationsAsset>[_generatorAsset],
   Result<AppPage<OperationsWorkItem>>? listOverride,
 }) {
@@ -148,15 +134,13 @@ void _stubRepository(
   });
 }
 
-Future<void> _pumpCompletedTab(
+Future<void> _pumpOpenTab(
   WidgetTester tester, {
   required _MockOperationsRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<OperationsWorkItem> requests = const <OperationsWorkItem>[
-    _completedRequest,
-  ],
+  List<OperationsWorkItem> requests = const <OperationsWorkItem>[_openRequest],
   Result<AppPage<OperationsWorkItem>>? listOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -173,7 +157,7 @@ Future<void> _pumpCompletedTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/operations?section=completed',
+    initialLocation: '/operations?section=open',
     routes: <RouteBase>[
       GoRoute(
         path: '/operations',
@@ -227,7 +211,7 @@ void main() {
     registerFallbackValue(const OperationsWorkItemQuery());
     registerFallbackValue(const OperationsAssetQuery());
     registerFallbackValue(const OperationsServiceLogQuery());
-    registerFallbackValue(_completedRequest);
+    registerFallbackValue(_openRequest);
     registerFallbackValue(
       const OperationsRequestDraft(
         category: 'OTHER',
@@ -236,10 +220,13 @@ void main() {
       ),
     );
     registerFallbackValue(
-      const OperationsRequestNoteDraft(kind: 'CLOSEOUT', note: 'Done'),
+      const OperationsTriageDraft(assignedEngineer: 'Tech'),
     );
     registerFallbackValue(
-      const OperationsStatusUpdateDraft(status: 'COMPLETED'),
+      const OperationsStatusUpdateDraft(status: 'IN_PROGRESS'),
+    );
+    registerFallbackValue(
+      const OperationsRequestNoteDraft(kind: 'CLOSEOUT', note: 'Done'),
     );
   });
 
@@ -250,39 +237,47 @@ void main() {
   test('reuses feature *Requirement helpers (no second vocabulary)', () {
     expect(
       identical(
-        OperationsCompletedAtomPermissions.tab,
+        OperationsOpenAtomPermissions.tab,
         operationsWorkspaceReadRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        OperationsCompletedAtomPermissions.write,
+        OperationsOpenAtomPermissions.write,
         operationsWorkspaceWriteRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        OperationsCompletedAtomPermissions.createRequest,
+        OperationsOpenAtomPermissions.createRequest,
         operationsWriteRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        OperationsCompletedAtomPermissions.report,
+        OperationsOpenAtomPermissions.assign,
+        operationsMutationRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        OperationsOpenAtomPermissions.report,
         operationsWorkspaceReportRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        OperationsCompletedAtomPermissions.routeEntry,
+        OperationsOpenAtomPermissions.routeEntry,
         RouteAccessCatalog.operationsEntry,
       ),
       isTrue,
     );
+    // Report matrix read ∩ narrows inventory "Always" — same as read helper.
     expect(
       identical(
         operationsWorkspaceReportRequirement,
@@ -293,85 +288,88 @@ void main() {
   });
 
   test('atom map covers inventory verbs (AC1)', () {
-    expect(OperationsCompletedAtomPermissions.tab, isNotNull);
-    expect(OperationsCompletedAtomPermissions.listChrome, isNotNull);
-    expect(OperationsCompletedAtomPermissions.search, isNotNull);
-    expect(OperationsCompletedAtomPermissions.filters, isNotNull);
-    expect(OperationsCompletedAtomPermissions.settings, isNotNull);
-    expect(OperationsCompletedAtomPermissions.empty, isNotNull);
-    expect(OperationsCompletedAtomPermissions.loading, isNotNull);
-    expect(OperationsCompletedAtomPermissions.retry, isNotNull);
-    expect(OperationsCompletedAtomPermissions.success, isNotNull);
-    expect(OperationsCompletedAtomPermissions.validation, isNotNull);
-    expect(OperationsCompletedAtomPermissions.rowSelect, isNotNull);
-    expect(OperationsCompletedAtomPermissions.detail, isNotNull);
-    expect(OperationsCompletedAtomPermissions.nextAction, isNotNull);
-    expect(OperationsCompletedAtomPermissions.create, isNotNull);
-    expect(OperationsCompletedAtomPermissions.update, isNotNull);
-    expect(OperationsCompletedAtomPermissions.delete, isNotNull);
-    expect(OperationsCompletedAtomPermissions.closeout, isNotNull);
-    expect(OperationsCompletedAtomPermissions.assign, isNotNull);
-    expect(OperationsCompletedAtomPermissions.updateStatus, isNotNull);
-    expect(OperationsCompletedAtomPermissions.serviceLog, isNotNull);
-    expect(OperationsCompletedAtomPermissions.note, isNotNull);
-    expect(OperationsCompletedAtomPermissions.report, isNotNull);
-    expect(OperationsCompletedAtomPermissions.nestedWrite, isNotNull);
-    expect(OperationsCompletedAtomPermissions.nestedRead, isNotNull);
-    expect(OperationsCompletedAtomPermissions.routeEntry, isNotNull);
+    expect(OperationsOpenAtomPermissions.tab, isNotNull);
+    expect(OperationsOpenAtomPermissions.listChrome, isNotNull);
+    expect(OperationsOpenAtomPermissions.search, isNotNull);
+    expect(OperationsOpenAtomPermissions.filters, isNotNull);
+    expect(OperationsOpenAtomPermissions.settings, isNotNull);
+    expect(OperationsOpenAtomPermissions.empty, isNotNull);
+    expect(OperationsOpenAtomPermissions.loading, isNotNull);
+    expect(OperationsOpenAtomPermissions.retry, isNotNull);
+    expect(OperationsOpenAtomPermissions.success, isNotNull);
+    expect(OperationsOpenAtomPermissions.validation, isNotNull);
+    expect(OperationsOpenAtomPermissions.rowSelect, isNotNull);
+    expect(OperationsOpenAtomPermissions.detail, isNotNull);
+    expect(OperationsOpenAtomPermissions.nextAction, isNotNull);
+    expect(OperationsOpenAtomPermissions.create, isNotNull);
+    expect(OperationsOpenAtomPermissions.update, isNotNull);
+    expect(OperationsOpenAtomPermissions.delete, isNotNull);
+    expect(OperationsOpenAtomPermissions.assign, isNotNull);
+    expect(OperationsOpenAtomPermissions.updateStatus, isNotNull);
+    expect(OperationsOpenAtomPermissions.serviceLog, isNotNull);
+    expect(OperationsOpenAtomPermissions.note, isNotNull);
+    expect(OperationsOpenAtomPermissions.closeout, isNotNull);
+    expect(OperationsOpenAtomPermissions.report, isNotNull);
+    expect(OperationsOpenAtomPermissions.nestedWrite, isNotNull);
+    expect(OperationsOpenAtomPermissions.nestedRead, isNotNull);
+    expect(OperationsOpenAtomPermissions.routeEntry, isNotNull);
+    expect(
+      OperationsOpenAtomPermissions.tab.allPermissions,
+      contains(AppPermissions.operationsRead),
+    );
+    expect(
+      OperationsOpenAtomPermissions.create.allPermissions,
+      contains(AppPermissions.operationsWrite),
+    );
+    expect(
+      OperationsOpenAtomPermissions.routeEntry.anyPermissions,
+      containsAll(<AppPermission>[
+        AppPermissions.operationsRead,
+        AppPermissions.operationsWrite,
+      ]),
+    );
   });
 
   testWidgets(
-    'read ∩ denial of write: list/Report visible; Create / Closeout / detail writes absent',
+    'read ∩ denial of write: list/Report visible; Create / Assign / detail writes absent',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
       );
-      expect(
-        OperationsCompletedAtomPermissions.tab.isAllowed(reader),
-        isTrue,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.write.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.closeout.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.report.isAllowed(reader),
-        isTrue,
-      );
+      expect(OperationsOpenAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(OperationsOpenAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(OperationsOpenAtomPermissions.assign.isAllowed(reader), isFalse);
+      expect(OperationsOpenAtomPermissions.report.isAllowed(reader), isTrue);
 
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
-      expect(find.text('Filter replaced'), findsOneWidget);
-      expect(_tabLabel('Completed'), findsOneWidget);
+      expect(find.text('Generator alarm'), findsOneWidget);
+      expect(_tabLabel('Open'), findsOneWidget);
       expect(find.text('Report'), findsOneWidget);
       expect(find.textContaining('Create request'), findsNothing);
-      expect(find.text('Add closeout note if needed'), findsNothing);
+      expect(find.text('Assign technician or team'), findsNothing);
       expect(find.text('Review request'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.text('Filter replaced'));
+      await tester.tap(find.text('Generator alarm'));
       await tester.pumpAndSettle();
 
       expect(find.text('REQUEST DETAIL'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Update status'),
+          matching: find.text('Assign'),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Closeout note'),
+          matching: find.text('Update status'),
         ),
         findsNothing,
       );
@@ -380,7 +378,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Create, Closeout next-action, complementary detail writes mount',
+    'full write ∩: Create, Assign next-action, complementary detail writes mount',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         roles: const <String>['OPERATIONS'],
@@ -389,34 +387,28 @@ void main() {
           AppPermissions.operationsWrite,
         },
       );
-      expect(
-        OperationsCompletedAtomPermissions.write.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.closeout.isAllowed(writer),
-        isTrue,
-      );
+      expect(OperationsOpenAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(OperationsOpenAtomPermissions.assign.isAllowed(writer), isTrue);
 
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.text('Filter replaced'), findsOneWidget);
+      expect(find.text('Generator alarm'), findsOneWidget);
       expect(find.textContaining('Create request'), findsOneWidget);
       expect(find.text('Report'), findsOneWidget);
-      expect(find.byTooltip('Add closeout note if needed'), findsOneWidget);
+      expect(find.text('Assign technician or team'), findsOneWidget);
 
-      await tester.tap(find.text('Filter replaced'));
+      await tester.tap(find.text('Generator alarm'));
       await tester.pumpAndSettle();
 
-      // Closeout is the row next-action — omitted from complementary detail.
+      // Assign is the row next-action — omitted from complementary detail.
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
-          matching: find.text('Closeout note'),
+          matching: find.text('Assign'),
         ),
         findsNothing,
       );
@@ -432,37 +424,28 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: operations:write alone without operations:read omits Completed chrome',
+    'route entry ∪: operations:write alone without operations:read omits Open chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.operationsWrite},
       );
       expect(
-        OperationsCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
+        OperationsOpenAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
-      expect(
-        OperationsCompletedAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.report.isAllowed(writeOnly),
-        isFalse,
-      );
-      // Matrix create ∩ write alone — create helper allows write; chrome collapses
-      // because tab read ∩ fails (same pattern as housekeeping).
-      expect(
-        OperationsCompletedAtomPermissions.create.isAllowed(writeOnly),
-        isTrue,
-      );
+      expect(OperationsOpenAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(OperationsOpenAtomPermissions.report.isAllowed(writeOnly), isFalse);
+      // Matrix create ∩ write alone — create helper allows write; chrome
+      // collapses because tab read ∩ fails.
+      expect(OperationsOpenAtomPermissions.create.isAllowed(writeOnly), isTrue);
 
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Filter replaced'), findsNothing);
+      expect(find.text('Generator alarm'), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.textContaining('Create request'), findsNothing);
       expect(find.text('Report'), findsNothing);
@@ -471,7 +454,32 @@ void main() {
   );
 
   testWidgets(
-    'subscription strip: facilities-maintenance missing omits Completed chrome',
+    'route entry ∪: operations:read alone satisfies entry and Open chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy readOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        OperationsOpenAtomPermissions.routeEntry.isAllowed(readOnly),
+        isTrue,
+      );
+      expect(OperationsOpenAtomPermissions.tab.isAllowed(readOnly), isTrue);
+
+      await _pumpOpenTab(
+        tester,
+        repository: repository,
+        accessPolicy: readOnly,
+      );
+
+      expect(find.text('Generator alarm'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.textContaining('Create request'), findsNothing);
+      expect(find.text('Report'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: facilities-maintenance missing omits Open chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
@@ -480,23 +488,17 @@ void main() {
         },
         modules: const <AppModuleEntitlement>[],
       );
-      expect(
-        OperationsCompletedAtomPermissions.tab.isAllowed(noModule),
-        isFalse,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.write.isAllowed(noModule),
-        isFalse,
-      );
+      expect(OperationsOpenAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(OperationsOpenAtomPermissions.write.isAllowed(noModule), isFalse);
 
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: noModule,
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Filter replaced'), findsNothing);
+      expect(find.text('Generator alarm'), findsNothing);
       expect(find.textContaining('Create request'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -512,12 +514,9 @@ void main() {
         },
         facilityId: null,
       );
+      expect(OperationsOpenAtomPermissions.tab.isAllowed(noFacility), isTrue);
       expect(
-        OperationsCompletedAtomPermissions.tab.isAllowed(noFacility),
-        isTrue,
-      );
-      expect(
-        OperationsCompletedAtomPermissions.routeEntry.isAllowed(noFacility),
+        OperationsOpenAtomPermissions.routeEntry.isAllowed(noFacility),
         isFalse,
       );
       expect(canEnterOperationsWorkspace(noFacility), isFalse);
@@ -525,9 +524,9 @@ void main() {
   );
 
   testWidgets(
-    'nested cross-module matrix _(n/a)_: no extra nested module chrome on Completed',
+    'nested cross-module matrix _(n/a)_: no extra nested module chrome on Open',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -539,7 +538,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Filter replaced'));
+      await tester.tap(find.text('Generator alarm'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Billing'), findsNothing);
@@ -558,7 +557,7 @@ void main() {
   testWidgets(
     'authorized Create opens dialog; validation keeps it open',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -578,20 +577,30 @@ void main() {
       await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
-      // Required issue empty — dialog stays; no mutation.
       verifyNever(() => repository.createRequest(any()));
     },
   );
 
   testWidgets(
-    'authorized Closeout next-action opens dialog and mutation syncs list',
+    'authorized Assign next-action opens dialog and mutation syncs list',
     (WidgetTester tester) async {
-      when(() => repository.appendRequestNote(any(), any())).thenAnswer(
-        (_) async =>
-            const Result<OperationsWorkItem>.success(_completedRequest),
+      const OperationsWorkItem assigned = OperationsWorkItem(
+        id: 'MR-OPEN',
+        displayId: 'MR-OPEN',
+        status: 'IN_PROGRESS',
+        assetLabel: 'Generator',
+        metadata: OperationsRequestMetadata(
+          issue: 'Generator alarm',
+          priority: 'HIGH',
+          category: 'POWER_BACKUP',
+          assignee: 'Tech A',
+        ),
+      );
+      when(() => repository.triageRequest(any(), any())).thenAnswer(
+        (_) async => const Result<OperationsWorkItem>.success(assigned),
       );
 
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -603,71 +612,24 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Add closeout note if needed'));
+      await tester.tap(find.byTooltip('Assign technician or team'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Save note'), findsOneWidget);
+      expect(find.text('Save assignment'), findsOneWidget);
       expect(find.text('REQUEST DETAIL'), findsNothing);
 
-      await tester.enterText(find.byType(TextFormField).first, 'Closed out');
-      await tester.tap(find.text('Save note'));
+      await tester.tap(find.text('Save assignment'));
       await tester.pumpAndSettle();
 
-      verify(
-        () => repository.appendRequestNote(
-          any(
-            that: predicate<OperationsWorkItem>(
-              (OperationsWorkItem item) => item.id == 'MR-DONE',
-            ),
-          ),
-          any(
-            that: predicate<OperationsRequestNoteDraft>(
-              (OperationsRequestNoteDraft draft) =>
-                  draft.kind == 'CLOSEOUT' && draft.note == 'Closed out',
-            ),
-          ),
-        ),
-      ).called(1);
+      verify(() => repository.triageRequest(any(), any())).called(1);
       expect(find.text('Operations changes saved.'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'cancelled row shows non-button copy; no write next-action',
+    'empty authorized Open queue still shows Create when allowed',
     (WidgetTester tester) async {
-      // Completed section chrome still hosts cancelled next-action copy when
-      // a cancelled row is present (status filter normally excludes them).
-      await _pumpCompletedTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          roles: const <String>['OPERATIONS'],
-          permissions: <AppPermission>{
-            AppPermissions.operationsRead,
-            AppPermissions.operationsWrite,
-          },
-        ),
-        requests: const <OperationsWorkItem>[_cancelledRequest],
-        listOverride: Result<AppPage<OperationsWorkItem>>.success(
-          AppPage<OperationsWorkItem>(
-            items: const <OperationsWorkItem>[_cancelledRequest],
-            request: const AppPageRequest(),
-            totalItemCount: 1,
-          ),
-        ),
-      );
-
-      expect(find.text('Cancelled leak check'), findsOneWidget);
-      expect(find.text('Request cancelled'), findsWidgets);
-      expect(find.byTooltip('Add closeout note if needed'), findsNothing);
-      expect(find.text('Review request'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'empty authorized Completed queue still shows Create when allowed',
-    (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -688,9 +650,9 @@ void main() {
   );
 
   testWidgets(
-    'error/retry surface remains for authorized Completed users',
+    'error/retry surface remains for authorized Open users',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -707,9 +669,34 @@ void main() {
   );
 
   testWidgets(
-    'mobile viewport: Closeout next-action and row select remain reachable',
+    'Open advanced filters omit status (tab owns status)',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        ),
+        physicalSize: const Size(1440, 900),
+      );
+
+      final AppListTable<OperationsWorkItem> table = tester
+          .widget<AppListTable<OperationsWorkItem>>(
+            find.byType(AppListTable<OperationsWorkItem>),
+          );
+      expect(
+        table.search!.filterGroups.any(
+          (AppSearchBarFilterGroup group) => group.key == 'status',
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'mobile viewport: Assign next-action and row select remain reachable',
+    (WidgetTester tester) async {
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -723,16 +710,27 @@ void main() {
       );
 
       expect(find.byType(AppListTableMobileItem), findsWidgets);
-      expect(find.textContaining('Filter replaced'), findsOneWidget);
-      expect(find.byTooltip('Add closeout note if needed'), findsOneWidget);
-      expect(_tabLabel('Completed'), findsOneWidget);
+      expect(find.textContaining('Generator alarm'), findsOneWidget);
+      expect(find.byTooltip('Assign technician or team'), findsOneWidget);
+      expect(_tabLabel('Open'), findsOneWidget);
+
+      await _pumpOpenTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        ),
+        physicalSize: const Size(390, 844),
+      );
+      expect(find.byTooltip('Assign technician or team'), findsNothing);
+      expect(find.text('Review request'), findsNothing);
     },
   );
 
   testWidgets(
-    'dark theme: authorized Completed chrome still mounts',
+    'dark theme: authorized Open chrome still mounts',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -747,7 +745,7 @@ void main() {
 
       expect(find.textContaining('Create request'), findsOneWidget);
       expect(find.text('Report'), findsOneWidget);
-      expect(find.text('Filter replaced'), findsOneWidget);
+      expect(find.text('Generator alarm'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -755,7 +753,7 @@ void main() {
   testWidgets(
     'Report summary (read ∩) opens metrics-only dialog',
     (WidgetTester tester) async {
-      await _pumpCompletedTab(
+      await _pumpOpenTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -772,19 +770,19 @@ void main() {
   );
 
   test(
-    'section tab gate: Completed uses Completed atom tab requirement',
+    'section tab gate: Open uses Open atom tab requirement',
     () {
       expect(
         identical(
-          operationsSectionTabRequirement(OperationsDeskSection.completed),
-          OperationsCompletedAtomPermissions.tab,
+          operationsSectionTabRequirement(OperationsDeskSection.open),
+          OperationsOpenAtomPermissions.tab,
         ),
         isTrue,
       );
       expect(
         canViewOperationsSection(
           _policy(permissions: <AppPermission>{AppPermissions.operationsRead}),
-          OperationsDeskSection.completed,
+          OperationsDeskSection.open,
         ),
         isTrue,
       );

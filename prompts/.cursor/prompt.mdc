@@ -25,6 +25,7 @@ Prompts must define observable behavior without requiring scope or implementatio
 - UI changes must use theme tokens for color, typography, spacing, shape, and states, including supported light and dark themes.
 - Interfaces must stay simple, focused, concise, and visually hierarchical; secondary detail should use progressive disclosure.
 - Prompts must specify permission, loading, empty, error, success, validation, and visible-feedback states.
+- Never create, edit, delete, or regenerate files under `screens/`. Those inventories are read-only reference input for agents.
 
 ## Writing Requirements
 

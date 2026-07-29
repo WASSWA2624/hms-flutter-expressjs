@@ -59,6 +59,12 @@ Use exact `AppPermissions` keys from `access_policy.dart` / `backend/src/config/
 - Synchronize frontend data after successful mutations.
 - Keep layouts responsive on mobile, tablet, and desktop; use theme tokens for light and dark.
 
+## Screen inventories (read-only)
+
+- `screens/*.md` are read-only inventories of reachable controls.
+- Do **not** create, edit, delete, rename, or regenerate any file under `screens/`.
+- Implement permission and billing/section changes in frontend/backend/tests only; leave inventories unchanged even if they look stale.
+
 ## Verification (every tab prompt)
 
 Widget/unit tests must prove unauthorized absence and authorized presence for representative atoms, including at least one ∩ denial and one ∪ allowance case where the matrix uses both. Verification must also cover:

@@ -76,7 +76,8 @@ const OpdFlowSummary _admissionFlow = OpdFlowSummary(
   patientIdentifier: 'PAT-ALL-ADM',
   encounterType: 'OPD',
   status: 'OPEN',
-  stage: 'ADMISSION_PENDING',
+  stage: 'WAITING_DISPOSITION',
+  displayCode: 'ADMISSION_PENDING',
 );
 
 AppAccessPolicy _policy({

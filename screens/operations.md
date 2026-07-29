@@ -2,7 +2,9 @@
 
 Primary surface: `OperationsWorkspacePage` (`frontend/lib/features/operations/presentation/pages/operations_workspace_page.dart`).
 
-Write gate (client): `_mutationRequirement` (`operationsWrite` + `facilities-maintenance` module) for create, assign, status update, service logs, and notes. Unauthorized write controls do not render. Backend auth remains authoritative.
+Write gate (client): `operationsWriteRequirement` / `operationsMutationRequirement` (`operations:write` ∩ + `facilities-maintenance` module) for create, assign, status update, service logs, and notes. Unauthorized write controls do not render. Backend auth remains authoritative.
+
+Read gate (client): `operationsReadRequirement` (`operations:read` ∩ + module) for tab strip sections, list chrome, detail, and Report. Tabs omitted when the section read gate fails. Route entry is ∪ `operations:read` | `operations:write` (see `operations_access.dart`).
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -34,20 +36,19 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, applies status filter (except Assets / All).
-  - Condition: Always when workspace loads.
-  - Counts: total / open / in progress / completed+cancelled / assets.
+  - Condition: Section visible when `operationsSectionTabRequirement` (read ∩) allows; omitted from strip otherwise.
 
 - **Create request** (primary)
   - Location: Tab-strip primary on every section.
   - Opens modal: Yes — create-request form.
   - Immediate result: Creates request; snackbar; worklist refresh.
-  - Condition: `_mutationRequirement`; omitted when unauthorized.
+  - Condition: `operationsWriteRequirement`; omitted when unauthorized.
 
 - **Report** (secondary)
   - Location: Tab-strip secondary.
   - Opens modal: Yes — summary metrics (all, open, in progress, assets).
   - Immediate result: Read-only summary dialog.
-  - Condition: Always when workspace is loaded.
+  - Condition: `operationsReportRequirement` (read ∩; Assets matrix narrows source “Always”).
 
 - **Try again** (page load / inline failure)
   - Location: `AsyncStateScaffold` / `AppFailureStateView`.
@@ -83,7 +84,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: `next_action` column (always visible on desktop); mobile list item **trailing** (same control; icon-only with tooltip under 600px).
   - Opens modal: Assign / service log / status / closeout form when that is next; absent when read-only / unauthorized / unknown; cancelled shows non-button copy.
   - Immediate result: Sole primary write for the row when a stage write applies (no detail-fetch shell).
-  - Condition: Write next-actions require `_mutationRequirement`; unauthorized and review-only rows show no next-action control (use row select).
+  - Condition: Write next-actions require `operationsWriteRequirement`; unauthorized and review-only rows show no next-action control (use row select).
 
 ### Detail dialog (request)
 
@@ -96,7 +97,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: `AppQuickActions` on detail.
   - Opens modal: Matching action dialog.
   - Immediate result: Mutates via controller; snackbar; worklist refresh.
-  - Condition: `_mutationRequirement`; action omitted when it equals the row next-action; unauthorized writes absent.
+  - Condition: `operationsWriteRequirement`; action omitted when it equals the row next-action; unauthorized writes absent.
 
 - **Service logs**
   - Location: Detail body panel.
@@ -115,6 +116,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 ### Asset detail
 
 - Progressive disclosure of asset identity (name, tag, status, location, id); no write actions.
+- Create / update / delete asset UI is not present; matrix create/update/delete ∩ `operations:write` is reserved for request create on this tab and future asset mutations (`OperationsAssetsAtomPermissions`).
 
 ---
 

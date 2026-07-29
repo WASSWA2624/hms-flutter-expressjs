@@ -252,10 +252,6 @@ class _OperationsWorkspaceContentState
     };
   }
 
-  void _applySectionFilter(OperationsDeskSection section) {
-    unawaited(_awaitSectionFilter(section));
-  }
-
   static IconData _sectionIcon(OperationsDeskSection section) {
     return switch (section) {
       OperationsDeskSection.allRequests => Icons.inventory_2_outlined,

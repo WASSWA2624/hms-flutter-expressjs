@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -678,6 +680,8 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(AppWorkspaceStatePanel), findsOneWidget);
+      expect(find.text('Start OPD encounter'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -691,9 +695,181 @@ void main() {
       );
 
       expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.text('Start OPD encounter'), findsNothing);
     });
 
-    testWidgets('mobile viewport: read-only hides Start encounter', (
+    testWidgets('authorized loading chrome remains observable on Queue', (
+      WidgetTester tester,
+    ) async {
+      final Completer<Result<AppPage<OpdQueueEntry>>> queueCompleter =
+          Completer<Result<AppPage<OpdQueueEntry>>>();
+      when(() => repository.listAppointments(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdAppointment>>.success(
+          AppPage<OpdAppointment>(
+            items: const <OpdAppointment>[],
+            request:
+                (invocation.positionalArguments.single as OpdAppointmentQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(() => repository.listVisitQueues(any())).thenAnswer(
+        (_) => queueCompleter.future,
+      );
+      when(() => repository.listOpdFlows(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: const <OpdFlowSummary>[],
+            request: (invocation.positionalArguments.single as OpdFlowQuery)
+                .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(() => repository.listTriageQueue(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: const <OpdFlowSummary>[],
+            request:
+                (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(() => repository.getOpdSummaryCounts()).thenAnswer(
+        (_) async => const Result<OpdFlowAggregateCounts>.success(
+          OpdFlowAggregateCounts(activeOpd: 0),
+        ),
+      );
+      when(
+        () => repository.listClinicalAlertThresholds(
+          vitalType: any(named: 'vitalType'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+          <OpdClinicalAlertThreshold>[],
+        ),
+      );
+      when(() => repository.listProviderSchedules()).thenAnswer(
+        (_) async => const Result<List<OpdProviderSchedule>>.success(
+          <OpdProviderSchedule>[],
+        ),
+      );
+      when(() => repository.listProviders()).thenAnswer(
+        (_) async => const Result<List<OpdProviderOption>>.success(
+          <OpdProviderOption>[],
+        ),
+      );
+      when(
+        () => repository.getBillingDefaults(
+          facilityId: any(named: 'facilityId'),
+          tenantId: any(named: 'tenantId'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/opd?section=queue',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/opd',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: OpdWorkspacePage(
+                  initialQuery: OpdWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            opdRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_readerPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.textContaining('Loading OPD'), findsWidgets);
+      expect(find.text('Start OPD encounter'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      queueCompleter.complete(
+        Result<AppPage<OpdQueueEntry>>.success(
+          AppPage<OpdQueueEntry>(
+            items: const <OpdQueueEntry>[_queueEntry],
+            request: const AppPageRequest(pageSize: 12),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Queue Patient'), findsOneWidget);
+    });
+
+    testWidgets(
+      'subscription strip UI: without scheduling-queue Queue chrome collapses',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byType(AppTabStrip), findsNothing);
+        expect(find.text('Queue Patient'), findsNothing);
+        expect(find.text('Start OPD encounter'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('mobile light theme: read-only hides Start encounter', (
       WidgetTester tester,
     ) async {
       await _pumpQueueTab(
@@ -701,6 +877,7 @@ void main() {
         repository: repository,
         accessPolicy: _readerPolicy(),
         physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.light,
       );
 
       expect(find.text('Queue Patient'), findsOneWidget);
@@ -791,6 +968,62 @@ void main() {
         expect(find.text('Assign doctor'), findsNothing);
         expect(find.text('Cancel'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'authorized nested Change status shows validation when status unset',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+          queueEntries: const <OpdQueueEntry>[
+            OpdQueueEntry(
+              id: 'queue-opd-2',
+              publicId: 'QUE-OPD-2',
+              patientDisplayName: 'Queue Patient',
+              patientIdentifier: 'PAT-QUE',
+              status: 'UNKNOWN_STATUS',
+              providerUserId: 'USR-DOC-1',
+              providerDisplayName: 'Dr Queue',
+            ),
+          ],
+        );
+
+        await tester.tap(find.text('Queue Patient'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Change status'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Change queue status'), findsOneWidget);
+        // Submit footer reuses the action label; tap the dialog primary.
+        await tester.tap(find.text('Change status').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('This field is required.'), findsOneWidget);
+        expect(find.text('Change queue status'), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested cross-module: Queue Actions hub has no Pay / Admission writes',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Queue Patient'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(QueueActionsDialog), findsOneWidget);
+        expect(find.text('Pay consultation'), findsNothing);
+        expect(find.text('Admission'), findsNothing);
+        expect(find.textContaining('Admit'), findsNothing);
+        expect(find.text('Prioritize'), findsOneWidget);
       },
     );
   });

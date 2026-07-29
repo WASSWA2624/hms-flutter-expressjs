@@ -117,7 +117,7 @@ AccessRequirement operationsSectionTabRequirement(
   return switch (section) {
     OperationsDeskSection.allRequests =>
       OperationsAllRequestsAtomPermissions.tab,
-    OperationsDeskSection.open => operationsWorkspaceReadRequirement,
+    OperationsDeskSection.open => OperationsOpenAtomPermissions.tab,
     OperationsDeskSection.inProgress =>
       OperationsInProgressAtomPermissions.tab,
     OperationsDeskSection.completed => OperationsCompletedAtomPermissions.tab,
@@ -200,6 +200,70 @@ abstract final class OperationsAllRequestsAtomPermissions {
   static const AccessRequirement mutate = operationsMutationRequirement;
   static const AccessRequirement createRequest =
       operationsWorkspaceWriteRequirement;
+  static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement updateStatus =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement serviceLog =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement note = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement closeout = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement report = operationsWorkspaceReportRequirement;
+  static const AccessRequirement nestedWrite =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = operationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      operationsWorkspaceEntryRequirement;
+}
+
+/// Open tab atom → permission mapping (inventory + matrix).
+///
+/// Target: `/operations?section=open`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Open tab | navigate | read ∩ `operations:read` |
+/// | Create request (tab primary) | create | write ∩ `operations:write` |
+/// | Report summary | read | report ∩ `operations:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Status filter | — | absent (tab owns status) |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ |
+/// | Row select → request detail | read | read ∩ |
+/// | Next action Assign | update | write ∩ |
+/// | Detail complementary writes | update | write ∩ |
+/// | Nested create / assign / status / log / notes | create / update | write ∩ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
+///
+/// Report uses matrix read ∩ (source inventory "Always" narrowed — note in
+/// tests). Facility ABAC is on route entry only; in-page atoms reuse module +
+/// permission. Matrix nested cross-module rows are _(n/a)_.
+abstract final class OperationsOpenAtomPermissions {
+  static const AccessRequirement tab = operationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement search = operationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = operationsWorkspaceReadRequirement;
+  static const AccessRequirement settings = operationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = operationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = operationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = operationsWorkspaceReadRequirement;
+  static const AccessRequirement success = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement create = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement update = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement write = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement mutate = operationsMutationRequirement;
+  static const AccessRequirement createRequest =
+      operationsWriteRequirement;
   static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
   static const AccessRequirement updateStatus =
       operationsWorkspaceWriteRequirement;
@@ -317,8 +381,10 @@ abstract final class OperationsCompletedAtomPermissions {
       operationsWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
   static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  /// Next-action **column** chrome (progressive disclosure) under read ∩;
+  /// Closeout / other write controls still require [closeout] / [mutate].
   static const AccessRequirement nextAction =
-      operationsWorkspaceWriteRequirement;
+      operationsWorkspaceReadRequirement;
   static const AccessRequirement create = operationsWorkspaceWriteRequirement;
   static const AccessRequirement update = operationsWorkspaceWriteRequirement;
   static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
