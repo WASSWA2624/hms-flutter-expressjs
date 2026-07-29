@@ -572,8 +572,6 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
             AppQuickActions(
               title: l10n.claimsSectionInsuranceSetup,
               presentation: AppQuickActionsPresentation.detailPanel,
-              // Collapses when all create actions are filtered for read-only.
-              hideWhenEmpty: true,
               permissionActions: <AppPermissionActionItem>[
                 AppPermissionActionItem(
                   requirement: ClaimsInsuranceSetupAtomPermissions.create,
