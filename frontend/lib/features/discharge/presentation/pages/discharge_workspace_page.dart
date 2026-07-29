@@ -10,12 +10,12 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
+import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -29,19 +29,6 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
-
-const AccessRequirement _dischargeClinicalWriteRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-    AppRole.doctor,
-    AppRole.nurse,
-    AppRole.icuManager,
-  ],
-  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-  activeModules: <String>['inpatient-bed-management'],
-);
 
 class DischargeWorkspacePage extends ConsumerStatefulWidget {
   const DischargeWorkspacePage({super.key, this.initialQuery});
@@ -291,6 +278,16 @@ class _DischargeWorkspaceContentState
     };
   }
 
+  void _handleTabChanged(DischargeDeskSection section) {
+    if (section == _section) {
+      return;
+    }
+    setState(() {
+      _section = section;
+    });
+    _updateUrlForSection(section);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -299,6 +296,21 @@ class _DischargeWorkspaceContentState
     final DischargeWorkspaceController controller = ref.read(
       dischargeWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<DischargeDeskSection> visibleSections =
+        dischargeAllowedSections(accessPolicy);
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final DischargeDeskSection fallback = visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        _handleTabChanged(fallback);
+      });
+    }
 
     final List<IpdAdmissionSummary> rows = _buildRows(state);
     final List<AppListTableColumn<IpdAdmissionSummary>> allColumns =
@@ -315,8 +327,7 @@ class _DischargeWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final DischargeDeskSection section
-                    in DischargeDeskSection.values)
+                for (final DischargeDeskSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -335,13 +346,9 @@ class _DischargeWorkspaceContentState
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final DischargeDeskSection section
-                    in DischargeDeskSection.values) {
+                for (final DischargeDeskSection section in visibleSections) {
                   if (section.name == tabId) {
-                    setState(() {
-                      _section = section;
-                    });
-                    _updateUrlForSection(section);
+                    _handleTabChanged(section);
                     break;
                   }
                 }
@@ -352,8 +359,12 @@ class _DischargeWorkspaceContentState
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'IPD'),
                 storageKeyPrefix: 'discharge_follow_ups',
+                readRequirement: dischargeFollowUpsRequirement,
+                writeRequirement: dischargeFollowUpsWriteRequirement,
               )
-            else
+            else if (dischargeSectionTabRequirement(_section).isAllowed(
+              accessPolicy,
+            ))
               AppListTable<IpdAdmissionSummary>(
               items: rows,
               columns: defaultColumns,
@@ -606,7 +617,7 @@ class _DischargeDetailContent extends ConsumerWidget {
           actions: <Widget>[
             if (!detail.isCompleted)
               AppAccessActionGate(
-                requirement: _dischargeClinicalWriteRequirement,
+                requirement: DischargeAllPatientsAtomPermissions.continueDischarge,
                 builder: (BuildContext context, bool isAllowed) {
                   return AppButton.primary(
                     label: continueDischargeLabel,
@@ -623,17 +634,28 @@ class _DischargeDetailContent extends ConsumerWidget {
                   );
                 },
               ),
-            AppButton.secondary(
-              label: l10n.dischargeRequestBillingAction,
-              leadingIcon: Icons.receipt_long_outlined,
-              isLoading: state.isSaving,
-              onPressed: () => _openBillingDialog(context, controller),
+            AppAccessActionGate(
+              requirement: DischargeAllPatientsAtomPermissions.requestBilling,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.secondary(
+                  label: l10n.dischargeRequestBillingAction,
+                  leadingIcon: Icons.receipt_long_outlined,
+                  isLoading: state.isSaving,
+                  onPressed: () => _openBillingDialog(context, controller),
+                );
+              },
             ),
-            AppButton.secondary(
-              label: l10n.dischargeRequestPharmacyAction,
-              leadingIcon: Icons.medication_outlined,
-              isLoading: state.isSaving,
-              onPressed: () => _openPharmacyDialog(context, controller, state),
+            AppAccessActionGate(
+              requirement: DischargeAllPatientsAtomPermissions.requestPharmacy,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.secondary(
+                  label: l10n.dischargeRequestPharmacyAction,
+                  leadingIcon: Icons.medication_outlined,
+                  isLoading: state.isSaving,
+                  onPressed: () =>
+                      _openPharmacyDialog(context, controller, state),
+                );
+              },
             ),
           ],
         ),
@@ -648,24 +670,40 @@ class _DischargeDetailContent extends ConsumerWidget {
         SizedBox(height: theme.spacing.lg),
         _SummarySection(detail: detail),
         SizedBox(height: theme.spacing.lg),
-        _RelatedRecordsSection(
-          title: l10n.dischargeMedicinesSectionTitle,
-          emptyBody: detail.pharmacyDataUnavailable
-              ? l10n.dischargePharmacyUnavailableBody
-              : l10n.dischargeNoMedicinesBody,
-          records: detail.pharmacyOrders,
-          icon: Icons.medication_outlined,
+        AppAccessGate(
+          requirement: DischargeAllPatientsAtomPermissions.medicinesPanel,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _RelatedRecordsSection(
+                title: l10n.dischargeMedicinesSectionTitle,
+                emptyBody: detail.pharmacyDataUnavailable
+                    ? l10n.dischargePharmacyUnavailableBody
+                    : l10n.dischargeNoMedicinesBody,
+                records: detail.pharmacyOrders,
+                icon: Icons.medication_outlined,
+              ),
+              SizedBox(height: theme.spacing.lg),
+            ],
+          ),
         ),
-        SizedBox(height: theme.spacing.lg),
-        _RelatedRecordsSection(
-          title: l10n.dischargeBillingSectionTitle,
-          emptyBody: detail.billingDataUnavailable
-              ? l10n.dischargeBillingUnavailableBody
-              : l10n.dischargeNoInvoicesBody,
-          records: detail.invoices,
-          icon: Icons.receipt_long_outlined,
+        AppAccessGate(
+          requirement: DischargeAllPatientsAtomPermissions.billingPanel,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _RelatedRecordsSection(
+                title: l10n.dischargeBillingSectionTitle,
+                emptyBody: detail.billingDataUnavailable
+                    ? l10n.dischargeBillingUnavailableBody
+                    : l10n.dischargeNoInvoicesBody,
+                records: detail.invoices,
+                icon: Icons.receipt_long_outlined,
+              ),
+              SizedBox(height: theme.spacing.lg),
+            ],
+          ),
         ),
-        SizedBox(height: theme.spacing.lg),
         _TimelineSection(detail: detail),
       ],
     );
@@ -699,63 +737,73 @@ class _PendingOrdersSection extends StatelessWidget {
   }
 }
 
-class _CrossModuleLinksSection extends StatelessWidget {
+class _CrossModuleLinksSection extends ConsumerWidget {
   const _CrossModuleLinksSection({required this.detail});
 
   final DischargeAdmissionDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final String admissionId = detail.summary.displayId ?? detail.summary.id;
+    final List<AppActionItem> actions = <AppActionItem>[
+      if (DischargeAllPatientsAtomPermissions.openIpd.isAllowed(policy))
+        AppActionItem(
+          label: l10n.dischargeOpenIpdAction,
+          leadingIcon: Icons.local_hotel_outlined,
+          variant: AppActionVariant.tertiary,
+          onPressed: () => _openLinkedWorkspace(
+            context,
+            admissionId.isEmpty
+                ? AppRoutes.ipd.path
+                : AppRoutes.ipd.location(
+                    queryParameters: <String, String>{'id': admissionId},
+                  ),
+          ),
+        ),
+      if (DischargeAllPatientsAtomPermissions.openNursing.isAllowed(policy))
+        AppActionItem(
+          label: l10n.dischargeOpenNursingAction,
+          leadingIcon: Icons.health_and_safety_outlined,
+          variant: AppActionVariant.tertiary,
+          onPressed: () =>
+              _openLinkedWorkspace(context, AppRoutes.nursing.path),
+        ),
+      if (DischargeAllPatientsAtomPermissions.openPharmacy.isAllowed(policy))
+        AppActionItem(
+          label: l10n.dischargeOpenPharmacyAction,
+          leadingIcon: Icons.medication_outlined,
+          variant: AppActionVariant.tertiary,
+          onPressed: () =>
+              _openLinkedWorkspace(context, AppRoutes.pharmacy.path),
+        ),
+      if (DischargeAllPatientsAtomPermissions.openBilling.isAllowed(policy))
+        AppActionItem(
+          label: l10n.dischargeOpenBillingAction,
+          leadingIcon: Icons.receipt_long_outlined,
+          variant: AppActionVariant.tertiary,
+          onPressed: () =>
+              _openLinkedWorkspace(context, AppRoutes.billing.path),
+        ),
+      if (DischargeAllPatientsAtomPermissions.openHousekeeping.isAllowed(policy))
+        AppActionItem(
+          label: l10n.dischargeOpenHousekeepingAction,
+          leadingIcon: Icons.cleaning_services_outlined,
+          variant: AppActionVariant.tertiary,
+          onPressed: () =>
+              _openLinkedWorkspace(context, AppRoutes.housekeeping.path),
+        ),
+    ];
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return AppQuickActions(
       title: l10n.dischargeCrossModuleLinksTitle,
       description: l10n.dischargeCrossModuleLinksBody,
       presentation: AppQuickActionsPresentation.detailPanel,
-      actions: <AppActionItem>[
-          AppActionItem(
-            label: l10n.dischargeOpenIpdAction,
-            leadingIcon: Icons.local_hotel_outlined,
-            variant: AppActionVariant.tertiary,
-            onPressed: () => _openLinkedWorkspace(
-              context,
-              admissionId.isEmpty
-                  ? AppRoutes.ipd.path
-                  : AppRoutes.ipd.location(
-                      queryParameters: <String, String>{'id': admissionId},
-                    ),
-            ),
-          ),
-          AppActionItem(
-            label: l10n.dischargeOpenNursingAction,
-            leadingIcon: Icons.health_and_safety_outlined,
-            variant: AppActionVariant.tertiary,
-            onPressed: () =>
-                _openLinkedWorkspace(context, AppRoutes.nursing.path),
-          ),
-          AppActionItem(
-            label: l10n.dischargeOpenPharmacyAction,
-            leadingIcon: Icons.medication_outlined,
-            variant: AppActionVariant.tertiary,
-            onPressed: () =>
-                _openLinkedWorkspace(context, AppRoutes.pharmacy.path),
-          ),
-          AppActionItem(
-            label: l10n.dischargeOpenBillingAction,
-            leadingIcon: Icons.receipt_long_outlined,
-            variant: AppActionVariant.tertiary,
-            onPressed: () =>
-                _openLinkedWorkspace(context, AppRoutes.billing.path),
-          ),
-          AppActionItem(
-            label: l10n.dischargeOpenHousekeepingAction,
-            leadingIcon: Icons.cleaning_services_outlined,
-            variant: AppActionVariant.tertiary,
-            onPressed: () =>
-                _openLinkedWorkspace(context, AppRoutes.housekeeping.path),
-          ),
-      ],
+      actions: actions,
     );
   }
 }
@@ -764,15 +812,22 @@ void _openLinkedWorkspace(BuildContext context, String location) {
   context.go(location);
 }
 
-class _ClearanceChecklist extends StatelessWidget {
+class _ClearanceChecklist extends ConsumerWidget {
   const _ClearanceChecklist({required this.detail});
 
   final DischargeAdmissionDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final List<DischargeClearanceItem> items = detail.clearanceItems;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<DischargeClearanceItem> items = dischargeVisibleClearanceItems(
+      policy,
+      detail.clearanceItems,
+    );
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final int firstPendingIndex = items.indexWhere(
       (DischargeClearanceItem item) =>
           item.state == DischargeClearanceState.pending,
@@ -1470,7 +1525,7 @@ class _DischargeNextActionButton extends ConsumerWidget {
     }
 
     return AppAccessActionGate(
-      requirement: _dischargeClinicalWriteRequirement,
+      requirement: DischargeAllPatientsAtomPermissions.nextActionPlan,
       builder: (BuildContext context, bool isAllowed) {
         final String label = isPlannedDischarge(item)
             ? l10n.dischargeManageClearanceAction

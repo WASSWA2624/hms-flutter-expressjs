@@ -5,6 +5,8 @@ Processing rules:
   the current folder has finished all iterations.
 - Within a folder iteration, at most MAX_CONCURRENCY prompts run at once.
 - Each folder is iterated ITERATIONS times so every prompt runs that many times.
+- Completed prompt iterations recorded in .run_prompts_state.json are skipped
+  on resume; pass --force to clear state and re-run everything.
 - After each successful prompt run, commit and push to GitHub.
 - Model is always "auto".
 """
@@ -32,8 +34,8 @@ PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "ui-permissions"
 STATE_FILE = PROJECT_DIR / ".run_prompts_state.json"
 ITERATIONS = 3
-MAX_CONCURRENCY = 3
-MAX_ATTEMPTS = 3
+MAX_CONCURRENCY = 5
+MAX_ATTEMPTS = 2
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
@@ -610,8 +612,8 @@ async def main(argv: list[str] | None = None):
     print(
         f"\nAll {len(all_keys)} ui-permissions prompt runs completed successfully."
     )
-    if STATE_FILE.exists():
-        STATE_FILE.unlink()
+    # Keep .run_prompts_state.json so a later start skips completed runs.
+    # Use --force (or delete the state file) to re-run everything.
 
 
 if __name__ == "__main__":

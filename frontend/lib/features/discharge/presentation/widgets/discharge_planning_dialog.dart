@@ -6,9 +6,12 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
+import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -366,17 +369,24 @@ class _DischargePlanningDialogState
   }
 }
 
-class _ClearanceChecklist extends StatelessWidget {
+class _ClearanceChecklist extends ConsumerWidget {
   const _ClearanceChecklist({required this.detail});
 
   final DischargeAdmissionDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final List<DischargeClearanceItem> items = detail.clearanceItems
-        .where((DischargeClearanceItem item) => !_isNonBlocking(item.code))
-        .toList(growable: false);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<DischargeClearanceItem> items = dischargeVisibleClearanceItems(
+      policy,
+      detail.clearanceItems
+          .where((DischargeClearanceItem item) => !_isNonBlocking(item.code))
+          .toList(growable: false),
+    );
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final int firstPendingIndex = items.indexWhere(
       (DischargeClearanceItem item) =>
           item.state == DischargeClearanceState.pending,
