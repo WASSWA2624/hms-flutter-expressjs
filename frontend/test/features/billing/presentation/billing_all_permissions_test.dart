@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -29,9 +30,22 @@ const BillingWorkItem _draftInvoice = BillingWorkItem(
   id: 'inv-all-draft',
   displayId: 'INV-ALL',
   kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
   patientDisplayName: 'All Queue Patient',
   patientDisplayId: 'PT-ALL',
   billingStatus: 'DRAFT',
+  amount: 175,
+  financials: BillingFinancials(balanceDue: 175),
+);
+
+const BillingWorkItem _issuedInvoice = BillingWorkItem(
+  id: 'inv-all-issued',
+  displayId: 'INV-ALL-PAY',
+  kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
+  patientDisplayName: 'All Pay Patient',
+  patientDisplayId: 'PT-PAY',
+  billingStatus: 'ISSUED',
   amount: 175,
   financials: BillingFinancials(balanceDue: 175),
 );
@@ -40,6 +54,7 @@ const BillingWorkItem _issuedFromDraft = BillingWorkItem(
   id: 'inv-all-draft',
   displayId: 'INV-ALL',
   kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
   patientDisplayName: 'All Queue Patient',
   patientDisplayId: 'PT-ALL',
   billingStatus: 'ISSUED',
@@ -79,11 +94,14 @@ AppAccessPolicy _policy({
 void _stubRepository(
   _MockBillingRepository repository, {
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => const Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(summary: _summary),
-    ),
+    (_) async =>
+        workspaceOverride ??
+        const Result<BillingWorkspaceOverview>.success(
+          BillingWorkspaceOverview(summary: _summary),
+        ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
     return Result<AppPage<BillingWorkItem>>.success(
@@ -101,6 +119,13 @@ void _stubRepository(
       BillingMutationResult(invoice: _issuedFromDraft),
     ),
   );
+  when(
+    () => repository.receivePayment(any(), any()),
+  ).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(invoice: _issuedInvoice),
+    ),
+  );
 }
 
 Future<void> _pumpAllTab(
@@ -110,10 +135,16 @@ Future<void> _pumpAllTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
+  String initialLocation = '/billing?queue=all',
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository, items: items);
+  _stubRepository(
+    repository,
+    items: items,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -121,7 +152,7 @@ Future<void> _pumpAllTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=all',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -166,6 +197,12 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
+    registerFallbackValue(
+      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
+    );
+    registerFallbackValue(
+      const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
+    );
   });
 
   setUp(() {
@@ -385,6 +422,26 @@ void main() {
     expect(find.byTooltip('Issue'), findsWidgets);
   });
 
+  testWidgets('light theme: authorized All chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAllTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('All Queue Patient'), findsOneWidget);
+    expect(find.text('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Issue'), findsWidgets);
+  });
+
   testWidgets(
     'authorized Issue next-action opens nested notes dialog (sync path)',
     (WidgetTester tester) async {
@@ -465,6 +522,99 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No billing items'), findsOneWidget);
       expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on All',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link opens payment only when write-authorized',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        items: const <BillingWorkItem>[_issuedInvoice],
+        initialLocation: '/billing?queue=all&invoice=INV-ALL-PAY&action=pay',
+      );
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link omitted for read-only (no payment dialog)',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        items: const <BillingWorkItem>[_issuedInvoice],
+        initialLocation: '/billing?queue=all&invoice=INV-ALL-PAY&action=pay',
+      );
+
+      expect(find.text('All Pay Patient'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Receive payment'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module: Claims pending absent without insurance-claims',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(
+        BillingAllAtomPermissions.claimsPendingTab.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isFalse,
+      );
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Close shift'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

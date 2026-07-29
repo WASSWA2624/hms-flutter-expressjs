@@ -224,13 +224,19 @@ abstract final class BillingAllAtomPermissions {
 /// | Search / filters / columns | read chrome | read ∩ |
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
-/// | Close shift / Close day | delete | write ∩ `billing:write` |
+/// | Close shift / Close day | delete / update | write ∩ `billing:write` |
 /// | Next action Approve | approve / create / update | write ∩ financial:approve |
 /// | Detail Approve / Reject | approve / create / update | write ∩ financial:approve |
 /// | Nested approval notes dialogs | update | write ∩ financial:approve |
 /// | View ledger | read | read ∩ |
 /// | Print / Download | export / read | document read ∩ |
 /// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Matrix create/update ∩ lists `financial:approve` alone; keep source
+/// [billingApprovalDecisionRequirement]. Nested matrix write ∩ is
+/// `billing:write` ([write]/[delete]/[close]); claims nested UI still uses
+/// [billingClaimsWriteRequirement]. Route entry ∪ is [routeEntry].
 abstract final class BillingApprovalRequiredAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -239,6 +245,7 @@ abstract final class BillingApprovalRequiredAtomPermissions {
   static const AccessRequirement update = billingApprovalDecisionRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
@@ -280,6 +287,7 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement update = billingWorkspaceWriteRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
   static const AccessRequirement refund = billingWorkspaceWriteRequirement;
   static const AccessRequirement adjust = billingWorkspaceWriteRequirement;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -57,6 +58,14 @@ const BillingSummary _summary = BillingSummary(
   overdue: 0,
 );
 
+const BillingSummary _emptySummary = BillingSummary(
+  needsIssue: 0,
+  pendingPayment: 0,
+  claimsPending: 0,
+  approvalRequired: 0,
+  overdue: 0,
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -78,18 +87,25 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubRepository(_MockBillingRepository repository) {
+void _stubRepository(
+  _MockBillingRepository repository, {
+  List<BillingWorkItem> items = const <BillingWorkItem>[_pendingInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => const Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(summary: _summary),
-    ),
+    (_) async =>
+        workspaceOverride ??
+        Result<BillingWorkspaceOverview>.success(
+          BillingWorkspaceOverview(summary: summary),
+        ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
-    return const Result<AppPage<BillingWorkItem>>.success(
+    return Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
-        items: <BillingWorkItem>[_pendingInvoice],
-        request: AppPageRequest(pageSize: 20),
-        totalItemCount: 1,
+        items: items,
+        request: const AppPageRequest(pageSize: 20),
+        totalItemCount: items.length,
       ),
     );
   });
@@ -108,11 +124,19 @@ Future<void> _pumpAwaitingPaymentTab(
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
+  List<BillingWorkItem> items = const <BillingWorkItem>[_pendingInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
   String initialLocation = '/billing?queue=awaiting-payment',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(
+    repository,
+    items: items,
+    summary: summary,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -188,6 +212,14 @@ void main() {
         BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(reader),
         isFalse,
       );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.close.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.refund.isAllowed(reader),
+        isFalse,
+      );
 
       await _pumpAwaitingPaymentTab(
         tester,
@@ -231,6 +263,7 @@ void main() {
         BillingAwaitingPaymentAtomPermissions.voidInvoice.isAllowed(writer),
         isTrue,
       );
+      expect(BillingAwaitingPaymentAtomPermissions.close.isAllowed(writer), isTrue);
 
       await _pumpAwaitingPaymentTab(
         tester,
@@ -301,6 +334,36 @@ void main() {
       expect(find.text('Ben Payment'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module: Claims pending absent without insurance-claims',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(
+        BillingAwaitingPaymentAtomPermissions.claimsPendingTab.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isFalse,
+      );
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
     },
   );
 
@@ -409,8 +472,28 @@ void main() {
     expect(find.byTooltip('Receive payment'), findsWidgets);
   });
 
+  testWidgets('light theme: authorized Awaiting payment chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAwaitingPaymentTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Ben Payment'), findsOneWidget);
+    expect(find.text('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
+  });
+
   testWidgets(
-    'authorized Receive payment next-action opens nested dialog (sync path)',
+    'authorized Receive payment next-action submits and syncs (mutation path)',
     (WidgetTester tester) async {
       await _pumpAwaitingPaymentTab(
         tester,
@@ -428,6 +511,16 @@ void main() {
 
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.text('Receive payment'), findsWidgets);
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Receive payment').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.receivePayment(any(), any())).called(1);
     },
   );
 
@@ -458,6 +551,89 @@ void main() {
         ),
         isFalse,
       );
+    },
+  );
+
+  testWidgets(
+    'empty authorized Awaiting payment queue still shows chrome and empty state',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        items: const <BillingWorkItem>[],
+        summary: _emptySummary,
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No billing items'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Awaiting payment',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link opens payment only when write-authorized',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        initialLocation:
+            '/billing?queue=awaiting-payment&invoice=INV-PAY&action=pay',
+      );
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link omitted for read-only (no payment dialog)',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        initialLocation:
+            '/billing?queue=awaiting-payment&invoice=INV-PAY&action=pay',
+      );
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Receive payment'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

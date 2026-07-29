@@ -196,13 +196,100 @@ void main() {
 
     test('All tab atom map reuses feature *Requirement helpers', () {
       expect(
-        identical(BillingAllAtomPermissions.write, billingWorkspaceWriteRequirement),
+        identical(
+          BillingAllAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.listChrome,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.detail,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.document,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.write,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.create,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.update,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.close,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.issue,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.receivePayment,
+          billingWorkspaceWriteRequirement,
+        ),
         isTrue,
       );
       expect(
         identical(
           BillingAllAtomPermissions.approve,
           billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.nestedWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.nestedRead,
+          billingClaimsNestedReadRequirement,
         ),
         isTrue,
       );
@@ -220,6 +307,31 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          BillingAllAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writer = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(BillingAllAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingAllAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.receivePayment.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.close.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.receivePayment.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.routeEntry.isAllowed(writer), isTrue);
     });
 
     test('Approval required atom map reuses feature *Requirement helpers', () {
@@ -247,6 +359,20 @@ void main() {
       expect(
         identical(
           BillingApprovalRequiredAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.close,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.write,
           billingWorkspaceWriteRequirement,
         ),
         isTrue,
@@ -387,7 +513,28 @@ void main() {
       );
       expect(
         identical(
+          BillingAwaitingPaymentAtomPermissions.close,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingAwaitingPaymentAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.listChrome,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.document,
           billingWorkspaceReadRequirement,
         ),
         isTrue,
@@ -410,6 +557,13 @@ void main() {
         identical(
           BillingAwaitingPaymentAtomPermissions.nestedWrite,
           billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.nestedRead,
+          billingClaimsNestedReadRequirement,
         ),
         isTrue,
       );
@@ -443,7 +597,15 @@ void main() {
         isFalse,
       );
       expect(
+        BillingAwaitingPaymentAtomPermissions.close.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingAwaitingPaymentAtomPermissions.write.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.close.isAllowed(writer),
         isTrue,
       );
     });

@@ -198,6 +198,10 @@ void main() {
         BillingApprovalRequiredAtomPermissions.delete.isAllowed(reader),
         isFalse,
       );
+      expect(
+        BillingApprovalRequiredAtomPermissions.close.isAllowed(reader),
+        isFalse,
+      );
 
       await _pumpApprovalTab(
         tester,
@@ -233,6 +237,10 @@ void main() {
       );
       expect(
         BillingApprovalRequiredAtomPermissions.delete.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.close.isAllowed(writer),
         isTrue,
       );
       expect(
@@ -572,7 +580,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Approve next-action opens nested dialog (sync path)',
+    'authorized Approve next-action submits and syncs (mutation path)',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -591,6 +599,49 @@ void main() {
 
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.text('Approve'), findsWidgets);
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Approve');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Approve').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.approveApproval(any(), any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied on Approval required',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.nestedWrite.isAllowed(
+          writerNoClaims,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.write.isAllowed(writerNoClaims),
+        isTrue,
+      );
+
+      await _pumpApprovalTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Approve'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 }
