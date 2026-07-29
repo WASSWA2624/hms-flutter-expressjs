@@ -519,6 +519,28 @@ void main() {
   );
 
   testWidgets(
+    'empty write-authorized Preventive keeps Schedule maintenance primary',
+    (WidgetTester tester) async {
+      await _pumpPreventiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Schedule maintenance'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized error/retry surface remains observable on Preventive',
     (WidgetTester tester) async {
       await _pumpPreventiveTab(

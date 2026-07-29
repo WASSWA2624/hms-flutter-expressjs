@@ -207,4 +207,4 @@ Preventive permission tests in `frontend/test/features/biomedical/presentation/b
 - [x] Route entry ∪ write-only omits Preventive chrome; subscription strip without biomed module omits Preventive.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; PM writes still mount.
 - [x] Authorized Perform maintenance mutation sync; Schedule maintenance validation keeps dialog open.
-- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
+- [x] Empty (read omits primary / write keeps Schedule maintenance) / loading→success / error-retry, mobile+desktop, light+dark authorized states.
