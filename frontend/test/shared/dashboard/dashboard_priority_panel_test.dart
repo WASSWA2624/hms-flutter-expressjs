@@ -51,4 +51,56 @@ void main() {
     expect(find.text('Manage tenants'), findsOneWidget);
     expect(find.byIcon(Icons.corporate_fare_outlined), findsOneWidget);
   });
+
+  testWidgets(
+    'spaces alerts above empty management queue',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DashboardPriorityPanel(
+                  data: DashboardPriorityPanelData(
+                    emptySectionTitle: 'Facility management',
+                    emptyMessage: '',
+                    showAlerts: true,
+                    alertsTitle: 'Facility alerts',
+                    alertItems: <DashboardWorklistItemData>[
+                      DashboardWorklistItemData(
+                        title: 'Entitlement Denied Modules',
+                        subtitle: '1 facility',
+                        icon: Icons.warning_amber_rounded,
+                      ),
+                    ],
+                    emptyActions: <DashboardQuickActionData>[
+                      DashboardQuickActionData(
+                        label: 'Add staff profile',
+                        icon: Icons.badge_outlined,
+                        semanticsLabel: 'Add staff profile',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Rect alertsTitle = tester.getRect(find.text('Facility alerts'));
+      final Rect managementTitle = tester.getRect(
+        find.text('Facility management'),
+      );
+      expect(managementTitle.top, greaterThan(alertsTitle.bottom + 8));
+    },
+  );
 }

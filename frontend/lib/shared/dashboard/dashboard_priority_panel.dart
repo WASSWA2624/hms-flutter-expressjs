@@ -106,7 +106,10 @@ class DashboardPriorityPanel extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        if (hasAlerts && !hasQueueContent) alertsPanel,
+                        if (hasAlerts && !hasQueueContent) ...<Widget>[
+                          alertsPanel,
+                          if (hasQueue) SizedBox(height: gap),
+                        ],
                         if (hasQueue) queuePanel,
                         if (hasQueue && hasAlerts && hasQueueContent)
                           SizedBox(height: gap),
