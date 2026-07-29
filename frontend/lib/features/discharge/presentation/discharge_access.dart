@@ -52,8 +52,10 @@ const AccessRequirement dischargePendingClearanceReadRequirement =
 /// Route entry — unique atom from [RouteAccessCatalog.discharge].
 ///
 /// Source gate is ∩ `discharge:read` + `inpatient-bed-management` (not the
-/// legacy prompt any-of clinical/pharmacy/billing/operations). Tab read ∪
-/// remains `clinical:read` | `last_office:read` after entry.
+/// legacy prompt any-of clinical/pharmacy/billing/operations). Most desk tabs
+/// use `clinical:read` | `last_office:read` after entry; Pending clearance uses
+/// a broader multi-department read ∪ (see
+/// [dischargePendingClearanceReadRequirement]).
 const AccessRequirement dischargeWorkspaceEntryRequirement =
     RouteAccessCatalog.dischargeEntry;
 
