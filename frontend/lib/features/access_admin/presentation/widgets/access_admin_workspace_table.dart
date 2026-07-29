@@ -388,11 +388,12 @@ List<AppListTableColumn<AccessAdminItem>> _userColumns(
         );
       },
     ),
-    _userNextActionColumn(
-      context,
-      canWrite: canWrite,
-      onUserStatusToggle: onUserStatusToggle,
-    ),
+    // Omit the column entirely when unauthorized (no empty/disabled cell).
+    if (canWrite)
+      _userNextActionColumn(
+        context,
+        onUserStatusToggle: onUserStatusToggle,
+      ),
     AppListTableColumn<AccessAdminItem>(
       id: 'user_details',
       label: l10n.accessAdminColumnDetails,
@@ -697,7 +698,6 @@ List<AppListTableColumn<AccessAdminItem>> _registrationColumns(
 
 AppListTableColumn<AccessAdminItem> _userNextActionColumn(
   BuildContext context, {
-  required bool canWrite,
   required Future<void> Function(AccessAdminItem item) onUserStatusToggle,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -706,9 +706,6 @@ AppListTableColumn<AccessAdminItem> _userNextActionColumn(
     label: l10n.accessAdminManageUserAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
-      if (!canWrite) {
-        return const SizedBox.shrink();
-      }
       final String label = item.status == 'ACTIVE'
           ? l10n.accessAdminDeactivateAction
           : l10n.accessAdminActivateAction;

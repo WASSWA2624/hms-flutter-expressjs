@@ -15,14 +15,22 @@ void main() {
 
   group('duplicates removed (source)', () {
     test('Overview tab is excluded from the tab strip', () {
+      final String accessSource = File(
+        'lib/features/access_admin/presentation/access_admin_access.dart',
+      ).readAsStringSync();
       expect(
-        pageSource.contains('panel != AccessAdminPanel.overview'),
+        accessSource.contains('panel != AccessAdminPanel.overview'),
         isTrue,
       );
       expect(
         pageSource.contains('accessAdminPanelOverview'),
         isFalse,
         reason: 'Overview label must not appear as a tab',
+      );
+      expect(
+        pageSource.contains('accessAdminAllowedPanels'),
+        isTrue,
+        reason: 'Tab strip must reuse accessAdminAllowedPanels',
       );
     });
 

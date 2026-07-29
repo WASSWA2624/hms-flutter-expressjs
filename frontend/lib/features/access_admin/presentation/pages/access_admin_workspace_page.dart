@@ -8,11 +8,14 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
@@ -88,19 +91,22 @@ class _AccessAdminWorkspacePageState
       accessAdminWorkspaceControllerProvider,
     );
 
-    return AsyncStateScaffold<AccessAdminWorkspaceState>(
-      value: workspace,
-      appBarTitle: context.l10n.accessAdminTitle,
-      loadingTitle: context.l10n.accessAdminLoadingTitle,
-      loadingBody: context.l10n.accessAdminLoadingBody,
-      maxWidth: PageMaxWidth.dataHeavy,
-      centerVertically: false,
-      onRetry: () {
-        ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
-      },
-      dataBuilder: (BuildContext context, AccessAdminWorkspaceState state) {
-        return _AccessAdminWorkspaceContent(state: state);
-      },
+    return AppAccessGate(
+      requirement: accessAdminWorkspaceReadRequirement,
+      child: AsyncStateScaffold<AccessAdminWorkspaceState>(
+        value: workspace,
+        appBarTitle: context.l10n.accessAdminTitle,
+        loadingTitle: context.l10n.accessAdminLoadingTitle,
+        loadingBody: context.l10n.accessAdminLoadingBody,
+        maxWidth: PageMaxWidth.dataHeavy,
+        centerVertically: false,
+        onRetry: () {
+          ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
+        },
+        dataBuilder: (BuildContext context, AccessAdminWorkspaceState state) {
+          return _AccessAdminWorkspaceContent(state: state);
+        },
+      ),
     );
   }
 
@@ -157,11 +163,27 @@ class _AccessAdminWorkspaceContentState
     final AccessAdminWorkspaceController controller = ref.read(
       accessAdminWorkspaceControllerProvider.notifier,
     );
-    final bool canWrite = state.data.permissions.canWrite;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Source inventory: workspace canWrite. Matrix write ∩: tenant:admin.
+    final bool canWrite = canWriteAccessAdmin(
+      policy,
+      workspaceCanWrite: state.data.permissions.canWrite,
+    );
+    final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
+      policy,
+      workspaceCanWrite: state.data.permissions.canWrite,
+      workspaceCanResetDemoPasswords:
+          state.data.permissions.canResetDemoPasswords,
+    );
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
     final ThemeData theme = Theme.of(context);
+    final bool isEntitlementsPanel =
+        state.query.panel == AccessAdminPanel.entitlements;
+    final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
+
+    _ensureAuthorizedPanel(controller, state, policy);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -188,7 +210,9 @@ class _AccessAdminWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (state.isTenantContextRequired &&
+            if (isEntitlementsPanel && !canReadEntitlements)
+              const SizedBox.shrink()
+            else if (state.isTenantContextRequired &&
                 state.query.panel != AccessAdminPanel.registrations)
               AppStateView(
                 title: context.l10n.accessAdminTenantContextRequiredTitle,
@@ -203,7 +227,14 @@ class _AccessAdminWorkspaceContentState
                 columnVisibilityController: _tableColumnController,
                 canWrite: canWrite,
                 onItemSelected: (AccessAdminItem item) {
-                  unawaited(_openDetailDialog(context, item, canWrite));
+                  unawaited(
+                    _openDetailDialog(
+                      context,
+                      item,
+                      canWrite,
+                      canResetDemoPassword: canResetDemoPassword,
+                    ),
+                  );
                 },
                 onRoleEdit: (AccessAdminItem role) {
                   // Edit completes in the shared dialog; do not reopen detail
@@ -220,6 +251,26 @@ class _AccessAdminWorkspaceContentState
         ),
       ),
     );
+  }
+
+  void _ensureAuthorizedPanel(
+    AccessAdminWorkspaceController controller,
+    AccessAdminWorkspaceState state,
+    AppAccessPolicy policy,
+  ) {
+    if (canAccessAccessAdminPanel(policy, state.query.panel)) {
+      return;
+    }
+    final AccessAdminPanel? fallback = accessAdminFallbackPanel(policy);
+    if (fallback == null || fallback == state.query.panel) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(controller.applyPanel(fallback));
+    });
   }
 
   Widget? _primaryAction(
@@ -257,8 +308,9 @@ class _AccessAdminWorkspaceContentState
   Future<void> _openDetailDialog(
     BuildContext context,
     AccessAdminItem item,
-    bool canWrite,
-  ) async {
+    bool canWrite, {
+    required bool canResetDemoPassword,
+  }) async {
     final AccessAdminWorkspaceController controller = ref.read(
       accessAdminWorkspaceControllerProvider.notifier,
     );
@@ -328,6 +380,7 @@ class _AccessAdminWorkspaceContentState
               rolePermissions: rolePermissions,
               state: current ?? widget.state,
               canWrite: canWrite,
+              canResetDemoPassword: canResetDemoPassword,
             ),
             actions: <Widget>[
               if (canWrite &&
@@ -418,19 +471,17 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isSuperAdmin = ref.watch(appAccessPolicyProvider).isElevated;
-    final List<AccessAdminPanel> panels = AccessAdminPanel.values
-        .where(
-          (AccessAdminPanel panel) =>
-              panel != AccessAdminPanel.overview &&
-              (panel != AccessAdminPanel.registrations || isSuperAdmin),
-        )
-        .toList(growable: false);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<AccessAdminPanel> panels = accessAdminAllowedPanels(policy);
 
     final AccessAdminPanel selectedPanel =
         state.query.panel == AccessAdminPanel.overview
         ? AccessAdminPanel.directory
         : state.query.panel;
+    final AccessAdminPanel effectiveSelected =
+        panels.contains(selectedPanel)
+        ? selectedPanel
+        : (panels.isNotEmpty ? panels.first : AccessAdminPanel.directory);
 
     return AppTabStrip(
       tabs: <AppTabItem>[
@@ -441,7 +492,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
             label: _panelLabel(context, panel),
           ),
       ],
-      selectedId: selectedPanel.serverValue,
+      selectedId: effectiveSelected.serverValue,
       onTabTapped: state.isSaving
           ? (_) {}
           : (String tabId) => _onTabTapped(context, tabId),
@@ -450,8 +501,15 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
   }
 
   void _onTabTapped(BuildContext context, String tabId) {
+    final AppAccessPolicy policy = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(appAccessPolicyProvider);
     for (final AccessAdminPanel panel in AccessAdminPanel.values) {
       if (panel.serverValue == tabId) {
+        if (!canAccessAccessAdminPanel(policy, panel)) {
+          return;
+        }
         unawaited(controller.applyPanel(panel));
         final AccessAdminWorkspaceQuery newQuery = state.query.copyWith(
           panel: panel,
@@ -653,6 +711,7 @@ class _DetailContent extends ConsumerWidget {
     required this.detail,
     required this.state,
     required this.canWrite,
+    required this.canResetDemoPassword,
     this.rolePermissions = const <AccessAdminRolePermissionAssignment>[],
   });
 
@@ -660,6 +719,7 @@ class _DetailContent extends ConsumerWidget {
   final AccessAdminUserDetail? detail;
   final AccessAdminWorkspaceState state;
   final bool canWrite;
+  final bool canResetDemoPassword;
   final List<AccessAdminRolePermissionAssignment> rolePermissions;
 
   @override
@@ -857,10 +917,8 @@ class _DetailContent extends ConsumerWidget {
               style: theme.textTheme.bodySmall,
             ),
           ),
-        if (canWrite &&
-            (isRegistration ||
-                (item.isDemo &&
-                    state.data.permissions.canResetDemoPasswords))) ...<Widget>[
+        if ((canWrite && isRegistration) ||
+            (canResetDemoPassword && item.isDemo)) ...<Widget>[
           SizedBox(height: theme.spacing.lg),
           Wrap(
             spacing: theme.spacing.sm,
@@ -878,7 +936,8 @@ class _DetailContent extends ConsumerWidget {
   ) {
     final List<Widget> actions = <Widget>[];
 
-    if (item.resource == AccessAdminResource.registrationFollowUps) {
+    if (canWrite &&
+        item.resource == AccessAdminResource.registrationFollowUps) {
       // Activate stays on the list next-action; detail only offers Reject.
       actions.add(
         AppButton.secondary(
@@ -888,7 +947,7 @@ class _DetailContent extends ConsumerWidget {
       );
     }
 
-    if (item.isDemo && state.data.permissions.canResetDemoPasswords) {
+    if (canResetDemoPassword && item.isDemo) {
       actions.add(
         AppButton.secondary(
           label: context.l10n.accessAdminResetDemoPasswordAction,
