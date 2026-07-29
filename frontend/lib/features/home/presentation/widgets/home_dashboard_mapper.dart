@@ -160,7 +160,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
       profile.maxResultsItems > 0 && dashboard.resultsPreview.isNotEmpty;
   final bool showFollowUps =
       profile.maxFollowUpItems > 0 && dashboard.followUpPreview.isNotEmpty;
-  final bool showShortcuts = profile.showShortcutsSection(
+  final bool showShortcutsConfigured = profile.showShortcutsSection(
     quickActionCount: actions.length,
   );
   final List<DashboardWorklistItemData> worklistItems = showQueue
@@ -184,6 +184,20 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   // Management strips: buttons already state the action — no tutorial body.
   // Keep empty copy only for true work queues with no management actions.
   final String emptyMessage = emptyActions.isNotEmpty ? '' : profile.emptyMessage;
+  final List<DashboardShortcutData> shortcutTiles = showShortcutsConfigured
+      ? shortcuts
+            .take(profile.maxShortcutTiles)
+            .map(
+              (HomeShortcutDefinition shortcut) => DashboardShortcutData(
+                label: shortcut.label,
+                icon: shortcut.icon,
+                onTap: () =>
+                    homeNavigateShortcut(context, ref, policy, shortcut),
+              ),
+            )
+            .toList(growable: false)
+      : const <DashboardShortcutData>[];
+  final bool showShortcuts = shortcutTiles.isNotEmpty;
 
   return DashboardPriorityPanelData(
     queueTitle: profile.showQueuePanelTitle
@@ -240,19 +254,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
           )
         : const <DashboardWorklistItemData>[],
     maxFollowUpItems: profile.maxFollowUpItems,
-    shortcuts: showShortcuts
-        ? shortcuts
-              .take(profile.maxShortcutTiles)
-              .map(
-                (HomeShortcutDefinition shortcut) => DashboardShortcutData(
-                  label: shortcut.label,
-                  icon: shortcut.icon,
-                  onTap: () =>
-                      homeNavigateShortcut(context, ref, policy, shortcut),
-                ),
-              )
-              .toList(growable: false)
-        : const <DashboardShortcutData>[],
+    shortcuts: shortcutTiles,
     maxShortcuts: profile.maxShortcutTiles,
     shortcutsTitle: l10n.homeDashboardQuickLinksTitle,
     showQueue: showQueue,

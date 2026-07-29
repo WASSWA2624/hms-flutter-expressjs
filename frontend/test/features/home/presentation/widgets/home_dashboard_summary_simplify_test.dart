@@ -78,19 +78,13 @@ void main() {
         roles: <String>['TENANT_ADMIN'],
         permissions: AppPermissions.all,
       );
-      final HomeDashboardProfile profile = homeProfileForRole(
-        AppRole.tenantAdmin,
-      );
+      final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
 
       expect(profile.quickActionIds, isEmpty);
       final List<HomeActionDefinition> quick =
           homeDeduplicateQuickActionsAgainstManage(
             homeVisibleActions(
-              <String>[
-                'create_facility',
-                'create_role',
-                'create_user',
-              ],
+              profile.quickActionIds,
               policy,
               maxCount: profile.maxQuickActions,
             ),
@@ -112,6 +106,9 @@ void main() {
           'add_staff_profile',
         ]),
       );
+      // Expansion must not reintroduce department Create rows onto org home.
+      expect(profile.quickActionIds, isNot(contains('register_patient')));
+      expect(profile.quickActionIds, isNot(contains('create_invoice')));
     });
 
     test('platform admin drops Create when Manage hubs cover them', () {
@@ -122,21 +119,15 @@ void main() {
         tenantId: null,
         facilityId: null,
       );
-      final HomeDashboardProfile profile = homeProfileForRole(
-        AppRole.superAdmin,
-      );
+      final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
 
       expect(profile.quickActionIds, isEmpty);
       final List<HomeActionDefinition> quick =
           homeDeduplicateQuickActionsAgainstManage(
             homeVisibleActions(
-              <String>[
-                'create_tenant',
-                'create_facility',
-                'create_role',
-                'create_user',
-              ],
+              profile.quickActionIds,
               policy,
+              maxCount: profile.maxQuickActions,
             ),
             profile.emptyActionIds,
             policy,
@@ -264,10 +255,45 @@ void main() {
       final HomeDashboardProfile profile = homeProfileForRole(
         AppRole.facilityAdmin,
       );
-      final List<HomeShortcutDefinition> shortcuts = homeVisibleShortcuts(
-        profile.shortcutIds,
+      final List<HomeActionDefinition> quick = homeVisibleActions(
+        profile.quickActionIds,
         policy,
-      ).take(profile.maxShortcutTiles).toList(growable: false);
+        maxCount: profile.maxQuickActions,
+      );
+      final List<HomeShortcutDefinition> shortcuts =
+          homeShortcutsExcludingQuickActions(
+            homeVisibleShortcuts(profile.shortcutIds, policy),
+            quick,
+            profile,
+          ).take(profile.maxShortcutTiles).toList(growable: false);
+
+      expect(shortcuts.length, greaterThanOrEqualTo(4));
+    });
+
+    test('lab shortcuts keep floor when quick actions share lab route', () {
+      final AppAccessPolicy policy = _policy(
+        roles: <String>['LAB_TECH'],
+        permissions: const <AppPermission>[
+          AppPermissions.labRead,
+          AppPermissions.labWrite,
+          AppPermissions.patientRead,
+          AppPermissions.reportsRead,
+          AppPermissions.profileRead,
+          AppPermissions.communicationsRead,
+        ],
+      );
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.labTech);
+      final List<HomeActionDefinition> quick = homeVisibleActions(
+        profile.quickActionIds,
+        policy,
+        maxCount: profile.maxQuickActions,
+      );
+      final List<HomeShortcutDefinition> shortcuts =
+          homeShortcutsExcludingQuickActions(
+            homeVisibleShortcuts(profile.shortcutIds, policy),
+            quick,
+            profile,
+          );
 
       expect(shortcuts.length, greaterThanOrEqualTo(4));
     });

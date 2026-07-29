@@ -1255,6 +1255,9 @@ List<HomeActionDefinition> homeVisibleActions(
   return actions.take(maxCount).toList(growable: false);
 }
 
+/// Drops Quick-link tiles that share a route with a visible Quick action when
+/// enough other authorized links remain; otherwise keeps hubs so the Quick
+/// links floor (≥4 when the catalog can supply them) is preserved.
 List<HomeShortcutDefinition> homeShortcutsExcludingQuickActions(
   List<HomeShortcutDefinition> shortcuts,
   List<HomeActionDefinition> actions,
@@ -1263,15 +1266,27 @@ List<HomeShortcutDefinition> homeShortcutsExcludingQuickActions(
   if (!profile.showShortcutsSection(quickActionCount: actions.length)) {
     return const <HomeShortcutDefinition>[];
   }
+  if (actions.isEmpty || shortcuts.isEmpty) {
+    return shortcuts;
+  }
   final Set<String> actionRoutes = actions
       .map((HomeActionDefinition action) => action.route.path)
       .toSet();
-  return shortcuts
+  final List<HomeShortcutDefinition> withoutOverlap = shortcuts
       .where(
         (HomeShortcutDefinition shortcut) =>
             !actionRoutes.contains(shortcut.route.path),
       )
       .toList(growable: false);
+  const int shortcutFloor = 4;
+  final int floor = shortcuts.length < shortcutFloor
+      ? shortcuts.length
+      : shortcutFloor;
+  if (withoutOverlap.length >= floor) {
+    return withoutOverlap;
+  }
+  // Prefer navigation hubs over dropping below the authorized-tile floor.
+  return shortcuts;
 }
 
 List<HomeShortcutDefinition> homeVisibleShortcuts(

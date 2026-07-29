@@ -86,7 +86,7 @@ void main() {
         'adjust_pharmacy_stock',
       ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
-      expect(profile.emptyMessage, contains('No pending orders'));
+      expect(profile.emptyMessage, 'No pending orders.');
       expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
       expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
     });
@@ -127,7 +127,7 @@ void main() {
           'settings',
         ]);
         expect(profile.metricRouteTargets.keys, contains('appointments_today'));
-        expect(profile.emptyMessage, contains('quick links'));
+        expect(profile.emptyMessage, 'No desk queue items right now.');
       },
     );
   });

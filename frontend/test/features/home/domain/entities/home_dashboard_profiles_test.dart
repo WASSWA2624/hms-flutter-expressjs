@@ -193,6 +193,7 @@ void main() {
         'patients',
         'reports',
         'settings',
+        'communications',
       ]);
       expect(profile.maxStatusCards, 4);
       expect(

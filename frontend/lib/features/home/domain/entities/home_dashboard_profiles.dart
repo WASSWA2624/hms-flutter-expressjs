@@ -456,7 +456,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'enter_lab_result',
       'flag_critical_lab',
     ],
-    shortcutIds: <String>['lab', 'patients', 'reports', 'settings'],
+    shortcutIds: <String>['lab', 'patients', 'reports', 'settings', 'communications'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -516,7 +516,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'add_radiology_report',
       'run_report',
     ],
-    shortcutIds: <String>['radiology', 'patients', 'reports', 'settings'],
+    shortcutIds: <String>[
+      'radiology',
+      'patients',
+      'reports',
+      'settings',
+      'communications',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.pharmacist: HomeDashboardProfile(
@@ -524,8 +530,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.pharmacist,
     roleLabel: 'Pharmacist',
     homeTitle: 'Pharmacy',
-    emptyMessage:
-        'No pending orders. Check stock levels or review today\'s dispensing activity.',
+    emptyMessage: 'No pending orders.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -595,8 +600,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.receptionist,
     roleLabel: 'Reception / front desk',
     homeTitle: 'Front desk',
-    emptyMessage:
-        'No desk queue items right now. Use quick links for registry, OPD, emergency, or follow-ups.',
+    emptyMessage: 'No desk queue items right now.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -986,7 +990,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['acknowledge_work_order', 'update_work_order'],
-    shortcutIds: <String>['biomedical', 'operations', 'reports', 'settings'],
+    shortcutIds: <String>[
+      'biomedical',
+      'operations',
+      'reports',
+      'settings',
+      'communications',
+    ],
     emptyActionIds: <String>['report_equipment_issue'],
   ),
   AppRole.houseKeeper: HomeDashboardProfile(
@@ -1024,7 +1034,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['start_cleaning_task', 'complete_cleaning_task'],
-    shortcutIds: <String>['housekeeping', 'rooms_beds', 'reports', 'settings'],
+    shortcutIds: <String>[
+      'housekeeping',
+      'rooms_beds',
+      'reports',
+      'settings',
+      'operations',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.ambulanceOperator: HomeDashboardProfile(
@@ -1062,7 +1078,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
-    shortcutIds: <String>['emergency', 'operations', 'reports', 'settings'],
+    shortcutIds: <String>[
+      'emergency',
+      'operations',
+      'reports',
+      'settings',
+      'communications',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.unitManager: HomeDashboardProfile(
@@ -1289,7 +1311,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'review_audit',
       'run_report',
     ],
-    shortcutIds: <String>['biomedical', 'operations', 'reports', 'settings'],
+    shortcutIds: <String>[
+      'biomedical',
+      'operations',
+      'reports',
+      'settings',
+      'communications',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryStaff: HomeDashboardProfile(
@@ -1533,7 +1561,7 @@ HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
 /// Prefer canonical roles; for custom roles, infer a dashboard from permissions.
 ///
 /// Ranked roles keep layout chrome. [expandHomeProfileForPermissions] unions
-/// grantable atoms from other domains so extra grants (e.g. doctor +
+/// grantable KPI/shortcut atoms from other domains so extra grants (e.g. doctor +
 /// `billing:read`) surface without inventing a new [AppRole]. Visibility still
 /// requires `grantsAll` via [filterHomeDashboardForAccess] / action libraries.
 HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
@@ -1601,7 +1629,7 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   return expandHomeProfileForPermissions(inferred, policy);
 }
 
-/// Unions grantable KPI/action/shortcut atoms onto [base] layout chrome.
+/// Unions grantable KPI/shortcut atoms onto [base] layout chrome.
 ///
 /// Roles choose the default profile layout; visibility still requires
 /// `grantsAll` via [filterHomeDashboardForAccess] / action libraries.
@@ -1610,6 +1638,10 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
 /// **cross-domain** grantable cards (permissions not already on the base
 /// profile) so extra grants (e.g. `billing:read` on a doctor) surface inside
 /// the 4–6 card budget. Same-domain extras follow after.
+///
+/// Quick actions and empty/management action ids stay on the base profile only
+/// so admin Manage hubs are not buried under every department's Create row and
+/// clinical next-steps are not mixed into organization/platform summaries.
 HomeDashboardProfile expandHomeProfileForPermissions(
   HomeDashboardProfile base,
   AppAccessPolicy policy,
@@ -1626,14 +1658,8 @@ HomeDashboardProfile expandHomeProfileForPermissions(
   final LinkedHashMap<String, HomeStatusCardTemplate> sameDomainCards =
       LinkedHashMap<String, HomeStatusCardTemplate>();
 
-  final LinkedHashSet<String> quickActionIds = LinkedHashSet<String>.of(
-    base.quickActionIds,
-  );
   final LinkedHashSet<String> shortcutIds = LinkedHashSet<String>.of(
     base.shortcutIds,
-  );
-  final LinkedHashSet<String> emptyActionIds = LinkedHashSet<String>.of(
-    base.emptyActionIds,
   );
   final Map<String, HomeMetricRouteTarget> metricRoutes =
       Map<String, HomeMetricRouteTarget>.of(base.metricRouteTargets);
@@ -1665,14 +1691,8 @@ HomeDashboardProfile expandHomeProfileForPermissions(
         sameDomainCards[template.id] = template;
       }
     }
-    for (final String id in profile.quickActionIds) {
-      quickActionIds.add(id);
-    }
     for (final String id in profile.shortcutIds) {
       shortcutIds.add(id);
-    }
-    for (final String id in profile.emptyActionIds) {
-      emptyActionIds.add(id);
     }
     for (final MapEntry<String, HomeMetricRouteTarget> entry
         in profile.metricRouteTargets.entries) {
@@ -1686,9 +1706,7 @@ HomeDashboardProfile expandHomeProfileForPermissions(
 
   if (crossDomainCards.isEmpty && sameDomainCards.isEmpty) {
     return base.copyWith(
-      quickActionIds: quickActionIds.toList(growable: false),
       shortcutIds: shortcutIds.toList(growable: false),
-      emptyActionIds: emptyActionIds.toList(growable: false),
       metricRouteTargets: metricRoutes,
       metricActionTargets: metricActions,
     );
@@ -1706,9 +1724,7 @@ HomeDashboardProfile expandHomeProfileForPermissions(
 
   return base.copyWith(
     statusCards: ordered,
-    quickActionIds: quickActionIds.toList(growable: false),
     shortcutIds: shortcutIds.toList(growable: false),
-    emptyActionIds: emptyActionIds.toList(growable: false),
     metricRouteTargets: metricRoutes,
     metricActionTargets: metricActions,
     maxStatusCards: math.min(6, math.max(base.maxStatusCards, ordered.length)),
