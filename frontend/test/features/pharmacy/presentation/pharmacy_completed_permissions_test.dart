@@ -756,7 +756,8 @@ void main() {
     );
 
     testWidgets(
-      '∪ route entry: operations:read keeps Completed chrome read-only',
+      '∪ route entry: operations:read keeps Completed chrome read-only '
+      '(catalog browse ∩ pharmacy:read strips Catalog primary)',
       (WidgetTester tester) async {
         await _pumpCompletedTab(
           tester,
@@ -780,7 +781,7 @@ void main() {
         expect(_tab('Completed'), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Return'), findsNothing);
-        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
       },
     );
 
@@ -863,7 +864,15 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Return').first);
+        await tester.tap(find.text('Dana Done'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Return'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Return medicines'), findsOneWidget);
@@ -872,7 +881,7 @@ void main() {
           find.descendant(
             of: find.byType(AppDialog),
             matching: find.text('Return'),
-          ),
+          ).last,
         );
         await tester.pumpAndSettle();
 
@@ -902,7 +911,15 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Return').first);
+        await tester.tap(find.text('Dana Done'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Return'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Return medicines'), findsOneWidget);
@@ -932,7 +949,7 @@ void main() {
           find.descendant(
             of: find.byType(AppDialog),
             matching: find.text('Return'),
-          ),
+          ).last,
         );
         await tester.pumpAndSettle();
 

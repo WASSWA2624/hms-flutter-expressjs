@@ -4,28 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/controllers/physiotherapy_workspace_controller.dart';
+import 'package:hosspi_hms/features/physiotherapy/presentation/physiotherapy_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 
-const AccessRequirement therapyNextActionReadRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.patientRead,
-    AppPermissions.billingRead,
-  ],
-);
+/// @nodoc — prefer [physiotherapyNextActionReadRequirement].
+const AccessRequirement therapyNextActionReadRequirement =
+    physiotherapyNextActionReadRequirement;
 
-const AccessRequirement therapyNextActionWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.patientWrite,
-  ],
-);
+/// @nodoc — prefer [physiotherapyNextActionWriteRequirement].
+const AccessRequirement therapyNextActionWriteRequirement =
+    physiotherapyNextActionWriteRequirement;
 
 enum TherapyNextActionKind {
   acceptReferral,
@@ -111,8 +103,8 @@ AccessRequirement therapyNextActionRequirementForKind(
   TherapyNextActionKind kind,
 ) {
   return kind == TherapyNextActionKind.printInstructions
-      ? therapyNextActionReadRequirement
-      : therapyNextActionWriteRequirement;
+      ? physiotherapyNextActionReadRequirement
+      : physiotherapyNextActionWriteRequirement;
 }
 
 bool therapyNextActionEnabled({

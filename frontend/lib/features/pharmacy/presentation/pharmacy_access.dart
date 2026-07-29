@@ -179,6 +179,18 @@ bool canViewPharmacySection(AppAccessPolicy policy, PharmacyDeskSection section)
   return pharmacySectionTabRequirement(section).isAllowed(policy);
 }
 
+/// Write gate for the active desk section (reuses tab atom maps).
+AccessRequirement pharmacySectionWriteRequirement(PharmacyDeskSection section) {
+  return switch (section) {
+    PharmacyDeskSection.queue => PharmacyReadyAtomPermissions.write,
+    PharmacyDeskSection.allOrders => PharmacyAllOrdersAtomPermissions.write,
+    PharmacyDeskSection.inProgress => PharmacyPartialAtomPermissions.write,
+    PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.write,
+    PharmacyDeskSection.pendingPayment =>
+      PharmacyPendingPaymentAtomPermissions.write,
+  };
+}
+
 /// Sections the user may open.
 ///
 /// Most worklist tabs use ∩ `pharmacy:read`. Pending payment uses ∩

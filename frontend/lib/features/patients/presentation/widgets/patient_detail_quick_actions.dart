@@ -29,11 +29,13 @@ class PatientDetailQuickActions extends ConsumerWidget {
   const PatientDetailQuickActions({
     required this.detail,
     required this.onAction,
+    this.registrySection,
     super.key,
   });
 
   final PatientDetail detail;
   final PatientQuickActionHandler onAction;
+  final PatientRegistrySection? registrySection;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +72,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.event_available_outlined,
           tooltip: l10n.patientsQuickAppointmentTooltip,
           onPressed: () => onAction(PatientQuickAction.appointment),
-          requirement: PatientActiveAtomPermissions.scheduleAppointment,
+          requirement: patientRegistryScheduleAppointmentAtom(registrySection),
         ),
       if (hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
@@ -78,7 +80,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.open_in_new_outlined,
           tooltip: l10n.patientsQuickViewActiveOpdTooltip,
           onPressed: () => onAction(PatientQuickAction.opdActions),
-          requirement: PatientActiveAtomPermissions.viewActiveOpd,
+          requirement: patientRegistryViewActiveOpdAtom(registrySection),
         )
       else if (!hasActiveOpdEncounter &&
           !hasActiveOpdWorkItem &&
@@ -88,7 +90,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: AppActionIcons.personAdd,
           tooltip: l10n.patientsQuickOpdCheckInTooltip,
           onPressed: () => onAction(PatientQuickAction.opdCheckIn),
-          requirement: PatientActiveAtomPermissions.startOpd,
+          requirement: patientRegistryStartOpdAtom(registrySection),
         ),
       if (!hasActiveAdmission)
         AppPermissionActionItem(
@@ -96,7 +98,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: AppActionIcons.bed,
           tooltip: l10n.patientsQuickAdmitPatientTooltip,
           onPressed: () => onAction(PatientQuickAction.admission),
-          requirement: PatientActiveAtomPermissions.requestAdmission,
+          requirement: patientRegistryRequestAdmissionAtom(registrySection),
         ),
       // Discharge / admission handoff continue solely via Active Work when that
       // panel already lists the in-flight admission.
@@ -106,7 +108,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.logout_outlined,
           tooltip: l10n.patientsQuickDischargeTooltip,
           onPressed: () => onAction(PatientQuickAction.discharge),
-          requirement: PatientActiveAtomPermissions.discharge,
+          requirement: patientRegistryDischargeAtom(registrySection),
         ),
       if (!patientHasPendingLabRequest(detail))
         AppPermissionActionItem(
@@ -114,7 +116,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.science_outlined,
           tooltip: l10n.patientsQuickLabOrderTooltip,
           onPressed: () => onAction(PatientQuickAction.labOrder),
-          requirement: PatientActiveAtomPermissions.labOrder,
+          requirement: patientRegistryLabOrderAtom(registrySection),
         ),
       if (!patientHasPendingRadiologyRequest(detail))
         AppPermissionActionItem(
@@ -122,7 +124,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.monitor_heart_outlined,
           tooltip: l10n.patientsQuickRadiologyOrderTooltip,
           onPressed: () => onAction(PatientQuickAction.radiologyOrder),
-          requirement: PatientActiveAtomPermissions.radiologyOrder,
+          requirement: patientRegistryRadiologyOrderAtom(registrySection),
         ),
       if (!patientHasPendingTheaterCase(detail))
         AppPermissionActionItem(
@@ -130,7 +132,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.medical_services_outlined,
           tooltip: l10n.patientsQuickTheaterScheduleTooltip,
           onPressed: () => onAction(PatientQuickAction.theaterSchedule),
-          requirement: PatientActiveAtomPermissions.theaterSchedule,
+          requirement: patientRegistryTheaterScheduleAtom(registrySection),
         ),
       if (canStartPhysiotherapy && !patientHasPendingTherapyRequest(detail))
         AppPermissionActionItem(
@@ -138,21 +140,21 @@ class PatientDetailQuickActions extends ConsumerWidget {
           icon: Icons.self_improvement_outlined,
           tooltip: l10n.patientsQuickPhysiotherapyTooltip,
           onPressed: () => onAction(PatientQuickAction.physiotherapy),
-          requirement: PatientActiveAtomPermissions.physiotherapy,
+          requirement: patientRegistryPhysiotherapyAtom(registrySection),
         ),
       AppPermissionActionItem(
         label: l10n.patientsEnrollInsuranceAction,
         icon: Icons.badge_outlined,
         tooltip: l10n.patientsEnrollInsuranceAction,
         onPressed: () => onAction(PatientQuickAction.enrollInsurance),
-        requirement: PatientActiveAtomPermissions.enrollInsurance,
+        requirement: patientRegistryEnrollInsuranceAtom(registrySection),
       ),
       AppPermissionActionItem(
         label: l10n.patientsQuickReportAction,
         icon: Icons.summarize_outlined,
         tooltip: l10n.patientsQuickReportTooltip,
         onPressed: () => onAction(PatientQuickAction.report),
-        requirement: PatientActiveAtomPermissions.report,
+        requirement: patientRegistryReportAtom(registrySection),
       ),
     ];
 

@@ -246,15 +246,16 @@ Finder _toolbarPrimary(String label) => find.descendant(
   matching: find.text(label),
 );
 
-/// Next-action / quick-action labels live on [AppButton].
+/// Ready worklist has a "Dispense" progress column; action labels live on
+/// [AppButton] only.
 Finder _actionLabel(String label) => find.descendant(
   of: find.byType(AppButton),
   matching: find.text(label),
 );
 
-Future<void> _pumpAllOrdersTab(
+Future<void> _pumpReadyTab(
   WidgetTester tester, {
-  required PharmacyRepository repository,
+  required _MockPharmacyRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1280, 800),
   ThemeMode themeMode = ThemeMode.light,
@@ -268,7 +269,7 @@ Future<void> _pumpAllOrdersTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/pharmacy?section=all',
+    initialLocation: '/pharmacy?section=ready',
     routes: <RouteBase>[
       GoRoute(
         path: '/pharmacy',
@@ -318,82 +319,82 @@ void main() {
     registerFallbackValue('');
   });
 
-  group('PharmacyAllOrdersAtomPermissions helpers', () {
+  group('PharmacyReadyAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.tab,
+          PharmacyReadyAtomPermissions.tab,
           pharmacyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.write,
+          PharmacyReadyAtomPermissions.write,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.dispense,
+          PharmacyReadyAtomPermissions.dispense,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.recordPayment,
+          PharmacyReadyAtomPermissions.recordPayment,
           pharmacyRecordPaymentRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogWrite,
+          PharmacyReadyAtomPermissions.catalogWrite,
           pharmacyCatalogWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.routeEntry,
+          PharmacyReadyAtomPermissions.routeEntry,
           pharmacyWorkspaceRouteEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogEntry,
+          PharmacyReadyAtomPermissions.catalogEntry,
           pharmacyWorkspaceCatalogEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.controlledDrugAudit,
+          PharmacyReadyAtomPermissions.controlledDrugAudit,
           pharmacyControlledDrugAuditRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.printInstructions,
+          PharmacyReadyAtomPermissions.printInstructions,
           pharmacyPrintInstructionsRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.items,
+          PharmacyReadyAtomPermissions.dispenseProgress,
           pharmacyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          pharmacySectionTabRequirement(PharmacyDeskSection.allOrders),
-          PharmacyAllOrdersAtomPermissions.tab,
+          pharmacySectionTabRequirement(PharmacyDeskSection.queue),
+          PharmacyReadyAtomPermissions.tab,
         ),
         isTrue,
       );
@@ -414,65 +415,59 @@ void main() {
     });
 
     test('atom map covers inventory verbs (AC1)', () {
-      expect(PharmacyAllOrdersAtomPermissions.tab, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.listChrome, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.search, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.filters, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.settings, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.pagination, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.items, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.empty, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.loading, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.retry, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.success, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.validation, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.rowSelect, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.detail, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nextAction, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nextActionWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.create, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.update, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.delete, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.dispense, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.attest, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.returnItems, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.cancelOrder, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.mapStock, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.priceSource, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.recordPayment, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.billingStatus, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.printInstructions, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.controlledDrugAudit, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogBrowse, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedBillingWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedRead, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.routeEntry, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogEntry, isNotNull);
+      expect(PharmacyReadyAtomPermissions.tab, isNotNull);
+      expect(PharmacyReadyAtomPermissions.listChrome, isNotNull);
+      expect(PharmacyReadyAtomPermissions.search, isNotNull);
+      expect(PharmacyReadyAtomPermissions.filters, isNotNull);
+      expect(PharmacyReadyAtomPermissions.settings, isNotNull);
+      expect(PharmacyReadyAtomPermissions.pagination, isNotNull);
+      expect(PharmacyReadyAtomPermissions.dispenseProgress, isNotNull);
+      expect(PharmacyReadyAtomPermissions.empty, isNotNull);
+      expect(PharmacyReadyAtomPermissions.loading, isNotNull);
+      expect(PharmacyReadyAtomPermissions.retry, isNotNull);
+      expect(PharmacyReadyAtomPermissions.success, isNotNull);
+      expect(PharmacyReadyAtomPermissions.validation, isNotNull);
+      expect(PharmacyReadyAtomPermissions.rowSelect, isNotNull);
+      expect(PharmacyReadyAtomPermissions.detail, isNotNull);
+      expect(PharmacyReadyAtomPermissions.nextAction, isNotNull);
+      expect(PharmacyReadyAtomPermissions.nextActionWrite, isNotNull);
+      expect(PharmacyReadyAtomPermissions.create, isNotNull);
+      expect(PharmacyReadyAtomPermissions.update, isNotNull);
+      expect(PharmacyReadyAtomPermissions.delete, isNotNull);
+      expect(PharmacyReadyAtomPermissions.dispense, isNotNull);
+      expect(PharmacyReadyAtomPermissions.attest, isNotNull);
+      expect(PharmacyReadyAtomPermissions.returnItems, isNotNull);
+      expect(PharmacyReadyAtomPermissions.cancelOrder, isNotNull);
+      expect(PharmacyReadyAtomPermissions.mapStock, isNotNull);
+      expect(PharmacyReadyAtomPermissions.priceSource, isNotNull);
+      expect(PharmacyReadyAtomPermissions.recordPayment, isNotNull);
+      expect(PharmacyReadyAtomPermissions.billingStatus, isNotNull);
+      expect(PharmacyReadyAtomPermissions.printInstructions, isNotNull);
+      expect(PharmacyReadyAtomPermissions.controlledDrugAudit, isNotNull);
+      expect(PharmacyReadyAtomPermissions.catalogBrowse, isNotNull);
+      expect(PharmacyReadyAtomPermissions.catalogWrite, isNotNull);
+      expect(PharmacyReadyAtomPermissions.nestedBillingWrite, isNotNull);
+      expect(PharmacyReadyAtomPermissions.nestedWrite, isNotNull);
+      expect(PharmacyReadyAtomPermissions.nestedRead, isNotNull);
+      expect(PharmacyReadyAtomPermissions.routeEntry, isNotNull);
+      expect(PharmacyReadyAtomPermissions.catalogEntry, isNotNull);
     });
 
-    test('∩ denial: missing pharmacy:read hides All orders tab gate', () {
+    test('∩ denial: missing pharmacy:read hides Ready tab gate', () {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyWrite},
       );
+      expect(PharmacyReadyAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(PharmacyReadyAtomPermissions.write.isAllowed(writeOnly), isTrue);
       expect(
-        PharmacyAllOrdersAtomPermissions.tab.isAllowed(writeOnly),
+        PharmacyReadyAtomPermissions.loading.isAllowed(writeOnly),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.write.isAllowed(writeOnly),
-        isTrue,
-      );
-      expect(
-        PharmacyAllOrdersAtomPermissions.loading.isAllowed(writeOnly),
+        PharmacyReadyAtomPermissions.routeEntry.isAllowed(writeOnly),
         isFalse,
       );
-      expect(
-        PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isFalse,
-      );
-      expect(canViewPharmacyAllOrdersTab(writeOnly), isFalse);
+      expect(canViewPharmacyReadyTab(writeOnly), isFalse);
     });
 
     test('∩ full set: pharmacy:read + write mounts read and mutate atoms', () {
@@ -482,21 +477,16 @@ void main() {
           AppPermissions.pharmacyWrite,
         },
       );
-      expect(PharmacyAllOrdersAtomPermissions.tab.isAllowed(writer), isTrue);
-      expect(PharmacyAllOrdersAtomPermissions.write.isAllowed(writer), isTrue);
-      expect(
-        PharmacyAllOrdersAtomPermissions.dispense.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        PharmacyAllOrdersAtomPermissions.success.isAllowed(writer),
-        isTrue,
-      );
-      expect(canViewPharmacyAllOrdersTab(writer), isTrue);
+      expect(PharmacyReadyAtomPermissions.tab.isAllowed(writer), isTrue);
+      expect(PharmacyReadyAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(PharmacyReadyAtomPermissions.dispense.isAllowed(writer), isTrue);
+      expect(PharmacyReadyAtomPermissions.success.isAllowed(writer), isTrue);
+      expect(canViewPharmacyReadyTab(writer), isTrue);
       expect(
         pharmacyAllowedSections(writer),
-        contains(PharmacyDeskSection.allOrders),
+        contains(PharmacyDeskSection.queue),
       );
+      expect(pharmacyFallbackSection(writer), PharmacyDeskSection.queue);
     });
 
     test(
@@ -518,29 +508,21 @@ void main() {
         );
 
         expect(
-          PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(
-            operationsReader,
-          ),
+          PharmacyReadyAtomPermissions.routeEntry.isAllowed(operationsReader),
           isTrue,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.tab.isAllowed(operationsReader),
+          PharmacyReadyAtomPermissions.tab.isAllowed(operationsReader),
           isFalse,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.write.isAllowed(operationsReader),
-          isFalse,
-        );
-        expect(
-          PharmacyAllOrdersAtomPermissions.catalogBrowse.isAllowed(
-            operationsReader,
-          ),
+          PharmacyReadyAtomPermissions.write.isAllowed(operationsReader),
           isFalse,
         );
         expect(canEnterPharmacyWorkspace(operationsReader), isTrue);
         expect(
           pharmacyAllowedSections(operationsReader),
-          contains(PharmacyDeskSection.allOrders),
+          contains(PharmacyDeskSection.queue),
         );
       },
     );
@@ -568,17 +550,15 @@ void main() {
         );
 
         expect(
-          PharmacyAllOrdersAtomPermissions.catalogWrite.isAllowed(
-            operationsWriter,
-          ),
+          PharmacyReadyAtomPermissions.catalogWrite.isAllowed(operationsWriter),
           isTrue,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.write.isAllowed(operationsWriter),
+          PharmacyReadyAtomPermissions.write.isAllowed(operationsWriter),
           isFalse,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.catalogWrite.isAllowed(reader),
+          PharmacyReadyAtomPermissions.catalogWrite.isAllowed(reader),
           isFalse,
         );
       },
@@ -610,15 +590,11 @@ void main() {
       );
 
       expect(
-        PharmacyAllOrdersAtomPermissions.recordPayment.isAllowed(
-          pharmacyWriter,
-        ),
+        PharmacyReadyAtomPermissions.recordPayment.isAllowed(pharmacyWriter),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.nestedBillingWrite.isAllowed(
-          withBilling,
-        ),
+        PharmacyReadyAtomPermissions.nestedBillingWrite.isAllowed(withBilling),
         isTrue,
       );
     });
@@ -635,20 +611,20 @@ void main() {
       );
 
       expect(
-        PharmacyAllOrdersAtomPermissions.controlledDrugAudit.isAllowed(
+        PharmacyReadyAtomPermissions.controlledDrugAudit.isAllowed(
           pharmacyOnly,
         ),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.controlledDrugAudit.isAllowed(
+        PharmacyReadyAtomPermissions.controlledDrugAudit.isAllowed(
           withCompliance,
         ),
         isTrue,
       );
     });
 
-    test('subscription strips All orders without pharmacy-dispensing', () {
+    test('subscription strips Ready without pharmacy-dispensing', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.pharmacyRead,
@@ -657,23 +633,17 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
 
+      expect(PharmacyReadyAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(PharmacyReadyAtomPermissions.write.isAllowed(noModule), isFalse);
       expect(
-        PharmacyAllOrdersAtomPermissions.tab.isAllowed(noModule),
+        PharmacyReadyAtomPermissions.routeEntry.isAllowed(noModule),
         isFalse,
       );
-      expect(
-        PharmacyAllOrdersAtomPermissions.write.isAllowed(noModule),
-        isFalse,
-      );
-      expect(
-        PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(noModule),
-        isFalse,
-      );
-      expect(canViewPharmacyAllOrdersTab(noModule), isFalse);
+      expect(canViewPharmacyReadyTab(noModule), isFalse);
     });
   });
 
-  group('pharmacy All orders UI permission enforcement', () {
+  group('pharmacy Ready UI permission enforcement', () {
     late _MockPharmacyRepository repository;
 
     setUp(() {
@@ -682,24 +652,24 @@ void main() {
     });
 
     testWidgets(
-      '∩ denial: read-only All orders keeps catalog/print path; Dispense absent',
+      '∩ denial: read-only Ready keeps catalog/print path; Dispense absent',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _policy(
           permissions: <AppPermission>{AppPermissions.pharmacyRead},
         );
-        expect(PharmacyAllOrdersAtomPermissions.tab.isAllowed(reader), isTrue);
+        expect(PharmacyReadyAtomPermissions.tab.isAllowed(reader), isTrue);
         expect(
-          PharmacyAllOrdersAtomPermissions.dispense.isAllowed(reader),
+          PharmacyReadyAtomPermissions.dispense.isAllowed(reader),
           isFalse,
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
 
-        expect(_tab('All orders'), findsOneWidget);
+        expect(_tab('Ready'), findsOneWidget);
         expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
@@ -736,11 +706,11 @@ void main() {
           },
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.dispense.isAllowed(writer),
+          PharmacyReadyAtomPermissions.dispense.isAllowed(writer),
           isTrue,
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: writer,
@@ -771,7 +741,7 @@ void main() {
     testWidgets(
       'nested cross-module: Record payment absent without billing:write',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -791,7 +761,7 @@ void main() {
     testWidgets(
       'nested billing write ∩: Record payment mounts with billing:write',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -818,7 +788,7 @@ void main() {
     );
 
     testWidgets(
-      'subscription strip: pharmacy-dispensing missing omits All orders chrome',
+      'subscription strip: pharmacy-dispensing missing omits Ready chrome',
       (WidgetTester tester) async {
         final AppAccessPolicy noModule = _policy(
           permissions: <AppPermission>{
@@ -828,7 +798,7 @@ void main() {
           modules: const <AppModuleEntitlement>[],
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: noModule,
@@ -842,9 +812,9 @@ void main() {
     );
 
     testWidgets(
-      '∪ route entry: operations:read keeps All orders chrome read-only',
+      '∪ route entry: operations:read keeps Ready chrome read-only',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -863,7 +833,7 @@ void main() {
           ),
         );
 
-        expect(_tab('All orders'), findsOneWidget);
+        expect(_tab('Ready'), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
         expect(_toolbarPrimary('Catalog and stock'), findsNothing);
@@ -871,14 +841,14 @@ void main() {
     );
 
     testWidgets(
-      'authorized empty All orders remains observable (no routine no-access)',
+      'authorized empty Ready remains observable (no routine no-access)',
       (WidgetTester tester) async {
         _stubPharmacyRepository(
           repository,
           orders: const <PharmacyOrder>[],
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -886,7 +856,7 @@ void main() {
           ),
         );
 
-        expect(_tab('All orders'), findsOneWidget);
+        expect(_tab('Ready'), findsOneWidget);
         expect(find.text('No pharmacy orders'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -895,7 +865,7 @@ void main() {
     testWidgets(
       'authorized Dispense opens dialog; zero qty keeps validation open',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -915,7 +885,6 @@ void main() {
           of: find.byType(AppDialog),
           matching: find.byType(TextField),
         );
-        // Quantity is the last text field in the dispense form.
         await tester.enterText(qtyField.last, '0');
         await tester.tap(
           find.descendant(
@@ -941,7 +910,7 @@ void main() {
     testWidgets(
       'authorized Dispense mutation syncs list and shows success snackbar',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpReadyTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -979,10 +948,10 @@ void main() {
       },
     );
 
-    testWidgets('All orders desktop light theme keeps authorized chrome', (
+    testWidgets('Ready desktop light theme keeps authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpReadyTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -1002,10 +971,10 @@ void main() {
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('All orders mobile dark theme keeps authorized chrome', (
+    testWidgets('Ready mobile dark theme keeps authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpReadyTab(
         tester,
         repository: repository,
         accessPolicy: _policy(

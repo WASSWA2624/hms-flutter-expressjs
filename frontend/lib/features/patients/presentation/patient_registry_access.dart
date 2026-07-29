@@ -317,6 +317,188 @@ AccessRequirement patientRegistryNextActionCompleteAtom(
   };
 }
 
+/// Section-aware nested atom resolver for detail Quick Actions / workbench.
+///
+/// Falls back to the shared `*Requirement` helper when [section] is null
+/// (dialogs opened outside the registry strip).
+AccessRequirement patientRegistrySectionNestedAtom(
+  PatientRegistrySection? section, {
+  required AccessRequirement all,
+  required AccessRequirement active,
+  required AccessRequirement admitted,
+  required AccessRequirement balanceDue,
+  required AccessRequirement fallback,
+}) {
+  return switch (section) {
+    PatientRegistrySection.all => all,
+    PatientRegistrySection.active => active,
+    PatientRegistrySection.admitted => admitted,
+    PatientRegistrySection.balanceDue => balanceDue,
+    null => fallback,
+  };
+}
+
+AccessRequirement patientRegistryScheduleAppointmentAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.scheduleAppointment,
+    active: PatientActiveAtomPermissions.scheduleAppointment,
+    admitted: PatientAdmittedAtomPermissions.scheduleAppointment,
+    balanceDue: PatientBalanceDueAtomPermissions.scheduleAppointment,
+    fallback: patientAppointmentWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryStartOpdAtom(PatientRegistrySection? section) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.startOpd,
+    active: PatientActiveAtomPermissions.startOpd,
+    admitted: PatientAdmittedAtomPermissions.startOpd,
+    balanceDue: PatientBalanceDueAtomPermissions.startOpd,
+    fallback: patientOpdEncounterRequirement,
+  );
+}
+
+AccessRequirement patientRegistryViewActiveOpdAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.viewActiveOpd,
+    active: PatientActiveAtomPermissions.viewActiveOpd,
+    admitted: PatientAdmittedAtomPermissions.viewActiveOpd,
+    balanceDue: PatientBalanceDueAtomPermissions.viewActiveOpd,
+    fallback: patientOpdViewActiveRequirement,
+  );
+}
+
+AccessRequirement patientRegistryRequestAdmissionAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.requestAdmission,
+    active: PatientActiveAtomPermissions.requestAdmission,
+    admitted: PatientAdmittedAtomPermissions.requestAdmission,
+    balanceDue: PatientBalanceDueAtomPermissions.requestAdmission,
+    fallback: patientAdmissionWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryDischargeAtom(PatientRegistrySection? section) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.discharge,
+    active: PatientActiveAtomPermissions.discharge,
+    admitted: PatientAdmittedAtomPermissions.discharge,
+    balanceDue: PatientBalanceDueAtomPermissions.discharge,
+    fallback: patientAdmissionWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryLabOrderAtom(PatientRegistrySection? section) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.labOrder,
+    active: PatientActiveAtomPermissions.labOrder,
+    admitted: PatientAdmittedAtomPermissions.labOrder,
+    balanceDue: PatientBalanceDueAtomPermissions.labOrder,
+    fallback: patientLabOrderWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryRadiologyOrderAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.radiologyOrder,
+    active: PatientActiveAtomPermissions.radiologyOrder,
+    admitted: PatientAdmittedAtomPermissions.radiologyOrder,
+    balanceDue: PatientBalanceDueAtomPermissions.radiologyOrder,
+    fallback: patientRadiologyOrderWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryTheaterScheduleAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.theaterSchedule,
+    active: PatientActiveAtomPermissions.theaterSchedule,
+    admitted: PatientAdmittedAtomPermissions.theaterSchedule,
+    balanceDue: PatientBalanceDueAtomPermissions.theaterSchedule,
+    fallback: patientTheaterWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryPhysiotherapyAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.physiotherapy,
+    active: PatientActiveAtomPermissions.physiotherapy,
+    admitted: PatientAdmittedAtomPermissions.physiotherapy,
+    balanceDue: PatientBalanceDueAtomPermissions.physiotherapy,
+    fallback: patientPhysiotherapyWriteRequirement,
+  );
+}
+
+AccessRequirement patientRegistryEnrollInsuranceAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.enrollInsurance,
+    active: PatientActiveAtomPermissions.enrollInsurance,
+    admitted: PatientAdmittedAtomPermissions.enrollInsurance,
+    balanceDue: PatientBalanceDueAtomPermissions.enrollInsurance,
+    fallback: patientEnrollInsuranceRequirement,
+  );
+}
+
+AccessRequirement patientRegistryReportAtom(PatientRegistrySection? section) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.report,
+    active: PatientActiveAtomPermissions.report,
+    admitted: PatientAdmittedAtomPermissions.report,
+    balanceDue: PatientBalanceDueAtomPermissions.report,
+    fallback: patientReportReadRequirement,
+  );
+}
+
+AccessRequirement patientRegistryBillingWorkbenchAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.billingWorkbench,
+    active: PatientActiveAtomPermissions.billingWorkbench,
+    admitted: PatientAdmittedAtomPermissions.billingWorkbench,
+    balanceDue: PatientBalanceDueAtomPermissions.billingWorkbench,
+    fallback: patientBillingWorkbenchRequirement,
+  );
+}
+
+AccessRequirement patientRegistryPharmacyWorkbenchAtom(
+  PatientRegistrySection? section,
+) {
+  return patientRegistrySectionNestedAtom(
+    section,
+    all: PatientAllAtomPermissions.pharmacyWorkbench,
+    active: PatientActiveAtomPermissions.pharmacyWorkbench,
+    admitted: PatientAdmittedAtomPermissions.pharmacyWorkbench,
+    balanceDue: PatientBalanceDueAtomPermissions.pharmacyWorkbench,
+    fallback: patientPharmacyWorkbenchRequirement,
+  );
+}
+
 bool canViewPatientRegistrySection(
   AppAccessPolicy policy,
   PatientRegistrySection section,

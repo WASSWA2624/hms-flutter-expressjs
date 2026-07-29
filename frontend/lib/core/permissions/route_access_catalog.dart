@@ -180,13 +180,18 @@ abstract final class RouteAccessCatalog {
   );
 
   static const AccessRequirement physiotherapyEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.physiotherapyRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.patientRead,
+      AppPermissions.billingRead,
+    ],
     activeModules: <String>['physiotherapy'],
   );
   static const RouteAccessAtom physiotherapy = RouteAccessAtom(
     routeName: 'physiotherapy',
     path: '/physiotherapy',
-    entryPermission: AppPermissions.physiotherapyRead,
+    entryPermission: AppPermissions.clinicalRead,
     requirement: physiotherapyEntry,
   );
 

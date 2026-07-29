@@ -8,11 +8,11 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/controllers/physiotherapy_workspace_controller.dart';
+import 'package:hosspi_hms/features/physiotherapy/presentation/physiotherapy_access.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/widgets/physiotherapy_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -25,21 +25,6 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
-
-const AccessRequirement _therapyReadRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.patientRead,
-    AppPermissions.billingRead,
-  ],
-);
-
-const AccessRequirement _therapyWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.patientWrite,
-  ],
-);
 
 const String _physiotherapyFollowUpsWorklistTabId = 'followUpsWorklist';
 
@@ -293,16 +278,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
   final AppListTableColumnVisibilityController<TherapyWorkItem>
   columnVisibilityController;
 
-  static const List<PhysiotherapyQueueScope> _tabScopes =
-      <PhysiotherapyQueueScope>[
-        PhysiotherapyQueueScope.referrals,
-        PhysiotherapyQueueScope.today,
-        PhysiotherapyQueueScope.activePlans,
-        PhysiotherapyQueueScope.followUpDue,
-        PhysiotherapyQueueScope.missed,
-        PhysiotherapyQueueScope.completed,
-      ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
@@ -310,6 +285,21 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     final controller = ref.read(
       physiotherapyWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<PhysiotherapyQueueScope> visibleScopes =
+        physiotherapyAllowedScopes(policy);
+    if (visibleScopes.isEmpty && !showFollowUpWorklist) {
+      return const SizedBox.shrink();
+    }
+    if (!showFollowUpWorklist &&
+        visibleScopes.isNotEmpty &&
+        !visibleScopes.contains(section)) {
+      final PhysiotherapyQueueScope fallback =
+          physiotherapyFallbackScope(policy) ?? visibleScopes.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onTabChanged(fallback);
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -318,7 +308,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         children: <Widget>[
           AppTabStrip(
             tabs: <AppTabItem>[
-              for (final PhysiotherapyQueueScope scope in _tabScopes)
+              for (final PhysiotherapyQueueScope scope in visibleScopes)
                 AppTabItem(
                   id: scope.name,
                   icon: _sectionIcon(scope),
@@ -326,14 +316,15 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                   count: _sectionCount(state, scope),
                   countTone: _sectionCountTone(scope),
                 ),
-              AppTabItem(
-                id: _physiotherapyFollowUpsWorklistTabId,
-                icon: Icons.phone_callback_outlined,
-                label: l10n.opdFollowUpsTitle,
-                count: ref.watch(
-                  followUpTabCountProvider(const FollowUpWorklistScope()),
+              if (physiotherapyWorkspaceReadRequirement.isAllowed(policy))
+                AppTabItem(
+                  id: _physiotherapyFollowUpsWorklistTabId,
+                  icon: Icons.phone_callback_outlined,
+                  label: l10n.opdFollowUpsTitle,
+                  count: ref.watch(
+                    followUpTabCountProvider(const FollowUpWorklistScope()),
+                  ),
                 ),
-              ),
             ],
             selectedId: showFollowUpWorklist
                 ? _physiotherapyFollowUpsWorklistTabId
@@ -343,8 +334,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 onFollowUpWorklistTabSelected();
                 return;
               }
-              for (final PhysiotherapyQueueScope scope
-                  in PhysiotherapyQueueScope.values) {
+              for (final PhysiotherapyQueueScope scope in visibleScopes) {
                 if (scope.name == tabId) {
                   onTabChanged(scope);
                   break;
@@ -357,9 +347,10 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             const FollowUpWorklistPanel(
               scope: FollowUpWorklistScope(),
               storageKeyPrefix: 'physiotherapy_follow_ups',
+              readRequirement: physiotherapyWorkspaceReadRequirement,
             )
           else
-            _buildWorklist(context, ref, controller),
+            _buildWorklist(context, ref, controller, policy),
         ],
       ),
     );
@@ -622,6 +613,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     PhysiotherapyWorkspaceController controller,
+    AppAccessPolicy policy,
   ) {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
@@ -635,8 +627,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       isLoading: state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: _columns(context, locale, ref),
-      columnChoices: _optionalColumns(context, locale),
+      columns: _columns(context, locale, ref, policy),
+      columnChoices: _optionalColumns(context, locale, policy),
       columnVisibilityController: columnVisibilityController,
       columnVisibilityStorageKey: 'physiotherapy_${section.name}',
       columnWidthStorageKey: 'physiotherapy_cw_${section.name}',
@@ -677,6 +669,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             AppListTableMobileMeta(
               label: _workspaceStatusForStatus(l10n, item.status).label,
             ),
+            if (canViewPhysiotherapyBilling(policy) &&
+                item.billingStatus != null &&
+                item.billingStatus!.trim().isNotEmpty)
+              AppListTableMobileMeta(
+                label: _billingLabel(l10n, item.billingStatus),
+                icon: Icons.price_check_outlined,
+              ),
           ],
           trailing: TherapyNextActionButton(
             item: item,

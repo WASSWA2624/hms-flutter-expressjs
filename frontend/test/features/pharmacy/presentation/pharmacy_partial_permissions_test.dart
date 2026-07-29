@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,61 +52,63 @@ AppAccessPolicy _policy({
   );
 }
 
-const PharmacyOrderItem _readyLine = PharmacyOrderItem(
-  id: 'item-ready-1',
-  drugDisplayName: 'Paracetamol',
-  quantityPrescribed: 24,
-  quantityDispensed: 0,
-  quantityRemaining: 24,
+const PharmacyOrderItem _partialLine = PharmacyOrderItem(
+  id: 'item-partial-1',
+  drugDisplayName: 'Amoxicillin',
+  quantityPrescribed: 20,
+  quantityDispensed: 8,
+  quantityRemaining: 12,
 );
 
-const PharmacyOrder _readyOrder = PharmacyOrder(
-  id: 'order-ready',
-  displayId: 'PHO-READY',
-  patientDisplayName: 'Noah Ready',
-  location: 'OUTPATIENT',
-  status: 'ORDERED',
-  itemCount: 1,
-  quantityPrescribedTotal: 24,
-  items: <PharmacyOrderItem>[_readyLine],
-);
-
-const PharmacyOrder _dispensedReadyOrder = PharmacyOrder(
-  id: 'order-ready',
-  displayId: 'PHO-READY',
-  patientDisplayName: 'Noah Ready',
+const PharmacyOrder _partialOrder = PharmacyOrder(
+  id: 'order-partial',
+  displayId: 'PHO-PARTIAL',
+  patientDisplayName: 'Amina Partial',
   location: 'OUTPATIENT',
   status: 'PARTIALLY_DISPENSED',
   itemCount: 1,
-  quantityPrescribedTotal: 24,
-  quantityDispensedTotal: 24,
+  quantityPrescribedTotal: 20,
+  quantityDispensedTotal: 8,
+  items: <PharmacyOrderItem>[_partialLine],
+);
+
+const PharmacyOrder _continuedPartialOrder = PharmacyOrder(
+  id: 'order-partial',
+  displayId: 'PHO-PARTIAL',
+  patientDisplayName: 'Amina Partial',
+  location: 'OUTPATIENT',
+  status: 'PARTIALLY_DISPENSED',
+  itemCount: 1,
+  quantityPrescribedTotal: 20,
+  quantityDispensedTotal: 20,
   items: <PharmacyOrderItem>[
     PharmacyOrderItem(
-      id: 'item-ready-1',
-      drugDisplayName: 'Paracetamol',
-      quantityPrescribed: 24,
-      quantityDispensed: 24,
+      id: 'item-partial-1',
+      drugDisplayName: 'Amoxicillin',
+      quantityPrescribed: 20,
+      quantityDispensed: 20,
       quantityRemaining: 0,
     ),
   ],
 );
 
-const PharmacyOrder _unpaidOrder = PharmacyOrder(
-  id: 'order-pay',
-  displayId: 'PHO-PAY',
-  patientDisplayName: 'Cathy Payment',
+const PharmacyOrder _unpaidPartialOrder = PharmacyOrder(
+  id: 'order-partial-pay',
+  displayId: 'PHO-PARTIAL-PAY',
+  patientDisplayName: 'Omar Partial Pay',
   location: 'OUTPATIENT',
-  status: 'ORDERED',
+  status: 'PARTIALLY_DISPENSED',
   paymentStatus: 'UNPAID',
   itemCount: 1,
-  quantityPrescribedTotal: 5,
+  quantityPrescribedTotal: 10,
+  quantityDispensedTotal: 4,
   items: <PharmacyOrderItem>[
     PharmacyOrderItem(
-      id: 'item-pay-1',
+      id: 'item-partial-pay-1',
       drugDisplayName: 'Ibuprofen',
-      quantityPrescribed: 5,
-      quantityDispensed: 0,
-      quantityRemaining: 5,
+      quantityPrescribed: 10,
+      quantityDispensed: 4,
+      quantityRemaining: 6,
     ),
   ],
 );
@@ -121,11 +124,31 @@ const PharmacyInventoryWorkbench _inventoryWorkbench =
 
 class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
+class _FakeSessionController extends SessionController {
+  _FakeSessionController(this._policy);
+
+  final AppAccessPolicy _policy;
+
+  @override
+  SessionState build() {
+    return SessionState(
+      status: SessionStatus.authenticated,
+      session: AuthSession(
+        tokens: SessionTokens(accessToken: 'token'),
+        user: _policy.session.user,
+        permissions: _policy.session.permissions,
+        moduleEntitlements: _policy.session.moduleEntitlements,
+        isAuthorizationHydrated: true,
+      ),
+    );
+  }
+}
+
 void _stubPharmacyRepository(
   _MockPharmacyRepository repository, {
   List<PharmacyOrder> orders = const <PharmacyOrder>[
-    _readyOrder,
-    _unpaidOrder,
+    _partialOrder,
+    _unpaidPartialOrder,
   ],
 }) {
   when(() => repository.loadWorkbench(any())).thenAnswer((
@@ -151,10 +174,11 @@ void _stubPharmacyRepository(
     return Result<PharmacyWorkbench>.success(
       PharmacyWorkbench(
         summary: PharmacyWorkbenchSummary(
-          orderedQueue: items
+          partiallyDispensedQueue: items
               .where(
                 (PharmacyOrder order) =>
-                    (order.status ?? '').toUpperCase() == 'ORDERED',
+                    (order.status ?? '').toUpperCase() ==
+                    'PARTIALLY_DISPENSED',
               )
               .length,
           totalOrders: items.length,
@@ -176,7 +200,7 @@ void _stubPharmacyRepository(
     final String orderId = invocation.positionalArguments.single as String;
     final PharmacyOrder order = orders.firstWhere(
       (PharmacyOrder item) => item.id == orderId || item.displayId == orderId,
-      orElse: () => _readyOrder,
+      orElse: () => _partialOrder,
     );
     return Result<PharmacyOrderWorkflow>.success(
       PharmacyOrderWorkflow(
@@ -226,11 +250,11 @@ void _stubPharmacyRepository(
     (_) async => Result<PharmacyMutationResult>.success(
       PharmacyMutationResult(
         workflow: PharmacyOrderWorkflow(
-          order: _dispensedReadyOrder,
-          items: _dispensedReadyOrder.items,
+          order: _continuedPartialOrder,
+          items: _continuedPartialOrder.items,
         ),
         summary: const PharmacyWorkbenchSummary(
-          orderedQueue: 0,
+          partiallyDispensedQueue: 1,
           totalOrders: 1,
         ),
       ),
@@ -246,13 +270,14 @@ Finder _toolbarPrimary(String label) => find.descendant(
   matching: find.text(label),
 );
 
-/// Next-action / quick-action labels live on [AppButton].
+/// Next-action labels live on [AppButton]; Partial "Dispense" progress column
+/// headers do not.
 Finder _actionLabel(String label) => find.descendant(
   of: find.byType(AppButton),
   matching: find.text(label),
 );
 
-Future<void> _pumpAllOrdersTab(
+Future<void> _pumpPartialTab(
   WidgetTester tester, {
   required PharmacyRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -260,15 +285,14 @@ Future<void> _pumpAllOrdersTab(
   ThemeMode themeMode = ThemeMode.light,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  final SharedPreferences preferences = await SharedPreferences.getInstance();
-
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
   tester.view.physicalSize = physicalSize;
-  tester.view.devicePixelRatio = 1;
+  tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/pharmacy?section=all',
+    initialLocation: '/pharmacy?section=partial',
     routes: <RouteBase>[
       GoRoute(
         path: '/pharmacy',
@@ -285,26 +309,32 @@ Future<void> _pumpAllOrdersTab(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: <Override>[
         pharmacyRepositoryProvider.overrideWithValue(repository),
-        sharedPreferencesProvider.overrideWithValue(preferences),
-        initialSessionStateProvider.overrideWithValue(
-          const SessionState.ready(),
-        ),
+        sharedPreferencesProvider.overrideWithValue(prefs),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
+        sessionControllerProvider.overrideWith(
+          (Ref ref) => _FakeSessionController(accessPolicy),
+        ),
       ],
       child: MaterialApp.router(
         theme: ThemeData.light(useMaterial3: true),
         darkTheme: ThemeData.dark(useMaterial3: true),
         themeMode: themeMode,
-        routerConfig: router,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+        builder: (BuildContext context, Widget? child) {
+          return AppBreakpointScope(
+            breakpoint: physicalSize.width < 600
+                ? AppBreakpoint.mobile
+                : AppBreakpoint.desktop,
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
       ),
     ),
   );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
 }
 
@@ -318,82 +348,89 @@ void main() {
     registerFallbackValue('');
   });
 
-  group('PharmacyAllOrdersAtomPermissions helpers', () {
+  group('PharmacyPartialAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.tab,
+          PharmacyPartialAtomPermissions.tab,
           pharmacyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.write,
+          PharmacyPartialAtomPermissions.write,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.dispense,
+          PharmacyPartialAtomPermissions.dispense,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.recordPayment,
+          PharmacyPartialAtomPermissions.recordPayment,
           pharmacyRecordPaymentRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogWrite,
+          PharmacyPartialAtomPermissions.catalogWrite,
           pharmacyCatalogWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.routeEntry,
+          PharmacyPartialAtomPermissions.routeEntry,
           pharmacyWorkspaceRouteEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogEntry,
+          PharmacyPartialAtomPermissions.catalogEntry,
           pharmacyWorkspaceCatalogEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.controlledDrugAudit,
+          PharmacyPartialAtomPermissions.controlledDrugAudit,
           pharmacyControlledDrugAuditRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.printInstructions,
+          PharmacyPartialAtomPermissions.printInstructions,
           pharmacyPrintInstructionsRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.items,
+          PharmacyPartialAtomPermissions.dispenseProgress,
           pharmacyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          pharmacySectionTabRequirement(PharmacyDeskSection.allOrders),
-          PharmacyAllOrdersAtomPermissions.tab,
+          pharmacySectionTabRequirement(PharmacyDeskSection.inProgress),
+          PharmacyPartialAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          pharmacySectionWriteRequirement(PharmacyDeskSection.inProgress),
+          PharmacyPartialAtomPermissions.write,
         ),
         isTrue,
       );
@@ -414,65 +451,62 @@ void main() {
     });
 
     test('atom map covers inventory verbs (AC1)', () {
-      expect(PharmacyAllOrdersAtomPermissions.tab, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.listChrome, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.search, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.filters, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.settings, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.pagination, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.items, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.empty, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.loading, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.retry, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.success, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.validation, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.rowSelect, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.detail, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nextAction, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nextActionWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.create, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.update, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.delete, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.dispense, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.attest, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.returnItems, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.cancelOrder, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.mapStock, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.priceSource, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.recordPayment, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.billingStatus, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.printInstructions, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.controlledDrugAudit, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogBrowse, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedBillingWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedWrite, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.nestedRead, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.routeEntry, isNotNull);
-      expect(PharmacyAllOrdersAtomPermissions.catalogEntry, isNotNull);
+      expect(PharmacyPartialAtomPermissions.tab, isNotNull);
+      expect(PharmacyPartialAtomPermissions.listChrome, isNotNull);
+      expect(PharmacyPartialAtomPermissions.search, isNotNull);
+      expect(PharmacyPartialAtomPermissions.filters, isNotNull);
+      expect(PharmacyPartialAtomPermissions.settings, isNotNull);
+      expect(PharmacyPartialAtomPermissions.pagination, isNotNull);
+      expect(PharmacyPartialAtomPermissions.dispenseProgress, isNotNull);
+      expect(PharmacyPartialAtomPermissions.empty, isNotNull);
+      expect(PharmacyPartialAtomPermissions.loading, isNotNull);
+      expect(PharmacyPartialAtomPermissions.retry, isNotNull);
+      expect(PharmacyPartialAtomPermissions.success, isNotNull);
+      expect(PharmacyPartialAtomPermissions.validation, isNotNull);
+      expect(PharmacyPartialAtomPermissions.rowSelect, isNotNull);
+      expect(PharmacyPartialAtomPermissions.detail, isNotNull);
+      expect(PharmacyPartialAtomPermissions.nextAction, isNotNull);
+      expect(PharmacyPartialAtomPermissions.nextActionWrite, isNotNull);
+      expect(PharmacyPartialAtomPermissions.create, isNotNull);
+      expect(PharmacyPartialAtomPermissions.update, isNotNull);
+      expect(PharmacyPartialAtomPermissions.delete, isNotNull);
+      expect(PharmacyPartialAtomPermissions.dispense, isNotNull);
+      expect(PharmacyPartialAtomPermissions.attest, isNotNull);
+      expect(PharmacyPartialAtomPermissions.returnItems, isNotNull);
+      expect(PharmacyPartialAtomPermissions.cancelOrder, isNotNull);
+      expect(PharmacyPartialAtomPermissions.mapStock, isNotNull);
+      expect(PharmacyPartialAtomPermissions.priceSource, isNotNull);
+      expect(PharmacyPartialAtomPermissions.recordPayment, isNotNull);
+      expect(PharmacyPartialAtomPermissions.billingStatus, isNotNull);
+      expect(PharmacyPartialAtomPermissions.printInstructions, isNotNull);
+      expect(PharmacyPartialAtomPermissions.controlledDrugAudit, isNotNull);
+      expect(PharmacyPartialAtomPermissions.catalogBrowse, isNotNull);
+      expect(PharmacyPartialAtomPermissions.catalogWrite, isNotNull);
+      expect(PharmacyPartialAtomPermissions.nestedBillingWrite, isNotNull);
+      expect(PharmacyPartialAtomPermissions.nestedWrite, isNotNull);
+      expect(PharmacyPartialAtomPermissions.nestedRead, isNotNull);
+      expect(PharmacyPartialAtomPermissions.routeEntry, isNotNull);
+      expect(PharmacyPartialAtomPermissions.catalogEntry, isNotNull);
     });
 
-    test('∩ denial: missing pharmacy:read hides All orders tab gate', () {
+    test('∩ denial: missing pharmacy:read hides Partial tab gate', () {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyWrite},
       );
+      expect(PharmacyPartialAtomPermissions.tab.isAllowed(writeOnly), isFalse);
       expect(
-        PharmacyAllOrdersAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
-      );
-      expect(
-        PharmacyAllOrdersAtomPermissions.write.isAllowed(writeOnly),
+        PharmacyPartialAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.loading.isAllowed(writeOnly),
+        PharmacyPartialAtomPermissions.loading.isAllowed(writeOnly),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(writeOnly),
+        PharmacyPartialAtomPermissions.routeEntry.isAllowed(writeOnly),
         isFalse,
       );
-      expect(canViewPharmacyAllOrdersTab(writeOnly), isFalse);
+      expect(canViewPharmacyPartialTab(writeOnly), isFalse);
     });
 
     test('∩ full set: pharmacy:read + write mounts read and mutate atoms', () {
@@ -482,20 +516,20 @@ void main() {
           AppPermissions.pharmacyWrite,
         },
       );
-      expect(PharmacyAllOrdersAtomPermissions.tab.isAllowed(writer), isTrue);
-      expect(PharmacyAllOrdersAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(PharmacyPartialAtomPermissions.tab.isAllowed(writer), isTrue);
+      expect(PharmacyPartialAtomPermissions.write.isAllowed(writer), isTrue);
       expect(
-        PharmacyAllOrdersAtomPermissions.dispense.isAllowed(writer),
+        PharmacyPartialAtomPermissions.dispense.isAllowed(writer),
         isTrue,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.success.isAllowed(writer),
+        PharmacyPartialAtomPermissions.success.isAllowed(writer),
         isTrue,
       );
-      expect(canViewPharmacyAllOrdersTab(writer), isTrue);
+      expect(canViewPharmacyPartialTab(writer), isTrue);
       expect(
         pharmacyAllowedSections(writer),
-        contains(PharmacyDeskSection.allOrders),
+        contains(PharmacyDeskSection.inProgress),
       );
     });
 
@@ -518,21 +552,21 @@ void main() {
         );
 
         expect(
-          PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(
+          PharmacyPartialAtomPermissions.routeEntry.isAllowed(
             operationsReader,
           ),
           isTrue,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.tab.isAllowed(operationsReader),
+          PharmacyPartialAtomPermissions.tab.isAllowed(operationsReader),
           isFalse,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.write.isAllowed(operationsReader),
+          PharmacyPartialAtomPermissions.write.isAllowed(operationsReader),
           isFalse,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.catalogBrowse.isAllowed(
+          PharmacyPartialAtomPermissions.catalogBrowse.isAllowed(
             operationsReader,
           ),
           isFalse,
@@ -540,7 +574,7 @@ void main() {
         expect(canEnterPharmacyWorkspace(operationsReader), isTrue);
         expect(
           pharmacyAllowedSections(operationsReader),
-          contains(PharmacyDeskSection.allOrders),
+          contains(PharmacyDeskSection.inProgress),
         );
       },
     );
@@ -568,17 +602,17 @@ void main() {
         );
 
         expect(
-          PharmacyAllOrdersAtomPermissions.catalogWrite.isAllowed(
+          PharmacyPartialAtomPermissions.catalogWrite.isAllowed(
             operationsWriter,
           ),
           isTrue,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.write.isAllowed(operationsWriter),
+          PharmacyPartialAtomPermissions.write.isAllowed(operationsWriter),
           isFalse,
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.catalogWrite.isAllowed(reader),
+          PharmacyPartialAtomPermissions.catalogWrite.isAllowed(reader),
           isFalse,
         );
       },
@@ -610,13 +644,13 @@ void main() {
       );
 
       expect(
-        PharmacyAllOrdersAtomPermissions.recordPayment.isAllowed(
+        PharmacyPartialAtomPermissions.recordPayment.isAllowed(
           pharmacyWriter,
         ),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.nestedBillingWrite.isAllowed(
+        PharmacyPartialAtomPermissions.nestedBillingWrite.isAllowed(
           withBilling,
         ),
         isTrue,
@@ -635,20 +669,20 @@ void main() {
       );
 
       expect(
-        PharmacyAllOrdersAtomPermissions.controlledDrugAudit.isAllowed(
+        PharmacyPartialAtomPermissions.controlledDrugAudit.isAllowed(
           pharmacyOnly,
         ),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.controlledDrugAudit.isAllowed(
+        PharmacyPartialAtomPermissions.controlledDrugAudit.isAllowed(
           withCompliance,
         ),
         isTrue,
       );
     });
 
-    test('subscription strips All orders without pharmacy-dispensing', () {
+    test('subscription strips Partial without pharmacy-dispensing', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.pharmacyRead,
@@ -657,23 +691,20 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
 
+      expect(PharmacyPartialAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(
-        PharmacyAllOrdersAtomPermissions.tab.isAllowed(noModule),
+        PharmacyPartialAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
       expect(
-        PharmacyAllOrdersAtomPermissions.write.isAllowed(noModule),
+        PharmacyPartialAtomPermissions.routeEntry.isAllowed(noModule),
         isFalse,
       );
-      expect(
-        PharmacyAllOrdersAtomPermissions.routeEntry.isAllowed(noModule),
-        isFalse,
-      );
-      expect(canViewPharmacyAllOrdersTab(noModule), isFalse);
+      expect(canViewPharmacyPartialTab(noModule), isFalse);
     });
   });
 
-  group('pharmacy All orders UI permission enforcement', () {
+  group('pharmacy Partial UI permission enforcement', () {
     late _MockPharmacyRepository repository;
 
     setUp(() {
@@ -682,30 +713,31 @@ void main() {
     });
 
     testWidgets(
-      '∩ denial: read-only All orders keeps catalog/print path; Dispense absent',
+      '∩ denial: read-only Partial keeps catalog/print path; Dispense absent',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _policy(
           permissions: <AppPermission>{AppPermissions.pharmacyRead},
         );
-        expect(PharmacyAllOrdersAtomPermissions.tab.isAllowed(reader), isTrue);
+        expect(PharmacyPartialAtomPermissions.tab.isAllowed(reader), isTrue);
         expect(
-          PharmacyAllOrdersAtomPermissions.dispense.isAllowed(reader),
+          PharmacyPartialAtomPermissions.dispense.isAllowed(reader),
           isFalse,
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
 
-        expect(_tab('All orders'), findsOneWidget);
+        expect(_tab('Partial'), findsOneWidget);
         expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
+        expect(_actionLabel('Cancel order'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
-        await tester.tap(find.text('Noah Ready'));
+        await tester.tap(find.text('Amina Partial'));
         await tester.pumpAndSettle();
 
         final Finder dialog = find.byType(AppDialog);
@@ -736,20 +768,20 @@ void main() {
           },
         );
         expect(
-          PharmacyAllOrdersAtomPermissions.dispense.isAllowed(writer),
+          PharmacyPartialAtomPermissions.dispense.isAllowed(writer),
           isTrue,
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: writer,
         );
 
-        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
 
-        await tester.tap(find.text('Noah Ready'));
+        await tester.tap(find.text('Amina Partial'));
         await tester.pumpAndSettle();
 
         final Finder dialog = find.byType(AppDialog);
@@ -771,7 +803,7 @@ void main() {
     testWidgets(
       'nested cross-module: Record payment absent without billing:write',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -782,7 +814,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Cathy Payment'), findsOneWidget);
+        expect(find.text('Omar Partial Pay'), findsOneWidget);
         expect(_actionLabel('Record payment'), findsNothing);
         expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
       },
@@ -791,7 +823,7 @@ void main() {
     testWidgets(
       'nested billing write ∩: Record payment mounts with billing:write',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -818,7 +850,7 @@ void main() {
     );
 
     testWidgets(
-      'subscription strip: pharmacy-dispensing missing omits All orders chrome',
+      'subscription strip: pharmacy-dispensing missing omits Partial chrome',
       (WidgetTester tester) async {
         final AppAccessPolicy noModule = _policy(
           permissions: <AppPermission>{
@@ -828,23 +860,23 @@ void main() {
           modules: const <AppModuleEntitlement>[],
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: noModule,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);
-        expect(find.text('Noah Ready'), findsNothing);
+        expect(find.text('Amina Partial'), findsNothing);
         expect(_actionLabel('Dispense'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
 
     testWidgets(
-      '∪ route entry: operations:read keeps All orders chrome read-only',
+      '∪ route entry: operations:read keeps Partial chrome read-only',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -863,22 +895,23 @@ void main() {
           ),
         );
 
-        expect(_tab('All orders'), findsOneWidget);
-        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(_tab('Partial'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
         expect(_actionLabel('Dispense'), findsNothing);
         expect(_toolbarPrimary('Catalog and stock'), findsNothing);
       },
     );
 
     testWidgets(
-      'authorized empty All orders remains observable (no routine no-access)',
+      'authorized empty Partial remains observable (no routine no-access)',
       (WidgetTester tester) async {
+        repository = _MockPharmacyRepository();
         _stubPharmacyRepository(
           repository,
           orders: const <PharmacyOrder>[],
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -886,7 +919,7 @@ void main() {
           ),
         );
 
-        expect(_tab('All orders'), findsOneWidget);
+        expect(_tab('Partial'), findsOneWidget);
         expect(find.text('No pharmacy orders'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -895,7 +928,7 @@ void main() {
     testWidgets(
       'authorized Dispense opens dialog; zero qty keeps validation open',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -915,7 +948,6 @@ void main() {
           of: find.byType(AppDialog),
           matching: find.byType(TextField),
         );
-        // Quantity is the last text field in the dispense form.
         await tester.enterText(qtyField.last, '0');
         await tester.tap(
           find.descendant(
@@ -941,7 +973,7 @@ void main() {
     testWidgets(
       'authorized Dispense mutation syncs list and shows success snackbar',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpPartialTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -967,7 +999,7 @@ void main() {
 
         verify(
           () => repository.prepareDispense(
-            orderId: 'order-ready',
+            orderId: 'order-partial',
             items: any(named: 'items'),
             dispenseBatchRef: any(named: 'dispenseBatchRef'),
             statement: any(named: 'statement'),
@@ -975,14 +1007,14 @@ void main() {
           ),
         ).called(1);
         expect(find.text('Pharmacy workflow updated.'), findsOneWidget);
-        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
       },
     );
 
-    testWidgets('All orders desktop light theme keeps authorized chrome', (
+    testWidgets('Partial desktop light theme keeps authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpPartialTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -1002,10 +1034,10 @@ void main() {
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('All orders mobile dark theme keeps authorized chrome', (
+    testWidgets('Partial mobile dark theme keeps authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpPartialTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -1021,7 +1053,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(DataTable), findsNothing);
-      expect(find.textContaining('Noah'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Amina'), findsAtLeastNWidgets(1));
       expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
     });
   });

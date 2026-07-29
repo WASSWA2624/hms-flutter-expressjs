@@ -399,6 +399,34 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          patientRegistryLabOrderAtom(PatientRegistrySection.all),
+          PatientAllAtomPermissions.labOrder,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          patientRegistryScheduleAppointmentAtom(PatientRegistrySection.all),
+          PatientAllAtomPermissions.scheduleAppointment,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          patientRegistryBillingWorkbenchAtom(PatientRegistrySection.all),
+          PatientAllAtomPermissions.billingWorkbench,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          patientRegistryDuplicateReviewAtom(PatientRegistrySection.all),
+          PatientAllAtomPermissions.duplicateReview,
+        ),
+        isTrue,
+      );
     });
 
     test('intersection denial: patient:read alone fails write/delete', () {
@@ -755,6 +783,50 @@ void main() {
         expect(find.text('Request radiology'), findsNothing);
         expect(find.text('Schedule theater procedure'), findsNothing);
         expect(find.text('Patient report'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'union allowance UI: view-active OPD chip with clinical:read alone',
+      (WidgetTester tester) async {
+        final Patient withOpdVisit = _idlePatient.copyWith(
+          currentVisit: const PatientVisitContext(
+            kind: 'encounter',
+            publicId: 'OPD-VIEW-1',
+            status: 'IN_PROGRESS',
+            title: 'OPD encounter',
+          ),
+        );
+        await _pumpAllTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: patientRegistryModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+          patient: withOpdVisit,
+          items: <Patient>[withOpdVisit],
+        );
+
+        await tester.tap(find.text('Ida Idle').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Continue OPD flow'), findsOneWidget);
+        expect(find.text('Start OPD encounter'), findsNothing);
+        expect(find.text('Request lab'), findsNothing);
       },
     );
 

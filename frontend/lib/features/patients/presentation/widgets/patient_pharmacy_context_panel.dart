@@ -12,9 +12,14 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class PatientPharmacyContextPanel extends StatelessWidget {
-  const PatientPharmacyContextPanel({required this.detail, super.key});
+  const PatientPharmacyContextPanel({
+    required this.detail,
+    this.registrySection,
+    super.key,
+  });
 
   final PatientDetail detail;
+  final PatientRegistrySection? registrySection;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +31,7 @@ class PatientPharmacyContextPanel extends StatelessWidget {
       title: l10n.patientsPharmacyOrdersSectionTitle,
       actions: <Widget>[
         AppAccessActionGate(
-          requirement: PatientActiveAtomPermissions.pharmacyWorkbench,
+          requirement: patientRegistryPharmacyWorkbenchAtom(registrySection),
           builder: (_, bool isAllowed) {
             if (!isAllowed) {
               return const SizedBox.shrink();

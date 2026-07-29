@@ -22,7 +22,6 @@ import 'package:hosspi_hms/features/operations/presentation/pages/operations_wor
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -623,7 +622,12 @@ void main() {
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextFormField).at(2), 'Generator alarm');
+      // Text fields in dialog: facility, asset search, location, issue, notes.
+      final Finder dialogFields = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(dialogFields.at(3), 'Generator alarm');
       await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 

@@ -4162,7 +4162,7 @@ class _DuplicateReviewCard extends StatelessWidget {
             runSpacing: theme.spacing.xs,
             children: <Widget>[
               AppAccessActionGate(
-                requirement: PatientActiveAtomPermissions.duplicateReview,
+                requirement: PatientAllAtomPermissions.duplicateReview,
                 builder: (_, bool isAllowed) {
                   if (!isAllowed) {
                     return const SizedBox.shrink();
@@ -4176,7 +4176,7 @@ class _DuplicateReviewCard extends StatelessWidget {
                 },
               ),
               AppAccessActionGate(
-                requirement: PatientActiveAtomPermissions.duplicateReview,
+                requirement: PatientAllAtomPermissions.duplicateReview,
                 builder: (_, bool isAllowed) {
                   if (!isAllowed) {
                     return const SizedBox.shrink();

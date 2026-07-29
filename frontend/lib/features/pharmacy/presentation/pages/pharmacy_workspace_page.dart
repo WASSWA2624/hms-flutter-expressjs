@@ -175,7 +175,7 @@ class _PharmacyWorkspaceContentState
           ref,
           widget.state,
           order,
-          pharmacyWriteRequirement,
+          pharmacySectionWriteRequirement(_section),
         );
       }
     }
@@ -419,7 +419,8 @@ class _PharmacyWorkspaceContentState
               _PharmacyQueuePanel(
                 state: state,
                 section: effectiveSection,
-                writeRequirement: pharmacyWriteRequirement,
+                writeRequirement:
+                    pharmacySectionWriteRequirement(effectiveSection),
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
               ),

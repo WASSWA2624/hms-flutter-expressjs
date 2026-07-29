@@ -259,6 +259,7 @@ class PatientDetailDialog extends ConsumerWidget {
                 SizedBox(height: Theme.of(context).spacing.md),
               PatientDetailQuickActions(
                 detail: detail,
+                registrySection: registrySection,
                 onAction: (PatientQuickAction action) =>
                     _openPatientQuickAction(
                       context,
@@ -270,13 +271,17 @@ class PatientDetailDialog extends ConsumerWidget {
               SizedBox(height: Theme.of(context).spacing.md),
             ],
             if (pharmacyReader) ...<Widget>[
-              PatientPharmacyContextPanel(detail: detail),
+              PatientPharmacyContextPanel(
+                detail: detail,
+                registrySection: registrySection,
+              ),
               SizedBox(height: Theme.of(context).spacing.md),
             ],
             if (billingReader) ...<Widget>[
               PatientBillingContextPanel(
                 detail: detail,
                 allowBillingNavigation: allowBillingNavigation,
+                registrySection: registrySection,
               ),
               SizedBox(height: Theme.of(context).spacing.md),
             ],

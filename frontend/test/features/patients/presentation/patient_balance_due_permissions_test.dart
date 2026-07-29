@@ -748,7 +748,7 @@ void main() {
     );
 
     testWidgets(
-      'intersection denial: tab read alone omits Register/Edit/Complete',
+      'intersection denial: tab read alone omits Register/Edit/Delete',
       (WidgetTester tester) async {
         await _pumpBalanceDueTab(
           tester,
@@ -761,7 +761,7 @@ void main() {
 
         expect(find.byTooltip('Register patient'), findsNothing);
         expect(find.text('Ina Incomplete'), findsWidgets);
-        expect(find.text('Complete record'), findsWidgets);
+        // Incomplete next-action button must not mount for read-only users.
         expect(
           find.descendant(
             of: find.byType(GestureDetector),

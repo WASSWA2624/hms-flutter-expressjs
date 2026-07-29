@@ -15,11 +15,13 @@ class PatientBillingContextPanel extends StatelessWidget {
   const PatientBillingContextPanel({
     required this.detail,
     this.allowBillingNavigation = true,
+    this.registrySection,
     super.key,
   });
 
   final PatientDetail detail;
   final bool allowBillingNavigation;
+  final PatientRegistrySection? registrySection;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class PatientBillingContextPanel extends StatelessWidget {
 
     final Widget? openBillingAction = allowBillingNavigation
         ? AppAccessActionGate(
-            requirement: PatientActiveAtomPermissions.billingWorkbench,
+            requirement: patientRegistryBillingWorkbenchAtom(registrySection),
             builder: (BuildContext context, bool canCashier) {
               if (!canCashier) {
                 return const SizedBox.shrink();
