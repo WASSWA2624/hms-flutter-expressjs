@@ -175,6 +175,34 @@ void main() {
       expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(writeOnly), isFalse);
     });
 
+    test(
+      'write ∪: system:admin satisfies mark/reschedule without clinical:write',
+      () {
+        final AppAccessPolicy adminReader = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.systemAdmin,
+          },
+        );
+        expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(adminReader),
+            isTrue);
+        expect(ClinicalFollowUpsAtomPermissions.write.isAllowed(adminReader),
+            isTrue);
+        expect(
+          ClinicalFollowUpsAtomPermissions.markCompleted.isAllowed(adminReader),
+          isTrue,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.reschedule.isAllowed(adminReader),
+          isTrue,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.saveFollowUp.isAllowed(adminReader),
+          isTrue,
+        );
+      },
+    );
+
     test('subscription strips Follow-ups when encounters-vitals inactive', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
@@ -206,6 +234,37 @@ void main() {
         expect(receptionFollowUpsRequirement.isAllowed(patientReader), isTrue);
         expect(
           clinicalFollowUpsRequirement.isAllowed(patientReader),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'nested cross-module _(n/a)_: Follow-ups write does not grant lab/radiology',
+      () {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        expect(ClinicalFollowUpsAtomPermissions.write.isAllowed(writer), isTrue);
+        expect(clinicalLabOrderWriteRequirement.isAllowed(writer), isTrue);
+        expect(
+          clinicalRadiologyOrderWriteRequirement.isAllowed(writer),
+          isTrue,
+        );
+        // Lab-only write without clinical does not unlock Follow-ups mutations.
+        final AppAccessPolicy labOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.labWrite},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+            AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
+          ],
+        );
+        expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(labOnly), isFalse);
+        expect(
+          ClinicalFollowUpsAtomPermissions.write.isAllowed(labOnly),
           isFalse,
         );
       },
@@ -319,6 +378,59 @@ void main() {
       ).called(1);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.text('No scheduled follow-ups'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'write ∪: system:admin mounts Mark completed without clinical:write',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.systemAdmin,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Follow Up Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reschedule follow-up'), findsOneWidget);
+      expect(find.text('Mark completed'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'reschedule entry opens Save follow-up dialog when write allowed',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Follow Up Patient'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reschedule follow-up'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save follow-up'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

@@ -291,6 +291,18 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalAllAtomPermissions.search,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.rowSelect,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.nextActionReview,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalAllAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
@@ -299,9 +311,24 @@ void main() {
         same(clinicalLabOrderWriteRequirement),
       );
       expect(
+        ClinicalAllAtomPermissions.requestAdmission,
+        same(clinicalAdmissionWriteRequirement),
+      );
+      expect(
+        ClinicalAllAtomPermissions.dischargeFinancialRead,
+        same(clinicalDischargeFinancialReadRequirement),
+      );
+      expect(
         ClinicalAllAtomPermissions.routeEntry,
         same(clinicalWorkspaceEntryRequirement),
       );
+      expect(
+        clinicalSectionTabRequirement(ClinicalWorkspaceSection.all),
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(canViewClinicalAll(_policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      )), isTrue);
     });
 
     test('∩ denial: missing clinical:read fails tab; write alone fails tab', () {
@@ -337,6 +364,95 @@ void main() {
         isFalse,
       );
     });
+
+    test('∪ allowance: pharmacy:write / operations:write nested writes', () {
+      final AppAccessPolicy pharmacyWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.pharmacyWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.prescribe.isAllowed(pharmacyWriter),
+        isTrue,
+      );
+      expect(
+        ClinicalAllAtomPermissions.addNote.isAllowed(pharmacyWriter),
+        isFalse,
+      );
+
+      final AppAccessPolicy opsWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.requestAdmission.isAllowed(opsWriter),
+        isTrue,
+      );
+    });
+
+    test('∪ allowance: system:admin satisfies clinical write source gate', () {
+      final AppAccessPolicy admin = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+      );
+      expect(ClinicalAllAtomPermissions.write.isAllowed(admin), isTrue);
+      expect(ClinicalAllAtomPermissions.addNote.isAllowed(admin), isTrue);
+      expect(ClinicalAllAtomPermissions.tab.isAllowed(admin), isFalse);
+    });
+
+    test('discharge financial read ∩ billing:read + billing-payments', () {
+      final AppAccessPolicy clinicalOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      expect(
+        ClinicalAllAtomPermissions.dischargeFinancialRead.isAllowed(
+          clinicalOnly,
+        ),
+        isFalse,
+      );
+
+      final AppAccessPolicy withBilling = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.billingRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.dischargeFinancialRead.isAllowed(
+          withBilling,
+        ),
+        isTrue,
+      );
+    });
   });
 
   testWidgets(
@@ -363,7 +479,9 @@ void main() {
 
       expect(find.text('Add clinical note'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Request radiology'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
+      expect(find.text('Request admission'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Edit order'), findsNothing);
@@ -396,7 +514,9 @@ void main() {
 
       expect(find.text('Add clinical note'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
+      expect(find.text('Request radiology'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
+      expect(find.text('Request admission'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -478,7 +598,88 @@ void main() {
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Add clinical note'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
+      expect(find.text('Request admission'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: pharmacy:write shows Prescribe without clinical:write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy pharmacyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.pharmacyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.prescribe.isAllowed(pharmacyOnly),
+        isTrue,
+      );
+      expect(ClinicalAllAtomPermissions.addNote.isAllowed(pharmacyOnly), isFalse);
+
+      await _pumpAllTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: pharmacyOnly,
+      );
+
+      await tester.tap(find.text('All Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prescribe'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Print summary'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: operations:write shows Request admission',
+    (WidgetTester tester) async {
+      final AppAccessPolicy opsOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.operationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalAllAtomPermissions.requestAdmission.isAllowed(opsOnly),
+        isTrue,
+      );
+
+      await _pumpAllTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: opsOnly,
+      );
+
+      await tester.tap(find.text('All Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request admission'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Prescribe'), findsNothing);
     },
   );
 

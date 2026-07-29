@@ -244,7 +244,7 @@ Opened from row select / **Review encounter**.
 
 ### Quick actions bar (`_ClinicalActionBar`)
 
-All clinical write actions below use write gate; disabled when not allowed (except Print summary).
+Write / nested-order actions below are **absent** when their gate fails (not disabled). Print summary uses read gate. Nested Request lab / radiology / prescribe / admission use feature ∪ helpers (`clinicalLabOrderWriteRequirement`, etc.); other mutations use `clinicalEncounterWriteRequirement`.
 
 - **Add clinical note**
   - Location: Encounter quick actions.

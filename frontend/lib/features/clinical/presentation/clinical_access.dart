@@ -231,13 +231,22 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
   static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement recordVitals = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement addDiagnosis =
       clinicalWorkspaceWriteRequirement;
   static const AccessRequirement recordProcedure =
@@ -271,21 +280,55 @@ abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
 }
 
+bool canViewClinicalAll(AppAccessPolicy policy) {
+  return ClinicalAllAtomPermissions.tab.isAllowed(policy);
+}
+
 /// Atom → requirement map for Clinical Follow-ups (`/clinical?section=follow-ups`).
+///
+/// Inventory: `screens/clinical.md` → Follow-ups tab (`FollowUpWorklistPanel`).
+/// Nested encounter / lab / radiology / pharmacy / admission / discharge UI is
+/// **not** reachable from this tab (matrix nested rows _(n/a)_). Shared panel
+/// defaults remain reception ∪; clinical host overrides with these gates.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Follow-ups strip tab | navigate | read ∩ `clinical:read` + `encounters-vitals` |
+/// | Search / clear / Settings / columns | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → Follow-up details | read | read ∩ |
+/// | Detail Close (read-only footer) | progressive disclosure | read ∩ |
+/// | Reschedule follow-up | update | write ∪ source |
+/// | Mark completed | update | write ∪ source |
+/// | Save follow-up (nested reschedule dialog) | update | write ∪ source |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// `clinical:write` alone.
 abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement tab = clinicalFollowUpsRequirement;
   static const AccessRequirement listChrome = clinicalFollowUpsRequirement;
   static const AccessRequirement search = clinicalFollowUpsRequirement;
   static const AccessRequirement settings = clinicalFollowUpsRequirement;
+  static const AccessRequirement empty = clinicalFollowUpsRequirement;
+  static const AccessRequirement retry = clinicalFollowUpsRequirement;
   static const AccessRequirement rowSelect = clinicalFollowUpsRequirement;
   static const AccessRequirement detail = clinicalFollowUpsRequirement;
-  static const AccessRequirement retry = clinicalFollowUpsRequirement;
+  static const AccessRequirement close = clinicalFollowUpsRequirement;
+  static const AccessRequirement create = clinicalFollowUpsWriteRequirement;
+  static const AccessRequirement update = clinicalFollowUpsWriteRequirement;
+  static const AccessRequirement delete = clinicalFollowUpsWriteRequirement;
   static const AccessRequirement reschedule = clinicalFollowUpsWriteRequirement;
   static const AccessRequirement markCompleted =
       clinicalFollowUpsWriteRequirement;
   static const AccessRequirement saveFollowUp =
       clinicalFollowUpsWriteRequirement;
   static const AccessRequirement write = clinicalFollowUpsWriteRequirement;
+  /// Nested cross-module write — not used on this tab (matrix _(n/a)_).
+  static const AccessRequirement nestedWrite =
+      clinicalFollowUpsWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalFollowUpsRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
 }
 
