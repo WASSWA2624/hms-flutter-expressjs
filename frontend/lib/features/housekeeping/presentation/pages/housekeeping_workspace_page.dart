@@ -261,14 +261,18 @@ class _HousekeepingWorkspaceContentState
             );
           },
         ),
-      HousekeepingSection.schedules => capabilities.canManage
-          ? AppTabToolbarPrimary(
+      // Schedules: create ∩ operations:write via atom map (not canUpdateTasks).
+      HousekeepingSection.schedules => AppAccessActionGate(
+          requirement: HousekeepingSchedulesAtomPermissions.createSchedule,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarPrimary(
               label: l10n.housekeepingCreateScheduleAction,
               icon: Icons.event_repeat_outlined,
               enabled: !state.isSaving,
               onPressed: () => _showScheduleDialog(context, ref, state),
-            )
-          : null,
+            );
+          },
+        ),
       // Source inventory: Request maintenance uses canUpdateTasks (manage or
       // housekeeper + read). Matrix create ∩ write is covered by canManage;
       // housekeeper path is intentional source mapping.

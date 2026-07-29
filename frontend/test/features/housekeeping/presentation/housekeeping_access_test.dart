@@ -182,6 +182,13 @@ void main() {
       );
       expect(
         identical(
+          HousekeepingSchedulesAtomPermissions.nextAction,
+          housekeepingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           HousekeepingSchedulesAtomPermissions.routeEntry,
           housekeepingWorkspaceEntryRequirement,
         ),

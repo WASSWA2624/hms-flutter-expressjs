@@ -261,8 +261,11 @@ abstract final class HousekeepingTasksAtomPermissions {
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Schedules have no update/delete
 /// UI atoms today; create/update/delete still map to manage ∩ for matrix
-/// completeness. Source `canManage` role OR is covered by role packs that
-/// include `operations:write`.
+/// completeness. Create schedule stays matrix write ∩ (`canManage`) — unlike
+/// Request maintenance, housekeeper + read alone does **not** unlock create.
+/// Facility ABAC is enforced on route entry only (same pattern as biomedical /
+/// Tasks); in-page atoms reuse module + permission. Report summary uses source
+/// ∪ `reports:read` | `operations:read`.
 abstract final class HousekeepingSchedulesAtomPermissions {
   static const AccessRequirement tab = housekeepingWorkspaceReadRequirement;
   static const AccessRequirement listChrome =

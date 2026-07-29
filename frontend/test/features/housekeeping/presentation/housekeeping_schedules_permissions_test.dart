@@ -638,12 +638,83 @@ void main() {
         accessPolicy: opsReader,
       );
 
-      // Report is icon/tooltip secondary — open if label present.
-      final Finder report = find.textContaining('Report');
-      if (report.evaluate().isNotEmpty) {
-        expect(report, findsWidgets);
-      }
+      expect(find.byType(AppReportActionButton), findsOneWidget);
       expect(find.byTooltip('Create schedule'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'housekeeper without write: Schedules list mounts; Create schedule absent '
+    '(matrix create ∩ write — not canUpdateTasks)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy housekeeper = _policy(
+        roles: const <String>['HOUSE_KEEPER'],
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      final HousekeepingCapabilities caps =
+          HousekeepingCapabilities.fromPolicy(housekeeper);
+      expect(caps.canManage, isFalse);
+      expect(caps.canUpdateTasks, isTrue);
+      expect(
+        HousekeepingSchedulesAtomPermissions.createSchedule.isAllowed(
+          housekeeper,
+        ),
+        isFalse,
+      );
+
+      await _pumpSchedulesTab(
+        tester,
+        repository: repository,
+        accessPolicy: housekeeper,
+      );
+
+      expect(_tabLabel('Schedules'), findsOneWidget);
+      expect(find.text('Daily corridor sweep'), findsOneWidget);
+      expect(find.byTooltip('Create schedule'), findsNothing);
+      expect(find.text('Review schedule'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC facility strip: missing facility context fails route entry ∪',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
+        facilityId: null,
+      );
+      // In-page atoms follow biomedical: facility ABAC on route entry only.
+      expect(
+        HousekeepingSchedulesAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        HousekeepingSchedulesAtomPermissions.routeEntry.isAllowed(noFacility),
+        isFalse,
+      );
+      expect(canEnterHousekeepingWorkspace(noFacility), isFalse);
+    },
+  );
+
+  testWidgets(
+    'light theme Schedules read ∩ mounts list; write ∩ Create schedule absent',
+    (WidgetTester tester) async {
+      await _pumpSchedulesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        ),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Daily corridor sweep'), findsOneWidget);
+      expect(find.byTooltip('Create schedule'), findsNothing);
+      expect(find.byType(AppReportActionButton), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 }
