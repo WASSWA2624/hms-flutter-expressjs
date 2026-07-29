@@ -1,72 +1,68 @@
 # App Menu Permission Access — Shell Destinations, Routes, and Screens
 
-Enforce permission-based visibility on every app menu item so users only see and open routes/screens their **effective** permissions allow. Unauthorized destinations must not appear in navigation; unauthorized deep links must not render the target screen.
+Enforce **permission-based** visibility on every app menu item so users only see and open routes/screens their **effective permissions** allow—including **custom roles** that grant those permissions. Do **not** gate shell menus or route entry on canonical `AppRole` membership. Unauthorized destinations must not appear; unauthorized deep links must not render the target screen.
 
 ## Context
 
 - Surface: shell navigation (sidebar, rail, drawer, bottom nav) in `app_router.dart` via `_localizedShellDestinations` filtered by `canAccessShellRoute`.
-- Catalog: `AppRoutes` / `AppRouteData` (`requiredPermissions` ∩, `requiredAnyPermissions` ∪, `requiredAnyRoles`, `requiredActiveModules`, tenant/facility flags).
+- Catalog: `AppRoutes` / `AppRouteData` — gate with `requiredPermissions` (∩) and/or `requiredAnyPermissions` (∪), `requiredActiveModules`, and tenant/facility flags. Treat `requiredAnyRoles` as legacy: **must not deny** users who already satisfy permission + module requirements (custom roles included).
 - Guards: `shell_route_access.dart`, `route_guards.dart`, `AccessRequirement` / `AppAccessPolicy`.
-- Focused packs: lab / pharmacist / receptionist / billing allowlists; custom-role domains via `permissionScopedDomainsFor`.
-- Secondary entries (Settings → Access admin / Setup / Subscriptions; Home shortcuts/metrics; workspace `context.go` cross-links) must use the same gate.
-- Effective access = union(role/module/user grants) ∩ subscription ∩ plan caps ∩ ABAC (`prompts/ui-permissions/_shared-rules.md`, `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `frontend/.cursor/navigation.mdc`).
-- Backend remains authoritative. Follow `prompts/.cursor/prompt.mdc`.
+- Custom roles / direct grants: `isPermissionScopedShellUser` + `permissionScopedDomainsFor` must map **permission domains** to workspaces—not empty deny sets that lock entitled custom roles out.
+- Focused packs (lab / pharmacist / receptionist / billing) may narrow default chrome for a single canonical role; **expanded grants** must still unlock matching destinations via `isShellRouteUnlockedByExpandedGrant`.
+- Secondary entries (Settings → Access admin / Setup / Subscriptions; Home shortcuts/metrics; `context.go` cross-links) use the same permission gate.
+- Effective access = union(role/module/user **permission** grants) ∩ subscription ∩ plan caps ∩ ABAC (`prompts/ui-permissions/_shared-rules.md`, `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `frontend/.cursor/navigation.mdc`). Roles may seed defaults; they are not the menu key.
+- Backend authoritative. Follow `prompts/.cursor/prompt.mdc`.
 
-## Menu ↔ route matrix (entry gates)
+## Menu ↔ route matrix (permission entry gates)
 
-Align code to exact keys already on each `AppRouteData`; do not invent a second vocabulary.
+Use exact `AppPermissions` on each `AppRouteData` (add permission gates where a route is role-only today). Modules remain plan ∩.
 
-| Menu / route | Path | Semantics | Typical keys / modules |
+| Menu / route | Path | Semantics | Permission keys / modules |
 | --- | --- | --- | --- |
-| Home | `/` | authenticated | core |
+| Home / Settings | `/`, `/settings` | authenticated | core |
 | Reception | `/reception` | ∪ | `patient:read` \| `last_office:read`; `patient-registry`, `scheduling-queue` |
 | Patients | `/patients` | ∩ | `patient:read`; `patient-registry` |
 | OPD | `/opd` | ∪ | `patient:read` \| `clinical:read` \| `billing:read` \| `operations:read` \| `emergency:read`; `scheduling-queue` |
-| Emergency | `/emergency` | ∪ | per `AppRoutes.emergency` |
-| IPD / Rooms & beds / ICU / Nursing | workspace paths | ∪ | per matching `AppRoutes.*` |
-| Clinical | `/clinical` | ∪ | `clinical:read` (+ roles/modules) |
-| Physiotherapy / Theater / Discharge | workspace paths | ∪ | per matching `AppRoutes.*` |
+| Emergency / IPD / Rooms & beds / ICU / Nursing | workspace paths | ∪ | matching `*:read` on `AppRoutes.*`; domain-scoped for custom roles |
+| Clinical / Physiotherapy / Theater / Discharge | workspace paths | ∪ | matching `*:read` on `AppRoutes.*`; domain-scoped for custom roles |
 | Lab / Radiology / Pharmacy | workspace paths | ∪ | `lab:read` / `radiology:read` / `pharmacy:read` + modules |
-| Billing | `/billing` | ∪ | `billing:read` \| `billing:write`; `billing-payments` |
-| Claims | `/claims` | ∪ | `billing:read` \| `billing:write` \| `financial:approve`; `insurance-claims` |
-| Subscriptions | `/subscriptions` | role | `superAdmin` unless source already differs |
-| Operations / Housekeeping / Biomedical / Mortuary | workspace paths | ∪ | per matching `AppRoutes.*` |
+| Billing / Claims | `/billing`, `/claims` | ∪ | `billing:read` \| `billing:write` (+ `financial:approve` for claims); billing/claims modules |
+| Subscriptions | `/subscriptions` | ∪ | `subscriptions:read` \| `system:admin` (replace role-only `superAdmin`) |
+| Operations / Housekeeping / Biomedical / Mortuary | workspace paths | ∪ | matching `*:read` + modules |
 | HR | `/hr` | ∪ | `hr:read` \| `unit:read` \| `roster:read`; `hr-rosters` |
-| Communications / Integrations / Reports | workspace paths | ∪ | `communications:read` / `integration:read` / `reports:read` + modules |
-| Settings | `/settings` | authenticated | core |
-| Setup | setup path | admin/setup pack | `AppRoutes.tenantFacilitySetup` |
-| Access admin | via Settings | admin pack | `AppRoutes.accessAdmin` |
+| Communications / Integrations / Reports | workspace paths | ∪ | `communications:read` / `integration:read` / `reports:read` (+ peers) + modules |
+| Setup / Access admin | setup & access paths | ∪ | `tenant:admin` \| `facility:admin` \| `system:admin` (not role packs) |
 
-Focused-shell allowlists and permission-domain scoping apply **after** `AccessRequirement.isAllowed`.
+Domain scoping runs **after** permission/module checks so custom roles open only workspaces their granted domains cover.
 
 ## Requirements
 
-1. Inventory every shell destination in `_localizedShellDestinations` plus non-shell navigators that open app screens (Settings rows, Home metric/shortcut navigation, cross-module `context.go`). Map each to its `AppRouteData.accessRequirement`.
-2. Align each entry gate with the matrix and the route’s existing ∩ / ∪ / roles / modules / context flags. Fix menu-vs-route drift so both share one source of truth on `AppRouteData`.
-3. Filter destinations with `canAccessShellRoute` before build so unauthorized items never mount in any shell chrome. Collapse empty navigation groups. Do not render disabled menu stubs or routine “no access” labels for omitted items.
-4. Protect entry with `AppRouteGuards`: require authenticated session; redirect unauthorized deep links / typed navigation to localized forbidden (or documented equivalent). Never paint a denied screen body.
-5. Keep focused-shell allowlists and `permissionScopedDomainsFor` so focused and custom-role-only users cannot leak across modules via broad ∪ lists. Extra unlocks only via existing `isShellRouteUnlockedByExpandedGrant`.
-6. Gate secondary entry points the same way; omit the control when `canAccessShellRoute` (or equivalent) denies.
-7. Compute shell badges only for accessible routes (`shell_badge_counts.dart`); never advertise a hidden module.
-8. Preserve authorized states: filtered chrome, shell loading, empty shell (core-only when that is all they have), session-restore error/retry, successful navigation, forbidden feedback for restricted deep links. Rebuild destinations after permission refresh without relaunch.
-9. Add/update tests in `frontend/test/app/router/` (and shell/layout as needed) proving: (a) missing ∩ or ∪ rights ⇒ destination absent and deep link forbidden; (b) satisfying grants ⇒ destination present and route opens; (c) module/subscription denial hides menu despite role pack strings; (d) focused/custom-role non-leakage; (e) secondary links omit unauthorized targets; (f) badges only for allowed routes. Cover guard integration, reuse of `canAccessShellRoute`/`AppRouteData`, authorization, sync after permission change, one mobile and one desktop viewport, light + dark themes.
+1. Inventory every shell destination plus secondary navigators (Settings, Home metrics/shortcuts, cross-module `context.go`). Map each to permission/module requirements—not canonical role lists.
+2. Make entry **permission-first**: every route must have ∩ and/or ∪ `AppPermission` requirements (and modules). Neutralize `requiredAnyRoles` as a hard deny when permissions are present so custom-role users with those grants pass. Replace role-only routes (e.g. Subscriptions) with matrix permission keys.
+3. Fix `permissionScopedDomainsFor` empty `{}` denials for workspaces custom roles should reach when they hold matching domain permissions (map IPD/nursing/ICU/etc. to the domains those routes already use).
+4. Filter with `canAccessShellRoute` before build; collapse empty groups; no disabled stubs or routine “no access” labels for omitted items.
+5. Protect deep links with `AppRouteGuards` using the same permission formula; redirect denied navigations to localized forbidden; never paint a denied screen body.
+6. Keep focused-shell narrowing for single canonical roles; always honor expanded grants and permission-scoped custom roles for matching destinations.
+7. Gate secondary links and badges the same way (`shell_badge_counts.dart`); never advertise a hidden module.
+8. Preserve authorized states: filtered chrome, shell loading, core-only empty shell, session-restore error/retry, success navigation, forbidden feedback. Rebuild destinations after permission refresh without relaunch.
+9. Tests in `frontend/test/app/router/`: (a) **custom role / no canonical `AppRole`** + modules + target permissions ⇒ destination present and route opens; (b) same fixture missing those permissions ⇒ absent and deep link forbidden; (c) canonical role name alone does not unlock when permissions are the gate; (d) module/subscription denial hides menu; (e) focused pack + expanded grant unlocks extra destination; (f) secondary links/badges follow permissions. Cover guards, reuse of `canAccessShellRoute`/`AppRouteData`, one mobile and one desktop viewport, light + dark.
 
 ## Constraints
 
-- Scope: shell destinations, route guards, `AppRouteData` access fields, badge gating, and secondary navigators into those routes. Do not redesign in-screen tab atoms (`prompts/ui-permissions/**`) or navigation IA beyond collapsing empty groups.
-- Reuse `AppAccessPolicy`, `AccessRequirement`, `canAccessShellRoute`, `AppRouteGuards`, `AppRoutes`, and existing shell widgets; no second permission vocabulary.
-- Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or invalid selected indices when the filtered list shrinks.
-- Backend RBAC/ABAC authoritative; no exploit/PoC code; no secrets in tests—use policy fixtures.
+- Scope: shell destinations, route guards, permission-first `AppRouteData` fields, domain scoping, badges, secondary navigators. Do not redesign in-screen tab atoms (`prompts/ui-permissions/**`) or IA beyond collapsing empty groups.
+- Reuse `AppAccessPolicy`, `AccessRequirement`, `canAccessShellRoute`, `AppRouteGuards`, `AppRoutes`; no second vocabulary; **do not add new role-only gates**.
+- Theme tokens; responsive without clipping, overflow, duplication, or invalid selected indices when the filtered list shrinks.
+- Backend authoritative; no exploit/PoC; no secrets—use permission fixtures including custom-role cases.
 - Optional enhancements: none.
 
 ## Acceptance Criteria
 
-- AC1 (Req 1-2): Every shell and secondary menu entry maps to one `AppRouteData` gate aligned with the matrix.
-- AC2 (Req 3, 6-7): Unauthorized destinations, secondary links, and badges do not render; no disabled unauthorized stubs.
-- AC3 (Req 4): Denied deep links redirect to forbidden (or documented equivalent) and never show the restricted screen.
-- AC4 (Req 2, 5): ∩ / ∪ / roles / modules / focused packs / domain scoping behave as specified; subscription/ABAC strips menus role packs alone would allow.
+- AC1 (Req 1-3): Every shell/secondary entry is gated by permissions (+ modules/scope); custom roles with those grants are allowed; role packs alone do not unlock menus.
+- AC2 (Req 4, 7): Unauthorized destinations, secondary links, and badges do not render; no disabled unauthorized stubs.
+- AC3 (Req 5): Denied deep links redirect to forbidden and never show the restricted screen.
+- AC4 (Req 2-3, 6): ∩ / ∪ / modules / domain scoping / expanded grants behave as specified; empty domain denials do not block entitled custom roles; subscription/ABAC still strip what the plan forbids.
 - AC5 (Req 8): Loading, empty, error, success, and forbidden-feedback states remain observable; destinations refresh when effective permissions change.
-- AC6 (Req 9): Tests prove unauthorized absence and authorized presence (including ∩ denial and ∪ allowance), focused/custom-role non-leakage, secondary-link gating, badges, viewports, and themes.
+- AC6 (Req 9): Tests prove custom-role allowance/denial by permissions, unauthorized absence / authorized presence, focused expanded grants, badges, viewports, and themes.
 
 ## Relevant Files
 
@@ -77,7 +73,7 @@ Focused-shell allowlists and permission-domain scoping apply **after** `AccessRe
 - `frontend/lib/app/router/shell_badge_counts.dart`
 - `frontend/lib/shared/layout/responsive_shell_scaffold.dart`
 - `frontend/lib/features/settings/presentation/pages/settings_page.dart`
-- `frontend/lib/features/home/` (metric/shortcut navigation)
+- `frontend/lib/features/home/`
 - `frontend/lib/core/permissions/access_policy.dart`
 - `frontend/lib/core/permissions/access_requirement.dart`
 - `frontend/test/app/router/shell_route_access_test.dart`

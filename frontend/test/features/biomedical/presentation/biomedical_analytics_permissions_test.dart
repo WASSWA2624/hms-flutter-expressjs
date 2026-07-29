@@ -774,6 +774,38 @@ void main() {
   });
 
   testWidgets(
+    'authorized Analytics Schedule maintenance validation keeps dialog open',
+    (WidgetTester tester) async {
+      await _pumpAnalytics(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+            AppPermissions.reportsRead,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Ventilator utilization'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Schedule maintenance'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCHEDULE MAINTENANCE'), findsOneWidget);
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCHEDULE MAINTENANCE'), findsOneWidget);
+      expect(find.textContaining('is required'), findsWidgets);
+      verifyNever(() => repository.createResource(any(), any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'post-mutation sync: Schedule maintenance refreshes Analytics workbench',
     (WidgetTester tester) async {
       when(

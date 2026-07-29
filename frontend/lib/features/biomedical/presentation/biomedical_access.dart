@@ -293,8 +293,10 @@ abstract final class BiomedicalPreventiveAtomPermissions {
 /// | Nested mutation dialogs | create / update / delete | write ∪ source |
 /// | Route entry (deep link) | navigate | read ∪ write |
 ///
-/// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
-/// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+/// Matrix nested cross-module rows are _(n/a)_. Prompt note “compliance:read
+/// may union” is not applied — tab read stays ∩ `biomed:read` only.
+/// Write keeps source ∪ `biomed:write` | `operations:write` rather than
+/// matrix ∩ `biomed:write` alone.
 abstract final class BiomedicalComplianceAtomPermissions {
   static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;
@@ -407,12 +409,12 @@ abstract final class BiomedicalWorkOrdersAtomPermissions {
 /// | --- | --- | --- |
 /// | Analytics tab | navigate | [tab] biomed:read ∩ + reports:read ∪ |
 /// | Search / filters / columns / pagination | read chrome | [listChrome] |
-/// | Empty / error / retry | read chrome | [listChrome] / page |
+/// | Empty / error / retry / loading / validation | read chrome | [listChrome] / page |
 /// | Row select → detail | read | [detail] |
 /// | Next action Review | navigate | [detail] |
 /// | Next action write | create / update | [write] (source ∪) |
-/// | Detail complementary writes | create / update / delete | [write] |
-/// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
+/// | Detail complementary writes | create / update / delete | [write] / [nestedWrite] |
+/// | Nested mutation dialogs (e.g. Schedule maintenance) | create / update / delete | [nestedWrite] |
 /// | Nested charts / utilization (cross-module) | read | [nestedRead] reports:read ∪ |
 /// | Print report | export | [export]/[print] (source evidence:export) |
 /// | Tab-strip primary | _(n/a on Analytics)_ | — |
@@ -421,6 +423,7 @@ abstract final class BiomedicalWorkOrdersAtomPermissions {
 /// Matrix nested cross-module write rows are _(n/a)_. Write keeps source ∪
 /// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
 /// Exports keep source ∩ `evidence:export` (matrix notes reports:read | evidence:export).
+/// Analytics has no tab-strip primary (charts / utilization list only).
 abstract final class BiomedicalAnalyticsAtomPermissions {
   static const AccessRequirement tab = biomedicalAnalyticsTabRequirement;
   static const AccessRequirement listChrome = biomedicalAnalyticsTabRequirement;

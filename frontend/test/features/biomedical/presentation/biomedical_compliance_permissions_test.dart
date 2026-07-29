@@ -235,6 +235,7 @@ void main() {
       expect(find.text('Ventilator calibration'), findsOneWidget);
       expect(find.text('Compliance'), findsWidgets);
       expect(find.text('Next due'), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.byTooltip('Record calibration'), findsNothing);
       expect(find.text('Review compliance'), findsNothing);
       expect(find.text('Review record'), findsWidgets);
@@ -488,6 +489,25 @@ void main() {
     },
   );
 
+  test(
+    'compliance:read alone does not grant Compliance tab '
+    '(matrix nested ∪ _(n/a)_; view remains biomed:read ∩)',
+    () {
+      final AppAccessPolicy complianceOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.complianceRead},
+      );
+      expect(
+        BiomedicalComplianceAtomPermissions.tab.isAllowed(complianceOnly),
+        isFalse,
+      );
+      expect(
+        BiomedicalComplianceAtomPermissions.listChrome.isAllowed(complianceOnly),
+        isFalse,
+      );
+      expect(canViewBiomedicalPanel(complianceOnly, BiomedicalPanels.compliance), isFalse);
+    },
+  );
+
   testWidgets(
     'authorized Compliance next-action opens dialog and mutation syncs list',
     (WidgetTester tester) async {
@@ -572,6 +592,58 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No equipment records'), findsOneWidget);
       expect(find.byTooltip('Record calibration'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'empty write-authorized Compliance keeps Record calibration primary',
+    (WidgetTester tester) async {
+      await _pumpComplianceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Record calibration'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'read-only: downtime / recall write next-actions absent (∩ denial)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.biomedRead},
+      );
+
+      await _pumpComplianceTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        assets: const <BiomedicalAsset>[_downtimeAsset, _recallAsset],
+      );
+
+      expect(find.text('MRI downtime'), findsOneWidget);
+      expect(find.text('Pump recall notice'), findsOneWidget);
+      expect(find.text('Return to service'), findsNothing);
+      expect(find.text('Review recall'), findsNothing);
+      expect(find.text('Review record'), findsWidgets);
+      expect(find.byTooltip('Record calibration'), findsNothing);
+
+      await tester.tap(find.text('MRI downtime'));
+      await tester.pumpAndSettle();
+      expect(find.text('Close downtime'), findsNothing);
+      expect(find.text('Acknowledge recall'), findsNothing);
+      expect(find.text('Print report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

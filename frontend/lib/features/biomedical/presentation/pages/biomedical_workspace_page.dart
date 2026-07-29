@@ -970,7 +970,7 @@ class _DetailActions extends ConsumerWidget {
         label: l10n.biomedicalDisposeTransferAction,
         icon: Icons.move_down_outlined,
       ),
-      if (BiomedicalOverviewAtomPermissions.print.isAllowed(policy))
+      if (biomedicalPrintRequirement.isAllowed(policy))
         AppReportActionButton.print(
           label: l10n.biomedicalPrintReportAction,
           onPressed: () => unawaited(_printBiomedicalReport(context, ref, asset)),

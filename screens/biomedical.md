@@ -157,7 +157,8 @@ Analytics permission tests in `frontend/test/features/biomedical/presentation/bi
 - [x] Read-only omits mutation/print atoms; Filters / Location list chrome remain when authorized.
 - [x] Nested export: print absent without `evidence:export`; nested writes still mount.
 - [x] Route entry ∪ write-only without `biomed:read` omits Analytics chrome (even with `reports:read`).
-- [x] Authorized flows, empty/loading/error-retry states, mobile+dark / desktop+light, post-mutation sync.
+- [x] Authorized Schedule maintenance validation keeps dialog open; post-mutation sync.
+- [x] Empty / loading→success / error-retry, mobile+dark / desktop+light authorized states.
 
 Support permission tests in `frontend/test/features/biomedical/presentation/biomedical_support_permissions_test.dart`:
 
@@ -193,13 +194,13 @@ Overview permission tests in `frontend/test/features/biomedical/presentation/bio
 
 Compliance permission tests in `frontend/test/features/biomedical/presentation/biomedical_compliance_permissions_test.dart`:
 
-- [x] ∩ denial: `biomed:read` without write omits **Record calibration** / write next-actions / detail writes / print.
+- [x] ∩ denial: `biomed:read` without write omits **Record calibration** / write next-actions (calibration, downtime, recall) / detail writes / print; Filters/list chrome remain.
 - [x] Full write ∩ / source ∪: Record calibration, Review compliance next-action, detail writes, print mount.
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Compliance write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits Compliance chrome; subscription strip without biomed module omits Compliance.
-- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; recall/calibration writes still mount.
+- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; recall/calibration writes still mount (`compliance:read` does not grant tab read).
 - [x] Authorized calibration next-action mutation sync; Record calibration validation keeps dialog open.
-- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
+- [x] Empty (read omits primary / write keeps Record calibration) / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Preventive permission tests in `frontend/test/features/biomedical/presentation/biomedical_preventive_permissions_test.dart`:
 
