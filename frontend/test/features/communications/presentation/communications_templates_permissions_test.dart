@@ -667,6 +667,32 @@ void main() {
     },
   );
 
+  testWidgets(
+    'deep link templateId ∩ denial: write-only omits detail dialog',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsWrite},
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.detail.isAllowed(writeOnly),
+        isFalse,
+      );
+
+      await _pumpTemplatesTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+        initialLocation:
+            '/communications?panel=templates&templateId=template-1',
+      );
+
+      expect(find.byType(AppDialog), findsNothing);
+      expect(find.text('TEMPLATE DETAIL'), findsNothing);
+      expect(find.text('Hello Jane Doe, your discharge is ready.'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('Templates mobile viewport keeps read chrome accessible', (
     WidgetTester tester,
   ) async {
@@ -760,6 +786,20 @@ void main() {
         identical(
           CommunicationsTemplatesAtomPermissions.routeEntry,
           communicationsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.preview,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.rowSelect,
+          communicationsWorkspaceReadRequirement,
         ),
         isTrue,
       );

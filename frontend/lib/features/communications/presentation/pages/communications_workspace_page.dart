@@ -246,6 +246,12 @@ class _CommunicationsWorkspaceContentState
         if (template == null) {
           return;
         }
+        final AppAccessPolicy templatePolicy = ref.read(appAccessPolicyProvider);
+        if (!CommunicationsTemplatesAtomPermissions.detail.isAllowed(
+          templatePolicy,
+        )) {
+          return;
+        }
         await showCommunicationsTemplateDetailDialog(
           context,
           ref,
@@ -917,7 +923,13 @@ class _TemplatesTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsTemplatesAtomPermissions.listChrome.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
     final AppLocalizations l10n = context.l10n;
+    final bool canSelectRow =
+        CommunicationsTemplatesAtomPermissions.rowSelect.isAllowed(policy);
 
     return AppListTable<CommunicationTemplate>(
       page: state.templates,
@@ -949,11 +961,18 @@ class _TemplatesTable extends ConsumerWidget {
               .changePage(request),
         );
       },
-      onRowSelected: (CommunicationTemplate item) {
-        unawaited(
-          showCommunicationsTemplateDetailDialog(context, ref, state, item),
-        );
-      },
+      onRowSelected: canSelectRow
+          ? (CommunicationTemplate item) {
+              unawaited(
+                showCommunicationsTemplateDetailDialog(
+                  context,
+                  ref,
+                  state,
+                  item,
+                ),
+              );
+            }
+          : null,
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoTemplatesTitle,
         body: l10n.communicationsNoTemplatesBody,

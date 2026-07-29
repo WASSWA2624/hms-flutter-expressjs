@@ -93,7 +93,8 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 
 #### Template detail (from row select / deep link)
 
-- Shows metadata + preview panel. Read-only preview (`CommunicationsTemplatesAtomPermissions.detail`).
+- Shows metadata + preview panel. Read-only preview (`CommunicationsTemplatesAtomPermissions.detail` / `preview`).
+- List chrome / row select gated via `listChrome` / `rowSelect` (same ∩ as read); unauthorized deep links do not open the dialog.
 - Create / Edit / Delete footer actions are not in the inventory UI; when exposed they use write ∩ / delete ∩ and must not mount unauthorized.
 
 ### Empty / loading / error / validation

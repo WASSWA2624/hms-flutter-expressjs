@@ -110,6 +110,9 @@ Future<void> showCommunicationsTemplateDetailDialog(
   if (!context.mounted) {
     return;
   }
+  // Inventory: Templates detail is preview-only. Create / Edit / Delete footer
+  // actions are not inventoried — omit them even when write/delete ∩ allow.
+  // Atom map create/update/delete remain for when CRUD is later exposed.
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
@@ -294,7 +297,7 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
   }
 }
 
-class CommunicationsTemplateDetailContent extends StatelessWidget {
+class CommunicationsTemplateDetailContent extends ConsumerWidget {
   const CommunicationsTemplateDetailContent({
     required this.template,
     super.key,
@@ -303,7 +306,12 @@ class CommunicationsTemplateDetailContent extends StatelessWidget {
   final CommunicationTemplate template;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsTemplatesAtomPermissions.preview.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
