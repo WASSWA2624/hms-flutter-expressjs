@@ -74,7 +74,8 @@ AppAccessPolicy _policy({
           code: 'scheduling-queue',
           licenseStatus: 'ACTIVE',
         ),
-        if (needsPatient)
+        // Follow-ups read ∪ requires patient-registry even for clinical:read.
+        if (needsPatient || needsClinical)
           const AppModuleEntitlement(
             code: 'patient-registry',
             licenseStatus: 'ACTIVE',

@@ -262,7 +262,7 @@ void main() {
       expect(opdBillingActionRequirement.isAllowed(cashier), isTrue);
     });
 
-    test('payment gate requires billing read but never billing write', () {
+    test('payment gate requires billing read; collect never mounts on desk', () {
       final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 'token'),
@@ -279,9 +279,36 @@ void main() {
           moduleEntitlements: _activeShellModules,
         ),
       );
+      final AppAccessPolicy billingWriter = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['BILLING']),
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
 
       expect(receptionPaymentGateRequirement.isAllowed(patientReader), isFalse);
       expect(receptionPaymentGateRequirement.isAllowed(billingReader), isTrue);
+      expect(canViewReceptionPaymentGate(billingReader), isTrue);
+      expect(
+        ReceptionPaymentGateAtomPermissions.collect.isAllowed(billingReader),
+        isFalse,
+      );
+      expect(
+        ReceptionPaymentGateAtomPermissions.collect.isAllowed(billingWriter),
+        isTrue,
+      );
+      expect(
+        identical(
+          receptionDeskSectionRequirement(ReceptionDeskSection.paymentGate),
+          ReceptionPaymentGateAtomPermissions.tab,
+        ),
+        isTrue,
+      );
     });
 
     test('appointments tab uses ∩ patient:read; schedule uses ∩ patient:write', () {

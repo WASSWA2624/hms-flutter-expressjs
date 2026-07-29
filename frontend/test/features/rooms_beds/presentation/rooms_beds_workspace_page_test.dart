@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/rooms_beds/data/repositories/rooms_beds_repo
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/repositories/rooms_beds_repository.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/rooms_beds_access.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_next_action_button.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -26,6 +27,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockRoomsBedsRepository extends Mock implements RoomsBedsRepository {}
+
+const List<AppModuleEntitlement> _inpatientModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(
+    code: roomsBedsInpatientBedManagementModule,
+    licenseStatus: 'ACTIVE',
+  ),
+  AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'facilities-maintenance', licenseStatus: 'ACTIVE'),
+];
 
 const FacilityProfile _facility = FacilityProfile(
   id: 'FAC-001',
@@ -119,6 +129,8 @@ AppAccessPolicy _adminAndClinicalPolicy() {
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
       },
+      moduleEntitlements: _inpatientModules,
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -133,6 +145,8 @@ AppAccessPolicy _readOnlyPolicy() {
         facilityId: 'FAC-001',
       ),
       permissions: <AppPermission>{AppPermissions.clinicalRead},
+      moduleEntitlements: _inpatientModules,
+      isAuthorizationHydrated: true,
     ),
   );
 }

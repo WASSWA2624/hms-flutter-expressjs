@@ -154,7 +154,7 @@ AccessRequirement roomsBedsSectionTabRequirement(RoomsBedsSection section) {
   return switch (section) {
     RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.tab,
     RoomsBedsSection.available => roomsBedsWorkspaceReadRequirement,
-    RoomsBedsSection.occupied => roomsBedsWorkspaceReadRequirement,
+    RoomsBedsSection.occupied => RoomsBedsOccupiedAtomPermissions.tab,
     RoomsBedsSection.turnover => roomsBedsWorkspaceReadRequirement,
     RoomsBedsSection.outOfService => roomsBedsWorkspaceReadRequirement,
   };
@@ -233,6 +233,78 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement nextAction =
       roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement create = roomsBedsAdminRequirement;
+  static const AccessRequirement update = roomsBedsAdminRequirement;
+  static const AccessRequirement delete = roomsBedsAdminRequirement;
+  static const AccessRequirement write = roomsBedsAdminRequirement;
+  static const AccessRequirement manage = roomsBedsAdminRequirement;
+  static const AccessRequirement createRoom = roomsBedsAdminRequirement;
+  static const AccessRequirement createBed = roomsBedsAdminRequirement;
+  static const AccessRequirement manageCatalog = roomsBedsAdminRequirement;
+  static const AccessRequirement updateBedStatus = roomsBedsAdminRequirement;
+  static const AccessRequirement assign = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement release = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement transfer = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement completeTransfer =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement occupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement navigateCrossModule =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement nestedWrite = roomsBedsAdminRequirement;
+  static const AccessRequirement nestedOccupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement nestedRead = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement entry = roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeUnion =
+      roomsBedsWorkspaceRouteUnionRequirement;
+}
+
+/// Available tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Available tab | navigate | read ∪ clinical\|operations\|facility:admin |
+/// | Create bed (tab primary) | create | admin ∪ unit:manage\|facility/tenant/system |
+/// | Create room (secondary) | create | admin ∪ |
+/// | Manage catalog → setup | navigate / nested write | admin ∪ |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Success snackbar / form validation | feedback | occupancy write ∪ / admin ∪ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Assign | update | occupancy write ∪ |
+/// | Detail Reserve / status mutations | update | admin ∪ |
+/// | Detail Assign | update | occupancy write ∪ |
+/// | Detail Open IPD admission | navigate | _(n/a)_ when admission linked |
+/// | Nested assign dialog | update | occupancy write ∪ |
+/// | Nested create room / bed forms | create | admin ∪ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
+/// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
+///
+/// Matrix create ∩ `unit:manage` alone maps to source admin ∪ (see
+/// [roomsBedsAdminRequirement]). Occupancy is ∪ clinical\|operations write.
+/// Never show admin create to clinical-read-only.
+abstract final class RoomsBedsAvailableAtomPermissions {
+  static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement settings = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement empty = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement loading = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement retry = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement success = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement validation =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;

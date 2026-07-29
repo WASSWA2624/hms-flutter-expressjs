@@ -229,8 +229,13 @@ class _RoomsBedsWorkspaceContentState
       roomsBedsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canAdminBeds = _canAdminBeds(accessPolicy);
-    final bool canIpdWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
+    final RoomsBedsCapabilities capabilities =
+        RoomsBedsCapabilities.fromPolicy(accessPolicy);
+    final bool canAdminBeds = capabilities.canAdminBeds;
+    final bool canIpdWrite = capabilities.canOccupancyWrite;
+    _ensureAuthorizedSection(accessPolicy);
+    final List<RoomsBedsSection> visibleSections =
+        roomsBedsAllowedSections(accessPolicy);
     final AppFailure? lastFailure = state.lastFailure as AppFailure?;
 
     final AppPage<BedBoardItem> sectionPage = roomsBedsSectionFilteredPage(
@@ -285,7 +290,7 @@ class _RoomsBedsWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final RoomsBedsSection section in RoomsBedsSection.values)
+                for (final RoomsBedsSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _roomsBedsSectionIcon(section),
@@ -296,8 +301,7 @@ class _RoomsBedsWorkspaceContentState
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final RoomsBedsSection section
-                    in RoomsBedsSection.values) {
+                for (final RoomsBedsSection section in visibleSections) {
                   if (section.name == tabId) {
                     _handleTabChanged(section);
                     break;
@@ -325,7 +329,8 @@ class _RoomsBedsWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            AppListTable<BedBoardItem>(
+            if (canViewRoomsBedsSection(accessPolicy, _section))
+              AppListTable<BedBoardItem>(
               page: sectionPage,
               isLoading: state.isRefreshing,
               columnVisibilityController: _tableColumnController,
@@ -495,19 +500,21 @@ class _RoomsBedsWorkspaceContentState
     required bool canAdminBeds,
   }) {
     return switch (_section) {
-      RoomsBedsSection.all =>
-        canAdminBeds
-            ? AppTabToolbarPrimary(
-                label: l10n.tenantFacilityAddRoomAction,
-                icon: Icons.meeting_room_outlined,
-                semanticLabel: l10n.tenantFacilityAddRoomAction,
-                tooltip: l10n.tenantFacilityAddRoomAction,
-                enabled: !state.isSaving,
-                onPressed: state.isSaving
-                    ? null
-                    : () => unawaited(_openAddRoomDialog(controller, state)),
-              )
-            : null,
+      RoomsBedsSection.all => AppAccessActionGate(
+        requirement: RoomsBedsAllBedsAtomPermissions.createRoom,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.tenantFacilityAddRoomAction,
+            icon: Icons.meeting_room_outlined,
+            semanticLabel: l10n.tenantFacilityAddRoomAction,
+            tooltip: l10n.tenantFacilityAddRoomAction,
+            enabled: !state.isSaving,
+            onPressed: state.isSaving
+                ? null
+                : () => unawaited(_openAddRoomDialog(controller, state)),
+          );
+        },
+      ),
       RoomsBedsSection.available =>
         canAdminBeds
             ? AppTabToolbarPrimary(
@@ -533,42 +540,57 @@ class _RoomsBedsWorkspaceContentState
     required RoomsBedsWorkspaceState state,
     required bool canAdminBeds,
   }) {
-    if (!canAdminBeds) {
-      return const <Widget>[];
+    AccessRequirement manageCatalogRequirement() {
+      return switch (_section) {
+        RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.manageCatalog,
+        RoomsBedsSection.occupied =>
+          RoomsBedsOccupiedAtomPermissions.manageCatalog,
+        RoomsBedsSection.available ||
+        RoomsBedsSection.turnover ||
+        RoomsBedsSection.outOfService => roomsBedsAdminRequirement,
+      };
     }
-    final AppTabToolbarAction manageCatalog = AppTabToolbarAction(
-      label: l10n.roomsBedsManageCatalogAction,
-      icon: Icons.apartment_outlined,
-      tooltip: l10n.roomsBedsManageCatalogAction,
-      onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+
+    final Widget manageCatalog = AppAccessGate(
+      requirement: manageCatalogRequirement(),
+      child: AppTabToolbarAction(
+        label: l10n.roomsBedsManageCatalogAction,
+        icon: Icons.apartment_outlined,
+        tooltip: l10n.roomsBedsManageCatalogAction,
+        onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+      ),
     );
 
     return switch (_section) {
       RoomsBedsSection.all => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.tenantFacilityAddBedAction,
-          icon: Icons.bed_outlined,
-          tooltip: l10n.tenantFacilityAddBedAction,
-          enabled: !state.isSaving,
-          onPressed: state.isSaving
-              ? null
-              : () => unawaited(_openAddBedDialog(controller, state)),
+        AppAccessGate(
+          requirement: RoomsBedsAllBedsAtomPermissions.createBed,
+          child: AppTabToolbarAction(
+            label: l10n.tenantFacilityAddBedAction,
+            icon: Icons.bed_outlined,
+            tooltip: l10n.tenantFacilityAddBedAction,
+            enabled: !state.isSaving,
+            onPressed: state.isSaving
+                ? null
+                : () => unawaited(_openAddBedDialog(controller, state)),
+          ),
         ),
         manageCatalog,
       ],
       RoomsBedsSection.available => <Widget>[
-        AppTabToolbarAction(
-          label: l10n.tenantFacilityAddRoomAction,
-          icon: Icons.meeting_room_outlined,
-          tooltip: l10n.tenantFacilityAddRoomAction,
-          enabled: !state.isSaving,
-          onPressed: state.isSaving
-              ? null
-              : () => unawaited(_openAddRoomDialog(controller, state)),
-        ),
+        if (canAdminBeds)
+          AppTabToolbarAction(
+            label: l10n.tenantFacilityAddRoomAction,
+            icon: Icons.meeting_room_outlined,
+            tooltip: l10n.tenantFacilityAddRoomAction,
+            enabled: !state.isSaving,
+            onPressed: state.isSaving
+                ? null
+                : () => unawaited(_openAddRoomDialog(controller, state)),
+          ),
         manageCatalog,
       ],
-      RoomsBedsSection.occupied ||
+      RoomsBedsSection.occupied => <Widget>[manageCatalog],
       RoomsBedsSection.turnover ||
       RoomsBedsSection.outOfService => <Widget>[manageCatalog],
     };
@@ -1344,15 +1366,6 @@ Future<void> _updateBedStatus(
       _showFailureIfNeeded(context, failure);
     }
   }
-}
-
-bool _canAdminBeds(AppAccessPolicy accessPolicy) {
-  return accessPolicy.isElevated ||
-      accessPolicy.grantsAny(const <AppPermission>[
-        AppPermissions.tenantAdmin,
-        AppPermissions.facilityAdmin,
-        AppPermissions.systemAdmin,
-      ]);
 }
 
 IconData _roomsBedsSectionIcon(RoomsBedsSection section) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -394,6 +396,55 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.success,
+          radiologyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.validation,
+          radiologyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.printReport,
+          radiologyPrintReportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.assign,
+          radiologyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.releaseReport,
+          radiologyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.billingColumn,
+          radiologyBillingHoldReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.paymentField,
+          radiologyBillingHoldReadRequirement,
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -427,6 +478,7 @@ void main() {
         expect(find.byTooltip('Configurations'), findsNothing);
         expect(find.byTooltip('Orders view'), findsOneWidget);
         expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
@@ -437,6 +489,8 @@ void main() {
         expect(find.byKey(AppDialog.shellKey), findsOneWidget);
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
+        expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
@@ -457,6 +511,7 @@ void main() {
 
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
@@ -468,6 +523,7 @@ void main() {
         expect(find.byTooltip('Request imaging'), findsOneWidget);
         expect(find.byTooltip('Configurations'), findsOneWidget);
         expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
 
         final bool hasBillingChoice =
             (_table(tester).columnChoices ??
@@ -485,12 +541,14 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
+        expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
         expect(
           RadiologyWorklistAtomPermissions.billingHold.isAllowed(
             _radiologyWritePolicy(),
           ),
           isTrue,
         );
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
@@ -522,6 +580,38 @@ void main() {
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
         expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'union route entry: billing:read sees Worklist chrome without create',
+      (WidgetTester tester) async {
+        await _pumpWorklistTab(
+          tester,
+          repository: repository,
+          policy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.billingRead},
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: radiologyWorkflowsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            roles: const <String>['BILLING_CLERK'],
+          ),
+        );
+
+        expect(find.byType(AppTabStrip), findsOneWidget);
+        expect(find.textContaining('Worklist'), findsWidgets);
+        expect(find.byTooltip('Request imaging'), findsNothing);
+        expect(find.byTooltip('Configurations'), findsNothing);
+        expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
@@ -611,6 +701,98 @@ void main() {
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized loading state remains observable', (
+      WidgetTester tester,
+    ) async {
+      final Completer<Result<RadiologyWorkbench>> workbenchCompleter =
+          Completer<Result<RadiologyWorkbench>>();
+      _stubWorkspace(repository);
+      when(
+        () => repository.getWorkbench(any()),
+      ).thenAnswer((_) => workbenchCompleter.future);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/radiology?section=worklist',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/radiology',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: RadiologyWorkspacePage(
+                  initialQuery: RadiologyWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            radiologyRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_radiologyWritePolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      expect(find.text('Loading radiology workspace'), findsOneWidget);
+      expect(find.byTooltip('Request imaging'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      workbenchCompleter.complete(
+        Result<RadiologyWorkbench>.success(
+          RadiologyWorkbench(
+            summary: _summary,
+            orders: AppPage<RadiologyOrder>(
+              items: const <RadiologyOrder>[_worklistOrder],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        ),
+      );
+      when(() => repository.getWorkbench(any())).thenAnswer(
+        (_) async => Result<RadiologyWorkbench>.success(
+          RadiologyWorkbench(
+            summary: _summary,
+            orders: AppPage<RadiologyOrder>(
+              items: const <RadiologyOrder>[_worklistOrder],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Wendy Worklist'), findsOneWidget);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -625,7 +807,39 @@ void main() {
       );
 
       expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     });
+
+    testWidgets(
+      'authorized create validation: empty form keeps dialog open',
+      (WidgetTester tester) async {
+        await _pumpWorklistTab(tester, repository: repository);
+
+        await tester.tap(find.byTooltip('Request imaging'));
+        await tester.pumpAndSettle();
+
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byKey(AppDialog.shellKey)),
+        );
+        final Finder submit = find.descendant(
+          of: find.byType(AppDialog).last,
+          matching: find.widgetWithText(
+            AppButton,
+            l10n.radiologyRequestImagingAction,
+          ),
+        );
+        expect(submit, findsOneWidget);
+        final AppButton submitButton = tester.widget<AppButton>(submit);
+        expect(submitButton.onPressed, isNotNull);
+        submitButton.onPressed!();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(AppDialog.shellKey), findsOneWidget);
+        expect(find.text(l10n.radiologySelectAtLeastOneTestMessage), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+        verifyNever(() => repository.createOrder(any()));
+      },
+    );
 
     testWidgets(
       'post-mutation sync: start imaging updates selected workflow in place',
@@ -674,6 +888,8 @@ void main() {
         verify(() => repository.startOrder(any(), any())).called(1);
         expect(find.byKey(AppDialog.shellKey), findsOneWidget);
         expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
+        expect(find.text(l10n.radiologySavedMessage), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
@@ -791,6 +1007,66 @@ void main() {
         RadiologyWorklistAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
+      expect(canEnterRadiologyWorkspace(noModule), isFalse);
     });
+
+    test('ABAC facility still evaluates Worklist when facility is present', () {
+      final AppAccessPolicy withFacility = _policyFor(
+        permissions: <AppPermission>{AppPermissions.radiologyRead},
+      );
+      expect(
+        RadiologyWorklistAtomPermissions.tab.isAllowed(withFacility),
+        isTrue,
+      );
+      expect(canViewRadiologyWorklistTab(withFacility), isTrue);
+      expect(
+        RadiologyWorklistAtomPermissions.catalogEntry.isAllowed(withFacility),
+        isTrue,
+      );
+    });
+
+    test('catalog entry requires facility context', () {
+      final AppAccessPolicy noFacility = _policyFor(
+        permissions: <AppPermission>{AppPermissions.radiologyRead},
+        facilityId: null,
+      );
+      expect(
+        RadiologyWorklistAtomPermissions.catalogEntry.isAllowed(noFacility),
+        isFalse,
+      );
+      // Tab chrome ∩ does not require facility; catalog entry does.
+      expect(canViewRadiologyWorklistTab(noFacility), isTrue);
+      expect(
+        RadiologyWorklistAtomPermissions.write.isAllowed(
+          _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.radiologyRead,
+              AppPermissions.radiologyWrite,
+            },
+            facilityId: null,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'nested cross-module _(n/a)_: Worklist write does not grant billing hold',
+      () {
+        final AppAccessPolicy writer = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        );
+        expect(RadiologyWorklistAtomPermissions.write.isAllowed(writer), isTrue);
+        expect(
+          RadiologyWorklistAtomPermissions.billingHold.isAllowed(writer),
+          isFalse,
+        );
+        expect(writer.grants(AppPermissions.billingRead), isFalse);
+        expect(writer.grants(AppPermissions.clinicalWrite), isFalse);
+      },
+    );
   });
 }
