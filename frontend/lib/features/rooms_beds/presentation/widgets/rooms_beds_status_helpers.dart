@@ -286,6 +286,7 @@ typedef RoomsBedsNextActionCellBuilder =
 List<AppListTableColumn<BedBoardItem>> roomsBedsBedBoardColumns({
   required AppLocalizations l10n,
   required RoomsBedsNextActionCellBuilder nextActionCellBuilder,
+  bool includeNextAction = true,
 }) {
   return <AppListTableColumn<BedBoardItem>>[
     AppListTableColumn<BedBoardItem>(
@@ -339,18 +340,19 @@ List<AppListTableColumn<BedBoardItem>> roomsBedsBedBoardColumns({
         );
       },
     ),
-    AppListTableColumn<BedBoardItem>(
-      id: 'next_action',
-      label: l10n.roomsBedsNextActionColumnLabel,
-      alwaysVisible: true,
-      sortComparator: (BedBoardItem left, BedBoardItem right) {
-        return appListTableCompareText(
-          roomsBedsPrimaryNextActionLabel(l10n, left),
-          roomsBedsPrimaryNextActionLabel(l10n, right),
-        );
-      },
-      cellBuilder: nextActionCellBuilder,
-    ),
+    if (includeNextAction)
+      AppListTableColumn<BedBoardItem>(
+        id: 'next_action',
+        label: l10n.roomsBedsNextActionColumnLabel,
+        alwaysVisible: true,
+        sortComparator: (BedBoardItem left, BedBoardItem right) {
+          return appListTableCompareText(
+            roomsBedsPrimaryNextActionLabel(l10n, left),
+            roomsBedsPrimaryNextActionLabel(l10n, right),
+          );
+        },
+        cellBuilder: nextActionCellBuilder,
+      ),
   ];
 }
 

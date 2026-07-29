@@ -645,6 +645,40 @@ void main() {
     );
 
     testWidgets(
+      'subscription strip UI: without billing-payments Payment gate collapses',
+      (WidgetTester tester) async {
+        await _pumpPaymentGateTab(
+          tester,
+          opdRepository: opdRepository,
+          billingRepository: billingRepository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+          initialLocation: '/reception',
+        );
+
+        expect(find.textContaining('Payment gate'), findsNothing);
+        expect(find.text('Penny Payment'), findsNothing);
+        expect(find.text('Receive payment'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
       '∪ allowance: route entry last_office:read keeps shell; tab stays hidden',
       (WidgetTester tester) async {
         await _pumpPaymentGateTab(

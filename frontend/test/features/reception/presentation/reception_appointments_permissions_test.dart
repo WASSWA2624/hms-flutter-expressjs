@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -332,6 +333,13 @@ void main() {
       );
       expect(
         identical(
+          ReceptionAppointmentsAtomPermissions.catalogEntry,
+          RouteAccessCatalog.receptionEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           receptionDeskSectionRequirement(ReceptionDeskSection.appointments),
           ReceptionAppointmentsAtomPermissions.tab,
         ),
@@ -451,6 +459,29 @@ void main() {
       expect(canViewReceptionAppointments(noModule), isFalse);
       expect(
         ReceptionAppointmentsAtomPermissions.schedule.isAllowed(noModule),
+        isFalse,
+      );
+    });
+
+    test('subscription strip: patient-registry required for Appointments tab', () {
+      final AppAccessPolicy noPatientRegistry = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'scheduling-queue',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ReceptionAppointmentsAtomPermissions.tab.isAllowed(noPatientRegistry),
+        isFalse,
+      );
+      expect(
+        ReceptionAppointmentsAtomPermissions.create.isAllowed(noPatientRegistry),
         isFalse,
       );
     });
@@ -653,6 +684,33 @@ void main() {
       expect(find.text('Start OPD encounter'), findsWidgets);
     });
 
+    testWidgets('desktop light theme: writer mutations mount; reader mutations absent', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAppointmentsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Schedule appointment'), findsOneWidget);
+      expect(find.text('Register patient'), findsOneWidget);
+      expect(find.text('Start OPD encounter'), findsWidgets);
+
+      await _pumpAppointmentsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readerPolicy(),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Schedule appointment'), findsNothing);
+      expect(find.text('Register patient'), findsNothing);
+      expect(find.text('Start OPD encounter'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
     testWidgets('post-mutation sync path: Check in opens encounter dialog', (
       WidgetTester tester,
     ) async {
@@ -670,6 +728,38 @@ void main() {
       expect(find.byType(OpdEncounterDialog), findsOneWidget);
       expect(find.text('APPOINTMENT ACTIONS'), findsNothing);
     });
+
+    testWidgets(
+      'post-mutation sync: hub Reschedule success path uses front-desk gate',
+      (WidgetTester tester) async {
+        await _pumpAppointmentsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Ada Appointment'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ReceptionAppointmentActionsDialog), findsOneWidget);
+        final OpdAppointmentActionsDialog hub = tester
+            .widget<OpdAppointmentActionsDialog>(
+              find.byType(OpdAppointmentActionsDialog),
+            );
+        expect(
+          hub.actionRequirement,
+          same(ReceptionAppointmentsAtomPermissions.frontDesk),
+        );
+        expect(find.text('Reschedule'), findsOneWidget);
+        expect(find.text('Cancel appointment'), findsOneWidget);
+
+        // Close without mutating — list remains; refresh runs only on success.
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(find.text('Ada Appointment'), findsOneWidget);
+        expect(find.byType(ReceptionAppointmentActionsDialog), findsNothing);
+      },
+    );
 
     testWidgets('integration: section=appointments deep link selects tab', (
       WidgetTester tester,

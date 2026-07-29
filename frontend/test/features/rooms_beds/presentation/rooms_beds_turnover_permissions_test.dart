@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
@@ -52,6 +53,36 @@ const RoomProfile _room = RoomProfile(
   floor: '1',
 );
 
+const BedProfile _cleaningBed = BedProfile(
+  id: 'BED-CLEANING',
+  tenantId: 'TEN-001',
+  facilityId: 'FAC-001',
+  wardId: 'WRD-001',
+  roomId: 'RM-001',
+  label: 'Bed C1',
+  status: BedSetupStatus.cleaning,
+);
+
+const BedProfile _reservedBed = BedProfile(
+  id: 'BED-RESERVED',
+  tenantId: 'TEN-001',
+  facilityId: 'FAC-001',
+  wardId: 'WRD-001',
+  roomId: 'RM-001',
+  label: 'Bed R1',
+  status: BedSetupStatus.reserved,
+);
+
+const BedProfile _maintenanceBed = BedProfile(
+  id: 'BED-MAINT',
+  tenantId: 'TEN-001',
+  facilityId: 'FAC-001',
+  wardId: 'WRD-001',
+  roomId: 'RM-001',
+  label: 'Bed M1',
+  status: BedSetupStatus.maintenance,
+);
+
 const BedProfile _availableBed = BedProfile(
   id: 'BED-AVAILABLE',
   tenantId: 'TEN-001',
@@ -60,23 +91,6 @@ const BedProfile _availableBed = BedProfile(
   roomId: 'RM-001',
   label: 'Bed A1',
   status: BedSetupStatus.available,
-);
-
-const BedProfile _occupiedBed = BedProfile(
-  id: 'BED-OCCUPIED',
-  tenantId: 'TEN-001',
-  facilityId: 'FAC-001',
-  wardId: 'WRD-001',
-  roomId: 'RM-001',
-  label: 'Bed O1',
-  status: BedSetupStatus.occupied,
-);
-
-const BedAssignmentRecord _activeAssignment = BedAssignmentRecord(
-  id: 'ASN-1',
-  admissionId: 'ADM-100',
-  bedId: 'BED-OCCUPIED',
-  admissionDisplayId: 'IPD-100',
 );
 
 const List<AppModuleEntitlement> _inpatientModules = <AppModuleEntitlement>[
@@ -90,7 +104,12 @@ const List<AppModuleEntitlement> _inpatientModules = <AppModuleEntitlement>[
 ];
 
 FacilitySetupSnapshot _snapshot({
-  List<BedProfile> beds = const <BedProfile>[_availableBed, _occupiedBed],
+  List<BedProfile> beds = const <BedProfile>[
+    _cleaningBed,
+    _reservedBed,
+    _maintenanceBed,
+    _availableBed,
+  ],
 }) {
   return FacilitySetupSnapshot(
     tenant: const TenantProfile(id: 'TEN-001', name: 'Tenant'),
@@ -191,19 +210,11 @@ void _stubRepository(_MockRoomsBedsRepository repository) {
   when(
     () => repository.loadSetup(facilityId: any(named: 'facilityId')),
   ).thenAnswer((_) async => Result<FacilitySetupSnapshot>.success(_snapshot()));
-  when(() => repository.listBedAssignmentsForBed(any())).thenAnswer((
-    Invocation invocation,
-  ) async {
-    final String bedId = invocation.positionalArguments.single as String;
-    if (bedId == _occupiedBed.id) {
-      return const Result<List<BedAssignmentRecord>>.success(
-        <BedAssignmentRecord>[_activeAssignment],
-      );
-    }
-    return const Result<List<BedAssignmentRecord>>.success(
+  when(() => repository.listBedAssignmentsForBed(any())).thenAnswer(
+    (_) async => const Result<List<BedAssignmentRecord>>.success(
       <BedAssignmentRecord>[],
-    );
-  });
+    ),
+  );
   when(
     () => repository.loadAdmissionContext(any()),
   ).thenAnswer(
@@ -224,7 +235,9 @@ void _stubRepository(_MockRoomsBedsRepository repository) {
     ),
   ).thenAnswer(
     (Invocation invocation) async => Result<BedProfile>.success(
-      invocation.namedArguments[#bed] as BedProfile,
+      (invocation.namedArguments[#bed] as BedProfile).copyWith(
+        status: invocation.namedArguments[#status] as BedSetupStatus,
+      ),
     ),
   );
 }
@@ -245,13 +258,13 @@ Finder _toolbarAction(String label) => find.descendant(
   ),
 );
 
-Future<void> _pumpAllBedsTab(
+Future<void> _pumpTurnoverTab(
   WidgetTester tester, {
   required _MockRoomsBedsRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/rooms-beds',
+  String initialLocation = '/rooms-beds?section=turnover',
   bool stubRepository = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -276,6 +289,12 @@ Future<void> _pumpAllBedsTab(
               initialQuery: RoomsBedsQuery.fromUri(state.uri),
             ),
           );
+        },
+      ),
+      GoRoute(
+        path: '/operations',
+        builder: (BuildContext context, GoRouterState state) {
+          return const Scaffold(body: Text('Operations destination'));
         },
       ),
     ],
@@ -310,7 +329,7 @@ void main() {
   late _MockRoomsBedsRepository repository;
 
   setUpAll(() {
-    registerFallbackValue(_availableBed);
+    registerFallbackValue(_cleaningBed);
     registerFallbackValue(BedSetupStatus.available);
   });
 
@@ -318,144 +337,176 @@ void main() {
     repository = _MockRoomsBedsRepository();
   });
 
-  test('All beds atom helpers reuse AccessRequirement vocabulary', () {
+  test('Turnover atom helpers reuse AccessRequirement vocabulary', () {
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.tab,
+        RoomsBedsTurnoverAtomPermissions.tab,
         roomsBedsWorkspaceReadRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.createRoom,
+        RoomsBedsTurnoverAtomPermissions.manageCatalog,
         roomsBedsAdminRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.assign,
+        RoomsBedsTurnoverAtomPermissions.markAvailable,
+        roomsBedsAdminRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        RoomsBedsTurnoverAtomPermissions.assign,
         roomsBedsOccupancyWriteRequirement,
       ),
       isTrue,
     );
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.routeEntry,
+        RoomsBedsTurnoverAtomPermissions.openOperations,
+        roomsBedsNavigationRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        RoomsBedsTurnoverAtomPermissions.routeEntry,
         RouteAccessCatalog.roomsBedsEntry,
       ),
       isTrue,
     );
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.routeUnion,
+        RoomsBedsTurnoverAtomPermissions.routeUnion,
         roomsBedsWorkspaceRouteUnionRequirement,
       ),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.tab.anyPermissions,
+      roomsBedsSectionTabRequirement(RoomsBedsSection.turnover),
+      same(RoomsBedsTurnoverAtomPermissions.tab),
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.tab.anyPermissions,
       containsAll(<AppPermission>[
         AppPermissions.clinicalRead,
         AppPermissions.operationsRead,
         AppPermissions.facilityAdmin,
       ]),
     );
-    expect(
-      RoomsBedsAllBedsAtomPermissions.create.anyPermissions,
-      containsAll(<AppPermission>[
-        AppPermissions.unitManage,
-        AppPermissions.facilityAdmin,
-        AppPermissions.tenantAdmin,
-        AppPermissions.systemAdmin,
-      ]),
-    );
-    expect(
-      RoomsBedsAllBedsAtomPermissions.occupancyWrite.anyPermissions,
-      containsAll(<AppPermission>[
-        AppPermissions.clinicalWrite,
-        AppPermissions.operationsWrite,
-      ]),
-    );
     // Matrix ∩ unit:manage alone maps to source admin ∪ (not a second map).
     expect(
       identical(
-        RoomsBedsAllBedsAtomPermissions.create,
+        RoomsBedsTurnoverAtomPermissions.create,
         roomsBedsWorkspaceCreateRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        RoomsBedsTurnoverAtomPermissions.update,
+        roomsBedsWorkspaceUpdateRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        RoomsBedsTurnoverAtomPermissions.delete,
+        roomsBedsWorkspaceDeleteRequirement,
       ),
       isTrue,
     );
   });
 
   test('read ∪ allowance: clinical or operations or facility admin', () {
-    expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_readerPolicy()), isTrue);
     expect(
-      RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_operationsReaderPolicy()),
+      RoomsBedsTurnoverAtomPermissions.tab.isAllowed(_readerPolicy()),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.tab.isAllowed(_facilityAdminPolicy()),
+      RoomsBedsTurnoverAtomPermissions.tab.isAllowed(_operationsReaderPolicy()),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.create.isAllowed(_readerPolicy()),
+      RoomsBedsTurnoverAtomPermissions.tab.isAllowed(_facilityAdminPolicy()),
+      isTrue,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(_readerPolicy()),
       isFalse,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(_readerPolicy()),
+      RoomsBedsTurnoverAtomPermissions.manageCatalog.isAllowed(_readerPolicy()),
+      isFalse,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.assign.isAllowed(_readerPolicy()),
       isFalse,
     );
   });
 
-  test('admin ∪: unit:manage alone (with modules) unlocks create', () {
+  test('admin ∪: unit:manage alone unlocks mark-available / catalog', () {
     final AppAccessPolicy unitManager = _unitManageOnlyPolicy();
-    expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(unitManager), isTrue);
-    expect(canAdminRoomsBeds(unitManager), isTrue);
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(unitManager),
+      RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(unitManager),
+      isTrue,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.manageCatalog.isAllowed(unitManager),
+      isTrue,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.assign.isAllowed(unitManager),
       isFalse,
     );
   });
 
   test('subscription strip: facility admin without inpatient module denied', () {
     final AppAccessPolicy stripped = _adminWithoutModulePolicy();
-    expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(stripped), isFalse);
-    expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(stripped), isFalse);
-    expect(canAdminRoomsBeds(stripped), isFalse);
+    expect(RoomsBedsTurnoverAtomPermissions.tab.isAllowed(stripped), isFalse);
+    expect(
+      RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(stripped),
+      isFalse,
+    );
+    expect(canViewRoomsBedsSection(stripped, RoomsBedsSection.turnover), isFalse);
   });
 
   test('occupancy write ∪: clinical:write or operations:write', () {
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(_occupancyWriterPolicy()),
+      RoomsBedsTurnoverAtomPermissions.assign.isAllowed(_occupancyWriterPolicy()),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.assign.isAllowed(_operationsWriterPolicy()),
+      RoomsBedsTurnoverAtomPermissions.assign.isAllowed(_operationsWriterPolicy()),
       isTrue,
     );
     expect(
-      RoomsBedsAllBedsAtomPermissions.create.isAllowed(_occupancyWriterPolicy()),
+      RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(
+        _occupancyWriterPolicy(),
+      ),
+      isFalse,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(
+        _operationsWriterPolicy(),
+      ),
       isFalse,
     );
   });
 
-  test('next-action helpers honor occupancy / admin flags', () {
+  test('next-action helpers: mark available admin; open operations navigate', () {
     expect(
       roomsBedsNextActionShouldRender(
-        kind: RoomsBedsNextActionKind.assign,
-        canAdminBeds: false,
-        canIpdWrite: false,
-      ),
-      isFalse,
-    );
-    expect(
-      roomsBedsNextActionShouldRender(
-        kind: RoomsBedsNextActionKind.assign,
+        kind: RoomsBedsNextActionKind.markAvailable,
         canAdminBeds: false,
         canIpdWrite: true,
       ),
-      isTrue,
+      isFalse,
     );
     expect(
       roomsBedsNextActionShouldRender(
@@ -465,77 +516,101 @@ void main() {
       ),
       isTrue,
     );
+    expect(
+      roomsBedsNextActionShouldRender(
+        kind: RoomsBedsNextActionKind.openOperations,
+        canAdminBeds: false,
+        canIpdWrite: false,
+      ),
+      isTrue,
+    );
+    expect(
+      roomsBedsPrimaryNextActionKind(
+        const BedBoardItem(bed: _cleaningBed),
+      ),
+      RoomsBedsNextActionKind.markAvailable,
+    );
+    expect(
+      roomsBedsPrimaryNextActionKind(
+        const BedBoardItem(bed: _maintenanceBed),
+      ),
+      RoomsBedsNextActionKind.openOperations,
+    );
   });
 
   testWidgets(
-    'clinical-read ∩ denial: list visible; Create room / Assign absent',
+    'clinical-read ∩ denial: turnover list visible; Mark available / catalog absent',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _readerPolicy();
-      expect(RoomsBedsAllBedsAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(RoomsBedsTurnoverAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(
+        RoomsBedsTurnoverAtomPermissions.markAvailable.isAllowed(reader),
+        isFalse,
+      );
 
-      await _pumpAllBedsTab(
+      await _pumpTurnoverTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
-      expect(find.text('Bed A1'), findsWidgets);
-      expect(find.text('All beds'), findsWidgets);
+      expect(find.text('Turnover'), findsWidgets);
+      expect(find.text('Bed C1'), findsWidgets);
+      expect(find.text('Bed R1'), findsWidgets);
+      expect(find.text('Bed M1'), findsWidgets);
+      expect(find.text('Bed A1'), findsNothing);
       expect(_toolbarPrimary('Create room'), findsNothing);
-      expect(_toolbarAction('Create bed'), findsNothing);
+      expect(_toolbarPrimary('Create bed'), findsNothing);
       expect(_toolbarAction('Manage catalog'), findsNothing);
-      expect(find.text('Assign bed'), findsNothing);
-      expect(find.bySemanticsLabel('Assign bed'), findsNothing);
+      expect(find.text('Mark available'), findsNothing);
+      expect(find.bySemanticsLabel('Mark available'), findsNothing);
+      expect(find.text('Open operations'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'facility-admin ∪: Create room / Create bed / Manage catalog present',
+    'facility-admin ∪: Manage catalog + Mark available present; create primary null',
     (WidgetTester tester) async {
       final AppAccessPolicy admin = _facilityAdminPolicy();
-      expect(RoomsBedsAllBedsAtomPermissions.create.isAllowed(admin), isTrue);
+      expect(
+        RoomsBedsTurnoverAtomPermissions.manageCatalog.isAllowed(admin),
+        isTrue,
+      );
 
-      await _pumpAllBedsTab(
+      await _pumpTurnoverTab(
         tester,
         repository: repository,
         accessPolicy: admin,
       );
 
-      expect(_toolbarPrimary('Create room'), findsOneWidget);
-      expect(_toolbarAction('Create bed'), findsOneWidget);
       expect(_toolbarAction('Manage catalog'), findsOneWidget);
-      expect(find.text('Assign bed'), findsNothing);
+      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(_toolbarPrimary('Create bed'), findsNothing);
+      expect(find.text('Mark available'), findsWidgets);
+      expect(find.text('Open operations'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'occupancy write ∪: Assign next-action mounts; Create room absent',
+    'occupancy write ∪: Mark available / catalog absent; Open operations remains',
     (WidgetTester tester) async {
-      await _pumpAllBedsTab(
+      await _pumpTurnoverTab(
         tester,
         repository: repository,
         accessPolicy: _occupancyWriterPolicy(),
       );
 
-      expect(_toolbarPrimary('Create room'), findsNothing);
-      expect(find.text('Assign bed'), findsWidgets);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
+      expect(find.text('Mark available'), findsNothing);
+      expect(find.text('Open operations'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.text('Bed A1').first);
+      await tester.tap(find.text('Bed C1').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      // Primary next-action twin is omitted in detail; transfer write remains.
-      expect(
-        find.descendant(
-          of: find.byType(AppDialog),
-          matching: find.text('Request transfer'),
-        ),
-        findsOneWidget,
-      );
       expect(
         find.descendant(
           of: find.byType(AppDialog),
@@ -543,99 +618,93 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.textContaining('no access'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Assign bed'),
+        ),
+        findsWidgets,
+      );
     },
   );
 
   testWidgets(
-    'operations:write ∪ also unlocks Assign without clinical:write',
+    'operations:write ∪ also keeps Mark available absent on turnover',
     (WidgetTester tester) async {
-      await _pumpAllBedsTab(
+      await _pumpTurnoverTab(
         tester,
         repository: repository,
         accessPolicy: _operationsWriterPolicy(),
       );
 
-      expect(find.text('Assign bed'), findsWidgets);
-      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(find.text('Mark available'), findsNothing);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
+      expect(find.text('Open operations'), findsWidgets);
     },
   );
 
-  testWidgets('authorized assign dialog mounts and submit syncs list', (
+  testWidgets('authorized mark-available succeeds and syncs list', (
     WidgetTester tester,
   ) async {
-    await _pumpAllBedsTab(
+    await _pumpTurnoverTab(
       tester,
       repository: repository,
-      accessPolicy: _occupancyWriterPolicy(),
+      accessPolicy: _facilityAdminPolicy(),
     );
 
-    await tester.tap(find.bySemanticsLabel('Assign bed').first);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AppDialog), findsOneWidget);
-    final Finder admissionField = find.descendant(
-      of: find.byType(AppDialog),
-      matching: find.byType(TextFormField),
-    );
-    expect(admissionField, findsOneWidget);
-    await tester.enterText(admissionField, 'ADM-200');
-    await tester.pump();
-
-    await tester.tap(
-      find.descendant(
-        of: find.byType(AppDialog),
-        matching: find.widgetWithText(AppButton, 'Assign bed'),
-      ),
-    );
+    await tester.tap(find.text('Mark available').first);
     await tester.pumpAndSettle();
 
     verify(
-      () => repository.assignBed(admissionId: 'ADM-200', bedId: 'BED-AVAILABLE'),
-    ).called(1);
-    // Occupancy mutations sync board state in-memory (no second loadSetup).
-    expect(find.byType(AppDialog), findsNothing);
-    expect(find.textContaining('Rooms and beds updated'), findsOneWidget);
-    expect(find.textContaining('no access'), findsNothing);
+      () => repository.updateBedStatus(
+        bed: any(named: 'bed'),
+        status: BedSetupStatus.available,
+      ),
+    ).called(greaterThanOrEqualTo(1));
+    verify(
+      () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+    ).called(greaterThan(1));
   });
 
-  testWidgets('mobile viewport: read chrome present, create absent for reader', (
+  testWidgets('mobile viewport: read chrome present, admin writes absent', (
     WidgetTester tester,
   ) async {
-    await _pumpAllBedsTab(
+    await _pumpTurnoverTab(
       tester,
       repository: repository,
       accessPolicy: _readerPolicy(),
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.text('Bed A1'), findsWidgets);
-    expect(_toolbarPrimary('Create room'), findsNothing);
-    expect(find.bySemanticsLabel('Assign bed'), findsNothing);
+    expect(find.text('Bed C1'), findsWidgets);
+    expect(find.text('Turnover'), findsWidgets);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
+    expect(find.bySemanticsLabel('Mark available'), findsNothing);
   });
 
-  testWidgets('desktop dark theme: admin create remains visible', (
+  testWidgets('desktop dark theme: admin mark-available remains visible', (
     WidgetTester tester,
   ) async {
-    await _pumpAllBedsTab(
+    await _pumpTurnoverTab(
       tester,
       repository: repository,
       accessPolicy: _facilityAdminPolicy(),
       themeMode: ThemeMode.dark,
     );
 
-    expect(_toolbarPrimary('Create room'), findsOneWidget);
-    expect(find.text('Bed A1'), findsWidgets);
+    expect(find.text('Mark available'), findsWidgets);
+    expect(_toolbarAction('Manage catalog'), findsOneWidget);
+    expect(find.text('Bed C1'), findsWidgets);
   });
 
-  testWidgets('empty list state remains for authorized reader', (
+  testWidgets('empty turnover list state remains for authorized reader', (
     WidgetTester tester,
   ) async {
     when(
       () => repository.loadSetup(facilityId: any(named: 'facilityId')),
     ).thenAnswer(
       (_) async => Result<FacilitySetupSnapshot>.success(
-        _snapshot(beds: const <BedProfile>[]),
+        _snapshot(beds: const <BedProfile>[_availableBed]),
       ),
     );
     when(() => repository.listBedAssignmentsForBed(any())).thenAnswer(
@@ -643,15 +712,36 @@ void main() {
         <BedAssignmentRecord>[],
       ),
     );
+    when(
+      () => repository.loadAdmissionContext(any()),
+    ).thenAnswer(
+      (_) async => const Result<BedAdmissionContext>.success(
+        BedAdmissionContext(admissionId: 'ADM-100'),
+      ),
+    );
 
-    await _pumpAllBedsTab(
+    await _pumpTurnoverTab(
       tester,
       repository: repository,
       accessPolicy: _readerPolicy(),
       stubRepository: false,
     );
 
-    expect(find.text('No beds found'), findsOneWidget);
-    expect(_toolbarPrimary('Create room'), findsNothing);
+    expect(find.textContaining('No beds'), findsOneWidget);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
+  });
+
+  testWidgets('nested cross-module write entry points stay n/a absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTurnoverTab(
+      tester,
+      repository: repository,
+      accessPolicy: _readerPolicy(),
+    );
+
+    expect(find.text('Create room'), findsNothing);
+    expect(find.text('Create bed'), findsNothing);
+    expect(RoomsBedsTurnoverAtomPermissions.nestedWrite.isAllowed(_readerPolicy()), isFalse);
   });
 }

@@ -1908,6 +1908,9 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _scheduleAppointment() async {
+    if (!_stripWriteRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+      return;
+    }
     final bool scheduled = await openReceptionScheduleAppointment(
       context: context,
       ref: ref,
@@ -1918,6 +1921,7 @@ class _ReceptionWorkspaceContentState
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    await _refreshWorkspace();
   }
 
   Future<void> _runAppointmentNextAction(
@@ -1926,6 +1930,11 @@ class _ReceptionWorkspaceContentState
   ) async {
     final OpdAppointment? appointment = row.appointment;
     if (appointment == null) {
+      return;
+    }
+    if (!ReceptionAppointmentsAtomPermissions.nextAction.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    )) {
       return;
     }
 
@@ -1964,6 +1973,11 @@ class _ReceptionWorkspaceContentState
 
   /// Check-in without the appointment hub shell (matches reception hub path).
   Future<bool?> _checkInAppointment(OpdAppointment appointment) async {
+    if (!ReceptionAppointmentsAtomPermissions.checkIn.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    )) {
+      return null;
+    }
     final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
       context: context,
       dialog: buildOpdWorkspaceEncounterDialog(
@@ -2015,6 +2029,11 @@ class _ReceptionWorkspaceContentState
       return;
     }
     if (row.appointment != null) {
+      if (!ReceptionAppointmentsAtomPermissions.rowSelect.isAllowed(
+        ref.read(appAccessPolicyProvider),
+      )) {
+        return;
+      }
       final bool? changed = await showReceptionAppointmentActionsDialog(
         context: context,
         appointment: row.appointment!,
@@ -2073,6 +2092,9 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openRegisterPatient() async {
+    if (!_stripWriteRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+      return;
+    }
     final AsyncValue<Result<PatientRegistryState>> registryAsync = ref.read(
       patientRegistryControllerProvider,
     );

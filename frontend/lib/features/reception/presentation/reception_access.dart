@@ -247,6 +247,7 @@ bool receptionAppointmentsShowsNextActionColumn(AppAccessPolicy policy) {
 /// | Nested encounter dialog (check-in) | create | source front-desk ([checkIn]) |
 /// | Nested billing / clinical panels | nested write | _(n/a)_ — hub strips them |
 /// | Route entry (deep link) | navigate | ∪ patient:read \| last_office:read |
+/// | Catalog route entry ∩ reception:read | navigate | ([catalogEntry]) |
 abstract final class ReceptionAppointmentsAtomPermissions {
   static const AccessRequirement tab = receptionSchedulingReadRequirement;
   static const AccessRequirement listChrome = receptionSchedulingReadRequirement;
@@ -296,6 +297,7 @@ abstract final class ReceptionAppointmentsAtomPermissions {
   static const AccessRequirement entry = receptionWorkspaceRequirement;
   static const AccessRequirement routeEntry = receptionWorkspaceRequirement;
   static const AccessRequirement routeEntryUnion = receptionWorkspaceRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.receptionEntry;
 }
 
 /// Desk queue tab atom → permission mapping (inventory + matrix).

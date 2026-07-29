@@ -155,8 +155,8 @@ AccessRequirement roomsBedsSectionTabRequirement(RoomsBedsSection section) {
     RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.tab,
     RoomsBedsSection.available => RoomsBedsAvailableAtomPermissions.tab,
     RoomsBedsSection.occupied => RoomsBedsOccupiedAtomPermissions.tab,
-    RoomsBedsSection.turnover => roomsBedsWorkspaceReadRequirement,
-    RoomsBedsSection.outOfService => roomsBedsWorkspaceReadRequirement,
+    RoomsBedsSection.turnover => RoomsBedsTurnoverAtomPermissions.tab,
+    RoomsBedsSection.outOfService => RoomsBedsOutOfServiceAtomPermissions.tab,
   };
 }
 
@@ -332,4 +332,256 @@ abstract final class RoomsBedsAvailableAtomPermissions {
       roomsBedsWorkspaceEntryRequirement;
   static const AccessRequirement routeUnion =
       roomsBedsWorkspaceRouteUnionRequirement;
+}
+
+/// Occupied tab atom → permission mapping (inventory + matrix).
+///
+/// Target: `/rooms-beds?section=occupied`. Release / transfer for occupancy
+/// writers; bed-admin create room/bed is not a strip primary on this tab.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Occupied tab | navigate | read ∪ clinical\|operations\|facility:admin |
+/// | Tab primary | — | none (null) |
+/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Success snackbar / form validation | feedback | occupancy write ∪ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Release | update | occupancy write ∪ |
+/// | Next action Manage / complete transfer | update | occupancy write ∪ |
+/// | Next action Assign / Mark available | update | occupancy write ∪ / admin ∪ (not primary on occupied) |
+/// | Detail info / assignment history | read | read ∪ |
+/// | Detail Open IPD admission | navigate | _(n/a)_ board readers |
+/// | Detail Release / Request transfer / Manage transfer | update | occupancy write ∪ |
+/// | Detail Assign / status mutations | update | occupancy write ∪ / admin ∪ |
+/// | Nested release / transfer dialogs | update | occupancy write ∪ |
+/// | Nested create room / bed (via catalog) | create | admin ∪ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
+/// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
+///
+/// Matrix create/update/delete ∩ `unit:manage` alone maps to source admin ∪
+/// ([roomsBedsAdminRequirement]). Occupancy write is ∪ `clinical:write` |
+/// `operations:write` + module.
+abstract final class RoomsBedsOccupiedAtomPermissions {
+  static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement settings = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement pagination = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement empty = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement loading = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement retry = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement success = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement validation =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement create = roomsBedsAdminRequirement;
+  static const AccessRequirement update = roomsBedsAdminRequirement;
+  static const AccessRequirement delete = roomsBedsAdminRequirement;
+  static const AccessRequirement write = roomsBedsAdminRequirement;
+  static const AccessRequirement manage = roomsBedsAdminRequirement;
+  static const AccessRequirement createRoom = roomsBedsAdminRequirement;
+  static const AccessRequirement createBed = roomsBedsAdminRequirement;
+  static const AccessRequirement manageCatalog = roomsBedsAdminRequirement;
+  static const AccessRequirement updateBedStatus = roomsBedsAdminRequirement;
+  static const AccessRequirement assign = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement release = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement transfer = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement completeTransfer =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement occupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement navigateCrossModule =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement nestedWrite = roomsBedsAdminRequirement;
+  static const AccessRequirement nestedOccupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement nestedRead = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement entry = roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeUnion =
+      roomsBedsWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.roomsBedsEntry;
+}
+
+/// Turnover tab atom → permission mapping (inventory + matrix).
+///
+/// Target: `/rooms-beds?section=turnover`. Housekeeping turnover
+/// (reserved / cleaning / maintenance). operations:write may apply via
+/// occupancy write ∪; bed status mutations use admin ∪.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Turnover tab | navigate | read ∪ clinical\|operations\|facility:admin |
+/// | Tab primary | — | none (null) |
+/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Success snackbar / form validation | feedback | admin ∪ / occupancy write ∪ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Mark available (reserved/cleaning) | update | admin ∪ |
+/// | Next action Open operations (maintenance) | navigate | _(n/a)_ board readers |
+/// | Detail info / assignment history | read | read ∪ |
+/// | Detail status mutations (available/clean/maintain/block) | update | admin ∪ |
+/// | Detail Assign / Release / Transfer | update | occupancy write ∪ |
+/// | Detail Open housekeeping / operations | navigate | admin chrome (existing) |
+/// | Nested occupancy dialogs | update | occupancy write ∪ |
+/// | Nested create room / bed (via catalog) | create | admin ∪ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
+/// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
+///
+/// Matrix create/update/delete ∩ `unit:manage` alone maps to source admin ∪
+/// ([roomsBedsAdminRequirement]). Occupancy write is ∪ `clinical:write` |
+/// `operations:write` + module. Never show admin create to clinical-read-only.
+abstract final class RoomsBedsTurnoverAtomPermissions {
+  static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement settings = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement pagination = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement empty = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement loading = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement retry = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement success = roomsBedsAdminRequirement;
+  static const AccessRequirement validation = roomsBedsAdminRequirement;
+  static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement create = roomsBedsAdminRequirement;
+  static const AccessRequirement update = roomsBedsAdminRequirement;
+  static const AccessRequirement delete = roomsBedsAdminRequirement;
+  static const AccessRequirement write = roomsBedsAdminRequirement;
+  static const AccessRequirement manage = roomsBedsAdminRequirement;
+  static const AccessRequirement createRoom = roomsBedsAdminRequirement;
+  static const AccessRequirement createBed = roomsBedsAdminRequirement;
+  static const AccessRequirement manageCatalog = roomsBedsAdminRequirement;
+  static const AccessRequirement updateBedStatus = roomsBedsAdminRequirement;
+  static const AccessRequirement markAvailable = roomsBedsAdminRequirement;
+  static const AccessRequirement assign = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement release = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement transfer = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement completeTransfer =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement occupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement navigateCrossModule =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openOperations =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openHousekeeping =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement nestedWrite = roomsBedsAdminRequirement;
+  static const AccessRequirement nestedOccupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement nestedRead = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement entry = roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeUnion =
+      roomsBedsWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.roomsBedsEntry;
+}
+
+/// Out of service tab atom → permission mapping (inventory + matrix).
+///
+/// Target: `/rooms-beds?section=out-of-service`. Mark in/out of service and
+/// status resolution need bed admin (manage/write); strip has no create
+/// primary.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Out of service tab | navigate | read ∪ clinical\|operations\|facility:admin |
+/// | Tab primary | — | none (null) |
+/// | Manage catalog → setup | navigate / nested write | admin ∪ unit:manage\|facility/tenant/system |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Success snackbar / form validation | feedback | admin ∪ / occupancy write ∪ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Mark available (blocked) | update | admin ∪ |
+/// | Next action Open operations (outOfService) | navigate | _(n/a)_ board readers |
+/// | Detail info / assignment history | read | read ∪ |
+/// | Detail Open IPD admission | navigate | _(n/a)_ when admission linked |
+/// | Detail Mark available / cleaning / maintenance / blocked | update | admin ∪ |
+/// | Detail Open housekeeping / operations | navigate | _(n/a)_ under admin chrome |
+/// | Detail Assign / Release / Transfer | update | occupancy write ∪ |
+/// | Nested status update (mark available) | update | admin ∪ |
+/// | Nested assign / release / transfer dialogs | update | occupancy write ∪ |
+/// | Nested create room / bed (via catalog) | create | admin ∪ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
+/// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
+///
+/// Matrix create/update/delete ∩ `unit:manage` alone maps to source admin ∪
+/// ([roomsBedsAdminRequirement]). Never show admin create/manage to
+/// clinical-read-only. Occupancy write is ∪ `clinical:write` |
+/// `operations:write` + module.
+abstract final class RoomsBedsOutOfServiceAtomPermissions {
+  static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement search = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement settings = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement pagination = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement empty = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement loading = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement retry = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement success = roomsBedsAdminRequirement;
+  static const AccessRequirement validation = roomsBedsAdminRequirement;
+  static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement create = roomsBedsAdminRequirement;
+  static const AccessRequirement update = roomsBedsAdminRequirement;
+  static const AccessRequirement delete = roomsBedsAdminRequirement;
+  static const AccessRequirement write = roomsBedsAdminRequirement;
+  static const AccessRequirement manage = roomsBedsAdminRequirement;
+  static const AccessRequirement createRoom = roomsBedsAdminRequirement;
+  static const AccessRequirement createBed = roomsBedsAdminRequirement;
+  static const AccessRequirement manageCatalog = roomsBedsAdminRequirement;
+  static const AccessRequirement updateBedStatus = roomsBedsAdminRequirement;
+  static const AccessRequirement markAvailable = roomsBedsAdminRequirement;
+  static const AccessRequirement markOutOfService = roomsBedsAdminRequirement;
+  static const AccessRequirement assign = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement release = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement transfer = roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement completeTransfer =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement occupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement navigateCrossModule =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openOperations =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openHousekeeping =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement nestedWrite = roomsBedsAdminRequirement;
+  static const AccessRequirement nestedOccupancyWrite =
+      roomsBedsOccupancyWriteRequirement;
+  static const AccessRequirement nestedRead = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement entry = roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      roomsBedsWorkspaceEntryRequirement;
+  static const AccessRequirement routeUnion =
+      roomsBedsWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.roomsBedsEntry;
 }

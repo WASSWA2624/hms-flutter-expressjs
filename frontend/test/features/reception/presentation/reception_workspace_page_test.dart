@@ -475,6 +475,26 @@ Future<GoRouter> _pumpWorkspace(
   return router;
 }
 
+Future<void> _tapReceptionDeskTab(WidgetTester tester, String tabLabel) async {
+  final Finder direct = find.textContaining(tabLabel);
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  final Finder overflow = find.byKey(const ValueKey<String>('tabOverflowMore'));
+  expect(
+    overflow,
+    findsOneWidget,
+    reason: 'Expected "$tabLabel" in strip or overflow menu',
+  );
+  await tester.tap(overflow);
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining(tabLabel).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late _MockOpdRepository repository;
 
@@ -732,8 +752,7 @@ void main() {
         ('Payment gate', 'payment-gate'),
         ('Appointments', 'appointments'),
       ]) {
-        await tester.tap(find.textContaining(tab).first);
-        await tester.pumpAndSettle();
+        await _tapReceptionDeskTab(tester, tab);
 
         expect(router.state.uri.queryParameters['section'], section);
         expect(find.text('Register patient'), findsOneWidget);
@@ -1463,14 +1482,11 @@ void main() {
         }
       }
       expect(find.text('Fresh Appointment'), findsOneWidget);
-      await tester.tap(find.textContaining('Desk queue').first);
-      await tester.pumpAndSettle();
+      await _tapReceptionDeskTab(tester, 'Desk queue');
       expect(find.text('Fresh Queue'), findsOneWidget);
-      await tester.tap(find.textContaining('Active visits').first);
-      await tester.pumpAndSettle();
+      await _tapReceptionDeskTab(tester, 'Active visits');
       expect(find.text('Fresh Active'), findsOneWidget);
-      await tester.tap(find.textContaining('Payment gate').first);
-      await tester.pumpAndSettle();
+      await _tapReceptionDeskTab(tester, 'Payment gate');
       expect(find.text('Fresh Payment'), findsOneWidget);
     },
   );

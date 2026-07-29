@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -312,13 +313,11 @@ class _RoomsBedsWorkspaceContentState
                 l10n,
                 controller: controller,
                 state: state,
-                canAdminBeds: canAdminBeds,
               ),
               secondaryActions: _buildSecondaryActions(
                 l10n,
                 controller: controller,
                 state: state,
-                canAdminBeds: canAdminBeds,
               ),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -430,6 +429,15 @@ class _RoomsBedsWorkspaceContentState
               ),
               columns: roomsBedsBedBoardColumns(
                 l10n: l10n,
+                includeNextAction: switch (_section) {
+                  // Available primary is occupancy assign only.
+                  RoomsBedsSection.available => canIpdWrite,
+                  // Turnover / OOS include navigate next-actions for board
+                  // readers (Open operations); write buttons still omit.
+                  RoomsBedsSection.turnover ||
+                  RoomsBedsSection.outOfService => true,
+                  _ => canAdminBeds || canIpdWrite,
+                },
                 nextActionCellBuilder:
                     (BuildContext context, BedBoardItem item) {
                       final RoomsBedsNextActionKind kind =
@@ -497,7 +505,6 @@ class _RoomsBedsWorkspaceContentState
     AppLocalizations l10n, {
     required RoomsBedsWorkspaceController controller,
     required RoomsBedsWorkspaceState state,
-    required bool canAdminBeds,
   }) {
     return switch (_section) {
       RoomsBedsSection.all => AppAccessActionGate(
@@ -515,19 +522,21 @@ class _RoomsBedsWorkspaceContentState
           );
         },
       ),
-      RoomsBedsSection.available =>
-        canAdminBeds
-            ? AppTabToolbarPrimary(
-                label: l10n.tenantFacilityAddBedAction,
-                icon: Icons.bed_outlined,
-                semanticLabel: l10n.tenantFacilityAddBedAction,
-                tooltip: l10n.tenantFacilityAddBedAction,
-                enabled: !state.isSaving,
-                onPressed: state.isSaving
-                    ? null
-                    : () => unawaited(_openAddBedDialog(controller, state)),
-              )
-            : null,
+      RoomsBedsSection.available => AppAccessActionGate(
+        requirement: RoomsBedsAvailableAtomPermissions.createBed,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.tenantFacilityAddBedAction,
+            icon: Icons.bed_outlined,
+            semanticLabel: l10n.tenantFacilityAddBedAction,
+            tooltip: l10n.tenantFacilityAddBedAction,
+            enabled: !state.isSaving,
+            onPressed: state.isSaving
+                ? null
+                : () => unawaited(_openAddBedDialog(controller, state)),
+          );
+        },
+      ),
       RoomsBedsSection.occupied ||
       RoomsBedsSection.turnover ||
       RoomsBedsSection.outOfService => null,
@@ -538,16 +547,18 @@ class _RoomsBedsWorkspaceContentState
     AppLocalizations l10n, {
     required RoomsBedsWorkspaceController controller,
     required RoomsBedsWorkspaceState state,
-    required bool canAdminBeds,
   }) {
     AccessRequirement manageCatalogRequirement() {
       return switch (_section) {
         RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.manageCatalog,
+        RoomsBedsSection.available =>
+          RoomsBedsAvailableAtomPermissions.manageCatalog,
         RoomsBedsSection.occupied =>
           RoomsBedsOccupiedAtomPermissions.manageCatalog,
-        RoomsBedsSection.available ||
-        RoomsBedsSection.turnover ||
-        RoomsBedsSection.outOfService => roomsBedsAdminRequirement,
+        RoomsBedsSection.turnover =>
+          RoomsBedsTurnoverAtomPermissions.manageCatalog,
+        RoomsBedsSection.outOfService =>
+          RoomsBedsOutOfServiceAtomPermissions.manageCatalog,
       };
     }
 
@@ -578,8 +589,9 @@ class _RoomsBedsWorkspaceContentState
         manageCatalog,
       ],
       RoomsBedsSection.available => <Widget>[
-        if (canAdminBeds)
-          AppTabToolbarAction(
+        AppAccessGate(
+          requirement: RoomsBedsAvailableAtomPermissions.createRoom,
+          child: AppTabToolbarAction(
             label: l10n.tenantFacilityAddRoomAction,
             icon: Icons.meeting_room_outlined,
             tooltip: l10n.tenantFacilityAddRoomAction,
@@ -588,6 +600,7 @@ class _RoomsBedsWorkspaceContentState
                 ? null
                 : () => unawaited(_openAddRoomDialog(controller, state)),
           ),
+        ),
         manageCatalog,
       ],
       RoomsBedsSection.occupied => <Widget>[manageCatalog],
