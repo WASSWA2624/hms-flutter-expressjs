@@ -38,7 +38,6 @@ class DashboardMetricStrip extends StatelessWidget {
 
         if (wide) {
           return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               for (
                 int index = 0;
@@ -83,11 +82,15 @@ class _DashboardMetricCard extends StatelessWidget {
     final bool isActionable = card.onTap != null;
     final double iconBox = compact ? 28 : 32;
     final double iconGlyph = compact ? 16 : 18;
+    const TextHeightBehavior tightTextHeight = TextHeightBehavior(
+      applyHeightToFirstAscent: false,
+      applyHeightToLastDescent: false,
+    );
 
     final Widget cardBody = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? theme.spacing.sm : theme.spacing.md,
-        vertical: compact ? theme.spacing.sm : theme.spacing.sm + 2,
+        vertical: compact ? theme.spacing.sm : theme.spacing.md,
       ),
       child: Row(
         children: <Widget>[
@@ -99,31 +102,39 @@ class _DashboardMetricCard extends StatelessWidget {
             child: Icon(card.icon, color: card.accent, size: iconGlyph),
           ),
           SizedBox(width: theme.spacing.sm),
-          Text(
-            card.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style:
-                (compact
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.headlineSmall)
-                    ?.copyWith(
-                      color: card.accent,
-                      fontWeight: FontWeight.w600,
-                      height: 1,
-                      letterSpacing: -0.3,
-                    ),
+          Flexible(
+            child: Text(
+              card.value,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              textHeightBehavior: tightTextHeight,
+              style:
+                  (compact
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.headlineSmall)
+                      ?.copyWith(
+                        color: card.accent,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                        letterSpacing: -0.3,
+                        leadingDistribution: TextLeadingDistribution.even,
+                      ),
+            ),
           ),
           SizedBox(width: theme.spacing.xs),
           Expanded(
             child: Text(
               card.label,
               maxLines: 1,
+              softWrap: false,
               overflow: TextOverflow.ellipsis,
+              textHeightBehavior: tightTextHeight,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 height: 1.1,
+                leadingDistribution: TextLeadingDistribution.even,
               ),
             ),
           ),
@@ -144,20 +155,20 @@ class _DashboardMetricCard extends StatelessWidget {
       colorScheme,
       card.accent,
     );
+    final BorderRadius borderRadius = BorderRadius.circular(theme.radius.lg);
 
     return Semantics(
       button: isActionable,
       label: card.semanticsLabel,
-      child: isActionable
-          ? Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: card.onTap,
-                borderRadius: BorderRadius.circular(theme.radius.lg),
-                child: Ink(decoration: decoration, child: cardBody),
-              ),
-            )
-          : DecoratedBox(decoration: decoration, child: cardBody),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: borderRadius,
+        child: InkWell(
+          onTap: card.onTap,
+          borderRadius: borderRadius,
+          child: Ink(decoration: decoration, child: cardBody),
+        ),
+      ),
     );
   }
 }

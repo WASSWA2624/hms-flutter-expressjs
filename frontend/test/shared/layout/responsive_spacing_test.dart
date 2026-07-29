@@ -36,6 +36,21 @@ void main() {
       expect(tokens.pagePaddingDesktop, 32);
     });
 
+    test('pagePaddingFor keeps tight sides and vertical breathing room', () {
+      const AppDesignTokens tokens = AppDesignTokens.standard;
+      const AppSpacingTokens spacing = AppSpacingTokens.standard;
+
+      final EdgeInsets padding = ResponsiveSpacing.pagePaddingFor(
+        AppBreakpoint.xl,
+        designTokens: tokens,
+      );
+
+      expect(padding.left, spacing.xs);
+      expect(padding.right, spacing.xs);
+      expect(padding.top, spacing.lg);
+      expect(padding.bottom, spacing.lg);
+    });
+
     test('resolves section and content gaps from spacing tokens', () {
       final ThemeData theme = AppTheme.light;
 

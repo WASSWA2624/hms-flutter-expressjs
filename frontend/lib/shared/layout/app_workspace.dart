@@ -2317,6 +2317,7 @@ EdgeInsets _compactWorkspacePagePadding(
   AppBreakpoint breakpoint,
   ThemeData theme,
 ) {
-  // Match ResponsiveSpacing.pagePaddingFor: xs sides, no top/bottom.
+  // Workspace tabs sit flush under the app bar; only side inset here.
+  // Non-workspace pages use ResponsiveSpacing.pagePaddingFor (adds vertical).
   return EdgeInsets.symmetric(horizontal: theme.spacing.xs);
 }

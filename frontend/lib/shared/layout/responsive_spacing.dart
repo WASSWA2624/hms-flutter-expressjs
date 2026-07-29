@@ -7,10 +7,12 @@ abstract final class ResponsiveSpacing {
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
   }) {
-    // Minimal side inset only; top/bottom stay flush so tab strips can sit
-    // against the app bar and content can reach the bottom edge.
+    // Tight side inset for dense shells; vertical inset gives breathing room
+    // under the app bar and at the scroll end. Workspace tab pages override
+    // via _compactWorkspacePagePadding when content must sit flush.
     return EdgeInsets.symmetric(
       horizontal: AppSpacingTokens.standard.xs,
+      vertical: AppSpacingTokens.standard.lg,
     );
   }
 
