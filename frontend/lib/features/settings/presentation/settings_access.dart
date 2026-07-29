@@ -249,3 +249,114 @@ List<AccessRequirement> settingsAdministrationNavigateDestinations({
     settingsAdministrationAccessAdminNavigateRequirement,
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Configuration (`/settings?tab=configuration`)
+// ---------------------------------------------------------------------------
+
+/// View / read UI for Configuration:
+/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `system:admin`).
+const AccessRequirement settingsConfigurationReadRequirement =
+    AccessRequirement(
+      allPermissions: <AppPermission>[AppPermissions.profileRead],
+      anyPermissions: settingsAdminAnyPermissions,
+    );
+
+/// Tenant defaults panel — source gate (differs from matrix update ∩
+/// `facility:admin`): `tenant:admin` ∪ `system:admin` + tenant context.
+const AccessRequirement settingsConfigurationTenantRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.tenantAdmin,
+        AppPermissions.systemAdmin,
+      ],
+      anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+      requiresTenantContext: true,
+    );
+
+/// Facility defaults panel — source gate (includes matrix `facility:admin`
+/// within admin ∪) + facility context.
+const AccessRequirement settingsConfigurationFacilityRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.tenantAdmin,
+        AppPermissions.facilityAdmin,
+        AppPermissions.systemAdmin,
+      ],
+      anyRoles: <AppRole>[
+        AppRole.superAdmin,
+        AppRole.tenantAdmin,
+        AppRole.facilityAdmin,
+      ],
+      requiresFacilityContext: true,
+    );
+
+/// Create (matrix ∩ `facility:admin`) — no create atoms on this tab.
+const AccessRequirement settingsConfigurationCreateRequirement =
+    settingsFacilityAdminRequirement;
+
+/// Update (matrix ∩ `facility:admin`). Mounted Save/Reset use source panel
+/// gates ([settingsConfigurationTenantRequirement] /
+/// [settingsConfigurationFacilityRequirement]); note mapping in tests.
+const AccessRequirement settingsConfigurationUpdateRequirement =
+    settingsFacilityAdminRequirement;
+
+/// Delete (matrix ∩ `facility:admin`) — no delete atoms; Reset clears via
+/// update/save under panel write gates.
+const AccessRequirement settingsConfigurationDeleteRequirement =
+    settingsFacilityAdminRequirement;
+
+/// Configuration tab atom → permission mapping.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | [tab] |
+/// | Loading / empty / error / retry | read | [tab] |
+/// | Tenant defaults panel + fields | update | source tenant |
+/// | Facility defaults panel + fields | update | source facility |
+/// | Save configuration | update | source panel write |
+/// | Reset to default (+ confirm dialog) | update | source panel write |
+/// | Create / delete | — | matrix ∩; **not mounted** |
+abstract final class SettingsConfigurationAtomPermissions {
+  static const AccessRequirement tab = settingsConfigurationReadRequirement;
+  static const AccessRequirement read = settingsConfigurationReadRequirement;
+  static const AccessRequirement loading = settingsConfigurationReadRequirement;
+  static const AccessRequirement empty = settingsConfigurationReadRequirement;
+  static const AccessRequirement retry = settingsConfigurationReadRequirement;
+  static const AccessRequirement tenantPanel =
+      settingsConfigurationTenantRequirement;
+  static const AccessRequirement facilityPanel =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement tenantSave =
+      settingsConfigurationTenantRequirement;
+  static const AccessRequirement tenantReset =
+      settingsConfigurationTenantRequirement;
+  static const AccessRequirement facilitySave =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement facilityReset =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement success =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement validation =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement create =
+      settingsConfigurationCreateRequirement;
+  static const AccessRequirement update =
+      settingsConfigurationUpdateRequirement;
+  static const AccessRequirement delete =
+      settingsConfigurationDeleteRequirement;
+  static const AccessRequirement nestedRead =
+      settingsConfigurationReadRequirement;
+  static const AccessRequirement nestedWrite =
+      settingsConfigurationUpdateRequirement;
+}
+
+/// True when the Configuration strip may appear: tab read gate plus at least
+/// one authorized tenant/facility panel for the current ABAC scope.
+bool settingsConfigurationSectionVisible(AppAccessPolicy policy) {
+  if (!settingsConfigurationReadRequirement.isAllowed(policy)) {
+    return false;
+  }
+  return settingsConfigurationTenantRequirement.isAllowed(policy) ||
+      settingsConfigurationFacilityRequirement.isAllowed(policy);
+}

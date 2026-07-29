@@ -352,6 +352,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
 /// | Row select → detail | read | read ∪ |
 /// | Next action Release | update | occupancy write ∪ |
 /// | Next action Manage / complete transfer | update | occupancy write ∪ |
+/// | Next action column | progressive disclosure | occupancy write ∪ |
 /// | Next action Assign / Mark available | update | occupancy write ∪ / admin ∪ (not primary on occupied) |
 /// | Detail info / assignment history | read | read ∪ |
 /// | Detail Open IPD admission | navigate | _(n/a)_ board readers |
@@ -365,7 +366,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
 ///
 /// Matrix create/update/delete ∩ `unit:manage` alone maps to source admin ∪
 /// ([roomsBedsAdminRequirement]). Occupancy write is ∪ `clinical:write` |
-/// `operations:write` + module.
+/// `operations:write` + module. Never show admin create to clinical-read-only.
 abstract final class RoomsBedsOccupiedAtomPermissions {
   static const AccessRequirement tab = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = roomsBedsWorkspaceReadRequirement;
@@ -382,7 +383,9 @@ abstract final class RoomsBedsOccupiedAtomPermissions {
       roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement rowSelect = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement detail = roomsBedsWorkspaceReadRequirement;
-  static const AccessRequirement nextAction = roomsBedsWorkspaceReadRequirement;
+  /// Occupied primary next-actions are Release / complete transfer only.
+  static const AccessRequirement nextAction =
+      roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement create = roomsBedsAdminRequirement;
   static const AccessRequirement update = roomsBedsAdminRequirement;
   static const AccessRequirement delete = roomsBedsAdminRequirement;

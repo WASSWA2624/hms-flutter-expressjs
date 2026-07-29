@@ -423,6 +423,85 @@ void main() {
     );
   });
 
+  test('inventory atoms map to matrix verbs (read ∪ / admin ∪ / occupancy ∪)', () {
+    expect(RoomsBedsTurnoverAtomPermissions.tab, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.listChrome, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.search, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.filters, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.columns, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.settings, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.pagination, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.empty, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.loading, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.retry, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.success, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.validation, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.rowSelect, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.detail, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.nextAction, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.create, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.update, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.delete, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.markAvailable, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.manageCatalog, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.assign, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.release, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.transfer, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.completeTransfer, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.nestedWrite, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.nestedOccupancyWrite, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.navigateCrossModule, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.openOperations, isNotNull);
+    expect(RoomsBedsTurnoverAtomPermissions.openHousekeeping, isNotNull);
+
+    expect(
+      RoomsBedsTurnoverAtomPermissions.markAvailable.anyPermissions,
+      contains(AppPermissions.unitManage),
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.assign.anyPermissions,
+      containsAll(<AppPermission>[
+        AppPermissions.clinicalWrite,
+        AppPermissions.operationsWrite,
+      ]),
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.nestedWrite,
+      same(RoomsBedsTurnoverAtomPermissions.manageCatalog),
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.catalogEntry.requiresFacilityContext,
+      isTrue,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.catalogEntry.allPermissions,
+      contains(AppPermissions.roomsBedsRead),
+    );
+  });
+
+  test('catalog ∩ rooms_beds:read denial without that permission', () {
+    final AppAccessPolicy clinicalOnly = _readerPolicy();
+    expect(
+      RoomsBedsTurnoverAtomPermissions.catalogEntry.isAllowed(clinicalOnly),
+      isFalse,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.routeUnion.isAllowed(clinicalOnly),
+      isTrue,
+    );
+  });
+
+  test('ABAC facility scope: catalog entry denied without facility context', () {
+    final AppAccessPolicy noFacility = _policy(
+      permissions: <AppPermission>{AppPermissions.roomsBedsRead},
+      facilityId: null,
+    );
+    expect(
+      RoomsBedsTurnoverAtomPermissions.catalogEntry.isAllowed(noFacility),
+      isFalse,
+    );
+  });
+
   test('read ∪ allowance: clinical or operations or facility admin', () {
     expect(
       RoomsBedsTurnoverAtomPermissions.tab.isAllowed(_readerPolicy()),
