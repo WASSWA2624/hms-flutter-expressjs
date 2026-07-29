@@ -612,25 +612,27 @@ abstract final class IcuDischargeReadyAtomPermissions {
 ///
 /// Historical stays (`/icu?section=ended`). Prefer read-only: stage next-action
 /// is **Open IPD** (navigate, no write). Nested cross-module matrix rows are
-/// _(n/a)_. Write keeps source ∪ `clinical:write` | `emergency:write` rather
-/// than matrix ∩ `clinical:write` alone (ineligible stay mutations stay absent
-/// via `canRecordIcuAction` / start-stay eligibility). Route entry ∪ is
+/// _(n/a)_ — [nestedWrite] / [nestedRead] reuse ICU write/read only. Write
+/// keeps source ∪ `clinical:write` | `emergency:write` rather than matrix ∩
+/// `clinical:write` alone (ineligible stay mutations stay absent via
+/// `canRecordIcuAction` / start-stay eligibility). Route entry ∪ is
 /// [routeEntry]. Tab chrome stays ∪ `clinical:read` | `emergency:read`.
+/// Open IPD / billing / clearance / print remain without write.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Ended stays tab / count badge | navigate | read ∪ `clinical:read` \| `emergency:read` |
-/// | Search / Clear / Filters / Settings / columns | read chrome | read ∪ |
-/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Ended stays tab / count badge | navigate | read ∪ ([tab]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → stay detail | read | read ∪ |
-/// | Next action Open IPD | navigate | navigate (no write) |
+/// | Row select → stay detail | read | ([detail]) |
+/// | Next action Open IPD | navigate | [nextActionOpenIpd] (no write) |
 /// | Detail complementary writes (when eligible) | create / update | write ∪ |
-/// | Detail Open billing / Open IPD / clearance | navigate | navigate |
-/// | Detail Print summary | export / read | read ∪ |
-/// | Deep link `?panel=` mutation | create / update | write ∪ |
-/// | Hard delete / void | delete | write ∪ — not mounted |
-/// | Route entry (deep link) | navigate | clinical \| emergency \| operations:read |
+/// | Detail Open billing / Open IPD / clearance | navigate | [navigate] |
+/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Nested mutation dialogs / `?panel=` | create / update | write ∪ ([panelDeepLink]) |
+/// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
+/// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
 abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement tab = icuWorkspaceReadRequirement;
   static const AccessRequirement listChrome = icuWorkspaceReadRequirement;
@@ -648,6 +650,7 @@ abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement update = icuWorkspaceWriteRequirement;
   static const AccessRequirement delete = icuWorkspaceDeleteRequirement;
   static const AccessRequirement write = icuWorkspaceWriteRequirement;
+  /// Stage next-action on Ended is always Open IPD (navigate).
   static const AccessRequirement nextAction = icuNavigationRequirement;
   static const AccessRequirement nextActionOpenIpd = icuNavigationRequirement;
   static const AccessRequirement startStay = icuWorkspaceWriteRequirement;
@@ -666,6 +669,7 @@ abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement markReadiness = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuNavigationRequirement;
