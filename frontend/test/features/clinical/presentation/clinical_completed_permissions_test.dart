@@ -432,9 +432,10 @@ void main() {
         ClinicalCompletedAtomPermissions.loading.isAllowed(writeOnly),
         isFalse,
       );
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
       expect(
         ClinicalCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
     });
 
@@ -648,14 +649,14 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits Completed chrome',
+    'route entry ∩: clinical:write alone without clinical:read omits Completed chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
       expect(
         ClinicalCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(ClinicalCompletedAtomPermissions.tab.isAllowed(writeOnly), isFalse);
 

@@ -86,6 +86,10 @@ const PLAN_PERMISSION_CAPS = Object.freeze({
   DEVELOPER: PRO,
 });
 
+const {
+  expandPermissionNamesWithRequiredReads,
+} = require('@lib/authorization/permission-read-dependency');
+
 const normalizePermissions = (values = []) =>
   Array.from(
     new Set(
@@ -102,7 +106,7 @@ const resolveSubscriptionPermissionCap = ({
 } = {}) => {
   const explicit = normalizePermissions(allowed_permissions);
   if (explicit.length > 0) {
-    return new Set(explicit);
+    return new Set(expandPermissionNamesWithRequiredReads(explicit));
   }
 
   const tier = String(plan_tier_code || '').trim().toUpperCase();

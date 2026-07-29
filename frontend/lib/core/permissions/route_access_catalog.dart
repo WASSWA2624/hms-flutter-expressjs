@@ -2,7 +2,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
-/// One shell/route entry atom: unique permission ↔ at most one destination.
+/// One shell/route entry atom: unique permission maps to at most one destination.
 final class RouteAccessAtom {
   const RouteAccessAtom({
     required this.routeName,

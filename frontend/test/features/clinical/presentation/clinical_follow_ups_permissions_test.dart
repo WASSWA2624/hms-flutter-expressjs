@@ -134,6 +134,18 @@ void main() {
         same(clinicalEncounterWriteRequirement),
       );
       expect(
+        ClinicalFollowUpsAtomPermissions.success,
+        same(clinicalFollowUpsWriteRequirement),
+      );
+      expect(
+        ClinicalFollowUpsAtomPermissions.validation,
+        same(clinicalFollowUpsWriteRequirement),
+      );
+      expect(
+        ClinicalFollowUpsAtomPermissions.routeEntry,
+        same(clinicalWorkspaceEntryRequirement),
+      );
+      expect(
         clinicalSectionRequirement(ClinicalWorkspaceSection.followUps),
         same(clinicalFollowUpsRequirement),
       );
@@ -161,23 +173,42 @@ void main() {
       expect(ClinicalFollowUpsAtomPermissions.empty.isAllowed(reader), isTrue);
       expect(ClinicalFollowUpsAtomPermissions.detail.isAllowed(reader), isTrue);
       expect(ClinicalFollowUpsAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(ClinicalFollowUpsAtomPermissions.success.isAllowed(reader), isFalse);
+      expect(
+        ClinicalFollowUpsAtomPermissions.validation.isAllowed(reader),
+        isFalse,
+      );
       expect(ClinicalFollowUpsAtomPermissions.markCompleted.isAllowed(reader),
           isFalse);
       expect(ClinicalFollowUpsAtomPermissions.reschedule.isAllowed(reader),
           isFalse);
     });
 
-    test('route entry ∪: clinical:write alone satisfies entry, not Follow-ups tab',
-        () {
-      final AppAccessPolicy writeOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalWrite},
-      );
-      expect(
-        ClinicalFollowUpsAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
-      );
-      expect(ClinicalFollowUpsAtomPermissions.tab.isAllowed(writeOnly), isFalse);
-    });
+    test(
+      'route entry ∩: clinical:write alone fails catalog entry and Follow-ups tab',
+      () {
+        final AppAccessPolicy writeOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalWrite},
+        );
+        // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
+        expect(
+          ClinicalFollowUpsAtomPermissions.routeEntry.isAllowed(writeOnly),
+          isFalse,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.tab.isAllowed(writeOnly),
+          isFalse,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.write.isAllowed(writeOnly),
+          isTrue,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.success.isAllowed(writeOnly),
+          isTrue,
+        );
+      },
+    );
 
     test(
       'write ∪: system:admin satisfies mark/reschedule without clinical:write',
@@ -202,6 +233,14 @@ void main() {
         );
         expect(
           ClinicalFollowUpsAtomPermissions.saveFollowUp.isAllowed(adminReader),
+          isTrue,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.success.isAllowed(adminReader),
+          isTrue,
+        );
+        expect(
+          ClinicalFollowUpsAtomPermissions.validation.isAllowed(adminReader),
           isTrue,
         );
       },
@@ -434,6 +473,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Save follow-up'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized reschedule shows validation feedback on submit failure',
+    (WidgetTester tester) async {
+      when(
+        () => followUpRepository.updateFollowUp(any(), any()),
+      ).thenAnswer(
+        (_) async => Result<void>.failure(ValidationFailure()),
+      );
+
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Follow Up Patient'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reschedule follow-up'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save follow-up'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save follow-up'), findsOneWidget);
+      expect(find.byType(AppFormInformationBanner), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

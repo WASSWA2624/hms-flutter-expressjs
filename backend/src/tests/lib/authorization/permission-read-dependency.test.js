@@ -75,7 +75,7 @@ describe('permission-read-dependency', () => {
       } catch (error) {
         expect(error.message).toBe('errors.permission.read_required');
         expect(error.statusCode).toBe(400);
-        expect(error.details[0].reason).toBe('read_permission_required');
+        expect(error.errors[0].reason).toBe('read_permission_required');
       }
     });
 
@@ -105,6 +105,25 @@ describe('permission-read-dependency', () => {
           PERMISSIONS.SYSTEM_ADMIN,
         ].sort()
       );
+    });
+  });
+
+  describe('shipped packs stay coherent', () => {
+    const { ROLE_PERMISSIONS } = require('@config/permissions');
+    const {
+      PLAN_PERMISSION_CAPS,
+    } = require('@lib/subscriptions/subscription-permission-caps');
+
+    it('role packs never grant write-without-read', () => {
+      for (const names of Object.values(ROLE_PERMISSIONS)) {
+        expect(findMissingRequiredReads(names)).toEqual([]);
+      }
+    });
+
+    it('subscription tier caps never grant write-without-read', () => {
+      for (const names of Object.values(PLAN_PERMISSION_CAPS)) {
+        expect(findMissingRequiredReads(names)).toEqual([]);
+      }
     });
   });
 });

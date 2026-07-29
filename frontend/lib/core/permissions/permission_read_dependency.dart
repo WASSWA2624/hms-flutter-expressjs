@@ -1,6 +1,5 @@
 /// Guard helpers: non-read actions require the matching `{domain}:read` atom
 /// when that atom exists in the assignable catalog.
-library;
 
 /// Returns `{domain}:read` when [permissionCode] is a non-read action and a
 /// matching read atom is present in [catalogCodes]. Otherwise null.

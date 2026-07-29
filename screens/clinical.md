@@ -180,7 +180,7 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
 
 ## Follow-ups tab (`FollowUpWorklistPanel`)
 
-- Condition: Tab **Follow-ups**; hidden from the strip unless `clinicalFollowUpsRequirement` (`clinical:read` ∩ `encounters-vitals`) is allowed. Panel uses the same read gate. Shared panel defaults remain `receptionFollowUpsRequirement` for non-clinical hosts.
+- Condition: Tab **Follow-ups**; hidden from the strip unless `clinicalFollowUpsRequirement` (`clinical:read` ∩ `encounters-vitals`) is allowed. Panel uses the same read gate. Shared panel defaults remain `receptionFollowUpsRequirement` for non-clinical hosts. Route entry keeps `RouteAccessCatalog.clinicalEntry` (∩ `clinical:read`); prompt ∪ read|write is not applied.
 
 - **Try again**
   - Location: Follow-ups load/error state.
@@ -228,7 +228,7 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
 
 #### Reschedule follow-up dialog (from **Reschedule follow-up**)
 
-Same control set as encounter **Follow up** dialog (see below): **Choose date**, **Select time**, **Cancel**, **Save follow-up**. Write-gated by parent entry point.
+Same control set as encounter **Follow up** dialog (see below): **Choose date**, **Select time**, **Cancel**, **Save follow-up**. Write-gated by parent entry point. Authorized paths keep form validation and failure banners; success closes dialogs and refreshes the Follow-ups list.
 
 ---
 

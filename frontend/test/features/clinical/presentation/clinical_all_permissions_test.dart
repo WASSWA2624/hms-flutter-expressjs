@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -375,6 +376,10 @@ void main() {
         same(clinicalWorkspaceEntryRequirement),
       );
       expect(
+        ClinicalAllAtomPermissions.routeEntry,
+        same(RouteAccessCatalog.clinicalEntry),
+      );
+      expect(
         clinicalSectionTabRequirement(ClinicalWorkspaceSection.all),
         same(clinicalWorkspaceReadRequirement),
       );
@@ -391,7 +396,11 @@ void main() {
       expect(ClinicalAllAtomPermissions.tab.isAllowed(writeOnly), isFalse);
       expect(ClinicalAllAtomPermissions.write.isAllowed(writeOnly), isTrue);
       expect(ClinicalAllAtomPermissions.create.isAllowed(writeOnly), isTrue);
-      expect(ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly), isTrue);
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
+      expect(
+        ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isFalse,
+      );
 
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
@@ -607,12 +616,15 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits All chrome',
+    'route entry ∩: clinical:write alone without clinical:read omits All chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
-      expect(ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly), isTrue);
+      expect(
+        ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isFalse,
+      );
       expect(ClinicalAllAtomPermissions.tab.isAllowed(writeOnly), isFalse);
 
       await _pumpAllTab(

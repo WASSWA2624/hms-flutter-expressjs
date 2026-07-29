@@ -221,11 +221,13 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Follow-ups strip tab | navigate | [clinicalFollowUpsRequirement] |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_).
+/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
+/// `clinical:write`) and `AppRoutes.clinical` ∪ map to catalog ∩
+/// `clinical:read` — keep catalog.
 abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -301,15 +303,17 @@ bool canViewClinicalAll(AppAccessPolicy policy) {
 /// | Follow-ups strip tab | navigate | read ∩ `clinical:read` + `encounters-vitals` |
 /// | Search / clear / Settings / columns | read chrome | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → Follow-up details | read | read ∩ |
 /// | Detail Close (read-only footer) | progressive disclosure | read ∩ |
 /// | Reschedule follow-up | update | write ∪ source |
 /// | Mark completed | update | write ∪ source |
 /// | Save follow-up (nested reschedule dialog) | update | write ∪ source |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | catalog ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
-/// `clinical:write` alone.
+/// `clinical:write` alone. Prompt route entry ∪ read|write → keep
+/// [RouteAccessCatalog.clinicalEntry] (∩ `clinical:read`).
 abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement tab = clinicalFollowUpsRequirement;
   static const AccessRequirement listChrome = clinicalFollowUpsRequirement;
@@ -318,6 +322,11 @@ abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement empty = clinicalFollowUpsRequirement;
   static const AccessRequirement loading = clinicalFollowUpsRequirement;
   static const AccessRequirement retry = clinicalFollowUpsRequirement;
+  /// Authorized success path after complete / reschedule (write-gated entry).
+  static const AccessRequirement success = clinicalFollowUpsWriteRequirement;
+  /// Authorized form validation feedback (nested reschedule dialog).
+  static const AccessRequirement validation =
+      clinicalFollowUpsWriteRequirement;
   static const AccessRequirement rowSelect = clinicalFollowUpsRequirement;
   static const AccessRequirement detail = clinicalFollowUpsRequirement;
   static const AccessRequirement close = clinicalFollowUpsRequirement;
@@ -471,11 +480,12 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_).
+/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
+/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
 abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -792,11 +802,13 @@ bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt
-/// narrative ∪ (matrix nested write _(n/a)_).
+/// narrative ∪ (matrix nested write _(n/a)_). Prompt route entry ∪
+/// (`clinical:read` | `clinical:write`) maps to catalog ∩ `clinical:read` —
+/// keep catalog.
 abstract final class ClinicalCompletedAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
