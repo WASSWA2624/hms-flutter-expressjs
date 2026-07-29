@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/clinical/data/repositories/clinical_reposito
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
+import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -307,6 +308,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const IpdAdmissionQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -1133,7 +1135,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Add clinical note opens dialog (sync path) from Results ready',
+    'authorized Add clinical note shows validation for empty submit',
     (WidgetTester tester) async {
       await _pumpResultsReadyTab(
         tester,
@@ -1153,6 +1155,119 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
+
+      await tester.tap(find.text('Add clinical note').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsWidgets);
+      verifyNever(() => clinicalRepository.createClinicalNote(any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  test(
+    'post-mutation sync: deleteDiagnosis reloads Results ready encounter bundle',
+    () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_encounter);
+
+      clearInteractions(clinicalRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(() => clinicalRepository.loadEncounterBundle(any())).thenAnswer((
+        invocation,
+      ) {
+        final ClinicalWorklistEntry entry =
+            invocation.positionalArguments.single as ClinicalWorklistEntry;
+        return Future<Result<ClinicalEncounterBundle>>.value(
+          Result<ClinicalEncounterBundle>.success(
+            _resultsBundle.copyWith(
+              entry: entry.copyWith(resultsReady: true),
+              diagnoses: const <ClinicalRelatedRecord>[],
+            ),
+          ),
+        );
+      });
+
+      final AppFailure? failure = await controller.deleteDiagnosis('dx-1');
+      expect(failure, isNull);
+      verify(() => clinicalRepository.deleteDiagnosis('dx-1')).called(1);
+      verify(
+        () => clinicalRepository.loadEncounterBundle(any()),
+      ).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  testWidgets(
+    'authorized Results ready chip mounts on worklist row',
+    (WidgetTester tester) async {
+      await _pumpResultsReadyTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(find.text('Results Ready Patient'), findsOneWidget);
+      expect(find.text('Results ready'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'write ∪: system:admin mounts Add clinical note with clinical:read',
+    (WidgetTester tester) async {
+      await _pumpResultsReadyTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.systemAdmin,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Results Ready Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add clinical note'), findsWidgets);
+      expect(find.text('Request lab'), findsWidgets);
+      expect(find.text('Print summary'), findsWidgets);
     },
   );
 
