@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -368,7 +369,19 @@ void main() {
         same(clinicalWorkspaceEntryRequirement),
       );
       expect(
+        ClinicalUrgentAtomPermissions.routeEntry,
+        same(RouteAccessCatalog.clinicalEntry),
+      );
+      expect(
+        ClinicalUrgentAtomPermissions.entry,
+        same(RouteAccessCatalog.clinicalEntry),
+      );
+      expect(
         clinicalSectionTabRequirement(ClinicalWorkspaceSection.urgent),
+        same(ClinicalUrgentAtomPermissions.tab),
+      );
+      expect(
+        ClinicalUrgentAtomPermissions.tab,
         same(clinicalWorkspaceReadRequirement),
       );
     });
@@ -387,9 +400,10 @@ void main() {
         ClinicalUrgentAtomPermissions.success.isAllowed(writeOnly),
         isTrue,
       );
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
       expect(
         ClinicalUrgentAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(canViewClinicalUrgent(writeOnly), isFalse);
 
@@ -397,6 +411,10 @@ void main() {
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       expect(canViewClinicalUrgent(reader), isTrue);
+      expect(
+        ClinicalUrgentAtomPermissions.routeEntry.isAllowed(reader),
+        isTrue,
+      );
       expect(ClinicalUrgentAtomPermissions.write.isAllowed(reader), isFalse);
       expect(
         ClinicalUrgentAtomPermissions.validation.isAllowed(reader),
@@ -596,14 +614,15 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits Urgent chrome',
+    'route entry catalog ∩: clinical:write alone without clinical:read omits Urgent chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      // Prompt ∪ read|write maps to catalog ∩ clinical:read — keep catalog.
       expect(
         ClinicalUrgentAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(ClinicalUrgentAtomPermissions.tab.isAllowed(writeOnly), isFalse);
 

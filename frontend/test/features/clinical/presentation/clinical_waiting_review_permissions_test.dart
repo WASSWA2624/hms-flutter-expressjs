@@ -374,7 +374,11 @@ void main() {
       );
       expect(
         clinicalSectionTabRequirement(ClinicalWorkspaceSection.waitingReview),
-        same(clinicalWorkspaceReadRequirement),
+        same(ClinicalWaitingReviewAtomPermissions.tab),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.waitingReviewChip,
+        same(ClinicalWaitingReviewAtomPermissions.tab),
       );
     });
 

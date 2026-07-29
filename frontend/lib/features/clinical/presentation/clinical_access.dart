@@ -108,12 +108,26 @@ const AccessRequirement clinicalFollowUpsWriteRequirement =
     clinicalWorkspaceWriteRequirement;
 
 /// Per-section tab strip gate.
+///
+/// Worklist tabs share ∩ `clinical:read` + `encounters-vitals`; Follow-ups uses
+/// [clinicalFollowUpsRequirement]. Returns each tab’s atom `tab` requirement so
+/// strip filtering traces to the inventory maps (e.g. Urgent →
+/// [ClinicalUrgentAtomPermissions.tab], Waiting review →
+/// [ClinicalWaitingReviewAtomPermissions.tab]).
 AccessRequirement clinicalSectionTabRequirement(
   ClinicalWorkspaceSection section,
 ) {
   return switch (section) {
-    ClinicalWorkspaceSection.followUps => clinicalFollowUpsRequirement,
-    _ => clinicalWorkspaceReadRequirement,
+    ClinicalWorkspaceSection.followUps => ClinicalFollowUpsAtomPermissions.tab,
+    ClinicalWorkspaceSection.all => ClinicalAllAtomPermissions.tab,
+    ClinicalWorkspaceSection.waitingReview =>
+      ClinicalWaitingReviewAtomPermissions.tab,
+    ClinicalWorkspaceSection.urgent => ClinicalUrgentAtomPermissions.tab,
+    ClinicalWorkspaceSection.resultsReady =>
+      ClinicalResultsReadyAtomPermissions.tab,
+    ClinicalWorkspaceSection.inConsultation =>
+      ClinicalInConsultationAtomPermissions.tab,
+    ClinicalWorkspaceSection.completed => ClinicalCompletedAtomPermissions.tab,
   };
 }
 
@@ -600,11 +614,13 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_).
+/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
+/// `clinical:write`) and `AppRoutes.clinical` ∪ map to catalog ∩
+/// `clinical:read` — keep catalog.
 abstract final class ClinicalUrgentAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;

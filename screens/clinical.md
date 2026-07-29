@@ -30,6 +30,16 @@ Tab-strip **Refresh**, **OPD**, **Lab**, and **Discharge** shortcuts were remove
 
 ## Clinical worklist (non–Follow-ups tabs)
 
+Shared by **All / Waiting review / Urgent / Results ready / In consultation / Completed**. Atom → requirement maps live in `clinical_access.dart` (`ClinicalAllAtomPermissions`, `ClinicalWaitingReviewAtomPermissions`, `ClinicalUrgentAtomPermissions`, `ClinicalResultsReadyAtomPermissions`, `ClinicalInConsultationAtomPermissions`, `ClinicalCompletedAtomPermissions`). Write / nested-order / print gates match the quick-actions and order-panel conditions below.
+
+### Waiting review (`?section=waiting-review`)
+
+- Condition: Tab mounts when `ClinicalWaitingReviewAtomPermissions.tab` / `clinicalSectionTabRequirement(waitingReview)` allows (∩ `clinical:read` + `encounters-vitals`). Tab count badge uses the same read gate (`waitingReviewChip`). Worklist + encounter detail reuse the shared chrome/actions below. Distinctive next-step surface: review-stage (`WAITING_DOCTOR_REVIEW` / `DOCTOR_REVIEW`) → disposition fallback (write ∪) or **Review encounter** (read ∩). Route entry keeps `RouteAccessCatalog.clinicalEntry` (∩ `clinical:read`); prompt ∪ read|write is not applied.
+
+### Urgent (`?section=urgent`)
+
+- Condition: Tab mounts when `ClinicalUrgentAtomPermissions.tab` / `clinicalSectionTabRequirement(urgent)` allows (∩ `clinical:read` + `encounters-vitals`). Danger-tone count badge and row/detail **Urgent** chips use `urgentChip` (same read ∩). Worklist + encounter detail reuse the shared chrome/actions below. Scope: `isUrgent` + non-terminal outpatient. Route entry keeps `RouteAccessCatalog.clinicalEntry` (∩ `clinical:read`); prompt ∪ read|write is not applied.
+
 ### Search / filters / table chrome
 
 - **Search** (text field + submit)
@@ -180,7 +190,7 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
 
 ## Follow-ups tab (`FollowUpWorklistPanel`)
 
-- Condition: Tab **Follow-ups**; hidden from the strip unless `clinicalFollowUpsRequirement` (`clinical:read` ∩ `encounters-vitals`) is allowed. Panel uses the same read gate. Shared panel defaults remain `receptionFollowUpsRequirement` for non-clinical hosts. Route entry keeps `RouteAccessCatalog.clinicalEntry` (∩ `clinical:read`); prompt ∪ read|write is not applied.
+- Condition: Tab **Follow-ups**; hidden from the strip unless `clinicalFollowUpsRequirement` (`clinical:read` ∩ `encounters-vitals`) is allowed. Panel uses the same read gate. Shared panel defaults remain `receptionFollowUpsRequirement` for non-clinical hosts. Route entry keeps `RouteAccessCatalog.clinicalEntry` (∩ `clinical:read`); prompt ∪ read|write is not applied. Non–Follow-ups worklist tabs (**All** / **Waiting review** / **Urgent** / **Results ready** / **In consultation** / **Completed**) share `clinicalWorkspaceReadRequirement` via `clinicalSectionTabRequirement` (and sibling `Clinical*AtomPermissions.tab` maps) for strip visibility.
 
 - **Try again**
   - Location: Follow-ups load/error state.
@@ -766,6 +776,6 @@ When planned, additional resolve actions:
 
 ## Notes on non-button surfaces
 
-- Status badges, triage handoff, and generic clinical record rows are display-only (no row actions except where order/diagnosis panels expose cancel/delete). **Workflow progress** is its own section (not nested under Triage). Titled `AppWorkspaceDetailPanel` sections are collapsible app-wide (header-only when collapsed). **Urgent** row/detail chips respect `ClinicalUrgentAtomPermissions.urgentChip` (∩ `clinical:read`). **Results timeline** appears only when the encounter has ready lab and/or radiology results (not notes, procedures, or open orders); lab vs imaging rows and Lab / Radiology order panels also respect Results ready panel read gates (`ClinicalResultsReadyAtomPermissions.labResultsPanel` / `radiologyResultsPanel` → ∩ `clinical:read`; matrix nested read _(n/a)_ — not separate `lab:read` / `radiology:read`). Empty filtered sections collapse. Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
+- Status badges, triage handoff, and generic clinical record rows are display-only (no row actions except where order/diagnosis panels expose cancel/delete). **Workflow progress** is its own section (not nested under Triage). Titled `AppWorkspaceDetailPanel` sections are collapsible app-wide (header-only when collapsed). **Waiting review** tab / count badge respect `ClinicalWaitingReviewAtomPermissions.tab` / `waitingReviewChip` (∩ `clinical:read`). **Urgent** row/detail chips respect `ClinicalUrgentAtomPermissions.urgentChip` (∩ `clinical:read`). **Results timeline** appears only when the encounter has ready lab and/or radiology results (not notes, procedures, or open orders); lab vs imaging rows and Lab / Radiology order panels also respect Results ready panel read gates (`ClinicalResultsReadyAtomPermissions.labResultsPanel` / `radiologyResultsPanel` → ∩ `clinical:read`; matrix nested read _(n/a)_ — not separate `lab:read` / `radiology:read`). Empty filtered sections collapse. Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
 - Copyable patient/encounter/admission identifiers in context tiles expose copy affordances from shared `AppCopyableIdentifier` / field `copyable: true` (not separate labeled page actions).
 - Empty clinical worklist has no primary empty-state button (state panel only).
