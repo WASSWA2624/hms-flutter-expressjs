@@ -303,6 +303,17 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          AccessAdminEntitlementsAtomPermissions.write,
+          accessAdminWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        AccessAdminEntitlementsAtomPermissions.create.allPermissions,
+        AccessAdminEntitlementsAtomPermissions.write.allPermissions,
+      );
     });
 
     test(
@@ -405,7 +416,93 @@ void main() {
         expect(find.text('Patient Registry'), findsWidgets);
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
+        // Mutate helper remains true for reserved ∩; panel forces write off.
         expect(canMutateAccessAdminEntitlements(tenant), isTrue);
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        expect(
+          table.columns.any(
+            (AppListTableColumn<AccessAdminItem> column) =>
+                column.id == 'next_action',
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'elevated writer: Entitlements stays read-only (no create/next_action)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy elevated = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.systemAdmin,
+            AppPermissions.tenantAdmin,
+          },
+          roles: const <String>['SUPER_ADMIN'],
+        );
+        await _pumpEntitlements(
+          tester,
+          repository: repository,
+          policy: elevated,
+          data: _entitlementsData(canWrite: true),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.text(l10n.accessAdminPanelEntitlements), findsOneWidget);
+        expect(find.text('Patient Registry'), findsWidgets);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
+        expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        expect(
+          table.columns.any(
+            (AppListTableColumn<AccessAdminItem> column) =>
+                column.id == 'next_action',
+          ),
+          isFalse,
+        );
+        expect(canMutateAccessAdminEntitlements(elevated), isTrue);
+      },
+    );
+
+    testWidgets(
+      'workspace canWrite false: Entitlements read chrome still present',
+      (WidgetTester tester) async {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        await _pumpEntitlements(
+          tester,
+          repository: repository,
+          policy: tenant,
+          data: _entitlementsData(canWrite: false),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.text(l10n.accessAdminPanelEntitlements), findsOneWidget);
+        expect(find.text('Patient Registry'), findsWidgets);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(
+          canMutateAccessAdminEntitlements(tenant, workspaceCanWrite: false),
+          isFalse,
+        );
       },
     );
 
@@ -556,6 +653,29 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
+    testWidgets('light theme: authorized Entitlements atoms remain visible', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy tenant = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      await _pumpEntitlements(
+        tester,
+        repository: repository,
+        policy: tenant,
+        data: _entitlementsData(canWrite: true),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
+      expect(find.text(l10n.accessAdminPanelEntitlements), findsOneWidget);
+      expect(find.text('Patient Registry'), findsWidgets);
+      expect(find.byType(AppSearchBar), findsWidgets);
+    });
+
     testWidgets('dark theme: authorized Entitlements atoms remain visible', (
       WidgetTester tester,
     ) async {
@@ -577,6 +697,7 @@ void main() {
 
       expect(find.text(l10n.accessAdminPanelEntitlements), findsOneWidget);
       expect(find.text('Patient Registry'), findsWidgets);
+      expect(find.byType(AppSearchBar), findsWidgets);
     });
 
     testWidgets(
@@ -627,10 +748,15 @@ void main() {
           ),
         );
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
 
-        expect(find.byType(AccessAdminWorkspacePage), findsOneWidget);
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
         expect(find.textContaining('no access'), findsNothing);
+        expect(find.text(l10n.errorNetworkMessage), findsWidgets);
       },
     );
   });
@@ -665,6 +791,28 @@ void main() {
       expect(ids, isNot(contains('next_action')));
       expect(ids, contains('ent_module'));
       expect(ids, contains('ent_active'));
+      expect(ids, contains('ent_plan'));
+      expect(ids, contains('ent_denial'));
+    });
+
+    testWidgets('mobile Entitlements next-action null regardless of canWrite', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(wrap(const SizedBox.shrink()));
+      final BuildContext context = tester.element(find.byType(SizedBox));
+
+      expect(
+        accessAdminMobileNextAction(
+          context,
+          resource: AccessAdminResource.moduleEntitlements,
+          item: _entitlementItem,
+          canWrite: true,
+          onUserStatusToggle: (_) async {},
+          onRoleEdit: (_) {},
+          onRegistrationActivate: (_) async {},
+        ),
+        isNull,
+      );
     });
   });
 }
