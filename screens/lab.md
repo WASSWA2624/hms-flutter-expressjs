@@ -2,7 +2,7 @@
 
 Primary surface: `LabWorkspacePage` (`frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`).
 
-Write gate: `labWrite` with active module `lab-workflows` (`_mutationRequirement` / `Lab*AtomPermissions.write`). Unauthorized write controls do not render (`AppAccessActionGate` / `canMutate`). Per-tab atom maps include `LabAllAtomPermissions`, `LabAwaitingResultsAtomPermissions`, `LabFollowUpsAtomPermissions`. Backend auth remains authoritative.
+Write gate: `labWrite` with active module `lab-workflows` (`_mutationRequirement` / `Lab*AtomPermissions.write`). Unauthorized write controls do not render (`AppAccessActionGate` / `canMutate`). Per-tab atom maps include `LabAllAtomPermissions`, `LabAwaitingResultsAtomPermissions`, `LabProcessingAtomPermissions`, `LabPendingVerificationAtomPermissions`, `LabCriticalAtomPermissions`, `LabVerifiedAtomPermissions`, `LabFollowUpsAtomPermissions`. Critical clinician notify / acknowledge uses ∩ `lab:write` + `clinical:read` (`labCriticalNotifyRequirement`); verify/release stays ∩ `lab:write`. Backend auth remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -153,6 +153,38 @@ for `LabDeskSection.collection`. Nested result-entry writes gated by `canMutate`
 open this tab without create/config when `lab:read` is missing. Tests:
 `frontend/test/features/lab/presentation/lab_awaiting_results_permissions_test.dart`.
 
+### Processing tab (`?section=processing`)
+
+In-lab processing queue (`LabQueueScope.processing`; `IN_PROCESS`). Atom map:
+`LabProcessingAtomPermissions` (`lab:read` ∩ / `lab:write` ∩ + `lab-workflows`).
+Strip create/configure use `labStripCreateRequirement` / `labStripConfigureRequirement`
+for `LabDeskSection.processing`. Nested result-entry writes gated by `canMutate` /
+`labWorkspaceWriteRequirement` (Receive / result entry / verify); preview ∪
+`lab:read`|`lab:write`. Critical notify narrative ∩ `lab:write` + `clinical:read`
+(no dedicated Processing chrome today). Request-from-clinical ∪ is documented for
+reuse, not as strip create. Route entry ∪ may open this tab without create/config
+when `lab:read` is missing. Readers with only `clinical:read` must not see
+config/create. Tests:
+`frontend/test/features/lab/presentation/lab_processing_permissions_test.dart`.
+
+### Critical tab (`?section=critical`)
+
+Critical-values queue (`LabQueueScope.critical`; `hasCriticalResult`). Atom map:
+`LabCriticalAtomPermissions` (`lab:read` ∩ / `lab:write` ∩ + `lab-workflows`).
+Strip create/configure use `labStripCreateRequirement` /
+`labStripConfigureRequirement` for `LabDeskSection.critical`. Read chrome /
+**Orders↔Patients** / row select / **Next action** (`Review critical`) use ∩
+`lab:read`. Nested result-entry writes reuse `canWriteLab` /
+`LabCriticalAtomPermissions` write atoms; preview is ∪ `lab:read`|`lab:write`.
+Clinician **notify / acknowledge** gate is
+`LabCriticalAtomPermissions.criticalNotify` / `.acknowledge` (∩ `lab:write` +
+`clinical:read`); verify/release remains ∩ `lab:write` so LAB_TECH can release.
+No dedicated notify/acknowledge worklist chrome today — requirement documented
+for reuse when chrome mounts. Nested request-from-clinical ∪ is not strip
+chrome. Readers with only `clinical:read` keep Critical via route-entry ∪ but
+must not see create/config. Tests:
+`frontend/test/features/lab/presentation/lab_critical_permissions_test.dart`.
+
 ### Follow-ups tab (`FollowUpWorklistPanel`)
 
 Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Hosted via
@@ -206,6 +238,8 @@ configurations / critical-notify UI is **not** opened from this tab. Route entry
 - [ ] Unauthorized user: Create, Configurations, and dialog write actions absent; view toggle remains.
 - [ ] All (`?section=all`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; clinical-only route entry keeps All without create.
 - [ ] Awaiting results (`?section=awaiting-results`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts Collect/edit/delete; clinical-only route entry keeps tab without create; post-collect sync keeps detail open.
+- [ ] Processing (`?section=processing`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts Receive/edit/delete; clinical-only route entry keeps tab without create; post-receive sync keeps detail open.
+- [ ] Critical (`?section=critical`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; critical notify ∩ needs clinical:read; clinical-only route entry keeps Critical without create.
 - [ ] Every worklist tab: one **Create Lab Order** primary and one **Lab Configurations** secondary; no Refresh.
 - [ ] Ordered row **Next action** opens result entry; Collect runs without a confirm shell.
 - [ ] Deep link `/lab?orderId=…` opens result entry without hunting the row.

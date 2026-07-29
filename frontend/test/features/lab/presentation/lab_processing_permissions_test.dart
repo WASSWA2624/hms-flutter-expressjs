@@ -277,6 +277,34 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.success,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.validation,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.loading,
+          labWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.resultEntry,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -327,6 +355,8 @@ void main() {
         expect(find.text(l10n.labEditOrderAction), findsNothing);
         expect(find.text(l10n.labDeleteOrderAction), findsNothing);
         expect(find.text(l10n.labReceiveSampleAction), findsNothing);
+        // Preview ∪ lab:read|lab:write — read-only still mounts preview.
+        expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
       },
     );
 

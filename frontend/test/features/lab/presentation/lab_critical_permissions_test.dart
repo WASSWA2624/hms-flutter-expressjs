@@ -313,6 +313,27 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.critical),
+          LabCriticalAtomPermissions.configure,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.write,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.workflowMutate,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
     });
   });
 

@@ -1295,21 +1295,33 @@ class _LabOrderResultSection extends StatelessWidget {
       actions: canMutate && (onEditOrder != null || onDeleteOrder != null)
           ? <Widget>[
               if (onEditOrder != null)
-                AppButton(
-                  leadingIcon: Icons.edit_outlined,
-                  label: l10n.labEditOrderAction,
-                  semanticLabel: l10n.labEditOrderAction,
-                  tooltip: l10n.labEditOrderAction,
-                  onPressed: onEditOrder,
+                AppAccessActionGate(
+                  requirement: labWorkspaceWriteRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton(
+                      leadingIcon: Icons.edit_outlined,
+                      label: l10n.labEditOrderAction,
+                      semanticLabel: l10n.labEditOrderAction,
+                      tooltip: l10n.labEditOrderAction,
+                      enabled: isAllowed,
+                      onPressed: isAllowed ? onEditOrder : null,
+                    );
+                  },
                 ),
               if (onDeleteOrder != null)
-                AppButton(
-                  icon: Icons.delete_outline,
-                  label: l10n.labDeleteOrderAction,
-                  semanticLabel: l10n.labDeleteOrderAction,
-                  tooltip: l10n.labDeleteOrderAction,
-                  color: theme.statusColors.danger,
-                  onPressed: onDeleteOrder,
+                AppAccessActionGate(
+                  requirement: labWorkspaceWriteRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton(
+                      icon: Icons.delete_outline,
+                      label: l10n.labDeleteOrderAction,
+                      semanticLabel: l10n.labDeleteOrderAction,
+                      tooltip: l10n.labDeleteOrderAction,
+                      color: theme.statusColors.danger,
+                      enabled: isAllowed,
+                      onPressed: isAllowed ? onDeleteOrder : null,
+                    );
+                  },
                 ),
             ]
           : const <Widget>[],
