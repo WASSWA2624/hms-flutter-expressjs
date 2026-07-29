@@ -64,7 +64,7 @@ void main() {
       expect(theme.listTokens.mobileTitle.fontWeight, AppListTokens.mobileTitleWeight);
       expect(
         theme.listTokens.mobileTitle.fontSize,
-        theme.textTheme.labelLarge?.fontSize ?? 14,
+        (theme.textTheme.bodyLarge?.fontSize ?? 15).clamp(14, 16).toDouble(),
       );
       expect(
         theme.listTokens.mobileCaption.fontWeight,
@@ -72,7 +72,9 @@ void main() {
       );
       expect(
         theme.listTokens.mobileCaption.fontSize,
-        theme.textTheme.labelMedium?.fontSize ?? 12,
+        theme.textTheme.bodySmall?.fontSize ??
+            theme.textTheme.labelMedium?.fontSize ??
+            12,
       );
       expect(
         theme.listTokens.mobileMeta.fontWeight,

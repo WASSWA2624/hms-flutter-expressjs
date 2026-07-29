@@ -26,6 +26,7 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,7 +62,7 @@ const IcuPatientDetail _openTransferDetail = IcuPatientDetail(
     IcuTransferRequest(
       id: 'TR-1',
       status: 'REQUESTED',
-      toWardId: 'ward-b',
+      toWardName: 'Ward B',
     ),
   ],
 );
@@ -184,7 +185,7 @@ void _stubRepository(
                 IcuTransferRequest(
                   id: 'TR-1',
                   status: 'REQUESTED',
-                  toWardId: 'ward-b',
+                  toWardName: 'Ward B',
                 ),
               ]
             : const <IcuTransferRequest>[],
@@ -717,6 +718,9 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
+      final IcuPatientSummary afterRequest = _noOpenTransferPatient.copyWith(
+        transferStatus: 'REQUESTED',
+      );
 
       await _pumpTransfersTab(
         tester,
@@ -724,6 +728,34 @@ void main() {
         accessPolicy: writer,
         items: const <IcuPatientSummary>[_noOpenTransferPatient],
       );
+
+      // After mutation + board refresh, return the patched transfer row.
+      when(() => repository.listIcuBoard(any())).thenAnswer((invocation) async {
+        final IcuBoardQuery query =
+            invocation.positionalArguments.single as IcuBoardQuery;
+        return Result<AppPage<IcuPatientSummary>>.success(
+          AppPage<IcuPatientSummary>(
+            items: <IcuPatientSummary>[afterRequest],
+            request: query.pageRequest,
+            totalItemCount: 1,
+          ),
+        );
+      });
+      when(() => repository.loadIcuDetail(any())).thenAnswer((_) async {
+        return Result<IcuPatientDetail>.success(
+          IcuPatientDetail(
+            summary: afterRequest,
+            activeStay: const IcuStaySummary(id: 'STAY-XFER-1'),
+            transferRequests: const <IcuTransferRequest>[
+              IcuTransferRequest(
+                id: 'TR-1',
+                status: 'REQUESTED',
+                toWardName: 'Ward B',
+              ),
+            ],
+          ),
+        );
+      });
 
       final Element element = tester.element(find.byType(IcuWorkspacePage));
       final ProviderContainer container = ProviderScope.containerOf(element);
@@ -759,6 +791,12 @@ void main() {
             failure: (_) => null,
           );
       expect(state?.selectedDetail?.summary.hasOpenTransfer, isTrue);
+      expect(
+        state?.board.items.any(
+          (IcuPatientSummary item) => item.hasOpenTransfer,
+        ),
+        isTrue,
+      );
     },
   );
 

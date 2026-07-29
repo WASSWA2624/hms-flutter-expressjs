@@ -38,7 +38,7 @@ enum AppListTablePaginationMode { infinite, buttons }
 const int _maxVisibleTableColumns = 5;
 const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
-const double _mobileRowNumberColumnWidth = 32;
+const double _mobileRowNumberColumnWidth = 28;
 const double _minResizableColumnWidth = 72;
 const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
@@ -571,10 +571,9 @@ final class AppListTableMobileMeta {
 
 /// Two-line mobile row for [AppListTable] list layout.
 ///
-/// Line 1: bold [title] with optional muted inline [caption] (caption truncates
-/// after the title as one line).
-/// Line 2: middot-joined [meta] entries (optional icons); the whole meta line
-/// truncates from the end.
+/// Line 1: [title] (up to two lines).
+/// Line 2: optional [caption] plus middot-joined [meta] entries (optional
+/// icons); the whole meta line truncates from the end.
 /// Optional [trailing] hosts a labeled next-action (or similar) without nesting
 /// a second list chrome. A chevron is still added by the table when the row is
 /// selectable.
@@ -606,9 +605,13 @@ class AppListTableMobileItem extends StatelessWidget {
     final AppListTokens listTokens = theme.listTokens;
     final String resolvedTitle = title.trim();
     final String? resolvedCaption = caption?.trim();
-    final List<AppListTableMobileMeta> resolvedMeta = meta
-        .where((AppListTableMobileMeta item) => item.label.trim().isNotEmpty)
-        .toList(growable: false);
+    final List<AppListTableMobileMeta> resolvedMeta = <AppListTableMobileMeta>[
+      if (resolvedCaption != null && resolvedCaption.isNotEmpty)
+        AppListTableMobileMeta(label: resolvedCaption),
+      ...meta.where(
+        (AppListTableMobileMeta item) => item.label.trim().isNotEmpty,
+      ),
+    ];
     final Widget? leadingWidget =
         leading ??
         (showAvatar
@@ -624,37 +627,25 @@ class AppListTableMobileItem extends StatelessWidget {
           padding ??
           EdgeInsets.symmetric(
             horizontal: theme.spacing.sm,
-            vertical: theme.spacing.sm,
+            vertical: theme.spacing.md - 2,
           ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
-            SizedBox(width: theme.spacing.sm),
+            SizedBox(width: theme.spacing.md - 2),
           ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text.rich(
-                  TextSpan(
-                    children: <InlineSpan>[
-                      TextSpan(
-                        text: resolvedTitle,
-                        style: listTokens.mobileTitle,
-                      ),
-                      if (resolvedCaption != null &&
-                          resolvedCaption.isNotEmpty)
-                        TextSpan(
-                          text: '  $resolvedCaption',
-                          style: listTokens.mobileCaption,
-                        ),
-                    ],
-                  ),
-                  maxLines: 1,
+                Text(
+                  resolvedTitle,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  style: listTokens.mobileTitle,
                 ),
                 if (resolvedMeta.isNotEmpty) ...<Widget>[
                   SizedBox(height: listTokens.mobileMetaLineGap),
@@ -683,8 +674,8 @@ class _AppListTableMobileAvatar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppListTokens listTokens = theme.listTokens;
     final ColorScheme colors = theme.colorScheme;
-    final String initials = _initialsFor(label);
-    final Color background = _avatarTone(colors, label);
+    final String? initials = _initialsFor(label);
+    final _AvatarTone tone = _avatarTone(colors, label);
     final double size = listTokens.mobileAvatarSize;
 
     return ExcludeSemantics(
@@ -692,40 +683,76 @@ class _AppListTableMobileAvatar extends StatelessWidget {
         width: size,
         height: size,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-        child: Text(initials, style: listTokens.mobileAvatarInitials),
+        decoration: BoxDecoration(
+          color: tone.background,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: tone.foreground.withValues(alpha: 0.12),
+          ),
+        ),
+        child: initials == null
+            ? Icon(
+                Icons.article_outlined,
+                size: size * 0.42,
+                color: tone.foreground.withValues(alpha: 0.85),
+              )
+            : Text(
+                initials,
+                style: listTokens.mobileAvatarInitials.copyWith(
+                  color: tone.foreground,
+                ),
+              ),
       ),
     );
   }
 
-  static String _initialsFor(String value) {
-    final List<String> parts = value
+  /// Prefer alphabetic word initials so catalog titles like
+  /// `1,3 beta glucan [...]` become `BG` instead of `1,` / `1[`.
+  static String? _initialsFor(String value) {
+    final List<String> words = value
         .trim()
-        .split(RegExp(r'\s+'))
+        .split(RegExp(r'[\s|/,_.:;\-]+'))
+        .map((String part) => part.replaceAll(RegExp(r'[^A-Za-z]'), ''))
         .where((String part) => part.isNotEmpty)
         .toList(growable: false);
-    if (parts.isEmpty) {
-      return '?';
+    if (words.isEmpty) {
+      return null;
     }
-    if (parts.length == 1) {
-      final String token = parts.first;
-      return token.length >= 2
-          ? token.substring(0, 2).toUpperCase()
-          : token.toUpperCase();
+    if (words.length == 1) {
+      final String token = words.first.toUpperCase();
+      return token.length >= 2 ? token.substring(0, 2) : token;
     }
-    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+    return '${words[0][0]}${words[1][0]}'.toUpperCase();
   }
 
-  static Color _avatarTone(ColorScheme colors, String seed) {
-    final List<Color> tones = <Color>[
-      colors.primaryContainer,
-      colors.secondaryContainer,
-      colors.tertiaryContainer,
-      colors.surfaceContainerHighest,
-      colors.errorContainer,
+  static _AvatarTone _avatarTone(ColorScheme colors, String seed) {
+    final List<_AvatarTone> tones = <_AvatarTone>[
+      _AvatarTone(
+        background: colors.primary.withValues(alpha: 0.10),
+        foreground: colors.primary,
+      ),
+      _AvatarTone(
+        background: colors.tertiary.withValues(alpha: 0.12),
+        foreground: colors.tertiary,
+      ),
+      _AvatarTone(
+        background: colors.secondary.withValues(alpha: 0.12),
+        foreground: colors.secondary,
+      ),
+      _AvatarTone(
+        background: colors.onSurface.withValues(alpha: 0.06),
+        foreground: colors.onSurfaceVariant,
+      ),
     ];
     return tones[seed.hashCode.abs() % tones.length];
   }
+}
+
+final class _AvatarTone {
+  const _AvatarTone({required this.background, required this.foreground});
+
+  final Color background;
+  final Color foreground;
 }
 
 class _AppListTableMobileMetaRow extends StatelessWidget {
@@ -747,7 +774,13 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
         style: style,
         children: <InlineSpan>[
           for (int index = 0; index < items.length; index++) ...<InlineSpan>[
-            if (index > 0) const TextSpan(text: ' · '),
+            if (index > 0)
+              TextSpan(
+                text: '  ·  ',
+                style: style.copyWith(
+                  color: muted.withValues(alpha: 0.55),
+                ),
+              ),
             if (items[index].icon != null)
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
@@ -758,7 +791,7 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
                   child: Icon(
                     items[index].icon,
                     size: iconSize,
-                    color: muted,
+                    color: muted.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -2497,15 +2530,10 @@ class _MobileListTable<T> extends StatelessWidget {
             return row;
           },
           separatorBuilder: (BuildContext context, int index) {
-            if (surfaceHeader != null && index == 0) {
-              return Divider(
-                height: 1,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              );
-            }
             return Divider(
               height: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              thickness: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.28),
             );
           },
         );
@@ -2525,6 +2553,7 @@ class _NumberedMobileListItem extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
           width: _mobileRowNumberColumnWidth,
@@ -2592,8 +2621,10 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                         end: theme.spacing.sm,
                       ),
                       child: Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        Icons.chevron_right_rounded,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.45,
+                        ),
                         size: theme.listTokens.mobileChevronSize,
                       ),
                     ),

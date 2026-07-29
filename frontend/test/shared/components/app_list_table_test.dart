@@ -100,7 +100,7 @@ void main() {
     );
 
     expect(find.textContaining('Alpha'), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
   });
 
   testWidgets('AppListTableMobileItem renders optional trailing next-action', (

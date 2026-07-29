@@ -1,4 +1,4 @@
-import 'dart:ui' show lerpDouble;
+import 'dart:ui' show FontFeature, lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
@@ -501,60 +501,63 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
   static const FontWeight mobileAvatarInitialsWeight = FontWeight.w600;
 
   /// Metrics for mobile list chrome — sized for thumb-friendly readability.
-  static const double mobileAvatarExtent = 36;
+  static const double mobileAvatarExtent = 40;
   static const double mobileMetaIconExtent = 14;
-  static const double mobileChevronExtent = 20;
-  static const double mobileMetaGap = 4;
+  static const double mobileChevronExtent = 18;
+  static const double mobileMetaGap = 6;
 
   /// Mobile list styles derived from the active [TextTheme]/[ColorScheme].
   ///
-  /// Titles use ~14sp (labelLarge); captions/meta use ~12sp (labelMedium) so
-  /// rows stay readable on phones without competing with desktop table density.
+  /// Titles use ~15sp body; captions/meta use ~12sp so hierarchy is clear
+  /// without looking dense or washed-out on phones.
   factory AppListTokens.compact({
     required TextTheme textTheme,
     required ColorScheme colorScheme,
   }) {
     final TextStyle titleBase =
-        textTheme.labelLarge ??
-        textTheme.bodyMedium ??
-        const TextStyle(fontSize: 14, height: 1.25);
+        textTheme.bodyLarge ??
+        textTheme.titleSmall ??
+        const TextStyle(fontSize: 15, height: 1.3);
     final TextStyle secondaryBase =
-        textTheme.labelMedium ??
         textTheme.bodySmall ??
-        const TextStyle(fontSize: 12, height: 1.25);
-    final double titleSize = titleBase.fontSize ?? 14;
+        textTheme.labelMedium ??
+        const TextStyle(fontSize: 12, height: 1.3);
+    final double titleSize = titleBase.fontSize ?? 15;
     final double secondarySize = secondaryBase.fontSize ?? 12;
+    final Color muted = colorScheme.onSurfaceVariant.withValues(alpha: 0.78);
 
     return AppListTokens(
       mobileTitle: titleBase.copyWith(
         color: colorScheme.onSurface,
-        fontSize: titleSize,
+        fontSize: titleSize.clamp(14, 16).toDouble(),
         fontWeight: mobileTitleWeight,
-        height: 1.25,
+        height: 1.3,
+        letterSpacing: -0.1,
       ),
       mobileCaption: secondaryBase.copyWith(
-        color: colorScheme.onSurfaceVariant,
+        color: muted,
         fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
-        height: 1.25,
+        height: 1.3,
       ),
       mobileMeta: secondaryBase.copyWith(
-        color: colorScheme.onSurfaceVariant,
+        color: muted,
         fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
-        height: 1.25,
+        height: 1.3,
       ),
       mobileAvatarInitials: secondaryBase.copyWith(
-        color: colorScheme.onSurface,
-        fontSize: secondarySize,
+        fontSize: 13,
         fontWeight: mobileAvatarInitialsWeight,
         height: 1,
+        letterSpacing: 0.2,
       ),
       mobileRowNumber: secondaryBase.copyWith(
-        color: colorScheme.onSurfaceVariant,
-        fontSize: secondarySize,
-        fontWeight: mobileSecondaryWeight,
-        height: 1.25,
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        height: 1.2,
+        fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
       ),
       mobileAvatarSize: mobileAvatarExtent,
       mobileMetaIconSize: mobileMetaIconExtent,
