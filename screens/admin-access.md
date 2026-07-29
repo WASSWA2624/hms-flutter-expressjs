@@ -90,7 +90,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 
 | Atom | Kind | Gate |
 | --- | --- | --- |
-| Directory tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Directory tab | navigate / progressive-disclosure | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
 | Search / filters / columns / pagination | read chrome | read ∪ |
 | Empty / error / retry | read chrome | read ∪ |
 | Row select → user detail | read | read ∪ |
@@ -101,7 +101,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 | Detail Close | progressive-disclosure | read ∪ |
 | Nested cross-module | — | _(n/a)_ |
 
-Helpers: `AccessAdminDirectoryAtomPermissions`, `canReadAccessAdminDirectory`, `canMutateAccessAdminDirectory`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
+Helpers: `AccessAdminDirectoryAtomPermissions`, `canReadAccessAdminDirectory`, `canMutateAccessAdminDirectory`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin` / `canMutateAccessAdminDirectory`. Workspace Directory panel write chrome uses `canMutateAccessAdminDirectory`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
 
 ### Demo tab atoms (matrix)
 

@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
@@ -167,6 +168,14 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const AccessAdminWorkspaceQuery());
+    registerFallbackValue(
+      const AccessAdminUserDraft(
+        tenantId: 'tenant-1',
+        email: 'fallback@example.com',
+        positionTitle: 'Staff',
+        firstName: 'Fallback',
+      ),
+    );
   });
 
   setUp(() {
@@ -604,6 +613,193 @@ void main() {
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
       expect(find.text(l10n.accessAdminCreateUserAction), findsOneWidget);
     });
+
+    testWidgets('create user syncs worklist after mutation', (
+      WidgetTester tester,
+    ) async {
+      const AccessAdminItem created = AccessAdminItem(
+        id: 'user-2',
+        resource: AccessAdminResource.users,
+        displayId: 'USR-2',
+        title: 'Grace Hopper',
+        email: 'grace@example.com',
+        status: 'ACTIVE',
+        facilityName: 'Main Campus',
+      );
+      final AppAccessPolicy tenant = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      var createdCalled = false;
+      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+        final List<AccessAdminItem> items = createdCalled
+            ? const <AccessAdminItem>[_directoryUser, created]
+            : const <AccessAdminItem>[_directoryUser];
+        return Result<AccessAdminWorkspaceData>.success(
+          _directoryData(canWrite: true, items: items),
+        );
+      });
+      when(() => repository.createUser(any())).thenAnswer((_) async {
+        createdCalled = true;
+        return const Result<String>.success('user-2');
+      });
+      when(
+        () => repository.getUserDetail(
+          any(),
+          tenantId: any(named: 'tenantId'),
+          facilityId: any(named: 'facilityId'),
+        ),
+      ).thenAnswer(
+        (_) async => Result<AccessAdminUserDetail>.success(
+          AccessAdminUserDetail(
+            item: createdCalled ? created : _directoryUser,
+          ),
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            accessAdminRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(tenant),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: AccessAdminWorkspacePage(
+                initialQuery: AccessAdminWorkspaceQuery(
+                  panel: AccessAdminPanel.directory,
+                  resource: AccessAdminResource.users,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Grace Hopper'), findsNothing);
+      expect(find.text('Ada Lovelace'), findsWidgets);
+
+      final AccessAdminWorkspaceController controller =
+          ProviderScope.containerOf(
+            tester.element(find.byType(AccessAdminWorkspacePage)),
+          ).read(accessAdminWorkspaceControllerProvider.notifier);
+
+      final Result<AccessAdminItem> result = await controller.createUserReviewed(
+        const AccessAdminUserDraft(
+          tenantId: 'tenant-1',
+          email: 'grace@example.com',
+          positionTitle: 'Engineer',
+          firstName: 'Grace',
+          lastName: 'Hopper',
+        ),
+      );
+      expect(result.isSuccess, isTrue);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createUser(any())).called(1);
+      expect(find.text('Grace Hopper'), findsWidgets);
+      expect(find.text('Ada Lovelace'), findsWidgets);
+    });
+
+    testWidgets(
+      'desktop authorized reader: search chrome present, write absent (∪)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpDirectory(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _directoryData(canWrite: true),
+          viewport: const Size(1280, 900),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.byType(AppListTable<AccessAdminItem>), findsOneWidget);
+        expect(find.text(l10n.accessAdminSearchHint), findsOneWidget);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'detail Close remains for readers; Open HR when staffProfileId set',
+      (WidgetTester tester) async {
+        const AccessAdminItem linked = AccessAdminItem(
+          id: 'user-hr',
+          resource: AccessAdminResource.users,
+          displayId: 'USR-HR',
+          title: 'HR Linked User',
+          email: 'hr@example.com',
+          status: 'ACTIVE',
+          facilityName: 'Main Campus',
+          staffProfileId: 'staff-1',
+        );
+        when(
+          () => repository.getUserDetail(
+            any(),
+            tenantId: any(named: 'tenantId'),
+            facilityId: any(named: 'facilityId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<AccessAdminUserDetail>.success(
+            AccessAdminUserDetail(item: linked),
+          ),
+        );
+
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpDirectory(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _directoryData(
+            canWrite: true,
+            items: const <AccessAdminItem>[linked],
+          ),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        table.onRowSelected!(linked);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.commonCloseActionLabel), findsOneWidget);
+        expect(find.text(l10n.accessAdminOpenHrProfileAction), findsOneWidget);
+        expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+        expect(find.text(l10n.accessAdminActivateAction), findsNothing);
+      },
+    );
 
     testWidgets('status toggle syncs worklist after mutation', (
       WidgetTester tester,

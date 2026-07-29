@@ -6,7 +6,7 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 - Screen inventory: `screens/admin-access.md` (source of truth for reachable controls).
 - Target tab: **Directory** (`directory`). Users directory; Create user.
-- Feature code: `frontend/lib/features/admin_access/`
+- Feature code: `frontend/lib/features/access_admin/`
 - Module entitlement: `access administration`
 - Route entry any-of: `tenant:admin`, `facility:admin`, `system:admin`
 - Effective access = union(role/module/user grants) ∩ subscription ∩ ABAC (see `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `backend/src/config/permissions.js`).
@@ -60,7 +60,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 ## Relevant Files
 
 - `screens/admin-access.md`
-- `frontend/lib/features/admin_access/`
+- `frontend/lib/features/access_admin/`
 - `frontend/lib/core/permissions/access_policy.dart`
 - `frontend/lib/core/permissions/access_requirement.dart`
 - `frontend/lib/core/permissions/access_gate.dart`

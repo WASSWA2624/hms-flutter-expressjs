@@ -176,7 +176,7 @@ class _AccessAdminWorkspaceContentState
         state.query.panel == AccessAdminPanel.registrations;
     final bool isDemoPanel = state.query.panel == AccessAdminPanel.demo;
     // Source inventory: workspace canWrite. Matrix write ∩: tenant:admin.
-    // Roles / Directory / Demo use the shared write ∩ helper;
+    // Directory / Roles / Demo use panel mutate helpers (shared write ∩);
     // Registrations additionally requires the elevated tab gate.
     // Permissions / Entitlements catalogs mount no write chrome (reserved via
     // [canMutateAccessAdminPermissions] / [canMutateAccessAdminEntitlements]
@@ -193,10 +193,15 @@ class _AccessAdminWorkspaceContentState
                     policy,
                     workspaceCanWrite: workspaceCanWrite,
                   )
-                : canWriteAccessAdmin(
-                    policy,
-                    workspaceCanWrite: workspaceCanWrite,
-                  );
+                : isDirectoryPanel
+                    ? canMutateAccessAdminDirectory(
+                        policy,
+                        workspaceCanWrite: workspaceCanWrite,
+                      )
+                    : canWriteAccessAdmin(
+                        policy,
+                        workspaceCanWrite: workspaceCanWrite,
+                      );
     final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
       policy,
       workspaceCanWrite: workspaceCanWrite,

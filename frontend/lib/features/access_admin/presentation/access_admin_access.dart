@@ -267,7 +267,7 @@ AccessAdminPanel? accessAdminFallbackPanel(AppAccessPolicy policy) {
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → user detail | read | read ∪ |
 /// | Create user (tab primary) | create | write ∩ + canWrite |
-/// | Activate / Deactivate (next-action) | update | write ∩ + canWrite |
+/// | Activate / Deactivate (next-action / mobile trailing) | update | write ∩ + canWrite |
 /// | Delete | delete | write ∩ (matrix; no delete UI on Directory today) |
 /// | Open HR profile | navigate | linked profile (nested n/a) |
 /// | Detail Close | progressive-disclosure | read ∪ |
@@ -275,7 +275,8 @@ AccessAdminPanel? accessAdminFallbackPanel(AppAccessPolicy policy) {
 ///
 /// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
 /// `tenant:admin` is applied via [canWriteAccessAdmin] /
-/// [canMutateAccessAdminDirectory].
+/// [canMutateAccessAdminDirectory]. Assignable rights stay within actor
+/// ceiling / subscription (backend authoritative).
 abstract final class AccessAdminDirectoryAtomPermissions {
   static const AccessRequirement tab = accessAdminDirectoryReadRequirement;
   static const AccessRequirement listChrome =
