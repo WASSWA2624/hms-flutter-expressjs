@@ -709,7 +709,6 @@ void main() {
 
       final IcuPatientSummary afterAssign = _noBedPatient.copyWith(
         hasActiveBed: true,
-        bedLabel: 'ICU-9',
       );
 
       await _pumpAllTab(
