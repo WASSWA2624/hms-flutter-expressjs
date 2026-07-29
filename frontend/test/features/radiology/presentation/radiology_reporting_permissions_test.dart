@@ -1108,6 +1108,39 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets(
+    'legacy section=draft alias still opens Reporting tab',
+    (WidgetTester tester) async {
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.radiologyRead},
+        ),
+        initialLocation: '/radiology?section=draft',
+      );
+
+      expect(_tab('Reporting'), findsOneWidget);
+      expect(find.text('Rita Reporting'), findsOneWidget);
+    },
+  );
+}
+
+Future<void> _openReportingDetail(WidgetTester tester) async {
+  await tester.tap(find.text('Rita Reporting'));
+  await tester.pumpAndSettle();
+
+  // Writers default to imaging floor; switch to Reporting view for draft CTAs.
+  final Finder reportingMode = find.descendant(
+    of: find.byType(AppDialog),
+    matching: find.text('Reporting'),
+  );
+  if (reportingMode.evaluate().isNotEmpty) {
+    await tester.ensureVisible(reportingMode.first);
+    await tester.tap(reportingMode.first);
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> _pumpReportingTab(
