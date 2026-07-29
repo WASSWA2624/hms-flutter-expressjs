@@ -7,12 +7,13 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/rooms_beds_access.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_next_action_button.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -95,14 +96,15 @@ class _RoomsBedsWorkspacePageState
       if (state == null || selected == null) {
         return;
       }
-      final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+      final RoomsBedsCapabilities capabilities =
+          RoomsBedsCapabilities.fromPolicy(ref.read(appAccessPolicyProvider));
       await _openBedDetailDialog(
         context,
         ref,
         state,
         selected,
-        canAdminBeds: _canAdminBeds(accessPolicy),
-        canIpdWrite: accessPolicy.grants(AppPermissions.clinicalWrite),
+        canAdminBeds: capabilities.canAdminBeds,
+        canIpdWrite: capabilities.canOccupancyWrite,
       );
     });
   }
@@ -173,6 +175,23 @@ class _RoomsBedsWorkspaceContentState
     if (oldWidget.state.query.section != widget.state.query.section) {
       _section = widget.state.query.section;
     }
+  }
+
+  void _ensureAuthorizedSection(AppAccessPolicy accessPolicy) {
+    if (canViewRoomsBedsSection(accessPolicy, _section)) {
+      return;
+    }
+    final RoomsBedsSection? fallback = roomsBedsFallbackSection(accessPolicy);
+    if (fallback == null || fallback == _section) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _section = fallback);
+      _updateUrlForSection(fallback);
+    });
   }
 
   @override

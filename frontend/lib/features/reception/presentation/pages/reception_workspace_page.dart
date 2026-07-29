@@ -46,7 +46,7 @@ class ReceptionWorkspacePage extends ConsumerWidget {
     final AsyncValue<Result<OpdWorkspaceState>> opdState = ref.watch(
       opdWorkspaceControllerProvider,
     );
-    final bool canReadPaymentGate = receptionPaymentGateRequirement.isAllowed(
+    final bool canReadPaymentGate = canViewReceptionPaymentGate(
       ref.watch(appAccessPolicyProvider),
     );
     final AsyncValue<Result<ReceptionPaymentGateState>>? paymentGateState =
@@ -696,6 +696,8 @@ class _ReceptionWorkspaceContentState
         ReceptionActiveVisitsAtomPermissions.register,
       ReceptionDeskSection.followUps =>
         ReceptionFollowUpsAtomPermissions.register,
+      ReceptionDeskSection.paymentGate =>
+        ReceptionPaymentGateAtomPermissions.register,
       _ => ReceptionAppointmentsAtomPermissions.register,
     };
   }
@@ -729,6 +731,8 @@ class _ReceptionWorkspaceContentState
         ReceptionActiveVisitsAtomPermissions.scheduleAppointment,
       ReceptionDeskSection.followUps =>
         ReceptionFollowUpsAtomPermissions.schedule,
+      ReceptionDeskSection.paymentGate =>
+        ReceptionPaymentGateAtomPermissions.schedule,
       _ => ReceptionAppointmentsAtomPermissions.schedule,
     };
     return <Widget>[
@@ -759,6 +763,24 @@ class _ReceptionWorkspaceContentState
 
   bool get _canShowDeskQueueNextAction {
     return receptionDeskQueueShowsNextActionColumn(
+      ref.watch(appAccessPolicyProvider),
+    );
+  }
+
+  bool get _canShowHighPriorityNextAction {
+    return receptionHighPriorityShowsNextActionColumn(
+      ref.watch(appAccessPolicyProvider),
+    );
+  }
+
+  bool get _canShowHighPriorityEmergencyNested {
+    return ReceptionHighPriorityAtomPermissions.nestedEmergencyRead.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+  }
+
+  bool get _canShowPaymentGateNextAction {
+    return receptionPaymentGateShowsNextActionColumn(
       ref.watch(appAccessPolicyProvider),
     );
   }
@@ -797,7 +819,8 @@ class _ReceptionWorkspaceContentState
           _receptionPatientColumn(l10n),
           _receptionQueuedAtColumn(l10n, locale),
           _receptionQueueCurrentStepColumn(l10n),
-          _receptionQueueNextActionColumn(l10n),
+          if (_canShowHighPriorityNextAction)
+            _receptionQueueNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.activeVisits:
         return <AppListTableColumn<_ReceptionDeskRow>>[
@@ -811,7 +834,8 @@ class _ReceptionWorkspaceContentState
           _receptionPatientColumn(l10n),
           _receptionPaymentEncounterColumn(l10n),
           _receptionPaymentGateStatusColumn(l10n),
-          _receptionPaymentNextActionColumn(l10n),
+          if (_canShowPaymentGateNextAction)
+            _receptionPaymentNextActionColumn(l10n),
           _receptionPaymentOutstandingColumn(l10n),
         ];
       case ReceptionDeskSection.followUps:
@@ -882,6 +906,11 @@ class _ReceptionWorkspaceContentState
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
         final ThemeData theme = Theme.of(context);
         final bool prioritized = row.queueEntry?.isPrioritized == true;
+        final bool showEmergencyBadge =
+            _section == ReceptionDeskSection.highPriority &&
+            _canShowHighPriorityEmergencyNested &&
+            row.flow != null &&
+            isReceptionEmergencyFlow(row.flow!);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -896,6 +925,15 @@ class _ReceptionWorkspaceContentState
                 status: AppWorkspaceStatus(
                   label: l10n.receptionHighPriorityBadgeLabel,
                   tone: AppWorkspaceStatusTone.warning,
+                ),
+              ),
+            ],
+            if (showEmergencyBadge) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.opdTriageScopeEmergency,
+                  tone: AppWorkspaceStatusTone.error,
                 ),
               ),
             ],
@@ -1514,9 +1552,15 @@ class _ReceptionWorkspaceContentState
         _section == ReceptionDeskSection.appointments &&
         _canShowAppointmentsNextAction &&
         row.appointment != null;
+    final bool showEmergencyBadge =
+        _section == ReceptionDeskSection.highPriority &&
+        _canShowHighPriorityEmergencyNested &&
+        row.flow != null &&
+        isReceptionEmergencyFlow(row.flow!);
     return _ReceptionDeskMobileRow(
       section: _section,
       row: row,
+      showEmergencyBadge: showEmergencyBadge,
       onAppointmentNextAction: allowAppointmentNextAction
           ? () {
               final OpdAppointmentPrimaryAction primary =
@@ -1959,6 +2003,11 @@ class _ReceptionWorkspaceContentState
       return;
     }
     if (row.paymentGateEntry != null) {
+      if (!ReceptionPaymentGateAtomPermissions.detail.isAllowed(
+        ref.read(appAccessPolicyProvider),
+      )) {
+        return;
+      }
       await showReceptionPaymentGateDetailDialog(
         context: context,
         entry: row.paymentGateEntry!,
@@ -1984,18 +2033,37 @@ class _ReceptionWorkspaceContentState
       return;
     }
     if (row.queueEntry != null) {
-      if (row.flow != null) {
-        await _openFlowActions(row.flow!);
-        return;
+      final policy = ref.read(appAccessPolicyProvider);
+      final OpdFlowSummary? linkedFlow = row.flow;
+      final bool openEmergencyFlow =
+          _section == ReceptionDeskSection.highPriority &&
+          linkedFlow != null &&
+          isReceptionEmergencyFlow(linkedFlow);
+      if (linkedFlow != null) {
+        if (openEmergencyFlow &&
+            !ReceptionHighPriorityAtomPermissions.nestedEmergencyRead
+                .isAllowed(policy)) {
+          // Nested emergency Flow Actions chrome requires ∪ emergency:read;
+          // fall through to Queue Actions without mounting emergency visit UI.
+        } else {
+          await _openFlowActions(linkedFlow);
+          return;
+        }
       }
+      final AccessRequirement queueHubRequirement =
+          _section == ReceptionDeskSection.highPriority
+          ? ReceptionHighPriorityAtomPermissions.frontDesk
+          : ReceptionDeskQueueAtomPermissions.frontDesk;
       final bool? changed = await showReceptionQueueActionsDialog(
         context: context,
         entry: row.queueEntry!,
+        actionRequirement: queueHubRequirement,
       );
       if (changed == true && mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+        await _refreshWorkspace();
       }
       return;
     }
@@ -2553,11 +2621,13 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
   const _ReceptionDeskMobileRow({
     required this.section,
     required this.row,
+    this.showEmergencyBadge = false,
     this.onAppointmentNextAction,
   });
 
   final ReceptionDeskSection section;
   final _ReceptionDeskRow row;
+  final bool showEmergencyBadge;
   final VoidCallback? onAppointmentNextAction;
 
   @override
@@ -2635,6 +2705,8 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
       meta: <AppListTableMobileMeta>[
         if (row.queueEntry?.isPrioritized == true)
           AppListTableMobileMeta(label: l10n.receptionHighPriorityBadgeLabel),
+        if (showEmergencyBadge)
+          AppListTableMobileMeta(label: l10n.opdTriageScopeEmergency),
         if (when != null) ...<AppListTableMobileMeta>[
           AppListTableMobileMeta(
             label: AppFormatters.shortDate(when.toLocal(), locale),

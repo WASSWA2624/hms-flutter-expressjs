@@ -36,7 +36,7 @@ void main() {
     final QueueActionsDialog hub = tester.widget<QueueActionsDialog>(
       find.byType(QueueActionsDialog),
     );
-    expect(hub.actionRequirement, same(receptionFrontDeskWriteRequirement));
+    expect(hub.actionRequirement, same(ReceptionDeskQueueAtomPermissions.frontDesk));
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isTrue);
