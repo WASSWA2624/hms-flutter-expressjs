@@ -153,3 +153,12 @@ Analytics permission tests in `frontend/test/features/biomedical/presentation/bi
 - [x] Nested ∪: `reports:read` (+ module) restores Analytics; subscription strip without biomed/reporting modules denies.
 - [x] Write ∪ source gate: `operations:write` (+ facilities module) satisfies write; read-only omits mutation/print atoms.
 - [x] Authorized flows, empty/loading states, mobile+dark / desktop+light, post-mutation sync.
+
+Work orders permission tests in `frontend/test/features/biomedical/presentation/biomedical_work_orders_permissions_test.dart`:
+
+- [x] ∩ denial: `biomed:read` without write omits Create work order / write next-actions / detail writes.
+- [x] Full write ∩ / source ∪: Create WO, Work order follow-up next-action, detail writes, print mount.
+- [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts write atoms without `biomed:write`.
+- [x] Route entry ∪ write-only omits tab chrome; subscription strip without biomed module omits Work orders.
+- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; WO writes still mount.
+- [x] Authorized Create WO dialog, start-WO mutation sync, empty/error, mobile+desktop, light+dark.

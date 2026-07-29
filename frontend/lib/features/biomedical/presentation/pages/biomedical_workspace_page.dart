@@ -371,7 +371,17 @@ class _BiomedicalWorkspaceContentState
       return null;
     }
     return AppAccessActionGate(
-      requirement: biomedicalWriteRequirement,
+      requirement: switch (_currentPanel) {
+        BiomedicalPanels.support => BiomedicalSupportAtomPermissions.reportFault,
+        BiomedicalPanels.registry => BiomedicalRegistryAtomPermissions.registerAsset,
+        BiomedicalPanels.preventive =>
+          BiomedicalPreventiveAtomPermissions.scheduleMaintenance,
+        BiomedicalPanels.workOrders =>
+          BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
+        BiomedicalPanels.compliance =>
+          BiomedicalComplianceAtomPermissions.recordCalibration,
+        _ => biomedicalWriteRequirement,
+      },
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: action.label,
