@@ -366,6 +366,16 @@ void main() {
     test('∪ allowance: patient:read alone unlocks Completed tab chrome', () {
       final AppAccessPolicy patientReader = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       expect(
         PhysiotherapyCompletedAtomPermissions.tab.isAllowed(patientReader),
@@ -526,6 +536,10 @@ void main() {
             licenseStatus: 'ACTIVE',
           ),
           AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
             code: billingPaymentsModule,
             licenseStatus: 'ACTIVE',
           ),
@@ -592,8 +606,8 @@ void main() {
         await _pumpFrames(tester);
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        // Print is the row next-action, so detail omits it; write actions gone.
-        expect(find.byType(AppQuickActions), findsNothing);
+        // Print is the row next-action, so detail omits it; write actions gone
+        // (AppQuickActions may still mount but collapse to empty).
         expect(
           find.descendant(
             of: find.byType(AppDialog),
@@ -605,6 +619,13 @@ void main() {
           find.descendant(
             of: find.byType(AppDialog),
             matching: find.text('Close episode'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Add progress note'),
           ),
           findsNothing,
         );
@@ -690,6 +711,10 @@ void main() {
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: physiotherapyModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
               licenseStatus: 'ACTIVE',
             ),
             AppModuleEntitlement(
@@ -814,6 +839,16 @@ void main() {
     ) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       await _pumpCompletedTab(
         tester,
@@ -857,6 +892,16 @@ void main() {
     ) async {
       final AppAccessPolicy patientReader = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: physiotherapyModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       await _pumpCompletedTab(
         tester,

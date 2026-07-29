@@ -86,14 +86,8 @@ abstract final class RouteAccessCatalog {
     requirement: opdEntry,
   );
 
-  /// Route entry ∪ matches [AppRoutes.emergency] / Active matrix:
-  /// `emergency:read` | `emergency:write` | `operations:read`.
   static const AccessRequirement emergencyEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.emergencyRead,
-      AppPermissions.emergencyWrite,
-      AppPermissions.operationsRead,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.emergencyRead],
     activeModules: <String>['scheduling-queue'],
     requiresTenantContext: true,
   );
@@ -104,20 +98,14 @@ abstract final class RouteAccessCatalog {
     requirement: emergencyEntry,
   );
 
-  /// Route entry ∪ matches [AppRoutes.ipd] / Admission Queue matrix:
-  /// `clinical:read` | `operations:read` | `billing:read`.
   static const AccessRequirement ipdEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.operationsRead,
-      AppPermissions.billingRead,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.ipdRead],
     activeModules: <String>['inpatient-bed-management'],
   );
   static const RouteAccessAtom ipd = RouteAccessAtom(
     routeName: 'ipd',
     path: '/ipd',
-    entryPermission: AppPermissions.clinicalRead,
+    entryPermission: AppPermissions.ipdRead,
     requirement: ipdEntry,
   );
 
@@ -133,38 +121,25 @@ abstract final class RouteAccessCatalog {
     requirement: roomsBedsEntry,
   );
 
-  /// Route entry ∪ matches [AppRoutes.icu] / Active ICU matrix:
-  /// `clinical:read` | `emergency:read` | `operations:read`.
   static const AccessRequirement icuEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.emergencyRead,
-      AppPermissions.operationsRead,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.icuRead],
     activeModules: <String>['icu-critical-care'],
   );
   static const RouteAccessAtom icu = RouteAccessAtom(
     routeName: 'icu',
     path: '/icu',
-    entryPermission: AppPermissions.clinicalRead,
+    entryPermission: AppPermissions.icuRead,
     requirement: icuEntry,
   );
 
-  /// Matches [AppRoutes.nursing] `requiredAnyPermissions` + module.
-  /// Roles remain on [AppRoutes.nursing] (`requiredAnyRoles`).
   static const AccessRequirement nursingEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.patientRead,
-      AppPermissions.lastOfficeRead,
-      AppPermissions.operationsRead,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.nursingRead],
     activeModules: <String>['inpatient-bed-management'],
   );
   static const RouteAccessAtom nursing = RouteAccessAtom(
     routeName: 'nursing',
     path: '/nursing',
-    entryPermission: AppPermissions.clinicalRead,
+    entryPermission: AppPermissions.nursingRead,
     requirement: nursingEntry,
   );
 
@@ -180,18 +155,13 @@ abstract final class RouteAccessCatalog {
   );
 
   static const AccessRequirement physiotherapyEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.clinicalWrite,
-      AppPermissions.patientRead,
-      AppPermissions.billingRead,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.physiotherapyRead],
     activeModules: <String>['physiotherapy'],
   );
   static const RouteAccessAtom physiotherapy = RouteAccessAtom(
     routeName: 'physiotherapy',
     path: '/physiotherapy',
-    entryPermission: AppPermissions.clinicalRead,
+    entryPermission: AppPermissions.physiotherapyRead,
     requirement: physiotherapyEntry,
   );
 
@@ -301,14 +271,8 @@ abstract final class RouteAccessCatalog {
     requirement: operationsEntry,
   );
 
-  /// Route entry matches [AppRoutes.housekeeping]: ∪ `operations:read` |
-  /// `operations:write` + facilities-maintenance + facility context.
-  /// Unique shell domain stays `housekeeping` via [entryPermission].
   static const AccessRequirement housekeepingEntry = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.operationsRead,
-      AppPermissions.operationsWrite,
-    ],
+    allPermissions: <AppPermission>[AppPermissions.housekeepingRead],
     activeModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );

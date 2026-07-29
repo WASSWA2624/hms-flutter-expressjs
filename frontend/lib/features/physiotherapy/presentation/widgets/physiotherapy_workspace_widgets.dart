@@ -102,10 +102,18 @@ AccessRequirement therapyNextActionRequirement(String status) {
 AccessRequirement therapyNextActionRequirementForKind(
   TherapyNextActionKind kind,
 ) {
+  // REFERRAL row next-action is Accept referral (Referrals atom map — write ∩).
   // COMPLETED row next-action is Print instructions (Completed atom map).
-  return kind == TherapyNextActionKind.printInstructions
-      ? PhysiotherapyCompletedAtomPermissions.printInstructions
-      : physiotherapyNextActionWriteRequirement;
+  // MISSED row next-action is Mark attendance (Missed atom map — write ∩).
+  return switch (kind) {
+    TherapyNextActionKind.acceptReferral =>
+      PhysiotherapyReferralsAtomPermissions.acceptReferral,
+    TherapyNextActionKind.printInstructions =>
+      PhysiotherapyCompletedAtomPermissions.printInstructions,
+    TherapyNextActionKind.markAttendance =>
+      PhysiotherapyMissedAtomPermissions.markAttendance,
+    _ => physiotherapyNextActionWriteRequirement,
+  };
 }
 
 bool therapyNextActionEnabled({

@@ -910,7 +910,7 @@ abstract final class PatientAdmittedAtomPermissions {
 /// | Quick Action Report | export / read | reports:read ∩ |
 /// | Related record add/edit | create / update | write ∩ |
 /// | Related record delete | delete | delete ∩ |
-/// | Billing context panel | nested read | billing role reader helper |
+/// | Billing context panel | nested read | tab read ∩ (Balance due mounts for all viewers) |
 /// | Open billing workbench | nested write / navigate | billing:write ∩ + module |
 /// | Open pharmacy workbench | navigate | pharmacy:read ∩ |
 /// | Route entry (deep link) | navigate | patient:read ∩ + module |

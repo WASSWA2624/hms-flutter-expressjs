@@ -1048,7 +1048,7 @@ class _ActionsPanel extends ConsumerWidget {
       permissionActions: <AppPermissionActionItem>[
         if (omit != TherapyNextActionKind.acceptReferral)
           AppPermissionActionItem(
-            requirement: physiotherapyWorkspaceWriteRequirement,
+            requirement: PhysiotherapyReferralsAtomPermissions.acceptReferral,
             label: l10n.physiotherapyAcceptReferralAction,
             icon: Icons.assignment_turned_in_outlined,
             isLoading: isSaving,
@@ -1161,7 +1161,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.markAttendance && canMarkAttendance)
           AppPermissionActionItem(
-            requirement: physiotherapyWorkspaceWriteRequirement,
+            requirement: PhysiotherapyMissedAtomPermissions.markAttendance,
             label: l10n.physiotherapyMarkAttendanceAction,
             icon: Icons.fact_check_outlined,
             isLoading: isSaving,
@@ -2237,19 +2237,23 @@ String _value(String? value, AppLocalizations l10n) {
   return normalized.isEmpty ? l10n.physiotherapyMissingValueLabel : normalized;
 }
 
-/// Billing column / mobile meta — Completed (and Active plans) atom maps reuse
+/// Billing column / mobile meta — queue tab atom maps reuse
 /// [physiotherapyBillingReadRequirement] (∩ `billing:read` + `billing-payments`).
 bool _billingColumnAllowed(
   AppAccessPolicy policy,
   PhysiotherapyQueueScope section,
 ) {
   return switch (section) {
+    PhysiotherapyQueueScope.referrals =>
+      PhysiotherapyReferralsAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.completed =>
       PhysiotherapyCompletedAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.activePlans =>
       PhysiotherapyActivePlansAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.followUpDue =>
       PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(policy),
+    PhysiotherapyQueueScope.missed =>
+      PhysiotherapyMissedAtomPermissions.billingColumn.isAllowed(policy),
     _ => canViewPhysiotherapyBilling(policy),
   };
 }

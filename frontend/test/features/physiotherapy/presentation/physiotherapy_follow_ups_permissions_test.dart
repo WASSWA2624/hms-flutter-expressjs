@@ -121,6 +121,13 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const PhysiotherapyWorklistQuery());
+    registerFallbackValue(
+      const TherapyWorkItem(
+        id: 'TH-FALLBACK',
+        encounterId: 'ENC-FALLBACK',
+        patientId: 'PAT-FALLBACK',
+      ),
+    );
     registerFallbackValue(<String, Object?>{});
   });
 

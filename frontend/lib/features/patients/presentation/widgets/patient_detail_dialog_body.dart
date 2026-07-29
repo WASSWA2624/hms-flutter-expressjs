@@ -192,6 +192,17 @@ class PatientDetailDialog extends ConsumerWidget {
     final bool hideClinicalSections = pharmacyReader || billingReader;
     final bool isAdmittedSection =
         registrySection == PatientRegistrySection.admitted;
+    final bool isBalanceDueSection =
+        registrySection == PatientRegistrySection.balanceDue;
+    // Balance due tab read already requires billing:read; mount invoice/payment
+    // chrome for any authorized Balance due viewer so nested write (Open billing
+    // ∩ billing:write) is reachable for writers, not only billing-role readers.
+    final bool showBillingContextPanel =
+        billingReader ||
+        (isBalanceDueSection &&
+            PatientBalanceDueAtomPermissions.nestedRead.isAllowed(
+              accessPolicy,
+            ));
     return AppDialog(
       title: Text(patient.effectiveDisplayName),
       icon: const Icon(Icons.assignment_ind_outlined),
@@ -277,7 +288,7 @@ class PatientDetailDialog extends ConsumerWidget {
               ),
               SizedBox(height: Theme.of(context).spacing.md),
             ],
-            if (billingReader) ...<Widget>[
+            if (showBillingContextPanel) ...<Widget>[
               PatientBillingContextPanel(
                 detail: detail,
                 allowBillingNavigation: allowBillingNavigation,

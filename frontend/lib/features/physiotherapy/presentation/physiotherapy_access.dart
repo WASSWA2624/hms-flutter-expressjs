@@ -106,15 +106,16 @@ AccessRequirement physiotherapySectionTabRequirement(
   PhysiotherapyQueueScope scope,
 ) {
   return switch (scope) {
+    PhysiotherapyQueueScope.referrals =>
+      PhysiotherapyReferralsAtomPermissions.tab,
     PhysiotherapyQueueScope.activePlans =>
       PhysiotherapyActivePlansAtomPermissions.tab,
     PhysiotherapyQueueScope.followUpDue =>
       PhysiotherapyFollowUpDueAtomPermissions.tab,
+    PhysiotherapyQueueScope.missed => PhysiotherapyMissedAtomPermissions.tab,
     PhysiotherapyQueueScope.completed =>
       PhysiotherapyCompletedAtomPermissions.tab,
-    PhysiotherapyQueueScope.referrals ||
     PhysiotherapyQueueScope.today ||
-    PhysiotherapyQueueScope.missed ||
     PhysiotherapyQueueScope.all => physiotherapyWorkspaceReadRequirement,
   };
 }
@@ -126,12 +127,20 @@ bool canViewPhysiotherapyTab(
   return physiotherapySectionTabRequirement(scope).isAllowed(policy);
 }
 
+bool canViewPhysiotherapyReferrals(AppAccessPolicy policy) {
+  return PhysiotherapyReferralsAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canViewPhysiotherapyActivePlans(AppAccessPolicy policy) {
   return PhysiotherapyActivePlansAtomPermissions.tab.isAllowed(policy);
 }
 
 bool canViewPhysiotherapyFollowUpDue(AppAccessPolicy policy) {
   return PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewPhysiotherapyMissed(AppAccessPolicy policy) {
+  return PhysiotherapyMissedAtomPermissions.tab.isAllowed(policy);
 }
 
 bool canViewPhysiotherapyCompleted(AppAccessPolicy policy) {
@@ -171,6 +180,94 @@ PhysiotherapyQueueScope? physiotherapyFallbackScope(AppAccessPolicy policy) {
     return PhysiotherapyQueueScope.referrals;
   }
   return allowed.first;
+}
+
+/// Referrals tab atom → permission mapping (inventory + matrix).
+///
+/// Incoming therapy referrals (`/physiotherapy?section=referrals`). Nested
+/// cross-module matrix rows are _(n/a)_ except billing status chips/columns
+/// ([billingColumn] / [billingChip] — ∩ `billing:read` + `billing-payments`).
+/// Create/update/delete keep matrix ∩ `clinical:write` + module. Route entry ∪
+/// is [routeEntry] (includes `billing:read` alone for shell entry, not tab
+/// chrome). Next action on this tab is Accept referral ([acceptReferral]).
+/// Referrals intake may allow `patient:read` readers without write.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Referrals tab / count badge | navigate | read ∪ ([tab]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Status filter (REFERRAL / ACCEPTED / ASSESSMENT) | read chrome | ([filters]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write / form |
+/// | Row select → therapy detail | read | ([detail]) |
+/// | Next action Accept referral | create / update | write ∩ ([acceptReferral]) |
+/// | Optional billing column | data read | ([billingColumn]) |
+/// | Detail complementary writes (plan, note, session, close…) | create / update / delete | write ∩ |
+/// | Detail billing authorization chip | nested read | ([billingChip]) |
+/// | Detail print instructions | read / export | ([printInstructions]) |
+/// | Nested Accept referral / mutation dialogs | create / update | write ∩ |
+/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+abstract final class PhysiotherapyReferralsAtomPermissions {
+  static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement search = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement filters = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement settings =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement empty = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement loading = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement retry = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement success =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement detail = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement create = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement update = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement delete = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement write = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement nextAction =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement acceptReferral =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement updatePlan =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement addProgressNote =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement scheduleSession =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement recordSession =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement recordAssessment =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement markAttendance =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement scheduleFollowUp =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement closeEpisode =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement printInstructions =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement billingColumn =
+      physiotherapyBillingReadRequirement;
+  static const AccessRequirement billingChip =
+      physiotherapyBillingReadRequirement;
+  static const AccessRequirement nestedWrite =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement entry = physiotherapyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      physiotherapyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      physiotherapyWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.physiotherapyEntry;
 }
 
 /// Active plans tab atom → permission mapping (inventory + matrix).
@@ -412,6 +509,97 @@ abstract final class PhysiotherapyFollowUpDueAtomPermissions {
   static const AccessRequirement recordAssessment =
       physiotherapyWorkspaceWriteRequirement;
   static const AccessRequirement markAttendance =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement acceptReferral =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement closeEpisode =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement printInstructions =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement billingColumn =
+      physiotherapyBillingReadRequirement;
+  static const AccessRequirement billingChip =
+      physiotherapyBillingReadRequirement;
+  static const AccessRequirement nestedWrite =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement entry = physiotherapyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      physiotherapyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      physiotherapyWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.physiotherapyEntry;
+}
+
+/// Missed tab atom → permission mapping (inventory + matrix).
+///
+/// Missed sessions (`/physiotherapy?section=missed`). Nested cross-module
+/// matrix rows are _(n/a)_ except billing status chips/columns
+/// ([billingColumn] / [billingChip] — ∩ `billing:read` + `billing-payments`).
+/// Create/update/delete keep matrix ∩ `clinical:write` + module. Route entry ∪
+/// is [routeEntry] (includes `billing:read` alone for shell entry, not tab
+/// chrome). Row next action is Mark attendance ([markAttendance]); reschedule
+/// (Schedule session / Schedule follow-up in detail) needs write ∩
+/// ([scheduleSession] / [scheduleFollowUp]). Therapy plans/sessions need
+/// `clinical:write`. Referrals intake may allow `patient:read` readers without
+/// write.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Missed tab / count badge | navigate | read ∪ ([tab]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write / form |
+/// | Row select → therapy detail | read | ([detail]) |
+/// | Next action Mark attendance | update | write ∩ ([markAttendance] / [nextAction]) |
+/// | Detail reschedule (Schedule session / follow-up) | create / update | write ∩ |
+/// | Optional billing column | data read | ([billingColumn]) |
+/// | Detail complementary writes (plan, note, session, close…) | create / update / delete | write ∩ |
+/// | Detail billing authorization chip | nested read | ([billingChip]) |
+/// | Detail print instructions | read / export | ([printInstructions]) |
+/// | Nested mutation dialogs (attendance, schedule…) | create / update | write ∩ |
+/// | Route entry (deep link) | navigate | clinical \| patient \| billing:read ([routeEntry]) |
+abstract final class PhysiotherapyMissedAtomPermissions {
+  static const AccessRequirement tab = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement search = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement filters = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement settings =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement empty = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement loading = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement retry = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement success =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect =
+      physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement detail = physiotherapyWorkspaceReadRequirement;
+  static const AccessRequirement create = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement update = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement delete = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement write = physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement nextAction =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement markAttendance =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement scheduleSession =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement scheduleFollowUp =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement updatePlan =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement addProgressNote =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement recordSession =
+      physiotherapyWorkspaceWriteRequirement;
+  static const AccessRequirement recordAssessment =
       physiotherapyWorkspaceWriteRequirement;
   static const AccessRequirement acceptReferral =
       physiotherapyWorkspaceWriteRequirement;
