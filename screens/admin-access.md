@@ -133,7 +133,7 @@ Helpers: `AccessAdminDemoAtomPermissions`, `canReadAccessAdminDemo`, `canWriteAc
 
 | Atom | Kind | Gate |
 | --- | --- | --- |
-| Roles tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Roles tab | navigate / progressive-disclosure | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
 | Search / filters / columns / pagination | read chrome | read ∪ |
 | Empty / error / retry | read chrome | read ∪ |
 | Row select → role detail | read | read ∪ |
@@ -143,7 +143,7 @@ Helpers: `AccessAdminDemoAtomPermissions`, `canReadAccessAdminDemo`, `canWriteAc
 | Detail Close | progressive-disclosure | read ∪ |
 | Nested cross-module | — | _(n/a)_ |
 
-Helpers: `AccessAdminRolesAtomPermissions`, `canReadAccessAdminRoles`, `canMutateAccessAdminRoles`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
+Helpers: `AccessAdminRolesAtomPermissions`, `canReadAccessAdminRoles`, `canMutateAccessAdminRoles`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin` / `canMutateAccessAdminRoles`. Workspace Roles panel write chrome uses `canMutateAccessAdminRoles`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
 
 ### Registrations
 
@@ -207,6 +207,20 @@ Helpers: `AccessAdminRegistrationsAtomPermissions`, `canReadAccessAdminRegistrat
   - Condition: elevated tab + write ∩ `tenant:admin` + workspace `canWrite` (`canMutateAccessAdminRegistrations`). Activate stays on the list next-action only.
 
 Permissions and entitlements details are read-only summaries (no write next-actions on those resources).
+
+### Entitlements tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Entitlements tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Search / filters / columns / pagination | read chrome | read ∪ |
+| Empty / error / retry | read chrome | read ∪ |
+| Row select → module entitlement detail | read | read ∪ |
+| Detail Close | progressive-disclosure | read ∪ |
+| Create / update / delete / next-action / tab primary | write | _(absent)_ ; reserved write ∩ `tenant:admin` + workspace `canWrite` |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminEntitlementsAtomPermissions`, `canReadAccessAdminEntitlements`, `canMutateAccessAdminEntitlements`. Catalog is read-only on this tab; workspace forces write chrome off for the Entitlements panel. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) remains on the reserved mutate helper via `canWriteAccessAdmin`. Assignable / subscription module rights stay within actor ceiling (backend authoritative).
 
 ### Permissions tab atoms (matrix)
 

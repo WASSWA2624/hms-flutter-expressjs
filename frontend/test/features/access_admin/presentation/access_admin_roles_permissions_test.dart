@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
@@ -638,6 +639,175 @@ void main() {
         expect(createResult, isNull);
         expect(editResult, isNull);
         expect(find.byType(AppDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'system-critical role: Edit and Delete absent even for writers',
+      (WidgetTester tester) async {
+        const AccessAdminItem critical = AccessAdminItem(
+          id: 'role-critical',
+          resource: AccessAdminResource.roles,
+          displayId: 'ROL-SYS',
+          title: 'System Admin Role',
+          roleScope: 'PLATFORM',
+          userCount: 1,
+          isSystemCritical: true,
+        );
+        when(() => repository.listRolePermissions(any())).thenAnswer(
+          (_) async => const Result<List<AccessAdminRolePermissionAssignment>>
+              .success(<AccessAdminRolePermissionAssignment>[]),
+        );
+
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        await _pumpRoles(
+          tester,
+          repository: repository,
+          policy: tenant,
+          data: _rolesData(canWrite: true, items: const <AccessAdminItem>[critical]),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.text(l10n.accessAdminCreateRoleAction), findsOneWidget);
+        // Column header may reuse the Edit label; the row action button must not mount.
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(
+          accessAdminMobileNextAction(
+            context,
+            resource: AccessAdminResource.roles,
+            item: critical,
+            canWrite: true,
+            onUserStatusToggle: (_) async {},
+            onRoleEdit: (_) {},
+            onRegistrationActivate: (_) async {},
+          ),
+          isNull,
+        );
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        table.onRowSelected!(critical);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.accessAdminDeleteRoleAction), findsNothing);
+        expect(find.text(l10n.commonCloseActionLabel), findsOneWidget);
+      },
+    );
+
+    testWidgets('create role syncs worklist after mutation', (
+      WidgetTester tester,
+    ) async {
+      const AccessAdminItem created = AccessAdminItem(
+        id: 'role-2',
+        resource: AccessAdminResource.roles,
+        displayId: 'ROL-2',
+        title: 'Night Shift Lead',
+        roleScope: 'FACILITY',
+        userCount: 0,
+        isSystemCritical: false,
+      );
+      final AppAccessPolicy tenant = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      var createdCalled = false;
+      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+        final List<AccessAdminItem> items = createdCalled
+            ? const <AccessAdminItem>[_roleItem, created]
+            : const <AccessAdminItem>[_roleItem];
+        return Result<AccessAdminWorkspaceData>.success(
+          _rolesData(canWrite: true, items: items),
+        );
+      });
+      when(() => repository.createRole(any())).thenAnswer((_) async {
+        createdCalled = true;
+        return const Result<AccessAdminItem>.success(created);
+      });
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            accessAdminRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(tenant),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: AccessAdminWorkspacePage(
+                initialQuery: AccessAdminWorkspaceQuery(
+                  panel: AccessAdminPanel.roles,
+                  resource: AccessAdminResource.roles,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Night Shift Lead'), findsNothing);
+      expect(find.text('Ward Nurse'), findsWidgets);
+
+      final AccessAdminWorkspaceController controller =
+          ProviderScope.containerOf(
+            tester.element(find.byType(AccessAdminWorkspacePage)),
+          ).read(accessAdminWorkspaceControllerProvider.notifier);
+
+      final Result<AccessAdminItem> result = await controller.createRole(
+        const AccessAdminRoleDraft(name: 'Night Shift Lead'),
+      );
+      expect(result.isSuccess, isTrue);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createRole(any())).called(1);
+      expect(find.text('Night Shift Lead'), findsWidgets);
+      expect(find.text('Ward Nurse'), findsWidgets);
+    });
+
+    testWidgets(
+      'desktop authorized reader: search chrome present, write absent (∪)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpRoles(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _rolesData(canWrite: true),
+          viewport: const Size(1280, 900),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.byType(AppListTable<AccessAdminItem>), findsOneWidget);
+        expect(find.text(l10n.accessAdminSearchHint), findsOneWidget);
+        expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
+        expect(find.text(l10n.accessAdminEditRoleAction), findsNothing);
       },
     );
 

@@ -295,14 +295,16 @@ abstract final class AccessAdminDirectoryAtomPermissions {
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → role detail | read | read ∪ |
-/// | Create role | create | write ∩ + canWrite |
-/// | Edit role (next-action) | update | write ∩ + canWrite; not system-critical |
-/// | Delete role (detail) | delete | write ∩ + canWrite; not system-critical |
+/// | Create role (tab primary) | create | write ∩ + canWrite |
+/// | Edit role (next-action / mobile trailing) | update | write ∩ + canWrite; not system-critical |
+/// | Delete role (detail footer + confirm) | delete | write ∩ + canWrite; not system-critical |
 /// | Detail Close | progressive-disclosure | read ∪ |
 /// | Nested cross-module | n/a | _(n/a)_ |
 ///
 /// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
-/// `tenant:admin` is applied via [canWriteAccessAdmin] / [canMutateAccessAdminRoles].
+/// `tenant:admin` is applied via [canWriteAccessAdmin] /
+/// [canMutateAccessAdminRoles]. Assignable rights stay within actor ceiling /
+/// subscription (backend authoritative).
 abstract final class AccessAdminRolesAtomPermissions {
   static const AccessRequirement tab = accessAdminRolesReadRequirement;
   static const AccessRequirement listChrome = accessAdminRolesReadRequirement;
@@ -351,12 +353,17 @@ abstract final class AccessAdminDemoAtomPermissions {
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → read-only detail | read | read ∪ |
 /// | Detail Close | progressive-disclosure | read ∪ |
-/// | Create / update / delete / next-action | write | _(absent)_ ; write ∩ if added |
+/// | Create | create | _(absent)_ ; write ∩ if added |
+/// | Update | update | _(absent)_ ; write ∩ if added |
+/// | Delete | delete | _(absent)_ ; write ∩ if added |
+/// | next-action / tab primary | write | _(absent on this resource)_ |
 /// | Nested cross-module | n/a | _(n/a)_ |
 ///
-/// Source inventory: entitlements detail is a read-only summary (no write
-/// next-actions). Matrix ∩ `tenant:admin` remains on [write] / create /
-/// update / delete for reserved mutations and ∩ denial tests.
+/// Source inventory (`screens/admin-access.md`): Entitlements detail is a
+/// read-only module/subscription summary (no write next-actions). Workspace
+/// forces write chrome off for the Entitlements panel. Matrix ∩ `tenant:admin`
+/// is reserved via [canMutateAccessAdminEntitlements] / create|update|delete
+/// aliases if mutations are mounted later.
 abstract final class AccessAdminEntitlementsAtomPermissions {
   static const AccessRequirement tab = accessAdminEntitlementsReadRequirement;
   static const AccessRequirement listChrome =
