@@ -589,6 +589,13 @@ void main() {
       // Dialog openers also gate on ClaimsInsuranceSetupAtomPermissions.create.
       expect(
         identical(
+          ClaimsInsuranceSetupAtomPermissions.addCompany,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsInsuranceSetupAtomPermissions.create,
           claimsWorkspaceWriteRequirement,
         ),
@@ -629,6 +636,88 @@ void main() {
       );
       expect(find.textContaining('Add company'), findsNothing);
       expect(find.byType(AppTabStrip), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Insurance Setup read ∪ chrome '
+    '(row scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.create.isAllowed(noFacility),
+        isFalse,
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(find.textContaining('Insurance Setup'), findsWidgets);
+      expect(
+        find.textContaining('Manage insurance companies'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Add company'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: insurance-claims EXPIRED omits Insurance Setup',
+    (WidgetTester tester) async {
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.facilityAdmin,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'EXPIRED',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.textContaining('Insurance Setup'), findsNothing);
+      expect(find.textContaining('Add company'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

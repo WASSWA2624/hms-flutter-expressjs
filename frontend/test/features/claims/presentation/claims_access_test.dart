@@ -384,6 +384,62 @@ void main() {
       );
       expect(
         identical(
+          ClaimsInsuranceSetupAtomPermissions.addCompany,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.addScheme,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.addOffer,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.enrollPatient,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.addPrice,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.insurerApi,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.update,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.delete,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsInsuranceSetupAtomPermissions.tab,
           claimsInsuranceSetupReadAnyRequirement,
         ),
@@ -414,7 +470,15 @@ void main() {
         isFalse,
       );
       expect(
+        ClaimsInsuranceSetupAtomPermissions.addCompany.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         ClaimsInsuranceSetupAtomPermissions.create.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.insurerApi.isAllowed(writer),
         isTrue,
       );
     });
