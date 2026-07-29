@@ -470,7 +470,7 @@ void main() {
   );
 
   testWidgets(
-    'delete ∩ alone: no Create/Manage; revoke absent without write',
+    'delete ∩ alone: no Create/Manage writes; Revoke mounts',
     (WidgetTester tester) async {
       final AppAccessPolicy deleter = _policy(
         permissions: <AppPermission>{
