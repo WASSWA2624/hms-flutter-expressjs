@@ -1177,7 +1177,6 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory: `{screen['inventory']}` (read-only reference for reachable controls; do not modify).
 - Target tab: **{tab['label']}** (`{tab['section']}`). {tab.get('extra', '')}
 - Feature code: `{screen['feature']}`
 - Module entitlement: `{screen['module']}`
@@ -1185,6 +1184,7 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 - Effective access = union(role/module/user grants) ∩ subscription ∩ ABAC (see `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`).
 - Reuse `AppAccessPolicy`, `AccessRequirement` (`allPermissions` = intersection, `anyPermissions` = union), `AppAccessGate` / action gates. Backend remains authoritative.
 - Shared rules: `prompts/ui-permissions/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
+- Inventory atoms from feature presentation code, routes, and tests—do not recreate `screens/`.
 
 ## Permission matrix (HMS defaults for this tab)
 

@@ -157,6 +157,20 @@ class _PatientRegistryContentState
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<PatientRegistrySection> allowedSections =
+        patientRegistryAllowedSections(accessPolicy);
+    if (allowedSections.isNotEmpty &&
+        !allowedSections.contains(_section)) {
+      final PatientRegistrySection fallback =
+          patientRegistryFallbackSection(accessPolicy) ?? allowedSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _section == fallback) {
+          return;
+        }
+        unawaited(_handleTabChanged(fallback));
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -167,8 +181,7 @@ class _PatientRegistryContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final PatientRegistrySection section
-                    in PatientRegistrySection.values)
+                for (final PatientRegistrySection section in allowedSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -179,8 +192,7 @@ class _PatientRegistryContentState
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final PatientRegistrySection section
-                    in PatientRegistrySection.values) {
+                for (final PatientRegistrySection section in allowedSections) {
                   if (section.name == tabId) {
                     unawaited(_handleTabChanged(section));
                     break;
@@ -203,22 +215,16 @@ class _PatientRegistryContentState
     );
   }
 
+  AccessRequirement get _sectionWriteRequirement {
+    return patientRegistryRegisterAtom(_section);
+  }
+
   Widget _buildPrimaryAction(AppLocalizations l10n) {
     return switch (_section) {
       PatientRegistrySection.all ||
       PatientRegistrySection.active ||
       PatientRegistrySection.admitted ||
       PatientRegistrySection.balanceDue => _registerPatientPrimaryAction(l10n),
-    };
-  }
-
-  AccessRequirement get _sectionWriteRequirement {
-    return switch (_section) {
-      PatientRegistrySection.admitted =>
-        PatientAdmittedAtomPermissions.register,
-      PatientRegistrySection.active => PatientActiveAtomPermissions.register,
-      PatientRegistrySection.all ||
-      PatientRegistrySection.balanceDue => patientRegistryWriteRequirement,
     };
   }
 
@@ -231,11 +237,7 @@ class _PatientRegistryContentState
 
     return <Widget>[
       AppAccessActionGate(
-        requirement: switch (_section) {
-          PatientRegistrySection.admitted =>
-            PatientAdmittedAtomPermissions.duplicateReview,
-          _ => PatientActiveAtomPermissions.duplicateReview,
-        },
+        requirement: patientRegistryDuplicateReviewAtom(_section),
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -969,6 +971,7 @@ class _PatientList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     return AppListTable<Patient>(
       page: state.page,
       columnVisibilityController: columnVisibilityController,
@@ -1022,7 +1025,12 @@ class _PatientList extends ConsumerWidget {
           caption: patient.effectiveIdentifier,
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
-              label: _patientRegistryStatusLabel(context, patient, section),
+              label: _patientRegistryStatusLabel(
+                context,
+                patient,
+                section,
+                policy: policy,
+              ),
             ),
           ],
         );
@@ -1216,6 +1224,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       alwaysVisible: true,
       cellBuilder: (BuildContext context, Patient patient) => _NextActionCell(
         patient: patient,
+        section: section,
         onCompleteRecord: () {
           unawaited(showPatientEditDialog(context, ref, patient));
         },
@@ -1263,7 +1272,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
   };
 }
 
-class _PatientRegistryStatusBadge extends StatelessWidget {
+class _PatientRegistryStatusBadge extends ConsumerWidget {
   const _PatientRegistryStatusBadge({
     required this.patient,
     required this.section,
@@ -1273,9 +1282,15 @@ class _PatientRegistryStatusBadge extends StatelessWidget {
   final PatientRegistrySection section;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     return AppWorkspaceStatusBadge(
-      status: _patientRegistryStatus(context, patient, section),
+      status: _patientRegistryStatus(
+        context,
+        patient,
+        section,
+        policy: policy,
+      ),
     );
   }
 }
@@ -1283,8 +1298,9 @@ class _PatientRegistryStatusBadge extends StatelessWidget {
 AppWorkspaceStatus _patientRegistryStatus(
   BuildContext context,
   Patient patient,
-  PatientRegistrySection section,
-) {
+  PatientRegistrySection section, {
+  AppAccessPolicy? policy,
+}) {
   final AppLocalizations l10n = context.l10n;
 
   if (patient.requiresCompletion) {
@@ -1296,8 +1312,12 @@ AppWorkspaceStatus _patientRegistryStatus(
   }
 
   final PatientVisitContext? visit = patient.currentVisit;
+  final bool canShowAdmittedClinical =
+      policy == null ||
+      PatientAdmittedAtomPermissions.admissionStatus.isAllowed(policy);
 
   if (section == PatientRegistrySection.admitted &&
+      canShowAdmittedClinical &&
       visit != null &&
       visit.kind == 'admission' &&
       visit.status != null) {
@@ -1336,9 +1356,15 @@ AppWorkspaceStatus _patientRegistryStatus(
 String _patientRegistryStatusLabel(
   BuildContext context,
   Patient patient,
-  PatientRegistrySection section,
-) {
-  return _patientRegistryStatus(context, patient, section).label;
+  PatientRegistrySection section, {
+  AppAccessPolicy? policy,
+}) {
+  return _patientRegistryStatus(
+    context,
+    patient,
+    section,
+    policy: policy,
+  ).label;
 }
 
 String _patientNextActionLabel(AppLocalizations l10n, Patient patient) {
@@ -1485,10 +1511,16 @@ class _NextActionCell extends StatelessWidget {
   const _NextActionCell({
     required this.patient,
     required this.onCompleteRecord,
+    this.section = PatientRegistrySection.all,
   });
 
   final Patient patient;
   final VoidCallback onCompleteRecord;
+  final PatientRegistrySection section;
+
+  AccessRequirement get _completeRequirement {
+    return patientRegistryNextActionCompleteAtom(section);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1508,7 +1540,7 @@ class _NextActionCell extends StatelessWidget {
     }
 
     return AppAccessActionGate(
-      requirement: PatientActiveAtomPermissions.nextActionComplete,
+      requirement: _completeRequirement,
       builder: (_, bool isAllowed) {
         if (!isAllowed) {
           return Text(

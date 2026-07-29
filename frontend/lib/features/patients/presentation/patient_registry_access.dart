@@ -125,11 +125,28 @@ const AccessRequirement patientReportReadRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.reportsRead],
 );
 
-/// Billing context panel open-workbench (source ∪ billing:write + module).
+/// Billing context panel open-workbench (matrix ∩ `billing:write` + module).
+///
+/// Balance-due nested write row; Active reuses the same helper.
 const AccessRequirement patientBillingWorkbenchRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+  allPermissions: <AppPermission>[AppPermissions.billingWrite],
   activeModules: <String>['billing-payments'],
 );
+
+/// Balance due tab view / read UI (matrix ∩ `patient:read` + `billing:read`).
+///
+/// Plan modules resolve via [PermissionModuleMap] to `patient-registry` and
+/// `billing-payments`.
+const AccessRequirement patientBalanceDueReadRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[
+    AppPermissions.patientRead,
+    AppPermissions.billingRead,
+  ],
+);
+
+/// Nested billing write on Balance due (matrix ∩ `billing:write`).
+const AccessRequirement patientBalanceDueBillingWriteRequirement =
+    patientBillingWorkbenchRequirement;
 
 /// Pharmacy context panel open-workbench (∩ `pharmacy:read`).
 const AccessRequirement patientPharmacyWorkbenchRequirement = AccessRequirement(
@@ -168,6 +185,11 @@ bool canViewPatientAllTab(AppAccessPolicy policy) {
 
 bool canViewPatientActiveTab(AppAccessPolicy policy) {
   return PatientActiveAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewPatientBalanceDueTab(AppAccessPolicy policy) {
+  // Section tabs share registry read ∩ until Balance Due atom map lands.
+  return patientRegistryReadRequirement.isAllowed(policy);
 }
 
 bool canViewPatientAdmittedTab(AppAccessPolicy policy) {
@@ -242,15 +264,57 @@ List<PatientActiveWorkItem> filterPatientActiveWorkForAdmittedNestedRead(
       .toList(growable: false);
 }
 
-/// Registry tabs share ∩ `patient:read`; all four remain when read is granted.
+/// Per-tab read gates. Balance due needs ∩ `patient:read` + `billing:read`;
+/// other tabs keep ∩ `patient:read`.
 AccessRequirement patientRegistrySectionTabRequirement(
   PatientRegistrySection section,
 ) {
   return switch (section) {
-    PatientRegistrySection.all ||
-    PatientRegistrySection.active ||
-    PatientRegistrySection.admitted ||
-    PatientRegistrySection.balanceDue => patientRegistryReadRequirement,
+    PatientRegistrySection.all => PatientAllAtomPermissions.tab,
+    PatientRegistrySection.active => PatientActiveAtomPermissions.tab,
+    PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.tab,
+    PatientRegistrySection.balanceDue => PatientBalanceDueAtomPermissions.tab,
+  };
+}
+
+/// Register-patient strip primary for the selected section.
+AccessRequirement patientRegistryRegisterAtom(PatientRegistrySection section) {
+  return switch (section) {
+    PatientRegistrySection.all => PatientAllAtomPermissions.register,
+    PatientRegistrySection.active => PatientActiveAtomPermissions.register,
+    PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.register,
+    PatientRegistrySection.balanceDue =>
+      PatientBalanceDueAtomPermissions.register,
+  };
+}
+
+/// Duplicate-review strip secondary for the selected section.
+AccessRequirement patientRegistryDuplicateReviewAtom(
+  PatientRegistrySection section,
+) {
+  return switch (section) {
+    PatientRegistrySection.all => PatientAllAtomPermissions.duplicateReview,
+    PatientRegistrySection.active =>
+      PatientActiveAtomPermissions.duplicateReview,
+    PatientRegistrySection.admitted =>
+      PatientAdmittedAtomPermissions.duplicateReview,
+    PatientRegistrySection.balanceDue =>
+      PatientBalanceDueAtomPermissions.duplicateReview,
+  };
+}
+
+/// Next-action Complete record for the selected section.
+AccessRequirement patientRegistryNextActionCompleteAtom(
+  PatientRegistrySection section,
+) {
+  return switch (section) {
+    PatientRegistrySection.all => PatientAllAtomPermissions.nextActionComplete,
+    PatientRegistrySection.active =>
+      PatientActiveAtomPermissions.nextActionComplete,
+    PatientRegistrySection.admitted =>
+      PatientAdmittedAtomPermissions.nextActionComplete,
+    PatientRegistrySection.balanceDue =>
+      PatientBalanceDueAtomPermissions.nextActionComplete,
   };
 }
 
@@ -271,6 +335,128 @@ List<PatientRegistrySection> patientRegistryAllowedSections(
             canViewPatientRegistrySection(policy, section),
       )
       .toList(growable: false);
+}
+
+/// First allowed section when a deep link targets a denied tab.
+PatientRegistrySection? patientRegistryFallbackSection(
+  AppAccessPolicy policy,
+) {
+  final List<PatientRegistrySection> allowed =
+      patientRegistryAllowedSections(policy);
+  if (allowed.isEmpty) {
+    return null;
+  }
+  return allowed.first;
+}
+
+/// Atom → requirement map for Patients registry **All patients**
+/// (`/patients` / `?section=all`).
+///
+/// Inventory: `screens/patients.md` → full registry list; Register patient +
+/// Duplicate review on strip. Nested matrix rows are _(n/a)_; Quick Action /
+/// Active Work continues keep source module + clinical gates (documented
+/// below). Route entry uses AppRoutes ∩ `patient:read` ([entry]); catalog
+/// `patients:read` is [catalogEntry].
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | All patients strip tab / count | navigate | read ∩ `patient:read` |
+/// | Register patient (primary) | create | write ∩ `patient:write` |
+/// | Duplicate review (secondary) | update | write ∩ |
+/// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Row select → patient detail | read | read ∩ |
+/// | Next action Complete record | update | write ∩ |
+/// | Next action Open record (label) | progressive disclosure | read ∩ |
+/// | Detail Edit | update | write ∩ |
+/// | Detail Delete | delete | delete ∩ `patient:delete` |
+/// | Active Work Continue (appointment) | update | write ∩ |
+/// | Active Work Continue (OPD) | update / navigate | OPD encounter source |
+/// | Active Work Continue (admission) | update | clinical write + IPD module |
+/// | Active Work Continue (lab/rad/theater/therapy) | navigate | clinical write + module |
+/// | Quick Action Schedule appointment | create | write ∩ |
+/// | Quick Action Start OPD | create | OPD encounter source |
+/// | Quick Action View/Continue OPD | navigate | clinical\|billing ∪ |
+/// | Quick Action Request admission / Discharge | create / update | clinical write + IPD |
+/// | Quick Action Lab / Radiology / Theater / Physio | create | clinical write + module |
+/// | Quick Action Enroll insurance | create | source ∪ + claims module |
+/// | Quick Action Report | export / read | reports:read ∩ |
+/// | Related record add/edit | create / update | write ∩ |
+/// | Related record delete | delete | delete ∩ |
+/// | Pharmacy / billing context panels | nested read | role reader helpers |
+/// | Open billing workbench | navigate | billing:write ∪ + module |
+/// | Open pharmacy workbench | navigate | pharmacy:read ∩ |
+/// | Route entry (deep link) | navigate | patient:read ∩ + module |
+abstract final class PatientAllAtomPermissions {
+  static const AccessRequirement tab = patientRegistryReadRequirement;
+  static const AccessRequirement listChrome = patientRegistryReadRequirement;
+  static const AccessRequirement search = patientRegistryReadRequirement;
+  static const AccessRequirement filters = patientRegistryReadRequirement;
+  static const AccessRequirement settings = patientRegistryReadRequirement;
+  static const AccessRequirement pagination = patientRegistryReadRequirement;
+  static const AccessRequirement empty = patientRegistryReadRequirement;
+  static const AccessRequirement loading = patientRegistryReadRequirement;
+  static const AccessRequirement retry = patientRegistryReadRequirement;
+  static const AccessRequirement success = patientRegistryWriteRequirement;
+  static const AccessRequirement validation = patientRegistryWriteRequirement;
+  static const AccessRequirement rowSelect = patientRegistryReadRequirement;
+  static const AccessRequirement detail = patientRegistryReadRequirement;
+  static const AccessRequirement nextActionComplete =
+      patientRegistryWriteRequirement;
+  static const AccessRequirement nextActionOpenRecord =
+      patientRegistryReadRequirement;
+  static const AccessRequirement create = patientRegistryWriteRequirement;
+  static const AccessRequirement update = patientRegistryWriteRequirement;
+  static const AccessRequirement delete = patientRegistryDeleteRequirement;
+  static const AccessRequirement write = patientRegistryWriteRequirement;
+  static const AccessRequirement register = patientRegistryWriteRequirement;
+  static const AccessRequirement duplicateReview =
+      patientRegistryWriteRequirement;
+  static const AccessRequirement edit = patientRegistryWriteRequirement;
+  static const AccessRequirement scheduleAppointment =
+      patientAppointmentWriteRequirement;
+  static const AccessRequirement startOpd = patientOpdEncounterRequirement;
+  static const AccessRequirement viewActiveOpd = patientOpdViewActiveRequirement;
+  static const AccessRequirement requestAdmission =
+      patientAdmissionWriteRequirement;
+  static const AccessRequirement discharge = patientAdmissionWriteRequirement;
+  static const AccessRequirement labOrder = patientLabOrderWriteRequirement;
+  static const AccessRequirement radiologyOrder =
+      patientRadiologyOrderWriteRequirement;
+  static const AccessRequirement theaterSchedule = patientTheaterWriteRequirement;
+  static const AccessRequirement physiotherapy =
+      patientPhysiotherapyWriteRequirement;
+  static const AccessRequirement enrollInsurance =
+      patientEnrollInsuranceRequirement;
+  static const AccessRequirement report = patientReportReadRequirement;
+  static const AccessRequirement activeWorkContinueAppointment =
+      patientAppointmentWriteRequirement;
+  static const AccessRequirement activeWorkContinueOpd =
+      patientOpdEncounterRequirement;
+  static const AccessRequirement activeWorkContinueAdmission =
+      patientAdmissionWriteRequirement;
+  static const AccessRequirement activeWorkContinueLab =
+      patientLabOrderWriteRequirement;
+  static const AccessRequirement activeWorkContinueRadiology =
+      patientRadiologyOrderWriteRequirement;
+  static const AccessRequirement activeWorkContinueTheater =
+      patientTheaterWriteRequirement;
+  static const AccessRequirement activeWorkContinueTherapy =
+      patientPhysiotherapyWriteRequirement;
+  static const AccessRequirement billingWorkbench =
+      patientBillingWorkbenchRequirement;
+  static const AccessRequirement pharmacyWorkbench =
+      patientPharmacyWorkbenchRequirement;
+  /// Nested cross-module write — matrix _(n/a)_; reuses clinical+module sources.
+  static const AccessRequirement nestedWrite = patientAdmissionWriteRequirement;
+  /// Nested cross-module read — matrix _(n/a)_; reuses registry read.
+  static const AccessRequirement nestedRead = patientRegistryReadRequirement;
+  static const AccessRequirement entry = patientRegistryEntryRequirement;
+  static const AccessRequirement routeEntry = patientRegistryEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      patientRegistryCatalogEntryRequirement;
+  static const AccessRequirement read = patientRegistryReadRequirement;
 }
 
 /// Atom → requirement map for Patients registry **Active**
@@ -506,4 +692,117 @@ abstract final class PatientAdmittedAtomPermissions {
   static const AccessRequirement catalogEntry =
       patientRegistryCatalogEntryRequirement;
   static const AccessRequirement read = patientRegistryReadRequirement;
+}
+
+/// Atom → requirement map for Patients registry **Balance due**
+/// (`/patients?section=balance-due`).
+///
+/// Inventory: `screens/patients.md` (shared registry chrome / detail /
+/// Quick Actions). Tab read is matrix ∩ `patient:read` + `billing:read`.
+/// Nested write ∩ `billing:write` (billing workbench). Enroll insurance keeps
+/// source ∪ (patient|billing|clinical write + claims) — note in tests.
+/// Other Quick Actions / Active Work keep source clinical+module gates.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Balance due strip tab / count | navigate | read ∩ patient:read + billing:read |
+/// | Register patient (primary) | create | write ∩ patient:write |
+/// | Duplicate review (secondary) | update | write ∩ |
+/// | Search / Clear / Filters / Settings / columns | read chrome | tab read ∩ |
+/// | Empty / loading / error / retry | read chrome | tab read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Row select → patient detail | read | tab read ∩ |
+/// | Next action Complete record | update | write ∩ |
+/// | Next action Open record (label) | progressive disclosure | tab read ∩ |
+/// | Detail Edit | update | write ∩ |
+/// | Detail Delete | delete | delete ∩ patient:delete |
+/// | Active Work Continue (appointment) | update | write ∩ |
+/// | Active Work Continue (OPD) | update / navigate | OPD encounter source |
+/// | Active Work Continue (admission) | update | clinical write + IPD module |
+/// | Active Work Continue (lab/rad/theater/therapy) | navigate | clinical write + module |
+/// | Quick Action Schedule appointment | create | write ∩ |
+/// | Quick Action Start OPD | create | OPD encounter source |
+/// | Quick Action View/Continue OPD | navigate | clinical\|billing ∪ |
+/// | Quick Action Request admission / Discharge | create / update | clinical write + IPD |
+/// | Quick Action Lab / Radiology / Theater / Physio | create | clinical write + module |
+/// | Quick Action Enroll insurance | create | source ∪ + claims (not matrix ∩ alone) |
+/// | Quick Action Report | export / read | reports:read ∩ |
+/// | Related record add/edit | create / update | write ∩ |
+/// | Related record delete | delete | delete ∩ |
+/// | Billing context panel | nested read | billing role reader helper |
+/// | Open billing workbench | nested write / navigate | billing:write ∩ + module |
+/// | Open pharmacy workbench | navigate | pharmacy:read ∩ |
+/// | Route entry (deep link) | navigate | patient:read ∩ + module |
+abstract final class PatientBalanceDueAtomPermissions {
+  static const AccessRequirement tab = patientBalanceDueReadRequirement;
+  static const AccessRequirement listChrome = patientBalanceDueReadRequirement;
+  static const AccessRequirement search = patientBalanceDueReadRequirement;
+  static const AccessRequirement filters = patientBalanceDueReadRequirement;
+  static const AccessRequirement settings = patientBalanceDueReadRequirement;
+  static const AccessRequirement pagination = patientBalanceDueReadRequirement;
+  static const AccessRequirement empty = patientBalanceDueReadRequirement;
+  static const AccessRequirement loading = patientBalanceDueReadRequirement;
+  static const AccessRequirement retry = patientBalanceDueReadRequirement;
+  static const AccessRequirement success = patientRegistryWriteRequirement;
+  static const AccessRequirement validation = patientRegistryWriteRequirement;
+  static const AccessRequirement rowSelect = patientBalanceDueReadRequirement;
+  static const AccessRequirement detail = patientBalanceDueReadRequirement;
+  static const AccessRequirement nextActionComplete =
+      patientRegistryWriteRequirement;
+  static const AccessRequirement nextActionOpenRecord =
+      patientBalanceDueReadRequirement;
+  static const AccessRequirement create = patientRegistryWriteRequirement;
+  static const AccessRequirement update = patientRegistryWriteRequirement;
+  static const AccessRequirement delete = patientRegistryDeleteRequirement;
+  static const AccessRequirement write = patientRegistryWriteRequirement;
+  static const AccessRequirement register = patientRegistryWriteRequirement;
+  static const AccessRequirement duplicateReview =
+      patientRegistryWriteRequirement;
+  static const AccessRequirement edit = patientRegistryWriteRequirement;
+  static const AccessRequirement scheduleAppointment =
+      patientAppointmentWriteRequirement;
+  static const AccessRequirement startOpd = patientOpdEncounterRequirement;
+  static const AccessRequirement viewActiveOpd = patientOpdViewActiveRequirement;
+  static const AccessRequirement requestAdmission =
+      patientAdmissionWriteRequirement;
+  static const AccessRequirement discharge = patientAdmissionWriteRequirement;
+  static const AccessRequirement labOrder = patientLabOrderWriteRequirement;
+  static const AccessRequirement radiologyOrder =
+      patientRadiologyOrderWriteRequirement;
+  static const AccessRequirement theaterSchedule = patientTheaterWriteRequirement;
+  static const AccessRequirement physiotherapy =
+      patientPhysiotherapyWriteRequirement;
+  /// Source ∪ (patient|billing|clinical write + claims); matrix narrative
+  /// mentions billing read/write ∩ — keep source and map in tests.
+  static const AccessRequirement enrollInsurance =
+      patientEnrollInsuranceRequirement;
+  static const AccessRequirement report = patientReportReadRequirement;
+  static const AccessRequirement activeWorkContinueAppointment =
+      patientAppointmentWriteRequirement;
+  static const AccessRequirement activeWorkContinueOpd =
+      patientOpdEncounterRequirement;
+  static const AccessRequirement activeWorkContinueAdmission =
+      patientAdmissionWriteRequirement;
+  static const AccessRequirement activeWorkContinueLab =
+      patientLabOrderWriteRequirement;
+  static const AccessRequirement activeWorkContinueRadiology =
+      patientRadiologyOrderWriteRequirement;
+  static const AccessRequirement activeWorkContinueTheater =
+      patientTheaterWriteRequirement;
+  static const AccessRequirement activeWorkContinueTherapy =
+      patientPhysiotherapyWriteRequirement;
+  static const AccessRequirement billingWorkbench =
+      patientBalanceDueBillingWriteRequirement;
+  static const AccessRequirement pharmacyWorkbench =
+      patientPharmacyWorkbenchRequirement;
+  /// Nested cross-module write — matrix ∩ `billing:write`.
+  static const AccessRequirement nestedWrite =
+      patientBalanceDueBillingWriteRequirement;
+  /// Nested cross-module read — matrix _(n/a)_; reuses tab read ∩.
+  static const AccessRequirement nestedRead = patientBalanceDueReadRequirement;
+  static const AccessRequirement entry = patientRegistryEntryRequirement;
+  static const AccessRequirement routeEntry = patientRegistryEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      patientRegistryCatalogEntryRequirement;
+  static const AccessRequirement read = patientBalanceDueReadRequirement;
 }

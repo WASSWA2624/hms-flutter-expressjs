@@ -271,6 +271,20 @@ void main() {
     );
     expect(
       identical(
+        OperationsCompletedAtomPermissions.mutate,
+        operationsMutationRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        OperationsCompletedAtomPermissions.closeout,
+        operationsWorkspaceWriteRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
         OperationsCompletedAtomPermissions.report,
         operationsWorkspaceReportRequirement,
       ),
@@ -283,12 +297,29 @@ void main() {
       ),
       isTrue,
     );
+    // Report source inventory "Always" narrowed to matrix read ∩.
     expect(
       identical(
         operationsWorkspaceReportRequirement,
         operationsWorkspaceReadRequirement,
       ),
       isTrue,
+    );
+    expect(
+      OperationsCompletedAtomPermissions.create.allPermissions,
+      contains(AppPermissions.operationsWrite),
+    );
+    expect(
+      OperationsCompletedAtomPermissions.tab.allPermissions,
+      contains(AppPermissions.operationsRead),
+    );
+    // Route entry ∪ read|write (matrix union allowance).
+    expect(
+      OperationsCompletedAtomPermissions.routeEntry.anyPermissions,
+      containsAll(<AppPermission>[
+        AppPermissions.operationsRead,
+        AppPermissions.operationsWrite,
+      ]),
     );
   });
 
@@ -455,6 +486,8 @@ void main() {
         OperationsCompletedAtomPermissions.create.isAllowed(writeOnly),
         isTrue,
       );
+      expect(canEnterOperationsWorkspace(writeOnly), isTrue);
+      expect(canReadOperations(writeOnly), isFalse);
 
       await _pumpCompletedTab(
         tester,
@@ -467,6 +500,69 @@ void main() {
       expect(find.textContaining('Create request'), findsNothing);
       expect(find.text('Report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'route entry ∪: operations:read alone satisfies entry and Completed chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy readOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        OperationsCompletedAtomPermissions.routeEntry.isAllowed(readOnly),
+        isTrue,
+      );
+      expect(
+        OperationsCompletedAtomPermissions.tab.isAllowed(readOnly),
+        isTrue,
+      );
+
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: readOnly,
+      );
+
+      expect(find.text('Filter replaced'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.textContaining('Create request'), findsNothing);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.byTooltip('Add closeout note if needed'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'report ∩: operations:read mounts Report (source Always narrowed); write alone does not',
+    (WidgetTester tester) async {
+      final AppAccessPolicy opsReader = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        OperationsCompletedAtomPermissions.report.isAllowed(opsReader),
+        isTrue,
+      );
+
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: opsReader,
+      );
+
+      expect(find.text('Report'), findsOneWidget);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('All requests'), findsWidgets);
+      expect(find.text('Preview'), findsNothing);
+
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsWrite},
+        ),
+      );
+      expect(find.text('Report'), findsNothing);
     },
   );
 
@@ -674,7 +770,7 @@ void main() {
   );
 
   testWidgets(
-    'empty authorized Completed queue still shows Create when allowed',
+    'empty write-authorized Completed queue still shows Create when allowed',
     (WidgetTester tester) async {
       await _pumpCompletedTab(
         tester,
@@ -697,72 +793,173 @@ void main() {
   );
 
   testWidgets(
+    'empty authorized Completed still shows chrome; Create omitted for reader',
+    (WidgetTester tester) async {
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        ),
+        requests: const <OperationsWorkItem>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No maintenance requests'), findsOneWidget);
+      expect(find.textContaining('Create request'), findsNothing);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'error/retry surface remains for authorized Completed users',
     (WidgetTester tester) async {
       await _pumpCompletedTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.operationsRead},
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
         ),
         listOverride: const Result<AppPage<OperationsWorkItem>>.failure(
           AppFailure.network(),
         ),
       );
 
+      expect(find.text('Try again'), findsOneWidget);
       expect(find.byType(AppFailureStateView), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
+  testWidgets('authorized loading then success on Completed', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.listRequests(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<AppPage<OperationsWorkItem>>.success(
+        AppPage<OperationsWorkItem>(
+          items: const <OperationsWorkItem>[_completedRequest],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      );
+    });
+    when(() => repository.listAssets(any())).thenAnswer(
+      (_) async => Result<AppPage<OperationsAsset>>.success(
+        AppPage<OperationsAsset>(
+          items: const <OperationsAsset>[_generatorAsset],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => repository.listServiceLogs(any())).thenAnswer(
+      (_) async => const Result<AppPage<OperationsServiceLog>>.success(
+        AppPage<OperationsServiceLog>(
+          items: <OperationsServiceLog>[],
+          request: AppPageRequest(),
+        ),
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/operations?section=completed',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/operations',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: OperationsWorkspacePage(
+                initialQuery: OperationsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          operationsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.operationsRead,
+                AppPermissions.operationsWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Loading'), findsWidgets);
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pumpAndSettle();
+    expect(find.text('Filter replaced'), findsOneWidget);
+  });
+
   testWidgets(
-    'mobile viewport: Closeout next-action and row select remain reachable',
+    'mobile viewport: authorized Closeout trailing; read-only omits write',
     (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        roles: const <String>['OPERATIONS'],
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
+      );
       await _pumpCompletedTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          roles: const <String>['OPERATIONS'],
-          permissions: <AppPermission>{
-            AppPermissions.operationsRead,
-            AppPermissions.operationsWrite,
-          },
-        ),
+        accessPolicy: writer,
         physicalSize: const Size(390, 844),
       );
 
+      expect(find.byType(DataTable), findsNothing);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
-      expect(find.textContaining('Filter replaced'), findsOneWidget);
       expect(find.byTooltip('Add closeout note if needed'), findsOneWidget);
       expect(_tabLabel('Completed'), findsOneWidget);
-    },
-  );
 
-  testWidgets(
-    'dark theme: authorized Completed chrome still mounts',
-    (WidgetTester tester) async {
       await _pumpCompletedTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['OPERATIONS'],
-          permissions: <AppPermission>{
-            AppPermissions.operationsRead,
-            AppPermissions.operationsWrite,
-          },
+          permissions: <AppPermission>{AppPermissions.operationsRead},
         ),
-        themeMode: ThemeMode.dark,
+        physicalSize: const Size(390, 844),
       );
-
-      expect(find.textContaining('Create request'), findsOneWidget);
-      expect(find.text('Report'), findsOneWidget);
-      expect(find.text('Filter replaced'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
+      expect(find.byTooltip('Add closeout note if needed'), findsNothing);
+      expect(find.text('Review request'), findsNothing);
     },
   );
 
   testWidgets(
-    'Report summary (read ∩) opens metrics-only dialog',
+    'desktop viewport: Completed status filter absent for authorized reader',
     (WidgetTester tester) async {
       await _pumpCompletedTab(
         tester,
@@ -770,15 +967,45 @@ void main() {
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.operationsRead},
         ),
+        physicalSize: const Size(1440, 900),
       );
 
-      await tester.tap(find.text('Report'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('All requests'), findsWidgets);
-      expect(find.text('Preview'), findsNothing);
+      final AppListTable<OperationsWorkItem> table = tester
+          .widget<AppListTable<OperationsWorkItem>>(
+            find.byType(AppListTable<OperationsWorkItem>),
+          );
+      expect(
+        table.search!.filterGroups.any(
+          (AppSearchBarFilterGroup group) => group.key == 'status',
+        ),
+        isFalse,
+      );
     },
   );
+
+  testWidgets('light + dark themes mount authorized Completed chrome', (
+    WidgetTester tester,
+  ) async {
+    for (final ThemeMode mode in <ThemeMode>[ThemeMode.light, ThemeMode.dark]) {
+      await _pumpCompletedTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          roles: const <String>['OPERATIONS'],
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
+        ),
+        themeMode: mode,
+      );
+
+      expect(find.text('Filter replaced'), findsOneWidget);
+      expect(find.textContaining('Create request'), findsOneWidget);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    }
+  });
 
   test(
     'section tab gate: Completed uses Completed atom tab requirement',

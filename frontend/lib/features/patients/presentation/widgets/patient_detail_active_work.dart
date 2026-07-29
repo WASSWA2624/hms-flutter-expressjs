@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
@@ -18,17 +19,26 @@ class PatientDetailActiveWorkPanel extends ConsumerWidget {
   const PatientDetailActiveWorkPanel({
     required this.detail,
     required this.onContinue,
+    this.applyAdmittedNestedReadFilter = false,
     super.key,
   });
 
   final PatientDetail detail;
   final PatientActiveWorkAction onContinue;
 
+  /// When true (Admitted tab detail), strip clinical/billing Active Work
+  /// bodies unless ∪ `clinical:read` | `billing:read` is granted.
+  final bool applyAdmittedNestedReadFilter;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final List<PatientActiveWorkItem> items = collectPatientActiveWorkItems(
-      detail,
-    );
+    List<PatientActiveWorkItem> items = collectPatientActiveWorkItems(detail);
+    if (applyAdmittedNestedReadFilter) {
+      items = filterPatientActiveWorkForAdmittedNestedRead(
+        items,
+        ref.watch(appAccessPolicyProvider),
+      );
+    }
     if (items.isEmpty) {
       return const SizedBox.shrink();
     }

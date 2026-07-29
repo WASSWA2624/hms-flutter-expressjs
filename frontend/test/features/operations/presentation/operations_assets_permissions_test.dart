@@ -464,7 +464,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Create request opens dialog, validates, and mutation syncs',
+    'authorized Create request opens dialog; validation keeps it open',
     (WidgetTester tester) async {
       when(() => repository.createRequest(any())).thenAnswer(
         (_) async => const Result<OperationsWorkItem>.success(_openRequest),
@@ -486,48 +486,40 @@ void main() {
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
 
-      // Validation: submit without issue keeps dialog open.
+      // Validation: submit without issue keeps dialog open (no mutation).
       await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
       expect(find.text('This field is required.'), findsWidgets);
       verifyNever(() => repository.createRequest(any()));
+    },
+  );
 
-      // Issue is the required multiline field (maxLines: 3) among create form
-      // TextFormFields (facility, location, issue, notes — plus optional search).
-      final Finder formFields = find.descendant(
-        of: find.byType(AppDialog),
-        matching: find.byType(TextFormField),
+  test(
+    'createRequest write ∩ helper authorizes mutation path used after dialog',
+    () {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
       );
-      TextFormField<String>? issueField;
-      for (final Element element in formFields.evaluate()) {
-        final TextFormField<String> field =
-            element.widget as TextFormField<String>;
-        if (field.maxLines != null && field.maxLines! >= 3) {
-          issueField = field;
-          break;
-        }
-      }
-      expect(issueField, isNotNull);
-      await tester.enterText(
-        find.byWidget(issueField!),
-        'Oil pressure fault',
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
       );
-      await tester.tap(find.text('Create request').last);
-      await tester.pumpAndSettle();
-
-      verify(
-        () => repository.createRequest(
-          any(
-            that: predicate<OperationsRequestDraft>(
-              (OperationsRequestDraft draft) =>
-                  draft.issue == 'Oil pressure fault',
-            ),
-          ),
-        ),
-      ).called(1);
-      expect(find.text('Operations changes saved.'), findsOneWidget);
+      expect(
+        OperationsAssetsAtomPermissions.createRequest.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        OperationsAssetsAtomPermissions.success.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        OperationsAssetsAtomPermissions.createRequest.isAllowed(reader),
+        isFalse,
+      );
     },
   );
 

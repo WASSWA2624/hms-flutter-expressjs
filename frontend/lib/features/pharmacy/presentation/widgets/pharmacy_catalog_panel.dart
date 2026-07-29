@@ -8,11 +8,11 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_tabs.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
@@ -45,13 +45,6 @@ class PharmacyCatalogPanel extends ConsumerStatefulWidget {
 }
 
 class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.pharmacyWrite,
-      AppPermissions.operationsWrite,
-    ],
-  );
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -74,22 +67,22 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
     final Widget tabContent = switch (tab) {
       PharmacyCatalogTab.drugs => _DrugCatalogTab(
         state: state,
-        writeRequirement: _writeRequirement,
+        writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.formulary => _FormularyCatalogTab(
         state: state,
-        writeRequirement: _writeRequirement,
+        writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.inventory => _InventoryCatalogTab(
         state: state,
-        writeRequirement: _writeRequirement,
+        writeRequirement: pharmacyCatalogWriteRequirement,
         fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.storage => PharmacyStoragePanel(
         state: state,
-        writeRequirement: _writeRequirement,
+        writeRequirement: pharmacyCatalogWriteRequirement,
         showHeaderActions: false,
         compact: true,
       ),

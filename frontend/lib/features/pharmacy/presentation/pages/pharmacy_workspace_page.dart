@@ -12,12 +12,12 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
@@ -78,10 +78,6 @@ class _PharmacyWorkspaceContent extends ConsumerStatefulWidget {
 
 class _PharmacyWorkspaceContentState
     extends ConsumerState<_PharmacyWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
-  );
-
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<PharmacyOrder>
   _tableColumnController;
@@ -179,7 +175,7 @@ class _PharmacyWorkspaceContentState
           ref,
           widget.state,
           order,
-          _writeRequirement,
+          pharmacyWriteRequirement,
         );
       }
     }
@@ -338,6 +334,8 @@ class _PharmacyWorkspaceContentState
   }
 
   Widget _catalogPrimaryAction(AppLocalizations l10n) {
+    // Catalog browse stays on every worklist tab; CRUD is gated inside the
+    // dialog via [pharmacyCatalogWriteRequirement].
     return AppTabToolbarPrimary(
       label: l10n.pharmacyCatalogPanelTitle,
       icon: Icons.inventory_2_outlined,
@@ -355,6 +353,24 @@ class _PharmacyWorkspaceContentState
       pharmacyWorkspaceControllerProvider.notifier,
     );
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<PharmacyDeskSection> allowedSections =
+        pharmacyAllowedSections(policy);
+    final PharmacyDeskSection effectiveSection =
+        allowedSections.contains(_section)
+        ? _section
+        : (pharmacyFallbackSection(policy) ?? _section);
+
+    if (effectiveSection != _section && allowedSections.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _section == effectiveSection) {
+          return;
+        }
+        setState(() => _section = effectiveSection);
+        _updateUrlForSection(effectiveSection);
+        unawaited(controller.applyFilter(_filterForSection(effectiveSection)));
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -363,42 +379,48 @@ class _PharmacyWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppTabStrip(
-              tabs: <AppTabItem>[
-                for (final PharmacyDeskSection section
-                    in PharmacyDeskSection.values)
-                  AppTabItem(
-                    id: section.name,
-                    icon: _sectionIcon(section),
-                    label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state.workbench.summary, section),
-                    countTone: _sectionCountTone(section),
-                  ),
-              ],
-              selectedId: _section.name,
-              onTabTapped: (String tabId) {
-                for (final PharmacyDeskSection section
-                    in PharmacyDeskSection.values) {
-                  if (section.name == tabId) {
-                    setState(() => _section = section);
-                    _updateUrlForSection(section);
-                    unawaited(
-                      controller.applyFilter(_filterForSection(section)),
-                    );
-                    break;
+            if (allowedSections.isNotEmpty)
+              AppTabStrip(
+                tabs: <AppTabItem>[
+                  for (final PharmacyDeskSection section in allowedSections)
+                    AppTabItem(
+                      id: section.name,
+                      icon: _sectionIcon(section),
+                      label: _sectionLabel(l10n, section),
+                      count: _sectionCount(state.workbench.summary, section),
+                      countTone: _sectionCountTone(section),
+                    ),
+                ],
+                selectedId: effectiveSection.name,
+                onTabTapped: (String tabId) {
+                  for (final PharmacyDeskSection section in allowedSections) {
+                    if (section.name == tabId) {
+                      setState(() => _section = section);
+                      _updateUrlForSection(section);
+                      unawaited(
+                        controller.applyFilter(_filterForSection(section)),
+                      );
+                      break;
+                    }
                   }
-                }
-              },
-              primaryAction: _catalogPrimaryAction(l10n),
-            ),
+                },
+                primaryAction: _catalogPrimaryAction(l10n),
+              ),
             SizedBox(height: theme.spacing.sm),
-            _PharmacyQueuePanel(
-              state: state,
-              section: _section,
-              writeRequirement: _writeRequirement,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-            ),
+            if (allowedSections.isEmpty)
+              AppWorkspaceStatePanel.empty(
+                title: l10n.pharmacyNoOrdersTitle,
+                body: l10n.pharmacyNoOrdersBody,
+                icon: Icons.medication_liquid_outlined,
+              )
+            else
+              _PharmacyQueuePanel(
+                state: state,
+                section: effectiveSection,
+                writeRequirement: pharmacyWriteRequirement,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+              ),
           ],
         ),
       ),
@@ -748,7 +770,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
     final PharmacyOrder order = workflow.order;
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = writeRequirement.isAllowed(policy);
-    final bool canBill = policy.grants(AppPermissions.billingWrite);
+    final bool canBill = pharmacyRecordPaymentRequirement.isAllowed(policy);
     final bool canPrepare =
         workflow.nextActions.canPrepareDispense || order.canPrepareDispense;
     final bool canAttest =
@@ -2505,18 +2527,18 @@ class _PharmacyOrderNextActionButton extends ConsumerWidget {
     final bool requiresBillingWrite =
         action == _PharmacyResolvedAction.recordPayment ||
         action == _PharmacyResolvedAction.confirmBilling;
-    final bool canBill = ref
-        .watch(appAccessPolicyProvider)
-        .grants(AppPermissions.billingWrite);
-    final bool requiresWrite = action != _PharmacyResolvedAction.viewDetails;
+    final bool requiresPharmacyWrite =
+        action != _PharmacyResolvedAction.viewDetails && !requiresBillingWrite;
+    final AccessRequirement gateRequirement = requiresBillingWrite
+        ? pharmacyRecordPaymentRequirement
+        : writeRequirement;
+    final bool requiresWrite = requiresPharmacyWrite || requiresBillingWrite;
 
     return AppAccessActionGate(
-      requirement: writeRequirement,
+      requirement: gateRequirement,
       hideWhenDenied: requiresWrite,
       builder: (BuildContext context, bool isAllowed) {
-        final bool enabled =
-            (!requiresWrite || isAllowed) && (!requiresBillingWrite || canBill);
-        if (!enabled) {
+        if (requiresWrite && !isAllowed) {
           return const SizedBox.shrink();
         }
         return AppButton.tertiary(
