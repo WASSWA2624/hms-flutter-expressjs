@@ -124,4 +124,4 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - [ ] Without write capability, Run / Schedule next-actions are absent; without export, Print / Export evidence are absent.
 - [ ] After mutations, snackbar + refreshed workspace; loading / empty / error-retry / validation still render.
 
-Automated: `frontend/test/features/reports/presentation/reports_workspace_page_test.dart`, `frontend/test/features/reports/presentation/reports_workspace_ux_simplify_test.dart`.
+Automated: `frontend/test/features/reports/presentation/reports_workspace_page_test.dart`, `frontend/test/features/reports/presentation/reports_workspace_ux_simplify_test.dart`, `frontend/test/features/reports/presentation/reports_access_test.dart`, `frontend/test/features/reports/presentation/reports_workspace_permissions_test.dart`.

@@ -54,9 +54,7 @@ const ComplianceLogItem _auditLog = ComplianceLogItem(
 );
 
 AppAccessPolicy _policy({
-  Set<AppPermission> permissions = const <AppPermission>{
-    AppPermissions.reportsRead,
-  },
+  Set<AppPermission>? permissions,
   bool includeModule = true,
 }) {
   return AppAccessPolicy.fromSession(
@@ -67,7 +65,7 @@ AppAccessPolicy _policy({
         facilityId: 'facility-1',
         roles: <String>['REPORTING'],
       ),
-      permissions: permissions,
+      permissions: permissions ?? <AppPermission>{AppPermissions.reportsRead},
       moduleEntitlements: includeModule
           ? const <AppModuleEntitlement>[
               AppModuleEntitlement(
@@ -143,12 +141,15 @@ Future<void> _pumpReports(
   required AppAccessPolicy policy,
   Size viewport = const Size(1920, 1200),
   ThemeMode themeMode = ThemeMode.light,
+  bool stubDefaults = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
-  _stubSchedules(repository);
-  _stubCompliance(repository);
+  if (stubDefaults) {
+    _stubWorkspace(repository);
+    _stubSchedules(repository);
+    _stubCompliance(repository);
+  }
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -343,6 +344,7 @@ void main() {
         ),
       );
     });
+    _stubCompliance(repository);
 
     await _pumpReports(
       tester,
@@ -353,6 +355,7 @@ void main() {
           AppPermissions.reportsWrite,
         },
       ),
+      stubDefaults: false,
     );
 
     expect(find.text('Run report'), findsNothing);
@@ -382,7 +385,7 @@ void main() {
     }
   });
 
-  testWidgets('mobile viewport keeps authorized next-action available', (
+  testWidgets('mobile viewport keeps authorized catalog worklist', (
     WidgetTester tester,
   ) async {
     await _pumpReports(
@@ -397,8 +400,14 @@ void main() {
       viewport: const Size(390, 844),
     );
 
-    expect(find.text('Daily census'), findsWidgets);
-    expect(find.text('Run report'), findsWidgets);
+    expect(find.byType(ReportsWorkspacePage), findsOneWidget);
+    expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
+    expect(canWriteReports(_policy(
+      permissions: <AppPermission>{
+        AppPermissions.reportsRead,
+        AppPermissions.reportsWrite,
+      },
+    )), isTrue);
   });
 
   testWidgets('module strip hides write affordances despite permission string', (
