@@ -45,7 +45,8 @@ const MortuaryWorkspaceItem _overviewItem = MortuaryWorkspaceItem(
   identificationStatus: 'VERIFIED',
   billingStatus: 'SETTLED',
   deceasedProfileLabel: 'Overview Patient',
-  storageLabel: 'Cold Bay A-1',
+  storageUnitLabel: 'Cold Bay A',
+  storageSlotLabel: 'A-1',
   billableEvents: <MortuaryBillableEvent>[_billableEvent],
 );
 

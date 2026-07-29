@@ -532,8 +532,8 @@ void main() {
       await _openDetail(tester);
       expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.text('Print documents'), findsNothing);
-      expect(find.text('Billing'), findsNothing);
       expect(find.text('Cold storage day'), findsNothing);
+      expect(find.text('No billing events recorded'), findsNothing);
       expect(find.text('Identity'), findsOneWidget);
       expect(find.text('Receive case'), findsNothing);
     },
@@ -582,8 +582,8 @@ void main() {
         accessPolicy: withoutBillingRead,
       );
       await _openDetail(tester);
-      expect(find.text('Billing'), findsNothing);
       expect(find.text('Cold storage day'), findsNothing);
+      expect(find.text('No billing events recorded'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -602,7 +602,6 @@ void main() {
         accessPolicy: withBilling,
       );
       await _openDetail(tester);
-      expect(find.text('Billing'), findsOneWidget);
       expect(find.textContaining('Cold storage day'), findsOneWidget);
     },
   );
@@ -730,7 +729,7 @@ void main() {
     expect(find.text('Amina K.'), findsWidgets);
     await _openDetail(tester);
     expect(find.text('Print documents'), findsOneWidget);
-    expect(find.text('Billing'), findsOneWidget);
+    expect(find.textContaining('Cold storage day'), findsOneWidget);
     expect(find.text('Receive case'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
