@@ -137,6 +137,7 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Staff **Assign department** next-action opens the assign dialog without Staff actions.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
+- Permission scan for Human resources (`staff`): `frontend/test/features/hr/presentation/hr_human_resources_permissions_test.dart` proves ∩ denial / presence, ∪ roster allowance, subscription strip, facility ABAC on route entry, nested write absence, mobile+dark chrome, and post-mutation sync.
 - Access tab suite `frontend/test/features/hr/presentation/hr_manage_users_roles_permissions_test.dart` proves ∩ denial (no admin ∪), ∪ allowance (facility/tenant admin), create ∩ mapping (source `hr:write` ∩ matrix `tenant:admin`), subscription strip, empty state, viewports, light/dark.
 - Shifts permission suite `frontend/test/features/hr/presentation/hr_shifts_permissions_test.dart` proves:
   - ∩ denial: missing `roster:write` hides Schedule templates / Override; missing `hr:write` hides template Delete.
