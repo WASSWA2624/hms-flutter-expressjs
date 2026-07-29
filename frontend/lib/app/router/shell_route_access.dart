@@ -1,8 +1,10 @@
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 
 bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
-  if (!route.accessRequirement.isAllowed(accessPolicy)) {
+  final AccessRequirement requirement = route.accessRequirement;
+  if (!requirement.isAllowed(accessPolicy)) {
     return false;
   }
 
@@ -10,16 +12,16 @@ bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
   // instead of letting broad route any-permission lists leak across modules.
   if (accessPolicy.isPermissionScopedShellUser) {
     return accessPolicy.isShellRouteAllowedByPermissionDomain(
-      allPermissions: route.requiredPermissions,
-      anyPermissions: route.requiredAnyPermissions,
+      allPermissions: requirement.allPermissions,
+      anyPermissions: requirement.anyPermissions,
       allowedDomains: AppRoutes.permissionScopedDomainsFor(route),
     );
   }
 
   final bool unlockedByExpandedGrant = accessPolicy
       .isShellRouteUnlockedByExpandedGrant(
-        allPermissions: route.requiredPermissions,
-        anyPermissions: route.requiredAnyPermissions,
+        allPermissions: requirement.allPermissions,
+        anyPermissions: requirement.anyPermissions,
       );
 
   if (accessPolicy.isLabFocusedShellUser &&

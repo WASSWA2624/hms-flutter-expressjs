@@ -18,7 +18,7 @@ const DOMAIN_TO_MODULE = Object.freeze({
   ipd: 'inpatient-bed-management',
   rooms_beds: 'inpatient-bed-management',
   nursing: 'inpatient-bed-management',
-  discharge: 'encounters-vitals',
+  discharge: 'inpatient-bed-management',
   icu: 'icu-critical-care',
   clinical: 'encounters-vitals',
   physiotherapy: 'physiotherapy',

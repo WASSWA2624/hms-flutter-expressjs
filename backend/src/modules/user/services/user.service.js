@@ -24,6 +24,10 @@ const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-r
 const { resolveEntityId, resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { checkUserDuplicates } = require('@lib/user/user-similarity');
+const {
+  assertPermissionNamesIncludeRequiredReads,
+} = require('@lib/authorization/permission-read-dependency');
+const prisma = require('@prisma/client');
 
 const USER_SIMILARITY_LOOKUP_LIMIT = 500;
 
@@ -353,6 +357,18 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
           field: 'permission_ids'})
       )
     );
+    if (next.permission_ids.length > 0) {
+      const permissionRecords = await prisma.permission.findMany({
+        where: {
+          id: { in: next.permission_ids },
+          deleted_at: null,
+        },
+        select: { name: true },
+      });
+      assertPermissionNamesIncludeRequiredReads(
+        permissionRecords.map((entry) => entry.name)
+      );
+    }
   }
 
   if (next.tenant_id !== undefined) {

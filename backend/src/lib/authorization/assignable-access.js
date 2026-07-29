@@ -22,6 +22,9 @@ const {
   normalizeEnabledModuleSet,
 } = require('@lib/authorization/permission-module-map');
 const {
+  assertPermissionNamesIncludeRequiredReads,
+} = require('@lib/authorization/permission-read-dependency');
+const {
   resolveTenantModuleEntitlements,
 } = require('@lib/subscriptions/tenant-entitlements');
 
@@ -42,6 +45,36 @@ const ROLE_RANK = Object.freeze({
 });
 
 const text = (value) => String(value || '').trim();
+
+const loadPermissionByIdentifier = async (permissionId) => {
+  const resolvedId = await resolveIdentifierForPayload({
+    value: permissionId,
+    model: 'permission',
+    field: 'permission_id',
+  });
+  const permission = await prisma.permission.findFirst({
+    where: { id: resolvedId, deleted_at: null },
+    select: { id: true, name: true, tenant_id: true },
+  });
+  if (!permission) {
+    throw new HttpError('errors.permission.not_found', 404);
+  }
+  return permission;
+};
+
+/**
+ * Read-dependency guard without actor ceiling (incremental assign).
+ */
+const assertPermissionIdHasRequiredRead = async (
+  permissionId,
+  existingPermissionNames = []
+) => {
+  const permission = await loadPermissionByIdentifier(permissionId);
+  assertPermissionNamesIncludeRequiredReads([permission.name], {
+    existingPermissionNames,
+  });
+  return permission;
+};
 
 const normalizeRoleName = (entry) => {
   if (typeof entry === 'string') {
@@ -192,7 +225,8 @@ const filterRoleRecordsByCeiling = (roles = [], user = {}) =>
 const assertPermissionNamesAssignable = (
   permissionNames = [],
   user = {},
-  enabledModules = null
+  enabledModules = null,
+  { existingPermissionNames = [] } = {}
 ) => {
   const assignable = resolveActorAssignablePermissionNames(user);
   const uniqueNames = [
@@ -221,31 +255,30 @@ const assertPermissionNamesAssignable = (
       },
     ]);
   }
+
+  assertPermissionNamesIncludeRequiredReads(uniqueNames, {
+    existingPermissionNames,
+  });
 };
 
 const assertPermissionIdAssignable = async (
   permissionId,
   user = {},
-  { tenantId = null, enabledModules = null } = {}
+  {
+    tenantId = null,
+    enabledModules = null,
+    existingPermissionNames = [],
+  } = {}
 ) => {
-  const resolvedId = await resolveIdentifierForPayload({
-    value: permissionId,
-    model: 'permission',
-    field: 'permission_id',
-  });
-  const permission = await prisma.permission.findFirst({
-    where: { id: resolvedId, deleted_at: null },
-    select: { id: true, name: true, tenant_id: true },
-  });
-  if (!permission) {
-    throw new HttpError('errors.permission.not_found', 404);
-  }
+  const permission = await loadPermissionByIdentifier(permissionId);
   const planModules =
     enabledModules ??
     (await resolveAssignablePlanModules(
       tenantId || permission.tenant_id || user.tenant_id || user.tenantId || null
     ));
-  assertPermissionNamesAssignable([permission.name], user, planModules);
+  assertPermissionNamesAssignable([permission.name], user, planModules, {
+    existingPermissionNames,
+  });
   return permission;
 };
 
@@ -256,7 +289,11 @@ const assertPermissionIdAssignable = async (
 const assertPermissionIdsAssignable = async (
   permissionIds = [],
   user = {},
-  { tenantId = null, enabledModules = null } = {}
+  {
+    tenantId = null,
+    enabledModules = null,
+    existingPermissionNames = [],
+  } = {}
 ) => {
   const unique = [
     ...new Set(
@@ -322,7 +359,8 @@ const assertPermissionIdsAssignable = async (
   assertPermissionNamesAssignable(
     resolved.map((entry) => entry.name),
     user,
-    planModules
+    planModules,
+    { existingPermissionNames }
   );
 
   return [...new Set(resolved.map((entry) => entry.id))];
@@ -611,6 +649,7 @@ module.exports = {
   ROLE_RANK,
   assertActorCanManageRoleRecord,
   assertPermissionIdAssignable,
+  assertPermissionIdHasRequiredRead,
   assertPermissionIdsAssignable,
   assertPermissionNamesAssignable,
   assertRoleIdAssignable,

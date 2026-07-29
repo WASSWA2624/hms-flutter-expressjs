@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 
@@ -19,15 +20,9 @@ const AccessRequirement billingWorkspaceReadRequirement = AccessRequirement(
 /// Alias used by tab atom maps / prompts.
 const AccessRequirement billingReadRequirement = billingWorkspaceReadRequirement;
 
-/// Route entry (∪): `billing:read` | `billing:write` — matches
-/// [AppRoutes.billing] `requiredAnyPermissions`.
-const AccessRequirement billingWorkspaceEntryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.billingRead,
-    AppPermissions.billingWrite,
-  ],
-  activeModules: <String>[billingPaymentsModule],
-);
+/// Route entry — unique atom from [RouteAccessCatalog.billing] (`billing:read`).
+const AccessRequirement billingWorkspaceEntryRequirement =
+    RouteAccessCatalog.billingEntry;
 
 /// Create / update / delete mutations, close shift, close day (matrix ∩
 /// `billing:write`).

@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 
@@ -17,15 +18,9 @@ const AccessRequirement clinicalWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement clinicalReadRequirement =
     clinicalWorkspaceReadRequirement;
 
-/// Route entry (∪): `clinical:read` | `clinical:write` — matches
-/// [AppRoutes.clinical] `requiredAnyPermissions`.
-const AccessRequirement clinicalWorkspaceEntryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.clinicalWrite,
-  ],
-  activeModules: <String>[clinicalEncountersVitalsModule],
-);
+/// Route entry — unique atom from [RouteAccessCatalog.clinical].
+const AccessRequirement clinicalWorkspaceEntryRequirement =
+    RouteAccessCatalog.clinicalEntry;
 
 /// Create / update / delete encounter mutations.
 ///
@@ -667,7 +662,11 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
 /// Outpatient encounters awaiting clinician review (`WAITING_DOCTOR_REVIEW` /
 /// review-stage aliases). Same encounter chrome as All / Urgent; distinctive
 /// surfaces are the Waiting review tab (warning count tone) and review-stage
-/// next actions (`DOCTOR_REVIEW` / Clinical notes).
+/// next actions (`DOCTOR_REVIEW` / Clinical notes). Matrix nested write rows
+/// are _(n/a)_; prompt narrative ∪ helpers still gate lab / radiology /
+/// pharmacy / admission. Discharge Open billing uses
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -675,25 +674,27 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Waiting review tab count / summary badge | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
-/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_).
+/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
+/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
 abstract final class ClinicalWaitingReviewAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -706,6 +707,11 @@ abstract final class ClinicalWaitingReviewAtomPermissions {
   static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
   static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =

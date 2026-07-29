@@ -10,6 +10,24 @@
 const apiKeyPermissionRepository = require('@repositories/api-key-permission/api-key-permission.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  assertPermissionIdHasRequiredRead,
+} = require('@lib/authorization/assignable-access');
+const prisma = require('@prisma/client');
+
+const loadApiKeyPermissionNames = async (apiKeyId) => {
+  if (!apiKeyId) {
+    return [];
+  }
+  const rows = await prisma.api_key_permission.findMany({
+    where: { api_key_id: apiKeyId, deleted_at: null },
+    include: {
+      permission: { select: { name: true } },
+    },
+    take: 1000,
+  });
+  return rows.map((entry) => entry?.permission?.name).filter(Boolean);
+};
 
 /**
  * List API key permissions with pagination and filtering
@@ -90,6 +108,15 @@ const getApiKeyPermissionById = async (id, userId, ipAddress) => {
  */
 const createApiKeyPermission = async (data, userId, ipAddress) => {
   try {
+    const existingPermissionNames = await loadApiKeyPermissionNames(
+      data.api_key_id
+    );
+    if (data.permission_id) {
+      await assertPermissionIdHasRequiredRead(
+        data.permission_id,
+        existingPermissionNames
+      );
+    }
     const apiKeyPermission = await apiKeyPermissionRepository.create(data);
 
     // Create audit log (non-blocking)

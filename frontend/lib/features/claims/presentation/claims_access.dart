@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 
 /// Module entitlement for the claims workspace route and tabs.
@@ -27,16 +28,9 @@ const AccessRequirement claimsInsuranceSetupReadAnyRequirement =
       activeModules: <String>[claimsInsuranceClaimsModule],
     );
 
-/// Route entry (∪): `billing:read` | `billing:write` | `financial:approve` —
-/// matches [AppRoutes.claims] `requiredAnyPermissions`.
-const AccessRequirement claimsWorkspaceEntryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.billingRead,
-    AppPermissions.billingWrite,
-    AppPermissions.financialApprove,
-  ],
-  activeModules: <String>[claimsInsuranceClaimsModule],
-);
+/// Route entry — unique atom from [RouteAccessCatalog.claims] (`claims:read`).
+const AccessRequirement claimsWorkspaceEntryRequirement =
+    RouteAccessCatalog.claimsEntry;
 
 /// Create / update / delete mutations (matrix ∩ `billing:write`).
 ///

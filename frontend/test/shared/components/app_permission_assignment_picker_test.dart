@@ -125,6 +125,81 @@ void main() {
       expect(selected, isEmpty);
     });
 
+    testWidgets('selecting write auto-attaches matching read', (tester) async {
+      final Set<String> selected = <String>{};
+
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppPermissionAssignmentPicker(
+                permissions: permissions,
+                selectedPermissionIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder writeTile = find.byKey(
+        const ValueKey<String>('permission-perm-patient-write'),
+      );
+      await tester.ensureVisible(writeTile);
+      await tester.tap(writeTile);
+      await tester.pumpAndSettle();
+
+      expect(selected, contains('perm-patient-write'));
+      expect(selected, contains('perm-patient-read'));
+    });
+
+    testWidgets('cannot deselect read while write remains selected', (
+      tester,
+    ) async {
+      final Set<String> selected = <String>{
+        'perm-patient-read',
+        'perm-patient-write',
+      };
+
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppPermissionAssignmentPicker(
+                permissions: permissions,
+                selectedPermissionIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder readTile = find.byKey(
+        const ValueKey<String>('permission-perm-patient-read'),
+      );
+      await tester.ensureVisible(readTile);
+      await tester.tap(readTile);
+      await tester.pumpAndSettle();
+
+      expect(selected, contains('perm-patient-read'));
+      expect(selected, contains('perm-patient-write'));
+    });
+
     testWidgets('single permission checkbox toggles independently', (
       tester,
     ) async {

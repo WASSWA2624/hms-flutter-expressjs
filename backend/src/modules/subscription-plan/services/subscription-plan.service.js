@@ -34,6 +34,20 @@ const {
   publishCrudRealtimeEvent,
   SUBSCRIPTION_EVENTS} = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
+const {
+  assertPermissionNamesIncludeRequiredReads,
+} = require('@lib/authorization/permission-read-dependency');
+
+const assertAllowedPermissionsIncludeRequiredReads = (extensionJson) => {
+  if (!extensionJson || typeof extensionJson !== 'object') {
+    return;
+  }
+  const allowed = extensionJson.allowed_permissions;
+  if (!Array.isArray(allowed) || allowed.length === 0) {
+    return;
+  }
+  assertPermissionNamesIncludeRequiredReads(allowed);
+};
 
 const PLAN_INCLUDE = Object.freeze({
   tenant: true,
@@ -287,6 +301,8 @@ const createSubscriptionPlan = async (data, user, ip) => {
       data.human_friendly_id
       || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription_plan)}, user);
 
+  assertAllowedPermissionsIncludeRequiredReads(payload.extension_json);
+
   const created = await subscriptionPlanRepository.create(payload);
   const subscriptionPlan = await loadSubscriptionPlanRecord(
     created.id,
@@ -317,6 +333,11 @@ const updateSubscriptionPlan = async (id, data, user, ip) => {
       payload.extension_json
     );
   }
+  assertAllowedPermissionsIncludeRequiredReads(
+    payload.extension_json !== undefined
+      ? payload.extension_json
+      : before.extension_json
+  );
   await subscriptionPlanRepository.update(before.id, payload);
   const subscriptionPlan = await loadSubscriptionPlanRecord(before.id, user, true);
 

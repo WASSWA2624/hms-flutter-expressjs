@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
@@ -609,22 +610,8 @@ List<_SettingsAction> _adminActions(
 // Access requirements
 // ---------------------------------------------------------------------------
 
-const AccessRequirement _tenantFacilitySetupRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-    AppPermissions.hrRead,
-    AppPermissions.hrWrite,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-    AppRole.hr,
-  ],
-  requiresFacilityContext: true,
-);
+const AccessRequirement _tenantFacilitySetupRequirement =
+    RouteAccessCatalog.setupEntry;
 
 /// HR users with facility scope see department and unit setup modules only.
 const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
@@ -637,24 +624,11 @@ const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
   requiresFacilityContext: true,
 );
 
-const AccessRequirement _subscriptionsRequirement = AccessRequirement(
-  anyRoles: <AppRole>[AppRole.superAdmin],
-);
+const AccessRequirement _subscriptionsRequirement =
+    RouteAccessCatalog.subscriptionsEntry;
 
-const AccessRequirement _accessAdminRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-    AppRole.operations,
-  ],
-  requiresTenantContext: true,
-);
+const AccessRequirement _accessAdminRequirement =
+    RouteAccessCatalog.accessAdminEntry;
 
 /// Matches backend [SETTINGS_WORKSPACE_ROLES]: super/tenant/facility admins only.
 const AccessRequirement _settingsWorkspaceRequirement = AccessRequirement(

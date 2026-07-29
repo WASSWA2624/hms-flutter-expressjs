@@ -272,6 +272,7 @@
   "errors.payroll_item.not_found": "Payroll item not found",
   "errors.payroll_run.not_found": "Payroll run not found",
   "errors.permission.not_found": "Permission not found",
+  "errors.permission.read_required": "Assign the matching read permission before granting other actions for that domain",
   "errors.pharmacy_order.already_dispensed": "Pharmacy order already dispensed",
   "errors.pharmacy_order.cannot_dispense_cancelled": "Cannot dispense a cancelled pharmacy order",
   "errors.pharmacy_order.not_found": "Pharmacy order not found",

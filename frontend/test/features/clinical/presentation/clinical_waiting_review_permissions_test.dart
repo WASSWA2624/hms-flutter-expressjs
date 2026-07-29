@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -17,6 +20,7 @@ import 'package:hosspi_hms/features/clinical/data/repositories/clinical_reposito
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
+import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -283,6 +287,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const IpdAdmissionQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -309,6 +314,26 @@ void main() {
       );
       expect(
         ClinicalWaitingReviewAtomPermissions.write,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.create,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.update,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.delete,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.success,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.validation,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
@@ -344,6 +369,10 @@ void main() {
         same(clinicalWorkspaceEntryRequirement),
       );
       expect(
+        ClinicalWaitingReviewAtomPermissions.routeEntry,
+        same(RouteAccessCatalog.clinicalEntry),
+      );
+      expect(
         clinicalSectionTabRequirement(ClinicalWorkspaceSection.waitingReview),
         same(clinicalWorkspaceReadRequirement),
       );
@@ -362,9 +391,10 @@ void main() {
         ClinicalWaitingReviewAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
       );
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
       expect(
         ClinicalWaitingReviewAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
     });
 
@@ -610,14 +640,14 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits Waiting review chrome',
+    'route entry ∩: clinical:write alone without clinical:read omits Waiting review chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
       expect(
         ClinicalWaitingReviewAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClinicalWaitingReviewAtomPermissions.tab.isAllowed(writeOnly),
@@ -875,6 +905,256 @@ void main() {
       verify(() => clinicalRepository.loadEncounterBundle(any())).called(
         greaterThan(0),
       );
+    },
+  );
+
+  testWidgets(
+    'authorized Add clinical note shows validation for empty submit',
+    (WidgetTester tester) async {
+      await _pumpWaitingReviewTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Waiting Review Tab Patient'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add clinical note').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+
+      await tester.tap(find.text('Add clinical note').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsWidgets);
+      verifyNever(() => clinicalRepository.createClinicalNote(any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  test(
+    'post-mutation sync: deleteDiagnosis reloads Waiting review encounter bundle',
+    () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_encounter);
+
+      clearInteractions(clinicalRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(() => clinicalRepository.loadEncounterBundle(any())).thenAnswer((
+        invocation,
+      ) {
+        final ClinicalWorklistEntry entry =
+            invocation.positionalArguments.single as ClinicalWorklistEntry;
+        return Future<Result<ClinicalEncounterBundle>>.value(
+          Result<ClinicalEncounterBundle>.success(
+            ClinicalEncounterBundle(
+              entry: entry,
+              diagnoses: const <ClinicalRelatedRecord>[],
+            ),
+          ),
+        );
+      });
+
+      final AppFailure? failure = await controller.deleteDiagnosis('dx-1');
+      expect(failure, isNull);
+      verify(() => clinicalRepository.deleteDiagnosis('dx-1')).called(1);
+      verify(
+        () => clinicalRepository.loadEncounterBundle(any()),
+      ).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  testWidgets(
+    'authorized loading chrome remains observable on Waiting review',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+
+      final Completer<Result<AppPage<ClinicalWorklistEntry>>> listCompleter =
+          Completer<Result<AppPage<ClinicalWorklistEntry>>>();
+      when(() => clinicalRepository.listEncounters(any())).thenAnswer(
+        (_) => listCompleter.future,
+      );
+      when(() => clinicalRepository.listAdmissions(any())).thenAnswer(
+        (invocation) async => Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[],
+            request:
+                (invocation.positionalArguments.single as ClinicalWorklistQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(clinicalRepository.loadReferenceData).thenAnswer(
+        (_) async =>
+            const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
+      );
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/clinical?section=waiting-review',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/clinical',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ClinicalWorkspacePage(
+                  initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            ipdRepositoryProvider.overrideWithValue(ipdRepository),
+            followUpTabCountProvider.overrideWith(
+              (Ref ref, FollowUpWorklistScope scope) => null,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{AppPermissions.clinicalRead},
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.textContaining('no access'), findsNothing);
+
+      listCompleter.complete(
+        Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[_encounter],
+            request: const AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Waiting Review Tab Patient'), findsOneWidget);
+    },
+  );
+
+  test('∩ denial: success/validation atoms require write', () {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+    expect(
+      ClinicalWaitingReviewAtomPermissions.success.isAllowed(reader),
+      isFalse,
+    );
+    expect(
+      ClinicalWaitingReviewAtomPermissions.validation.isAllowed(reader),
+      isFalse,
+    );
+
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+    );
+    expect(
+      ClinicalWaitingReviewAtomPermissions.success.isAllowed(writer),
+      isTrue,
+    );
+    expect(
+      ClinicalWaitingReviewAtomPermissions.validation.isAllowed(writer),
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    '∪ write: system:admin shows Waiting review mutation atoms with clinical:read',
+    (WidgetTester tester) async {
+      await _pumpWaitingReviewTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.systemAdmin,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Waiting Review Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add clinical note'), findsWidgets);
+      expect(find.text('Request lab'), findsWidgets);
+      expect(find.text('Print summary'), findsWidgets);
     },
   );
 }

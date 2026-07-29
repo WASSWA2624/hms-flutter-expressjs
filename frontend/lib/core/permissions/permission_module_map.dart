@@ -15,7 +15,7 @@ abstract final class PermissionModuleMap {
     'reception': 'scheduling-queue',
     'opd': 'scheduling-queue',
     'clinical': 'encounters-vitals',
-    'discharge': 'encounters-vitals',
+    'discharge': 'inpatient-bed-management',
     'emergency': 'scheduling-queue',
     'ipd': 'inpatient-bed-management',
     'rooms_beds': 'inpatient-bed-management',

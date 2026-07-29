@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/permission_read_dependency.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -176,13 +177,69 @@ class _AppPermissionAssignmentPickerState
     widget.onSelectionChanged(next);
   }
 
+  Map<String, String> get _idByCode {
+    return <String, String>{
+      for (final AppPermissionAssignmentOption permission in widget.permissions)
+        permission.code: permission.id,
+    };
+  }
+
+  Map<String, String> get _codeById {
+    return <String, String>{
+      for (final AppPermissionAssignmentOption permission in widget.permissions)
+        permission.id: permission.code,
+    };
+  }
+
+  Set<String> get _catalogCodes {
+    return widget.permissions
+        .map((AppPermissionAssignmentOption permission) => permission.code)
+        .toSet();
+  }
+
+  Set<String> _selectionCodes(Set<String> ids) {
+    final Map<String, String> codeById = _codeById;
+    return ids
+        .map((String id) => codeById[id])
+        .whereType<String>()
+        .toSet();
+  }
+
+  Set<String> _idsForCodes(Set<String> codes) {
+    final Map<String, String> idByCode = _idByCode;
+    return codes
+        .map((String code) => idByCode[code])
+        .whereType<String>()
+        .toSet();
+  }
+
+  Set<String> _withRequiredReads(Set<String> ids) {
+    final Set<String> codes = _selectionCodes(ids);
+    final Set<String> expandedCodes = expandPermissionCodesWithRequiredReads(
+      codes,
+      catalogCodes: _catalogCodes,
+    );
+    return <String>{...ids, ..._idsForCodes(expandedCodes)};
+  }
+
   void _togglePermission(String permissionId, bool selected) {
     final Set<String> next = Set<String>.from(widget.selectedPermissionIds);
+    final String? code = _codeById[permissionId];
     if (selected) {
       next.add(permissionId);
-    } else {
-      next.remove(permissionId);
+      _updateSelection(_withRequiredReads(next));
+      return;
     }
+
+    if (code != null &&
+        !canDeselectPermissionCode(
+          code,
+          selectedCodes: _selectionCodes(next),
+          catalogCodes: _catalogCodes,
+        )) {
+      return;
+    }
+    next.remove(permissionId);
     _updateSelection(next);
   }
 
@@ -191,7 +248,7 @@ class _AppPermissionAssignmentPickerState
     for (final AppPermissionAssignmentOption permission in _scopePermissions) {
       next.add(permission.id);
     }
-    _updateSelection(next);
+    _updateSelection(_withRequiredReads(next));
   }
 
   void _clearInScope() {
@@ -202,6 +259,13 @@ class _AppPermissionAssignmentPickerState
 
     final Set<String> next = Set<String>.from(widget.selectedPermissionIds);
     for (final AppPermissionAssignmentOption permission in _scopePermissions) {
+      if (!canDeselectPermissionCode(
+        permission.code,
+        selectedCodes: _selectionCodes(next),
+        catalogCodes: _catalogCodes,
+      )) {
+        continue;
+      }
       next.remove(permission.id);
     }
     _updateSelection(next);
@@ -212,12 +276,32 @@ class _AppPermissionAssignmentPickerState
     for (final AppPermissionAssignmentOption permission in groupPermissions) {
       next.add(permission.id);
     }
-    _updateSelection(next);
+    _updateSelection(_withRequiredReads(next));
   }
 
   void _clearGroup(List<AppPermissionAssignmentOption> groupPermissions) {
     final Set<String> next = Set<String>.from(widget.selectedPermissionIds);
-    for (final AppPermissionAssignmentOption permission in groupPermissions) {
+    // Clear non-read actions first so reads become free to remove.
+    final List<AppPermissionAssignmentOption> ordered =
+        List<AppPermissionAssignmentOption>.from(groupPermissions)..sort((
+          AppPermissionAssignmentOption a,
+          AppPermissionAssignmentOption b,
+        ) {
+          final bool aRead = a.code.endsWith(':read');
+          final bool bRead = b.code.endsWith(':read');
+          if (aRead == bRead) {
+            return 0;
+          }
+          return aRead ? 1 : -1;
+        });
+    for (final AppPermissionAssignmentOption permission in ordered) {
+      if (!canDeselectPermissionCode(
+        permission.code,
+        selectedCodes: _selectionCodes(next),
+        catalogCodes: _catalogCodes,
+      )) {
+        continue;
+      }
       next.remove(permission.id);
     }
     _updateSelection(next);
@@ -391,6 +475,15 @@ class _AppPermissionAssignmentPickerState
                   onTogglePermission: _togglePermission,
                   onToggleGroup: _toggleGroup,
                   selectedCountInGroup: _selectedCountInGroup,
+                  canDeselectPermission: (AppPermissionAssignmentOption permission) {
+                    return canDeselectPermissionCode(
+                      permission.code,
+                      selectedCodes: _selectionCodes(
+                        widget.selectedPermissionIds,
+                      ),
+                      catalogCodes: _catalogCodes,
+                    );
+                  },
                 );
               }
 
@@ -416,6 +509,16 @@ class _AppPermissionAssignmentPickerState
                       onTogglePermission: _togglePermission,
                       onToggleGroup: _toggleGroup,
                       selectedCountInGroup: _selectedCountInGroup,
+                      canDeselectPermission:
+                          (AppPermissionAssignmentOption permission) {
+                        return canDeselectPermissionCode(
+                          permission.code,
+                          selectedCodes: _selectionCodes(
+                            widget.selectedPermissionIds,
+                          ),
+                          catalogCodes: _catalogCodes,
+                        );
+                      },
                     ),
                   ),
                   SizedBox(width: theme.spacing.md),
@@ -430,6 +533,16 @@ class _AppPermissionAssignmentPickerState
                       onTogglePermission: _togglePermission,
                       onToggleGroup: _toggleGroup,
                       selectedCountInGroup: _selectedCountInGroup,
+                      canDeselectPermission:
+                          (AppPermissionAssignmentOption permission) {
+                        return canDeselectPermissionCode(
+                          permission.code,
+                          selectedCodes: _selectionCodes(
+                            widget.selectedPermissionIds,
+                          ),
+                          catalogCodes: _catalogCodes,
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -452,6 +565,7 @@ class _PermissionGroupColumn extends StatelessWidget {
     required this.onTogglePermission,
     required this.onToggleGroup,
     required this.selectedCountInGroup,
+    required this.canDeselectPermission,
   });
 
   final List<String> groupKeys;
@@ -465,6 +579,8 @@ class _PermissionGroupColumn extends StatelessWidget {
   onToggleGroup;
   final int Function(List<AppPermissionAssignmentOption> permissions)
   selectedCountInGroup;
+  final bool Function(AppPermissionAssignmentOption permission)
+  canDeselectPermission;
 
   @override
   Widget build(BuildContext context) {
@@ -486,6 +602,7 @@ class _PermissionGroupColumn extends StatelessWidget {
             onTogglePermission: onTogglePermission,
             onToggleGroup: onToggleGroup,
             selectedCountInGroup: selectedCountInGroup,
+            canDeselectPermission: canDeselectPermission,
           ),
         SizedBox(height: theme.spacing.xs),
       ],
@@ -504,6 +621,7 @@ class _PermissionGroupSection extends StatelessWidget {
     required this.onTogglePermission,
     required this.onToggleGroup,
     required this.selectedCountInGroup,
+    required this.canDeselectPermission,
   });
 
   final String groupKey;
@@ -517,6 +635,8 @@ class _PermissionGroupSection extends StatelessWidget {
   onToggleGroup;
   final int Function(List<AppPermissionAssignmentOption> permissions)
   selectedCountInGroup;
+  final bool Function(AppPermissionAssignmentOption permission)
+  canDeselectPermission;
 
   @override
   Widget build(BuildContext context) {
@@ -617,10 +737,14 @@ class _PermissionGroupSection extends StatelessWidget {
                       key: ValueKey<String>('permission-${permission.id}'),
                       value: selectedPermissionIds.contains(permission.id),
                       onChanged: enabled
-                          ? (bool? value) => onTogglePermission(
-                              permission.id,
-                              value ?? false,
-                            )
+                          ? (bool? value) {
+                              final bool nextSelected = value ?? false;
+                              if (!nextSelected &&
+                                  !canDeselectPermission(permission)) {
+                                return;
+                              }
+                              onTogglePermission(permission.id, nextSelected);
+                            }
                           : null,
                       title: Text(permission.label),
                       subtitle: permission.code == permission.label

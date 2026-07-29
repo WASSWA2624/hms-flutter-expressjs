@@ -2,6 +2,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 
@@ -32,18 +33,9 @@ const AccessRequirement dischargeWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement dischargeReadRequirement =
     dischargeWorkspaceReadRequirement;
 
-/// Route entry (∪): matches [AppRoutes.discharge] `requiredAnyPermissions`.
-const AccessRequirement dischargeWorkspaceEntryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.clinicalWrite,
-    AppPermissions.pharmacyRead,
-    AppPermissions.billingRead,
-    AppPermissions.operationsRead,
-  ],
-  anyRoles: AppRoutes.dischargeWorkspaceRoles,
-  activeModules: <String>[dischargeInpatientBedModule],
-);
+/// Route entry — unique atom from [RouteAccessCatalog.discharge].
+const AccessRequirement dischargeWorkspaceEntryRequirement =
+    RouteAccessCatalog.dischargeEntry;
 
 /// Planning / finalize mutations — source inventory
 /// (`screens/discharge.md` → `_dischargeClinicalWriteRequirement`).

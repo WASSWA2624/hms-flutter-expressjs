@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 
 /// Module entitlement for the biomedical workspace route and panels.
@@ -19,15 +20,9 @@ const AccessRequirement biomedicalWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement biomedicalReadRequirement =
     biomedicalWorkspaceReadRequirement;
 
-/// Route entry (∪): `biomed:read` | `biomed:write` — matches
-/// [AppRoutes.biomedical] `requiredAnyPermissions`.
-const AccessRequirement biomedicalWorkspaceEntryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.biomedRead,
-    AppPermissions.biomedWrite,
-  ],
-  activeModules: <String>[biomedicalEngineeringSuiteModule],
-);
+/// Route entry — unique atom from [RouteAccessCatalog.biomedical].
+const AccessRequirement biomedicalWorkspaceEntryRequirement =
+    RouteAccessCatalog.biomedicalEntry;
 
 /// Create / update / delete mutations.
 ///

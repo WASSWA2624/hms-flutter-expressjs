@@ -13,7 +13,30 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForPayload,
   resolvePublicIdentifier} = require('@lib/billing/identifiers');
-const { assertPermissionIdAssignable, assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
+const {
+  assertPermissionIdAssignable,
+  assertPermissionIdHasRequiredRead,
+  assertRoleIdAssignable,
+} = require('@lib/authorization/assignable-access');
+const {
+  assertPermissionNamesIncludeRequiredReads,
+} = require('@lib/authorization/permission-read-dependency');
+
+const ROLE_PERMISSION_NAME_LIMIT = 1000;
+
+const loadRolePermissionNames = async (roleId) => {
+  if (!roleId) {
+    return [];
+  }
+  const rows = await rolePermissionRepository.findMany(
+    { role_id: roleId },
+    0,
+    ROLE_PERMISSION_NAME_LIMIT
+  );
+  return rows
+    .map((entry) => entry?.permission?.name)
+    .filter(Boolean);
+};
 
 const normalizeCreateRolePermissionPayload = async (data = {}) => ({
   role_id: await resolveIdentifierForPayload({
@@ -160,9 +183,17 @@ const getRolePermissionById = async (id, userId, ipAddress) => {
 const createRolePermission = async (data, userId, ipAddress, actor = null) => {
   try {
     const payload = await normalizeCreateRolePermissionPayload(data);
+    const existingPermissionNames = await loadRolePermissionNames(payload.role_id);
     if (actor) {
       await assertRoleIdAssignable(payload.role_id, actor);
-      await assertPermissionIdAssignable(payload.permission_id, actor);
+      await assertPermissionIdAssignable(payload.permission_id, actor, {
+        existingPermissionNames,
+      });
+    } else {
+      await assertPermissionIdHasRequiredRead(
+        payload.permission_id,
+        existingPermissionNames
+      );
     }
     const rolePermission = await rolePermissionRepository.create(payload);
 
@@ -195,23 +226,52 @@ const createRolePermission = async (data, userId, ipAddress, actor = null) => {
  */
 const updateRolePermission = async (id, data, userId, ipAddress, actor = null) => {
   try {
-    // Get current state for audit
     const before = await rolePermissionRepository.findById(id);
 
     if (!before) {
       throw new HttpError('errors.role_permission.not_found', 404);
     }
 
+    const targetRoleId =
+      data.role_id !== undefined
+        ? await resolveIdentifierForPayload({
+            value: data.role_id,
+            model: 'role',
+            field: 'role_id',
+          })
+        : before.role_id;
+    const targetPermissionId =
+      data.permission_id !== undefined
+        ? await resolveIdentifierForPayload({
+            value: data.permission_id,
+            model: 'permission',
+            field: 'permission_id',
+          })
+        : before.permission_id;
+
+    const beforeRows = await rolePermissionRepository.findMany(
+      { id: before.id },
+      0,
+      1
+    );
+    const outgoingName = beforeRows[0]?.permission?.name || null;
+    const existingForTarget = (await loadRolePermissionNames(targetRoleId)).filter(
+      (name) => name !== outgoingName
+    );
+
     if (actor) {
       await assertRoleIdAssignable(before.role_id, actor);
       if (data.role_id !== undefined) {
-        await assertRoleIdAssignable(data.role_id, actor);
+        await assertRoleIdAssignable(targetRoleId, actor);
       }
-      if (data.permission_id !== undefined) {
-        await assertPermissionIdAssignable(data.permission_id, actor);
-      } else if (before.permission_id) {
-        await assertPermissionIdAssignable(before.permission_id, actor);
-      }
+      await assertPermissionIdAssignable(targetPermissionId, actor, {
+        existingPermissionNames: existingForTarget,
+      });
+    } else {
+      await assertPermissionIdHasRequiredRead(
+        targetPermissionId,
+        existingForTarget
+      );
     }
 
     const rolePermission = await rolePermissionRepository.update(
@@ -219,7 +279,6 @@ const updateRolePermission = async (id, data, userId, ipAddress, actor = null) =
       await normalizeUpdateRolePermissionPayload(data),
     );
 
-    // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',
@@ -247,7 +306,6 @@ const updateRolePermission = async (id, data, userId, ipAddress, actor = null) =
  */
 const deleteRolePermission = async (id, userId, ipAddress, actor = null) => {
   try {
-    // Get current state for audit
     const before = await rolePermissionRepository.findById(id);
 
     if (!before) {
@@ -258,9 +316,19 @@ const deleteRolePermission = async (id, userId, ipAddress, actor = null) => {
       await assertRoleIdAssignable(before.role_id, actor);
     }
 
+    const beforeRows = await rolePermissionRepository.findMany(
+      { id: before.id },
+      0,
+      1
+    );
+    const removingName = beforeRows[0]?.permission?.name || null;
+    const remainingNames = (await loadRolePermissionNames(before.role_id)).filter(
+      (name) => name !== removingName
+    );
+    assertPermissionNamesIncludeRequiredReads(remainingNames);
+
     await rolePermissionRepository.softDelete(before.id);
 
-    // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
