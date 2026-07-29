@@ -195,9 +195,9 @@ void main() {
       expect(profile.shortcutIds, <String>[
         'lab',
         'patients',
-        'reports',
-        'settings',
         'communications',
+        'settings',
+        'reports',
       ]);
       expect(profile.maxStatusCards, 4);
       expect(
