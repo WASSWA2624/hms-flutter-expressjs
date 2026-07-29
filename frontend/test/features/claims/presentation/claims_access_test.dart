@@ -119,6 +119,14 @@ void main() {
       );
 
       expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(writer),
+        isTrue,
+      );
+      expect(
         claimsSectionShowsNextActionColumn(
           reader,
           ClaimsDeskSection.authorizations,

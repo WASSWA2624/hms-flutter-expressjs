@@ -186,9 +186,10 @@ bool claimsSectionShowsNextActionColumn(
   return switch (section) {
     ClaimsDeskSection.settled ||
     ClaimsDeskSection.insuranceSetup => false,
-    ClaimsDeskSection.authorizations => canWriteClaims(policy),
+    ClaimsDeskSection.authorizations =>
+      ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(policy),
     ClaimsDeskSection.activeClaims =>
-      claimsActiveClaimsNextActionColumnRequirement.isAllowed(policy),
+      ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(policy),
   };
 }
 
@@ -200,17 +201,21 @@ bool claimsSectionShowsNextActionColumn(
 /// | Request authorization (strip primary) | create | write ∩ `billing:write` |
 /// | Summary chips (Auth pending / approved / Denied / Expired) | read chrome | read ∩ |
 /// | Search / Clear / Settings (columns) | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Print statement | export / read | document read ∩ |
 /// | Next action Update status | update | write ∩ |
+/// | Next-action column chrome | progressive disclosure | write ∩ |
 /// | Nested Request authorization dialog | create | write ∩ |
 /// | Nested Update authorization dialog | update | write ∩ |
 /// | Deep link `action=preauth` | create | write ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
+/// | Approve / Sync / Settled export | _(absent on this tab)_ | — |
 ///
-/// Nested cross-module matrix rows are _(n/a)_ for this tab. Settlement /
-/// close-as-paid lives on Active Claims and uses [approve].
+/// Nested cross-module matrix rows are _(n/a)_ for this tab — Print stays
+/// [document] read ∩ (not Settled export ∪). Settlement / close-as-paid and
+/// Sync live on Active Claims. Column chrome uses [nextActionColumn] (write ∩);
+/// per-row buttons use [nextAction] / [claimsNextActionRequirement].
 abstract final class ClaimsAuthorizationsAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
@@ -222,6 +227,8 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
   static const AccessRequirement requestAuthorization =
       claimsWorkspaceWriteRequirement;
   static const AccessRequirement nextAction = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionColumn =
+      claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;
   static const AccessRequirement entry = claimsWorkspaceEntryRequirement;

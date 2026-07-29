@@ -308,6 +308,20 @@ void main() {
       );
       expect(
         identical(
+          ClaimsAuthorizationsAtomPermissions.nextActionColumn,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsAuthorizationsAtomPermissions.listChrome,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsAuthorizationsAtomPermissions.document,
           claimsWorkspaceReadRequirement,
         ),
@@ -352,6 +366,10 @@ void main() {
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.nextAction.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(reader),
         isFalse,
       );
       expect(
@@ -1069,6 +1087,138 @@ void main() {
       expect(find.textContaining('Auth pending'), findsOneWidget);
       expect(find.textContaining('Auth approved'), findsOneWidget);
       expect(find.byTooltip('Request authorization'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: EXPIRED insurance-claims omits Authorizations chrome',
+    (WidgetTester tester) async {
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'EXPIRED',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('AUTH-PENDING'), findsNothing);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Authorizations read chrome '
+    '(row scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        ClaimsAuthorizationsAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(
+          noFacility,
+        ),
+        isFalse,
+      );
+
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(find.textContaining('Authorizations'), findsWidgets);
+      expect(find.text('AUTH-PENDING'), findsOneWidget);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+      expect(find.byTooltip('Update status'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nextActionColumn ∩: write mounts column chrome; read-only omits it',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        claimsSectionShowsNextActionColumn(
+          reader,
+          ClaimsDeskSection.authorizations,
+        ),
+        isFalse,
+      );
+      expect(
+        claimsSectionShowsNextActionColumn(
+          writer,
+          ClaimsDeskSection.authorizations,
+        ),
+        isTrue,
+      );
+
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsOneWidget,
+      );
     },
   );
 

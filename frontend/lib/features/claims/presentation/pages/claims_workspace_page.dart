@@ -368,11 +368,17 @@ class _ClaimsWorkspaceContentState
             else
               Expanded(
                 child: AppAccessGate(
-                  // Settled list chrome → [ClaimsSettledAtomPermissions.listChrome]
-                  // (read ∩); other queue tabs share the same desk-section helper.
-                  requirement: effectiveSection == ClaimsDeskSection.settled
-                      ? ClaimsSettledAtomPermissions.listChrome
-                      : claimsDeskSectionRequirement(effectiveSection),
+                  // Queue list chrome → each tab atom map's listChrome (read ∩).
+                  requirement: switch (effectiveSection) {
+                    ClaimsDeskSection.authorizations =>
+                      ClaimsAuthorizationsAtomPermissions.listChrome,
+                    ClaimsDeskSection.activeClaims =>
+                      ClaimsActiveClaimsAtomPermissions.listChrome,
+                    ClaimsDeskSection.settled =>
+                      ClaimsSettledAtomPermissions.listChrome,
+                    ClaimsDeskSection.insuranceSetup =>
+                      ClaimsInsuranceSetupAtomPermissions.listChrome,
+                  },
                   child: _ClaimsQueuePanel(
                     state: state,
                     section: effectiveSection,
@@ -1193,7 +1199,9 @@ class _ClaimsNextActionButton extends ConsumerWidget {
     }
 
     return AppAccessActionGate(
-      requirement: claimsNextActionRequirement(item),
+      requirement: item.isAuthorization
+          ? ClaimsAuthorizationsAtomPermissions.nextAction
+          : claimsNextActionRequirement(item),
       builder: (BuildContext context, bool isAllowed) {
         final bool isNarrow = MediaQuery.sizeOf(context).width < 600;
         return AppButton.tertiary(
