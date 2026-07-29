@@ -335,6 +335,41 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsMessagesAtomPermissions.search,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.filters,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.pagination,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.thread,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.detail,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsMessagesAtomPermissions.threadMenu,
           communicationsWorkspaceWriteRequirement,
         ),
@@ -471,6 +506,34 @@ void main() {
       expect(find.byTooltip('New message'), findsOneWidget);
       expect(find.byTooltip('New group'), findsOneWidget);
       expect(find.text('Critical lab follow-up'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '∩ present: read chrome mounts search / filters for authorized Messages',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsRead},
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.search.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.filters.isAllowed(reader),
+        isTrue,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+
+      expect(find.byType(AppSearchBar), findsOneWidget);
+      expect(find.text('Critical lab follow-up'), findsOneWidget);
+      expect(find.byTooltip('New message'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
