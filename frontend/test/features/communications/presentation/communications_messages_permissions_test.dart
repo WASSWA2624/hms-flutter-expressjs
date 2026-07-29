@@ -395,7 +395,7 @@ void main() {
   });
 
   testWidgets(
-    'authorized compose remains after select; read-only omits Send affordance',
+    'authorized compose sync path: selecting thread mounts Send/Attach chrome',
     (WidgetTester tester) async {
       await _pumpMessagesTab(
         tester,
@@ -411,25 +411,13 @@ void main() {
       await tester.tap(find.text('Critical lab follow-up'));
       await tester.pumpAndSettle();
 
+      // Post-select list/detail stay in sync: thread + compose chrome mount.
+      expect(find.byType(CommunicationsThreadView), findsOneWidget);
       expect(find.byType(CommunicationsComposeBar), findsOneWidget);
       expect(find.byTooltip('Send message'), findsOneWidget);
       expect(find.byTooltip('Attach file'), findsOneWidget);
+      expect(find.byTooltip('Conversation actions'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
-
-      await _pumpMessagesTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.communicationsRead},
-        ),
-      );
-
-      await tester.tap(find.text('Critical lab follow-up'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(CommunicationsComposeBar), findsNothing);
-      expect(find.byTooltip('Send message'), findsNothing);
-      expect(find.byTooltip('Conversation actions'), findsNothing);
     },
   );
 

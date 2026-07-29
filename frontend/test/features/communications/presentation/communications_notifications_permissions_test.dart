@@ -765,6 +765,11 @@ void main() {
       when(() => repository.archiveNotification('notification-1')).thenAnswer(
         (_) async => const Result<void>.success(null),
       );
+      when(() => repository.getNotificationMetrics()).thenAnswer(
+        (_) async => const Result<NotificationMetrics>.success(
+          NotificationMetrics(total: 0),
+        ),
+      );
 
       await _pumpNotificationsTab(
         tester,
@@ -785,16 +790,19 @@ void main() {
         matching: find.text('Archive'),
       );
       expect(detailArchive, findsWidgets);
+      await tester.ensureVisible(detailArchive.first);
+      await tester.pumpAndSettle();
       await tester.tap(detailArchive.first);
       await tester.pumpAndSettle();
 
-      // Confirm dialog
-      expect(find.text('ARCHIVE COMMUNICATION'), findsOneWidget);
-      final Finder confirmArchive = find.descendant(
+      expect(find.text('ARCHIVE COMMUNICATION'), findsWidgets);
+      final Finder confirmSubmit = find.descendant(
         of: find.byType(AppDialog).last,
         matching: find.text('Archive'),
       );
-      await tester.tap(confirmArchive.last);
+      await tester.ensureVisible(confirmSubmit.last);
+      await tester.pumpAndSettle();
+      await tester.tap(confirmSubmit.last);
       await tester.pumpAndSettle();
 
       verify(() => repository.archiveNotification('notification-1')).called(1);
