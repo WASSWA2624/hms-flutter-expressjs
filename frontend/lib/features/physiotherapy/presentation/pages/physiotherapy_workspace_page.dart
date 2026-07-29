@@ -1236,7 +1236,8 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.scheduleFollowUp)
           AppPermissionActionItem(
-            requirement: physiotherapyWorkspaceWriteRequirement,
+            requirement:
+                PhysiotherapyActivePlansAtomPermissions.scheduleFollowUp,
             label: l10n.physiotherapyScheduleFollowUpAction,
             icon: Icons.notification_add_outlined,
             isLoading: isSaving,

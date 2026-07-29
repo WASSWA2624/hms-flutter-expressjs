@@ -1638,7 +1638,7 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
       description: widget.imagingView ? null : l10n.radiologyReportSectionBody,
       actions: <Widget>[
         AppAccessActionGate(
-          requirement: RadiologyAllOrdersAtomPermissions.printReport,
+          requirement: radiologyPrintReportRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.tertiary(
               label: l10n.radiologyPrintReportAction,

@@ -537,6 +537,27 @@ void main() {
         isTrue,
       );
       expect(
+        identical(
+          PhysiotherapyReferralsAtomPermissions.updatePlan,
+          physiotherapyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyReferralsAtomPermissions.addProgressNote,
+          physiotherapyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyReferralsAtomPermissions.closeEpisode,
+          physiotherapyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
         PhysiotherapyReferralsAtomPermissions.billingColumn.isAllowed(writer),
         isTrue,
       );
@@ -837,9 +858,121 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(ClinicalFreeTextActionDialog), findsOneWidget);
+      // List already loaded for the tab; dialog open is the authorized
+      // sync seam before submit (validation / success chrome).
       verify(() => repository.listWorkItems(any())).called(greaterThan(0));
       expect(find.textContaining('no access'), findsNothing);
     });
+
+    testWidgets(
+      'post-mutation sync: Accept referral refreshes after save',
+      (WidgetTester tester) async {
+        await _pumpReferralsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        clearInteractions(repository);
+        when(() => repository.listWorkItems(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final PhysiotherapyWorklistQuery query =
+              invocation.positionalArguments.single as PhysiotherapyWorklistQuery;
+          final List<TherapyWorkItem> filtered = <TherapyWorkItem>[_referralItem]
+              .where(
+                (TherapyWorkItem item) =>
+                    physiotherapyItemMatchesScope(item, query.scope),
+              )
+              .toList(growable: false);
+          return Result<AppPage<TherapyWorkItem>>.success(
+            AppPage<TherapyWorkItem>(
+              items: filtered,
+              request: query.pageRequest,
+              totalItemCount: filtered.length,
+            ),
+          );
+        });
+        when(() => repository.loadDetail(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final TherapyWorkItem item =
+              invocation.positionalArguments.single as TherapyWorkItem;
+          return Result<PhysiotherapyDetail>.success(
+            PhysiotherapyDetail(item: item),
+          );
+        });
+        when(
+          () => repository.acceptReferral(
+            item: any(named: 'item'),
+            note: any(named: 'note'),
+          ),
+        ).thenAnswer((Invocation invocation) async {
+          final TherapyWorkItem item =
+              invocation.namedArguments[#item] as TherapyWorkItem;
+          return Result<PhysiotherapyDetail>.success(
+            PhysiotherapyDetail(
+              item: item.copyWith(status: 'ACCEPTED'),
+            ),
+          );
+        });
+
+        await tester.tap(find.byTooltip('Accept referral').first);
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(ClinicalFreeTextActionDialog), findsOneWidget);
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'Accepted for mobility plan',
+        );
+        await tester.tap(find.text('Save'));
+        await _pumpAfterAction(tester);
+
+        verify(
+          () => repository.acceptReferral(
+            item: any(named: 'item'),
+            note: any(named: 'note'),
+          ),
+        ).called(1);
+        verify(() => repository.listWorkItems(any())).called(greaterThan(0));
+        expect(find.text('Physiotherapy record saved.'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'post-mutation sync: Update plan refreshes after save',
+      (WidgetTester tester) async {
+        await _pumpReferralsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Rita Referral'));
+        await _pumpAfterAction(tester);
+
+        await tester.tap(find.text('Update plan'));
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'Updated mobility protocol',
+        );
+        await tester.tap(find.text('Save'));
+        await _pumpAfterAction(tester);
+
+        verify(
+          () => repository.updatePlan(
+            item: any(named: 'item'),
+            plan: any(named: 'plan'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+        expect(find.text('Physiotherapy record saved.'), findsOneWidget);
+      },
+    );
 
     testWidgets('empty state remains observable for authorized readers', (
       WidgetTester tester,

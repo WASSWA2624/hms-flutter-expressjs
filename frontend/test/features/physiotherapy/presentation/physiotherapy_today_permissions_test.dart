@@ -559,24 +559,38 @@ void main() {
       );
     });
 
-    test('route catalog entry matches AppRoutes physiotherapy ∪', () {
-      expect(
-        RouteAccessCatalog.physiotherapyEntry.anyPermissions.toSet(),
-        <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        },
-      );
-      expect(
-        identical(
-          PhysiotherapyTodayAtomPermissions.catalogEntry,
-          RouteAccessCatalog.physiotherapyEntry,
-        ),
-        isTrue,
-      );
-    });
+    test(
+      'mapping note: catalog route entry is ∩ physiotherapy:read '
+      '(prompt ∪ clinical|patient|billing:read maps to catalog)',
+      () {
+        expect(
+          PhysiotherapyTodayAtomPermissions.routeEntry.allPermissions,
+          <AppPermission>[AppPermissions.physiotherapyRead],
+        );
+        expect(
+          PhysiotherapyTodayAtomPermissions.routeEntry.anyPermissions,
+          isEmpty,
+        );
+        expect(
+          PhysiotherapyTodayAtomPermissions.routeEntry.activeModules,
+          contains(physiotherapyModule),
+        );
+        expect(
+          identical(
+            PhysiotherapyTodayAtomPermissions.catalogEntry,
+            RouteAccessCatalog.physiotherapyEntry,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            PhysiotherapyTodayAtomPermissions.routeEntryUnion,
+            physiotherapyWorkspaceRouteUnionRequirement,
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('nested cross-module write is n/a; billing is only nested read ∩', () {
       final AppAccessPolicy reader = _readerPolicy();

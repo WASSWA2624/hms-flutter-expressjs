@@ -342,6 +342,22 @@ void main() {
       );
       expect(
         identical(
+          PhysiotherapyActivePlansAtomPermissions.catalogEntry,
+          RouteAccessCatalog.physiotherapyEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          physiotherapySectionTabRequirement(
+            PhysiotherapyQueueScope.activePlans,
+          ),
+          PhysiotherapyActivePlansAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           therapyNextActionWriteRequirement,
           physiotherapyNextActionWriteRequirement,
         ),
@@ -352,16 +368,14 @@ void main() {
           therapyNextActionRequirementForKind(
             TherapyNextActionKind.scheduleFollowUp,
           ),
-          physiotherapyWorkspaceWriteRequirement,
+          PhysiotherapyActivePlansAtomPermissions.scheduleFollowUp,
         ),
         isTrue,
       );
       expect(
         identical(
-          therapyNextActionRequirementForKind(
-            TherapyNextActionKind.printInstructions,
-          ),
-          physiotherapyWorkspaceReadRequirement,
+          PhysiotherapyActivePlansAtomPermissions.scheduleFollowUp,
+          PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp,
         ),
         isTrue,
       );
@@ -382,6 +396,10 @@ void main() {
       );
       expect(
         PhysiotherapyActivePlansAtomPermissions.updatePlan.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        PhysiotherapyActivePlansAtomPermissions.nestedWrite.isAllowed(reader),
         isFalse,
       );
       expect(canWritePhysiotherapy(reader), isFalse);
@@ -427,6 +445,10 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        PhysiotherapyActivePlansAtomPermissions.filters.isAllowed(patientOnly),
+        isTrue,
+      );
       expect(canViewPhysiotherapyActivePlans(clinicalOnly), isTrue);
       expect(canViewPhysiotherapyActivePlans(patientOnly), isTrue);
       expect(
@@ -435,23 +457,89 @@ void main() {
       );
     });
 
-    test('billing:read alone enters route but not Active-plans chrome', () {
-      final AppAccessPolicy billingOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.billingRead},
-      );
-      expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
-      expect(
-        PhysiotherapyActivePlansAtomPermissions.tab.isAllowed(billingOnly),
-        isFalse,
-      );
-      expect(
-        PhysiotherapyActivePlansAtomPermissions.billingColumn.isAllowed(
-          billingOnly,
-        ),
-        isTrue,
-      );
-      expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
-    });
+    test(
+      'mapping note: catalog route entry is ∩ physiotherapy:read '
+      '(prompt ∪ clinical|patient|billing:read maps to catalog)',
+      () {
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.routeEntry.allPermissions,
+          <AppPermission>[AppPermissions.physiotherapyRead],
+        );
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.routeEntry.anyPermissions,
+          isEmpty,
+        );
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.routeEntry.activeModules,
+          contains(physiotherapyModule),
+        );
+        expect(
+          identical(
+            PhysiotherapyActivePlansAtomPermissions.catalogEntry,
+            RouteAccessCatalog.physiotherapyEntry,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            PhysiotherapyActivePlansAtomPermissions.routeEntryUnion,
+            physiotherapyWorkspaceRouteUnionRequirement,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'billing:read alone does not enter route or Active-plans chrome; '
+      'billing column still allowed',
+      () {
+        final AppAccessPolicy billingOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
+        );
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.routeEntry.isAllowed(
+            billingOnly,
+          ),
+          isFalse,
+        );
+        expect(canEnterPhysiotherapyWorkspace(billingOnly), isFalse);
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.tab.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.billingColumn.isAllowed(
+            billingOnly,
+          ),
+          isTrue,
+        );
+        expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+        expect(canViewPhysiotherapyActivePlans(billingOnly), isFalse);
+      },
+    );
+
+    test(
+      '∩ physiotherapy:read + module satisfies route entry, not tab chrome',
+      () {
+        final AppAccessPolicy physioReader = _policy(
+          permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+          roles: const <String>['CUSTOM_READER'],
+        );
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.routeEntry.isAllowed(
+            physioReader,
+          ),
+          isTrue,
+        );
+        expect(canEnterPhysiotherapyWorkspace(physioReader), isTrue);
+        expect(
+          PhysiotherapyActivePlansAtomPermissions.tab.isAllowed(physioReader),
+          isFalse,
+        );
+      },
+    );
 
     test('full ∩ write set presents write atoms', () {
       final AppAccessPolicy writer = _writerPolicy();
@@ -523,20 +611,19 @@ void main() {
       );
     });
 
-    test('route catalog entry matches AppRoutes physiotherapy ∪', () {
+    test('nested cross-module write is n/a; billing is only nested read ∩', () {
+      final AppAccessPolicy reader = _readerPolicy();
       expect(
-        RouteAccessCatalog.physiotherapyEntry.anyPermissions.toSet(),
-        <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.billingRead,
-        },
+        PhysiotherapyActivePlansAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
       );
       expect(
-        identical(
-          PhysiotherapyActivePlansAtomPermissions.catalogEntry,
-          RouteAccessCatalog.physiotherapyEntry,
+        PhysiotherapyActivePlansAtomPermissions.billingChip.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        PhysiotherapyActivePlansAtomPermissions.billingChip.isAllowed(
+          _billingReaderPolicy(),
         ),
         isTrue,
       );
@@ -614,13 +701,33 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
         ),
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.byType(AppListTable<TherapyWorkItem>), findsNothing);
       expect(find.text('Alex ActivePlan'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     });
+
+    testWidgets(
+      'physiotherapy:read alone mounts no Active-plans chrome (tab needs clinical|patient read)',
+      (WidgetTester tester) async {
+        await _pumpActivePlansTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+            roles: const <String>['CUSTOM_READER'],
+          ),
+        );
+
+        expect(find.byType(AppTabStrip), findsNothing);
+        expect(find.byType(AppListTable<TherapyWorkItem>), findsNothing);
+        expect(find.text('Alex ActivePlan'), findsNothing);
+      },
+    );
 
     testWidgets('detail write actions absent for read-only; present for writer', (
       WidgetTester tester,
@@ -638,6 +745,7 @@ void main() {
       expect(find.text('Add progress note'), findsNothing);
       expect(find.text('Close episode'), findsNothing);
       expect(find.text('Schedule follow-up'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await _pumpActivePlansTab(
@@ -668,11 +776,22 @@ void main() {
             false,
         isFalse,
       );
+
+      await tester.tap(find.text('Alex ActivePlan'));
+      await _pumpAfterAction(tester);
+      final AppLocalizations readerL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder readerShowMore = find.text(
+        readerL10n.commonShowMoreActionLabel,
+      );
+      if (readerShowMore.evaluate().isNotEmpty) {
+        await tester.tap(readerShowMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        PhysiotherapyActivePlansAtomPermissions.billingChip.isAllowed(
-          _readerPolicy(),
-        ),
-        isFalse,
+        find.textContaining(readerL10n.physiotherapyBillingAuthorizationLabel),
+        findsNothing,
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -688,11 +807,22 @@ void main() {
             false,
         isTrue,
       );
+
+      await tester.tap(find.text('Alex ActivePlan'));
+      await _pumpAfterAction(tester);
+      final AppLocalizations billingL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder billingShowMore = find.text(
+        billingL10n.commonShowMoreActionLabel,
+      );
+      if (billingShowMore.evaluate().isNotEmpty) {
+        await tester.tap(billingShowMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        PhysiotherapyActivePlansAtomPermissions.billingChip.isAllowed(
-          _billingReaderPolicy(),
-        ),
-        isTrue,
+        find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
+        findsOneWidget,
       );
       expect(canViewPhysiotherapyBilling(_billingReaderPolicy()), isTrue);
     });
@@ -715,6 +845,41 @@ void main() {
       verify(() => repository.listWorkItems(any())).called(greaterThan(0));
     });
 
+    testWidgets(
+      'post-mutation sync: Update plan refreshes after save',
+      (WidgetTester tester) async {
+        await _pumpActivePlansTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Alex ActivePlan'));
+        await _pumpAfterAction(tester);
+
+        await tester.tap(find.text('Update plan'));
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'Updated strength protocol',
+        );
+        await tester.tap(find.text('Save'));
+        await _pumpAfterAction(tester);
+
+        verify(
+          () => repository.updatePlan(
+            item: any(named: 'item'),
+            plan: any(named: 'plan'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+        expect(find.text('Physiotherapy record saved.'), findsOneWidget);
+      },
+    );
+
     testWidgets('empty state remains observable for authorized readers', (
       WidgetTester tester,
     ) async {
@@ -727,6 +892,7 @@ void main() {
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Schedule follow-up'), findsNothing);
+      expect(_table(tester).search, isNotNull);
     });
 
     testWidgets('error/retry remains observable for authorized readers', (
@@ -755,6 +921,7 @@ void main() {
       expect(find.text('Alex ActivePlan'), findsOneWidget);
       expect(find.byTooltip('Schedule follow-up'), findsNothing);
       expect(find.textContaining('Active plans'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets('desktop viewport: writer next-action present', (
@@ -780,6 +947,7 @@ void main() {
         themeMode: ThemeMode.light,
       );
       expect(find.byTooltip('Schedule follow-up'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await _pumpActivePlansTab(
@@ -790,6 +958,7 @@ void main() {
       );
       expect(find.byTooltip('Schedule follow-up'), findsWidgets);
       expect(find.text('Alex ActivePlan'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     });
   });
 }
