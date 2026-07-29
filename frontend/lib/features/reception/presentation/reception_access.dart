@@ -18,9 +18,9 @@ const AccessRequirement receptionWorkspaceRequirement = AccessRequirement(
 
 /// Front-desk mutations: check-in, reschedule, cancel, route, assign provider.
 ///
-/// Source role gate ([opdFrontDeskActionRequirement]). Appointments matrix
-/// update/delete document ∩ `patient:write` / ∩ `patient:delete`; keep this
-/// source gate for hub mutations (receptionist packs omit `patient:delete`).
+/// Source role gate ([opdFrontDeskActionRequirement]). Matrix update/delete for
+/// Appointments document ∩ `patient:write` / ∩ `patient:delete`; keep this
+/// source gate for hub mutations (receptionist role packs omit `patient:delete`).
 const AccessRequirement receptionFrontDeskWriteRequirement =
     opdFrontDeskActionRequirement;
 
@@ -34,7 +34,7 @@ const AccessRequirement receptionPatientWriteRequirement = AccessRequirement(
 /// Matrix delete ∩ `patient:delete` (Appointments / Active visits atoms).
 ///
 /// Cancel appointment keeps [receptionFrontDeskWriteRequirement] — role packs
-/// for receptionists omit `patient:delete`.
+/// for receptionists omit `patient:delete`. No delete control on Active visits.
 const AccessRequirement receptionPatientDeleteRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.patientDelete],
   activeModules: <String>['patient-registry', 'scheduling-queue'],
@@ -120,6 +120,10 @@ bool canViewReceptionAppointments(AppAccessPolicy policy) {
   return ReceptionAppointmentsAtomPermissions.tab.isAllowed(policy);
 }
 
+bool canViewReceptionActiveVisits(AppAccessPolicy policy) {
+  return ReceptionActiveVisitsAtomPermissions.tab.isAllowed(policy);
+}
+
 /// Whether the Appointments next-action column may mount.
 bool receptionAppointmentsShowsNextActionColumn(AppAccessPolicy policy) {
   return ReceptionAppointmentsAtomPermissions.nextActionCheckIn.isAllowed(
@@ -132,10 +136,6 @@ bool receptionAppointmentsShowsNextActionColumn(AppAccessPolicy policy) {
         policy,
       ) ||
       ReceptionAppointmentsAtomPermissions.frontDesk.isAllowed(policy);
-}
-
-bool canViewReceptionActiveVisits(AppAccessPolicy policy) {
-  return ReceptionActiveVisitsAtomPermissions.tab.isAllowed(policy);
 }
 
 /// Appointments tab atom → permission mapping (inventory + matrix).
