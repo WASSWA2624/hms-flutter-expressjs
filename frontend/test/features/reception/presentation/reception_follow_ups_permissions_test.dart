@@ -67,6 +67,11 @@ AppAccessPolicy _policy({
         permission == AppPermissions.clinicalRead ||
         permission == AppPermissions.clinicalWrite,
   );
+  final bool needsWorkspaceModules = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.lastOfficeRead ||
+        permission == AppPermissions.lastOfficeWrite,
+  );
   final List<AppModuleEntitlement> resolvedModules =
       modules ??
       <AppModuleEntitlement>[
@@ -74,8 +79,8 @@ AppAccessPolicy _policy({
           code: 'scheduling-queue',
           licenseStatus: 'ACTIVE',
         ),
-        // Follow-ups read ∪ requires patient-registry even for clinical:read.
-        if (needsPatient || needsClinical)
+        // Follow-ups / workspace gates list patient-registry explicitly.
+        if (needsPatient || needsClinical || needsWorkspaceModules)
           const AppModuleEntitlement(
             code: 'patient-registry',
             licenseStatus: 'ACTIVE',

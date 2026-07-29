@@ -153,7 +153,7 @@ bool canWriteRoomsBedsOccupancy(AppAccessPolicy policy) {
 AccessRequirement roomsBedsSectionTabRequirement(RoomsBedsSection section) {
   return switch (section) {
     RoomsBedsSection.all => RoomsBedsAllBedsAtomPermissions.tab,
-    RoomsBedsSection.available => roomsBedsWorkspaceReadRequirement,
+    RoomsBedsSection.available => RoomsBedsAvailableAtomPermissions.tab,
     RoomsBedsSection.occupied => RoomsBedsOccupiedAtomPermissions.tab,
     RoomsBedsSection.turnover => roomsBedsWorkspaceReadRequirement,
     RoomsBedsSection.outOfService => roomsBedsWorkspaceReadRequirement,

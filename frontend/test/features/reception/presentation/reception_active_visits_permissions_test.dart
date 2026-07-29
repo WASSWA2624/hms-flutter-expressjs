@@ -629,10 +629,11 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(FlowActionsDialog), findsOneWidget);
-        expect(find.text('Pay consultation'), findsNothing);
         expect(find.text('Manage consultation billing'), findsNothing);
+        expect(find.text('Update consultation billing'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
-        expect(find.text('Record vitals'), findsNothing);
+        expect(find.widgetWithText(AppButton, 'Pay consultation'), findsNothing);
+        expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
       },
     );
 
