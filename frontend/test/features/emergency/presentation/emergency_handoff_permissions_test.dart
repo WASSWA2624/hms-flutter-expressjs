@@ -289,6 +289,22 @@ void main() {
         same(emergencyHandoffWriteRequirement),
       );
       expect(
+        EmergencyHandoffAtomPermissions.recordTriage,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.markResponse,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.startTrip,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.completeTrip,
+        same(emergencyWriteRequirement),
+      );
+      expect(
         EmergencyHandoffAtomPermissions.panelDeepLink,
         same(emergencyHandoffWriteRequirement),
       );
@@ -420,6 +436,40 @@ void main() {
       },
     );
 
+    test(
+      '∪ allowance: patient:write | operations:write also satisfy handoff source',
+      () {
+        final AppAccessPolicy patientWriter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.patientWrite,
+          },
+        );
+        final AppAccessPolicy opsWriter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.operationsWrite,
+          },
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.handoff.isAllowed(patientWriter),
+          isTrue,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.handoff.isAllowed(opsWriter),
+          isTrue,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.quickArrival.isAllowed(patientWriter),
+          isFalse,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.nestedWrite.isAllowed(opsWriter),
+          isFalse,
+        );
+      },
+    );
+
     test('∪ allowance: operations:read satisfies prompt route-entry union', () {
       final AppAccessPolicy opsReader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
@@ -434,6 +484,33 @@ void main() {
       );
       // Tab chrome stays ∩ emergency:read.
       expect(canViewEmergencyHandoff(opsReader), isFalse);
+    });
+
+    test('nested cross-module matrix _(n/a)_: reuses emergency read/write only',
+        () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyRead},
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.nestedRead.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.ambulanceContext.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.nestedWrite,
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.nestedRead,
+        same(emergencyWorkspaceReadRequirement),
+      );
     });
 
     test('subscription strip: scheduling-queue required for Handoff tab', () {
@@ -751,7 +828,29 @@ void main() {
   });
 
   testWidgets(
-    'post-mutation sync: handoff dialog mounts from next-action',
+    'authorized error/retry surface remains observable on Handoff',
+    (WidgetTester tester) async {
+      await _pumpHandoffTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.emergencyWrite,
+          },
+        ),
+        listOverride: const Result<AppPage<EmergencyCaseSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: Record handoff patches board and shows success',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -760,28 +859,133 @@ void main() {
         },
       );
 
-      await _pumpHandoffTab(
-        tester,
-        repository: repository,
-        accessPolicy: writer,
+      const EmergencyHandoffOutcome handedOff = EmergencyHandoffOutcome(
+        destination: 'OPD',
+        route: 'opd',
+        receivingDisplayId: 'ENC-HAND-1',
+      );
+      final EmergencyCaseDetail closedDetail = EmergencyCaseDetail(
+        summary: _handoffCase.copyWith(
+          status: 'CLOSED',
+          handoff: handedOff,
+        ),
+        triageAssessments: _handoffDetail.triageAssessments,
+        responses: _handoffDetail.responses,
       );
 
-      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
-      await tester.tap(find.text(EmergencyText.recordHandoff));
-      await tester.pumpAndSettle();
-
-      // Authorized write path mounts the nested handoff dialog.
-      expect(find.byType(AppDialog), findsWidgets);
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      verifyNever(
+      var persisted = false;
+      when(() => repository.listEmergencyBoard(any())).thenAnswer((
+        invocation,
+      ) {
+        final EmergencyBoardQuery query =
+            invocation.positionalArguments.single as EmergencyBoardQuery;
+        final List<EmergencyCaseSummary> items = persisted
+            ? const <EmergencyCaseSummary>[]
+            : const <EmergencyCaseSummary>[_handoffCase];
+        return Future<Result<AppPage<EmergencyCaseSummary>>>.value(
+          Result<AppPage<EmergencyCaseSummary>>.success(
+            AppPage<EmergencyCaseSummary>(
+              items: items,
+              request: query.pageRequest,
+              totalItemCount: items.length,
+            ),
+          ),
+        );
+      });
+      when(repository.loadReferenceData).thenAnswer(
+        (_) async => const Result<EmergencyReferenceData>.success(
+          EmergencyReferenceData(),
+        ),
+      );
+      when(() => repository.loadEmergencyDetail(any())).thenAnswer(
+        (_) async => Result<EmergencyCaseDetail>.success(
+          persisted ? closedDetail : _handoffDetail,
+        ),
+      );
+      when(
         () => repository.recordHandoff(
           detail: any(named: 'detail'),
           destination: any(named: 'destination'),
           notes: any(named: 'notes'),
           closeCase: any(named: 'closeCase'),
         ),
+      ).thenAnswer((_) async {
+        persisted = true;
+        return Result<EmergencyCaseDetail>.success(closedDetail);
+      });
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/emergency?scope=handoff',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/emergency',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: EmergencyWorkspacePage(
+                  initialQuery: EmergencyWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
       );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            emergencyRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(writer),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Handoff Tab Patient'), findsOneWidget);
+      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
+
+      await tester.tap(find.text(EmergencyText.recordHandoff));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      await tester.tap(find.text('Handoff').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.recordHandoff(
+          detail: any(named: 'detail'),
+          destination: any(named: 'destination'),
+          notes: any(named: 'notes'),
+          closeCase: any(named: 'closeCase'),
+        ),
+      ).called(1);
+      expect(find.text(EmergencyText.handoffRecorded), findsOneWidget);
+      expect(find.text('Handoff Tab Patient'), findsNothing);
+      expect(find.text('No emergency cases'), findsOneWidget);
     },
   );
 

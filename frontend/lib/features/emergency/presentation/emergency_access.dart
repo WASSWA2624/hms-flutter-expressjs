@@ -686,9 +686,16 @@ abstract final class EmergencyHandoffAtomPermissions {
   static const AccessRequirement nextActionHandoff =
       emergencyHandoffWriteRequirement;
   static const AccessRequirement triage = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement recordTriage =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement response = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement markResponse =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement dispatch = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement trip = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement startTrip = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement completeTrip =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement priority = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement updatePriority =
       emergencyWorkspaceWriteRequirement;
@@ -703,6 +710,7 @@ abstract final class EmergencyHandoffAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
+  /// Nested cross-module — matrix _(n/a)_; reuses emergency write/read only.
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
