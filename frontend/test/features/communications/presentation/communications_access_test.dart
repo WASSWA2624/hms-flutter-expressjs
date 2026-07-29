@@ -429,6 +429,20 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsTemplatesAtomPermissions.view,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.search,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsTemplatesAtomPermissions.rowSelect,
           communicationsWorkspaceReadRequirement,
         ),

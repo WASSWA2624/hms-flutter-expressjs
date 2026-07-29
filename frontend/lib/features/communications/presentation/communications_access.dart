@@ -323,21 +323,23 @@ abstract final class CommunicationsDeliveriesAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Templates tab | navigate | read ∩ `communications:read` |
-/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
-/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
-/// | Row select → template detail (preview) | read | [detail] |
-/// | Detail metadata + preview panel | read | [detail] |
+/// | Templates tab | navigate | [tab] read ∩ `communications:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
+/// | Empty / error / retry / loading | read chrome | [empty] / [retry] / [loading] |
+/// | Row select → template detail (preview) | read | [rowSelect] / [view] / [detail] |
+/// | Detail metadata + preview panel | read | [detail] / [preview] |
 /// | Tab-strip New message / New group | create | _(Messages only)_ [create] |
-/// | Create / update template (when exposed) | create / update | write ∩ |
-/// | Delete template (when exposed) | delete | delete ∩ |
+/// | Create / update template (when exposed) | create / update | [create] / [update] write ∩ |
+/// | Delete template (when exposed) | delete | [delete] delete ∩ |
 /// | Nested cross-module read / write | — | _(n/a)_ |
 /// | Route entry (deep link) | navigate | [routeEntry] read ∪ write |
 ///
 /// Source inventory (`screens/communications.md`) documents Templates as
-/// read-focused: no next-action column; detail is preview-only. Matrix create /
-/// update / delete apply when CRUD controls are exposed — they must not mount
-/// for unauthorized users. Nested cross-module matrix rows are _(n/a)_.
+/// read-focused: no next-action column; detail is preview-only (no Create /
+/// Edit / Delete footer even when write/delete ∩ allow). Matrix create /
+/// update / delete apply when CRUD controls are later exposed — they must not
+/// mount for unauthorized users. Nested cross-module matrix rows are _(n/a)_.
+/// Unauthorized deep links / dialog entry no-op (no routine "no access" banner).
 abstract final class CommunicationsTemplatesAtomPermissions {
   static const AccessRequirement tab = communicationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -355,6 +357,7 @@ abstract final class CommunicationsTemplatesAtomPermissions {
   static const AccessRequirement rowSelect =
       communicationsWorkspaceReadRequirement;
   static const AccessRequirement detail = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement view = communicationsWorkspaceReadRequirement;
   static const AccessRequirement preview = communicationsWorkspaceReadRequirement;
   static const AccessRequirement create = communicationsWorkspaceWriteRequirement;
   static const AccessRequirement update = communicationsWorkspaceWriteRequirement;

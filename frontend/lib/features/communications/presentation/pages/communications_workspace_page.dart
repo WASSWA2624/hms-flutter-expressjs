@@ -923,12 +923,15 @@ class _TemplatesTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    if (!CommunicationsTemplatesAtomPermissions.listChrome.isAllowed(policy)) {
+    // Search / Filters / Settings / pagination share listChrome (read ∩).
+    if (!CommunicationsTemplatesAtomPermissions.listChrome.isAllowed(policy) ||
+        !CommunicationsTemplatesAtomPermissions.search.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
     final AppLocalizations l10n = context.l10n;
     final bool canSelectRow =
-        CommunicationsTemplatesAtomPermissions.rowSelect.isAllowed(policy);
+        CommunicationsTemplatesAtomPermissions.rowSelect.isAllowed(policy) &&
+        CommunicationsTemplatesAtomPermissions.view.isAllowed(policy);
 
     return AppListTable<CommunicationTemplate>(
       page: state.templates,
@@ -953,13 +956,16 @@ class _TemplatesTable extends ConsumerWidget {
       pageLabelBuilder: (AppPage<CommunicationTemplate> page) {
         return _pageLabel(context, page);
       },
-      onPageChanged: (AppPageRequest request) {
-        unawaited(
-          ref
-              .read(communicationsWorkspaceControllerProvider.notifier)
-              .changePage(request),
-        );
-      },
+      onPageChanged:
+          CommunicationsTemplatesAtomPermissions.pagination.isAllowed(policy)
+          ? (AppPageRequest request) {
+              unawaited(
+                ref
+                    .read(communicationsWorkspaceControllerProvider.notifier)
+                    .changePage(request),
+              );
+            }
+          : null,
       onRowSelected: canSelectRow
           ? (CommunicationTemplate item) {
               unawaited(

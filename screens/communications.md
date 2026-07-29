@@ -98,8 +98,8 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 
 #### Template detail (from row select / deep link)
 
-- Shows metadata + preview panel. Read-only preview (`CommunicationsTemplatesAtomPermissions.detail` / `preview`).
-- List chrome / row select gated via `listChrome` / `rowSelect` (same ∩ as read); unauthorized deep links do not open the dialog.
+- Shows metadata + preview panel. Read-only preview (`CommunicationsTemplatesAtomPermissions.detail` / `preview` / `view`).
+- List chrome / search / row select gated via `listChrome` / `search` / `rowSelect` (same ∩ as read); unauthorized deep links do not open the dialog.
 - Create / Edit / Delete footer actions are not in the inventory UI; when exposed they use write ∩ / delete ∩ and must not mount unauthorized.
 
 ### Empty / loading / error / validation
@@ -117,7 +117,7 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
   - `communications_messages_permissions_test.dart` — unauthorized absence / authorized presence for Messages chrome, compose, thread menu, manage members; route-entry ∪; subscription strip (missing + EXPIRED module); plan delete cap; ABAC facility note; mobile/desktop; light/dark; post-send sync.
   - `communications_notifications_permissions_test.dart` — Notifications ∩ denial / presence, Archive delete gate, Mark read write gate, route-entry ∪, subscription/plan strip, sync, viewports, light/dark.
   - `communications_deliveries_permissions_test.dart` — Deliveries ∩ denial / presence, read-only logs, detail Open linked, route-entry ∪, subscription/plan strip, sync, viewports, light/dark.
-  - `communications_templates_permissions_test.dart` — Templates ∩ denial / presence, detail preview without create/update/delete chrome, route-entry ∪, subscription/plan delete strip, sync, viewports, light/dark.
+  - `communications_templates_permissions_test.dart` — Templates ∩ denial / presence, detail preview without create/update/delete chrome, route-entry ∪, subscription strip (missing + EXPIRED module), plan delete strip, ABAC facility note, sync, viewports, light/dark.
   - `communications_workspace_page_test.dart` — **Refresh** absent; **New message** / **New group** only on Messages with write; notification/delivery detail inventory (non-Messages tabs).
 - **Refresh** absent from the tab strip on inbox and other panels (desktop/mobile).
 - **New message** / **New group** only on Messages with write; absent when unauthorized (including on Templates).

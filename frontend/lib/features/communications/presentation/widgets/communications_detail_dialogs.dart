@@ -97,7 +97,9 @@ Future<void> showCommunicationsTemplateDetailDialog(
   CommunicationTemplate item,
 ) async {
   final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-  if (!CommunicationsTemplatesAtomPermissions.detail.isAllowed(policy)) {
+  // Detail / view / preview share read ∩; unauthorized deep links no-op.
+  if (!CommunicationsTemplatesAtomPermissions.detail.isAllowed(policy) ||
+      !CommunicationsTemplatesAtomPermissions.view.isAllowed(policy)) {
     return;
   }
   final CommunicationsWorkspaceController controller = ref.read(
@@ -111,8 +113,9 @@ Future<void> showCommunicationsTemplateDetailDialog(
     return;
   }
   // Inventory: Templates detail is preview-only. Create / Edit / Delete footer
-  // actions are not inventoried — omit them even when write/delete ∩ allow.
-  // Atom map create/update/delete remain for when CRUD is later exposed.
+  // actions are not inventoried — omit them even when write/delete ∩ allow
+  // (matrix create/update = write ∩, delete = delete ∩ when later exposed).
+  // AppDialog defaults to empty actions (no mutation footer).
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(

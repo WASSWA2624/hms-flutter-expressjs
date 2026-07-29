@@ -453,6 +453,89 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip: EXPIRED notifications-communications omits Templates',
+    (WidgetTester tester) async {
+      final AppAccessPolicy expired = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'EXPIRED',
+          ),
+        ],
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.tab.isAllowed(expired),
+        isFalse,
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.listChrome.isAllowed(expired),
+        isFalse,
+      );
+
+      await _pumpTemplatesTab(
+        tester,
+        repository: repository,
+        accessPolicy: expired,
+      );
+
+      expect(_tab('Templates'), findsNothing);
+      expect(find.text('Discharge summary'), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('Filters'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Templates read chrome '
+    '(row/own scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['NURSE'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: communicationsActiveModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        CommunicationsTemplatesAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.listChrome.isAllowed(noFacility),
+        isTrue,
+      );
+
+      await _pumpTemplatesTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(_tab('Templates'), findsOneWidget);
+      expect(find.text('Discharge summary'), findsWidgets);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.text('Create'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'plan BASIC strips delete ∩ even when role grants communications:delete',
     (WidgetTester tester) async {
       final AppAccessPolicy basic = _policy(
@@ -487,6 +570,44 @@ void main() {
       expect(_tab('Templates'), findsOneWidget);
       expect(find.text('Discharge summary'), findsWidgets);
       expect(find.text('Delete'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '∩ write without read: write rights alone omit Templates view/detail atoms',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsWrite},
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.view.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.preview.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.create.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        CommunicationsTemplatesAtomPermissions.update.isAllowed(writeOnly),
+        isTrue,
+      );
+
+      await _pumpTemplatesTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.text('Discharge summary'), findsNothing);
+      expect(find.byTooltip('Filters'), findsNothing);
+      expect(find.byTooltip('Settings'), findsNothing);
+      expect(find.text('TEMPLATE DETAIL'), findsNothing);
+      expect(find.byTooltip('New message'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -712,6 +833,31 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
+  testWidgets(
+    'Templates mobile: row select opens preview detail; no mutation chrome',
+    (WidgetTester tester) async {
+      await _pumpTemplatesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        physicalSize: const Size(390, 844),
+      );
+
+      await tester.tap(find.textContaining('Discharge').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('TEMPLATE DETAIL'), findsAtLeastNWidgets(1));
+      expect(find.text('Hello Jane Doe, your discharge is ready.'), findsOneWidget);
+      expect(find.text('Create'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('Templates desktop dark theme keeps authorized atoms', (
     WidgetTester tester,
   ) async {
@@ -792,6 +938,20 @@ void main() {
       expect(
         identical(
           CommunicationsTemplatesAtomPermissions.preview,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.view,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.search,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,
