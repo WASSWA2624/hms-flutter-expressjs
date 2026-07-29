@@ -86,6 +86,24 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
   - Immediate result: Toggles `ACTIVE` / `INACTIVE` via `setUserStatus`.
   - Condition: `canWrite`.
 
+### Demo tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Demo tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Search / filters / columns / pagination | read chrome | read ∪ |
+| Empty / error / retry | read chrome | read ∪ |
+| Row select → demo user detail | read | read ∪ |
+| Create user (tab primary) | create | write ∩ `tenant:admin` + workspace `canWrite` |
+| Activate / Deactivate (next-action / mobile trailing) | update | write ∩ + `canWrite` |
+| Reset demo password (detail) | update | write ∩ + `canWrite` + workspace `canResetDemoPasswords` |
+| Delete | delete | write ∩ (matrix; no delete UI on Demo today) |
+| Open HR profile | navigate | linked `staffProfileId` (nested cross-module n/a) |
+| Detail Close | progressive-disclosure | read ∪ |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminDemoAtomPermissions`, `canReadAccessAdminDemo`, `canWriteAccessAdmin`, `canResetDemoPasswordAccessAdmin`. Same write gate as Directory. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`.
+
 ### Roles
 
 - **Edit role** (next-action)
@@ -181,4 +199,4 @@ Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions
 - **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
 
-Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`.
+Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_demo_permissions_test.dart`.
