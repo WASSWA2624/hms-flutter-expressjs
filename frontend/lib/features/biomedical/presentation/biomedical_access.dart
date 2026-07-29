@@ -320,8 +320,9 @@ abstract final class BiomedicalComplianceAtomPermissions {
 /// | Report fault (tab primary) | create | write ∪ source |
 /// | Next action Review record | navigate / read | read ∩ |
 /// | Next action write (rare on support rows) | create / update | write ∪ source |
-/// | Detail Log incident / complementary writes | create / update / delete | write ∪ source |
-/// | Nested fault-report dialog | create | write ∪ source |
+/// | Detail Log incident | create | [logIncident] write ∪ source |
+/// | Detail complementary writes | create / update / delete | write ∪ source |
+/// | Nested fault-report dialog | create | [reportFault] write ∪ source |
 /// | Print report | export | print (evidence:export ∩ …) |
 /// | Nested mutation dialogs | create / update / delete | write ∪ source |
 /// | Route entry (deep link) | navigate | read ∪ write |

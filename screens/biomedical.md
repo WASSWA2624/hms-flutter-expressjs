@@ -156,11 +156,12 @@ Analytics permission tests in `frontend/test/features/biomedical/presentation/bi
 
 Support permission tests in `frontend/test/features/biomedical/presentation/biomedical_support_permissions_test.dart`:
 
-- [x] ∩ denial: `biomed:read` without write omits **Report fault** and detail mutation/print atoms.
+- [x] ∩ denial: `biomed:read` without write omits **Report fault** and detail mutation/print atoms; Filters/list chrome remain.
 - [x] Source write ∪: `biomed:write` or `operations:write` (+ facilities module) mounts Report fault / nested writes.
 - [x] Route entry ∪ without read, and subscription strip without biomed module, omit Support chrome.
 - [x] Nested print requires `evidence:export`; authorized Report fault syncs after mutation.
-- [x] Empty / error-retry, mobile+desktop, light+dark authorized states.
+- [x] Authorized Report fault validation keeps dialog open without mutation.
+- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Work orders permission tests in `frontend/test/features/biomedical/presentation/biomedical_work_orders_permissions_test.dart`:
 

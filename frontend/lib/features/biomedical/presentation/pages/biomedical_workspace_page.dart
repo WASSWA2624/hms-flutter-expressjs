@@ -1225,9 +1225,9 @@ AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
       BiomedicalWorkOrdersAtomPermissions.startWorkOrder,
     _BiomedicalActionKind.returnToService =>
       BiomedicalWorkOrdersAtomPermissions.returnToService,
-    _BiomedicalActionKind.fault ||
+    _BiomedicalActionKind.fault => BiomedicalSupportAtomPermissions.reportFault,
     _BiomedicalActionKind.incident =>
-      BiomedicalSupportAtomPermissions.reportFault,
+      BiomedicalSupportAtomPermissions.logIncident,
     _BiomedicalActionKind.asset => BiomedicalRegistryAtomPermissions.editAsset,
     _BiomedicalActionKind.transfer ||
     _BiomedicalActionKind.disposal =>
@@ -1549,11 +1549,25 @@ class _BiomedicalActionDialogState
             labelText: l10n.biomedicalReasonLabel,
             minLines: 2,
             maxLines: 4,
+            isRequired: widget.kind == _BiomedicalActionKind.fault,
+            validator: widget.kind == _BiomedicalActionKind.fault
+                ? AppValidators.requiredText(
+                    l10n.biomedicalFieldRequiredLabel(
+                      l10n.biomedicalReasonLabel,
+                    ),
+                  )
+                : null,
           ),
         if (widget.kind == _BiomedicalActionKind.fault)
           AppTextField(
             controller: _reportedNameController,
             labelText: l10n.biomedicalReportedEquipmentNameLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.biomedicalFieldRequiredLabel(
+                l10n.biomedicalReportedEquipmentNameLabel,
+              ),
+            ),
           ),
         if (_showsDescription)
           AppTextField(
