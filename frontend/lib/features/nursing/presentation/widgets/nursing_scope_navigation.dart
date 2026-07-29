@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -43,53 +45,68 @@ int? _tabCountOrNull(int value) => value > 0 ? value : null;
 
 List<AppTabItem> nursingTabItems(
   AppLocalizations l10n,
-  NursingWorkspaceState state,
-) {
+  NursingWorkspaceState state, {
+  AppAccessPolicy? policy,
+}) {
+  final List<NursingQueueScope> scopes = policy == null
+      ? NursingQueueScope.values
+      : nursingAllowedScopes(policy);
   return <AppTabItem>[
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.all),
+    for (final NursingQueueScope scope in scopes)
+      _tabItemForScope(l10n, state, scope),
+  ];
+}
+
+AppTabItem _tabItemForScope(
+  AppLocalizations l10n,
+  NursingWorkspaceState state,
+  NursingQueueScope scope,
+) {
+  return switch (scope) {
+    NursingQueueScope.all => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.inventory_2_outlined,
       label: l10n.nursingScopeAllLabel,
       count: _tabCountOrNull(nursingPageTotal(state.worklist)),
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.assignedWard),
+    NursingQueueScope.assignedWard => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.local_hospital_outlined,
       label: l10n.nursingScopeAssignedWardLabel,
       count: _tabCountOrNull(state.assignedWardCount),
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.urgent),
+    NursingQueueScope.urgent => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.priority_high_outlined,
       label: l10n.nursingScopeUrgentLabel,
       count: _tabCountOrNull(state.urgentCount),
       countTone: AppTabCountTone.danger,
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.medicationDue),
+    NursingQueueScope.medicationDue => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.medication_outlined,
       label: l10n.nursingScopeMedicationDueLabel,
       count: _tabCountOrNull(state.medicationDueCount),
       countTone: AppTabCountTone.warning,
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.handoverPending),
+    NursingQueueScope.handoverPending => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.swap_horiz_outlined,
       label: l10n.nursingScopeHandoverPendingLabel,
       count: _tabCountOrNull(state.handoverPendingCount),
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.transferPending),
+    NursingQueueScope.transferPending => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.transfer_within_a_station_outlined,
       label: l10n.nursingScopeTransferPendingLabel,
       count: _tabCountOrNull(state.transferPendingCount),
       countTone: AppTabCountTone.warning,
     ),
-    AppTabItem(
-      id: nursingScopeToQueryValue(NursingQueueScope.dischargePending),
+    NursingQueueScope.dischargePending => AppTabItem(
+      id: nursingScopeToQueryValue(scope),
       icon: Icons.logout_outlined,
       label: l10n.nursingScopeDischargePendingLabel,
       count: _tabCountOrNull(state.dischargePendingCount),
     ),
-  ];
+  };
 }

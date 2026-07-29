@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_escalation_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
@@ -19,25 +17,9 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
+export 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart'
+    show nursingWriteRequirement;
 export 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
-
-const AccessRequirement nursingWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.patientWrite,
-    AppPermissions.lastOfficeWrite,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.nurse,
-    AppRole.wardManager,
-    AppRole.icuManager,
-    AppRole.theatreManager,
-    AppRole.facilityAdmin,
-    AppRole.tenantAdmin,
-    AppRole.superAdmin,
-  ],
-  activeModules: <String>['inpatient-bed-management'],
-);
 
 Future<void> nursingExecuteRowAction(
   BuildContext context,
@@ -148,12 +130,16 @@ class NursingNextActionCell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final NursingNextActionKind kind = nursingResolveNextActionKind(
+      item,
+      scope,
+    );
     final String label = nursingResolveNextActionLabel(l10n, item, scope);
     final IconData icon = nursingResolveNextActionIcon(item, scope);
 
     // hideWhenDenied (default): unauthorized next-action does not render.
     return AppAccessActionGate(
-      requirement: nursingWriteRequirement,
+      requirement: nursingNextActionRequirement(kind),
       builder: (BuildContext context, bool isAllowed) {
         void onPressed() => nursingExecuteRowAction(context, ref, item, scope);
         if (compact) {

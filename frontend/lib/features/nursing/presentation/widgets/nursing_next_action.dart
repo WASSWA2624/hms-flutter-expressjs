@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 /// Stage-aware next-action kinds for the nursing worklist.
@@ -34,6 +36,18 @@ NursingNextActionKind nursingResolveNextActionKind(
       'DISCHARGE_PENDING' => NursingNextActionKind.discharge,
       _ => NursingNextActionKind.vitals,
     },
+  };
+}
+
+/// Requirement for the stage next-action control on a row.
+AccessRequirement nursingNextActionRequirement(NursingNextActionKind kind) {
+  return switch (kind) {
+    NursingNextActionKind.medication => nursingMedicationWriteRequirement,
+    NursingNextActionKind.vitals ||
+    NursingNextActionKind.handover ||
+    NursingNextActionKind.transfer ||
+    NursingNextActionKind.discharge ||
+    NursingNextActionKind.escalate => nursingWriteRequirement,
   };
 }
 
