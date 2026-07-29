@@ -231,6 +231,11 @@ class _NewGroupFieldsState extends ConsumerState<_NewGroupFields> {
   }
 
   Future<AppFailure?> submit() async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = widget.ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.newGroup.isAllowed(policy)) {
+      return null;
+    }
     if (!_canSubmit) {
       return AppFailure.validation(
         validationFields: <String>{

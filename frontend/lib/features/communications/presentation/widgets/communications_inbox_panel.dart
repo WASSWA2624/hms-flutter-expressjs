@@ -30,6 +30,9 @@ class CommunicationsInboxPanel extends ConsumerWidget {
     if (!CommunicationsMessagesAtomPermissions.tab.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
+    final bool canShowThread =
+        CommunicationsMessagesAtomPermissions.thread.isAllowed(policy) &&
+        CommunicationsMessagesAtomPermissions.detail.isAllowed(policy);
     final bool effectiveWrite =
         canWrite &&
         CommunicationsMessagesAtomPermissions.write.isAllowed(policy);
@@ -39,7 +42,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
       communicationsWorkspaceControllerProvider.notifier,
     );
 
-    if (!isWide && selected != null) {
+    if (!isWide && selected != null && canShowThread) {
       return CommunicationsThreadView(
         conversation: selected,
         canWrite: effectiveWrite,
@@ -71,7 +74,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
         SizedBox(width: Theme.of(context).spacing.lg),
         Expanded(
           flex: 7,
-          child: selected == null
+          child: !canShowThread || selected == null
               ? AppWorkspaceDetailPanel(
                   title: context.l10n.communicationsConversationDetailTitle,
                   child: AppWorkspaceStatePanel.empty(

@@ -90,6 +90,11 @@ class _CommunicationsThreadViewState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Thread / detail — read ∩; unauthorized thread does not mount.
+    if (!CommunicationsMessagesAtomPermissions.thread.isAllowed(policy) ||
+        !CommunicationsMessagesAtomPermissions.detail.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
     final bool canWrite =
         widget.canWrite &&
         CommunicationsMessagesAtomPermissions.write.isAllowed(policy);

@@ -149,6 +149,13 @@ class _ManageMembersDialogState extends ConsumerState<_ManageMembersDialog> {
   }
 
   Future<void> _addMember() async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.manageMembers.isAllowed(
+      policy,
+    )) {
+      return;
+    }
     final String? userId = _selectedUserId;
     if (userId == null) {
       return;
@@ -166,6 +173,13 @@ class _ManageMembersDialogState extends ConsumerState<_ManageMembersDialog> {
   }
 
   Future<void> _removeParticipant(String participantId) async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.manageMembers.isAllowed(
+      policy,
+    )) {
+      return;
+    }
     final AppFailure? failure = await ref
         .read(communicationsWorkspaceControllerProvider.notifier)
         .removeParticipantFromSelected(participantId);

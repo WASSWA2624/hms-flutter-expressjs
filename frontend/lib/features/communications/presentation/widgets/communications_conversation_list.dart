@@ -29,6 +29,12 @@ class CommunicationsConversationList extends ConsumerWidget {
     if (!CommunicationsMessagesAtomPermissions.listChrome.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
+    final bool canSearch =
+        CommunicationsMessagesAtomPermissions.search.isAllowed(policy);
+    final bool canFilter =
+        CommunicationsMessagesAtomPermissions.filters.isAllowed(policy);
+    final bool canPaginate =
+        CommunicationsMessagesAtomPermissions.pagination.isAllowed(policy);
     final bool canSelectRow =
         CommunicationsMessagesAtomPermissions.rowSelect.isAllowed(policy);
     final ThemeData theme = Theme.of(context);
@@ -40,44 +46,52 @@ class CommunicationsConversationList extends ConsumerWidget {
     final String activeFilterId = communicationsMessageFilterIdForQuery(
       state.query,
     );
+    final bool showLoadMore =
+        canPaginate &&
+        state.conversations.totalItemCount != null &&
+        state.conversations.totalItemCount! > state.conversations.items.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppSearchBar(
-          controller: searchController,
-          hintText: context.l10n.communicationsSearchHint,
-          semanticLabel: context.l10n.communicationsSearchSemanticLabel,
-          clearLabel: context.l10n.communicationsClearSearchAction,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppWorkspaceOptionToggle<String>(
-          value: activeFilterId,
-          options: kCommunicationsMessageFilters
-              .map(
-                (CommunicationsMessageFilter filter) =>
-                    AppWorkspaceOptionToggleOption<String>(
-                      value: filter.id,
-                      label: filter.labelBuilder(context.l10n),
-                      icon: filter.icon,
-                    ),
-              )
-              .toList(growable: false),
-          onChanged: controller.applyMessageFilter,
-        ),
-        if (state.usesClientMessageFilter)
-          Padding(
-            padding: EdgeInsets.only(top: theme.spacing.xs),
-            child: Text(
-              context.l10n.communicationsClientFilterNotice,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+        if (canSearch) ...<Widget>[
+          AppSearchBar(
+            controller: searchController,
+            hintText: context.l10n.communicationsSearchHint,
+            semanticLabel: context.l10n.communicationsSearchSemanticLabel,
+            clearLabel: context.l10n.communicationsClearSearchAction,
+            onSubmitted: controller.applySearch,
+            onClear: () => controller.applySearch(''),
+          ),
+          SizedBox(height: theme.spacing.sm),
+        ],
+        if (canFilter) ...<Widget>[
+          AppWorkspaceOptionToggle<String>(
+            value: activeFilterId,
+            options: kCommunicationsMessageFilters
+                .map(
+                  (CommunicationsMessageFilter filter) =>
+                      AppWorkspaceOptionToggleOption<String>(
+                        value: filter.id,
+                        label: filter.labelBuilder(context.l10n),
+                        icon: filter.icon,
+                      ),
+                )
+                .toList(growable: false),
+            onChanged: controller.applyMessageFilter,
+          ),
+          if (state.usesClientMessageFilter)
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs),
+              child: Text(
+                context.l10n.communicationsClientFilterNotice,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        SizedBox(height: theme.spacing.sm),
+          SizedBox(height: theme.spacing.sm),
+        ],
         Expanded(
           child: state.isRefreshingConversations && conversations.isEmpty
               ? const Center(child: CircularProgressIndicator())
@@ -105,9 +119,7 @@ class CommunicationsConversationList extends ConsumerWidget {
                   },
                 ),
         ),
-        if (state.conversations.totalItemCount != null &&
-            state.conversations.totalItemCount! >
-                state.conversations.items.length)
+        if (showLoadMore)
           Align(
             child: AppButton.tertiary(
               label: context.l10n.communicationsLoadMoreAction,
