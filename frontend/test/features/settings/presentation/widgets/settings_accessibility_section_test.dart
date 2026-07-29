@@ -17,6 +17,7 @@ import 'package:hosspi_hms/core/storage/preferences/app_preferences_store.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -258,16 +259,40 @@ void main() {
 
   test('feature helpers match AccessRequirement matrix keys', () {
     expect(
-      profileReadRequirement.allPermissions,
+      SettingsAccessibilityAtomPermissions.tab,
+      same(profileReadRequirement),
+    );
+    expect(
+      SettingsAccessibilityAtomPermissions.update,
+      same(profileUpdateRequirement),
+    );
+    expect(
+      SettingsAccessibilityAtomPermissions.tab.allPermissions,
       <AppPermission>[AppPermissions.profileRead],
     );
-    expect(profileReadRequirement.anyPermissions, isEmpty);
+    expect(SettingsAccessibilityAtomPermissions.tab.anyPermissions, isEmpty);
     expect(
-      profileUpdateRequirement.allPermissions,
+      SettingsAccessibilityAtomPermissions.update.allPermissions,
       <AppPermission>[AppPermissions.profileUpdate],
     );
-    expect(profileUpdateRequirement.anyPermissions, isEmpty);
+    expect(SettingsAccessibilityAtomPermissions.update.anyPermissions, isEmpty);
+    expect(
+      SettingsAccessibilityAtomPermissions.create.allPermissions,
+      <AppPermission>[AppPermissions.facilityAdmin],
+    );
+    expect(
+      SettingsAccessibilityAtomPermissions.delete.allPermissions,
+      <AppPermission>[AppPermissions.facilityAdmin],
+    );
     // Matrix has no union / nested cross-module rows for this tab.
+    expect(
+      SettingsAccessibilityAtomPermissions.nestedRead.anyPermissions,
+      isEmpty,
+    );
+    expect(
+      SettingsAccessibilityAtomPermissions.nestedWrite,
+      same(profileUpdateRequirement),
+    );
     // profile:* keys are core/platform (not plan-module mapped).
   });
 

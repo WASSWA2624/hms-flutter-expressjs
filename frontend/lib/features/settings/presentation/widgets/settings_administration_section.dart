@@ -15,7 +15,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 /// Administration boundaries tab (`/settings?tab=administration`).
 ///
 /// Inventory → matrix mapping (reuse [settingsAdministrationReadRequirement]
-/// and [RouteAccessCatalog] navigate sources; create/update/delete and nested
+/// and RouteAccessCatalog navigate sources; create/update/delete and nested
 /// cross-module write rows have no atoms on this navigate-only surface):
 ///
 /// | Atom | Intent | Gate |

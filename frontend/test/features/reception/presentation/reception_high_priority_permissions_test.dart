@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -772,20 +774,188 @@ void main() {
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('mobile viewport: read-only hides Schedule; shows prioritized', (
-      WidgetTester tester,
-    ) async {
-      await _pumpHighPriorityTab(
-        tester,
-        repository: repository,
-        accessPolicy: _readerPolicy(),
-        physicalSize: const Size(390, 844),
-      );
+    testWidgets(
+      'authorized loading chrome remains observable on High priority',
+      (WidgetTester tester) async {
+        final Completer<Result<AppPage<OpdQueueEntry>>> queueCompleter =
+            Completer<Result<AppPage<OpdQueueEntry>>>();
+        when(() => repository.listAppointments(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdAppointment>>.success(
+            AppPage<OpdAppointment>(
+              items: const <OpdAppointment>[],
+              request:
+                  (invocation.positionalArguments.single as OpdAppointmentQuery)
+                      .pageRequest,
+              totalItemCount: 0,
+            ),
+          ),
+        );
+        when(() => repository.listVisitQueues(any())).thenAnswer(
+          (_) => queueCompleter.future,
+        );
+        when(() => repository.listOpdFlows(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+            AppPage<OpdFlowSummary>(
+              items: const <OpdFlowSummary>[],
+              request: (invocation.positionalArguments.single as OpdFlowQuery)
+                  .pageRequest,
+              totalItemCount: 0,
+            ),
+          ),
+        );
+        when(() => repository.listTriageQueue(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+            AppPage<OpdFlowSummary>(
+              items: const <OpdFlowSummary>[],
+              request:
+                  (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                      .pageRequest,
+              totalItemCount: 0,
+            ),
+          ),
+        );
+        when(() => repository.getOpdSummaryCounts()).thenAnswer(
+          (_) async => const Result<OpdFlowAggregateCounts>.success(
+            OpdFlowAggregateCounts(),
+          ),
+        );
+        when(
+          () => repository.listClinicalAlertThresholds(
+            vitalType: any(named: 'vitalType'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+            <OpdClinicalAlertThreshold>[],
+          ),
+        );
+        when(() => repository.listProviderSchedules()).thenAnswer(
+          (_) async => const Result<List<OpdProviderSchedule>>.success(
+            <OpdProviderSchedule>[],
+          ),
+        );
+        when(() => repository.listProviders()).thenAnswer(
+          (_) async => const Result<List<OpdProviderOption>>.success(
+            <OpdProviderOption>[],
+          ),
+        );
+        when(
+          () => repository.getBillingDefaults(
+            facilityId: any(named: 'facilityId'),
+            tenantId: any(named: 'tenantId'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+        );
 
-      expect(find.text('Victor VIP'), findsOneWidget);
-      expect(find.text('Schedule appointment'), findsNothing);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
-    });
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final SharedPreferences preferences =
+            await SharedPreferences.getInstance();
+
+        tester.view.physicalSize = const Size(1440, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final GoRouter router = GoRouter(
+          initialLocation: '/reception?section=high-priority',
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/reception',
+              builder: (BuildContext context, GoRouterState state) {
+                return Scaffold(
+                  body: ReceptionWorkspacePage(
+                    initialQuery: ReceptionWorkspaceQuery.fromUri(state.uri),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              opdRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(_readerPolicy()),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: ThemeMode.light,
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Loading'), findsWidgets);
+        expect(find.text('Register patient'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+
+        queueCompleter.complete(
+          Result<AppPage<OpdQueueEntry>>.success(
+            AppPage<OpdQueueEntry>(
+              items: const <OpdQueueEntry>[_priorityEntry],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Victor VIP'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'subscription strip UI: without scheduling-queue High priority collapses',
+      (WidgetTester tester) async {
+        await _pumpHighPriorityTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(find.textContaining('High priority'), findsNothing);
+        expect(find.text('Victor VIP'), findsNothing);
+        expect(find.text('Register patient'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'mobile light theme: read-only hides Schedule; shows prioritized',
+      (WidgetTester tester) async {
+        await _pumpHighPriorityTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          physicalSize: const Size(390, 844),
+          themeMode: ThemeMode.light,
+        );
+
+        expect(find.text('Victor VIP'), findsOneWidget);
+        expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+      },
+    );
 
     testWidgets('desktop dark theme: writer Schedule still mounts', (
       WidgetTester tester,

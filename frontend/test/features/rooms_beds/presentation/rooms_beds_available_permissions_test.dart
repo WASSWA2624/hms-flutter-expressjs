@@ -557,11 +557,13 @@ void main() {
 
       verify(
         () => repository.assignBed(
-          bedId: any(named: 'bedId'),
-          admissionId: any(named: 'admissionId'),
+          admissionId: 'ADM-200',
+          bedId: 'BED-AVAILABLE',
         ),
       ).called(1);
-      expect(find.textContaining('Rooms and beds updated'), findsWidgets);
+      expect(find.byType(AppDialog), findsNothing);
+      expect(find.textContaining('Rooms and beds updated'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     });
   });
 

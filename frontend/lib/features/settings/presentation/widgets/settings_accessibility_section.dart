@@ -8,7 +8,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -16,20 +16,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Accessibility preferences tab (`/settings?tab=accessibility`).
 ///
-/// Inventory → matrix mapping (reuse [profileReadRequirement] /
-/// [profileUpdateRequirement]; create/delete `facility:admin` and nested
-/// cross-module rows have no atoms on this surface):
-///
-/// | Atom | Intent | Gate |
-/// | --- | --- | --- |
-/// | Section chrome / tab strip entry | read | `profile:read` ∩ |
-/// | Reduce motion value display | read | `profile:read` ∩ |
-/// | Bold text value display | read | `profile:read` ∩ |
-/// | Text size value display | read | `profile:read` ∩ |
-/// | Reduce motion checkbox | update | `profile:update` ∩ |
-/// | Bold text checkbox | update | `profile:update` ∩ |
-/// | Text size select | update | `profile:update` ∩ |
-/// | Save-error snackbar | visible feedback | authorized update path |
+/// See [SettingsAccessibilityAtomPermissions] for the inventory → matrix map.
 class SettingsAccessibilitySection extends ConsumerWidget {
   const SettingsAccessibilitySection({super.key});
 
@@ -40,10 +27,11 @@ class SettingsAccessibilitySection extends ConsumerWidget {
     final AppAccessibilityPreferences accessibility = ref.watch(
       appAccessibilityProvider,
     );
-    final bool canUpdate = profileUpdateRequirement.isAllowed(accessPolicy);
+    final bool canUpdate = SettingsAccessibilityAtomPermissions.update
+        .isAllowed(accessPolicy);
 
     return AppAccessGate(
-      requirement: profileReadRequirement,
+      requirement: SettingsAccessibilityAtomPermissions.tab,
       child: AppScreenSection(
         title: l10n.settingsAccessibilitySectionTitle,
         body: l10n.settingsAccessibilitySectionBody,
@@ -68,7 +56,7 @@ class _AccessibilityUpdateControls extends ConsumerWidget {
     return Column(
       children: <Widget>[
         AppAccessActionGate(
-          requirement: profileUpdateRequirement,
+          requirement: SettingsAccessibilityAtomPermissions.reduceMotion,
           builder: (BuildContext context, bool _) {
             return AppCheckboxField(
               title: l10n.settingsReduceMotionLabel,
@@ -82,7 +70,7 @@ class _AccessibilityUpdateControls extends ConsumerWidget {
         ),
         SizedBox(height: theme.spacing.md),
         AppAccessActionGate(
-          requirement: profileUpdateRequirement,
+          requirement: SettingsAccessibilityAtomPermissions.boldText,
           builder: (BuildContext context, bool _) {
             return AppCheckboxField(
               title: l10n.settingsBoldTextLabel,
@@ -96,7 +84,7 @@ class _AccessibilityUpdateControls extends ConsumerWidget {
         ),
         SizedBox(height: theme.spacing.lg),
         AppAccessActionGate(
-          requirement: profileUpdateRequirement,
+          requirement: SettingsAccessibilityAtomPermissions.textScale,
           builder: (BuildContext context, bool _) {
             return AppSelectField<AppTextScaleLevel>(
               labelText: l10n.settingsTextScaleFieldLabel,

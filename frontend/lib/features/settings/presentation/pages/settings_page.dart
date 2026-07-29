@@ -11,11 +11,11 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_administration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -129,20 +129,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _configFacilityRequirement.isAllowed(accessPolicy);
     final bool showAccount =
         SettingsAccountAtomPermissions.tab.isAllowed(accessPolicy);
-    final bool showAccessibility = profileReadRequirement.isAllowed(
+    final bool showAccessibility =
+        SettingsAccessibilityAtomPermissions.tab.isAllowed(accessPolicy);
+    final bool showAdministration = settingsAdministrationSectionVisible(
       accessPolicy,
+      settingsWorkspaceVisible: showSettingsWorkspace,
     );
-    // When the setup workspace is visible it owns tenant/facility and access
-    // entry points; Administration only keeps destinations the workspace does
-    // not cover (subscriptions).
-    final List<_SettingsAction> adminActions =
-        (showSettingsWorkspace
-                ? _subscriptionAdminActions(context, l10n)
-                : _adminActions(context, l10n))
-            .where((_SettingsAction action) {
-              return action.requirement?.isAllowed(accessPolicy) ?? true;
-            })
-            .toList(growable: false);
 
     final List<_AccordionEntry> sections = <_AccordionEntry>[
       _AccordionEntry(
@@ -204,13 +196,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onPanelChanged: _onAccountPanelChanged,
           ),
         ),
-      if (adminActions.isNotEmpty)
+      if (showAdministration)
         _AccordionEntry(
           id: 'administration',
           icon: Icons.admin_panel_settings_outlined,
           title: l10n.settingsAdministrationSectionTitle,
           body: l10n.settingsAdministrationSectionBody,
-          builder: (_) => _SettingsActionList(actions: adminActions),
+          wrapInSection: false,
+          builder: (_) => SettingsAdministrationSection(
+            settingsWorkspaceVisible: showSettingsWorkspace,
+          ),
         ),
       if (showConfiguration)
         _AccordionEntry(
@@ -467,69 +462,9 @@ class _AccordionPanelContent extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Settings action data + list widgets (unchanged)
+// Access requirements (workspace / configuration — administration lives in
+// [settings_access.dart])
 // ---------------------------------------------------------------------------
-
-final class _SettingsAction {
-  const _SettingsAction({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.onTap,
-    this.requirement,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final VoidCallback onTap;
-  final AccessRequirement? requirement;
-}
-
-List<_SettingsAction> _subscriptionAdminActions(
-  BuildContext context,
-  AppLocalizations l10n,
-) {
-  return <_SettingsAction>[
-    _SettingsAction(
-      icon: Icons.workspace_premium_outlined,
-      title: l10n.navigationSubscriptionsLabel,
-      body: l10n.settingsSubscriptionsActionBody,
-      requirement: _subscriptionsRequirement,
-      onTap: () => context.go(AppRoutes.subscriptions.location()),
-    ),
-  ];
-}
-
-List<_SettingsAction> _adminActions(
-  BuildContext context,
-  AppLocalizations l10n,
-) {
-  return <_SettingsAction>[
-    _SettingsAction(
-      icon: Icons.domain_add_outlined,
-      title: l10n.settingsTenantFacilitySetupActionTitle,
-      body: l10n.settingsTenantFacilitySetupActionBody,
-      requirement: _tenantFacilitySetupRequirement,
-      onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
-    ),
-    ..._subscriptionAdminActions(context, l10n),
-    _SettingsAction(
-      icon: Icons.manage_accounts_outlined,
-      title: l10n.settingsAccessAdminActionTitle,
-      body: l10n.settingsAccessAdminActionBody,
-      requirement: _accessAdminRequirement,
-      onTap: () => context.go(AppRoutes.accessAdmin.location()),
-    ),
-  ];
-}
-
-// ---------------------------------------------------------------------------
-// Access requirements
-// ---------------------------------------------------------------------------
-
-const AccessRequirement _tenantFacilitySetupRequirement =
-    RouteAccessCatalog.setupEntry;
 
 /// HR users with facility scope see department and unit setup modules only.
 const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
@@ -541,12 +476,6 @@ const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
   requiresTenantContext: true,
   requiresFacilityContext: true,
 );
-
-const AccessRequirement _subscriptionsRequirement =
-    RouteAccessCatalog.subscriptionsEntry;
-
-const AccessRequirement _accessAdminRequirement =
-    RouteAccessCatalog.accessAdminEntry;
 
 /// Matches backend [SETTINGS_WORKSPACE_ROLES]: super/tenant/facility admins only.
 const AccessRequirement _settingsWorkspaceRequirement = AccessRequirement(
@@ -585,105 +514,3 @@ const AccessRequirement _configFacilityRequirement = AccessRequirement(
   ],
   requiresFacilityContext: true,
 );
-
-// ---------------------------------------------------------------------------
-// Settings action list & tile widgets (unchanged)
-// ---------------------------------------------------------------------------
-
-class _SettingsActionList extends StatelessWidget {
-  const _SettingsActionList({required this.actions});
-
-  final List<_SettingsAction> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      children: <Widget>[
-        for (var index = 0; index < actions.length; index += 1) ...<Widget>[
-          _SettingsActionTile(action: actions[index]),
-          if (index < actions.length - 1)
-            Divider(
-              height: 1,
-              indent: theme.spacing.sm,
-              endIndent: theme.spacing.sm,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-            ),
-        ],
-      ],
-    );
-  }
-}
-
-class _SettingsActionTile extends StatelessWidget {
-  const _SettingsActionTile({required this.action});
-
-  final _SettingsAction action;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: action.onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: theme.spacing.md,
-            horizontal: theme.spacing.sm,
-          ),
-          child: Row(
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(theme.spacing.sm),
-                  child: Icon(
-                    action.icon,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-              SizedBox(width: theme.spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      action.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs / 2),
-                    Text(
-                      action.body,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

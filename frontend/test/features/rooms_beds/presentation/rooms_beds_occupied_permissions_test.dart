@@ -23,7 +23,6 @@ import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_s
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -709,7 +708,6 @@ void main() {
         repository: repository,
         accessPolicy: writer,
         themeMode: ThemeMode.dark,
-        physicalSize: const Size(1440, 900),
       );
 
       expect(_tabLabel('Occupied'), findsOneWidget);
@@ -729,7 +727,6 @@ void main() {
         tester,
         repository: repository,
         accessPolicy: operationsReader,
-        themeMode: ThemeMode.light,
       );
 
       expect(_tabLabel('Occupied'), findsOneWidget);
