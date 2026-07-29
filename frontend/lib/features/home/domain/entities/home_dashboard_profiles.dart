@@ -747,19 +747,15 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'process_refund',
       'close_shift',
     ],
+    // Navigation hubs live in Quick links (not a second review strip).
     shortcutIds: <String>[
+      'billing',
       'patients',
       'claims',
-      'communications',
       'reports',
       'settings',
     ],
-    emptyActionIds: <String>[
-      'review_overdue_invoices',
-      'review_pending_payments',
-      'review_claims_pending',
-      'review_open_patient_balances',
-    ],
+    emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'collections_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'pendingPayment'},

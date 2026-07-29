@@ -18,13 +18,26 @@ class DashboardPriorityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final double gap = theme.spacing.lg;
-    final bool hasQueue = data.showQueue;
-    final bool hasAlerts = data.showAlerts && data.alertsTitle != null;
-    final bool hasResults = data.showResults && data.resultsTitle != null;
-    final bool hasFollowUps = data.showFollowUps && data.followUpTitle != null;
+    final bool hasQueueContent = data.showQueue && data.queueItems.isNotEmpty;
+    final bool hasQueueEmptySurface = data.showQueue &&
+        data.queueItems.isEmpty &&
+        (data.emptyActions.isNotEmpty || data.emptyMessage.isNotEmpty);
+    final bool hasQueue = hasQueueContent || hasQueueEmptySurface;
+    // Collapse quiet "All clear" / "Nothing pending" chrome — only real items.
+    final bool hasAlerts =
+        data.showAlerts &&
+        data.alertsTitle != null &&
+        data.alertItems.isNotEmpty;
+    final bool hasResults =
+        data.showResults &&
+        data.resultsTitle != null &&
+        data.resultsItems.isNotEmpty;
+    final bool hasFollowUps =
+        data.showFollowUps &&
+        data.followUpTitle != null &&
+        data.followUpItems.isNotEmpty;
     final bool hasShortcuts = data.showShortcuts && data.shortcuts.isNotEmpty;
-    final bool hasQueueContent = hasQueue && data.queueItems.isNotEmpty;
-    final bool hasAlertContent = hasAlerts && data.alertItems.isNotEmpty;
+    final bool hasAlertContent = hasAlerts;
 
     if (!hasQueue &&
         !hasAlerts &&
@@ -219,9 +232,16 @@ class _DashboardQueuePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isEmpty = items.isEmpty;
+    final bool hasEmptyActions = emptyActions.isNotEmpty;
+    final bool hasEmptyMessage = emptyMessage.isNotEmpty;
+
+    // Never leave a blank header with zero content.
+    if (isEmpty && !hasEmptyActions && !hasEmptyMessage) {
+      return const SizedBox.shrink();
+    }
 
     final String? panelTitle = isEmpty ? (emptySectionTitle ?? title) : title;
-    final String? panelDescription = isEmpty && emptyMessage.isNotEmpty
+    final String? panelDescription = isEmpty && hasEmptyMessage
         ? emptyMessage
         : null;
 
@@ -241,7 +261,7 @@ class _DashboardQueuePanel extends StatelessWidget {
                 onPressed: onViewAll,
               ),
         children: <Widget>[
-          if (isEmpty && emptyActions.isNotEmpty)
+          if (isEmpty && hasEmptyActions)
             _DashboardEmptyState(actions: emptyActions),
           if (!isEmpty)
             _DashboardWorklistGroup(items: items.take(maxItems).toList()),
@@ -270,7 +290,9 @@ class _DashboardSecondaryQueuePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isEmpty = items.isEmpty;
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return _DashboardSectionShell(
       child: AppSectionPanel(
@@ -279,7 +301,7 @@ class _DashboardSecondaryQueuePanel extends StatelessWidget {
         density: AppContentPanelDensity.spacious,
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
-        trailing: isEmpty || onViewAll == null
+        trailing: onViewAll == null
             ? null
             : AppButton.tertiary(
                 label: viewAllLabel,
@@ -287,10 +309,7 @@ class _DashboardSecondaryQueuePanel extends StatelessWidget {
                 onPressed: onViewAll,
               ),
         children: <Widget>[
-          if (isEmpty)
-            const _DashboardQuietState(message: 'Nothing pending')
-          else
-            _DashboardWorklistGroup(items: items.take(maxItems).toList()),
+          _DashboardWorklistGroup(items: items.take(maxItems).toList()),
         ],
       ),
     );

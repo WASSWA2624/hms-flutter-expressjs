@@ -408,4 +408,80 @@ void main() {
       expect(find.text('Manage facilities'), findsOneWidget);
     });
   });
+
+  group('empty section collapse', () {
+    test('no profile keeps Create beside covering Manage hubs', () {
+      for (final AppRole role in AppRole.values) {
+        final HomeDashboardProfile profile = homeProfileForRole(role);
+        final Set<String> empty = profile.emptyActionIds
+            .map(homeCanonicalActionId)
+            .toSet();
+        for (final MapEntry<String, String> entry
+            in homeCreateCoveredByManageHub.entries) {
+          if (empty.contains(entry.value)) {
+            expect(
+              profile.quickActionIds.map(homeCanonicalActionId),
+              isNot(contains(entry.key)),
+              reason: '${role.value}: ${entry.key} vs ${entry.value}',
+            );
+          }
+        }
+      }
+    });
+
+    test('billing navigates via Quick links, not a second review strip', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.billing);
+
+      expect(profile.emptyActionIds, isEmpty);
+      expect(profile.shortcutIds, <String>[
+        'billing',
+        'patients',
+        'claims',
+        'reports',
+        'settings',
+      ]);
+      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
+      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
+      expect(profile.quickActionIds, <String>[
+        'create_invoice',
+        'receive_payment',
+        'process_refund',
+        'close_shift',
+      ]);
+    });
+
+    testWidgets('collapses empty results and follow-ups chrome', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(
+          DashboardPriorityPanel(
+            data: DashboardPriorityPanelData(
+              queueTitle: 'Worklist',
+              emptyMessage: 'No assigned clinical work right now.',
+              showAlerts: true,
+              alertsTitle: 'Critical alerts',
+              alertItems: const <DashboardWorklistItemData>[],
+              showResults: true,
+              resultsTitle: 'Results ready',
+              resultsItems: const <DashboardWorklistItemData>[],
+              showFollowUps: true,
+              followUpTitle: 'Follow-ups',
+              followUpItems: const <DashboardWorklistItemData>[],
+              showShortcuts: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Worklist'), findsOneWidget);
+      expect(find.text('No assigned clinical work right now.'), findsOneWidget);
+      expect(find.text('Results ready'), findsNothing);
+      expect(find.text('Follow-ups'), findsNothing);
+      expect(find.text('Critical alerts'), findsNothing);
+      expect(find.text('Nothing pending'), findsNothing);
+      expect(find.text('All clear'), findsNothing);
+    });
+  });
 }

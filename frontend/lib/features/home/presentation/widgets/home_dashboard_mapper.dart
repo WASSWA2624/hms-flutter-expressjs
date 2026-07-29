@@ -153,17 +153,13 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   HomeDashboardRequest request = HomeDashboardRequest.empty,
 }) {
   final HomeDashboardProfile profile = dashboard.profile;
-  final bool showQueue = profile.showQueuePanel;
-  final bool showAlerts =
+  final bool queuePanelAllowed = profile.showQueuePanel;
+  final bool alertsAllowed =
       profile.showQueuePanel && profile.showAlertsInPriorityPanel;
-  final bool showResults =
-      profile.maxResultsItems > 0 && dashboard.resultsPreview.isNotEmpty;
-  final bool showFollowUps =
-      profile.maxFollowUpItems > 0 && dashboard.followUpPreview.isNotEmpty;
   final bool showShortcutsConfigured = profile.showShortcutsSection(
     quickActionCount: actions.length,
   );
-  final List<DashboardWorklistItemData> worklistItems = showQueue
+  final List<DashboardWorklistItemData> worklistItems = queuePanelAllowed
       ? homeDashboardWorklistItems(
           context: context,
           ref: ref,
@@ -183,7 +179,56 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   );
   // Management strips: buttons already state the action — no tutorial body.
   // Keep empty copy only for true work queues with no management actions.
-  final String emptyMessage = emptyActions.isNotEmpty ? '' : profile.emptyMessage;
+  final String emptyMessage =
+      emptyActions.isNotEmpty ? '' : profile.emptyMessage;
+  // Collapse blank headers — only surface a queue strip with items, Manage
+  // hubs, or a real "nothing due" empty message.
+  final bool showQueue = queuePanelAllowed &&
+      (worklistItems.isNotEmpty ||
+          emptyActions.isNotEmpty ||
+          emptyMessage.isNotEmpty);
+  final List<DashboardWorklistItemData> alertItems = alertsAllowed
+      ? dashboard.alerts
+            .take(3)
+            .map(
+              (HomeAlertItem alert) => DashboardWorklistItemData(
+                icon: Icons.warning_amber_outlined,
+                title: alert.label,
+                subtitle: '${alert.count}',
+                status: AppWorkspaceStatus(
+                  label: homeStatusLabel(alert.severity),
+                  tone: homeSeverityTone(alert.severity),
+                ),
+                onTap: homeWorklistTap(context, ref, policy, alert.target),
+              ),
+            )
+            .toList(growable: false)
+      : const <DashboardWorklistItemData>[];
+  final bool showAlerts = alertItems.isNotEmpty;
+  final List<DashboardWorklistItemData> resultsItems =
+      profile.maxResultsItems > 0
+      ? homeDashboardWorklistItems(
+          context: context,
+          ref: ref,
+          policy: policy,
+          items: dashboard.resultsPreview
+              .take(profile.maxResultsItems)
+              .toList(growable: false),
+        )
+      : const <DashboardWorklistItemData>[];
+  final bool showResults = resultsItems.isNotEmpty;
+  final List<DashboardWorklistItemData> followUpItems =
+      profile.maxFollowUpItems > 0
+      ? homeDashboardWorklistItems(
+          context: context,
+          ref: ref,
+          policy: policy,
+          items: dashboard.followUpPreview
+              .take(profile.maxFollowUpItems)
+              .toList(growable: false),
+        )
+      : const <DashboardWorklistItemData>[];
+  final bool showFollowUps = followUpItems.isNotEmpty;
   final List<DashboardShortcutData> shortcutTiles = showShortcutsConfigured
       ? shortcuts
             .take(profile.maxShortcutTiles)
@@ -200,67 +245,31 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   final bool showShortcuts = shortcutTiles.isNotEmpty;
 
   return DashboardPriorityPanelData(
-    queueTitle: profile.showQueuePanelTitle
+    queueTitle: showQueue && profile.showQueuePanelTitle
         ? homeQueueTitle(profile.role)
         : null,
     queueItems: worklistItems,
-    emptySectionTitle: homeEmptyManagementSectionTitle(profile, l10n),
-    emptyMessage: emptyMessage,
-    emptyActions: emptyActions,
+    emptySectionTitle: showQueue
+        ? homeEmptyManagementSectionTitle(profile, l10n)
+        : null,
+    emptyMessage: showQueue ? emptyMessage : '',
+    emptyActions: showQueue ? emptyActions : const <DashboardQuickActionData>[],
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,
-    alertItems: showAlerts
-        ? dashboard.alerts
-              .take(3)
-              .map(
-                (HomeAlertItem alert) => DashboardWorklistItemData(
-                  icon: Icons.warning_amber_outlined,
-                  title: alert.label,
-                  subtitle: '${alert.count}',
-                  status: AppWorkspaceStatus(
-                    label: homeStatusLabel(alert.severity),
-                    tone: homeSeverityTone(alert.severity),
-                  ),
-                  onTap: homeWorklistTap(context, ref, policy, alert.target),
-                ),
-              )
-              .toList(growable: false)
-        : const <DashboardWorklistItemData>[],
-    resultsTitle: profile.maxResultsItems > 0
-        ? homeResultsTitle(profile.role)
-        : null,
-    resultsItems: profile.maxResultsItems > 0
-        ? homeDashboardWorklistItems(
-            context: context,
-            ref: ref,
-            policy: policy,
-            items: dashboard.resultsPreview
-                .take(profile.maxResultsItems)
-                .toList(growable: false),
-          )
-        : const <DashboardWorklistItemData>[],
+    alertItems: alertItems,
+    resultsTitle: showResults ? homeResultsTitle(profile.role) : null,
+    resultsItems: resultsItems,
     maxResultsItems: profile.maxResultsItems,
-    followUpTitle: profile.maxFollowUpItems > 0
-        ? homeFollowUpTitle(profile.role)
-        : null,
-    followUpItems: profile.maxFollowUpItems > 0
-        ? homeDashboardWorklistItems(
-            context: context,
-            ref: ref,
-            policy: policy,
-            items: dashboard.followUpPreview
-                .take(profile.maxFollowUpItems)
-                .toList(growable: false),
-          )
-        : const <DashboardWorklistItemData>[],
+    followUpTitle: showFollowUps ? homeFollowUpTitle(profile.role) : null,
+    followUpItems: followUpItems,
     maxFollowUpItems: profile.maxFollowUpItems,
     shortcuts: shortcutTiles,
     maxShortcuts: profile.maxShortcutTiles,
     shortcutsTitle: l10n.homeDashboardQuickLinksTitle,
     showQueue: showQueue,
     showAlerts: showAlerts,
-    showResults: showResults || profile.maxResultsItems > 0,
-    showFollowUps: showFollowUps || profile.maxFollowUpItems > 0,
+    showResults: showResults,
+    showFollowUps: showFollowUps,
     showShortcuts: showShortcuts,
     viewAllLabel: l10n.homeViewAllAction,
     onViewAll: homeFirstQueueTarget(dashboard.queuePreview) == null
