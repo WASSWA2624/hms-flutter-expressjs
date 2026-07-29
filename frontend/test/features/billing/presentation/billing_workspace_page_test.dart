@@ -55,6 +55,7 @@ const BillingWorkItem _pendingInvoice = BillingWorkItem(
   id: 'inv-pay',
   displayId: 'INV-PAY',
   kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
   patientDisplayName: 'Ben Payment',
   patientDisplayId: 'PT-PAY',
   billingStatus: 'ISSUED',
@@ -115,14 +116,20 @@ AppAccessPolicy _billingWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['BILLING']),
+      user: const AuthUserProfile(
+        roles: <String>['BILLING'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
       permissions: <AppPermission>{
         AppPermissions.billingRead,
         AppPermissions.billingWrite,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -131,11 +138,80 @@ AppAccessPolicy _billingReadOnlyPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['BILLING']),
+      user: const AuthUserProfile(
+        roles: <String>['BILLING'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
       permissions: <AppPermission>{AppPermissions.billingRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
       ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
+AppAccessPolicy _billingApproverPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['BILLING'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
+        AppPermissions.financialApprove,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
+AppAccessPolicy _billingWriteWithoutInsurancePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['BILLING'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
+AppAccessPolicy _billingWriteWithoutModulePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['BILLING'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -388,6 +464,302 @@ void main() {
     expect(find.text('Refresh'), findsNothing);
     expect(find.byTooltip('Issue'), findsNothing);
     expect(find.byTooltip('Receive payment'), findsNothing);
+    expect(find.byTooltip('Approve'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'writer without financial:approve has no Approve next-action or detail',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(tester, repository: repository);
+
+      await _selectQueueTab(tester, 'Approval required');
+
+      expect(find.text('Dana Approval'), findsOneWidget);
+      expect(find.byTooltip('Approve'), findsNothing);
+
+      await tester.tap(find.text('Dana Approval'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Approve'), findsNothing);
+      expect(find.text('Reject'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'approver with billing:write ∩ financial:approve sees Approve controls',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _billingApproverPolicy(),
+      );
+
+      await _selectQueueTab(tester, 'Approval required');
+
+      expect(find.byTooltip('Approve'), findsWidgets);
+
+      await tester.tap(find.text('Dana Approval'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Approve'), findsWidgets);
+      expect(find.text('Reject'), findsWidgets);
+    },
+  );
+
+  testWidgets('Claims pending tab absent without insurance-claims module', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _billingWriteWithoutInsurancePolicy(),
+    );
+
+    final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+    expect(
+      strip.tabs.map((AppTabItem tab) => tab.label),
+      isNot(contains('Claims pending')),
+    );
+    expect(strip.tabs.length, BillingQueueType.values.length - 1);
+    _expectStableCloseToolbar();
+  });
+
+  testWidgets('missing billing-payments module omits billing chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _billingWriteWithoutModulePolicy(),
+    );
+
+    expect(find.byType(AppTabStrip), findsNothing);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.text('Ben Payment'), findsNothing);
+    expect(find.text('No access'), findsNothing);
+  });
+
+  testWidgets(
+    'Awaiting payment: write user sees Receive payment; read-only does not',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?queue=pending-payment',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?queue=pending-payment'),
+        ),
+      );
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
+      _expectStableCloseToolbar();
+
+      await tester.tap(find.text('Ben Payment'));
+      await tester.pumpAndSettle();
+      expect(find.text('Receive payment'), findsWidgets);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _billingReadOnlyPolicy(),
+        initialLocation: '/billing?queue=awaiting-payment',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?queue=awaiting-payment'),
+        ),
+      );
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Ben Payment'));
+      await tester.pumpAndSettle();
+      expect(find.text('Receive payment'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Awaiting payment mobile + dark theme keeps authorized Receive payment',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      _stubBillingRepository(repository);
+
+      tester.view.physicalSize = const Size(1024, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/billing?queue=pending-payment',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/billing',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: BillingWorkspacePage(
+                  initialQuery: BillingWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            billingRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_billingWritePolicy()),
+          ],
+          child: MaterialApp.router(
+            themeMode: ThemeMode.dark,
+            theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              useMaterial3: true,
+            ),
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
+      _expectStableCloseToolbar();
+    },
+  );
+
+  testWidgets(
+    'Awaiting payment narrow mobile keeps queue content without Refresh',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        physicalSize: const Size(390, 844),
+        initialLocation: '/billing?queue=pending-payment',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?queue=pending-payment'),
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.text('Refresh'), findsNothing);
+    },
+  );
+
+  testWidgets('authorized All tab keeps Issue next-action in light and dark', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    _stubBillingRepository(repository);
+
+    for (final ThemeMode mode in <ThemeMode>[ThemeMode.light, ThemeMode.dark]) {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/billing',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/billing',
+            builder: (BuildContext context, GoRouterState state) {
+              return const Scaffold(body: BillingWorkspacePage());
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            billingRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_billingWritePolicy()),
+          ],
+          child: MaterialApp.router(
+            themeMode: mode,
+            theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              useMaterial3: true,
+            ),
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ada Draft'), findsOneWidget);
+      expect(find.byTooltip('Issue'), findsWidgets);
+      _expectStableCloseToolbar();
+    }
+  });
+
+  testWidgets('mobile viewport keeps authorized close toolbar and Issue', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      physicalSize: const Size(1024, 900),
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    _expectStableCloseToolbar();
+    expect(find.text('Ada Draft'), findsOneWidget);
+  });
+
+  testWidgets('authorized Issue detail opens and omits finalize clearance', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    expect(find.byTooltip('Issue'), findsWidgets);
+
+    await tester.tap(find.text('Ada Draft'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Issue'), findsWidgets);
+    expect(find.text('Finalize financial clearance'), findsNothing);
   });
 
   testWidgets('deep link queue=pending-payment selects Awaiting Payment tab', (

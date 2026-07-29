@@ -2,7 +2,17 @@
 
 Primary surface: `BillingWorkspacePage` (`frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`).
 
-Write gate: `AppPermissions.billingWrite` (mutations / close shift / close day / next-action). Read: `billingRead` via route access. Approval decisions also require facility-manage capability in the detail action panel.
+Permission helpers: `frontend/lib/features/billing/presentation/billing_access.dart`.
+
+| Concern | Gate |
+| --- | --- |
+| View / read UI, list, filters, detail, print/download, ledger | `billingWorkspaceReadRequirement` (`billing:read` ∩ `billing-payments`) |
+| Close shift / close day / invoice mutations / next-action (non-approve, non-claim) | `billingWorkspaceWriteRequirement` (`billing:write` ∩ `billing-payments`) |
+| Approve / reject financial holds | `billingApprovalDecisionRequirement` (`billing:write` ∩ `financial:approve` ∩ `billing-payments`) |
+| Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
+| Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
+
+Route entry any-of: `billing:read` \| `billing:write` + `billing-payments`. Backend remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -19,6 +29,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Optional **Balance** column vs **Amount due** | Same `balanceDue` value | **Removed** Balance from column choices — Amount due remains |
 | Row **Next action** vs row select → detail actions | Start primary / all item actions | **Kept** — next-action is the labeled minimal path; detail holds secondary actions + print/download |
 | Disabled close toolbar when read-only | Close shift / day | **Unauthorized UI absent** — toolbar omitted without `billingWrite` |
+| Approve via facility-manage | Approve / reject | **Mapped** to `billingApprovalDecisionRequirement` (`financial:approve` ∩ `billing:write`) |
 
 ---
 
@@ -26,23 +37,29 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 ### Tab strip
 
-- **All / Needs issue / Awaiting payment / Claims pending / Approval required / Overdue**
+- **All / Needs issue / Awaiting payment / Approval required / Overdue**
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?queue=…`, applies queue via controller.
-  - Condition: Always shown; count badges from overview summary.
+  - Condition: `billingWorkspaceReadRequirement`.
+
+- **Claims pending**
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to claims queue.
+  - Condition: `billingClaimsPendingTabRequirement`; omitted without insurance module / billing read.
 
 - **Close shift** (primary)
   - Location: Tab-strip primary (`billingCloseShift`).
   - Opens modal: Yes — shift close form.
   - Immediate result: Closes shift; snackbar; workspace refresh.
-  - Condition: `billingWrite`; omitted when unauthorized.
+  - Condition: `billingWorkspaceWriteRequirement`; omitted when unauthorized.
 
 - **Close day** (secondary)
   - Location: Tab-strip secondary (`billingCloseDay`).
   - Opens modal: Yes — day close form.
   - Immediate result: Closes day; snackbar; workspace refresh.
-  - Condition: `billingWrite`; omitted when unauthorized.
+  - Condition: `billingWorkspaceWriteRequirement`; omitted when unauthorized.
 
 Tab-strip **Refresh** was removed. Queue work refreshes after mutations, realtime sync, and scaffold **Try again**.
 
@@ -58,7 +75,7 @@ Tab-strip **Refresh** was removed. Queue work refreshes after mutations, realtim
   - Location: `AppListTable` / `AppSearchBar` chrome.
   - Opens modal: Advanced filters panel; Table Settings dialog.
   - Immediate result: Filters/search/column visibility for the active queue (`billing_{queue}`).
-  - Condition: Always on the worklist.
+  - Condition: Always on the worklist when the queue is visible.
 
 #### Advanced filters (from **Filters**)
 
@@ -80,30 +97,35 @@ Fields: patient ID, invoice #, encounter #; source module; billing status; issue
   - Location: Next-action column (`billingNextActionColumnLabel`).
   - Opens modal: The mutation dialog for the item’s top allowed action (issue, receive payment, approve, submit/reconcile claim, pre-auth approve, refund, adjust, void, or send).
   - Immediate result: Completes that mutation path without opening the full detail first.
-  - Condition: `billingWrite` and an actionable label; absent when unauthorized.
+  - Condition: `billingNextActionRequirement(item)`; column omitted when the user has no mutation rights; absent when unauthorized for that item.
 
 ### Detail dialog (from row select)
 
-Invoice / claim / approval / pre-auth actions appear only when allowed and `billingWrite` (approve/reject also need facility manage). Progressive disclosure: financial summary, line items, payments, adjustments.
+Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingApprovalDecisionRequirement`); claim/pre-auth (`billingClaimsWriteRequirement`). Progressive disclosure: financial summary, line items, payments, adjustments.
 
-- **View ledger** — nested ledger dialog when patient id known.
-- **Print** / **Download** invoice — dialog footer when item is an invoice.
+- **View ledger** — nested ledger dialog when patient id known (read chrome).
+- **Print** / **Download** invoice — dialog footer when item is an invoice and `canReadBillingDocument`.
 - Nested forms: receive payment, issue notes, refund, adjustment, void reason, send email, approval notes/reason, claim submit/reconcile, pre-auth notes.
+- Deep link `action=pay` opens payment only when write-authorized.
 
 ### Empty / no-results / validation
 
 - Empty queue: `billingEmptyTitle` / `billingEmptyBody`.
 - Search/filter no matches: same empty panel after filter application.
 - Form validation stays inside each mutation dialog; success/pending-approval/error via snackbar (`billingActionSaved` / `billingActionPendingApproval` / failure message).
+- No visible queues (missing billing read / module): forbidden state for restricted access.
 
 ---
 
 ## Verification (Req 7)
 
-- Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart` prove:
+- Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart` and `billing_access_test.dart` prove:
   - **Refresh** is absent from the tab strip on every queue (desktop/mobile).
   - **Close shift** is the sole primary and **Close day** the sole secondary, stable across tabs when write-authorized.
   - Unauthorized users see no Close shift / Close day / next-action controls.
+  - Writer without `financial:approve` sees no Approve next-action / detail buttons; approver with both sees them.
+  - Claims pending tab and claim mutations absent without `insurance-claims`.
   - Advanced filters omit a Queue group; clearing filters does not reset the active tab queue.
   - Finalize financial clearance is absent from next-action and detail actions.
   - Next-action and detail entry points still open for representative issue / pay paths.
+  - Light + dark and mobile + desktop viewports keep authorized chrome.

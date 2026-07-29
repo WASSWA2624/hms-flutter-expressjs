@@ -92,6 +92,7 @@ final class BillingWorkspaceQuery {
             <String, BillingQueueType>{
               'needs-issue': BillingQueueType.needsIssue,
               'pending-payment': BillingQueueType.pendingPayment,
+              'awaiting-payment': BillingQueueType.pendingPayment,
               'claims-pending': BillingQueueType.claimsPending,
               'approval-required': BillingQueueType.approvalRequired,
               'overdue': BillingQueueType.overdue,

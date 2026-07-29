@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
@@ -172,7 +173,9 @@ class _BillingWorkspaceContentState
       }
     }
 
-    if (target != null && mounted) {
+    if (target != null &&
+        mounted &&
+        canWriteBilling(ref.read(appAccessPolicyProvider))) {
       await _showPaymentDialog(context, ref, target);
     }
   }
@@ -245,7 +248,24 @@ class _BillingWorkspaceContentState
   Widget build(BuildContext context) {
     final BillingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = accessPolicy.grants(AppPermissions.billingWrite);
+    final bool canWrite = canWriteBilling(accessPolicy);
+    final List<BillingQueueType> visibleQueues = <BillingQueueType>[
+      for (final BillingQueueType queue in BillingQueueType.values)
+        if (canViewBillingQueue(accessPolicy, queue)) queue,
+    ];
+    if (visibleQueues.isEmpty) {
+      // No authorized queues — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    if (!visibleQueues.contains(_section)) {
+      final BillingQueueType fallback = visibleQueues.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleQueues.contains(_section)) {
+          return;
+        }
+        _selectQueue(fallback);
+      });
+    }
     final BillingWorkspaceController controller = ref.read(
       billingWorkspaceControllerProvider.notifier,
     );
@@ -264,7 +284,7 @@ class _BillingWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final BillingQueueType queue in BillingQueueType.values)
+                for (final BillingQueueType queue in visibleQueues)
                   AppTabItem(
                     id: queue.name,
                     icon: billingQueueIcon(queue),
@@ -275,7 +295,7 @@ class _BillingWorkspaceContentState
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final BillingQueueType queue in BillingQueueType.values) {
+                for (final BillingQueueType queue in visibleQueues) {
                   if (queue.name == tabId) {
                     _selectQueue(queue);
                     break;
@@ -303,6 +323,7 @@ class _BillingWorkspaceContentState
             ],
             _BillingQueuePanel(
               state: state,
+              accessPolicy: accessPolicy,
               canWrite: canWrite,
               searchController: _searchController,
               columnVisibilityController: _tableColumnController,
@@ -360,6 +381,7 @@ class _BillingWorkspaceContentState
 class _BillingQueuePanel extends ConsumerWidget {
   const _BillingQueuePanel({
     required this.state,
+    required this.accessPolicy,
     required this.canWrite,
     required this.searchController,
     required this.columnVisibilityController,
@@ -367,6 +389,7 @@ class _BillingQueuePanel extends ConsumerWidget {
   });
 
   final BillingWorkspaceState state;
+  final AppAccessPolicy accessPolicy;
   final bool canWrite;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<BillingWorkItem>
@@ -450,6 +473,7 @@ class _BillingQueuePanel extends ConsumerWidget {
         l10n,
         activeQueue,
         ref: ref,
+        accessPolicy: accessPolicy,
         canWrite: canWrite,
         isSaving: state.isSaving,
         onNextAction: _runBillingNextAction,
@@ -459,6 +483,7 @@ class _BillingQueuePanel extends ConsumerWidget {
         l10n,
         activeQueue,
         ref: ref,
+        accessPolicy: accessPolicy,
         canWrite: canWrite,
         isSaving: state.isSaving,
         onNextAction: _runBillingNextAction,
@@ -488,16 +513,20 @@ Future<void> _runBillingNextAction(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!billingNextActionIsAllowed(policy, item)) {
+    return;
+  }
+  if (item.canApproveOrReject) {
+    await _showApproveDialog(context, ref);
+    return;
+  }
   if (item.canIssue) {
     await _showIssueDialog(context, ref);
     return;
   }
   if (item.canReceivePayment) {
     await _showPaymentDialog(context, ref, item);
-    return;
-  }
-  if (item.canApproveOrReject) {
-    await _showApproveDialog(context, ref);
     return;
   }
   if (item.canSubmitClaim) {
@@ -580,6 +609,10 @@ class _BillingLiveDetailDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canApprove = canApproveBillingMutations(accessPolicy);
+    final bool canClaimsWrite = canWriteBillingClaims(accessPolicy);
+    final bool canDocument = canReadBillingDocument(accessPolicy);
     final AsyncValue<Result<BillingWorkspaceState>> asyncState = ref.watch(
       billingWorkspaceControllerProvider,
     );
@@ -599,39 +632,46 @@ class _BillingLiveDetailDialogState
       content: BillingDetailBody(
         item: item,
         canWrite: widget.canWrite,
+        canApprove: canApprove,
+        canWriteClaims: canClaimsWrite,
         isSaving: isSaving,
-        onReceivePayment: item.canReceivePayment
+        onReceivePayment: widget.canWrite && item.canReceivePayment
             ? () => _showPaymentDialog(context, ref, item)
             : null,
-        onIssue: item.canIssue ? () => _showIssueDialog(context, ref) : null,
-        onRefund: item.canRequestRefund
+        onIssue: widget.canWrite && item.canIssue
+            ? () => _showIssueDialog(context, ref)
+            : null,
+        onRefund: widget.canWrite && item.canRequestRefund
             ? () => _showRefundDialog(context, ref, item)
             : null,
-        onAdjust: item.canRequestAdjustment
+        onAdjust: widget.canWrite && item.canRequestAdjustment
             ? () => _showAdjustmentDialog(context, ref, item)
             : null,
-        onVoid: item.canRequestVoid
+        onVoid: widget.canWrite && item.canRequestVoid
             ? () => _showVoidDialog(context, ref)
             : null,
-        onSend: item.isInvoice && !billingWorkItemIsCancelled(item)
+        onSend: widget.canWrite &&
+                item.isInvoice &&
+                !billingWorkItemIsCancelled(item)
             ? () => _showSendDialog(context, ref)
             : null,
-        onApprove: item.canApproveOrReject
+        onApprove: canApprove && item.canApproveOrReject
             ? () => _showApproveDialog(context, ref)
             : null,
-        onReject: item.canApproveOrReject
+        onReject: canApprove && item.canApproveOrReject
             ? () => _showRejectDialog(context, ref)
             : null,
-        onSubmitClaim: item.canSubmitClaim
+        onSubmitClaim: canClaimsWrite && item.canSubmitClaim
             ? () => _showSubmitClaimDialog(context, ref)
             : null,
-        onReconcileClaim: item.canReconcileClaim
+        onReconcileClaim: canClaimsWrite && item.canReconcileClaim
             ? () => _showReconcileClaimDialog(context, ref)
             : null,
-        onApprovePreAuthorization: item.canApprovePreAuthorization
+        onApprovePreAuthorization:
+            canClaimsWrite && item.canApprovePreAuthorization
             ? () => _showPreAuthStatusDialog(context, ref, status: 'APPROVED')
             : null,
-        onDenyPreAuthorization: item.canDenyPreAuthorization
+        onDenyPreAuthorization: canClaimsWrite && item.canDenyPreAuthorization
             ? () => _showPreAuthStatusDialog(context, ref, status: 'DENIED')
             : null,
         onViewLedger: (item.patientId ?? item.effectivePatientNumber) != null
@@ -639,23 +679,28 @@ class _BillingLiveDetailDialogState
             : null,
       ),
       actions: <Widget>[
-        AppReportActionButton.print(
-          label: l10n.billingPrintInvoiceAction,
-          enabled: item.isInvoice,
-          tooltip: l10n.billingPrintInvoiceTooltip,
-          onPressed: item.isInvoice
-              ? () =>
-                    printBillingInvoice(ref: ref, context: context, item: item)
-              : null,
-        ),
-        AppReportActionButton.download(
-          label: l10n.billingInvoiceLabel,
-          enabled: item.isInvoice,
-          tooltip: l10n.billingDocumentTooltip,
-          onPressed: item.isInvoice
-              ? () => _downloadInvoiceDocument(context, ref, item)
-              : null,
-        ),
+        if (canDocument) ...<Widget>[
+          AppReportActionButton.print(
+            label: l10n.billingPrintInvoiceAction,
+            enabled: item.isInvoice,
+            tooltip: l10n.billingPrintInvoiceTooltip,
+            onPressed: item.isInvoice
+                ? () => printBillingInvoice(
+                    ref: ref,
+                    context: context,
+                    item: item,
+                  )
+                : null,
+          ),
+          AppReportActionButton.download(
+            label: l10n.billingInvoiceLabel,
+            enabled: item.isInvoice,
+            tooltip: l10n.billingDocumentTooltip,
+            onPressed: item.isInvoice
+                ? () => _downloadInvoiceDocument(context, ref, item)
+                : null,
+          ),
+        ],
       ],
     );
   }

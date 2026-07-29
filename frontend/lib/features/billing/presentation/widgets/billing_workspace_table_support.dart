@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -82,28 +84,30 @@ String? billingNextActionLabel(
   BuildContext context,
   BillingWorkItem item, {
   required bool canWrite,
+  bool canApprove = false,
+  bool canMutateClaims = false,
 }) {
+  final AppLocalizations l10n = context.l10n;
+  if (item.canApproveOrReject) {
+    return canApprove ? l10n.billingApproveAction : null;
+  }
+  if (item.canSubmitClaim) {
+    return canMutateClaims ? l10n.billingSubmitClaimAction : null;
+  }
+  if (item.canReconcileClaim) {
+    return canMutateClaims ? l10n.billingReconcileClaimAction : null;
+  }
+  if (item.canApprovePreAuthorization) {
+    return canMutateClaims ? l10n.billingPreAuthApproveAction : null;
+  }
   if (!canWrite) {
     return null;
   }
-  final AppLocalizations l10n = context.l10n;
   if (item.canIssue) {
     return l10n.billingIssueAction;
   }
   if (item.canReceivePayment) {
     return l10n.billingReceivePayment;
-  }
-  if (item.canApproveOrReject) {
-    return l10n.billingApproveAction;
-  }
-  if (item.canSubmitClaim) {
-    return l10n.billingSubmitClaimAction;
-  }
-  if (item.canReconcileClaim) {
-    return l10n.billingReconcileClaimAction;
-  }
-  if (item.canApprovePreAuthorization) {
-    return l10n.billingPreAuthApproveAction;
   }
   if (item.canRequestRefund) {
     return l10n.billingRequestRefund;
@@ -134,6 +138,8 @@ bool billingWorkItemMatchesSearch(
     context,
     item,
     canWrite: true,
+    canApprove: true,
+    canMutateClaims: true,
   );
 
   return <String?>[
@@ -158,6 +164,7 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnsForQueue(
   AppLocalizations l10n,
   BillingQueueType queue, {
   required WidgetRef ref,
+  required AppAccessPolicy accessPolicy,
   required bool canWrite,
   required bool isSaving,
   required BillingNextActionHandler onNextAction,
@@ -167,14 +174,20 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnsForQueue(
         context,
         l10n,
         ref: ref,
+        accessPolicy: accessPolicy,
         canWrite: canWrite,
         isSaving: isSaving,
         onNextAction: onNextAction,
       );
   final List<String> ids =
       billingDefaultColumnIds[queue] ?? billingDefaultColumnIds.values.first;
+  final bool showNextAction =
+      canWrite ||
+      canDecideBillingApproval(accessPolicy) ||
+      canMutateBillingClaims(accessPolicy);
   return <AppListTableColumn<BillingWorkItem>>[
-    for (final String id in ids) columns[id]!,
+    for (final String id in ids)
+      if (id != billingNextActionColumnId || showNextAction) columns[id]!,
   ];
 }
 
@@ -183,6 +196,7 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnChoicesForQueue(
   AppLocalizations l10n,
   BillingQueueType queue, {
   required WidgetRef ref,
+  required AppAccessPolicy accessPolicy,
   required bool canWrite,
   required bool isSaving,
   required BillingNextActionHandler onNextAction,
@@ -192,6 +206,7 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnChoicesForQueue(
         context,
         l10n,
         ref: ref,
+        accessPolicy: accessPolicy,
         canWrite: canWrite,
         isSaving: isSaving,
         onNextAction: onNextAction,
@@ -212,10 +227,13 @@ Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
   BuildContext context,
   AppLocalizations l10n, {
   required WidgetRef ref,
+  required AppAccessPolicy accessPolicy,
   required bool canWrite,
   required bool isSaving,
   required BillingNextActionHandler onNextAction,
 }) {
+  final bool canApprove = canDecideBillingApproval(accessPolicy);
+  final bool canMutateClaims = canMutateBillingClaims(accessPolicy);
   return <String, AppListTableColumn<BillingWorkItem>>{
     billingPatientColumnId: billingPatientColumn(l10n),
     billingInvoiceColumnId: billingInvoiceColumn(l10n),
@@ -228,6 +246,8 @@ Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
     billingNextActionColumnId: billingNextActionColumn(
       l10n: l10n,
       canWrite: canWrite,
+      canApprove: canApprove,
+      canMutateClaims: canMutateClaims,
       isSaving: isSaving,
       onAction: (BuildContext actionContext, BillingWorkItem item) {
         return onNextAction(actionContext, ref, item);
@@ -417,6 +437,8 @@ int _billingNextActionSortKey(BillingWorkItem item) {
 AppListTableColumn<BillingWorkItem> billingNextActionColumn({
   required AppLocalizations l10n,
   required bool canWrite,
+  required bool canApprove,
+  required bool canMutateClaims,
   required bool isSaving,
   required Future<void> Function(BuildContext context, BillingWorkItem item)
   onAction,
@@ -434,6 +456,8 @@ AppListTableColumn<BillingWorkItem> billingNextActionColumn({
       return BillingNextActionButton(
         item: item,
         canWrite: canWrite,
+        canApprove: canApprove,
+        canMutateClaims: canMutateClaims,
         isSaving: isSaving,
         onPressed: () => onAction(context, item),
       );
@@ -445,6 +469,8 @@ class BillingNextActionButton extends StatelessWidget {
   const BillingNextActionButton({
     required this.item,
     required this.canWrite,
+    required this.canApprove,
+    required this.canMutateClaims,
     required this.isSaving,
     required this.onPressed,
     super.key,
@@ -452,6 +478,8 @@ class BillingNextActionButton extends StatelessWidget {
 
   final BillingWorkItem item;
   final bool canWrite;
+  final bool canApprove;
+  final bool canMutateClaims;
   final bool isSaving;
   final Future<void> Function() onPressed;
 
@@ -461,13 +489,23 @@ class BillingNextActionButton extends StatelessWidget {
       context,
       item,
       canWrite: canWrite,
+      canApprove: canApprove,
+      canMutateClaims: canMutateClaims,
     );
     if (label == null) {
       return const SizedBox.shrink();
     }
 
     final ThemeData theme = Theme.of(context);
-    final bool enabled = canWrite && !isSaving;
+    final bool actionAllowed = item.canApproveOrReject
+        ? canApprove
+        : item.canSubmitClaim ||
+              item.canReconcileClaim ||
+              item.canApprovePreAuthorization ||
+              item.canDenyPreAuthorization
+        ? canMutateClaims
+        : canWrite;
+    final bool enabled = actionAllowed && !isSaving;
     final Color primaryColor = enabled
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurface.withValues(alpha: 0.38);
@@ -516,14 +554,6 @@ class BillingNextActionButton extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (!enabled) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Icon(
-                      Icons.lock_outlined,
-                      size: 10,
-                      color: primaryColor.withValues(alpha: 0.5),
-                    ),
-                  ],
                 ],
               ),
             ),

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
-import 'package:hosspi_hms/features/patients/presentation/widgets/patient_detail_header.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -32,6 +29,8 @@ class BillingDetailBody extends ConsumerWidget {
     required this.item,
     required this.canWrite,
     required this.isSaving,
+    this.canApprove = false,
+    this.canWriteClaims = false,
     this.onReceivePayment,
     this.onIssue,
     this.onRefund,
@@ -50,6 +49,8 @@ class BillingDetailBody extends ConsumerWidget {
 
   final BillingWorkItem item;
   final bool canWrite;
+  final bool canApprove;
+  final bool canWriteClaims;
   final bool isSaving;
   final VoidCallback? onReceivePayment;
   final VoidCallback? onIssue;
@@ -69,8 +70,6 @@ class BillingDetailBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canApprove = accessPolicy.canManageFacility();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -108,11 +107,13 @@ class BillingDetailBody extends ConsumerWidget {
                 ],
         ),
         SizedBox(height: theme.spacing.md),
-        if (canWrite) ...<Widget>[
+        if (canWrite || canApprove || canWriteClaims) ...<Widget>[
           _BillingActionPanel(
             item: item,
             isSaving: isSaving,
+            canWrite: canWrite,
             canApprove: canApprove,
+            canWriteClaims: canWriteClaims,
             onReceivePayment: onReceivePayment,
             onIssue: onIssue,
             onRefund: onRefund,
@@ -282,7 +283,9 @@ class _BillingActionPanel extends StatelessWidget {
   const _BillingActionPanel({
     required this.item,
     required this.isSaving,
+    required this.canWrite,
     required this.canApprove,
+    required this.canWriteClaims,
     this.onReceivePayment,
     this.onIssue,
     this.onRefund,
@@ -299,7 +302,9 @@ class _BillingActionPanel extends StatelessWidget {
 
   final BillingWorkItem item;
   final bool isSaving;
+  final bool canWrite;
   final bool canApprove;
+  final bool canWriteClaims;
   final VoidCallback? onReceivePayment;
   final VoidCallback? onIssue;
   final VoidCallback? onRefund;
@@ -318,68 +323,90 @@ class _BillingActionPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<AppActionItem> actions = <AppActionItem>[];
 
-    if (item.isInvoice) {
-      actions.addAll(<AppActionItem>[
-        AppActionItem(
-          label: l10n.billingReceivePayment,
-          leadingIcon: Icons.point_of_sale,
-          enabled: item.canReceivePayment && !isSaving,
-          variant: AppActionVariant.primary,
-          onPressed: onReceivePayment,
-        ),
-        AppActionItem(
-          label: l10n.billingIssueAction,
-          leadingIcon: Icons.outbox_outlined,
-          enabled: item.canIssue && !isSaving,
-          onPressed: onIssue,
-        ),
-        AppActionItem(
-          label: l10n.billingRefundAction,
-          leadingIcon: Icons.assignment_return_outlined,
-          enabled: item.canRequestRefund && !isSaving,
-          onPressed: onRefund,
-        ),
-        AppActionItem(
-          label: l10n.billingAdjustAction,
-          leadingIcon: Icons.tune,
-          enabled: item.canRequestAdjustment && !isSaving,
-          onPressed: onAdjust,
-        ),
-        AppActionItem(
-          label: l10n.billingVoidAction,
-          leadingIcon: Icons.block_outlined,
-          enabled: item.canRequestVoid && !isSaving,
-          onPressed: onVoid,
-        ),
-        AppActionItem(
-          label: l10n.billingSendAction,
-          leadingIcon: Icons.send_outlined,
-          enabled: onSend != null && !isSaving,
-          onPressed: onSend,
-        ),
-      ]);
+    if (canWrite && item.isInvoice) {
+      if (onReceivePayment != null && item.canReceivePayment) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingReceivePayment,
+            leadingIcon: Icons.point_of_sale,
+            enabled: !isSaving,
+            variant: AppActionVariant.primary,
+            onPressed: onReceivePayment,
+          ),
+        );
+      }
+      if (onIssue != null && item.canIssue) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingIssueAction,
+            leadingIcon: Icons.outbox_outlined,
+            enabled: !isSaving,
+            onPressed: onIssue,
+          ),
+        );
+      }
+      if (onRefund != null && item.canRequestRefund) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingRefundAction,
+            leadingIcon: Icons.assignment_return_outlined,
+            enabled: !isSaving,
+            onPressed: onRefund,
+          ),
+        );
+      }
+      if (onAdjust != null && item.canRequestAdjustment) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingAdjustAction,
+            leadingIcon: Icons.tune,
+            enabled: !isSaving,
+            onPressed: onAdjust,
+          ),
+        );
+      }
+      if (onVoid != null && item.canRequestVoid) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingVoidAction,
+            leadingIcon: Icons.block_outlined,
+            enabled: !isSaving,
+            onPressed: onVoid,
+          ),
+        );
+      }
+      if (onSend != null) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingSendAction,
+            leadingIcon: Icons.send_outlined,
+            enabled: !isSaving,
+            onPressed: onSend,
+          ),
+        );
+      }
     }
 
-    if (item.isApproval && canApprove) {
+    if (canApprove && item.isApproval && item.canApproveOrReject) {
       actions.addAll(<AppActionItem>[
         AppActionItem(
           label: l10n.billingApproveAction,
           leadingIcon: Icons.check_circle_outline,
-          enabled: item.canApproveOrReject && !isSaving,
+          enabled: !isSaving,
           variant: AppActionVariant.primary,
           onPressed: onApprove,
         ),
         AppActionItem(
           label: l10n.billingRejectAction,
           leadingIcon: Icons.cancel_outlined,
-          enabled: item.canApproveOrReject && !isSaving,
+          enabled: !isSaving,
           onPressed: onReject,
         ),
       ]);
     }
 
-    if (item.isClaim) {
-      if (item.canSubmitClaim) {
+    if (canWriteClaims && item.isClaim) {
+      if (item.canSubmitClaim && onSubmitClaim != null) {
         actions.add(
           AppActionItem(
             label: l10n.billingSubmitClaimAction,
@@ -390,7 +417,7 @@ class _BillingActionPanel extends StatelessWidget {
           ),
         );
       }
-      if (item.canReconcileClaim) {
+      if (item.canReconcileClaim && onReconcileClaim != null) {
         actions.add(
           AppActionItem(
             label: l10n.billingReconcileClaimAction,
@@ -403,8 +430,9 @@ class _BillingActionPanel extends StatelessWidget {
       }
     }
 
-    if (item.isPreAuthorization) {
-      if (item.canApprovePreAuthorization) {
+    if (canWriteClaims && item.isPreAuthorization) {
+      if (item.canApprovePreAuthorization &&
+          onApprovePreAuthorization != null) {
         actions.add(
           AppActionItem(
             label: l10n.billingPreAuthApproveAction,
@@ -415,7 +443,7 @@ class _BillingActionPanel extends StatelessWidget {
           ),
         );
       }
-      if (item.canDenyPreAuthorization) {
+      if (item.canDenyPreAuthorization && onDenyPreAuthorization != null) {
         actions.add(
           AppActionItem(
             label: l10n.billingPreAuthDenyAction,

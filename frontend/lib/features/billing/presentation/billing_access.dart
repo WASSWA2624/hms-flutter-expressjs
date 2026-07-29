@@ -1,0 +1,207 @@
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
+
+/// Module entitlement for the billing workspace route and queues.
+const String billingPaymentsModule = 'billing-payments';
+
+/// Insurance module required for Claims pending tab and claim mutations.
+const String billingInsuranceClaimsModule = 'insurance-claims';
+
+/// View / read UI for billing queues (matrix ∩ `billing:read`).
+const AccessRequirement billingWorkspaceReadRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Alias used by tab atom maps / prompts.
+const AccessRequirement billingReadRequirement = billingWorkspaceReadRequirement;
+
+/// Route entry (∪): `billing:read` | `billing:write` — matches
+/// [AppRoutes.billing] `requiredAnyPermissions`.
+const AccessRequirement billingWorkspaceEntryRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.billingRead,
+    AppPermissions.billingWrite,
+  ],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Create / update / delete mutations, close shift, close day (matrix ∩
+/// `billing:write`).
+const AccessRequirement billingWorkspaceWriteRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingWrite],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Alias used by tab atom maps / prompts.
+const AccessRequirement billingWriteRequirement = billingWorkspaceWriteRequirement;
+
+/// Approve / reject financial holds (matrix create/update ∩):
+/// `billing:write` ∩ `financial:approve` when both apply.
+///
+/// Source inventory (`screens/billing.md`) historically documented
+/// facility-manage for detail approve/reject; matrix + BILLING role pack use
+/// `financial:approve` ∩ `billing:write`. Prefer this requirement; backend
+/// remains authoritative if scopes differ.
+const AccessRequirement billingApprovalDecisionRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[
+    AppPermissions.billingWrite,
+    AppPermissions.financialApprove,
+  ],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Matrix-only `financial:approve` (∩) without write — claims settlement /
+/// intersection denial fixtures.
+const AccessRequirement billingFinancialApproveRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.financialApprove],
+  activeModules: <String>[billingPaymentsModule],
+);
+
+/// Claims pending tab visibility — billing read ∩ insurance entitlement.
+const AccessRequirement billingClaimsPendingTabRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>[billingPaymentsModule, billingInsuranceClaimsModule],
+);
+
+/// Claim submit / reconcile / pre-auth from billing — reuses claims write
+/// vocabulary (`billing:write` + `insurance-claims`).
+const AccessRequirement billingClaimsWriteRequirement =
+    claimsWorkspaceWriteRequirement;
+
+/// Nested claims read / deep-link from billing.
+const AccessRequirement billingClaimsNestedReadRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>[billingPaymentsModule, billingInsuranceClaimsModule],
+);
+
+/// Per-queue tab strip gate. Most queues need billing read; Claims pending
+/// additionally requires the insurance module.
+AccessRequirement billingQueueTabRequirement(BillingQueueType queue) {
+  return switch (queue) {
+    BillingQueueType.claimsPending => billingClaimsPendingTabRequirement,
+    _ => billingWorkspaceReadRequirement,
+  };
+}
+
+/// Requirement for the labeled next-action on a work item.
+AccessRequirement billingNextActionRequirement(BillingWorkItem item) {
+  if (item.canApproveOrReject) {
+    return billingApprovalDecisionRequirement;
+  }
+  if (item.canSubmitClaim ||
+      item.canReconcileClaim ||
+      item.canApprovePreAuthorization ||
+      item.canDenyPreAuthorization) {
+    return billingClaimsWriteRequirement;
+  }
+  return billingWorkspaceWriteRequirement;
+}
+
+bool canReadBilling(AppAccessPolicy policy) {
+  return billingWorkspaceReadRequirement.isAllowed(policy);
+}
+
+bool canWriteBilling(AppAccessPolicy policy) {
+  return billingWorkspaceWriteRequirement.isAllowed(policy);
+}
+
+bool canApproveBillingMutations(AppAccessPolicy policy) {
+  return billingApprovalDecisionRequirement.isAllowed(policy);
+}
+
+/// Alias used by table chrome for approval next-actions.
+bool canDecideBillingApproval(AppAccessPolicy policy) {
+  return canApproveBillingMutations(policy);
+}
+
+bool canWriteBillingClaims(AppAccessPolicy policy) {
+  return billingClaimsWriteRequirement.isAllowed(policy);
+}
+
+/// Alias used by table chrome for claim / pre-auth next-actions.
+bool canMutateBillingClaims(AppAccessPolicy policy) {
+  return canWriteBillingClaims(policy);
+}
+
+bool canReadBillingClaimsNested(AppAccessPolicy policy) {
+  return billingClaimsNestedReadRequirement.isAllowed(policy);
+}
+
+bool canViewBillingQueue(AppAccessPolicy policy, BillingQueueType queue) {
+  return billingQueueTabRequirement(queue).isAllowed(policy);
+}
+
+/// Print / download invoice are read chrome (no separate export key on this tab).
+bool canReadBillingDocument(AppAccessPolicy policy) {
+  return canReadBilling(policy);
+}
+
+/// Whether [item] exposes a permission-allowed next action.
+bool billingNextActionIsAllowed(
+  AppAccessPolicy policy,
+  BillingWorkItem item,
+) {
+  return billingNextActionRequirement(item).isAllowed(policy);
+}
+
+/// Approval required tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Approval required tab | navigate | read ∩ `billing:read` |
+/// | Search / filters / columns | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Close shift / Close day | delete | write ∩ `billing:write` |
+/// | Next action Approve | approve / update | write ∩ financial:approve |
+/// | Detail Approve / Reject | approve / update | write ∩ financial:approve |
+/// | Nested approval notes dialogs | update | write ∩ financial:approve |
+/// | View ledger | read | read ∩ |
+/// | Print / Download | export / read | document read ∩ |
+/// | Nested claims UI | navigate / write | claims nested read / write |
+abstract final class BillingApprovalRequiredAtomPermissions {
+  static const AccessRequirement tab = billingWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
+  static const AccessRequirement detail = billingWorkspaceReadRequirement;
+  static const AccessRequirement create = billingApprovalDecisionRequirement;
+  static const AccessRequirement update = billingApprovalDecisionRequirement;
+  static const AccessRequirement delete = billingWorkspaceWriteRequirement;
+  static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement approve = billingApprovalDecisionRequirement;
+  static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
+  static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+}
+
+/// Awaiting payment tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Awaiting payment tab | navigate | read ∩ `billing:read` |
+/// | Search / filters / columns | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Close shift / Close day | update | write ∩ `billing:write` |
+/// | Next action Receive payment | create / update | write ∩ |
+/// | Detail Receive payment / refund / adjust / void / send | CRUD | write ∩ |
+/// | Nested payment dialogs | create / update | write ∩ |
+/// | View ledger / financial panels | read | read ∩ |
+/// | Print / Download | export / read | document read ∩ |
+/// | Approve / claims nested | approve / write | approval ∩ / claims write |
+abstract final class BillingAwaitingPaymentAtomPermissions {
+  static const AccessRequirement tab = billingWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
+  static const AccessRequirement detail = billingWorkspaceReadRequirement;
+  static const AccessRequirement create = billingWorkspaceWriteRequirement;
+  static const AccessRequirement update = billingWorkspaceWriteRequirement;
+  static const AccessRequirement delete = billingWorkspaceWriteRequirement;
+  static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
+  static const AccessRequirement approve = billingApprovalDecisionRequirement;
+  static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
+  static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+  static const AccessRequirement document = billingWorkspaceReadRequirement;
+}
