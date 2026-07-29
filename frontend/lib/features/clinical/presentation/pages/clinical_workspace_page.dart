@@ -834,14 +834,20 @@ class _ClinicalQueueCell extends StatelessWidget {
   }
 }
 
-class _ClinicalStatusColumnCell extends StatelessWidget {
+class _ClinicalStatusColumnCell extends ConsumerWidget {
   const _ClinicalStatusColumnCell({required this.item});
 
   final ClinicalWorklistEntry item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool showUrgentChip =
+        item.isUrgent && ClinicalUrgentAtomPermissions.urgentChip.isAllowed(policy);
+    final bool showResultsReadyChip =
+        item.resultsReady &&
+        ClinicalResultsReadyAtomPermissions.resultsReadyChip.isAllowed(policy);
 
     return Wrap(
       spacing: Theme.of(context).spacing.xs,
@@ -849,7 +855,7 @@ class _ClinicalStatusColumnCell extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         AppWorkspaceStatusBadge(status: _entryStatus(item)),
-        if (item.isUrgent)
+        if (showUrgentChip)
           AppWorkspaceStatusBadge(
             status: AppWorkspaceStatus(
               label: l10n.clinicalUrgentSummaryLabel,
@@ -857,7 +863,7 @@ class _ClinicalStatusColumnCell extends StatelessWidget {
               icon: Icons.priority_high_outlined,
             ),
           ),
-        if (item.resultsReady)
+        if (showResultsReadyChip)
           AppWorkspaceStatusBadge(
             status: AppWorkspaceStatus(
               label: l10n.clinicalResultsReadySummaryLabel,
@@ -1372,6 +1378,9 @@ class _ClinicalDetailPanel extends ConsumerWidget {
           includeLaboratory: canViewLabResults,
           includeRadiology: canViewRadiologyResults,
         );
+    final bool showUrgentAlert =
+        entry.isUrgent &&
+        ClinicalUrgentAtomPermissions.urgentChip.isAllowed(accessPolicy);
     final List<Widget> sections = <Widget>[
       _ClinicalEncounterContextPanel(
         entry: entry,
@@ -1379,7 +1388,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         showPrimaryStatus: !_clinicalTriageShowsWorkflowStage(triageHandoff),
         omitSubtitleFields: true,
         alerts: <AppWorkspaceStatus>[
-          if (entry.isUrgent)
+          if (showUrgentAlert)
             AppWorkspaceStatus(
               label: l10n.clinicalUrgentSummaryLabel,
               tone: AppWorkspaceStatusTone.error,

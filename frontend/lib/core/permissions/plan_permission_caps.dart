@@ -10,11 +10,14 @@ abstract final class PlanPermissionCaps {
   static const Set<String> free = <String>{
     'patient:read',
     'patient:write',
+    'patients:read',
     'reports:read',
   };
 
   static const Set<String> basic = <String>{
     ...free,
+    'reception:read',
+    'opd:read',
     'clinical:read',
     'clinical:write',
     'emergency:read',
@@ -37,12 +40,21 @@ abstract final class PlanPermissionCaps {
     'radiology:write',
     'reports:write',
     'financial:approve',
+    'claims:read',
+    'ipd:read',
+    'rooms_beds:read',
+    'nursing:read',
+    'icu:read',
+    'discharge:read',
+    'physiotherapy:read',
+    'theater:read',
   };
 
   static const Set<String> pro = <String>{
     ...advanced,
     'operations:read',
     'operations:write',
+    'housekeeping:read',
     'hr:read',
     'hr:write',
     'unit:read',

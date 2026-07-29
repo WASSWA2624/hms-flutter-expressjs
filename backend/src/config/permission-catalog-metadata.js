@@ -8,13 +8,25 @@
 const DOMAIN_LABELS = Object.freeze({
   profile: 'Profile',
   patient: 'Patient',
+  patients: 'Patients Registry',
+  reception: 'Reception',
+  opd: 'OPD',
+  ipd: 'IPD',
+  rooms_beds: 'Rooms & Beds',
+  icu: 'ICU',
+  nursing: 'Nursing',
+  physiotherapy: 'Physiotherapy',
+  theater: 'Theater',
+  discharge: 'Discharge',
   clinical: 'Clinical',
   emergency: 'Emergency',
   lab: 'Lab',
   radiology: 'Radiology',
   pharmacy: 'Pharmacy',
   billing: 'Billing',
+  claims: 'Claims',
   operations: 'Operations',
+  housekeeping: 'Housekeeping',
   hr: 'HR',
   unit: 'Unit',
   roster: 'Roster',
@@ -32,6 +44,8 @@ const DOMAIN_LABELS = Object.freeze({
   facility: 'Facility',
   tenant: 'Tenant',
   system: 'System',
+  setup: 'Administrative Setup',
+  access_admin: 'Access Admin',
 });
 
 const ACTION_LABELS = Object.freeze({
@@ -69,6 +83,62 @@ const PERMISSION_OVERRIDES = Object.freeze({
   'financial:approve': {
     displayName: 'Financial — Approve',
     description: 'Approve financial transactions, adjustments, and billing exceptions.',
+  },
+  'reception:read': {
+    displayName: 'Reception — Read',
+    description: 'Open the Reception workspace menu and route.',
+  },
+  'patients:read': {
+    displayName: 'Patients Registry — Read',
+    description: 'Open the Patients registry menu and route.',
+  },
+  'opd:read': {
+    displayName: 'OPD — Read',
+    description: 'Open the OPD workspace menu and route.',
+  },
+  'ipd:read': {
+    displayName: 'IPD — Read',
+    description: 'Open the IPD workspace menu and route.',
+  },
+  'rooms_beds:read': {
+    displayName: 'Rooms & Beds — Read',
+    description: 'Open the Rooms & beds workspace menu and route.',
+  },
+  'icu:read': {
+    displayName: 'ICU — Read',
+    description: 'Open the ICU workspace menu and route.',
+  },
+  'nursing:read': {
+    displayName: 'Nursing — Read',
+    description: 'Open the Nursing workspace menu and route.',
+  },
+  'physiotherapy:read': {
+    displayName: 'Physiotherapy — Read',
+    description: 'Open the Physiotherapy workspace menu and route.',
+  },
+  'theater:read': {
+    displayName: 'Theater — Read',
+    description: 'Open the Theater workspace menu and route.',
+  },
+  'discharge:read': {
+    displayName: 'Discharge — Read',
+    description: 'Open the Discharge workspace menu and route.',
+  },
+  'claims:read': {
+    displayName: 'Claims — Read',
+    description: 'Open the Claims workspace menu and route.',
+  },
+  'housekeeping:read': {
+    displayName: 'Housekeeping — Read',
+    description: 'Open the Housekeeping workspace menu and route.',
+  },
+  'setup:read': {
+    displayName: 'Setup — Read',
+    description: 'Open the Administrative setup menu and route.',
+  },
+  'access_admin:read': {
+    displayName: 'Access Admin — Read',
+    description: 'Open the Access admin menu and route; assignable to roles and users.',
   },
   'evidence:export': {
     displayName: 'Evidence — Export',

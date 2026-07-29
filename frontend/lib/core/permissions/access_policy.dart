@@ -43,6 +43,21 @@ abstract final class AppPermissions {
   static const patientRead = AppPermission('patient:read');
   static const patientWrite = AppPermission('patient:write');
   static const patientDelete = AppPermission('patient:delete');
+  // Unique shell/route entry atoms (one key ↔ one menu destination).
+  static const receptionRead = AppPermission('reception:read');
+  static const patientsRead = AppPermission('patients:read');
+  static const opdRead = AppPermission('opd:read');
+  static const ipdRead = AppPermission('ipd:read');
+  static const roomsBedsRead = AppPermission('rooms_beds:read');
+  static const icuRead = AppPermission('icu:read');
+  static const nursingRead = AppPermission('nursing:read');
+  static const physiotherapyRead = AppPermission('physiotherapy:read');
+  static const theaterRead = AppPermission('theater:read');
+  static const dischargeRead = AppPermission('discharge:read');
+  static const claimsRead = AppPermission('claims:read');
+  static const housekeepingRead = AppPermission('housekeeping:read');
+  static const setupRead = AppPermission('setup:read');
+  static const accessAdminRead = AppPermission('access_admin:read');
   static const clinicalRead = AppPermission('clinical:read');
   static const clinicalWrite = AppPermission('clinical:write');
   static const emergencyRead = AppPermission('emergency:read');
@@ -113,6 +128,20 @@ abstract final class AppPermissions {
     patientRead,
     patientWrite,
     patientDelete,
+    receptionRead,
+    patientsRead,
+    opdRead,
+    ipdRead,
+    roomsBedsRead,
+    icuRead,
+    nursingRead,
+    physiotherapyRead,
+    theaterRead,
+    dischargeRead,
+    claimsRead,
+    housekeepingRead,
+    setupRead,
+    accessAdminRead,
     clinicalRead,
     clinicalWrite,
     emergencyRead,

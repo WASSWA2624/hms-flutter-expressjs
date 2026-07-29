@@ -567,23 +567,28 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
 ///
 /// Urgent outpatient encounters (`isUrgent` + non-terminal). Same encounter
 /// chrome as All / In consultation; distinctive surfaces are the Urgent tab
-/// count tone and Urgent summary chips on rows / detail.
+/// (danger count tone) and Urgent summary chips on rows / detail. Matrix
+/// nested write rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
+/// radiology / pharmacy / admission. Discharge Open billing uses
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Urgent tab | navigate | read ∩ `clinical:read` |
+/// | Urgent tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Urgent summary chip / badge | read | read ∩ |
+/// | Urgent summary chip / badge (row + detail) | read | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
-/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
@@ -605,6 +610,11 @@ abstract final class ClinicalUrgentAtomPermissions {
   static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
   static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
@@ -627,10 +637,10 @@ abstract final class ClinicalUrgentAtomPermissions {
   static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
   static const AccessRequirement requestRadiology =
       clinicalRadiologyOrderWriteRequirement;
-  static const AccessRequirement prescribe =
-      clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement requestAdmission =
       clinicalAdmissionWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement printSummary =
       clinicalWorkspaceReadRequirement;
   static const AccessRequirement nestedLabWrite =

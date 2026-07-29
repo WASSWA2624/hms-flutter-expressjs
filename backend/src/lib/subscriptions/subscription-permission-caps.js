@@ -8,11 +8,14 @@
 const FREE = Object.freeze([
   'patient:read',
   'patient:write',
+  'patients:read',
   'reports:read',
 ]);
 
 const BASIC = Object.freeze([
   ...FREE,
+  'reception:read',
+  'opd:read',
   'clinical:read',
   'clinical:write',
   'emergency:read',
@@ -35,12 +38,21 @@ const ADVANCED = Object.freeze([
   'radiology:write',
   'reports:write',
   'financial:approve',
+  'claims:read',
+  'ipd:read',
+  'rooms_beds:read',
+  'nursing:read',
+  'icu:read',
+  'discharge:read',
+  'physiotherapy:read',
+  'theater:read',
 ]);
 
 const PRO = Object.freeze([
   ...ADVANCED,
   'operations:read',
   'operations:write',
+  'housekeeping:read',
   'hr:read',
   'hr:write',
   'unit:read',
