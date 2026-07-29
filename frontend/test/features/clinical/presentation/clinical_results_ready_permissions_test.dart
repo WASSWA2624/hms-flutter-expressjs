@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -317,12 +319,40 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalResultsReadyAtomPermissions.nextActionReview,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.resultsReadyChip,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalResultsReadyAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
         ClinicalResultsReadyAtomPermissions.requestLab,
         same(clinicalLabOrderWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestRadiology,
+        same(clinicalRadiologyOrderWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.prescribe,
+        same(clinicalPharmacyOrderWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestAdmission,
+        same(clinicalAdmissionWriteRequirement),
       );
       expect(
         ClinicalResultsReadyAtomPermissions.labResultsPanel,
@@ -340,6 +370,28 @@ void main() {
         ClinicalResultsReadyAtomPermissions.dischargeFinancialRead,
         same(clinicalDischargeFinancialReadRequirement),
       );
+      expect(
+        clinicalSectionTabRequirement(ClinicalWorkspaceSection.resultsReady),
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        canViewClinicalResultsReady(
+          _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
+        ),
+        isTrue,
+      );
+      expect(
+        canViewClinicalLabResultsPanel(
+          _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
+        ),
+        isTrue,
+      );
+      expect(
+        canViewClinicalRadiologyResultsPanel(
+          _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
+        ),
+        isTrue,
+      );
     });
 
     test('∩ denial: missing clinical:read fails tab; write alone fails tab', () {
@@ -348,6 +400,12 @@ void main() {
       );
       expect(
         ClinicalResultsReadyAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.labResultsPanel.isAllowed(
+          writeOnly,
+        ),
         isFalse,
       );
       expect(
@@ -390,6 +448,126 @@ void main() {
         isFalse,
       );
     });
+
+    test('∪ allowance: pharmacy:write / radiology:write / operations:write', () {
+      final AppAccessPolicy pharmacyWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.pharmacyWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.prescribe.isAllowed(pharmacyWriter),
+        isTrue,
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.addNote.isAllowed(pharmacyWriter),
+        isFalse,
+      );
+
+      final AppAccessPolicy radiologyWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.radiologyWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'radiology-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestRadiology.isAllowed(
+          radiologyWriter,
+        ),
+        isTrue,
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestLab.isAllowed(
+          radiologyWriter,
+        ),
+        isFalse,
+      );
+
+      final AppAccessPolicy opsWriter = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestAdmission.isAllowed(
+          opsWriter,
+        ),
+        isTrue,
+      );
+    });
+
+    test('∪ allowance: system:admin satisfies clinical write source gate', () {
+      final AppAccessPolicy admin = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+      );
+      expect(ClinicalResultsReadyAtomPermissions.write.isAllowed(admin), isTrue);
+      expect(
+        ClinicalResultsReadyAtomPermissions.addNote.isAllowed(admin),
+        isTrue,
+      );
+      expect(ClinicalResultsReadyAtomPermissions.tab.isAllowed(admin), isFalse);
+    });
+
+    test('discharge financial read ∩ billing:read + billing-payments', () {
+      final AppAccessPolicy clinicalOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.dischargeFinancialRead.isAllowed(
+          clinicalOnly,
+        ),
+        isFalse,
+      );
+
+      final AppAccessPolicy withBilling = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.billingRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.dischargeFinancialRead.isAllowed(
+          withBilling,
+        ),
+        isTrue,
+      );
+    });
   });
 
   testWidgets(
@@ -423,6 +601,10 @@ void main() {
       expect(find.text('Print summary'), findsWidgets);
       expect(find.text('Results timeline'), findsWidgets);
       expect(find.text('Lab orders'), findsWidgets);
+      expect(find.text('Radiology orders'), findsWidgets);
+      expect(find.text('Hemoglobin'), findsWidgets);
+      expect(find.textContaining('13.5'), findsWidgets);
+      expect(find.textContaining('Chest X-Ray'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Edit order'), findsNothing);
       expect(find.byTooltip('Delete'), findsNothing);
@@ -594,6 +776,125 @@ void main() {
     },
   );
 
+  testWidgets(
+    'nested cross-module ∪: radiology:write shows Request radiology without clinical:write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy radiologyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.radiologyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'radiology-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestRadiology.isAllowed(
+          radiologyOnly,
+        ),
+        isTrue,
+      );
+
+      await _pumpResultsReadyTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: radiologyOnly,
+      );
+
+      await tester.tap(find.text('Results Ready Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request radiology'), findsWidgets);
+      expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Results timeline'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: pharmacy:write shows Prescribe without clinical:write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy pharmacyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.pharmacyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.prescribe.isAllowed(pharmacyOnly),
+        isTrue,
+      );
+
+      await _pumpResultsReadyTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: pharmacyOnly,
+      );
+
+      await tester.tap(find.text('Results Ready Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prescribe'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Request lab'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: operations:write shows Request admission',
+    (WidgetTester tester) async {
+      final AppAccessPolicy opsOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.operationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.requestAdmission.isAllowed(opsOnly),
+        isTrue,
+      );
+
+      await _pumpResultsReadyTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: opsOnly,
+      );
+
+      await tester.tap(find.text('Results Ready Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request admission'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+    },
+  );
+
   testWidgets('mobile viewport keeps authorized Results ready chrome', (
     WidgetTester tester,
   ) async {
@@ -738,6 +1039,108 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'authorized loading chrome remains observable on Results ready',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+
+      final Completer<Result<AppPage<ClinicalWorklistEntry>>> listCompleter =
+          Completer<Result<AppPage<ClinicalWorklistEntry>>>();
+      when(() => clinicalRepository.listEncounters(any())).thenAnswer(
+        (_) => listCompleter.future,
+      );
+      when(() => clinicalRepository.listAdmissions(any())).thenAnswer(
+        (invocation) async => Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[],
+            request:
+                (invocation.positionalArguments.single as ClinicalWorklistQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(clinicalRepository.loadReferenceData).thenAnswer(
+        (_) async =>
+            const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
+      );
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/clinical?section=results-ready',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/clinical',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ClinicalWorkspacePage(
+                  initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            ipdRepositoryProvider.overrideWithValue(ipdRepository),
+            followUpTabCountProvider.overrideWith(
+              (Ref ref, FollowUpWorklistScope scope) => null,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{AppPermissions.clinicalRead},
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Loading clinical workspace'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+
+      listCompleter.complete(
+        Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[_encounter],
+            request: const AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Results Ready Patient'), findsOneWidget);
     },
   );
 }

@@ -308,6 +308,10 @@ void main() {
         same(clinicalLabOrderWriteRequirement),
       );
       expect(
+        ClinicalWaitingReviewAtomPermissions.nestedLabWrite,
+        same(clinicalLabOrderWriteRequirement),
+      );
+      expect(
         ClinicalWaitingReviewAtomPermissions.requestRadiology,
         same(clinicalRadiologyOrderWriteRequirement),
       );
@@ -318,6 +322,10 @@ void main() {
       expect(
         ClinicalWaitingReviewAtomPermissions.requestAdmission,
         same(clinicalAdmissionWriteRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.printSummary,
+        same(clinicalWorkspaceReadRequirement),
       );
       expect(
         ClinicalWaitingReviewAtomPermissions.dischargeFinancialRead,
@@ -341,6 +349,7 @@ void main() {
         ClinicalWaitingReviewAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
       );
+      expect(canViewClinicalWaitingReview(writeOnly), isFalse);
       expect(
         ClinicalWaitingReviewAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
@@ -349,7 +358,6 @@ void main() {
         ClinicalWaitingReviewAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
-      expect(canViewClinicalWaitingReview(writeOnly), isFalse);
     });
 
     test('∪ allowance: lab:write satisfies nested lab order write', () {
@@ -371,6 +379,12 @@ void main() {
         isTrue,
       );
       expect(
+        ClinicalWaitingReviewAtomPermissions.nestedLabWrite.isAllowed(
+          labWriter,
+        ),
+        isTrue,
+      );
+      expect(
         ClinicalWaitingReviewAtomPermissions.addNote.isAllowed(labWriter),
         isFalse,
       );
@@ -380,6 +394,25 @@ void main() {
         ),
         isFalse,
       );
+    });
+
+    test('∪ write: system:admin satisfies encounter write (source gate)', () {
+      final AppAccessPolicy admin = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.write.isAllowed(admin),
+        isTrue,
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.addNote.isAllowed(admin),
+        isTrue,
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.tab.isAllowed(admin),
+        isFalse,
+      );
+      expect(canViewClinicalWaitingReview(admin), isFalse);
     });
 
     test('∪ allowance: pharmacy:write / operations:write nested writes', () {
@@ -506,6 +539,9 @@ void main() {
       expect(find.text('Waiting Review Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('Waiting review'), findsWidgets);
+      // Disposition next-action is write-gated; readers get Review encounter.
+      expect(find.text('Disposition'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Waiting Review Tab Patient'));
       await tester.pumpAndSettle();
@@ -530,6 +566,7 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
+      expect(canViewClinicalWaitingReview(writer), isTrue);
       expect(
         ClinicalWaitingReviewAtomPermissions.write.isAllowed(writer),
         isTrue,
@@ -547,6 +584,8 @@ void main() {
 
       expect(find.text('Waiting Review Tab Patient'), findsOneWidget);
       expect(find.text('Waiting review'), findsWidgets);
+      // WAITING_DOCTOR_REVIEW + OPD flow → write-gated disposition next action.
+      expect(find.text('Disposition'), findsWidgets);
 
       await tester.tap(find.text('Waiting Review Tab Patient'));
       await tester.pumpAndSettle();
@@ -557,6 +596,7 @@ void main() {
       expect(find.text('Prescribe'), findsWidgets);
       expect(find.text('Request admission'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
+      expect(find.byTooltip('Edit order'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -647,8 +687,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Request lab'), findsWidgets);
+      expect(find.byTooltip('Edit order'), findsWidgets);
       expect(find.text('Add clinical note'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
+      expect(find.text('Request radiology'), findsNothing);
+      expect(find.text('Request admission'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
     },
   );
@@ -672,6 +715,7 @@ void main() {
       expect(find.text('Request radiology'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Request admission'), findsNothing);
+      expect(find.byTooltip('Edit order'), findsNothing);
     },
   );
 

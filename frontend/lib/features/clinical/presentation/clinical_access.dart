@@ -414,18 +414,19 @@ abstract final class ClinicalInConsultationAtomPermissions {
 
 /// Results ready tab atom → permission mapping (inventory + matrix).
 ///
-/// Worklist `?section=results-ready`. Same outpatient encounter chrome as All;
-/// distinctive surfaces are results-ready chips, Results timeline, and lab /
-/// radiology order panels (prompt context: lab:read / radiology:read domain
-/// panels — matrix nested read _(n/a)_, so panel **read** stays ∩
-/// `clinical:read`; nested **writes** use prompt ∪ helpers).
+/// Worklist `?section=results-ready` (`screens/clinical.md`). Same outpatient
+/// encounter chrome as All; distinctive surfaces are results-ready chips,
+/// Results timeline, and lab / radiology order panels (prompt context names
+/// lab:read / radiology:read domain panels — matrix nested read _(n/a)_, so
+/// panel **read** stays ∩ `clinical:read`; nested **writes** use prompt ∪
+/// helpers: lab/radiology/pharmacy/admission).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Results ready tab | navigate | read ∩ `clinical:read` |
+/// | Results ready tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Results-ready summary chip / badge | read | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -446,8 +447,9 @@ abstract final class ClinicalInConsultationAtomPermissions {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
-/// admission rows document prompt ∪ (matrix nested write _(n/a)_).
+/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// `clinical:write` alone. Nested order / admission rows document prompt ∪
+/// (matrix nested write _(n/a)_).
 abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -457,9 +459,13 @@ abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
   static const AccessRequirement resultsReadyChip =
       clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
   static const AccessRequirement resultsTimeline =
       clinicalWorkspaceReadRequirement;
   /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a).
