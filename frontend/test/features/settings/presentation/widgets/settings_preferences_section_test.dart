@@ -17,45 +17,45 @@ import 'package:hosspi_hms/core/storage/preferences/app_preferences_store.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
-import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
-import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_preferences_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   testWidgets(
-    'accessibility strip is absent without profile:read (intersection denial)',
+    'preferences strip is absent without profile:read (intersection denial)',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
         permissions: const <AppPermission>[],
-        tab: 'accessibility',
+        tab: 'preferences',
       );
 
-      expect(find.text('Accessibility'), findsNothing);
-      expect(find.text('Reduce motion'), findsNothing);
-      expect(find.text('Bold text'), findsNothing);
-      expect(find.text('Text size'), findsNothing);
-      expect(find.byType(AppCheckboxField), findsNothing);
-      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsNothing);
+      expect(find.text('Preferences'), findsNothing);
+      expect(find.text('App theme'), findsNothing);
+      expect(find.text('System'), findsNothing);
+      expect(find.text('Light'), findsNothing);
+      expect(find.text('Dark'), findsNothing);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.text('Access denied'), findsNothing);
     },
   );
 
   testWidgets(
-    'profile:update alone does not reveal accessibility (intersection denial)',
+    'profile:update alone does not reveal preferences (intersection denial)',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
         permissions: <AppPermission>[AppPermissions.profileUpdate],
-        tab: 'accessibility',
+        tab: 'preferences',
       );
 
-      expect(find.text('Accessibility'), findsNothing);
-      expect(find.text('Reduce motion'), findsNothing);
-      expect(find.byType(AppCheckboxField), findsNothing);
+      expect(find.text('Preferences'), findsNothing);
+      expect(find.text('App theme'), findsNothing);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
     },
   );
 
@@ -65,29 +65,23 @@ void main() {
       await _pumpSettings(
         tester,
         permissions: <AppPermission>[AppPermissions.profileRead],
-        tab: 'accessibility',
-        accessibility: const AppAccessibilityPreferences(
-          reduceMotion: true,
-          boldText: false,
-          textScaleLevel: AppTextScaleLevel.large,
-        ),
+        tab: 'preferences',
+        themeMode: ThemeMode.dark,
       );
 
-      expect(find.text('Accessibility'), findsWidgets);
-      expect(find.text('Reduce motion'), findsOneWidget);
-      expect(find.text('Bold text'), findsOneWidget);
-      expect(find.text('Text size'), findsOneWidget);
-      expect(find.text('Yes'), findsOneWidget);
-      expect(find.text('No'), findsOneWidget);
-      expect(find.text('Large'), findsOneWidget);
-      expect(find.byType(AppCheckboxField), findsNothing);
-      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsNothing);
+      expect(find.text('Preferences'), findsWidgets);
+      expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
+      expect(find.text('Use the dark color scheme.'), findsOneWidget);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
+      expect(find.text('System'), findsNothing);
+      expect(find.text('Light'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'full intersection set mounts update controls',
+    'full intersection set mounts theme update controls',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -95,40 +89,37 @@ void main() {
           AppPermissions.profileRead,
           AppPermissions.profileUpdate,
         ],
-        tab: 'accessibility',
+        tab: 'preferences',
       );
 
-      expect(find.text('Accessibility'), findsWidgets);
-      expect(find.byType(AppCheckboxField), findsNWidgets(2));
-      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsOneWidget);
-      expect(find.text('Reduce motion'), findsOneWidget);
-      expect(find.text('Bold text'), findsOneWidget);
-      expect(find.text('Text size'), findsOneWidget);
-      // Read-only Yes/No summary is not used on the update path.
-      expect(find.text('Yes'), findsNothing);
-      expect(find.text('No'), findsNothing);
+      expect(find.text('Preferences'), findsWidgets);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
+      expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('System'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'facility:admin alone does not unlock accessibility create/delete UI',
+    'facility:admin alone does not unlock preferences create/delete UI',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
         permissions: <AppPermission>[AppPermissions.facilityAdmin],
-        tab: 'accessibility',
+        tab: 'preferences',
       );
 
       // Create/delete matrix keys map to facility:admin but this tab has no
       // create/delete atoms; without profile:read the section stays collapsed.
-      expect(find.text('Accessibility'), findsNothing);
+      expect(find.text('Preferences'), findsNothing);
       expect(find.text('Create'), findsNothing);
       expect(find.text('Delete'), findsNothing);
     },
   );
 
   testWidgets(
-    'no nested cross-module write entry points on accessibility',
+    'no nested cross-module write entry points on preferences',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -136,7 +127,7 @@ void main() {
           AppPermissions.profileRead,
           AppPermissions.profileUpdate,
         ],
-        tab: 'accessibility',
+        tab: 'preferences',
       );
 
       expect(find.text('Users and access'), findsNothing);
@@ -146,7 +137,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized update toggles reduce motion and syncs provider state',
+    'authorized theme change syncs provider and preference store',
     (WidgetTester tester) async {
       final _MemoryPreferencesStore store = _MemoryPreferencesStore();
       await _pumpSettings(
@@ -155,23 +146,16 @@ void main() {
           AppPermissions.profileRead,
           AppPermissions.profileUpdate,
         ],
-        tab: 'accessibility',
+        tab: 'preferences',
         store: store,
+        themeMode: ThemeMode.system,
       );
 
-      expect(find.byType(AppCheckboxField), findsNWidgets(2));
-      final Finder reduceMotionTile = find.widgetWithText(
-        CheckboxListTile,
-        'Reduce motion',
-      );
-      expect(reduceMotionTile, findsOneWidget);
-
-      await tester.tap(reduceMotionTile);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
+      await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();
 
-      final CheckboxListTile tile = tester.widget(reduceMotionTile);
-      expect(tile.value, isTrue);
-      expect(store.getBool(AppPreferenceKeys.reduceMotion), isTrue);
+      expect(store.getString(AppPreferenceKeys.themeMode), 'dark');
     },
   );
 
@@ -184,13 +168,12 @@ void main() {
           AppPermissions.profileRead,
           AppPermissions.profileUpdate,
         ],
-        tab: 'accessibility',
+        tab: 'preferences',
         store: _MemoryPreferencesStore(failPersist: true),
+        themeMode: ThemeMode.system,
       );
 
-      await tester.tap(
-        find.widgetWithText(CheckboxListTile, 'Reduce motion'),
-      );
+      await tester.tap(find.text('Light'));
       await tester.pumpAndSettle();
 
       expect(
@@ -201,7 +184,7 @@ void main() {
   );
 
   testWidgets(
-    'mobile light theme shows authorized accessibility update atoms',
+    'mobile light theme shows authorized preferences update atoms',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -209,42 +192,36 @@ void main() {
           AppPermissions.profileRead,
           AppPermissions.profileUpdate,
         ],
-        tab: 'accessibility',
+        tab: 'preferences',
         size: const Size(390, 844),
         themeMode: ThemeMode.light,
       );
 
-      expect(find.byType(AppCheckboxField), findsNWidgets(2));
-      expect(find.text('Reduce motion'), findsOneWidget);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
+      expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('System'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'desktop dark theme shows authorized accessibility read atoms',
+    'desktop dark theme shows authorized preferences read atoms',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
         permissions: <AppPermission>[AppPermissions.profileRead],
-        tab: 'accessibility',
+        tab: 'preferences',
         size: const Size(1280, 1200),
         themeMode: ThemeMode.dark,
-        accessibility: const AppAccessibilityPreferences(
-          reduceMotion: false,
-          boldText: true,
-          textScaleLevel: AppTextScaleLevel.extraLarge,
-        ),
       );
 
-      expect(find.text('Reduce motion'), findsOneWidget);
-      expect(find.text('Yes'), findsOneWidget);
-      expect(find.text('No'), findsOneWidget);
-      expect(find.text('Extra large'), findsOneWidget);
-      expect(find.byType(AppCheckboxField), findsNothing);
+      expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
     },
   );
 
   testWidgets(
-    'SettingsPage strip hides Accessibility without profile:read',
+    'SettingsPage strip hides Preferences without profile:read',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -259,45 +236,45 @@ void main() {
 
   test('feature helpers match AccessRequirement matrix keys', () {
     expect(
-      SettingsAccessibilityAtomPermissions.tab,
+      SettingsPreferencesAtomPermissions.tab,
       same(profileReadRequirement),
     );
     expect(
-      SettingsAccessibilityAtomPermissions.update,
+      SettingsPreferencesAtomPermissions.update,
       same(profileUpdateRequirement),
     );
     expect(
-      SettingsAccessibilityAtomPermissions.tab.allPermissions,
+      SettingsPreferencesAtomPermissions.tab.allPermissions,
       <AppPermission>[AppPermissions.profileRead],
     );
-    expect(SettingsAccessibilityAtomPermissions.tab.anyPermissions, isEmpty);
+    expect(SettingsPreferencesAtomPermissions.tab.anyPermissions, isEmpty);
     expect(
-      SettingsAccessibilityAtomPermissions.update.allPermissions,
+      SettingsPreferencesAtomPermissions.update.allPermissions,
       <AppPermission>[AppPermissions.profileUpdate],
     );
-    expect(SettingsAccessibilityAtomPermissions.update.anyPermissions, isEmpty);
+    expect(SettingsPreferencesAtomPermissions.update.anyPermissions, isEmpty);
     expect(
-      SettingsAccessibilityAtomPermissions.create.allPermissions,
+      SettingsPreferencesAtomPermissions.create.allPermissions,
       <AppPermission>[AppPermissions.facilityAdmin],
     );
     expect(
-      SettingsAccessibilityAtomPermissions.delete.allPermissions,
+      SettingsPreferencesAtomPermissions.delete.allPermissions,
       <AppPermission>[AppPermissions.facilityAdmin],
     );
     // Matrix has no union / nested cross-module rows for this tab.
     expect(
-      SettingsAccessibilityAtomPermissions.nestedRead.anyPermissions,
+      SettingsPreferencesAtomPermissions.nestedRead.anyPermissions,
       isEmpty,
     );
     expect(
-      SettingsAccessibilityAtomPermissions.nestedWrite,
+      SettingsPreferencesAtomPermissions.nestedWrite,
       same(profileUpdateRequirement),
     );
     // profile:* keys are core/platform (not plan-module mapped).
   });
 
   testWidgets(
-    'SettingsAccessibilitySection integrates AppAccessGate helpers',
+    'SettingsPreferencesSection integrates AppAccessGate helpers',
     (WidgetTester tester) async {
       await _pumpSection(
         tester,
@@ -307,8 +284,8 @@ void main() {
         ],
       );
 
-      expect(find.byType(SettingsAccessibilitySection), findsOneWidget);
-      expect(find.byType(AppCheckboxField), findsNWidgets(2));
+      expect(find.byType(SettingsPreferencesSection), findsOneWidget);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
     },
   );
 }
@@ -316,11 +293,9 @@ void main() {
 Future<void> _pumpSettings(
   WidgetTester tester, {
   required List<AppPermission> permissions,
-  String tab = 'accessibility',
+  String tab = 'preferences',
   Size size = const Size(900, 1000),
   ThemeMode themeMode = ThemeMode.light,
-  AppAccessibilityPreferences accessibility =
-      const AppAccessibilityPreferences(),
   _MemoryPreferencesStore? store,
 }) async {
   final AuthSession session = _session(permissions);
@@ -347,7 +322,7 @@ Future<void> _pumpSettings(
           AppStartupState(
             themeMode: themeMode,
             locale: const Locale('en'),
-            accessibility: accessibility,
+            accessibility: const AppAccessibilityPreferences(),
             storageReadiness: const StorageReadiness.ready(),
             sessionReadiness: SessionState.authenticated(session: session),
           ),
@@ -413,7 +388,7 @@ Future<void> _pumpSection(
         home: const Scaffold(
           body: SingleChildScrollView(
             padding: EdgeInsets.all(24),
-            child: SettingsAccessibilitySection(),
+            child: SettingsPreferencesSection(),
           ),
         ),
       ),

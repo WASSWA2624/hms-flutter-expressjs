@@ -279,12 +279,13 @@ abstract final class RoomsBedsAllBedsAtomPermissions {
 /// | Row select → detail | read | read ∪ |
 /// | Next action Assign | update | occupancy write ∪ |
 /// | Detail Reserve / status mutations | update | admin ∪ |
-/// | Detail Assign | update | occupancy write ∪ |
+/// | Detail Assign (when not board twin) | update | occupancy write ∪ |
 /// | Detail Open IPD admission | navigate | _(n/a)_ when admission linked |
+/// | Detail Open housekeeping / operations | navigate | _(n/a)_ under admin chrome |
 /// | Nested assign dialog | update | occupancy write ∪ |
 /// | Nested create room / bed forms | create | admin ∪ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
-/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read |
+/// | Route entry (catalog) | navigate | catalog ∩ rooms_beds:read + facility ABAC |
 /// | Route entry (AppRoutes ∪) | navigate | clinical\|operations\|admins |
 ///
 /// Matrix create ∩ `unit:manage` alone maps to source admin ∪ (see

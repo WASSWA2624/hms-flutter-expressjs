@@ -14,9 +14,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Administration boundaries tab (`/settings?tab=administration`).
 ///
-/// Inventory → matrix mapping (reuse [settingsAdministrationReadRequirement]
-/// and RouteAccessCatalog navigate sources; create/update/delete and nested
-/// cross-module write rows have no atoms on this navigate-only surface):
+/// Inventory → matrix mapping (see [SettingsAdministrationAtomPermissions]):
 ///
 /// | Atom | Intent | Gate |
 /// | --- | --- | --- |
@@ -24,9 +22,13 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 /// | Tenant and facility setup tile | navigate | catalog `setup:read` ∩ facility |
 /// | Subscription plans tile | navigate | catalog `subscriptions:read` ∩ module |
 /// | Users and access tile | navigate | catalog `access_admin:read` ∩ tenant |
+/// | Create / update / delete / nested write | — | matrix keys; **not mounted** |
 ///
-/// When Administrative setup workspace is visible, tenant/facility and access
-/// tiles are omitted here (owned by the workspace); only subscriptions remain.
+/// Denied destinations are filtered before build (no disabled tiles / no
+/// routine "no access" banners). When all destinations are filtered the
+/// section collapses to [SizedBox.shrink]. When Administrative setup workspace
+/// is visible, tenant/facility and access tiles are omitted here (owned by
+/// the workspace); only subscriptions remain.
 class SettingsAdministrationSection extends ConsumerWidget {
   const SettingsAdministrationSection({
     required this.settingsWorkspaceVisible,

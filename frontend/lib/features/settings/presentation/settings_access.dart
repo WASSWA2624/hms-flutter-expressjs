@@ -227,16 +227,31 @@ const AccessRequirement settingsAdministrationAccessAdminNavigateRequirement =
 
 /// Administration boundaries tab atom → permission mapping.
 ///
-/// | Atom | Intent | Gate |
+/// Settings accordion tab `administration` (`/settings?tab=administration`).
+/// View = `profile:read` ∩ admin ∪. Navigate tiles reuse [RouteAccessCatalog]
+/// sources (documented mapping vs tab admin ∪). Create / update / delete and
+/// nested cross-module write rows are matrix-documented but **not mounted**
+/// on this navigate-only surface. Admin / profile keys are core/platform;
+/// subscriptions navigate applies `subscription-controls` plan module +
+/// destination ABAC (setup: facility; access admin: tenant).
+///
+/// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Tab strip / section chrome | read | [tab] |
-/// | Tenant and facility setup tile | navigate | catalog setup |
-/// | Subscription plans tile | navigate | catalog subscriptions |
-/// | Users and access tile | navigate | catalog access admin |
-/// | Create / update / delete | — | matrix keys; **not mounted** |
+/// | Administration boundaries strip tab | navigate | read ∩∪ ([tab]) |
+/// | Section title / body chrome | read chrome | ([read] / [listChrome]) |
+/// | Tenant and facility setup tile | navigate | catalog setup ([tenantFacilitySetup]) |
+/// | Subscription plans tile | navigate | catalog subscriptions ([subscriptions]) |
+/// | Users and access tile | navigate | catalog access admin ([accessAdmin]) |
+/// | Loading / empty / error / retry | read chrome | ([loading] / [empty] / [retry]) — empty collapses when no destinations |
+/// | Create / update / delete affordances | create/update/delete | matrix ∩ — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Success / validation snackbars | visible feedback | N/A (no mutations on tab) |
+/// | Settings route entry | navigate | authenticated core ([routeEntry]) |
 abstract final class SettingsAdministrationAtomPermissions {
   static const AccessRequirement tab = settingsAdministrationReadRequirement;
   static const AccessRequirement read = settingsAdministrationReadRequirement;
+  static const AccessRequirement listChrome =
+      settingsAdministrationReadRequirement;
   static const AccessRequirement loading = settingsAdministrationReadRequirement;
   static const AccessRequirement empty = settingsAdministrationReadRequirement;
   static const AccessRequirement retry = settingsAdministrationReadRequirement;
@@ -256,6 +271,12 @@ abstract final class SettingsAdministrationAtomPermissions {
       settingsAdministrationReadRequirement;
   static const AccessRequirement nestedWrite =
       settingsAdministrationUpdateRequirement;
+  static const AccessRequirement success =
+      settingsAdministrationReadRequirement;
+  static const AccessRequirement validation =
+      settingsAdministrationReadRequirement;
+  static const AccessRequirement routeEntry =
+      RouteAccessCatalog.authenticatedCore;
 }
 
 /// True when the Administration boundaries strip may appear: tab read gate

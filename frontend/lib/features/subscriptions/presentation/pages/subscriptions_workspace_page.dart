@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/subscriptions_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -124,9 +125,9 @@ class _SubscriptionsWorkspacePageState
           return;
         }
         _openedRouteDetailSignature = signature;
-        final bool canWrite = ref
-            .read(appAccessPolicyProvider)
-            .grants(AppPermissions.subscriptionsWrite);
+        final bool canWrite = canWriteSubscriptions(
+          ref.read(appAccessPolicyProvider),
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -200,8 +201,11 @@ class _SubscriptionsWorkspaceContentState
   Widget build(BuildContext context) {
     final SubscriptionsWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = accessPolicy.grants(
-      AppPermissions.subscriptionsWrite,
+    final SubscriptionsCapabilities caps =
+        SubscriptionsCapabilities.fromPolicy(accessPolicy);
+    final bool canWrite = caps.canWrite;
+    final List<SubscriptionPanel> visiblePanels = subscriptionsAllowedPanels(
+      accessPolicy,
     );
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
@@ -210,9 +214,40 @@ class _SubscriptionsWorkspaceContentState
     final AppFailure? lastFailure = failure is AppFailure ? failure : null;
     final ThemeData theme = Theme.of(context);
 
+    if (visiblePanels.isEmpty) {
+      // No authorized panels — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+
+    final bool canShowCurrentPanel = visiblePanels.contains(state.query.panel);
+    if (!canShowCurrentPanel) {
+      final SubscriptionPanel? fallback = subscriptionsFallbackPanel(
+        accessPolicy,
+      );
+      if (fallback != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted ||
+              subscriptionsAllowedPanels(
+                ref.read(appAccessPolicyProvider),
+              ).contains(state.query.panel)) {
+            return;
+          }
+          final SubscriptionResource resource = _defaultResourceForPanel(
+            fallback,
+          );
+          unawaited(controller.applyPanel(fallback));
+          context.go(
+            state.query
+                .copyWith(panel: fallback, resource: resource)
+                .location(),
+          );
+        });
+      }
+    }
+
     final bool isOverview = state.query.panel == SubscriptionPanel.overview;
     final List<AppWorkspaceSummaryNotification> queueChips =
-        _queueSummaryChips(state);
+        _queueSummaryChips(state, accessPolicy);
     final List<SubscriptionResource> panelResources = _resourcesForPanel(
       state.query.panel,
     );
@@ -225,7 +260,10 @@ class _SubscriptionsWorkspaceContentState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _SubscriptionsPanelTabBar(
-              activePanel: state.query.panel,
+              visiblePanels: visiblePanels,
+              activePanel: canShowCurrentPanel
+                  ? state.query.panel
+                  : visiblePanels.first,
               isRefreshing: state.isRefreshing,
               onPanelSelected: (SubscriptionPanel panel) {
                 final SubscriptionResource resource =
@@ -237,57 +275,66 @@ class _SubscriptionsWorkspaceContentState
                       .location(),
                 );
               },
-              primaryAction: _primaryAction(context, canWrite, state),
+              primaryAction: canShowCurrentPanel
+                  ? _primaryAction(context, canWrite, state)
+                  : null,
             ),
             SizedBox(height: theme.spacing.sm),
-            if (queueChips.isNotEmpty) ...<Widget>[
-              _SubscriptionsQueueChipBar(chips: queueChips),
-              SizedBox(height: theme.spacing.md),
-            ],
-            if (lastFailure != null) ...<Widget>[
-              AppFailureStateView(
-                failure: lastFailure,
-                onRetry: controller.refresh,
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
-            if (isOverview)
-              _SubscriptionOverviewPanel(state: state, canWrite: canWrite)
-            else ...<Widget>[
-              if (panelResources.length > 1) ...<Widget>[
-                _SubscriptionsResourceTabBar(
-                  resources: panelResources,
-                  selected: state.query.resource,
-                  isRefreshing: state.isRefreshing,
-                  onResourceSelected: (SubscriptionResource resource) {
-                    unawaited(controller.applyResource(resource));
-                    context.go(
-                      state.query
-                          .copyWith(
-                            panel: resource.defaultPanel,
-                            resource: resource,
-                          )
-                          .location(),
+            if (canShowCurrentPanel) ...<Widget>[
+              if (queueChips.isNotEmpty) ...<Widget>[
+                _SubscriptionsQueueChipBar(chips: queueChips),
+                SizedBox(height: theme.spacing.md),
+              ],
+              if (lastFailure != null) ...<Widget>[
+                AppFailureStateView(
+                  failure: lastFailure,
+                  onRetry: controller.refresh,
+                ),
+                SizedBox(height: theme.spacing.md),
+              ],
+              if (isOverview)
+                _SubscriptionOverviewPanel(state: state, canWrite: canWrite)
+              else ...<Widget>[
+                if (panelResources.length > 1) ...<Widget>[
+                  _SubscriptionsResourceTabBar(
+                    resources: panelResources,
+                    selected: state.query.resource,
+                    isRefreshing: state.isRefreshing,
+                    onResourceSelected: (SubscriptionResource resource) {
+                      unawaited(controller.applyResource(resource));
+                      context.go(
+                        state.query
+                            .copyWith(
+                              panel: resource.defaultPanel,
+                              resource: resource,
+                            )
+                            .location(),
+                      );
+                    },
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                ],
+                _SubscriptionsWorklistPanel(
+                  state: state,
+                  searchController: _searchController,
+                  columnVisibilityController: _tableColumnController,
+                  onItemSelected: (SubscriptionItem item) {
+                    if (state.query.panel == SubscriptionPanel.billing &&
+                        !SubscriptionsInvoicesAtomPermissions.rowSelect
+                            .isAllowed(accessPolicy)) {
+                      return;
+                    }
+                    unawaited(
+                      _openSubscriptionDetailDialog(
+                        context,
+                        ref,
+                        item,
+                        canWrite,
+                      ),
                     );
                   },
                 ),
-                SizedBox(height: theme.spacing.sm),
               ],
-              _SubscriptionsWorklistPanel(
-                state: state,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                onItemSelected: (SubscriptionItem item) {
-                  unawaited(
-                    _openSubscriptionDetailDialog(
-                      context,
-                      ref,
-                      item,
-                      canWrite,
-                    ),
-                  );
-                },
-              ),
             ],
           ],
         ),
@@ -301,6 +348,10 @@ class _SubscriptionsWorkspaceContentState
     SubscriptionsWorkspaceState state,
   ) {
     if (!canWrite || state.query.panel == SubscriptionPanel.overview) {
+      return null;
+    }
+    // Invoices: no create primary — Collect/Retry live on detail only.
+    if (state.query.panel == SubscriptionPanel.billing) {
       return null;
     }
     return switch (state.query.resource) {
@@ -334,6 +385,7 @@ class _SubscriptionsWorkspaceContentState
 
   List<AppWorkspaceSummaryNotification> _queueSummaryChips(
     SubscriptionsWorkspaceState state,
+    AppAccessPolicy accessPolicy,
   ) {
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
@@ -349,6 +401,9 @@ class _SubscriptionsWorkspaceContentState
       final SubscriptionQueueSummary? queue = _queueById(state, queueId);
       final int count = state.summaryValue(metricId);
       if (count <= 0 || queue == null) {
+        return null;
+      }
+      if (!canViewSubscriptionsQueueChip(accessPolicy, queue)) {
         return null;
       }
       return AppWorkspaceSummaryNotification(
@@ -413,12 +468,14 @@ class _SubscriptionsWorkspaceContentState
 
 class _SubscriptionsPanelTabBar extends StatelessWidget {
   const _SubscriptionsPanelTabBar({
+    required this.visiblePanels,
     required this.activePanel,
     required this.isRefreshing,
     required this.onPanelSelected,
     this.primaryAction,
   });
 
+  final List<SubscriptionPanel> visiblePanels;
   final SubscriptionPanel activePanel;
   final bool isRefreshing;
   final ValueChanged<SubscriptionPanel> onPanelSelected;
@@ -428,7 +485,7 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppTabStrip(
       tabs: <AppTabItem>[
-        for (final SubscriptionPanel panel in SubscriptionPanel.values)
+        for (final SubscriptionPanel panel in visiblePanels)
           AppTabItem(
             id: panel.serverValue,
             icon: _panelIcon(panel),
@@ -439,8 +496,7 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
       onTabTapped: isRefreshing
           ? (_) {}
           : (String tabId) {
-              for (final SubscriptionPanel panel
-                  in SubscriptionPanel.values) {
+              for (final SubscriptionPanel panel in visiblePanels) {
                 if (panel.serverValue == tabId) {
                   onPanelSelected(panel);
                   return;
@@ -1623,6 +1679,8 @@ class _DetailActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteSubscriptions(accessPolicy);
     final List<Widget> actions = <Widget>[
       if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
         AppButton.secondary(
@@ -1686,20 +1744,25 @@ class _DetailActions extends ConsumerWidget {
           onPressed: () =>
               _showLicenseDialog(context, ref, state, initial: item),
         ),
-      if (item.resource == SubscriptionResource.subscriptionInvoices) ...<Widget>[
-        if (item.canCollectInvoice)
+      if (item.resource == SubscriptionResource.subscriptionInvoices &&
+          canWrite) ...<Widget>[
+        if (item.canCollectInvoice &&
+            SubscriptionsInvoicesAtomPermissions.collect.isAllowed(
+              accessPolicy,
+            ))
           AppButton.secondary(
             label: _SubscriptionsText.collectInvoice,
             leadingIcon: Icons.payments_outlined,
             enabled: !state.isSaving,
             onPressed: () => _showCollectInvoiceDialog(context, ref),
           ),
-        AppButton.secondary(
-          label: _SubscriptionsText.retryInvoice,
-          leadingIcon: Icons.replay_outlined,
-          enabled: !state.isSaving,
-          onPressed: () => _showRetryInvoiceDialog(context, ref),
-        ),
+        if (SubscriptionsInvoicesAtomPermissions.retry.isAllowed(accessPolicy))
+          AppButton.secondary(
+            label: _SubscriptionsText.retryInvoice,
+            leadingIcon: Icons.replay_outlined,
+            enabled: !state.isSaving,
+            onPressed: () => _showRetryInvoiceDialog(context, ref),
+          ),
       ],
     ];
     if (actions.isEmpty) {

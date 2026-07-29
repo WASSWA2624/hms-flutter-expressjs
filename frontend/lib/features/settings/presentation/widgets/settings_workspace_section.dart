@@ -7,7 +7,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
@@ -40,29 +39,19 @@ class SettingsWorkspaceSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    if (!settingsWorkspaceSectionVisible(accessPolicy)) {
+      return const SizedBox.shrink();
+    }
+
     final AsyncValue<Result<SettingsWorkspaceState>> workspaceState = ref.watch(
       settingsWorkspaceControllerProvider,
     );
 
-    return AppAccessGate(
-      requirement: SettingsWorkspaceAtomPermissions.adminGate,
-      deniedBuilder: (BuildContext context, AppAccessPolicy policy) {
-        if (!SettingsWorkspaceAtomPermissions.hrGate.isAllowed(policy)) {
-          return const SizedBox.shrink();
-        }
-        return _SettingsWorkspaceBody(
-          workspaceState: workspaceState,
-          onRefresh: () => unawaited(
-            ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
-          ),
-        );
-      },
-      child: _SettingsWorkspaceBody(
-        workspaceState: workspaceState,
-        onRefresh: () => unawaited(
-          ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
-        ),
+    return _SettingsWorkspaceBody(
+      workspaceState: workspaceState,
+      onRefresh: () => unawaited(
+        ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
       ),
     );
   }
@@ -374,19 +363,23 @@ class _SettingsModuleGroupsPanel extends StatelessWidget {
   }
 }
 
-class _SettingsModuleRow extends StatelessWidget {
+class _SettingsModuleRow extends ConsumerWidget {
   const _SettingsModuleRow({required this.module});
 
   final SettingsModuleItem module;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final String? route = _mappedSettingsRoute(module.route);
     final String? createRoute = _mappedSettingsRoute(module.createRoute);
     final bool canOpen = route != null && module.canRead;
-    final bool canCreate = createRoute != null && module.canCreate;
+    final bool canCreate =
+        createRoute != null &&
+        module.canCreate &&
+        settingsWorkspaceCanCreate(accessPolicy);
     final String reason = _moduleReason(l10n, module);
 
     return AppContentPanel(

@@ -5,8 +5,6 @@ import 'package:hosspi_hms/app/accessibility/app_accessibility_controller.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
@@ -111,7 +109,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeMode themeMode = ref.watch(appThemeModeProvider);
     final bool reduceMotion = ref.watch(
       appAccessibilityProvider.select(
         (prefs) => prefs.reduceMotion,
@@ -123,6 +120,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     final bool showConfiguration =
         settingsConfigurationSectionVisible(accessPolicy);
+    final bool showPreferences =
+        SettingsPreferencesAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccount =
         SettingsAccountAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccessibility =
@@ -133,44 +132,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
 
     final List<_AccordionEntry> sections = <_AccordionEntry>[
-      _AccordionEntry(
-        id: 'preferences',
-        icon: Icons.palette_outlined,
-        title: l10n.settingsPreferencesSectionTitle,
-        body: l10n.settingsPreferencesSectionBody,
-        builder: (_) => Column(
-          children: <Widget>[
-            AppRadioGroup<ThemeMode>(
-              labelText: l10n.settingsThemeModeFieldLabel,
-              value: themeMode,
-              options: <AppRadioOption<ThemeMode>>[
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.system,
-                  label: l10n.settingsThemeModeSystem,
-                  description: l10n.settingsThemeModeSystemDescription,
-                  secondary: const Icon(Icons.brightness_auto_outlined),
-                ),
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.light,
-                  label: l10n.settingsThemeModeLight,
-                  description: l10n.settingsThemeModeLightDescription,
-                  secondary: const Icon(Icons.light_mode_outlined),
-                ),
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.dark,
-                  label: l10n.settingsThemeModeDark,
-                  description: l10n.settingsThemeModeDarkDescription,
-                  secondary: const Icon(Icons.dark_mode_outlined),
-                ),
-              ],
-              onChanged: (ThemeMode? mode) {
-                if (mode == null) return;
-                unawaited(_setThemeMode(context, ref, mode));
-              },
-            ),
-          ],
+      if (showPreferences)
+        _AccordionEntry(
+          id: 'preferences',
+          icon: Icons.palette_outlined,
+          title: l10n.settingsPreferencesSectionTitle,
+          body: l10n.settingsPreferencesSectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsPreferencesSection(),
         ),
-      ),
       if (showAccessibility)
         _AccordionEntry(
           id: 'accessibility',
@@ -438,31 +408,3 @@ class _AccordionPanelContent extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Access requirements (configuration — workspace / administration live in
-// [settings_access.dart])
-// ---------------------------------------------------------------------------
-
-const AccessRequirement _configTenantRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
-  requiresTenantContext: true,
-);
-
-const AccessRequirement _configFacilityRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-  ],
-  requiresFacilityContext: true,
-);

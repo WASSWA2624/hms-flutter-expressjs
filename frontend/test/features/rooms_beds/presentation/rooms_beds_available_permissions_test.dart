@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -305,8 +306,98 @@ void main() {
         same(RouteAccessCatalog.roomsBedsEntry),
       );
       expect(
+        RoomsBedsAvailableAtomPermissions.catalogEntry,
+        same(RouteAccessCatalog.roomsBedsEntry),
+      );
+      expect(
         roomsBedsSectionTabRequirement(RoomsBedsSection.available),
         same(RoomsBedsAvailableAtomPermissions.tab),
+      );
+    });
+
+    test('inventory atoms map to matrix verbs (read ∪ / admin ∪ / occupancy ∪)', () {
+      expect(RoomsBedsAvailableAtomPermissions.tab, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.listChrome, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.search, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.filters, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.columns, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.settings, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.pagination, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.empty, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.loading, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.retry, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.success, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.validation, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.rowSelect, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.detail, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.nextAction, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.create, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.update, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.delete, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.createBed, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.createRoom, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.manageCatalog, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.markAvailable, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.assign, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.nestedWrite, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.nestedOccupancyWrite, isNotNull);
+      expect(RoomsBedsAvailableAtomPermissions.navigateCrossModule, isNotNull);
+      expect(
+        RoomsBedsAvailableAtomPermissions.navigateCrossModule.isEmpty,
+        isTrue,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.nestedWrite,
+        same(RoomsBedsAvailableAtomPermissions.manageCatalog),
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.createBed.anyPermissions,
+        contains(AppPermissions.unitManage),
+      );
+    });
+
+    test('nested cross-module matrix rows are n/a (empty navigate gate)', () {
+      expect(
+        RoomsBedsAvailableAtomPermissions.navigateCrossModule.isEmpty,
+        isTrue,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.openOperations.isEmpty,
+        isTrue,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.openHousekeeping.isEmpty,
+        isTrue,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.navigateCrossModule.isAllowed(
+          _clinicalReader(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('catalog entry ABAC: facility context required (∩ rooms_beds:read)', () {
+      final AppAccessPolicy withFacility = _policyFor(
+        permissions: <AppPermission>{AppPermissions.roomsBedsRead},
+      );
+      final AppAccessPolicy withoutFacility = _policyFor(
+        permissions: <AppPermission>{AppPermissions.roomsBedsRead},
+        facilityId: null,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.catalogEntry.isAllowed(withFacility),
+        isTrue,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.catalogEntry.isAllowed(
+          withoutFacility,
+        ),
+        isFalse,
+      );
+      expect(
+        RoomsBedsAvailableAtomPermissions.catalogEntry.requiresFacilityContext,
+        isTrue,
       );
     });
 
@@ -497,6 +588,122 @@ void main() {
       expect(find.text('No beds found'), findsOneWidget);
     });
 
+    testWidgets('error/retry state remains for authorized reader', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+      ).thenAnswer(
+        (_) async => const Result<FacilitySetupSnapshot>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      await _pumpAvailable(
+        tester,
+        repository: repository,
+        accessPolicy: _clinicalReader(),
+        stubRepository: false,
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(_toolbarPrimary('Create bed'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets(
+      'admin detail: Reserve on available bed; Assign twin omitted from detail',
+      (WidgetTester tester) async {
+        await _pumpAvailable(
+          tester,
+          repository: repository,
+          accessPolicy: _facilityAdmin(),
+        );
+
+        await tester.tap(find.text('Bed A1').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Reserve'),
+          ),
+          findsOneWidget,
+        );
+        // Assign is board next-action for available — not a detail twin for admin
+        // without occupancy write.
+        expect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Assign bed'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('reader detail omits status and occupancy write actions', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAvailable(
+        tester,
+        repository: repository,
+        accessPolicy: _clinicalReader(),
+      );
+
+      await tester.tap(find.text('Bed A1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Reserve'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Assign bed'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Create bed'),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'nested occupancy write absent without clinical/operations write',
+      (WidgetTester tester) async {
+        await _pumpAvailable(
+          tester,
+          repository: repository,
+          accessPolicy: _facilityAdmin(),
+        );
+
+        expect(find.text('Assign bed'), findsNothing);
+        expect(find.bySemanticsLabel('Assign bed'), findsNothing);
+
+        await tester.tap(find.text('Bed A1').first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Assign bed'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('mobile viewport: Assign next-action for occupancy writer', (
       WidgetTester tester,
     ) async {
@@ -525,6 +732,23 @@ void main() {
       expect(_toolbarPrimary('Create bed'), findsOneWidget);
       expect(find.text('Bed A1'), findsWidgets);
     });
+
+    testWidgets(
+      'light theme desktop: operations:read ∪ shows Available without writes',
+      (WidgetTester tester) async {
+        await _pumpAvailable(
+          tester,
+          repository: repository,
+          accessPolicy: _operationsReader(),
+          themeMode: ThemeMode.light,
+        );
+
+        expect(find.text('Available'), findsWidgets);
+        expect(find.text('Bed A1'), findsWidgets);
+        expect(_toolbarPrimary('Create bed'), findsNothing);
+        expect(find.bySemanticsLabel('Assign bed'), findsNothing);
+      },
+    );
 
     testWidgets('post-mutation sync: assign dialog mounts for writer', (
       WidgetTester tester,

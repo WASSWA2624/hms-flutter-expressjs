@@ -121,13 +121,23 @@ void main() {
   ) async {
     final AuthSession session = AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
+      permissions: <AppPermission>{
+        AppPermissions.profileRead,
+        AppPermissions.profileUpdate,
+      },
+      isAuthorizationHydrated: true,
       user: const AuthUserProfile(
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
         roles: <String>['FACILITY_USER'],
       ),
     );
-    final AppAccessPolicy policy = AppAccessPolicy.fromSession(session);
+    final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+      session,
+    ).copyWithPermissions(<AppPermission>[
+      AppPermissions.profileRead,
+      AppPermissions.profileUpdate,
+    ]);
 
     await pumpLocalizedWidget(
       tester,
@@ -135,7 +145,7 @@ void main() {
         overrides: [
           appAccessPolicyProvider.overrideWithValue(policy),
           initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
+            SessionState.authenticated(session: session),
           ),
         ],
         child: const SettingsPage(initialQuery: SettingsPageQuery()),
@@ -188,8 +198,8 @@ void main() {
 
       expect(find.text('Account and security'), findsNothing);
       expect(find.text('Accessibility'), findsNothing);
-      expect(find.text('Preferences'), findsWidgets);
-      expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('Preferences'), findsNothing);
+      expect(find.text('App theme'), findsNothing);
     },
   );
 
