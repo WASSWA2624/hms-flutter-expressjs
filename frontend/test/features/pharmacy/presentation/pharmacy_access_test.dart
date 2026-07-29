@@ -49,6 +49,14 @@ AppAccessPolicy _policyFor({
   );
 }
 
+const PharmacyOrderItem _readyLine = PharmacyOrderItem(
+  id: 'item-ready-1',
+  drugDisplayName: 'Paracetamol',
+  quantityPrescribed: 24,
+  quantityDispensed: 0,
+  quantityRemaining: 24,
+);
+
 const PharmacyOrder _readyOrder = PharmacyOrder(
   id: 'order-ready',
   displayId: 'PHO-READY',
@@ -57,6 +65,48 @@ const PharmacyOrder _readyOrder = PharmacyOrder(
   status: 'ORDERED',
   itemCount: 1,
   quantityPrescribedTotal: 24,
+  items: <PharmacyOrderItem>[_readyLine],
+);
+
+const PharmacyOrderItem _partialLine = PharmacyOrderItem(
+  id: 'item-partial-1',
+  drugDisplayName: 'Amoxicillin',
+  quantityPrescribed: 20,
+  quantityDispensed: 8,
+  quantityRemaining: 12,
+);
+
+const PharmacyOrder _partialOrder = PharmacyOrder(
+  id: 'order-partial',
+  displayId: 'PHO-PARTIAL',
+  patientDisplayName: 'Amina Partial',
+  location: 'OUTPATIENT',
+  status: 'PARTIALLY_DISPENSED',
+  itemCount: 1,
+  quantityPrescribedTotal: 20,
+  quantityDispensedTotal: 8,
+  items: <PharmacyOrderItem>[_partialLine],
+);
+
+const PharmacyOrder _unpaidPartialOrder = PharmacyOrder(
+  id: 'order-partial-pay',
+  displayId: 'PHO-PARTIAL-PAY',
+  patientDisplayName: 'Omar Partial Pay',
+  location: 'OUTPATIENT',
+  status: 'PARTIALLY_DISPENSED',
+  paymentStatus: 'UNPAID',
+  itemCount: 1,
+  quantityPrescribedTotal: 10,
+  quantityDispensedTotal: 4,
+  items: <PharmacyOrderItem>[
+    PharmacyOrderItem(
+      id: 'item-partial-pay-1',
+      drugDisplayName: 'Ibuprofen',
+      quantityPrescribed: 10,
+      quantityDispensed: 4,
+      quantityRemaining: 6,
+    ),
+  ],
 );
 
 const PharmacyOrder _unpaidOrder = PharmacyOrder(
@@ -87,7 +137,21 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   ) async {
     final PharmacyWorkbenchQuery query =
         invocation.positionalArguments.single as PharmacyWorkbenchQuery;
-    List<PharmacyOrder> items = <PharmacyOrder>[_readyOrder, _unpaidOrder];
+    List<PharmacyOrder> items = <PharmacyOrder>[
+      _readyOrder,
+      _unpaidOrder,
+      _partialOrder,
+      _unpaidPartialOrder,
+    ];
+    final String? status = query.status?.trim().toUpperCase();
+    if (status != null && status.isNotEmpty) {
+      items = items
+          .where(
+            (PharmacyOrder order) =>
+                (order.status ?? '').toUpperCase() == status,
+          )
+          .toList(growable: false);
+    }
     if (query.pendingPayment == true) {
       items = items
           .where((PharmacyOrder order) => order.requiresPaymentBeforeDispense)
@@ -96,25 +160,47 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
     return Result<PharmacyWorkbench>.success(
       PharmacyWorkbench(
         summary: const PharmacyWorkbenchSummary(
-          orderedQueue: 1,
-          pendingPaymentQueue: 1,
-          totalOrders: 2,
+          orderedQueue: 2,
+          partiallyDispensedQueue: 2,
+          pendingPaymentQueue: 2,
+          dispensedOrders: 0,
+          totalOrders: 4,
         ),
         orders: AppPage<PharmacyOrder>(
           items: items,
           request: query.pageRequest,
+          totalItemCount: items.length,
         ),
       ),
     );
   });
-  when(() => repository.loadOrderWorkflow(any())).thenAnswer(
-    (_) async => Result<PharmacyOrderWorkflow>.success(
+  when(() => repository.loadOrderWorkflow(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final String orderId = invocation.positionalArguments.single as String;
+    final PharmacyOrder order =
+        <PharmacyOrder>[
+          _readyOrder,
+          _unpaidOrder,
+          _partialOrder,
+          _unpaidPartialOrder,
+        ].firstWhere(
+          (PharmacyOrder item) =>
+              item.id == orderId || item.displayId == orderId,
+          orElse: () => _readyOrder,
+        );
+    return Result<PharmacyOrderWorkflow>.success(
       PharmacyOrderWorkflow(
-        order: _readyOrder,
-        nextActions: const PharmacyNextActions(canCancel: true),
+        order: order,
+        nextActions: PharmacyNextActions(
+          canPrepareDispense: order.canPrepareDispense,
+          canAttestDispense: order.canAttestDispense,
+          canCancel: order.canCancel,
+          canReturn: order.canReturn,
+        ),
       ),
-    ),
-  );
+    );
+  });
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(
       AppPage<PharmacyDrug>(items: <PharmacyDrug>[], request: AppPageRequest()),
@@ -148,10 +234,18 @@ Finder _toolbarPrimary(String label) => find.descendant(
   matching: find.text(label),
 );
 
-Future<void> _pumpAllOrdersWorkspace(
+/// Next-action / quick-action labels live on [AppButton]; table column headers
+/// such as the Partial/Ready "Dispense" progress column do not.
+Finder _actionLabel(String label) => find.descendant(
+  of: find.byType(AppButton),
+  matching: find.text(label),
+);
+
+Future<void> _pumpPharmacyWorkspace(
   WidgetTester tester, {
   required _MockPharmacyRepository repository,
   required AppAccessPolicy accessPolicy,
+  required String initialLocation,
   Size physicalSize = const Size(1280, 800),
   ThemeMode themeMode = ThemeMode.light,
 }) async {
@@ -165,7 +259,7 @@ Future<void> _pumpAllOrdersWorkspace(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/pharmacy?section=all',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/pharmacy',
@@ -203,6 +297,93 @@ Future<void> _pumpAllOrdersWorkspace(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpPartialWorkspace(
+  WidgetTester tester, {
+  required _MockPharmacyRepository repository,
+  required AppAccessPolicy accessPolicy,
+  Size physicalSize = const Size(1280, 800),
+  ThemeMode themeMode = ThemeMode.light,
+}) {
+  return _pumpPharmacyWorkspace(
+    tester,
+    repository: repository,
+    accessPolicy: accessPolicy,
+    physicalSize: physicalSize,
+    themeMode: themeMode,
+    initialLocation: '/pharmacy?section=partial',
+  );
+}
+
+Future<void> _pumpPendingPaymentWorkspace(
+  WidgetTester tester, {
+  required _MockPharmacyRepository repository,
+  required AppAccessPolicy accessPolicy,
+  Size physicalSize = const Size(1280, 800),
+  ThemeMode themeMode = ThemeMode.light,
+}) {
+  return _pumpPharmacyWorkspace(
+    tester,
+    repository: repository,
+    accessPolicy: accessPolicy,
+    physicalSize: physicalSize,
+    themeMode: themeMode,
+    initialLocation: '/pharmacy?section=pending-payment',
+  );
+}
+
+List<AppModuleEntitlement> get _pharmacyAndBillingModules =>
+    const <AppModuleEntitlement>[
+      AppModuleEntitlement(
+        code: pharmacyDispensingModule,
+        licenseStatus: 'ACTIVE',
+      ),
+      AppModuleEntitlement(
+        code: billingPaymentsModule,
+        licenseStatus: 'ACTIVE',
+      ),
+    ];
+
+AppAccessPolicy _pendingPaymentTabReadPolicy() {
+  return _policyFor(
+    permissions: <AppPermission>{
+      AppPermissions.pharmacyRead,
+      AppPermissions.billingRead,
+    },
+    modules: _pharmacyAndBillingModules,
+  );
+}
+
+AppAccessPolicy _pendingPaymentWriterPolicy({
+  bool includeBillingWrite = false,
+}) {
+  return _policyFor(
+    permissions: <AppPermission>{
+      AppPermissions.pharmacyRead,
+      AppPermissions.billingRead,
+      AppPermissions.pharmacyWrite,
+      if (includeBillingWrite) AppPermissions.billingWrite,
+    },
+    modules: _pharmacyAndBillingModules,
+  );
+}
+
+Future<void> _pumpReadyWorkspace(
+  WidgetTester tester, {
+  required _MockPharmacyRepository repository,
+  required AppAccessPolicy accessPolicy,
+  Size physicalSize = const Size(1280, 800),
+  ThemeMode themeMode = ThemeMode.light,
+}) {
+  return _pumpPharmacyWorkspace(
+    tester,
+    repository: repository,
+    accessPolicy: accessPolicy,
+    physicalSize: physicalSize,
+    themeMode: themeMode,
+    initialLocation: '/pharmacy?section=ready',
+  );
 }
 
 void main() {
@@ -405,74 +586,75 @@ void main() {
       expect(canEnterPharmacyWorkspace(writerNoModule), isFalse);
     });
 
-    test('All orders atom map reuses feature *Requirement helpers', () {
+    test('Ready atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.tab,
+          PharmacyReadyAtomPermissions.tab,
           pharmacyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.write,
+          PharmacyReadyAtomPermissions.write,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.dispense,
+          PharmacyReadyAtomPermissions.dispense,
           pharmacyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.recordPayment,
+          PharmacyReadyAtomPermissions.recordPayment,
           pharmacyRecordPaymentRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogWrite,
+          PharmacyReadyAtomPermissions.catalogWrite,
           pharmacyCatalogWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.routeEntry,
+          PharmacyReadyAtomPermissions.routeEntry,
           pharmacyWorkspaceRouteEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.catalogEntry,
-          pharmacyWorkspaceCatalogEntryRequirement,
+          PharmacyReadyAtomPermissions.printInstructions,
+          pharmacyPrintInstructionsRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PharmacyAllOrdersAtomPermissions.controlledDrugAudit,
+          PharmacyReadyAtomPermissions.controlledDrugAudit,
           pharmacyControlledDrugAuditRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          pharmacySectionTabRequirement(PharmacyDeskSection.allOrders),
-          PharmacyAllOrdersAtomPermissions.tab,
+          pharmacySectionTabRequirement(PharmacyDeskSection.queue),
+          PharmacyReadyAtomPermissions.tab,
         ),
         isTrue,
       );
     });
 
     test(
-      'All orders tab present for pharmacy:read; operations-only keeps sections',
+      'Ready tab present for pharmacy:read; operations-only keeps Ready '
+      '(route ∪ without pharmacy:read)',
       () {
         final AppAccessPolicy pharmacyReader = _policyFor(
           permissions: <AppPermission>{AppPermissions.pharmacyRead},
@@ -492,21 +674,278 @@ void main() {
           roles: const <String>['OPERATIONS'],
         );
 
-        expect(canViewPharmacyAllOrdersTab(pharmacyReader), isTrue);
-        expect(canViewPharmacyAllOrdersTab(operationsReader), isFalse);
+        expect(canViewPharmacyReadyTab(pharmacyReader), isTrue);
+        expect(canViewPharmacyReadyTab(operationsReader), isFalse);
         expect(
           pharmacyAllowedSections(pharmacyReader),
-          contains(PharmacyDeskSection.allOrders),
+          contains(PharmacyDeskSection.queue),
         );
         expect(
           pharmacyAllowedSections(operationsReader),
-          contains(PharmacyDeskSection.allOrders),
+          contains(PharmacyDeskSection.queue),
         );
+        expect(canBrowsePharmacyCatalog(operationsReader), isFalse);
         expect(canWritePharmacy(operationsReader), isFalse);
         expect(
           pharmacyFallbackSection(pharmacyReader),
           PharmacyDeskSection.queue,
         );
+      },
+    );
+
+    test('Partial atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.tab,
+          pharmacyWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.write,
+          pharmacyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.dispense,
+          pharmacyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.recordPayment,
+          pharmacyRecordPaymentRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.catalogWrite,
+          pharmacyCatalogWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.routeEntry,
+          pharmacyWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.controlledDrugAudit,
+          pharmacyControlledDrugAuditRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          pharmacySectionTabRequirement(PharmacyDeskSection.inProgress),
+          PharmacyPartialAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'Partial tab present for pharmacy:read; operations-only keeps Partial '
+      '(route ∪ without pharmacy:read)',
+      () {
+        final AppAccessPolicy pharmacyReader = _policyFor(
+          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+        );
+        final AppAccessPolicy operationsReader = _policyFor(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['OPERATIONS'],
+        );
+
+        expect(canViewPharmacyPartialTab(pharmacyReader), isTrue);
+        expect(canViewPharmacyPartialTab(operationsReader), isFalse);
+        expect(
+          pharmacyAllowedSections(pharmacyReader),
+          contains(PharmacyDeskSection.inProgress),
+        );
+        expect(
+          pharmacyAllowedSections(operationsReader),
+          contains(PharmacyDeskSection.inProgress),
+        );
+        expect(canBrowsePharmacyCatalog(operationsReader), isFalse);
+        expect(canWritePharmacy(operationsReader), isFalse);
+      },
+    );
+
+    test(
+      'Pending payment tab read ∩ needs pharmacy:read + billing:read '
+      '(intersection denial without billing:read)',
+      () {
+        final AppAccessPolicy pharmacyOnly = _policyFor(
+          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+        );
+        final AppAccessPolicy billingOnly = _policyFor(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          modules: _pharmacyAndBillingModules,
+        );
+        final AppAccessPolicy both = _pendingPaymentTabReadPolicy();
+        final AppAccessPolicy bothMissingBillingModule = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyRead,
+            AppPermissions.billingRead,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+
+        expect(canViewPharmacyPendingPaymentTab(pharmacyOnly), isFalse);
+        expect(canViewPharmacyPendingPaymentTab(billingOnly), isFalse);
+        expect(canViewPharmacyPendingPaymentTab(both), isTrue);
+        expect(
+          canViewPharmacyPendingPaymentTab(bothMissingBillingModule),
+          isFalse,
+        );
+        expect(
+          pharmacyAllowedSections(pharmacyOnly),
+          isNot(contains(PharmacyDeskSection.pendingPayment)),
+        );
+        expect(
+          pharmacyAllowedSections(both),
+          contains(PharmacyDeskSection.pendingPayment),
+        );
+      },
+    );
+
+    test('Pending payment atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.tab,
+          pharmacyPendingPaymentReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.write,
+          pharmacyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.dispense,
+          pharmacyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.recordPayment,
+          pharmacyRecordPaymentRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.billingStatus,
+          pharmacyBillingStatusReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.nestedBillingWrite,
+          pharmacyRecordPaymentRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.catalogWrite,
+          pharmacyCatalogWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.routeEntry,
+          pharmacyWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.controlledDrugAudit,
+          pharmacyControlledDrugAuditRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          pharmacySectionTabRequirement(PharmacyDeskSection.pendingPayment),
+          PharmacyPendingPaymentAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'Pending payment route ∪ allows pharmacy:read | operations:read; '
+      'catalog write ∪ allows pharmacy:write | operations:write',
+      () {
+        final AppAccessPolicy operationsReader = _policyFor(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['OPERATIONS'],
+        );
+        final AppAccessPolicy operationsWriter = _policyFor(
+          permissions: <AppPermission>{AppPermissions.operationsWrite},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: pharmacyDispensingModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['OPERATIONS'],
+        );
+
+        expect(canEnterPharmacyWorkspace(operationsReader), isTrue);
+        expect(canViewPharmacyPendingPaymentTab(operationsReader), isFalse);
+        expect(
+          pharmacyAllowedSections(operationsReader),
+          contains(PharmacyDeskSection.pendingPayment),
+        );
+        expect(canWritePharmacyCatalog(operationsWriter), isTrue);
+        expect(canWritePharmacy(operationsWriter), isFalse);
       },
     );
   });
@@ -526,7 +965,7 @@ void main() {
     });
 
     testWidgets(
-      'read-only All orders: catalog present; cancel next-action absent',
+      'read-only All orders: catalog present; dispense next-action absent',
       (WidgetTester tester) async {
         await _pumpAllOrdersWorkspace(
           tester,
@@ -538,13 +977,13 @@ void main() {
 
         expect(_tab('All orders'), findsOneWidget);
         expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-        expect(find.text('Cancel order'), findsNothing);
+        expect(_actionLabel('Dispense'), findsNothing);
         expect(find.text('Noah Ready'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'writer All orders: cancel next-action present (authorized mutate)',
+      'writer All orders: dispense next-action present (authorized mutate)',
       (WidgetTester tester) async {
         await _pumpAllOrdersWorkspace(
           tester,
@@ -558,7 +997,7 @@ void main() {
         );
 
         expect(_tab('All orders'), findsOneWidget);
-        expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
+        expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
       },
     );
 
@@ -577,7 +1016,7 @@ void main() {
         );
 
         expect(find.text('Cathy Payment'), findsOneWidget);
-        expect(find.text('Record payment'), findsNothing);
+        expect(_actionLabel('Record payment'), findsNothing);
       },
     );
 
@@ -606,7 +1045,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Record payment'), findsAtLeastNWidgets(1));
+        expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
       },
     );
 
@@ -652,7 +1091,518 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(DataTable), findsNothing);
       expect(find.textContaining('Noah'), findsAtLeastNWidgets(1));
-      expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
+      expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('pharmacy Partial UI permission enforcement', () {
+    late _MockPharmacyRepository repository;
+
+    setUp(() {
+      repository = _MockPharmacyRepository();
+    });
+
+    setUpAll(() {
+      registerFallbackValue(const PharmacyWorkbenchQuery());
+      registerFallbackValue(const PharmacyDrugQuery());
+      registerFallbackValue(const PharmacyFormularyQuery());
+      registerFallbackValue(const PharmacyInventoryStockQuery());
+    });
+
+    testWidgets(
+      'read-only Partial: catalog present; dispense next-action absent '
+      '(write ∩ denial)',
+      (WidgetTester tester) async {
+        await _pumpPartialWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          ),
+        );
+
+        expect(_tab('Partial'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
+        expect(_actionLabel('Dispense'), findsNothing);
+        expect(_actionLabel('Cancel order'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'writer Partial: dispense next-action present (authorized mutate)',
+      (WidgetTester tester) async {
+        await _pumpPartialWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        expect(_tab('Partial'), findsOneWidget);
+        expect(find.text('Amina Partial'), findsOneWidget);
+        expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'Partial payment next-action absent without billing:write '
+      '(nested cross-module)',
+      (WidgetTester tester) async {
+        await _pumpPartialWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        expect(find.text('Omar Partial Pay'), findsOneWidget);
+        expect(_actionLabel('Record payment'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Partial payment next-action present with billing:write ∩ '
+      'billing-payments',
+      (WidgetTester tester) async {
+        await _pumpPartialWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.billingWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: billingPaymentsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'Partial catalog browse absent for operations-only route ∪ '
+      '(no pharmacy:read)',
+      (WidgetTester tester) async {
+        await _pumpPartialWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.operationsRead},
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'facilities-maintenance',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            roles: const <String>['OPERATIONS'],
+          ),
+        );
+
+        expect(_tab('Partial'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_actionLabel('Dispense'), findsNothing);
+      },
+    );
+
+    testWidgets('Partial desktop light theme keeps authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPartialWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          },
+        ),
+        physicalSize: const Size(1280, 800),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byType(DataTable), findsOneWidget);
+      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('Partial mobile dark theme keeps authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPartialWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          },
+        ),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byType(DataTable), findsNothing);
+      expect(find.textContaining('Amina'), findsAtLeastNWidgets(1));
+      expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('pharmacy Ready UI permission enforcement', () {
+    late _MockPharmacyRepository repository;
+
+    setUp(() {
+      repository = _MockPharmacyRepository();
+    });
+
+    setUpAll(() {
+      registerFallbackValue(const PharmacyWorkbenchQuery());
+      registerFallbackValue(const PharmacyDrugQuery());
+      registerFallbackValue(const PharmacyFormularyQuery());
+      registerFallbackValue(const PharmacyInventoryStockQuery());
+    });
+
+    testWidgets(
+      'read-only Ready: catalog present; dispense next-action absent '
+      '(∩ pharmacy:write denial)',
+      (WidgetTester tester) async {
+        await _pumpReadyWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          ),
+        );
+
+        expect(_tab('Ready'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(_actionLabel('Dispense'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'writer Ready: dispense next-action present (authorized mutate)',
+      (WidgetTester tester) async {
+        await _pumpReadyWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        expect(_tab('Ready'), findsOneWidget);
+        expect(find.text('Noah Ready'), findsOneWidget);
+        expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'Ready payment next-action absent without billing:write '
+      '(nested cross-module)',
+      (WidgetTester tester) async {
+        await _pumpReadyWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        expect(find.text('Cathy Payment'), findsOneWidget);
+        expect(_actionLabel('Record payment'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Ready payment next-action present with billing:write ∩ '
+      'billing-payments (union-of-atoms via nested ∩)',
+      (WidgetTester tester) async {
+        await _pumpReadyWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.billingWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: billingPaymentsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'Ready catalog browse absent for operations-only route ∪ '
+      '(∪ allowance keeps tab; ∩ pharmacy:read strips catalog)',
+      (WidgetTester tester) async {
+        await _pumpReadyWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.operationsRead},
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'facilities-maintenance',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            roles: const <String>['OPERATIONS'],
+          ),
+        );
+
+        expect(_tab('Ready'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_actionLabel('Dispense'), findsNothing);
+      },
+    );
+
+    testWidgets('Ready desktop light theme keeps authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpReadyWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          },
+        ),
+        physicalSize: const Size(1280, 800),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byType(DataTable), findsOneWidget);
+      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('Ready mobile dark theme keeps authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpReadyWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          },
+        ),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byType(DataTable), findsNothing);
+      expect(find.textContaining('Noah'), findsAtLeastNWidgets(1));
+      expect(_actionLabel('Dispense'), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('pharmacy Pending payment UI permission enforcement', () {
+    late _MockPharmacyRepository repository;
+
+    setUp(() {
+      repository = _MockPharmacyRepository();
+    });
+
+    setUpAll(() {
+      registerFallbackValue(const PharmacyWorkbenchQuery());
+      registerFallbackValue(const PharmacyDrugQuery());
+      registerFallbackValue(const PharmacyFormularyQuery());
+      registerFallbackValue(const PharmacyInventoryStockQuery());
+    });
+
+    testWidgets(
+      'pharmacy:read without billing:read hides Pending payment tab '
+      '(read ∩ denial) and falls back',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          ),
+        );
+
+        expect(_tab('Pending payment'), findsNothing);
+        expect(_tab('Ready'), findsOneWidget);
+        expect(find.text('Cathy Payment'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Pending payment tab + Payment column present with pharmacy:read ∩ '
+      'billing:read; write next-actions absent for readers',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _pendingPaymentTabReadPolicy(),
+        );
+
+        expect(_tab('Pending payment'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(find.text('Cathy Payment'), findsOneWidget);
+        expect(find.text('Payment'), findsAtLeastNWidgets(1));
+        expect(_actionLabel('Record payment'), findsNothing);
+        expect(_actionLabel('Dispense'), findsNothing);
+        expect(_actionLabel('Cancel order'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Pending payment Record payment absent without billing:write '
+      '(nested cross-module write ∩ denial)',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _pendingPaymentWriterPolicy(),
+        );
+
+        expect(_tab('Pending payment'), findsOneWidget);
+        expect(find.text('Cathy Payment'), findsOneWidget);
+        expect(_actionLabel('Record payment'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Pending payment Record payment present with billing:write ∩ '
+      'billing-payments (authorized nested write)',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _pendingPaymentWriterPolicy(includeBillingWrite: true),
+        );
+
+        expect(find.text('Cathy Payment'), findsOneWidget);
+        expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'Pending payment catalog browse absent for operations-only route ∪ '
+      '(no pharmacy:read)',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _policyFor(
+            permissions: <AppPermission>{AppPermissions.operationsRead},
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'facilities-maintenance',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            roles: const <String>['OPERATIONS'],
+          ),
+        );
+
+        expect(_tab('Pending payment'), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        expect(_actionLabel('Record payment'), findsNothing);
+        expect(find.text('Payment'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Pending payment desktop light theme keeps authorized chrome',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentWorkspace(
+          tester,
+          repository: repository,
+          accessPolicy: _pendingPaymentWriterPolicy(includeBillingWrite: true),
+          physicalSize: const Size(1280, 800),
+          themeMode: ThemeMode.light,
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(AppTabStrip), findsOneWidget);
+        expect(find.byType(DataTable), findsOneWidget);
+        expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+        expect(find.text('Payment'), findsAtLeastNWidgets(1));
+        expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets('Pending payment mobile dark theme keeps authorized chrome', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPendingPaymentWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _pendingPaymentWriterPolicy(includeBillingWrite: true),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byType(DataTable), findsNothing);
+      expect(find.textContaining('Cathy'), findsAtLeastNWidgets(1));
+      expect(_actionLabel('Record payment'), findsAtLeastNWidgets(1));
     });
   });
 }

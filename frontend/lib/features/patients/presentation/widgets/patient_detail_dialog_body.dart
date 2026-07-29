@@ -74,25 +74,34 @@ class PatientDetailDialog extends ConsumerWidget {
 
   AccessRequirement get _editRequirement {
     return switch (registrySection) {
-      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.edit,
+      PatientRegistrySection.all => PatientAllAtomPermissions.edit,
       PatientRegistrySection.active => PatientActiveAtomPermissions.edit,
-      _ => patientRegistryWriteRequirement,
+      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.edit,
+      PatientRegistrySection.balanceDue =>
+        PatientBalanceDueAtomPermissions.edit,
+      null => patientRegistryWriteRequirement,
     };
   }
 
   AccessRequirement get _deleteRequirement {
     return switch (registrySection) {
-      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.delete,
+      PatientRegistrySection.all => PatientAllAtomPermissions.delete,
       PatientRegistrySection.active => PatientActiveAtomPermissions.delete,
-      _ => patientRegistryDeleteRequirement,
+      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.delete,
+      PatientRegistrySection.balanceDue =>
+        PatientBalanceDueAtomPermissions.delete,
+      null => patientRegistryDeleteRequirement,
     };
   }
 
   AccessRequirement get _writeRequirement {
     return switch (registrySection) {
-      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.write,
+      PatientRegistrySection.all => PatientAllAtomPermissions.write,
       PatientRegistrySection.active => PatientActiveAtomPermissions.write,
-      _ => patientRegistryWriteRequirement,
+      PatientRegistrySection.admitted => PatientAdmittedAtomPermissions.write,
+      PatientRegistrySection.balanceDue =>
+        PatientBalanceDueAtomPermissions.write,
+      null => patientRegistryWriteRequirement,
     };
   }
 
@@ -236,6 +245,7 @@ class PatientDetailDialog extends ConsumerWidget {
             if (!hideClinicalSections) ...<Widget>[
               PatientDetailActiveWorkPanel(
                 detail: detail,
+                applyAdmittedNestedReadFilter: isAdmittedSection,
                 onContinue: (PatientActiveWorkItem item) =>
                     _continuePatientActiveWork(context, ref, detail, item),
               ),

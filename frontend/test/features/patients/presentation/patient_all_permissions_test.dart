@@ -437,6 +437,16 @@ void main() {
             AppPermissions.patientRead,
             AppPermissions.clinicalRead,
           },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: patientRegistryModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
         );
         expect(
           PatientAllAtomPermissions.viewActiveOpd.isAllowed(clinicalOnly),
@@ -520,6 +530,16 @@ void main() {
           AppPermissions.patientRead,
           AppPermissions.clinicalWrite,
         },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: patientRegistryModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       expect(
         PatientAllAtomPermissions.labOrder.isAllowed(clinicalNoLab),
@@ -534,6 +554,10 @@ void main() {
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
             code: patientRegistryModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
             licenseStatus: 'ACTIVE',
           ),
           AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
@@ -579,6 +603,26 @@ void main() {
       );
     });
 
+    test('nextActionComplete ∩ requires patient:write', () {
+      expect(
+        PatientAllAtomPermissions.nextActionComplete.isAllowed(_readPolicy()),
+        isFalse,
+      );
+      expect(
+        PatientAllAtomPermissions.nextActionComplete.isAllowed(
+          _readWritePolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          patientRegistryNextActionCompleteAtom(PatientRegistrySection.all),
+          PatientAllAtomPermissions.nextActionComplete,
+        ),
+        isTrue,
+      );
+    });
+
     test('canViewPatientAllTab mirrors tab atom', () {
       expect(canViewPatientAllTab(_readPolicy()), isTrue);
       expect(canViewPatientAllTab(_fullCrudPolicy()), isTrue);
@@ -612,7 +656,7 @@ void main() {
     });
 
     testWidgets(
-      'intersection denial: patient:read alone omits Register/Edit/Complete',
+      'intersection denial: patient:read alone omits Register/Edit/Delete',
       (WidgetTester tester) async {
         await _pumpAllTab(
           tester,
@@ -625,7 +669,8 @@ void main() {
 
         expect(find.byTooltip('Register patient'), findsNothing);
         expect(find.text('Duplicate review'), findsNothing);
-        expect(find.text('Complete record'), findsOneWidget);
+        expect(find.text('Ina Incomplete'), findsWidgets);
+        // Complete-record control must not mount as an actionable GestureDetector.
         expect(
           find.descendant(
             of: find.byType(GestureDetector),
@@ -749,8 +794,8 @@ void main() {
           PatientTimelineItem(
             id: 'lab-1',
             resource: 'lab_order',
-            status: 'ORDERED',
             title: 'CBC',
+            subtitle: 'ORDERED',
             occurredAt: DateTime(2026, 7, 1),
           ),
         ],

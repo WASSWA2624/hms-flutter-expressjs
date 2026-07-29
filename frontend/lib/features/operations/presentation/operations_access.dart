@@ -457,17 +457,20 @@ abstract final class OperationsCompletedAtomPermissions {
 
 /// Assets tab atom → permission mapping (inventory + matrix).
 ///
+/// Target: `/operations?section=assets`.
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Assets tab | navigate | read ∩ `operations:read` |
 /// | Create request (tab primary) | create | write ∩ `operations:write` |
 /// | Report summary | read | report ∩ `operations:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Status filter (asset status) | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
 /// | Row select → asset detail | read | read ∩ |
 /// | Asset detail identity tiles (no asset writes) | read | read ∩ |
-/// | Nested create-request dialog | create | write ∩ |
+/// | Nested create-request dialog | create | write ∩ ([createRequest]) |
 /// | Asset create / update / delete UI | create / update / delete | write ∩ (no UI today) |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (deep link) | navigate | entry ∪ read\|write |
@@ -497,9 +500,8 @@ abstract final class OperationsAssetsAtomPermissions {
   static const AccessRequirement update = operationsWorkspaceWriteRequirement;
   static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
   static const AccessRequirement write = operationsWorkspaceWriteRequirement;
-  static const AccessRequirement mutate = operationsWorkspaceWriteRequirement;
-  static const AccessRequirement createRequest =
-      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement mutate = operationsMutationRequirement;
+  static const AccessRequirement createRequest = operationsWriteRequirement;
   static const AccessRequirement createAsset =
       operationsWorkspaceWriteRequirement;
   static const AccessRequirement updateAsset =

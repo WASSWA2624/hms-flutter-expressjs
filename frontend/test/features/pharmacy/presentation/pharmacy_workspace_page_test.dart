@@ -109,13 +109,19 @@ AppAccessPolicy _pharmacyWritePolicy() {
       permissions: <AppPermission>{
         AppPermissions.pharmacyRead,
         AppPermissions.pharmacyWrite,
+        AppPermissions.billingRead,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
           code: 'pharmacy-dispensing',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'billing-payments',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -125,13 +131,21 @@ AppAccessPolicy _pharmacyReadOnlyPolicy() {
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(roles: <String>['VIEWER']),
-      permissions: <AppPermission>{AppPermissions.pharmacyRead},
+      permissions: <AppPermission>{
+        AppPermissions.pharmacyRead,
+        AppPermissions.billingRead,
+      },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
           code: 'pharmacy-dispensing',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'billing-payments',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }

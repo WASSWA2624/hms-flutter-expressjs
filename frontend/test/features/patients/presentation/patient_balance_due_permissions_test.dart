@@ -62,6 +62,12 @@ const Patient _incompletePatient = Patient(
   firstName: 'Ina',
   lastName: 'Incomplete',
   requiresCompletion: true,
+  currentVisit: PatientVisitContext(
+    kind: 'invoice',
+    publicId: 'INV-INC-1',
+    status: 'UNPAID',
+    title: 'Outstanding balance',
+  ),
 );
 
 const Patient _idlePatient = Patient(
@@ -137,6 +143,7 @@ AppAccessPolicy _fullCrudPolicy() {
       AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(
         code: 'inpatient-bed-management',
         licenseStatus: 'ACTIVE',
@@ -646,6 +653,10 @@ void main() {
               code: 'billing-payments',
               licenseStatus: 'ACTIVE',
             ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
             AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
           ],
         );
@@ -749,7 +760,8 @@ void main() {
         );
 
         expect(find.byTooltip('Register patient'), findsNothing);
-        expect(find.text('Complete record'), findsOneWidget);
+        expect(find.text('Ina Incomplete'), findsWidgets);
+        expect(find.text('Complete record'), findsWidgets);
         expect(
           find.descendant(
             of: find.byType(GestureDetector),

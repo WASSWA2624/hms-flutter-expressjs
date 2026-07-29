@@ -67,6 +67,22 @@ const Patient _idlePatient = Patient(
   primaryIdentifierValue: 'MRN-IDLE-1',
 );
 
+const Patient _incompleteActivePatient = Patient(
+  id: 'patient-inc-act-1',
+  publicId: 'PAT-INC-ACT-1',
+  tenantId: 'tenant-1',
+  facilityId: 'facility-1',
+  firstName: 'Ina',
+  lastName: 'Incomplete',
+  requiresCompletion: true,
+  currentVisit: PatientVisitContext(
+    kind: 'encounter',
+    publicId: 'OPD-INC-1',
+    status: 'IN_PROGRESS',
+    title: 'OPD encounter',
+  ),
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -587,6 +603,57 @@ void main() {
         contains(AppPermissions.patientRead),
       );
     });
+
+    test('nextActionComplete ∩ requires patient:write', () {
+      expect(
+        PatientActiveAtomPermissions.nextActionComplete.isAllowed(_readPolicy()),
+        isFalse,
+      );
+      expect(
+        PatientActiveAtomPermissions.nextActionComplete.isAllowed(
+          _readWritePolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          patientRegistryNextActionCompleteAtom(PatientRegistrySection.active),
+          PatientActiveAtomPermissions.nextActionComplete,
+        ),
+        isTrue,
+      );
+    });
+
+    test('canViewPatientActiveTab mirrors tab atom', () {
+      expect(canViewPatientActiveTab(_readPolicy()), isTrue);
+      expect(canViewPatientActiveTab(_fullCrudPolicy()), isTrue);
+    });
+
+    test(
+      'subscription/ABAC strip: patient:read without patient-registry denies tab',
+      () {
+        final AppAccessPolicy noModule = _policy(
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          modules: const <AppModuleEntitlement>[],
+        );
+        expect(PatientActiveAtomPermissions.tab.isAllowed(noModule), isFalse);
+        expect(canViewPatientActiveTab(noModule), isFalse);
+        expect(
+          patientRegistryAllowedSections(noModule),
+          isEmpty,
+        );
+      },
+    );
+
+    test('ABAC: missing facility context still allows tab when not required', () {
+      // Active tab read does not set requiresFacilityContext; facility ABAC
+      // is enforced by backend + session hydration, not this atom.
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{AppPermissions.patientRead},
+        facilityId: null,
+      );
+      expect(PatientActiveAtomPermissions.tab.isAllowed(noFacility), isTrue);
+    });
   });
 
   group('Active tab UI authorization (AC2-AC5)', () {
@@ -620,14 +687,23 @@ void main() {
           patientRepository: patientRepository,
           opdRepository: opdRepository,
           policy: _readPolicy(),
-          patient: _idlePatient,
-          items: const <Patient>[_idlePatient],
+          patient: _incompleteActivePatient,
+          items: const <Patient>[_incompleteActivePatient],
         );
 
         expect(find.byTooltip('Register patient'), findsNothing);
         expect(find.text('Duplicate review'), findsNothing);
+        expect(find.text('Ina Incomplete'), findsWidgets);
+        // Unauthorized complete control is label-only (no GestureDetector).
+        expect(
+          find.descendant(
+            of: find.byType(GestureDetector),
+            matching: find.text('Complete record'),
+          ),
+          findsNothing,
+        );
 
-        await tester.tap(find.text('Ida Idle').first);
+        await tester.tap(find.text('Ina Incomplete').first);
         await tester.pumpAndSettle();
 
         expect(find.text('Edit'), findsNothing);

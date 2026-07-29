@@ -64,10 +64,24 @@ const AccessRequirement pharmacyRecordPaymentRequirement =
     billingWorkspaceWriteRequirement;
 
 /// Pending-payment / billing status visibility (matrix narrative ∩
-/// `billing:read`). All-orders status column stays pharmacy-read; payment
-/// column on Pending payment uses this when gated.
+/// `billing:read`). All-orders / Ready / Partial / Completed status columns
+/// stay pharmacy-read; the Payment column on Pending payment (and optional
+/// Payment picker columns) uses this when gated.
 const AccessRequirement pharmacyBillingStatusReadRequirement =
     billingWorkspaceReadRequirement;
+
+/// Pending payment tab view / read UI (matrix ∩ `pharmacy:read` +
+/// `billing:read`).
+///
+/// Plan modules resolve via [PermissionModuleMap] to `pharmacy-dispensing` and
+/// `billing-payments`.
+const AccessRequirement pharmacyPendingPaymentReadRequirement =
+    AccessRequirement(
+      allPermissions: <AppPermission>[
+        AppPermissions.pharmacyRead,
+        AppPermissions.billingRead,
+      ],
+    );
 
 /// Controlled-drug audit panels (matrix narrative ∩ `pharmacy:read` +
 /// `compliance:read`). No dedicated chrome on All orders today; documented for
@@ -107,15 +121,17 @@ const AccessRequirement pharmacyWorkspaceEntryRequirement =
 
 /// Per-section tab strip gate.
 ///
-/// Worklist tabs (Ready / Partial / Pending payment / Completed / All orders)
-/// share ∩ `pharmacy:read` + `pharmacy-dispensing`.
+/// Ready / Partial / Completed / All orders: ∩ `pharmacy:read` +
+/// `pharmacy-dispensing`. Pending payment: ∩ `pharmacy:read` + `billing:read`
+/// (modules via [PermissionModuleMap]).
 AccessRequirement pharmacySectionTabRequirement(PharmacyDeskSection section) {
   return switch (section) {
+    PharmacyDeskSection.queue => PharmacyReadyAtomPermissions.tab,
     PharmacyDeskSection.allOrders => PharmacyAllOrdersAtomPermissions.tab,
     PharmacyDeskSection.inProgress => PharmacyPartialAtomPermissions.tab,
     PharmacyDeskSection.completed => PharmacyCompletedAtomPermissions.tab,
-    PharmacyDeskSection.queue ||
-    PharmacyDeskSection.pendingPayment => pharmacyWorkspaceReadRequirement,
+    PharmacyDeskSection.pendingPayment =>
+      PharmacyPendingPaymentAtomPermissions.tab,
   };
 }
 
@@ -147,6 +163,10 @@ bool canReadPharmacyBillingStatus(AppAccessPolicy policy) {
   return pharmacyBillingStatusReadRequirement.isAllowed(policy);
 }
 
+bool canViewPharmacyPendingPaymentTab(AppAccessPolicy policy) {
+  return PharmacyPendingPaymentAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canViewPharmacyControlledDrugAudit(AppAccessPolicy policy) {
   return pharmacyControlledDrugAuditRequirement.isAllowed(policy);
 }
@@ -161,7 +181,8 @@ bool canViewPharmacySection(AppAccessPolicy policy, PharmacyDeskSection section)
 
 /// Sections the user may open.
 ///
-/// Matrix tab read is ∩ `pharmacy:read`. Route-only operations readers
+/// Most worklist tabs use ∩ `pharmacy:read`. Pending payment uses ∩
+/// `pharmacy:read` + `billing:read`. Route-only operations readers
 /// (`operations:read` without `pharmacy:read`) may still open `/pharmacy` via
 /// [pharmacyWorkspaceRouteEntryRequirement] and see worklist chrome read-only —
 /// they must not see write / catalog CRUD ([canWritePharmacy]).
@@ -192,19 +213,109 @@ PharmacyDeskSection? pharmacyFallbackSection(AppAccessPolicy policy) {
   return allowed.first;
 }
 
+/// Atom → requirement map for Pharmacy Ready (`/pharmacy?section=ready`).
+///
+/// Inventory: Ready-to-dispense worklist (`PharmacyDeskSection.queue`); columns
+/// patient / location / dispense progress / status / next action. Nested
+/// cross-module matrix rows are _(n/a)_ for strip chrome; payment recording
+/// reuses billing write ∩; catalog CRUD keeps source ∪ `pharmacy:write`|
+/// `operations:write`. Controlled-drug audit ∩ is [controlledDrugAudit] (no
+/// dedicated chrome on Ready today).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Ready strip tab / count | navigate | read ∩ `pharmacy:read` |
+/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Dispense progress column | read | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Row select → prescription detail | read / navigate | read ∩ |
+/// | Next action (view details) | progressive disclosure | read ∩ |
+/// | Next action dispense / attest / return / cancel | update / delete | write ∩ |
+/// | Next action record / confirm payment | update | billing write ∩ |
+/// | Detail Record payment | update | billing write ∩ |
+/// | Detail Dispense / Attest / Return / Cancel | update / delete | write ∩ |
+/// | Detail Print instructions | export / read | print ∩ `pharmacy:read` |
+/// | Line Map stock / price source | update | write ∩ |
+/// | Nested catalog CRUD (drugs / formulary / stock / storage) | create / update / delete | catalog write ∪ |
+/// | Controlled-drug audit (narrative ∩) | read | pharmacy:read ∩ compliance:read |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyReadyAtomPermissions {
+  static const AccessRequirement tab = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement search = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement dispenseProgress =
+      pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement empty = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement loading = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement retry = pharmacyWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = pharmacyWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement detail = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement nextActionWrite =
+      pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement catalogBrowse =
+      pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement catalogWrite = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement create = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement update = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement delete = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement write = pharmacyWorkspaceWriteRequirement;
+  /// Dispense / prepare fill from Ready queue.
+  static const AccessRequirement dispense = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement attest = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement recordPayment =
+      pharmacyRecordPaymentRequirement;
+  static const AccessRequirement billingStatus =
+      pharmacyBillingStatusReadRequirement;
+  static const AccessRequirement printInstructions =
+      pharmacyPrintInstructionsRequirement;
+  static const AccessRequirement controlledDrugAudit =
+      pharmacyControlledDrugAuditRequirement;
+  /// Nested cross-module write — matrix _(n/a)_ on Ready; payment uses billing ∩.
+  static const AccessRequirement nestedBillingWrite =
+      pharmacyRecordPaymentRequirement;
+  static const AccessRequirement nestedWrite = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement entry = pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement read = pharmacyWorkspaceReadRequirement;
+}
+
+bool canViewPharmacyReadyTab(AppAccessPolicy policy) {
+  return PharmacyReadyAtomPermissions.tab.isAllowed(policy);
+}
+
 /// Atom → requirement map for Pharmacy All orders (`/pharmacy?section=all`).
 ///
-/// Inventory: `screens/pharmacy.md` → All orders tab (unfiltered worklist;
-/// Catalog and stock primary). Nested cross-module matrix rows are _(n/a)_ for
-/// strip chrome; payment recording reuses billing write ∩; catalog CRUD keeps
-/// source ∪ `pharmacy:write`|`operations:write`. Controlled-drug audit ∩ is
-/// [controlledDrugAudit] (no dedicated chrome on All today).
+/// Inventory: unfiltered worklist (`PharmacyDeskSection.allOrders`); columns
+/// patient / location / items / status / next action. Nested cross-module
+/// matrix rows are _(n/a)_ for strip chrome; payment recording reuses billing
+/// write ∩; catalog CRUD keeps source ∪ `pharmacy:write`|`operations:write`.
+/// Controlled-drug audit ∩ is [controlledDrugAudit] (no dedicated chrome on
+/// All today).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | All orders strip tab / count | navigate | read ∩ `pharmacy:read` |
 /// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Items / status columns | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → prescription detail | read / navigate | read ∩ |
@@ -225,6 +336,8 @@ abstract final class PharmacyAllOrdersAtomPermissions {
   static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
+  /// Items column on All orders (status stays pharmacy-read).
+  static const AccessRequirement items = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement empty = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement loading = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement retry = pharmacyWorkspaceReadRequirement;
@@ -445,4 +558,93 @@ abstract final class PharmacyCompletedAtomPermissions {
 
 bool canViewPharmacyCompletedTab(AppAccessPolicy policy) {
   return PharmacyCompletedAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Atom → requirement map for Pharmacy Pending payment
+/// (`/pharmacy?section=pending-payment`).
+///
+/// Inventory: payment-gate worklist before dispense; columns patient / Payment /
+/// ordered-at / status / next action. Tab read is ∩ `pharmacy:read` +
+/// `billing:read`. Nested cross-module write is ∩ `billing:write` (record /
+/// confirm payment). Catalog CRUD keeps source ∪ `pharmacy:write`|
+/// `operations:write`. Controlled-drug audit ∩ is [controlledDrugAudit] (no
+/// dedicated chrome on Pending payment today). Route entry remains ∪
+/// `pharmacy:read`|`operations:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Pending payment strip tab / count | navigate | read ∩ pharmacy:read + billing:read |
+/// | Catalog and stock (primary) | navigate / read | browse ∩ `pharmacy:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | tab read ∩ |
+/// | Payment status column | read | billing status ∩ `billing:read` |
+/// | Empty / loading / error / retry | read chrome | tab read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / billing write ∩ |
+/// | Row select → prescription detail | read / navigate | tab read ∩ |
+/// | Next action (view details) | progressive disclosure | tab read ∩ |
+/// | Next action dispense / attest / return / cancel | update / delete | write ∩ |
+/// | Next action record / confirm payment | update | billing write ∩ |
+/// | Detail Record payment | update | billing write ∩ |
+/// | Detail Dispense / Attest / Return / Cancel | update / delete | write ∩ |
+/// | Detail Print instructions | export / read | print ∩ `pharmacy:read` |
+/// | Line Map stock / price source | update | write ∩ |
+/// | Nested catalog CRUD (drugs / formulary / stock / storage) | create / update / delete | catalog write ∪ |
+/// | Controlled-drug audit (narrative ∩) | read | pharmacy:read ∩ compliance:read |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyPendingPaymentAtomPermissions {
+  static const AccessRequirement tab = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement listChrome =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement search = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement filters = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement settings =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement pagination =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement empty = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement loading = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement retry = pharmacyPendingPaymentReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = pharmacyWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement detail = pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement nextAction =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement nextActionWrite =
+      pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement catalogBrowse =
+      pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement catalogWrite = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement create = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement update = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement delete = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement write = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement dispense = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement attest = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement returnItems = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement cancelOrder = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement mapStock = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement priceSource = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement recordPayment =
+      pharmacyRecordPaymentRequirement;
+  static const AccessRequirement billingStatus =
+      pharmacyBillingStatusReadRequirement;
+  static const AccessRequirement printInstructions =
+      pharmacyPrintInstructionsRequirement;
+  static const AccessRequirement controlledDrugAudit =
+      pharmacyControlledDrugAuditRequirement;
+  /// Nested cross-module write — matrix ∩ `billing:write`.
+  static const AccessRequirement nestedBillingWrite =
+      pharmacyRecordPaymentRequirement;
+  static const AccessRequirement nestedWrite = pharmacyWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement entry = pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement read = pharmacyPendingPaymentReadRequirement;
 }

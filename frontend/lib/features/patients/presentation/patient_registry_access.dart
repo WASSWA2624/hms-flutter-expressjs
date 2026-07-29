@@ -188,8 +188,7 @@ bool canViewPatientActiveTab(AppAccessPolicy policy) {
 }
 
 bool canViewPatientBalanceDueTab(AppAccessPolicy policy) {
-  // Section tabs share registry read ∩ until Balance Due atom map lands.
-  return patientRegistryReadRequirement.isAllowed(policy);
+  return PatientBalanceDueAtomPermissions.tab.isAllowed(policy);
 }
 
 bool canViewPatientAdmittedTab(AppAccessPolicy policy) {

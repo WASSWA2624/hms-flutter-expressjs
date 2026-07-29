@@ -452,6 +452,8 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool includeBillingStatus = canReadPharmacyBillingStatus(policy);
 
     return AppListTable<PharmacyOrder>(
       page: state.workbench.orders,
@@ -546,8 +548,12 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         section,
         state: state,
         writeRequirement: writeRequirement,
+        includeBillingStatus: includeBillingStatus,
       ),
-      columnChoices: _optionalPharmacyWorklistColumns(context),
+      columnChoices: _optionalPharmacyWorklistColumns(
+        context,
+        includeBillingStatus: includeBillingStatus,
+      ),
       mobileItemBuilder: (BuildContext context, PharmacyOrder item) {
         final AppWorkspaceStatus status = _orderStatus(context, item);
         return AppListTableMobileItem(
@@ -563,6 +569,12 @@ class _PharmacyQueuePanel extends ConsumerWidget {
               label: _dispenseProgressLabel(context, item),
               icon: Icons.medication_outlined,
             ),
+            if (includeBillingStatus &&
+                section == PharmacyDeskSection.pendingPayment)
+              AppListTableMobileMeta(
+                label: _billingGateLabel(context, item),
+                icon: Icons.payments_outlined,
+              ),
           ],
           trailing: _PharmacyOrderNextActionButton(
             order: item,
@@ -783,7 +795,8 @@ class _PharmacyActionPanel extends ConsumerWidget {
         order.requiresPaymentBeforeDispense && canPrepare;
 
     // Only eligible, authorized writes — no disabled no-op chrome.
-    // Print stays outside the write gate so browse/print remains available.
+    // Print is outside the write gate (browse/print) but still ∩ pharmacy:read.
+    final bool canPrint = canPrintPharmacyInstructions(policy);
     final List<AppActionItem> actions = <AppActionItem>[
       if (order.requiresPaymentBeforeDispense && canBill)
         AppActionItem(
@@ -825,30 +838,31 @@ class _PharmacyActionPanel extends ConsumerWidget {
       runSpacing: theme.spacing.xs,
       actions: actions,
       extraActions: <Widget>[
-        AppReportActionButton.print(
-          label: l10n.pharmacyPrintInstructionsAction,
-          variant: AppButtonVariant.secondary,
-          onPressed: () async {
-            await printFormTemplateDocument(
-              ref: ref,
-              context: context,
-              title: l10n.pharmacyReportTitle,
-              patientContext: buildPrintFormPatientContext(
-                l10n,
-                patientName: workflow.order.displayTitle,
-                patientId: workflow.order.patientId,
-                encounterId: workflow.order.encounterId,
-              ),
-              contextReference: PrintFormContextReference(
-                label: l10n.pharmacyReportOrderLabel,
-                value: workflow.order.displayId ?? l10n.profileUnknownValue,
-              ),
-              bodyHtml: pharmacyInstructionsHtml(context, workflow),
-              footerNote: l10n.pharmacyReportFooter,
-              includeSignatures: true,
-            );
-          },
-        ),
+        if (canPrint)
+          AppReportActionButton.print(
+            label: l10n.pharmacyPrintInstructionsAction,
+            variant: AppButtonVariant.secondary,
+            onPressed: () async {
+              await printFormTemplateDocument(
+                ref: ref,
+                context: context,
+                title: l10n.pharmacyReportTitle,
+                patientContext: buildPrintFormPatientContext(
+                  l10n,
+                  patientName: workflow.order.displayTitle,
+                  patientId: workflow.order.patientId,
+                  encounterId: workflow.order.encounterId,
+                ),
+                contextReference: PrintFormContextReference(
+                  label: l10n.pharmacyReportOrderLabel,
+                  value: workflow.order.displayId ?? l10n.profileUnknownValue,
+                ),
+                bodyHtml: pharmacyInstructionsHtml(context, workflow),
+                footerNote: l10n.pharmacyReportFooter,
+                includeSignatures: true,
+              );
+            },
+          ),
       ],
     );
   }
@@ -2284,11 +2298,12 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
   PharmacyDeskSection section, {
   required PharmacyWorkspaceState state,
   required AccessRequirement writeRequirement,
+  required bool includeBillingStatus,
 }) {
   return switch (section) {
     PharmacyDeskSection.pendingPayment => <AppListTableColumn<PharmacyOrder>>[
       _pharmacyPatientColumn(context),
-      _pharmacyBillingColumn(context),
+      if (includeBillingStatus) _pharmacyBillingColumn(context),
       _pharmacyOrderedAtColumn(context),
       _pharmacyStatusColumn(context),
       _pharmacyNextActionColumn(
@@ -2708,8 +2723,9 @@ bool _medicationItemSearchMatcher(
 }
 
 List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required bool includeBillingStatus,
+}) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<PharmacyOrder>>[
     AppListTableColumn<PharmacyOrder>(
@@ -2723,7 +2739,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
     ),
     _pharmacyItemsColumn(context),
     _pharmacyDispenseProgressColumn(context),
-    _pharmacyBillingColumn(context),
+    if (includeBillingStatus) _pharmacyBillingColumn(context),
     _pharmacyOrderedAtColumn(context),
     AppListTableColumn<PharmacyOrder>(
       id: 'patient_id',

@@ -595,6 +595,10 @@ void main() {
               licenseStatus: 'ACTIVE',
             ),
             AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
               code: 'inpatient-bed-management',
               licenseStatus: 'ACTIVE',
             ),
@@ -712,13 +716,14 @@ void main() {
         expect(find.text('Duplicate review'), findsNothing);
         expect(find.text('Visit'), findsNothing);
         expect(find.text('Ward B'), findsNothing);
-        expect(find.text('Complete record'), findsOneWidget);
+        expect(find.text('Ina Incomplete'), findsWidgets);
 
         await tester.tap(find.text('Ina Incomplete').first);
         await tester.pumpAndSettle();
 
         expect(find.text('Edit'), findsNothing);
         expect(find.text('Delete'), findsNothing);
+        expect(find.text('Inpatient admission'), findsNothing);
       },
     );
 
@@ -780,7 +785,9 @@ void main() {
 
         expect(find.text('Visit'), findsOneWidget);
 
-        await tester.tap(find.byTooltip('Filters'));
+        final Finder filtersButton = find.text('Filters');
+        expect(filtersButton, findsWidgets);
+        await tester.tap(filtersButton.first);
         await tester.pumpAndSettle();
 
         expect(find.text('Outstanding balance'), findsOneWidget);
@@ -798,7 +805,9 @@ void main() {
           policy: _readPolicy(),
         );
 
-        await tester.tap(find.byTooltip('Filters'));
+        final Finder filtersButton = find.text('Filters');
+        expect(filtersButton, findsWidgets);
+        await tester.tap(filtersButton.first);
         await tester.pumpAndSettle();
 
         expect(find.text('Outstanding balance'), findsNothing);
@@ -881,7 +890,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Active work'), findsOneWidget);
-        expect(find.text('Inpatient admission'), findsOneWidget);
+        expect(find.text('Inpatient admission'), findsWidgets);
       },
     );
 

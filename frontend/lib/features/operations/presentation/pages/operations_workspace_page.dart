@@ -1776,6 +1776,11 @@ Future<void> _showCreateRequestDialog(
   WidgetRef ref,
   OperationsWorkspaceState state,
 ) async {
+  // Nested write entry — omit dialog when write ∩ fails (defense beyond
+  // AppAccessActionGate on the tab primary).
+  if (!canWriteOperations(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final OperationsRequestDraft? draft =
       await showAppDialog<OperationsRequestDraft>(
         context: context,

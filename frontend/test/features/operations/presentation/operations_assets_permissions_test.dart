@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -21,6 +22,7 @@ import 'package:hosspi_hms/features/operations/presentation/pages/operations_wor
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -227,6 +229,13 @@ void main() {
       );
       expect(
         identical(
+          OperationsAssetsAtomPermissions.mutate,
+          operationsMutationRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           OperationsAssetsAtomPermissions.report,
           operationsReportRequirement,
         ),
@@ -235,7 +244,15 @@ void main() {
       expect(
         identical(
           OperationsAssetsAtomPermissions.routeEntry,
-          operationsWorkspaceEntryRequirement,
+          RouteAccessCatalog.operationsEntry,
+        ),
+        isTrue,
+      );
+      // Report matrix read ∩ narrows inventory "Always" — same as read helper.
+      expect(
+        identical(
+          operationsWorkspaceReportRequirement,
+          operationsWorkspaceReadRequirement,
         ),
         isTrue,
       );
@@ -250,6 +267,57 @@ void main() {
       expect(
         OperationsAssetsAtomPermissions.delete.allPermissions,
         contains(AppPermissions.operationsWrite),
+      );
+      expect(
+        OperationsAssetsAtomPermissions.createAsset.allPermissions,
+        contains(AppPermissions.operationsWrite),
+      );
+      expect(
+        OperationsAssetsAtomPermissions.updateAsset.allPermissions,
+        contains(AppPermissions.operationsWrite),
+      );
+      expect(
+        OperationsAssetsAtomPermissions.deleteAsset.allPermissions,
+        contains(AppPermissions.operationsWrite),
+      );
+    });
+
+    test('atom map covers inventory verbs (AC1)', () {
+      expect(OperationsAssetsAtomPermissions.tab, isNotNull);
+      expect(OperationsAssetsAtomPermissions.listChrome, isNotNull);
+      expect(OperationsAssetsAtomPermissions.search, isNotNull);
+      expect(OperationsAssetsAtomPermissions.filters, isNotNull);
+      expect(OperationsAssetsAtomPermissions.settings, isNotNull);
+      expect(OperationsAssetsAtomPermissions.empty, isNotNull);
+      expect(OperationsAssetsAtomPermissions.loading, isNotNull);
+      expect(OperationsAssetsAtomPermissions.retry, isNotNull);
+      expect(OperationsAssetsAtomPermissions.success, isNotNull);
+      expect(OperationsAssetsAtomPermissions.validation, isNotNull);
+      expect(OperationsAssetsAtomPermissions.rowSelect, isNotNull);
+      expect(OperationsAssetsAtomPermissions.detail, isNotNull);
+      expect(OperationsAssetsAtomPermissions.create, isNotNull);
+      expect(OperationsAssetsAtomPermissions.update, isNotNull);
+      expect(OperationsAssetsAtomPermissions.delete, isNotNull);
+      expect(OperationsAssetsAtomPermissions.write, isNotNull);
+      expect(OperationsAssetsAtomPermissions.mutate, isNotNull);
+      expect(OperationsAssetsAtomPermissions.createRequest, isNotNull);
+      expect(OperationsAssetsAtomPermissions.createAsset, isNotNull);
+      expect(OperationsAssetsAtomPermissions.updateAsset, isNotNull);
+      expect(OperationsAssetsAtomPermissions.deleteAsset, isNotNull);
+      expect(OperationsAssetsAtomPermissions.report, isNotNull);
+      expect(OperationsAssetsAtomPermissions.nestedWrite, isNotNull);
+      expect(OperationsAssetsAtomPermissions.nestedRead, isNotNull);
+      expect(OperationsAssetsAtomPermissions.routeEntry, isNotNull);
+      expect(
+        OperationsAssetsAtomPermissions.tab.allPermissions,
+        contains(AppPermissions.operationsRead),
+      );
+      expect(
+        OperationsAssetsAtomPermissions.routeEntry.anyPermissions,
+        containsAll(<AppPermission>[
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        ]),
       );
     });
   });
@@ -355,6 +423,12 @@ void main() {
         OperationsAssetsAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
       );
+      // Matrix create ∩ write alone — create helper allows write; chrome
+      // collapses because tab read ∩ fails.
+      expect(
+        OperationsAssetsAtomPermissions.create.isAllowed(writeOnly),
+        isTrue,
+      );
       expect(canEnterOperationsWorkspace(writeOnly), isTrue);
       expect(canReadOperations(writeOnly), isFalse);
 
@@ -368,6 +442,36 @@ void main() {
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.textContaining('Create request'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'route entry ∪: operations:read alone satisfies entry and Assets chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy readOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        OperationsAssetsAtomPermissions.routeEntry.isAllowed(readOnly),
+        isTrue,
+      );
+      expect(OperationsAssetsAtomPermissions.tab.isAllowed(readOnly), isTrue);
+      expect(
+        OperationsAssetsAtomPermissions.report.isAllowed(readOnly),
+        isTrue,
+      );
+
+      await _pumpAssetsTab(
+        tester,
+        repository: repository,
+        accessPolicy: readOnly,
+      );
+
+      expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(_tabLabel('Assets'), findsOneWidget);
+      expect(find.textContaining('Create request'), findsNothing);
+      expect(find.text('Report'), findsOneWidget);
     },
   );
 
@@ -496,6 +600,40 @@ void main() {
     },
   );
 
+  testWidgets(
+    'authorized Create request mutates, syncs workspace, and shows success',
+    (WidgetTester tester) async {
+      when(() => repository.createRequest(any())).thenAnswer(
+        (_) async => const Result<OperationsWorkItem>.success(_openRequest),
+      );
+
+      await _pumpAssetsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Create request'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CREATE REQUEST'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField).at(2), 'Generator alarm');
+      await tester.tap(find.text('Create request').last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createRequest(any())).called(1);
+      expect(find.text('Operations changes saved.'), findsOneWidget);
+      expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   test(
     'createRequest write ∩ helper authorizes mutation path used after dialog',
     () {
@@ -514,6 +652,10 @@ void main() {
       );
       expect(
         OperationsAssetsAtomPermissions.success.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        OperationsAssetsAtomPermissions.validation.isAllowed(writer),
         isTrue,
       );
       expect(
@@ -697,6 +839,39 @@ void main() {
     await tester.tap(find.textContaining('Backup Generator').first);
     await tester.pumpAndSettle();
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+
+    await _pumpAssetsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      ),
+      physicalSize: const Size(390, 844),
+    );
+    expect(find.byTooltip('Create request'), findsNothing);
+  });
+
+  testWidgets('desktop viewport Assets write ∩ mounts Create and list chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAssetsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
+      ),
+      physicalSize: const Size(1440, 900),
+    );
+
+    expect(find.byType(AppListTable<OperationsAsset>), findsOneWidget);
+    expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+    expect(find.textContaining('Create request'), findsOneWidget);
+    expect(find.text('Report'), findsOneWidget);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('dark theme Assets write ∩ still mounts Create request', (
@@ -716,6 +891,24 @@ void main() {
 
     expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
     expect(find.byTooltip('Create request'), findsOneWidget);
+    expect(find.text('Report'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('light theme Assets read ∩ keeps list; omits Create', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAssetsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+    expect(find.textContaining('Create request'), findsNothing);
     expect(find.text('Report'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });
