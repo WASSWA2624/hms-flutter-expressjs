@@ -96,6 +96,31 @@ Read-only sections: Identity, Storage, Custody, Viewing, Post-mortem, Release, B
 
 ---
 
+## Custody tab — permission mapping (`?panel=custody`)
+
+Atom map: `MortuaryCustodyAtomPermissions` in `frontend/lib/features/mortuary/presentation/mortuary_access.dart`. Unauthorized atoms do not mount (no disabled stubs / routine “no access” banners). Nested write ∪ and fine-grained gates are kept for helpers / future chrome; inventory removed no-op mutation buttons.
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Custody strip tab / count | navigate | ∩ `mortuary:read` (+ module + facility) |
+| Search / Clear / Filters / Settings / pagination | read chrome | ∩ `mortuary:read` |
+| Empty / loading / error / retry | read chrome | ∩ `mortuary:read` |
+| Success snackbar / validation (authorized) | visible feedback | ∩ `mortuary:write` |
+| Row select → detail | read / navigate | ∩ `mortuary:read` |
+| Next action (guidance text only) | read | ∩ `mortuary:read` |
+| Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | ∩ `mortuary:read` |
+| Detail Billing events | read | ∩ `mortuary:billing_event` + `billing:read` |
+| Detail Print documents | export | ∪ `mortuary:export` \| `reports:read` |
+| Nested post-mortem request / approve / record custody | create / update / approve | ∪ `mortuary:post_mortem_request` \| `approve` \| `write` — not mounted |
+| Assign storage | update | ∩ `mortuary:manage_storage` — not mounted |
+| Release / approve release | approve / update | ∩ `mortuary:release` / `approve` — not mounted |
+| Audit panel | read | ∩ `mortuary:audit` — not mounted |
+| Route entry (deep link `/mortuary`) | navigate | ∪ `read`\|`write`\|`approve`\|`release`\|`audit` |
+
+Automated: `frontend/test/features/mortuary/presentation/mortuary_custody_permissions_test.dart`.
+
+---
+
 ## Manual checks (Req 7)
 
 - [ ] Tab strip has no Refresh, no disabled Receive case / Assign storage primaries, and no queue / In storage chips.

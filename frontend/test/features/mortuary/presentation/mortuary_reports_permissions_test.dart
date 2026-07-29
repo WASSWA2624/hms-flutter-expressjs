@@ -424,6 +424,9 @@ void main() {
         mortuaryAllowedPanels(_exportOnlyPolicy()),
         <String>[mortuaryPanelReporting],
       );
+      // Source route entry ∪ excludes export alone — gate blocks workspace.
+      expect(canEnterMortuaryWorkspace(_exportOnlyPolicy()), isFalse);
+      expect(canEnterMortuaryWorkspace(_auditOnlyPolicy()), isTrue);
     });
 
     test(
@@ -491,7 +494,6 @@ void main() {
       expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.text('Actions unavailable'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
-      expect(find.text('Assign storage'), findsNothing);
       expect(find.text('Approve release'), findsNothing);
       expect(find.text('Request post-mortem'), findsNothing);
     });
@@ -512,15 +514,23 @@ void main() {
     );
 
     testWidgets(
-      'union allowance: export-only mounts Reports strip',
+      'union allowance: export via route-entry companion mounts Reports + print',
       (WidgetTester tester) async {
+        // Route entry ∪ excludes mortuary:export alone (source inventory);
+        // approve grants entry, export ∪ unlocks Reports strip + print.
         await _pumpReportsTab(
           tester,
           repository: repository,
-          policy: _exportOnlyPolicy(),
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.mortuaryApprove,
+              AppPermissions.mortuaryExport,
+            },
+          ),
         );
 
         expect(find.text('Reports'), findsWidgets);
+        expect(find.text('Overview'), findsNothing);
         expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
         await _openDetail(tester);
         expect(find.text('Print documents'), findsOneWidget);

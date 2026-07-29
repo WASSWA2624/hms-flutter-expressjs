@@ -150,14 +150,21 @@ abstract final class RouteAccessCatalog {
     requirement: icuEntry,
   );
 
+  /// Matches [AppRoutes.nursing] `requiredAnyPermissions` + module.
+  /// Roles remain on [AppRoutes.nursing] (`requiredAnyRoles`).
   static const AccessRequirement nursingEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.nursingRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.patientRead,
+      AppPermissions.lastOfficeRead,
+      AppPermissions.operationsRead,
+    ],
     activeModules: <String>['inpatient-bed-management'],
   );
   static const RouteAccessAtom nursing = RouteAccessAtom(
     routeName: 'nursing',
     path: '/nursing',
-    entryPermission: AppPermissions.nursingRead,
+    entryPermission: AppPermissions.clinicalRead,
     requirement: nursingEntry,
   );
 
