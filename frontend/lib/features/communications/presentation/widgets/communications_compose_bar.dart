@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_mention_utils.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -82,8 +85,10 @@ class _CommunicationsComposeBarState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     // Unauthorized compose must not mount (no routine "no access" / lock banner).
-    if (!widget.canWrite) {
+    if (!widget.canWrite ||
+        !CommunicationsMessagesAtomPermissions.compose.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
 

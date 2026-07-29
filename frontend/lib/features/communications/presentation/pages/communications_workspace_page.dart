@@ -228,12 +228,18 @@ class _CommunicationsWorkspaceContentState
           return;
         }
         final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+        if (!CommunicationsNotificationsAtomPermissions.detail.isAllowed(
+          policy,
+        )) {
+          return;
+        }
         await showCommunicationsNotificationDetailDialog(
           context,
           ref,
           state,
           notification,
-          canDelete: canDeleteCommunications(policy),
+          canDelete: CommunicationsNotificationsAtomPermissions.archive
+              .isAllowed(policy),
         );
       case CommunicationsPanel.templates:
         final CommunicationTemplate? template = state.selectedTemplate;
@@ -313,7 +319,6 @@ class _CommunicationsWorkspaceContentState
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = canWriteCommunications(policy);
-    final bool canDelete = canDeleteCommunications(policy);
     final List<CommunicationsPanel> visiblePanels =
         communicationsAllowedPanels(policy);
     if (visiblePanels.isEmpty) {
@@ -381,7 +386,6 @@ class _CommunicationsWorkspaceContentState
               state: state,
               searchController: _searchController,
               canWrite: canWrite,
-              canDelete: canDelete,
               notificationColumns: _notificationColumns,
               deliveryColumns: _deliveryColumns,
               templateColumns: _templateColumns,
@@ -397,7 +401,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.canWrite,
-    required this.canDelete,
     required this.notificationColumns,
     required this.deliveryColumns,
     required this.templateColumns,
@@ -406,7 +409,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
   final bool canWrite;
-  final bool canDelete;
   final AppListTableColumnVisibilityController<NotificationItem>
   notificationColumns;
   final AppListTableColumnVisibilityController<NotificationDelivery>
@@ -434,8 +436,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
         state: state,
         searchController: searchController,
         columnVisibilityController: notificationColumns,
-        canWrite: canWrite,
-        canDelete: canDelete,
       ),
       CommunicationsPanel.deliveries => _DeliveriesTable(
         state: state,
@@ -456,19 +456,25 @@ class _NotificationsTable extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
-    required this.canWrite,
-    required this.canDelete,
   });
 
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<NotificationItem>
   columnVisibilityController;
-  final bool canWrite;
-  final bool canDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsNotificationsAtomPermissions.listChrome.isAllowed(
+      policy,
+    )) {
+      return const SizedBox.shrink();
+    }
+    final bool canWrite =
+        CommunicationsNotificationsAtomPermissions.markRead.isAllowed(policy);
+    final bool canDelete =
+        CommunicationsNotificationsAtomPermissions.archive.isAllowed(policy);
     final AppLocalizations l10n = context.l10n;
 
     return AppListTable<NotificationItem>(
@@ -502,6 +508,11 @@ class _NotificationsTable extends ConsumerWidget {
         );
       },
       onRowSelected: (NotificationItem item) {
+        if (!CommunicationsNotificationsAtomPermissions.rowSelect.isAllowed(
+          policy,
+        )) {
+          return;
+        }
         unawaited(
           showCommunicationsNotificationDetailDialog(
             context,
@@ -680,7 +691,15 @@ class _DeliveriesTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsDeliveriesAtomPermissions.listChrome.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
     final AppLocalizations l10n = context.l10n;
+    final bool canSelectRow =
+        CommunicationsDeliveriesAtomPermissions.rowSelect.isAllowed(policy);
+    final bool canShowNextAction =
+        CommunicationsDeliveriesAtomPermissions.nextAction.isAllowed(policy);
 
     return AppListTable<NotificationDelivery>(
       page: state.deliveries,
@@ -712,11 +731,18 @@ class _DeliveriesTable extends ConsumerWidget {
               .changePage(request),
         );
       },
-      onRowSelected: (NotificationDelivery item) {
-        unawaited(
-          showCommunicationsDeliveryDetailDialog(context, ref, state, item),
-        );
-      },
+      onRowSelected: canSelectRow
+          ? (NotificationDelivery item) {
+              unawaited(
+                showCommunicationsDeliveryDetailDialog(
+                  context,
+                  ref,
+                  state,
+                  item,
+                ),
+              );
+            }
+          : null,
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoDeliveriesTitle,
         body: l10n.communicationsNoDeliveriesBody,
@@ -775,20 +801,21 @@ class _DeliveriesTable extends ConsumerWidget {
             );
           },
         ),
-        AppListTableColumn<NotificationDelivery>(
-          id: 'next_action',
-          label: l10n.communicationsNextActionColumnLabel,
-          alwaysVisible: true,
-          sortComparator:
-              (NotificationDelivery left, NotificationDelivery right) =>
-                  appListTableCompareNumber(
-                    _deliveryNextActionLabel(context, left).length,
-                    _deliveryNextActionLabel(context, right).length,
-                  ),
-          cellBuilder: (BuildContext context, NotificationDelivery item) {
-            return _DeliveryNextActionCell(item: item, state: state);
-          },
-        ),
+        if (canShowNextAction)
+          AppListTableColumn<NotificationDelivery>(
+            id: 'next_action',
+            label: l10n.communicationsNextActionColumnLabel,
+            alwaysVisible: true,
+            sortComparator:
+                (NotificationDelivery left, NotificationDelivery right) =>
+                    appListTableCompareNumber(
+                      _deliveryNextActionLabel(context, left).length,
+                      _deliveryNextActionLabel(context, right).length,
+                    ),
+            cellBuilder: (BuildContext context, NotificationDelivery item) {
+              return _DeliveryNextActionCell(item: item, state: state);
+            },
+          ),
       ],
       columnChoices: <AppListTableColumn<NotificationDelivery>>[
         AppListTableColumn<NotificationDelivery>(
@@ -1081,12 +1108,25 @@ class _NotificationNextActionCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String label = _notificationNextActionLabel(context, item, canWrite);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsNotificationsAtomPermissions.nextAction.isAllowed(
+      policy,
+    )) {
+      return const SizedBox.shrink();
+    }
+    final bool markAllowed =
+        canWrite &&
+        CommunicationsNotificationsAtomPermissions.markRead.isAllowed(policy);
+    final String label = _notificationNextActionLabel(
+      context,
+      item,
+      markAllowed,
+    );
     return AppButton.tertiary(
       label: label,
       enabled: !state.isSaving,
       onPressed: () {
-        if (canWrite) {
+        if (markAllowed) {
           unawaited(_handleNotificationNextAction(context, ref, item));
           return;
         }

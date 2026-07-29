@@ -219,6 +219,27 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsNotificationsAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.nextAction,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.view,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsNotificationsAtomPermissions.markRead,
           communicationsWorkspaceWriteRequirement,
         ),
@@ -242,6 +263,108 @@ void main() {
         identical(
           CommunicationsNotificationsAtomPermissions.nestedRead,
           communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          communicationsPanelTabRequirement(CommunicationsPanel.notifications),
+          CommunicationsNotificationsAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Deliveries atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.tab,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.search,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.nextAction,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.openLinked,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.detail,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.create,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.update,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.delete,
+          communicationsWorkspaceDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.routeEntry,
+          communicationsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      // Nested cross-module matrix rows are _(n/a)_ — nested gates stay in-module.
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.nestedRead,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.nestedWrite,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          communicationsPanelTabRequirement(CommunicationsPanel.deliveries),
+          CommunicationsDeliveriesAtomPermissions.tab,
         ),
         isTrue,
       );

@@ -226,7 +226,49 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsNotificationsAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.search,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.rowSelect,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.nextAction,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.view,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsNotificationsAtomPermissions.markRead,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.markUnread,
           communicationsWorkspaceWriteRequirement,
         ),
         isTrue,

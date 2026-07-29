@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_conversation_list.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_thread_view.dart';
@@ -23,6 +26,13 @@ class CommunicationsInboxPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.tab.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    final bool effectiveWrite =
+        canWrite &&
+        CommunicationsMessagesAtomPermissions.write.isAllowed(policy);
     final bool isWide = MediaQuery.sizeOf(context).width >= AppBreakpoints.lg;
     final CommunicationsConversation? selected = state.selectedConversation;
     final CommunicationsWorkspaceController controller = ref.read(
@@ -32,7 +42,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
     if (!isWide && selected != null) {
       return CommunicationsThreadView(
         conversation: selected,
-        canWrite: canWrite,
+        canWrite: effectiveWrite,
         isSaving: state.isSaving,
         isLoadingThread: state.isRefreshingThread,
         composeAutofocus: state.composeAutofocus,
@@ -76,7 +86,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
                   height: 640,
                   child: CommunicationsThreadView(
                     conversation: selected,
-                    canWrite: canWrite,
+                    canWrite: effectiveWrite,
                     isSaving: state.isSaving,
                     isLoadingThread: state.isRefreshingThread,
                     composeAutofocus: state.composeAutofocus,

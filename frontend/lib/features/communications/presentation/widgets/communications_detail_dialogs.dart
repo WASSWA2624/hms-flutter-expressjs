@@ -19,8 +19,15 @@ Future<void> showCommunicationsNotificationDetailDialog(
   WidgetRef ref,
   CommunicationsWorkspaceState fallbackState,
   NotificationItem item, {
-  required bool canDelete,
+  bool? canDelete,
 }) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!CommunicationsNotificationsAtomPermissions.detail.isAllowed(policy)) {
+    return;
+  }
+  final bool archiveAllowed =
+      canDelete ??
+      CommunicationsNotificationsAtomPermissions.archive.isAllowed(policy);
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
   );
@@ -45,7 +52,7 @@ Future<void> showCommunicationsNotificationDetailDialog(
         context,
         ref,
         state,
-        canDelete: canDelete,
+        canDelete: archiveAllowed,
       ),
     ),
   );
@@ -203,7 +210,7 @@ class CommunicationsNotificationDetailContent extends StatelessWidget {
   }
 }
 
-class CommunicationsDeliveryDetailContent extends StatelessWidget {
+class CommunicationsDeliveryDetailContent extends ConsumerWidget {
   const CommunicationsDeliveryDetailContent({
     required this.delivery,
     super.key,
@@ -212,7 +219,11 @@ class CommunicationsDeliveryDetailContent extends StatelessWidget {
   final NotificationDelivery delivery;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canOpenLinked =
+        CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(policy);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -274,8 +285,10 @@ class CommunicationsDeliveryDetailContent extends StatelessWidget {
             icon: Icons.error_outline,
           ),
         ],
-        SizedBox(height: Theme.of(context).spacing.md),
-        CommunicationsLinkedRecordAction(targetPath: delivery.targetPath),
+        if (canOpenLinked) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          CommunicationsLinkedRecordAction(targetPath: delivery.targetPath),
+        ],
       ],
     );
   }
@@ -412,8 +425,12 @@ List<Widget> _notificationDialogActions(
 }) {
   // Mark read/unread lives only on the row next-action (sole primary for that
   // goal). Detail keeps Archive as the secondary destructive path, gated by
-  // communications:delete (backend bulk/archive + matrix delete).
-  if (!canDelete) {
+  // CommunicationsNotificationsAtomPermissions.archive (matrix ∩ delete).
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  final bool archiveAllowed =
+      canDelete &&
+      CommunicationsNotificationsAtomPermissions.archive.isAllowed(policy);
+  if (!archiveAllowed) {
     return const <Widget>[];
   }
   final CommunicationsWorkspaceController controller = ref.read(

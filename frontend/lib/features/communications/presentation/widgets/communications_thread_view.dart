@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_compose_bar.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_formatters.dart';
@@ -86,6 +89,16 @@ class _CommunicationsThreadViewState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite =
+        widget.canWrite &&
+        CommunicationsMessagesAtomPermissions.write.isAllowed(policy);
+    final bool canCompose =
+        canWrite &&
+        CommunicationsMessagesAtomPermissions.compose.isAllowed(policy);
+    final bool canThreadMenu =
+        canWrite &&
+        CommunicationsMessagesAtomPermissions.threadMenu.isAllowed(policy);
     final CommunicationsConversation conversation = widget.conversation;
     final String? currentUserId = ref
         .watch(sessionStateProvider)
@@ -106,7 +119,7 @@ class _CommunicationsThreadViewState
           _ThreadHeader(
             conversation: conversation,
             title: title,
-            canWrite: widget.canWrite,
+            canWrite: canThreadMenu,
             isSaving: widget.isSaving,
             showBackButton: widget.showBackButton,
             onBack: widget.onBack,
@@ -117,7 +130,7 @@ class _CommunicationsThreadViewState
                 : isEmpty
                 ? Center(
                     child: AppMessagePanel(
-                      message: widget.canWrite
+                      message: canCompose
                           ? context.l10n.communicationsFirstMessageHint
                           : context.l10n.communicationsNoMessagesBody,
                       icon: Icons.forum_outlined,
@@ -139,14 +152,14 @@ class _CommunicationsThreadViewState
                         isGroup: conversation.isGroup,
                         participants: conversation.participants,
                         currentUserId: currentUserId,
-                        onReply: widget.canWrite
+                        onReply: canCompose
                             ? () => setState(() => _replyToMessage = message)
                             : null,
                       );
                     },
                   ),
           ),
-          if (widget.canWrite)
+          if (canCompose)
             CommunicationsComposeBar(
               canWrite: true,
               isSaving: widget.isSaving,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -12,6 +15,10 @@ Future<void> showCommunicationsManageMembersDialogImpl(
   WidgetRef ref, {
   required CommunicationsConversation conversation,
 }) {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!CommunicationsMessagesAtomPermissions.manageMembers.isAllowed(policy)) {
+    return Future<void>.value();
+  }
   return showAppDialog<void>(
     context: context,
     builder: (_) => _ManageMembersDialog(conversation: conversation),

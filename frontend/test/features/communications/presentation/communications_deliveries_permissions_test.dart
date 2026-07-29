@@ -439,6 +439,51 @@ void main() {
   );
 
   testWidgets(
+    'plan BASIC strips delete ∩; Deliveries remain read-only without mutation chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy basic = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.communicationsDelete,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'ACTIVE',
+            planTierCode: 'BASIC',
+          ),
+        ],
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.tab.isAllowed(basic),
+        isTrue,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.delete.isAllowed(basic),
+        isFalse,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.create.isAllowed(basic),
+        isTrue,
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: basic,
+      );
+
+      expect(_tab('Deliveries'), findsOneWidget);
+      expect(find.text('Critical lab result'), findsWidgets);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Archive'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized empty Deliveries keeps chrome; no write affordances',
     (WidgetTester tester) async {
       await _pumpDeliveriesTab(
@@ -621,6 +666,42 @@ void main() {
     },
   );
 
+  testWidgets(
+    'failed delivery without path shows View error next-action and error panel',
+    (WidgetTester tester) async {
+      const NotificationDelivery failedNoPath = NotificationDelivery(
+        id: 'delivery-failed',
+        status: 'FAILED',
+        channel: 'EMAIL',
+        notificationTitle: 'Failed alert',
+        recipientTarget: 'ops@example.com',
+        attemptCount: 3,
+        errorMessage: 'SMTP timeout',
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        deliveries: const <NotificationDelivery>[failedNoPath],
+      );
+
+      expect(find.text('View error'), findsWidgets);
+      expect(find.text('Open linked record'), findsNothing);
+
+      await tester.tap(find.text('View error').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('DELIVERY DETAIL'), findsOneWidget);
+      expect(find.text('SMTP timeout'), findsWidgets);
+      expect(find.text('Archive'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+    },
+  );
+
   testWidgets('Deliveries mobile viewport keeps read chrome accessible', (
     WidgetTester tester,
   ) async {
@@ -686,6 +767,27 @@ void main() {
       expect(
         identical(
           CommunicationsDeliveriesAtomPermissions.tab,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.rowSelect,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.openLinked,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,
