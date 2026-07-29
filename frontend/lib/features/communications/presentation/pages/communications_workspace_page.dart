@@ -487,6 +487,8 @@ class _NotificationsTable extends ConsumerWidget {
         CommunicationsNotificationsAtomPermissions.archive.isAllowed(policy);
     final bool canSelectRow =
         CommunicationsNotificationsAtomPermissions.rowSelect.isAllowed(policy);
+    final bool canShowNextAction =
+        CommunicationsNotificationsAtomPermissions.nextAction.isAllowed(policy);
     final AppLocalizations l10n = context.l10n;
 
     return AppListTable<NotificationItem>(
@@ -591,24 +593,25 @@ class _NotificationsTable extends ConsumerWidget {
             );
           },
         ),
-        AppListTableColumn<NotificationItem>(
-          id: 'next_action',
-          label: l10n.communicationsNextActionColumnLabel,
-          alwaysVisible: true,
-          sortComparator: (NotificationItem left, NotificationItem right) =>
-              appListTableCompareText(
-                _notificationNextActionLabel(context, left, canWrite),
-                _notificationNextActionLabel(context, right, canWrite),
-              ),
-          cellBuilder: (BuildContext context, NotificationItem item) {
-            return _NotificationNextActionCell(
-              item: item,
-              state: state,
-              canWrite: canWrite,
-              canDelete: canDelete,
-            );
-          },
-        ),
+        if (canShowNextAction)
+          AppListTableColumn<NotificationItem>(
+            id: 'next_action',
+            label: l10n.communicationsNextActionColumnLabel,
+            alwaysVisible: true,
+            sortComparator: (NotificationItem left, NotificationItem right) =>
+                appListTableCompareText(
+                  _notificationNextActionLabel(context, left, canWrite),
+                  _notificationNextActionLabel(context, right, canWrite),
+                ),
+            cellBuilder: (BuildContext context, NotificationItem item) {
+              return _NotificationNextActionCell(
+                item: item,
+                state: state,
+                canWrite: canWrite,
+                canDelete: canDelete,
+              );
+            },
+          ),
       ],
       columnChoices: <AppListTableColumn<NotificationItem>>[
         AppListTableColumn<NotificationItem>(
@@ -701,7 +704,9 @@ class _DeliveriesTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    if (!CommunicationsDeliveriesAtomPermissions.listChrome.isAllowed(policy)) {
+    // Search / Filters / Settings / pagination share listChrome (read ∩).
+    if (!CommunicationsDeliveriesAtomPermissions.listChrome.isAllowed(policy) ||
+        !CommunicationsDeliveriesAtomPermissions.search.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
     final AppLocalizations l10n = context.l10n;
@@ -1228,9 +1233,18 @@ class _DeliveryNextActionCell extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final String? path = communicationsInternalPath(item.targetPath);
+    // Inventory: Open linked uses [openLinked] read ∩; without it fall back to
+    // View / View error → detail (no disabled stub).
+    final bool canOpenLinked =
+        path != null &&
+        CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(policy);
     return AppButton.tertiary(
-      label: _deliveryNextActionLabel(context, item),
-      onPressed: path != null
+      label: _deliveryNextActionLabel(
+        context,
+        item,
+        canOpenLinked: canOpenLinked,
+      ),
+      onPressed: canOpenLinked
           ? () => context.go(path)
           : () => unawaited(
               showCommunicationsDeliveryDetailDialog(context, ref, state, item),
@@ -1241,9 +1255,11 @@ class _DeliveryNextActionCell extends ConsumerWidget {
 
 String _deliveryNextActionLabel(
   BuildContext context,
-  NotificationDelivery item,
-) {
-  if (communicationsInternalPath(item.targetPath) != null) {
+  NotificationDelivery item, {
+  bool canOpenLinked = true,
+}) {
+  if (canOpenLinked &&
+      communicationsInternalPath(item.targetPath) != null) {
     return context.l10n.communicationsOpenLinkedRecordAction;
   }
   final String status = (item.status ?? '').trim().toUpperCase();

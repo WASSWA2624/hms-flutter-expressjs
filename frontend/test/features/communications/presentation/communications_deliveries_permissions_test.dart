@@ -516,6 +516,92 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip: EXPIRED notifications-communications omits Deliveries',
+    (WidgetTester tester) async {
+      final AppAccessPolicy expired = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'EXPIRED',
+          ),
+        ],
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.tab.isAllowed(expired),
+        isFalse,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.listChrome.isAllowed(expired),
+        isFalse,
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: expired,
+      );
+
+      expect(_tab('Deliveries'), findsNothing);
+      expect(find.text('Critical lab result'), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('Filters'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Deliveries read chrome '
+    '(row/own scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['NURSE'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: communicationsActiveModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        CommunicationsDeliveriesAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.listChrome.isAllowed(
+          noFacility,
+        ),
+        isTrue,
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(_tab('Deliveries'), findsOneWidget);
+      expect(find.text('Critical lab result'), findsWidgets);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Archive'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'plan BASIC strips delete ∩; Deliveries remain read-only without mutation chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy basic = _policy(

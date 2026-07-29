@@ -628,6 +628,105 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip: EXPIRED notifications-communications omits tab',
+    (WidgetTester tester) async {
+      final AppAccessPolicy expired = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.communicationsDelete,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'EXPIRED',
+          ),
+        ],
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.tab.isAllowed(expired),
+        isFalse,
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.listChrome.isAllowed(
+          expired,
+        ),
+        isFalse,
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.archive.isAllowed(expired),
+        isFalse,
+      );
+
+      await _pumpNotificationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: expired,
+      );
+
+      expect(_tab('Notifications'), findsNothing);
+      expect(find.text('Critical lab result'), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('Filters'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Notifications read chrome '
+    '(row/own scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['NURSE'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: communicationsActiveModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        CommunicationsNotificationsAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.listChrome.isAllowed(
+          noFacility,
+        ),
+        isTrue,
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.markRead.isAllowed(
+          noFacility,
+        ),
+        isFalse,
+      );
+
+      await _pumpNotificationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(_tab('Notifications'), findsOneWidget);
+      expect(find.text('Critical lab result'), findsWidgets);
+      expect(find.text('View notification'), findsWidgets);
+      expect(find.text('Mark read'), findsNothing);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'plan BASIC strips delete: Archive absent despite role grant',
     (WidgetTester tester) async {
       final AppAccessPolicy basic = _policy(
@@ -891,6 +990,116 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Patient detail'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'detail Open linked omitted when targetPath absent',
+    (WidgetTester tester) async {
+      const NotificationItem noPath = NotificationItem(
+        id: 'notification-1',
+        title: 'Critical lab result',
+        message: 'Potassium critically high',
+        priority: 'HIGH',
+        notificationType: 'LAB_ALERT',
+      );
+
+      await _pumpNotificationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.communicationsRead,
+            AppPermissions.communicationsDelete,
+          },
+        ),
+        notifications: const <NotificationItem>[noPath],
+        physicalSize: const Size(1024, 900),
+      );
+
+      await tester.tap(_tableRowInkWell().first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('NOTIFICATION DETAIL'), findsWidgets);
+      expect(find.text('Open linked record'), findsNothing);
+      expect(find.text('Archive'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'unauthorized deep link notificationId does not open detail dialog',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      _stubWorkspace(repository);
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation:
+            '/communications?panel=notifications&notificationId=notification-1',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/communications',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: CommunicationsWorkspacePage(
+                  initialQuery: CommunicationsWorkspaceQuery.fromUri(
+                    state.uri,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      // Write alone can enter the route (∪) but fails Notifications read ∩.
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsWrite},
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.routeEntry.isAllowed(
+          writeOnly,
+        ),
+        isTrue,
+      );
+      expect(
+        CommunicationsNotificationsAtomPermissions.detail.isAllowed(writeOnly),
+        isFalse,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            communicationsRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(writeOnly),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsNothing);
+      expect(find.text('NOTIFICATION DETAIL'), findsNothing);
+      expect(find.text('Archive'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

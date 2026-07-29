@@ -475,7 +475,16 @@ List<Widget> _notificationDialogActions(
         body: context.l10n.communicationsArchiveNotificationDialogBody,
         submitLabel: context.l10n.communicationsArchiveAction,
         icon: const Icon(Icons.archive_outlined),
-        onConfirm: controller.archiveSelectedNotification,
+        onConfirm: () async {
+          // Re-check before mutation — stale grants must not fire delete paths.
+          final AppAccessPolicy latest = ref.read(appAccessPolicyProvider);
+          if (!CommunicationsNotificationsAtomPermissions.archive.isAllowed(
+            latest,
+          )) {
+            return null;
+          }
+          return controller.archiveSelectedNotification();
+        },
       ),
     ),
   ];
