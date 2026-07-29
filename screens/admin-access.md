@@ -141,6 +141,20 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 
 Permissions and entitlements details are read-only summaries (no write next-actions on those resources).
 
+### Permissions tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Permissions tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Search / columns / pagination | read chrome | read ∪ |
+| Empty / error / retry | read chrome | read ∪ |
+| Row select → catalog detail | read | read ∪ |
+| Detail Close | progressive-disclosure | read ∪ |
+| Create / update / delete / next-action / tab primary | write | _(absent)_ ; reserved write ∩ `tenant:admin` + workspace `canWrite` |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions`, `canMutateAccessAdminPermissions`.
+
 ---
 
 ## Manual checks (Req 7)

@@ -332,11 +332,19 @@ abstract final class AccessAdminDemoAtomPermissions {
 /// | Row select → read-only detail | read | read ∪ |
 /// | Detail Close | progressive-disclosure | read ∪ |
 /// | Create / update / delete / next-action | write | _(absent)_ ; write ∩ if added |
+/// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Source inventory: entitlements detail is a read-only summary (no write
+/// next-actions). Matrix ∩ `tenant:admin` remains on [write] / create /
+/// update / delete for reserved mutations and ∩ denial tests.
 abstract final class AccessAdminEntitlementsAtomPermissions {
   static const AccessRequirement tab = accessAdminEntitlementsReadRequirement;
   static const AccessRequirement listChrome =
       accessAdminEntitlementsReadRequirement;
   static const AccessRequirement detail = accessAdminEntitlementsReadRequirement;
+  static const AccessRequirement create = accessAdminCreateRequirement;
+  static const AccessRequirement update = accessAdminUpdateRequirement;
+  static const AccessRequirement delete = accessAdminDeleteRequirement;
   static const AccessRequirement write =
       accessAdminEntitlementsWriteRequirement;
 }
@@ -350,8 +358,17 @@ abstract final class AccessAdminEntitlementsAtomPermissions {
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → read-only catalog detail | read | read ∪ |
 /// | Detail Close | progressive-disclosure | read ∪ |
-/// | Create / update / delete / next-action | write | _(absent)_ ; write ∩ if added |
+/// | Create | create | _(absent)_ ; write ∩ if added |
+/// | Update | update | _(absent)_ ; write ∩ if added |
+/// | Delete | delete | _(absent)_ ; write ∩ if added |
+/// | next-action / tab primary | write | _(absent on this resource)_ |
 /// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Source inventory (`screens/admin-access.md`): Permissions detail is a
+/// read-only catalog summary (no write next-actions). Matrix ∩ `tenant:admin`
+/// is reserved via [canMutateAccessAdminPermissions] / create|update|delete
+/// aliases if mutations are mounted later. Prompt "edits elevated only" maps
+/// to that reserved write ∩ + elevated path in [canWriteAccessAdmin].
 abstract final class AccessAdminPermissionsAtomPermissions {
   static const AccessRequirement tab = accessAdminPermissionsReadRequirement;
   static const AccessRequirement listChrome =

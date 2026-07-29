@@ -287,6 +287,31 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          AccessAdminPermissionsAtomPermissions.update,
+          accessAdminUpdateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminPermissionsAtomPermissions.delete,
+          accessAdminDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminPermissionsAtomPermissions.write,
+          accessAdminWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        AccessAdminPermissionsAtomPermissions.create.allPermissions,
+        AccessAdminPermissionsAtomPermissions.write.allPermissions,
+      );
     });
 
     test(
@@ -390,6 +415,78 @@ void main() {
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
         expect(canMutateAccessAdminPermissions(tenant), isTrue);
+      },
+    );
+
+    testWidgets(
+      'elevated writer: Permissions stays read-only (no create/next_action)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy elevated = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.systemAdmin,
+            AppPermissions.tenantAdmin,
+          },
+          roles: const <String>['SUPER_ADMIN'],
+        );
+        await _pumpPermissions(
+          tester,
+          repository: repository,
+          policy: elevated,
+          data: _permissionsData(canWrite: true),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.text(l10n.accessAdminPanelPermissions), findsOneWidget);
+        expect(find.text('Patient Read'), findsWidgets);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
+        expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        expect(
+          table.columns.any(
+            (AppListTableColumn<AccessAdminItem> column) =>
+                column.id == 'next_action',
+          ),
+          isFalse,
+        );
+        expect(canMutateAccessAdminPermissions(elevated), isTrue);
+      },
+    );
+
+    testWidgets(
+      'workspace canWrite false: Permissions read chrome still present',
+      (WidgetTester tester) async {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        await _pumpPermissions(
+          tester,
+          repository: repository,
+          policy: tenant,
+          data: _permissionsData(canWrite: false),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.text(l10n.accessAdminPanelPermissions), findsOneWidget);
+        expect(find.text('Patient Read'), findsWidgets);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(
+          canMutateAccessAdminPermissions(tenant, workspaceCanWrite: false),
+          isFalse,
+        );
       },
     );
 
@@ -541,6 +638,29 @@ void main() {
       expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
     });
 
+    testWidgets('light theme: authorized Permissions atoms remain visible', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy tenant = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      await _pumpPermissions(
+        tester,
+        repository: repository,
+        policy: tenant,
+        data: _permissionsData(canWrite: true),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
+      expect(find.text(l10n.accessAdminPanelPermissions), findsOneWidget);
+      expect(find.text('Patient Read'), findsWidgets);
+      expect(find.byType(AppSearchBar), findsWidgets);
+    });
+
     testWidgets('dark theme: authorized Permissions atoms remain visible', (
       WidgetTester tester,
     ) async {
@@ -562,6 +682,7 @@ void main() {
 
       expect(find.text(l10n.accessAdminPanelPermissions), findsOneWidget);
       expect(find.text('Patient Read'), findsWidgets);
+      expect(find.byType(AppSearchBar), findsWidgets);
     });
 
     testWidgets(

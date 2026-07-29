@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -213,6 +214,7 @@ void main() {
         roles: const <String>['FACILITY_ADMIN'],
       );
       // Source canWrite may be true; matrix still requires tenant:admin.
+      // Inventory: Entitlements catalog has no write atoms; helper still ∩.
       expect(
         canMutateAccessAdminEntitlements(
           facilityOnly,
@@ -222,6 +224,10 @@ void main() {
       );
       expect(
         accessAdminEntitlementsWriteRequirement.isAllowed(facilityOnly),
+        isFalse,
+      );
+      expect(
+        AccessAdminEntitlementsAtomPermissions.create.isAllowed(facilityOnly),
         isFalse,
       );
     });
@@ -276,6 +282,27 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          AccessAdminEntitlementsAtomPermissions.create,
+          accessAdminCreateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminEntitlementsAtomPermissions.update,
+          accessAdminUpdateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminEntitlementsAtomPermissions.delete,
+          accessAdminDeleteRequirement,
+        ),
+        isTrue,
+      );
     });
 
     test(
@@ -292,8 +319,24 @@ void main() {
         );
         expect(canReadAccessAdminEntitlements(tenant), isTrue);
         expect(accessAdminModuleLabel, 'access administration');
+        expect(accessAdminActiveModule, 'access_admin');
       },
     );
+
+    test('route entry ∪ aligns with Entitlements read matrix', () {
+      expect(
+        AppRoutes.accessAdmin.requiredAnyPermissions,
+        containsAll(<AppPermission>[
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]),
+      );
+      expect(
+        accessAdminEntitlementsReadRequirement.anyPermissions,
+        accessAdminReadPermissions,
+      );
+    });
   });
 
   group('Entitlements UI permissions', () {
