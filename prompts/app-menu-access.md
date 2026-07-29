@@ -5,13 +5,11 @@ Enforce **permission-based** visibility on every app menu item so users only see
 ## Context
 
 - Surface: shell navigation in `app_router.dart` via `_localizedShellDestinations` filtered by `canAccessShellRoute`.
-- **Central catalog (required):** create/maintain a single frontend module (e.g. `frontend/lib/core/permissions/route_access_catalog.dart` or `app_route_permissions.dart`) that maps every `AppRouteData` / route name → unique entry `AccessRequirement` (permission ∩ modules ∩ tenant/facility flags). `AppRoutes`, `canAccessShellRoute`, `AppRouteGuards`, shell badges, Settings/Home secondary links, and any feature `routeEntry` alias **must read only from this catalog**—not redefine entry keys in feature `*_access.dart` files.
-- Vocabulary strings: register keys once in `backend/src/config/permissions.js` and mirror in `AppPermissions`. Treat `requiredAnyRoles` as legacy: **must not deny** when catalog permission + module requirements are met.
-- **Anti-pattern to remove:** broad shared entry lists (e.g. OPD unlocked by `billing:read` / `operations:read` / `patient:read` / …). Billing and operations grants must **not** open OPD (or any other non-billing/operations route). Duplicate entry requirements spread across features.
-- Custom roles: `permissionScopedDomainsFor` must follow each route’s **unique entry domain** from the catalog (no empty `{}` blank-denies; no domain that unlocks a second route).
-- Focused packs may narrow default chrome; expanded grants unlock only destinations whose **own** catalog entry permission is granted.
-- Effective access = union(permission grants) ∩ subscription ∩ plan caps ∩ ABAC (`prompts/ui-permissions/_shared-rules.md`, `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `frontend/.cursor/navigation.mdc`).
-- Backend authoritative. Follow `prompts/.cursor/prompt.mdc`.
+- **Central catalog (required):** one frontend module (e.g. `frontend/lib/core/permissions/route_access_catalog.dart`) maps every `AppRouteData` / route name → unique entry `AccessRequirement` (permission ∩ modules ∩ context flags). `AppRoutes`, `canAccessShellRoute`, `AppRouteGuards`, badges, Settings/Home links, and feature `routeEntry` aliases **must read only from this catalog**—never redefine entry keys in feature `*_access.dart`.
+- Vocabulary: register keys in `backend/src/config/permissions.js` and `AppPermissions`. Treat `requiredAnyRoles` as legacy: **must not deny** when catalog permission + modules are met.
+- **Anti-patterns:** shared entry lists (OPD via `billing:read` / `operations:read` / …); duplicate entry requirements across features. Billing/operations must not open OPD or other non-matching routes.
+- Custom roles: `permissionScopedDomainsFor` follows each catalog entry’s unique domain (no empty `{}`; no domain unlocking a second route). Focused packs may narrow chrome; expanded grants unlock only destinations with their own catalog key.
+- Effective access = union(permission grants) ∩ subscription ∩ plan caps ∩ ABAC (`prompts/ui-permissions/_shared-rules.md`, `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `frontend/.cursor/navigation.mdc`). Backend authoritative. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Unique route-entry permission matrix
 
@@ -37,14 +35,14 @@ Keep an existing key only if it uniquely maps to that one workspace; otherwise a
 
 ## Requirements
 
-1. Introduce (or consolidate into) **one central route/screen access catalog** that lists every authenticated app route with its unique entry permission, modules, and context flags. Wire `AppRouteData.accessRequirement` / shell filtering / guards to resolve from this catalog only.
-2. Inventory shell destinations and secondary navigators; flag any entry permission used by more than one route, or any feature-local redefinition of route entry, as a defect—replace with catalog lookups/aliases.
-3. Give each route a **unique** entry permission per the matrix; remove shared ∪ entry lists. OPD requires only `opd:read`—billing/operations/patient/clinical/emergency must not open it. Add missing keys to `backend/src/config/permissions.js` and `AppPermissions`; update role/custom-role catalogs.
+1. Create/consolidate **one central route/screen access catalog** mapping every authenticated route → unique entry permission, modules, and context flags. Wire `AppRouteData` / shell filtering / guards to resolve from it only.
+2. Inventory shell destinations and secondary navigators; replace multi-route keys and feature-local entry redefinitions with catalog lookups/aliases.
+3. Apply the matrix: unique entry permission per route; OPD = `opd:read` only. Register missing keys in `backend/src/config/permissions.js` and `AppPermissions`; update role/custom-role catalogs. Neutralize `requiredAnyRoles` hard denies when permissions are present.
 4. Align `permissionScopedDomainsFor` to each catalog entry’s unique domain.
 5. Filter with `canAccessShellRoute`; collapse empty groups; no disabled stubs. Guard deep links; redirect denied to forbidden; never paint denied bodies.
 6. Gate secondary links and badges via the catalog entry for the **target** route.
 7. Preserve authorized UI states; rebuild destinations after permission refresh without relaunch.
-8. Tests: (a) catalog is the sole source—changing/looking up an entry updates shell + guard behavior; (b) route appears only with its unique key; (c) `billing:read` or `operations:read` alone does **not** show OPD; (d) one route’s key does not open another; (e) custom role with only `opd:read` (+ modules) sees OPD only; (f) missing key ⇒ absent + forbidden deep link; (g) module denial hides; (h) secondary links/badges follow catalog. Cover guards, reuse, one mobile + one desktop viewport, light + dark.
+8. Tests: (a) catalog is sole source for shell + guard entry; (b) route only with its unique key; (c) billing/operations alone ≠ OPD; (d) one key ≠ another route; (e) custom role with only `opd:read` (+ modules) sees OPD only; (f) missing key ⇒ absent + forbidden; (g) module denial hides; (h) secondary links/badges follow catalog. Cover guards, reuse, one mobile + one desktop viewport, light + dark.
 
 ## Constraints
 
