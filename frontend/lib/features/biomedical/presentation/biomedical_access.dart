@@ -197,7 +197,7 @@ abstract final class BiomedicalRegistryAtomPermissions {
 /// | Overview tab | navigate | [tab] read ∩ `biomed:read` |
 /// | Search / filters / columns / pagination | read chrome | [listChrome] |
 /// | Risk / status list columns (KPI-style) | read | [listChrome] |
-/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
+/// | Empty / error / retry / loading / validation | read chrome | [listChrome] / page |
 /// | Row select → detail | read | [detail] |
 /// | Next action Review record | navigate / read | [detail] |
 /// | Next action Work order follow-up (start) | update | [workOrderFollowUp] write ∪ source |
@@ -205,7 +205,7 @@ abstract final class BiomedicalRegistryAtomPermissions {
 /// | Detail complementary writes | create / update / delete | [nestedWrite] |
 /// | Print report | export | [export]/[print] (evidence:export ∩ …) |
 /// | Tab-strip primary | create | _(none on Overview)_ |
-/// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
+/// | Nested mutation dialogs (e.g. Schedule maintenance) | create / update / delete | [nestedWrite] |
 /// | Route entry (deep link) | navigate | [routeEntry]/[entry] read ∪ write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
