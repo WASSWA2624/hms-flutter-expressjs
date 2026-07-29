@@ -211,6 +211,12 @@ Future<void> _pumpBedBoard(
           return const Scaffold(body: Text('IPD workspace'));
         },
       ),
+      GoRoute(
+        path: '/rooms-beds',
+        builder: (BuildContext context, GoRouterState state) {
+          return const Scaffold(body: Text('Rooms & beds'));
+        },
+      ),
     ],
   );
 
@@ -318,6 +324,10 @@ void main() {
       );
       expect(
         IcuBedBoardAtomPermissions.routeEntry,
+        same(RouteAccessCatalog.icuEntry),
+      );
+      expect(
+        IcuBedBoardAtomPermissions.catalogEntry,
         same(RouteAccessCatalog.icuEntry),
       );
       expect(
@@ -467,6 +477,44 @@ void main() {
       expect(IcuBedBoardAtomPermissions.write.isAllowed(noModule), isFalse);
     });
 
+    test(
+      'subscription/ABAC strip: manageBeds needs inpatient module even with admin',
+      () {
+        final AppAccessPolicy adminNoInpatient = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.facilityAdmin,
+          },
+          roles: const <String>['FACILITY_ADMIN'],
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'icu-critical-care',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canViewIcuBedBoard(adminNoInpatient), isTrue);
+        expect(canManageIcuBedBoard(adminNoInpatient), isFalse);
+        expect(
+          IcuBedBoardAtomPermissions.nestedWrite.isAllowed(adminNoInpatient),
+          isFalse,
+        );
+
+        // ABAC: missing facility context does not strip board read ∪ (read
+        // requirement has no requiresFacilityContext); manage still needs
+        // inpatient module + admin grant as above.
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          facilityId: null,
+        );
+        expect(canViewIcuBedBoard(noFacility), isTrue);
+      },
+    );
+
     test('authorized UI-state atoms map to read / write helpers', () {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
@@ -515,6 +563,55 @@ void main() {
   );
 
   testWidgets(
+    'writer: Bed board has Open IPD; no stay mutate chrome; Manage beds absent',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+      );
+
+      expect(find.byType(IcuBedBoardPanel), findsOneWidget);
+      expect(find.byTooltip('Open in IPD'), findsOneWidget);
+      expect(find.byTooltip('Manage beds'), findsNothing);
+      expect(find.textContaining('Assign bed'), findsNothing);
+      expect(find.textContaining('Start ICU stay'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested manage ∪: facility admin mounts Manage beds and navigates',
+    (WidgetTester tester) async {
+      final AppAccessPolicy facilityAdmin = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.facilityAdmin,
+        },
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: facilityAdmin,
+      );
+
+      expect(find.byTooltip('Manage beds'), findsOneWidget);
+      await tester.tap(find.byTooltip('Manage beds'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rooms & beds'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     '∪ emergency:read alone mounts Bed board and Open IPD',
     (WidgetTester tester) async {
       final AppAccessPolicy emergencyReader = _policy(
@@ -529,6 +626,7 @@ void main() {
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
       expect(find.byTooltip('Open in IPD'), findsOneWidget);
+      expect(find.byTooltip('Manage beds'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -756,6 +854,26 @@ void main() {
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
       expect(find.textContaining('Ada Occupant'), findsOneWidget);
+      expect(find.byTooltip('Open in IPD'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'desktop light theme: Bed board occupancy chrome remains visible',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        themeMode: ThemeMode.light,
+        viewport: const Size(1440, 900),
+      );
+
+      expect(find.byType(IcuBedBoardPanel), findsOneWidget);
+      expect(find.textContaining('All ICU wards'), findsOneWidget);
       expect(find.byTooltip('Open in IPD'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },

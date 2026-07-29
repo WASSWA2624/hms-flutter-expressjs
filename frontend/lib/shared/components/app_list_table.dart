@@ -39,6 +39,7 @@ const int _maxVisibleTableColumns = 5;
 const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
 const double _mobileRowNumberColumnWidth = 28;
+const double _mobileRowGutterHeight = 8;
 const double _minResizableColumnWidth = 72;
 const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
@@ -627,7 +628,7 @@ class AppListTableMobileItem extends StatelessWidget {
           padding ??
           EdgeInsets.symmetric(
             horizontal: theme.spacing.sm,
-            vertical: theme.spacing.md - 2,
+            vertical: theme.spacing.md,
           ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -2521,7 +2522,23 @@ class _MobileListTable<T> extends StatelessWidget {
 
             final Color? rowColor = rowColorBuilder?.call(context, item);
             if (rowColor != null) {
-              row = ColoredBox(color: rowColor, child: row);
+              row = DecoratedBox(
+                decoration: BoxDecoration(
+                  color: rowColor,
+                  border: Border(
+                    // Soft left rail keeps status tint readable as a distinct
+                    // row even when adjacent pastels are similar.
+                    left: BorderSide(
+                      color: Color.alphaBlend(
+                        theme.colorScheme.onSurface.withValues(alpha: 0.14),
+                        rowColor,
+                      ),
+                      width: 3,
+                    ),
+                  ),
+                ),
+                child: row,
+              );
             }
 
             if (surfaceHeader == null && itemIndex == 0) {
@@ -2530,10 +2547,22 @@ class _MobileListTable<T> extends StatelessWidget {
             return row;
           },
           separatorBuilder: (BuildContext context, int index) {
-            return Divider(
-              height: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.28),
+            // Surface gutters break continuous pastel bands into distinct rows.
+            return ColoredBox(
+              color: theme.colorScheme.surface,
+              child: SizedBox(
+                height: _mobileRowGutterHeight,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    height: 1,
+                    margin: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.42,
+                    ),
+                  ),
+                ),
+              ),
             );
           },
         );

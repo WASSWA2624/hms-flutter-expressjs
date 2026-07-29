@@ -521,6 +521,7 @@ abstract final class IcuAllAtomPermissions {
   static const AccessRequirement routeEntry = icuWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       icuWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.icuEntry;
 }
 
 /// Discharge ready tab atom → permission mapping (inventory + matrix).
@@ -528,24 +529,29 @@ abstract final class IcuAllAtomPermissions {
 /// Discharge-ready / step-down queue (`/icu?section=discharge`). Stage
 /// next-action is **Mark readiness** (write ∪) or **Open discharge clearance**
 /// (navigate when already planned). Nested cross-module matrix rows are
-/// _(n/a)_. Write keeps source ∪ `clinical:write` | `emergency:write` rather
-/// than matrix ∩ `clinical:write` alone. Route entry ∪ is [routeEntry].
+/// _(n/a)_ — [nestedWrite] / [nestedRead] reuse ICU write/read only. Write
+/// keeps source ∪ `clinical:write` | `emergency:write` rather than matrix ∩
+/// `clinical:write` alone. Route entry ∪ is [routeEntry]. Tab chrome stays ∪
+/// `clinical:read` | `emergency:read`. Open clearance / IPD / billing / print
+/// remain without write.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Discharge ready tab / count badge | navigate | read ∪ `clinical:read` \| `emergency:read` |
-/// | Search / Clear / Filters / Settings / columns | read chrome | read ∪ |
-/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Discharge ready tab / count badge | navigate | read ∪ ([tab]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → stay detail | read | read ∪ |
-/// | Next action Mark readiness | update | write ∪ |
-/// | Next action Open discharge clearance | navigate | navigate (no write) |
+/// | Row select → stay detail | read | ([detail]) |
+/// | Next action Mark readiness | update | write ∪ ([nextActionMarkReadiness]) |
+/// | Next action Open discharge clearance | navigate | [navigate] (no write) |
 /// | Detail complementary writes (vitals, alert, round, orders, transfer, end stay, …) | create / update | write ∪ |
-/// | Detail Mark readiness (when not row next-action) | update | write ∪ |
-/// | Detail Open clearance / Open IPD / Open billing | navigate | navigate |
-/// | Detail Print summary | export / read | read ∪ |
-/// | Deep link `?panel=discharge` | update | write ∪ |
-/// | Route entry (deep link) | navigate | clinical \| emergency \| operations:read |
+/// | Detail Mark readiness (when not row next-action) | update | write ∪ ([markReadiness]) |
+/// | Detail Open clearance / Open IPD / Open billing | navigate | [navigate] |
+/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Nested readiness / mutation dialogs | create / update | write ∪ |
+/// | Deep link `?panel=discharge` | update | write ∪ ([panelDeepLink]) |
+/// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
+/// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
 abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement tab = icuWorkspaceReadRequirement;
   static const AccessRequirement listChrome = icuWorkspaceReadRequirement;
@@ -569,6 +575,7 @@ abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement nextActionOpenDischargeClearance =
       icuNavigationRequirement;
   static const AccessRequirement markReadiness = icuWorkspaceWriteRequirement;
+  static const AccessRequirement startStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement recordObservation =
       icuWorkspaceWriteRequirement;
   static const AccessRequirement recordVitals = icuWorkspaceWriteRequirement;
@@ -584,6 +591,7 @@ abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement manageTransfer = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuNavigationRequirement;
@@ -739,6 +747,7 @@ abstract final class IcuCriticalAtomPermissions {
   static const AccessRequirement startStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
+  static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuNavigationRequirement;
   static const AccessRequirement openDischargeClearance =
@@ -751,6 +760,7 @@ abstract final class IcuCriticalAtomPermissions {
   static const AccessRequirement routeEntry = icuWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       icuWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.icuEntry;
 }
 
 /// Transfers tab atom → permission mapping (inventory + matrix).
@@ -844,8 +854,8 @@ abstract final class IcuTransfersAtomPermissions {
 /// catalog; bed CRUD stays in Facility / Rooms & beds. Write keeps source ∪
 /// `clinical:write` | `emergency:write` (matrix ∩ `clinical:write` alone).
 /// Manage beds follows rooms-beds admin gates ([manageBeds] /
-/// [icuBedBoardManageRequirement]) — not mounted on this panel today (inventory
-/// removed strip toolbar). Nested general matrix rows _(n/a)_ reuse ICU
+/// [icuBedBoardManageRequirement]) — strip primary on Bed board only (Refresh /
+/// Start ICU stay stay removed). Nested general matrix rows _(n/a)_ reuse ICU
 /// read/write; manage is the dedicated cross-module nested write.
 ///
 /// | Atom | Kind | Gate |
@@ -856,7 +866,7 @@ abstract final class IcuTransfersAtomPermissions {
 /// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
 /// | Bed row (location / occupant / status) | read | ([rowSelect]) |
 /// | Open IPD (occupied row) | navigate | [openIpd] (no write) |
-/// | Manage beds → `/rooms-beds` | nested write / navigate | [manageBeds] — not mounted |
+/// | Manage beds → `/rooms-beds` | nested write / navigate | [manageBeds] |
 /// | Create / update / delete stay mutations | create / update / delete | write ∪ — not on this tab |
 /// | Success / validation (authorized mutations elsewhere) | visible feedback | write ∪ |
 /// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
@@ -889,6 +899,7 @@ abstract final class IcuBedBoardAtomPermissions {
   static const AccessRequirement routeEntry = icuWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       icuWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.icuEntry;
 }
 
 /// Verifies AppRoutes ICU entry keys stay aligned with [routeEntry].

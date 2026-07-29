@@ -32,7 +32,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Condition: Always when workspace loads.
   - Counts: Active / Critical / Transfers / Discharge / Ended / All / Beds from board state; Follow-ups from scoped follow-up count.
 
-Tab-strip toolbar actions were removed. Board work refreshes after mutations, realtime sync, adaptive polling, and scaffold **Try again**.
+Patient-board strip toolbar actions (**Refresh**, **Start ICU stay**) were removed. Board work refreshes after mutations, realtime sync, adaptive polling, and scaffold **Try again**. Bed board may show **Manage beds** when rooms-beds admin gates pass.
 
 - **Try again** (page load failure)
   - Location: `AsyncStateScaffold`.
@@ -47,6 +47,38 @@ Tab-strip toolbar actions were removed. Board work refreshes after mutations, re
   - Opens modal: Advanced filters panel; Table Settings dialog.
   - Immediate result: Client filters / search / column visibility for the active section.
   - Condition: Patient board sections only (not Bed board / Follow-ups).
+
+### Bed board (`?section=beds`)
+
+- **Ward ChoiceChip filters** (All ICU wards / per-ward)
+  - Location: `IcuBedBoardPanel` chrome.
+  - Opens modal: No.
+  - Immediate result: Filters visible beds by ward.
+  - Condition: Bed board tab with wards; read ∪ `clinical:read` | `emergency:read`.
+
+- **Available / occupied summary badges**
+  - Location: `IcuBedBoardPanel` chrome.
+  - Opens modal: No.
+  - Immediate result: Occupancy counts for the filtered ward set.
+  - Condition: Bed board tab; same read ∪.
+
+- **Bed row** (location / occupant / status)
+  - Location: `IcuBedBoardPanel` list.
+  - Opens modal: No (no stay detail from this tab).
+  - Immediate result: Shows occupancy row.
+  - Condition: Beds present after ward filter.
+
+- **Open IPD** (occupied row)
+  - Location: Occupied bed row trailing action.
+  - Opens modal: No — navigates to `/ipd` (optionally `?id=`).
+  - Immediate result: Leaves ICU for IPD workspace.
+  - Condition: Occupied bed; navigate (no write).
+
+- **Manage beds**
+  - Location: Bed board tab-strip primary (`AppTabToolbarPrimary`).
+  - Opens modal: No — navigates to `/rooms-beds`.
+  - Immediate result: Opens Rooms & beds admin.
+  - Condition: Rooms-beds admin ∪ (facility/tenant/system admin roles or perms) + `inpatient-bed-management`. Absent when denied.
 
 ### Empty / no-results
 
@@ -108,4 +140,6 @@ Tab-strip toolbar actions were removed. Board work refreshes after mutations, re
 - [ ] Critical tab alerted patient: only **Acknowledge alert** next-action; detail omits Acknowledge.
 - [ ] Deep link `/icu?id=…&panel=vitals` opens vitals dialog without an empty detail first.
 - [ ] No Refresh or Start ICU stay control on the tab strip; board still updates after a successful mutation.
+- [ ] Bed board: read-only staff see ward chips / occupancy / Open IPD; **Manage beds** absent without rooms-beds admin.
+- [ ] Bed board: facility admin + inpatient module sees **Manage beds**; clinical writer alone does not.
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths.

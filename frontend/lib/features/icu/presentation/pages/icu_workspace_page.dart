@@ -314,6 +314,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       accessPolicy,
       _section,
     );
+    final bool canManageBeds = canManageIcuBedBoard(accessPolicy);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -342,6 +343,15 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                   ),
               ],
               selectedId: _section.name,
+              primaryAction: isBedView && canManageBeds
+                  ? AppTabToolbarPrimary(
+                      label: l10n.ipdBedBoardManageBedsAction,
+                      icon: Icons.open_in_new,
+                      tooltip: l10n.ipdBedBoardManageBedsAction,
+                      semanticLabel: l10n.ipdBedBoardManageBedsAction,
+                      onPressed: () => context.go(AppRoutes.roomsBeds.path),
+                    )
+                  : null,
               onTabTapped: (String tabId) {
                 for (final IcuWorkspaceSection section in visibleSections) {
                   if (section.name == tabId) {

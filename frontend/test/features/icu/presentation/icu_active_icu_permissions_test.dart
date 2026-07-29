@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.da
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
+import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -433,6 +434,27 @@ void main() {
       expect(icuAllowedSections(noModule), isEmpty);
     });
 
+    test(
+      'ABAC: missing facility still allows Active chrome '
+      '(row/own scope remains backend-authoritative)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(IcuActiveIcuAtomPermissions.tab.isAllowed(noFacility), isTrue);
+        expect(IcuActiveIcuAtomPermissions.write.isAllowed(noFacility), isTrue);
+        expect(
+          IcuActiveIcuAtomPermissions.routeEntry.isAllowed(noFacility),
+          isTrue,
+        );
+      },
+    );
+
     test('nested cross-module rows are n/a; nestedWrite reuses write ∪', () {
       expect(
         identical(
@@ -497,7 +519,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized writer: Assign bed next-action present; sync after mutation path',
+    'authorized writer: Assign bed next-action present',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -510,6 +532,176 @@ void main() {
       expect(find.text('Assign ICU bed'), findsWidgets);
       expect(find.text('Observation'), findsWidgets);
       expect(find.text('Ada Active'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: Assign bed patches selected stay + board via write ∪',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      expect(IcuActiveIcuAtomPermissions.assignBed.isAllowed(writer), isTrue);
+
+      const IcuPatientSummary assigned = IcuPatientSummary(
+        id: 'ADM-ACT-1',
+        admissionId: 'ADM-ACT-1',
+        displayId: 'ADM-A1',
+        patientDisplayName: 'Ada Active',
+        icuStatus: 'ACTIVE',
+        bedLabel: 'ICU-1',
+        hasActiveBed: true,
+        encounterId: 'ENC-ACT-1',
+      );
+
+      when(() => repository.listIcuBoard(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final IcuBoardQuery query =
+            invocation.positionalArguments.single as IcuBoardQuery;
+        return Result<AppPage<IcuPatientSummary>>.success(
+          AppPage<IcuPatientSummary>(
+            items: const <IcuPatientSummary>[_needsBed],
+            request: query.pageRequest,
+            totalItemCount: 1,
+          ),
+        );
+      });
+      when(() => repository.loadReferenceData()).thenAnswer(
+        (_) async =>
+            const Result<IcuReferenceData>.success(IcuReferenceData()),
+      );
+      when(() => repository.loadBedBoard()).thenAnswer(
+        (_) async => const Result<IcuBedBoard>.success(
+          IcuBedBoard(wards: <IcuBedWard>[], beds: <IcuBed>[]),
+        ),
+      );
+      when(() => repository.loadIcuDetail(any())).thenAnswer(
+        (_) async => Result<IcuPatientDetail>.success(
+          IcuPatientDetail(
+            summary: _needsBed,
+            activeStay: const IcuStaySummary(id: 'stay-1'),
+          ),
+        ),
+      );
+      when(
+        () => repository.assignBed(
+          detail: any(named: 'detail'),
+          bedId: any(named: 'bedId'),
+        ),
+      ).thenAnswer((_) async {
+        // Subsequent board refresh (refreshBoardAfter) returns assigned stay.
+        when(() => repository.listIcuBoard(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final IcuBoardQuery query =
+              invocation.positionalArguments.single as IcuBoardQuery;
+          return Result<AppPage<IcuPatientSummary>>.success(
+            AppPage<IcuPatientSummary>(
+              items: const <IcuPatientSummary>[assigned],
+              request: query.pageRequest,
+              totalItemCount: 1,
+            ),
+          );
+        });
+        return const Result<IcuPatientDetail>.success(
+          IcuPatientDetail(
+            summary: assigned,
+            activeStay: IcuStaySummary(id: 'stay-1'),
+          ),
+        );
+      });
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/icu',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/icu',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: IcuWorkspacePage(
+                  initialQuery: IcuBoardQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            icuRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(writer),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final Element element = tester.element(find.byType(IcuWorkspacePage));
+      final ProviderContainer container = ProviderScope.containerOf(element);
+      final IcuWorkspaceController controller = container.read(
+        icuWorkspaceControllerProvider.notifier,
+      );
+      final AppFailure? selectFailure = await controller.selectPatient(
+        _needsBed,
+      );
+      expect(selectFailure, isNull);
+
+      final AppFailure? mutateFailure = await controller.assignBed('BED-ACT-1');
+      expect(mutateFailure, isNull);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      verify(
+        () => repository.assignBed(
+          detail: any(named: 'detail'),
+          bedId: 'BED-ACT-1',
+        ),
+      ).called(1);
+      verify(() => repository.listIcuBoard(any())).called(greaterThan(1));
+
+      final IcuWorkspaceState? state = container
+          .read(icuWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (IcuWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.selectedDetail?.summary.hasActiveBed, isTrue);
+      expect(
+        state?.board.items.any(
+          (IcuPatientSummary item) =>
+              item.id == assigned.id && item.hasActiveBed,
+        ),
+        isTrue,
+      );
     },
   );
 
@@ -666,4 +858,110 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'authorized writer detail: complementary writes present; Assign bed omitted as next-action',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        board: const <IcuPatientSummary>[_needsBed],
+      );
+
+      await tester.tap(find.text('Ada Active'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Print summary'), findsOneWidget);
+      // Row next-action was Assign bed — omitted from detail Quick Actions.
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Assign ICU bed'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Observation'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.textContaining('End'),
+        ),
+        findsWidgets,
+      );
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('integration: Active tab selected via default /icu deep link', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+
+    await _pumpActiveTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      initialLocation: '/icu',
+    );
+
+    final List<IcuBoardQuery> scopes = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(
+      scopes.any(
+        (IcuBoardQuery q) =>
+            q.scope == IcuBoardScope.active || q.scope == null,
+      ),
+      isTrue,
+    );
+    expect(find.textContaining('Active ICU'), findsWidgets);
+  });
+
+  testWidgets(
+    '∪ navigate: discharge-planned Open clearance remains for read-only',
+    (WidgetTester tester) async {
+      const IcuPatientSummary dischargePlanned = IcuPatientSummary(
+        id: 'ADM-ACT-CLR',
+        admissionId: 'ADM-ACT-CLR',
+        displayId: 'ADM-CLR',
+        patientDisplayName: 'Clearance Ready',
+        icuStatus: 'ACTIVE',
+        bedLabel: 'ICU-9',
+        hasActiveBed: true,
+        dischargeStatus: 'PLANNED',
+        encounterId: 'ENC-ACT-CLR',
+      );
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        board: const <IcuPatientSummary>[dischargePlanned],
+      );
+
+      expect(find.text('Clearance Ready'), findsOneWidget);
+      expect(find.text('Open discharge clearance'), findsWidgets);
+      expect(find.text('Assign ICU bed'), findsNothing);
+      expect(find.text('Observation'), findsNothing);
+    },
+  );
 }

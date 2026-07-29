@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -280,39 +282,76 @@ void main() {
   group('IcuDischargeReadyAtomPermissions mapping', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        identical(
-          IcuDischargeReadyAtomPermissions.tab,
-          icuWorkspaceReadRequirement,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.tab,
+        same(icuWorkspaceReadRequirement),
       );
       expect(
-        identical(
-          IcuDischargeReadyAtomPermissions.write,
-          icuWorkspaceWriteRequirement,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.listChrome,
+        same(icuWorkspaceReadRequirement),
       );
       expect(
-        identical(
-          IcuWorkspaceWriteRequirement.writeRequirement,
-          icuWorkspaceWriteRequirement,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.loading,
+        same(icuWorkspaceReadRequirement),
       );
       expect(
-        identical(
-          IcuDischargeReadyAtomPermissions.routeEntry,
-          icuWorkspaceRouteEntryRequirement,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.detail,
+        same(icuWorkspaceReadRequirement),
       );
       expect(
-        identical(
-          IcuDischargeReadyAtomPermissions.catalogEntry,
-          RouteAccessCatalog.icuEntry,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.printSummary,
+        same(icuWorkspaceReadRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.write,
+        same(icuWorkspaceWriteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.write,
+        same(IcuWorkspaceWriteRequirement.writeRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.validation,
+        same(icuWorkspaceWriteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.success,
+        same(icuWorkspaceWriteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.nextActionMarkReadiness,
+        same(icuWorkspaceWriteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.nextActionOpenDischargeClearance,
+        same(icuNavigationRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.navigate,
+        same(icuNavigationRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.delete,
+        same(icuWorkspaceDeleteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.routeEntry,
+        same(icuWorkspaceRouteEntryRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.catalogEntry,
+        same(RouteAccessCatalog.icuEntry),
+      );
+      expect(
+        icuBoardTabRequirement(IcuWorkspaceSection.discharge),
+        same(IcuDischargeReadyAtomPermissions.tab),
+      );
+      expect(
+        icuDetailReadRequirement(IcuWorkspaceSection.discharge),
+        same(IcuDischargeReadyAtomPermissions.detail),
+      );
+      expect(
+        icuWriteRequirementForSection(IcuWorkspaceSection.discharge),
+        same(IcuDischargeReadyAtomPermissions.write),
       );
       expect(icuRouteEntryMatchesAppRoutes(), isTrue);
     });
@@ -337,8 +376,22 @@ void main() {
         IcuDischargeReadyAtomPermissions.endStay.isAllowed(reader),
         isFalse,
       );
+      expect(
+        IcuDischargeReadyAtomPermissions.validation.isAllowed(reader),
+        isFalse,
+      );
       expect(canWriteIcu(reader), isFalse);
       expect(canViewIcuDischargeReady(reader), isTrue);
+      // Navigate next-action stays available without write.
+      expect(
+        IcuDischargeReadyAtomPermissions.nextActionOpenDischargeClearance
+            .isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        icuBoardShowsNextActionColumn(reader, IcuWorkspaceSection.discharge),
+        isTrue,
+      );
     });
 
     test(
@@ -356,6 +409,12 @@ void main() {
         );
         expect(
           IcuDischargeReadyAtomPermissions.markReadiness.isAllowed(
+            clinicalWriter,
+          ),
+          isTrue,
+        );
+        expect(
+          IcuDischargeReadyAtomPermissions.validation.isAllowed(
             clinicalWriter,
           ),
           isTrue,
@@ -382,6 +441,10 @@ void main() {
       );
       expect(
         IcuDischargeReadyAtomPermissions.tab.isAllowed(emergencyReader),
+        isTrue,
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.loading.isAllowed(emergencyReader),
         isTrue,
       );
       expect(canViewIcuDischargeReady(emergencyReader), isTrue);
@@ -442,11 +505,19 @@ void main() {
 
     test('nested cross-module rows are n/a; nestedWrite reuses write ∪', () {
       expect(
-        identical(
-          IcuDischargeReadyAtomPermissions.nestedWrite,
-          icuWorkspaceWriteRequirement,
-        ),
-        isTrue,
+        IcuDischargeReadyAtomPermissions.nestedWrite,
+        same(icuWorkspaceWriteRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.nestedRead,
+        same(icuWorkspaceReadRequirement),
+      );
+      expect(
+        IcuDischargeReadyAtomPermissions.nestedWrite.anyPermissions.toSet(),
+        <AppPermission>{
+          AppPermissions.clinicalWrite,
+          AppPermissions.emergencyWrite,
+        },
       );
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
@@ -852,5 +923,165 @@ void main() {
 
     expect(find.text('Discharge readiness'), findsWidgets);
     expect(find.text('Dana Discharge'), findsOneWidget);
+  });
+
+  testWidgets('integration: Discharge tab selected via section=discharge', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+
+    await _pumpDischargeReadyTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      initialLocation: '/icu?section=discharge',
+    );
+
+    final List<IcuBoardQuery> scopes = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(
+      scopes.any((IcuBoardQuery q) => q.scope == IcuBoardScope.discharge),
+      isTrue,
+    );
+    expect(find.textContaining('Discharge ready'), findsWidgets);
+  });
+
+  testWidgets(
+    'authorized readiness dialog shows validation on empty submit',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+
+      // Planned next-action is Open clearance; Mark readiness stays in detail
+      // Quick Actions so the nested write dialog is reachable for validation.
+      await _pumpDischargeReadyTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        items: const <IcuPatientSummary>[_plannedClearance],
+      );
+
+      await tester.tap(find.text('Pat Planned'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Discharge readiness'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mark discharge readiness'), findsOneWidget);
+      await tester.tap(find.text('Mark ready'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsOneWidget);
+      verifyNever(
+        () => repository.markDischargeReady(
+          detail: any(named: 'detail'),
+          summary: any(named: 'summary'),
+          dischargedAt: any(named: 'dischargedAt'),
+        ),
+      );
+    },
+  );
+
+  testWidgets('authorized loading chrome remains observable', (
+    WidgetTester tester,
+  ) async {
+    final Completer<Result<AppPage<IcuPatientSummary>>> listCompleter =
+        Completer<Result<AppPage<IcuPatientSummary>>>();
+    when(() => repository.listIcuBoard(any())).thenAnswer(
+      (_) => listCompleter.future,
+    );
+    when(() => repository.loadReferenceData()).thenAnswer(
+      (_) async => const Result<IcuReferenceData>.success(IcuReferenceData()),
+    );
+    when(() => repository.loadBedBoard()).thenAnswer(
+      (_) async => const Result<IcuBedBoard>.success(
+        IcuBedBoard(wards: <IcuBedWard>[], beds: <IcuBed>[]),
+      ),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/icu?section=discharge',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/icu',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: IcuWorkspacePage(
+                initialQuery: IcuBoardQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          icuRepositoryProvider.overrideWithValue(repository),
+          followUpTabCountProvider.overrideWith(
+            (Ref ref, FollowUpWorklistScope scope) => null,
+          ),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{AppPermissions.clinicalRead},
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Loading ICU board'), findsOneWidget);
+    expect(find.text('Discharge readiness'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+
+    listCompleter.complete(
+      Result<AppPage<IcuPatientSummary>>.success(
+        AppPage<IcuPatientSummary>(
+          items: const <IcuPatientSummary>[_pendingReadiness],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
   });
 }

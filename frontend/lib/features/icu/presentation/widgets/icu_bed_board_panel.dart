@@ -41,51 +41,60 @@ class IcuBedBoardPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (board.wards.isNotEmpty)
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              ChoiceChip(
-                label: Text(l10n.icuBedBoardAllWards),
-                selected: board.selectedWardId == null,
-                onSelected: (_) => controller.selectBedWard(null),
-              ),
-              for (final IcuBedWard ward in board.wards)
+          AppAccessGate(
+            requirement: IcuBedBoardAtomPermissions.wardFilters,
+            child: Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
                 ChoiceChip(
-                  label: Text(ward.displayTitle),
-                  selected: board.selectedWardId == ward.id,
-                  onSelected: (_) => controller.selectBedWard(ward.id),
+                  label: Text(l10n.icuBedBoardAllWards),
+                  selected: board.selectedWardId == null,
+                  onSelected: (_) => controller.selectBedWard(null),
                 ),
-            ],
+                for (final IcuBedWard ward in board.wards)
+                  ChoiceChip(
+                    label: Text(ward.displayTitle),
+                    selected: board.selectedWardId == ward.id,
+                    onSelected: (_) => controller.selectBedWard(ward.id),
+                  ),
+              ],
+            ),
           ),
         SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: l10n.icuBedAvailableLabel(board.availableCount),
-                tone: AppWorkspaceStatusTone.success,
+        AppAccessGate(
+          requirement: IcuBedBoardAtomPermissions.summaryChips,
+          child: Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.icuBedAvailableLabel(board.availableCount),
+                  tone: AppWorkspaceStatusTone.success,
+                ),
               ),
-            ),
-            AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: l10n.icuBedOccupiedLabel(board.occupiedCount),
-                tone: AppWorkspaceStatusTone.info,
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.icuBedOccupiedLabel(board.occupiedCount),
+                  tone: AppWorkspaceStatusTone.info,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         SizedBox(height: theme.spacing.md),
         if (state.isRefreshingBeds && beds.isEmpty)
           const LinearProgressIndicator(minHeight: 2)
         else if (beds.isEmpty)
-          AppWorkspaceStatePanel.state(
-            variant: AppStateViewVariant.empty,
-            title: l10n.icuBedNoBedsTitle,
-            body: l10n.icuBedNoBedsBody,
-            icon: Icons.bed_outlined,
+          AppAccessGate(
+            requirement: IcuBedBoardAtomPermissions.empty,
+            child: AppWorkspaceStatePanel.state(
+              variant: AppStateViewVariant.empty,
+              title: l10n.icuBedNoBedsTitle,
+              body: l10n.icuBedNoBedsBody,
+              icon: Icons.bed_outlined,
+            ),
           )
         else
           Column(

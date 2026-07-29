@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
+import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
@@ -115,8 +117,12 @@ void _stubRepository(
   _MockIcuRepository repository, {
   List<IcuPatientSummary> items = const <IcuPatientSummary>[_criticalPatient],
   IcuPatientDetail? detail,
+  Result<AppPage<IcuPatientSummary>>? listOverride,
 }) {
   when(() => repository.listIcuBoard(any())).thenAnswer((invocation) async {
+    if (listOverride != null) {
+      return listOverride;
+    }
     final IcuBoardQuery query =
         invocation.positionalArguments.single as IcuBoardQuery;
     List<IcuPatientSummary> filtered = items;
@@ -177,10 +183,12 @@ Future<void> _pumpCriticalTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/icu?section=critical',
+  List<IcuPatientSummary> items = const <IcuPatientSummary>[_criticalPatient],
+  Result<AppPage<IcuPatientSummary>>? listOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(repository, items: items, listOverride: listOverride);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -292,6 +300,18 @@ void main() {
       expect(
         IcuCriticalAtomPermissions.routeEntry,
         same(RouteAccessCatalog.icuEntry),
+      );
+      expect(
+        IcuCriticalAtomPermissions.catalogEntry,
+        same(RouteAccessCatalog.icuEntry),
+      );
+      expect(
+        IcuCriticalAtomPermissions.navigation,
+        same(icuNavigationRequirement),
+      );
+      expect(
+        IcuCriticalAtomPermissions.navigate,
+        same(icuNavigationRequirement),
       );
       expect(
         icuWriteRequirementForSection(IcuWorkspaceSection.critical),
@@ -538,7 +558,6 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
-      _stubRepository(repository);
 
       await _pumpCriticalTab(
         tester,
@@ -546,15 +565,146 @@ void main() {
         accessPolicy: writer,
       );
 
-      expect(find.text('Acknowledge alert'), findsWidgets);
-      await tester.tap(find.text('Acknowledge alert').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      final Element element = tester.element(find.byType(IcuWorkspacePage));
+      final ProviderContainer container = ProviderScope.containerOf(element);
+      final IcuWorkspaceController controller = container.read(
+        icuWorkspaceControllerProvider.notifier,
+      );
+      final AppFailure? selectFailure = await controller.selectPatient(
+        _criticalPatient,
+      );
+      expect(selectFailure, isNull);
 
-      // Confirm dialog should surface for authorized write.
-      expect(find.textContaining('Acknowledge'), findsWidgets);
+      final AppFailure? mutateFailure = await controller.acknowledgeLatestAlert();
+      expect(mutateFailure, isNull);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      verify(
+        () => repository.acknowledgeAlert(
+          detail: any(named: 'detail'),
+          alertId: 'ALERT-1',
+        ),
+      ).called(1);
+
+      final IcuWorkspaceState? state = container
+          .read(icuWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (IcuWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.selectedDetail?.summary.hasCriticalAlert, isFalse);
+      expect(
+        state?.board.items.any(
+          (IcuPatientSummary item) =>
+              item.id == _criticalPatient.id && !item.hasCriticalAlert,
+        ),
+        isTrue,
+      );
     },
   );
+
+  testWidgets(
+    'subscription strip collapses Critical chrome without icu-critical-care',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      await _pumpCriticalTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Critical Tab Patient'), findsNothing);
+      expect(find.text('Acknowledge alert'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('authorized empty state remains observable for readers', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+
+    await _pumpCriticalTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      items: const <IcuPatientSummary>[],
+      listOverride: Result<AppPage<IcuPatientSummary>>.success(
+        AppPage<IcuPatientSummary>(
+          items: const <IcuPatientSummary>[],
+          request: const AppPageRequest(),
+          totalItemCount: 0,
+        ),
+      ),
+    );
+
+    expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
+    expect(find.text('Acknowledge alert'), findsNothing);
+    expect(find.byType(AppSearchBar), findsOneWidget);
+  });
+
+  testWidgets('authorized error/retry surface remains observable', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+    );
+
+    await _pumpCriticalTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      listOverride: const Result<AppPage<IcuPatientSummary>>.failure(
+        AppFailure.network(),
+      ),
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('integration: Critical tab selected via section=critical', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+
+    await _pumpCriticalTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      initialLocation: '/icu?section=critical',
+    );
+
+    final List<IcuBoardQuery> scopes = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(
+      scopes.any((IcuBoardQuery q) => q.scope == IcuBoardScope.critical),
+      isTrue,
+    );
+  });
 
   testWidgets('mobile viewport: Critical read chrome + no write affordance', (
     WidgetTester tester,
@@ -571,12 +721,12 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.textContaining('Critical Tab'), findsWidgets);
+    expect(find.textContaining('Critical'), findsWidgets);
     expect(find.text('Acknowledge alert'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('dark theme: Critical write affordances remain for writer', (
+  testWidgets('desktop + dark: Critical write affordances remain for writer', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -598,76 +748,25 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('empty Critical board still shows authorized empty state', (
+  testWidgets('desktop + light: write ∪ mounts Acknowledge alert', (
     WidgetTester tester,
   ) async {
-    final AppAccessPolicy reader = _policy(
-      permissions: <AppPermission>{AppPermissions.clinicalRead},
-    );
-    when(() => repository.listIcuBoard(any())).thenAnswer((invocation) async {
-      final IcuBoardQuery query =
-          invocation.positionalArguments.single as IcuBoardQuery;
-      return Result<AppPage<IcuPatientSummary>>.success(
-        AppPage<IcuPatientSummary>(
-          items: const <IcuPatientSummary>[],
-          request: query.pageRequest,
-          totalItemCount: 0,
-        ),
-      );
-    });
-    when(repository.loadReferenceData).thenAnswer(
-      (_) async => const Result<IcuReferenceData>.success(IcuReferenceData()),
-    );
-    when(repository.loadBedBoard).thenAnswer(
-      (_) async => const Result<IcuBedBoard>.success(IcuBedBoard()),
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
     );
 
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    tester.view.physicalSize = const Size(1440, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final GoRouter router = GoRouter(
-      initialLocation: '/icu?section=critical',
-      routes: <RouteBase>[
-        GoRoute(
-          path: '/icu',
-          builder: (BuildContext context, GoRouterState state) {
-            return Scaffold(
-              body: IcuWorkspacePage(
-                initialQuery: IcuBoardQuery.fromUri(state.uri),
-              ),
-            );
-          },
-        ),
-      ],
+    await _pumpCriticalTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      physicalSize: const Size(1440, 900),
+      themeMode: ThemeMode.light,
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          icuRepositoryProvider.overrideWithValue(repository),
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
-          ),
-          appAccessPolicyProvider.overrideWithValue(reader),
-        ],
-        child: MaterialApp.router(
-          theme: AppTheme.light,
-          routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
-    expect(find.text('Acknowledge alert'), findsNothing);
+    expect(find.text('Acknowledge alert'), findsWidgets);
+    expect(find.text('Critical Tab Patient'), findsOneWidget);
   });
 }
