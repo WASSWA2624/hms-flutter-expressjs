@@ -1,11 +1,10 @@
 """Run prompts/billing-and-sections/**/*.md with Cursor agents.
 
 Processing rules:
-- One folder at a time; never start the next until every prompt in the
-  current folder has finished.
-- Within a folder, at most MAX_CONCURRENCY prompts run at once.
+- Up to MAX_CONCURRENCY prompts run at once, drawn from any folder
+  (folder boundaries do not throttle concurrency).
 - Each prompt runs once.
-- After each successful prompt, commit and push to GitHub.
+- As soon as a prompt finishes successfully, commit and push its results.
 - Completed prompt files in .run_billing_and_sections_prompts_state.json
   are skipped on resume; pass --force to clear state and re-run everything.
 - Model is Composer 2.5 (composer-2.5).
@@ -352,9 +351,10 @@ async def run_prompt(
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run prompts/billing-and-sections folder-by-folder with Cursor "
-            f"model={MODEL}. Each prompt once; commit+push after success. "
-            "Resume skips finished files in "
+            "Run prompts/billing-and-sections with Cursor "
+            f"model={MODEL}. Up to {MAX_CONCURRENCY} prompts concurrent "
+            "across any folder; each prompt once; commit+push as soon as "
+            "each succeeds. Resume skips finished files in "
             ".run_billing_and_sections_prompts_state.json."
         )
     )
@@ -439,7 +439,11 @@ async def main(argv: list[str] | None = None):
         f"Billing & sections - {len(folders)} folders - "
         f"{len(all_prompts)} prompts - {MODEL}"
     )
-    _log(f"{skipped} done - {len(pending_prompts)} left - up to {MAX_CONCURRENCY} at once\n")
+    _log(
+        f"{skipped} done - {len(pending_prompts)} left - "
+        f"up to {MAX_CONCURRENCY} at once (any folder)"
+    )
+    _log("Commit+push as soon as each prompt finishes.\n")
 
     if not pending_prompts:
         _log("Nothing left to run. Use --force to start over.")
@@ -452,7 +456,6 @@ async def main(argv: list[str] | None = None):
     ]
     git_lock = asyncio.Lock()
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
-    failed = False
 
     try:
         async with await AsyncClient.launch_bridge(
@@ -460,56 +463,23 @@ async def main(argv: list[str] | None = None):
             client_timeout=BRIDGE_TIMEOUT_SECONDS,
             max_retries=2,
         ) as client:
-            for folder in folders:
-                prompts = prompts_by_folder[folder]
-                batch = [
-                    p
-                    for p in prompts
-                    if not _is_finished(_prompt_rel(p), finished)
-                ]
-                if not batch:
-                    continue
-
-                _log(f"{folder.name} ({len(batch)} left)")
-                batch_results = await asyncio.gather(
-                    *[
-                        run_prompt(
-                            prompt_path=prompt,
-                            client=client,
-                            finished=finished,
-                            git_lock=git_lock,
-                            sem=sem,
-                        )
-                        for prompt in batch
-                    ]
-                )
-                results.extend(batch_results)
-
-                errors = [r for r in batch_results if r["status"] != "finished"]
-                if errors:
-                    failed = True
-                    _log(
-                        f"\nStopped in {folder.name} "
-                        f"({len(errors)} failed). Re-run to continue.",
-                        err=True,
+            _log(
+                f"Starting {len(pending_prompts)} prompt(s) "
+                f"(max {MAX_CONCURRENCY} concurrent)"
+            )
+            batch_results = await asyncio.gather(
+                *[
+                    run_prompt(
+                        prompt_path=prompt,
+                        client=client,
+                        finished=finished,
+                        git_lock=git_lock,
+                        sem=sem,
                     )
-                    break
-
-                still_open = [
-                    p
-                    for p in prompts
-                    if not _is_finished(_prompt_rel(p), finished)
+                    for prompt in pending_prompts
                 ]
-                if still_open:
-                    failed = True
-                    _log(
-                        f"\nStopped: {folder.name} still has "
-                        f"{len(still_open)} unfinished. Re-run to continue.",
-                        err=True,
-                    )
-                    break
-
-                _log("")
+            )
+            results.extend(batch_results)
     except (asyncio.CancelledError, KeyboardInterrupt):
         _save_finished(finished)
         done = sum(1 for rel in all_rels if _is_finished(rel, finished))
@@ -524,7 +494,7 @@ async def main(argv: list[str] | None = None):
     errors = [r for r in this_run if r["status"] != "finished"]
     finished_count = sum(1 for rel in all_rels if _is_finished(rel, finished))
 
-    _log("Summary")
+    _log("\nSummary")
     if this_run:
         ok = sum(1 for r in this_run if r["status"] == "finished")
         bad = sum(1 for r in this_run if r["status"] != "finished")
@@ -543,7 +513,7 @@ async def main(argv: list[str] | None = None):
     else:
         _log(f"  {finished_count}/{len(all_rels)} complete - nothing new")
 
-    if errors or failed or finished_count < len(all_rels):
+    if errors or finished_count < len(all_rels):
         _log(f"\n{finished_count}/{len(all_rels)} complete. Re-run for the rest.")
         sys.exit(1)
 
