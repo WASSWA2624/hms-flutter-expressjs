@@ -142,10 +142,12 @@ Widget tests in `frontend/test/features/biomedical/presentation/biomedical_works
 
 Registry permission tests in `frontend/test/features/biomedical/presentation/biomedical_registry_permissions_test.dart`:
 
-- [x] ∩ denial: `biomed:read` without write omits Register asset / detail writes / print.
+- [x] ∩ denial: `biomed:read` without write omits Register asset / detail writes / print; Filters/list chrome remain.
 - [x] Source write ∪: `operations:write` (+ facilities module) mounts Register / Edit; print needs `evidence:export`.
 - [x] Route entry ∪ without tab read ∩ omits Registry chrome; subscription strip without module denies.
-- [x] Authorized Register / Edit mutations sync; empty/loading→success/error-retry, mobile+desktop, light+dark.
+- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; nested writes still mount.
+- [x] Authorized Register / Edit mutations sync; Register validation keeps dialog open.
+- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Analytics permission tests in `frontend/test/features/biomedical/presentation/biomedical_analytics_permissions_test.dart`:
 

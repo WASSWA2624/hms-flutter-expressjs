@@ -185,7 +185,6 @@ class _BiomedicalWorkspaceContentState
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = canWriteBiomedical(accessPolicy);
-    final bool canPrint = canPrintBiomedical(accessPolicy);
     final List<String> visiblePanels = <String>[
       for (final String panel in BiomedicalPanels.values)
         if (canViewBiomedicalPanel(accessPolicy, panel)) panel,
@@ -807,8 +806,6 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
         _DetailActions(
           state: state,
           asset: asset,
-          canWrite: canWrite,
-          canPrint: canPrint,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
         ...appWorkspaceDetailSectionSpacing(context, <Widget>[
@@ -874,14 +871,10 @@ class _DetailActions extends ConsumerWidget {
   const _DetailActions({
     required this.state,
     required this.asset,
-    required this.canWrite,
-    required this.canPrint,
   });
 
   final BiomedicalWorkspaceState state;
   final BiomedicalAsset asset;
-  final bool canWrite;
-  final bool canPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -891,12 +884,19 @@ class _DetailActions extends ConsumerWidget {
         asset.resource == BiomedicalResources.workOrders;
     final String workOrderStatus = asset.status?.trim().toUpperCase() ?? '';
 
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+
     Widget? writeAction({
       required _BiomedicalActionKind kind,
       required String label,
       required IconData icon,
     }) {
-      if (!canWrite || kind == nextKind) {
+      // Omit when this kind is the row next-action, or when the atom's
+      // *Requirement (e.g. Support [logIncident]) denies the policy.
+      if (kind == nextKind) {
+        return null;
+      }
+      if (!_nextActionWriteRequirement(kind).isAllowed(policy)) {
         return null;
       }
       return AppButton.secondary(
@@ -910,7 +910,7 @@ class _DetailActions extends ConsumerWidget {
     }
 
     final List<Widget> actions = <Widget>[
-      if (canWrite && asset.isRegistryAsset)
+      if (asset.isRegistryAsset)
         ?writeAction(
           kind: _BiomedicalActionKind.asset,
           label: l10n.biomedicalEditAssetAction,
@@ -983,7 +983,7 @@ class _DetailActions extends ConsumerWidget {
         label: l10n.biomedicalDisposeTransferAction,
         icon: Icons.move_down_outlined,
       ),
-      if (canPrint)
+      if (biomedicalPrintRequirement.isAllowed(policy))
         AppReportActionButton.print(
           label: l10n.biomedicalPrintReportAction,
           onPressed: () => unawaited(_printBiomedicalReport(context, ref, asset)),

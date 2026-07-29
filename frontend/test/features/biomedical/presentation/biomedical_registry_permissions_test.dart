@@ -209,6 +209,7 @@ void main() {
       expect(find.text('Defibrillator'), findsOneWidget);
       expect(find.text('Registry'), findsWidgets);
       expect(find.text('Location'), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.byTooltip('Register asset'), findsNothing);
       expect(find.text('Review record'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
@@ -485,6 +486,40 @@ void main() {
         ),
       ).called(1);
       expect(find.text('Biomedical changes saved.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Register asset validation keeps dialog open without mutation',
+    (WidgetTester tester) async {
+      await _pumpRegistryTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Register asset'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('REGISTER EQUIPMENT'), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Create'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('REGISTER EQUIPMENT'), findsOneWidget);
+      expect(find.textContaining('is required'), findsWidgets);
+      verifyNever(() => repository.createResource(any(), any()));
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
