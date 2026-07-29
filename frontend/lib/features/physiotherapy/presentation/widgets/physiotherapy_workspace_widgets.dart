@@ -103,11 +103,14 @@ AccessRequirement therapyNextActionRequirementForKind(
   TherapyNextActionKind kind,
 ) {
   // REFERRAL row next-action is Accept referral (Referrals atom map — write ∩).
+  // TODAY / IN_TREATMENT row next-action is Record session (Today atom map).
   // COMPLETED row next-action is Print instructions (Completed atom map).
   // MISSED row next-action is Mark attendance (Missed atom map — write ∩).
   return switch (kind) {
     TherapyNextActionKind.acceptReferral =>
       PhysiotherapyReferralsAtomPermissions.acceptReferral,
+    TherapyNextActionKind.recordSession =>
+      PhysiotherapyTodayAtomPermissions.recordSession,
     TherapyNextActionKind.printInstructions =>
       PhysiotherapyCompletedAtomPermissions.printInstructions,
     TherapyNextActionKind.markAttendance =>

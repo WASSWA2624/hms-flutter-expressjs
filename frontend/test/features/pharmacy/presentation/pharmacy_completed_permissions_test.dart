@@ -338,8 +338,29 @@ void main() {
       );
       expect(
         identical(
+          PharmacyCompletedAtomPermissions.dispenseProgress,
+          pharmacyWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyCompletedAtomPermissions.billingStatus,
+          pharmacyBillingStatusReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           pharmacySectionTabRequirement(PharmacyDeskSection.completed),
           PharmacyCompletedAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          pharmacySectionWriteRequirement(PharmacyDeskSection.completed),
+          PharmacyCompletedAtomPermissions.write,
         ),
         isTrue,
       );
@@ -366,6 +387,7 @@ void main() {
       expect(PharmacyCompletedAtomPermissions.filters, isNotNull);
       expect(PharmacyCompletedAtomPermissions.settings, isNotNull);
       expect(PharmacyCompletedAtomPermissions.pagination, isNotNull);
+      expect(PharmacyCompletedAtomPermissions.dispenseProgress, isNotNull);
       expect(PharmacyCompletedAtomPermissions.empty, isNotNull);
       expect(PharmacyCompletedAtomPermissions.loading, isNotNull);
       expect(PharmacyCompletedAtomPermissions.retry, isNotNull);
@@ -559,6 +581,39 @@ void main() {
       );
     });
 
+    test('billing status ∩ denial without billing:read', () {
+      final AppAccessPolicy pharmacyOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.pharmacyRead},
+      );
+      final AppAccessPolicy withBillingRead = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.pharmacyRead,
+          AppPermissions.billingRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: pharmacyDispensingModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: billingPaymentsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      expect(
+        PharmacyCompletedAtomPermissions.billingStatus.isAllowed(pharmacyOnly),
+        isFalse,
+      );
+      expect(
+        PharmacyCompletedAtomPermissions.billingStatus.isAllowed(
+          withBillingRead,
+        ),
+        isTrue,
+      );
+    });
+
     test('controlled-drug audit ∩ needs pharmacy:read + compliance:read', () {
       final AppAccessPolicy pharmacyOnly = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyRead},
@@ -728,6 +783,77 @@ void main() {
         expect(find.text('Dana Done'), findsOneWidget);
         expect(find.text('Record payment'), findsNothing);
         expect(find.text('Return'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'billing status ∩ denial: Payment clearance absent in Completed detail',
+      (WidgetTester tester) async {
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          ),
+        );
+
+        await tester.tap(find.text('Dana Done'));
+        await tester.pumpAndSettle();
+
+        final Finder dialog = find.byType(AppDialog);
+        expect(dialog, findsOneWidget);
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.text('Payment clearance'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.text('Amount due')),
+          findsNothing,
+        );
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'billing status ∩ full set: Payment clearance mounts in Completed detail',
+      (WidgetTester tester) async {
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.billingRead,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: billingPaymentsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Dana Done'));
+        await tester.pumpAndSettle();
+
+        final Finder dialog = find.byType(AppDialog);
+        expect(dialog, findsOneWidget);
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.text('Payment clearance'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 

@@ -34306,6 +34306,90 @@ abstract class AppLocalizations {
   /// Permission catalog label.
   ///
   /// In en, this message translates to:
+  /// **'Reception — Read'**
+  String get permissionCatalogReceptionRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients Registry — Read'**
+  String get permissionCatalogPatientsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD — Read'**
+  String get permissionCatalogOpdRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'IPD — Read'**
+  String get permissionCatalogIpdRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms & Beds — Read'**
+  String get permissionCatalogRoomsBedsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU — Read'**
+  String get permissionCatalogIcuRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing — Read'**
+  String get permissionCatalogNursingRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy — Read'**
+  String get permissionCatalogPhysiotherapyRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater — Read'**
+  String get permissionCatalogTheaterRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge — Read'**
+  String get permissionCatalogDischargeRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims — Read'**
+  String get permissionCatalogClaimsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping — Read'**
+  String get permissionCatalogHousekeepingRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrative Setup — Read'**
+  String get permissionCatalogSetupRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Admin — Read'**
+  String get permissionCatalogAccessAdminRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
   /// **'Clinical — Read'**
   String get permissionCatalogClinicalRead;
 

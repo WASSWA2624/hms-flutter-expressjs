@@ -155,8 +155,14 @@ Future<bool?> showRoleMutationDialog({
           (AccessAdminLookupOption option) => AppPermissionAssignmentOption(
             id: option.id,
             code: option.label,
-            label: l10n.permissionCatalogLabelForCode(option.label),
-            description: option.label,
+            label: l10n.permissionAssignmentLabelForCode(
+              option.label,
+              displayName: option.displayName,
+            ),
+            description:
+                (option.meta ?? '').trim().isNotEmpty
+                    ? option.meta
+                    : l10n.permissionCatalogDescriptionForCode(option.label),
           ),
         )
         .toList(growable: false);

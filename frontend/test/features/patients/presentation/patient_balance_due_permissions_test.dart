@@ -757,9 +757,25 @@ void main() {
           policy: _tabReadPolicy(),
           patient: _incompletePatient,
           items: const <Patient>[_incompletePatient],
+          overviewOverride: Result<PatientRegistryOverview>.success(
+            PatientRegistryOverview(
+              totalPatients: 1,
+              unpaidInvoices: 1,
+              duplicates: <PatientDuplicateCandidate>[
+                PatientDuplicateCandidate(
+                  reviewId: 'dup-1',
+                  confidenceScore: 90,
+                  classification: 'LIKELY',
+                  primaryPatient: _incompletePatient,
+                  secondaryPatient: _idlePatient,
+                ),
+              ],
+            ),
+          ),
         );
 
         expect(find.byTooltip('Register patient'), findsNothing);
+        expect(find.text('Duplicate review'), findsNothing);
         expect(find.text('Ina Incomplete'), findsWidgets);
         // Incomplete next-action button must not mount for read-only users.
         expect(
@@ -775,6 +791,9 @@ void main() {
 
         expect(find.text('Edit'), findsNothing);
         expect(find.text('Delete'), findsNothing);
+        expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Billing details'), findsOneWidget);
+        expect(find.text('Open billing'), findsNothing);
       },
     );
 
@@ -844,8 +863,98 @@ void main() {
 
         expect(find.text('Request lab'), findsNothing);
         expect(find.text('Request radiology'), findsNothing);
+        expect(find.text('Schedule theater procedure'), findsNothing);
         expect(find.text('Patient report'), findsOneWidget);
+        expect(find.text('Billing details'), findsOneWidget);
         expect(find.text('Open billing'), findsNothing);
+        expect(find.text('Enroll insurance'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested write ∩ billing:write: Open billing present for writers',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.billingRead,
+              AppPermissions.patientWrite,
+              AppPermissions.billingWrite,
+            },
+            roles: const <String>['DOCTOR', 'BILLING'],
+          ),
+          patient: _idlePatient,
+          items: const <Patient>[_idlePatient],
+        );
+
+        await tester.tap(find.text('Ida Idle').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Billing details'), findsOneWidget);
+        expect(find.text('Open billing'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'billing-role reader: Open billing present; clinical chips absent',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+            roles: const <String>['BILLING'],
+          ),
+          patient: _idlePatient,
+          items: const <Patient>[_idlePatient],
+        );
+
+        await tester.tap(find.text('Ida Idle').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Billing details'), findsOneWidget);
+        expect(find.text('Open billing'), findsOneWidget);
+        expect(find.text('Schedule appointment'), findsNothing);
+        expect(find.text('Start OPD encounter'), findsNothing);
+        expect(find.text('Request lab'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'union allowance UI: Continue OPD via tab billing:read leg',
+      (WidgetTester tester) async {
+        final Patient withOpdVisit = _idlePatient.copyWith(
+          currentVisit: const PatientVisitContext(
+            kind: 'encounter',
+            publicId: 'OPD-BAL-1',
+            status: 'IN_PROGRESS',
+            title: 'OPD encounter',
+          ),
+        );
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _tabReadPolicy(),
+          patient: withOpdVisit,
+          items: <Patient>[withOpdVisit],
+        );
+
+        await tester.tap(find.text('Ida Idle').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Continue OPD flow'), findsOneWidget);
+        expect(find.text('Start OPD encounter'), findsNothing);
+        expect(find.text('Request lab'), findsNothing);
       },
     );
 
@@ -872,8 +981,43 @@ void main() {
         expect(find.text('Request admission'), findsOneWidget);
         expect(find.text('Request lab'), findsOneWidget);
         expect(find.text('Patient report'), findsOneWidget);
+        expect(find.text('Enroll insurance'), findsOneWidget);
+        expect(find.text('Billing details'), findsOneWidget);
+        expect(find.text('Open billing'), findsOneWidget);
       },
     );
+
+    testWidgets('Active Work Continue for lab absent without lab module', (
+      WidgetTester tester,
+    ) async {
+      final PatientDetail detail = PatientDetail(
+        patient: _balancePatient,
+        workspace: const PatientWorkspaceSnapshot(),
+        timeline: <PatientTimelineItem>[
+          PatientTimelineItem(
+            id: 'lab-1',
+            resource: 'lab_order',
+            title: 'CBC',
+            subtitle: 'ORDERED',
+            occurredAt: DateTime(2026, 7, 1),
+          ),
+        ],
+      );
+
+      await _pumpBalanceDueTab(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        policy: _tabReadWritePolicy(),
+        detail: detail,
+      );
+
+      await tester.tap(find.text('Bea Balance').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Active work'), findsOneWidget);
+      expect(find.text('Collect sample'), findsNothing);
+    });
 
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,

@@ -846,6 +846,13 @@ void main() {
       );
       expect(
         identical(
+          PharmacyPendingPaymentAtomPermissions.paymentSuccess,
+          pharmacyRecordPaymentRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           PharmacyPendingPaymentAtomPermissions.billingStatus,
           pharmacyBillingStatusReadRequirement,
         ),

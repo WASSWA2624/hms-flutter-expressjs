@@ -18422,6 +18422,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionCatalogPatientDelete => 'Patient — Delete';
 
   @override
+  String get permissionCatalogReceptionRead => 'Reception — Read';
+
+  @override
+  String get permissionCatalogPatientsRead => 'Patients Registry — Read';
+
+  @override
+  String get permissionCatalogOpdRead => 'OPD — Read';
+
+  @override
+  String get permissionCatalogIpdRead => 'IPD — Read';
+
+  @override
+  String get permissionCatalogRoomsBedsRead => 'Rooms & Beds — Read';
+
+  @override
+  String get permissionCatalogIcuRead => 'ICU — Read';
+
+  @override
+  String get permissionCatalogNursingRead => 'Nursing — Read';
+
+  @override
+  String get permissionCatalogPhysiotherapyRead => 'Physiotherapy — Read';
+
+  @override
+  String get permissionCatalogTheaterRead => 'Theater — Read';
+
+  @override
+  String get permissionCatalogDischargeRead => 'Discharge — Read';
+
+  @override
+  String get permissionCatalogClaimsRead => 'Claims — Read';
+
+  @override
+  String get permissionCatalogHousekeepingRead => 'Housekeeping — Read';
+
+  @override
+  String get permissionCatalogSetupRead => 'Administrative Setup — Read';
+
+  @override
+  String get permissionCatalogAccessAdminRead => 'Access Admin — Read';
+
+  @override
   String get permissionCatalogClinicalRead => 'Clinical — Read';
 
   @override

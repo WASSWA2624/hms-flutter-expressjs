@@ -16,6 +16,20 @@ extension AppPermissionCatalogLocalizations on AppLocalizations {
       'patient:read' => permissionCatalogPatientRead,
       'patient:write' => permissionCatalogPatientWrite,
       'patient:delete' => permissionCatalogPatientDelete,
+      'reception:read' => permissionCatalogReceptionRead,
+      'patients:read' => permissionCatalogPatientsRead,
+      'opd:read' => permissionCatalogOpdRead,
+      'ipd:read' => permissionCatalogIpdRead,
+      'rooms_beds:read' => permissionCatalogRoomsBedsRead,
+      'icu:read' => permissionCatalogIcuRead,
+      'nursing:read' => permissionCatalogNursingRead,
+      'physiotherapy:read' => permissionCatalogPhysiotherapyRead,
+      'theater:read' => permissionCatalogTheaterRead,
+      'discharge:read' => permissionCatalogDischargeRead,
+      'claims:read' => permissionCatalogClaimsRead,
+      'housekeeping:read' => permissionCatalogHousekeepingRead,
+      'setup:read' => permissionCatalogSetupRead,
+      'access_admin:read' => permissionCatalogAccessAdminRead,
       'clinical:read' => permissionCatalogClinicalRead,
       'clinical:write' => permissionCatalogClinicalWrite,
       'emergency:read' => permissionCatalogEmergencyRead,
@@ -80,6 +94,22 @@ extension AppPermissionCatalogLocalizations on AppLocalizations {
     };
   }
 
+  /// Prefer localized catalog labels; fall back to synced API display names.
+  String permissionAssignmentLabelForCode(
+    String code, {
+    String? displayName,
+  }) {
+    final String localized = permissionCatalogLabelForCode(code);
+    if (localized != code) {
+      return localized;
+    }
+    final String synced = (displayName ?? '').trim();
+    if (synced.isNotEmpty) {
+      return synced;
+    }
+    return code;
+  }
+
   /// Catalog description for [code], never the display-name label.
   ///
   /// Prefer synced DB descriptions when present on list items; use this when
@@ -128,6 +158,20 @@ String? _permissionDescriptionOverride(String code) {
     'break_glass:review' =>
       'Review break-glass access requests submitted by clinical staff.',
     'break_glass:approve' => 'Approve or deny break-glass access requests.',
+    'reception:read' => 'Open the Reception workspace menu and route.',
+    'patients:read' => 'Open the Patients registry menu and route.',
+    'opd:read' => 'Open the OPD workspace menu and route.',
+    'ipd:read' => 'Open the IPD workspace menu and route.',
+    'rooms_beds:read' => 'Open the Rooms & beds workspace menu and route.',
+    'icu:read' => 'Open the ICU workspace menu and route.',
+    'nursing:read' => 'Open the Nursing workspace menu and route.',
+    'physiotherapy:read' => 'Open the Physiotherapy workspace menu and route.',
+    'theater:read' => 'Open the Theater workspace menu and route.',
+    'discharge:read' => 'Open the Discharge workspace menu and route.',
+    'claims:read' => 'Open the Claims workspace menu and route.',
+    'housekeeping:read' => 'Open the Housekeeping workspace menu and route.',
+    'setup:read' => 'Open Administrative Setup menu and route.',
+    'access_admin:read' => 'Open Access Admin menu and route.',
     _ => null,
   };
 }
@@ -136,6 +180,20 @@ String _humanizePermissionToken(String token) {
   const Map<String, String> known = <String, String>{
     'profile': 'Profile',
     'patient': 'Patient',
+    'patients': 'Patients Registry',
+    'reception': 'Reception',
+    'opd': 'OPD',
+    'ipd': 'IPD',
+    'rooms_beds': 'Rooms & Beds',
+    'icu': 'ICU',
+    'nursing': 'Nursing',
+    'physiotherapy': 'Physiotherapy',
+    'theater': 'Theater',
+    'discharge': 'Discharge',
+    'claims': 'Claims',
+    'housekeeping': 'Housekeeping',
+    'setup': 'Administrative Setup',
+    'access_admin': 'Access Admin',
     'clinical': 'Clinical',
     'emergency': 'Emergency',
     'lab': 'Lab',

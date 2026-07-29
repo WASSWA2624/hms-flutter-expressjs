@@ -668,6 +668,8 @@ void main() {
       final AppLocalizations l10n = l10nOf(
         tester.element(find.byType(AppDialog)),
       );
+      await tester.tap(find.text(l10n.commonShowMoreActionLabel));
+      await _pumpAfterAction(tester);
       expect(
         find.text(l10n.physiotherapyBillingAuthorizationLabel),
         findsNothing,
@@ -681,12 +683,13 @@ void main() {
       );
       await tester.tap(find.text('Alex ActivePlan'));
       await _pumpAfterAction(tester);
+      final AppLocalizations billingL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      await tester.tap(find.text(billingL10n.commonShowMoreActionLabel));
+      await _pumpAfterAction(tester);
       expect(
-        find.text(
-          AppLocalizations.of(
-            tester.element(find.byType(AppDialog)),
-          ).physiotherapyBillingAuthorizationLabel,
-        ),
+        find.text(billingL10n.physiotherapyBillingAuthorizationLabel),
         findsOneWidget,
       );
     });

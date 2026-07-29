@@ -2331,8 +2331,14 @@ class _AccessAdminRoleDetailDialogState
           (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
             id: permission.id,
             code: permission.label,
-            label: l10n.permissionCatalogLabelForCode(permission.label),
-            description: permission.meta,
+            label: l10n.permissionAssignmentLabelForCode(
+              permission.label,
+              displayName: permission.displayName,
+            ),
+            description:
+                (permission.meta ?? '').trim().isNotEmpty
+                    ? permission.meta
+                    : l10n.permissionCatalogDescriptionForCode(permission.label),
           ),
         )
         .toList(growable: false);
@@ -3342,8 +3348,14 @@ class _AccessAdminUserDetailDialogState
           (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
             id: permission.id,
             code: permission.label,
-            label: l10n.permissionCatalogLabelForCode(permission.label),
-            description: permission.meta,
+            label: l10n.permissionAssignmentLabelForCode(
+              permission.label,
+              displayName: permission.displayName,
+            ),
+            description:
+                (permission.meta ?? '').trim().isNotEmpty
+                    ? permission.meta
+                    : l10n.permissionCatalogDescriptionForCode(permission.label),
           ),
         )
         .toList(growable: false);

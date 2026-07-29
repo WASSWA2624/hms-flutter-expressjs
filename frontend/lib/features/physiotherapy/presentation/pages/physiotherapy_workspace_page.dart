@@ -1132,7 +1132,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.recordSession)
           AppPermissionActionItem(
-            requirement: physiotherapyWorkspaceWriteRequirement,
+            requirement: PhysiotherapyTodayAtomPermissions.recordSession,
             label: l10n.physiotherapyRecordSessionAction,
             icon: Icons.directions_walk_outlined,
             isLoading: isSaving,
@@ -2246,6 +2246,8 @@ bool _billingColumnAllowed(
   return switch (section) {
     PhysiotherapyQueueScope.referrals =>
       PhysiotherapyReferralsAtomPermissions.billingColumn.isAllowed(policy),
+    PhysiotherapyQueueScope.today =>
+      PhysiotherapyTodayAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.completed =>
       PhysiotherapyCompletedAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.activePlans =>

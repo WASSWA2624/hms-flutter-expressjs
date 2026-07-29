@@ -231,12 +231,16 @@ final class AccessAdminLookupOption {
     required this.id,
     required this.label,
     this.meta,
+    this.displayName,
     this.permissionCount = 0,
   });
 
   final String id;
+  /// Machine permission/role code (e.g. `billing:read`).
   final String label;
   final String? meta;
+  /// Human-readable catalog label from the API when available.
+  final String? displayName;
   final int permissionCount;
 }
 

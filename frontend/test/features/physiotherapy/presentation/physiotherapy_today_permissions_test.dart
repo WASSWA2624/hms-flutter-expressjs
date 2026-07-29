@@ -22,7 +22,6 @@ import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiothera
 import 'package:hosspi_hms/features/physiotherapy/presentation/physiotherapy_access.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/widgets/physiotherapy_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -32,17 +31,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockPhysiotherapyRepository extends Mock
     implements PhysiotherapyRepository {}
 
-const TherapyWorkItem _followUpDueItem = TherapyWorkItem(
-  id: 'TH-FU',
-  encounterId: 'ENC-FU',
-  encounterPublicId: 'ENC-FU-PUB',
-  patientId: 'PAT-FU',
-  patientPublicId: 'PAT-FU-PUB',
-  patientDisplayName: 'Fay FollowUp',
-  status: 'FOLLOW_UP_DUE',
+final DateTime _today = DateTime.now();
+
+final TherapyWorkItem _todayItem = TherapyWorkItem(
+  id: 'TH-TODAY',
+  encounterId: 'ENC-TODAY',
+  encounterPublicId: 'ENC-TODAY-PUB',
+  patientId: 'PAT-TODAY',
+  patientPublicId: 'PAT-TODAY-PUB',
+  patientDisplayName: 'Tina Today',
+  status: 'TODAY',
   billingStatus: 'AUTHORIZED',
-  plan: 'Mobility protocol',
+  plan: 'Gait training',
   therapistName: 'Dr. Therapist',
+  sessionAt: DateTime(_today.year, _today.month, _today.day, 10),
 );
 
 AppAccessPolicy _policy({
@@ -137,9 +139,11 @@ AppAccessPolicy _billingReaderPolicy() {
 
 void _stubWorkItems(
   _MockPhysiotherapyRepository repository, {
-  List<TherapyWorkItem> items = const <TherapyWorkItem>[_followUpDueItem],
+  List<TherapyWorkItem>? items,
   bool failLists = false,
 }) {
+  final List<TherapyWorkItem> resolvedItems =
+      items ?? <TherapyWorkItem>[_todayItem];
   when(() => repository.listWorkItems(any())).thenAnswer((
     Invocation invocation,
   ) async {
@@ -150,7 +154,7 @@ void _stubWorkItems(
     }
     final PhysiotherapyWorklistQuery query =
         invocation.positionalArguments.single as PhysiotherapyWorklistQuery;
-    List<TherapyWorkItem> filtered = items
+    List<TherapyWorkItem> filtered = resolvedItems
         .where(
           (TherapyWorkItem item) =>
               physiotherapyItemMatchesScope(item, query.scope),
@@ -178,10 +182,10 @@ void _stubWorkItems(
     return Result<PhysiotherapyDetail>.success(PhysiotherapyDetail(item: item));
   });
   when(
-    () => repository.scheduleFollowUp(
+    () => repository.recordSession(
       item: any(named: 'item'),
-      scheduledAt: any(named: 'scheduledAt'),
-      notes: any(named: 'notes'),
+      note: any(named: 'note'),
+      attendanceStatus: any(named: 'attendanceStatus'),
     ),
   ).thenAnswer((Invocation invocation) async {
     final TherapyWorkItem item =
@@ -190,6 +194,20 @@ void _stubWorkItems(
       PhysiotherapyDetail(
         item: item.copyWith(status: 'ACTIVE_PLAN'),
       ),
+    );
+  });
+  when(
+    () => repository.scheduleSession(
+      item: any(named: 'item'),
+      startAt: any(named: 'startAt'),
+      endAt: any(named: 'endAt'),
+      reason: any(named: 'reason'),
+    ),
+  ).thenAnswer((Invocation invocation) async {
+    final TherapyWorkItem item =
+        invocation.namedArguments[#item] as TherapyWorkItem;
+    return Result<PhysiotherapyDetail>.success(
+      PhysiotherapyDetail(item: item),
     );
   });
   when(
@@ -225,14 +243,14 @@ Future<void> _pumpAfterAction(WidgetTester tester) async {
   await _pumpFrames(tester);
 }
 
-Future<void> _pumpFollowUpDueTab(
+Future<void> _pumpTodayTab(
   WidgetTester tester, {
   required _MockPhysiotherapyRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/physiotherapy?section=follow-up',
-  List<TherapyWorkItem> items = const <TherapyWorkItem>[_followUpDueItem],
+  String initialLocation = '/physiotherapy?section=today',
+  List<TherapyWorkItem>? items,
   bool failLists = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -288,7 +306,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const PhysiotherapyWorklistQuery());
-    registerFallbackValue(_followUpDueItem);
+    registerFallbackValue(_todayItem);
     registerFallbackValue(DateTime(2026, 1, 1));
   });
 
@@ -296,63 +314,70 @@ void main() {
     repository = _MockPhysiotherapyRepository();
   });
 
-  group('PhysiotherapyFollowUpDueAtomPermissions helpers', () {
+  group('PhysiotherapyTodayAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.tab,
+          PhysiotherapyTodayAtomPermissions.tab,
           physiotherapyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.write,
+          PhysiotherapyTodayAtomPermissions.write,
           physiotherapyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp,
+          PhysiotherapyTodayAtomPermissions.recordSession,
           physiotherapyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.billingColumn,
+          PhysiotherapyTodayAtomPermissions.nextAction,
+          physiotherapyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyTodayAtomPermissions.billingColumn,
           billingReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.billingChip,
+          PhysiotherapyTodayAtomPermissions.billingChip,
           physiotherapyBillingReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.routeEntry,
+          PhysiotherapyTodayAtomPermissions.routeEntry,
           RouteAccessCatalog.physiotherapyEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          physiotherapySectionTabRequirement(PhysiotherapyQueueScope.followUpDue),
-          PhysiotherapyFollowUpDueAtomPermissions.tab,
+          physiotherapySectionTabRequirement(PhysiotherapyQueueScope.today),
+          PhysiotherapyTodayAtomPermissions.tab,
         ),
         isTrue,
       );
       expect(
         identical(
           therapyNextActionRequirementForKind(
-            TherapyNextActionKind.scheduleFollowUp,
+            TherapyNextActionKind.recordSession,
           ),
-          physiotherapyWorkspaceWriteRequirement,
+          PhysiotherapyTodayAtomPermissions.recordSession,
         ),
         isTrue,
       );
@@ -360,22 +385,17 @@ void main() {
 
     test('∩ denial: clinical:write alone missing strips write atoms', () {
       final AppAccessPolicy reader = _readerPolicy();
+      expect(PhysiotherapyTodayAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(reader),
-        isTrue,
-      );
-      expect(
-        PhysiotherapyFollowUpDueAtomPermissions.write.isAllowed(reader),
+        PhysiotherapyTodayAtomPermissions.write.isAllowed(reader),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp.isAllowed(
-          reader,
-        ),
+        PhysiotherapyTodayAtomPermissions.recordSession.isAllowed(reader),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.updatePlan.isAllowed(reader),
+        PhysiotherapyTodayAtomPermissions.updatePlan.isAllowed(reader),
         isFalse,
       );
       expect(canWritePhysiotherapy(reader), isFalse);
@@ -390,17 +410,17 @@ void main() {
         },
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(patientWriter),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(patientWriter),
         isTrue,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.write.isAllowed(patientWriter),
+        PhysiotherapyTodayAtomPermissions.write.isAllowed(patientWriter),
         isFalse,
       );
       expect(canWritePhysiotherapy(patientWriter), isFalse);
     });
 
-    test('∪ allowance: clinical:read alone grants Follow-up due read chrome', () {
+    test('∪ allowance: clinical:read alone grants Today read chrome', () {
       final AppAccessPolicy clinicalOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
@@ -408,40 +428,36 @@ void main() {
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(clinicalOnly),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(clinicalOnly),
         isTrue,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(patientOnly),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(patientOnly),
         isTrue,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.listChrome.isAllowed(
-          clinicalOnly,
-        ),
+        PhysiotherapyTodayAtomPermissions.listChrome.isAllowed(clinicalOnly),
         isTrue,
       );
-      expect(canViewPhysiotherapyFollowUpDue(clinicalOnly), isTrue);
-      expect(canViewPhysiotherapyFollowUpDue(patientOnly), isTrue);
+      expect(canViewPhysiotherapyToday(clinicalOnly), isTrue);
+      expect(canViewPhysiotherapyToday(patientOnly), isTrue);
       expect(
-        canViewPhysiotherapyTab(clinicalOnly, PhysiotherapyQueueScope.followUpDue),
+        canViewPhysiotherapyTab(clinicalOnly, PhysiotherapyQueueScope.today),
         isTrue,
       );
     });
 
-    test('billing:read alone enters route but not Follow-up due chrome', () {
+    test('billing:read alone enters route but not Today chrome', () {
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(billingOnly),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(billingOnly),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(
-          billingOnly,
-        ),
+        PhysiotherapyTodayAtomPermissions.billingColumn.isAllowed(billingOnly),
         isTrue,
       );
       expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
@@ -449,22 +465,17 @@ void main() {
 
     test('full ∩ write set presents write atoms', () {
       final AppAccessPolicy writer = _writerPolicy();
+      expect(PhysiotherapyTodayAtomPermissions.tab.isAllowed(writer), isTrue);
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(writer),
+        PhysiotherapyTodayAtomPermissions.write.isAllowed(writer),
         isTrue,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.write.isAllowed(writer),
+        PhysiotherapyTodayAtomPermissions.recordSession.isAllowed(writer),
         isTrue,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp.isAllowed(
-          writer,
-        ),
-        isTrue,
-      );
-      expect(
-        PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(writer),
+        PhysiotherapyTodayAtomPermissions.billingColumn.isAllowed(writer),
         isTrue,
       );
       expect(canWritePhysiotherapy(writer), isTrue);
@@ -490,17 +501,17 @@ void main() {
         ],
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(noModule),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(noModule),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.write.isAllowed(noModule),
+        PhysiotherapyTodayAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
-      expect(canViewPhysiotherapyFollowUpDue(noModule), isFalse);
+      expect(canViewPhysiotherapyToday(noModule), isFalse);
     });
 
-    test('ABAC session still evaluates Follow-up due when facility is present', () {
+    test('ABAC session still evaluates Today when facility is present', () {
       final AppAccessPolicy withFacility = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
@@ -508,14 +519,11 @@ void main() {
         },
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.tab.isAllowed(withFacility),
+        PhysiotherapyTodayAtomPermissions.tab.isAllowed(withFacility),
         isTrue,
       );
       expect(
-        canViewPhysiotherapyTab(
-          withFacility,
-          PhysiotherapyQueueScope.followUpDue,
-        ),
+        canViewPhysiotherapyTab(withFacility, PhysiotherapyQueueScope.today),
         isTrue,
       );
     });
@@ -532,7 +540,7 @@ void main() {
       );
       expect(
         identical(
-          PhysiotherapyFollowUpDueAtomPermissions.catalogEntry,
+          PhysiotherapyTodayAtomPermissions.catalogEntry,
           RouteAccessCatalog.physiotherapyEntry,
         ),
         isTrue,
@@ -542,15 +550,15 @@ void main() {
     test('nested cross-module write is n/a; billing is only nested read ∩', () {
       final AppAccessPolicy reader = _readerPolicy();
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.nestedWrite.isAllowed(reader),
+        PhysiotherapyTodayAtomPermissions.nestedWrite.isAllowed(reader),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.billingChip.isAllowed(reader),
+        PhysiotherapyTodayAtomPermissions.billingChip.isAllowed(reader),
         isFalse,
       );
       expect(
-        PhysiotherapyFollowUpDueAtomPermissions.billingChip.isAllowed(
+        PhysiotherapyTodayAtomPermissions.billingChip.isAllowed(
           _billingReaderPolicy(),
         ),
         isTrue,
@@ -558,57 +566,55 @@ void main() {
     });
   });
 
-  group('Physiotherapy Follow-up due tab UI gates', () {
-    testWidgets('read-only: worklist present; Schedule follow-up absent', (
+  group('Physiotherapy Today tab UI gates', () {
+    testWidgets('read-only: worklist present; Record session absent', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
       );
 
-      expect(find.text('Fay FollowUp'), findsOneWidget);
-      expect(find.byTooltip('Schedule follow-up'), findsNothing);
-      expect(find.textContaining('Follow-up due'), findsWidgets);
+      expect(find.text('Tina Today'), findsOneWidget);
+      expect(find.byTooltip('Record session'), findsNothing);
+      expect(find.textContaining('Today'), findsWidgets);
       expect(find.byType(AppListTable<TherapyWorkItem>), findsOneWidget);
       expect(
         _table(tester).columnVisibilityStorageKey,
-        'physiotherapy_followUpDue',
+        'physiotherapy_today',
       );
       expect(
-        _table(tester).columnChoices?.any(
-              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
-            ) ??
-            false,
+        _table(tester).columnChoices.any(
+          (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+        ),
         isFalse,
       );
     });
 
-    testWidgets('writer: Schedule follow-up next-action present', (
+    testWidgets('writer: Record session next-action present', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
       );
 
-      expect(find.byTooltip('Schedule follow-up'), findsWidgets);
-      expect(find.text('Fay FollowUp'), findsOneWidget);
+      expect(find.byTooltip('Record session'), findsWidgets);
+      expect(find.text('Tina Today'), findsOneWidget);
       expect(
-        _table(tester).columnChoices?.any(
-              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
-            ) ??
-            false,
+        _table(tester).columnChoices.any(
+          (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+        ),
         isTrue,
       );
     });
 
-    testWidgets('∪ clinical:read alone shows Follow-up due tab and list', (
+    testWidgets('∪ clinical:read alone shows Today tab and list', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -616,15 +622,15 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Follow-up due'), findsWidgets);
-      expect(find.text('Fay FollowUp'), findsOneWidget);
-      expect(find.byTooltip('Schedule follow-up'), findsNothing);
+      expect(find.textContaining('Today'), findsWidgets);
+      expect(find.text('Tina Today'), findsOneWidget);
+      expect(find.byTooltip('Record session'), findsNothing);
     });
 
-    testWidgets('billing-only route entry mounts no Follow-up due chrome', (
+    testWidgets('billing-only route entry mounts no Today chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -634,38 +640,49 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.byType(AppListTable<TherapyWorkItem>), findsNothing);
-      expect(find.text('Fay FollowUp'), findsNothing);
+      expect(find.text('Tina Today'), findsNothing);
     });
 
-    testWidgets('detail write actions absent for read-only; present for writer', (
+    testWidgets('detail write absent for read-only; present for writer', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
       );
-      await tester.tap(find.text('Fay FollowUp'));
+      await tester.tap(find.text('Tina Today'));
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('Update plan'), findsNothing);
       expect(find.text('Add progress note'), findsNothing);
       expect(find.text('Close episode'), findsNothing);
+      expect(find.text('Schedule session'), findsNothing);
       expect(find.text('Schedule follow-up'), findsNothing);
+      expect(find.text('Record session'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
       );
-      await tester.tap(find.text('Fay FollowUp'));
+      await tester.tap(find.text('Tina Today'));
       await _pumpAfterAction(tester);
 
       expect(find.text('Update plan'), findsWidgets);
       expect(find.text('Add progress note'), findsWidgets);
       expect(find.text('Close episode'), findsWidgets);
+      expect(find.text('Schedule follow-up'), findsWidgets);
+      // Record session omitted from detail because it is the row next-action.
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Record session'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('billing chip absent without billing:read; present with it', (
@@ -673,70 +690,60 @@ void main() {
     ) async {
       final AppLocalizations Function(BuildContext) l10nOf = AppLocalizations.of;
 
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
       );
-      await tester.tap(find.text('Fay FollowUp'));
+      await tester.tap(find.text('Tina Today'));
       await _pumpAfterAction(tester);
       final AppLocalizations l10n = l10nOf(
         tester.element(find.byType(AppDialog)),
       );
-      // Expand patient context so nested billing chip can surface.
-      final Finder showMore = find.text(l10n.commonShowMoreActionLabel);
-      if (showMore.evaluate().isNotEmpty) {
-        await tester.tap(showMore.first);
-        await _pumpAfterAction(tester);
-      }
       expect(
         find.text(l10n.physiotherapyBillingAuthorizationLabel),
         findsNothing,
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _billingReaderPolicy(),
       );
-      await tester.tap(find.text('Fay FollowUp'));
-      await _pumpAfterAction(tester);
-      final AppLocalizations billingL10n = AppLocalizations.of(
-        tester.element(find.byType(AppDialog)),
-      );
-      final Finder billingShowMore = find.text(
-        billingL10n.commonShowMoreActionLabel,
-      );
-      expect(billingShowMore, findsWidgets);
-      await tester.tap(billingShowMore.first);
+      await tester.tap(find.text('Tina Today'));
       await _pumpAfterAction(tester);
       expect(
-        find.text(billingL10n.physiotherapyBillingAuthorizationLabel),
+        find.text(
+          AppLocalizations.of(
+            tester.element(find.byType(AppDialog)),
+          ).physiotherapyBillingAuthorizationLabel,
+        ),
         findsOneWidget,
       );
     });
 
-    testWidgets('authorized schedule follow-up opens dialog (sync seam)', (
+    testWidgets('authorized record session opens dialog (sync seam)', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
       );
 
-      await tester.tap(find.byTooltip('Schedule follow-up').first);
+      await tester.tap(find.byTooltip('Record session').first);
       await _pumpAfterAction(tester);
 
-      expect(find.byType(ClinicalFollowUpActionDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.textContaining('session'), findsWidgets);
       verify(() => repository.listWorkItems(any())).called(greaterThan(0));
     });
 
     testWidgets('empty state remains observable for authorized readers', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -744,13 +751,13 @@ void main() {
       );
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
-      expect(find.byTooltip('Schedule follow-up'), findsNothing);
+      expect(find.byTooltip('Record session'), findsNothing);
     });
 
     testWidgets('error/retry remains observable for authorized readers', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -766,51 +773,51 @@ void main() {
     testWidgets('mobile viewport: read chrome present, write absent', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
         physicalSize: const Size(390, 844),
       );
 
-      expect(find.text('Fay FollowUp'), findsOneWidget);
-      expect(find.byTooltip('Schedule follow-up'), findsNothing);
-      expect(find.textContaining('Follow-up due'), findsWidgets);
+      expect(find.text('Tina Today'), findsOneWidget);
+      expect(find.byTooltip('Record session'), findsNothing);
+      expect(find.textContaining('Today'), findsWidgets);
     });
 
     testWidgets('desktop viewport: writer next-action present', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
         physicalSize: const Size(1440, 900),
       );
 
-      expect(find.byTooltip('Schedule follow-up'), findsWidgets);
+      expect(find.byTooltip('Record session'), findsWidgets);
     });
 
     testWidgets('light + dark themes keep authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
         themeMode: ThemeMode.light,
       );
-      expect(find.byTooltip('Schedule follow-up'), findsWidgets);
+      expect(find.byTooltip('Record session'), findsWidgets);
 
       await tester.pumpWidget(const SizedBox.shrink());
-      await _pumpFollowUpDueTab(
+      await _pumpTodayTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
         themeMode: ThemeMode.dark,
       );
-      expect(find.byTooltip('Schedule follow-up'), findsWidgets);
-      expect(find.text('Fay FollowUp'), findsOneWidget);
+      expect(find.byTooltip('Record session'), findsWidgets);
+      expect(find.text('Tina Today'), findsOneWidget);
     });
   });
 }

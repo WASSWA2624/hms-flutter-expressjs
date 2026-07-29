@@ -154,12 +154,12 @@ const AccessRequirement patientPharmacyWorkbenchRequirement = AccessRequirement(
 );
 
 bool isPharmacyRegistryReader(AppAccessPolicy policy) {
-  return policy.hasRole(AppRole.pharmacist) &&
+  return policy.grants(AppPermissions.pharmacyRead) &&
       !policy.grants(AppPermissions.patientWrite);
 }
 
 bool isBillingRegistryReader(AppAccessPolicy policy) {
-  return policy.hasRole(AppRole.billing) &&
+  return policy.grants(AppPermissions.billingRead) &&
       !policy.grants(AppPermissions.patientWrite);
 }
 

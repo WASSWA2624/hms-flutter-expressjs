@@ -628,6 +628,8 @@ class _PharmacyDetailPanel extends ConsumerWidget {
 
     final PharmacyOrder order = workflow.order;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool includeBillingStatus = canReadPharmacyBillingStatus(policy);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -639,7 +641,11 @@ class _PharmacyDetailPanel extends ConsumerWidget {
           status: _orderStatus(context, order),
           copyPatientNumberTooltip: l10n.copyIdentifierAction,
           copyPatientNumberMessage: l10n.identifierCopiedMessage,
-          expandedFields: _pharmacyDetailExpandedFields(context, order),
+          expandedFields: _pharmacyDetailExpandedFields(
+            context,
+            order,
+            includeBillingStatus: includeBillingStatus,
+          ),
         ),
         SizedBox(height: theme.spacing.md),
         _PharmacyActionPanel(
@@ -701,6 +707,18 @@ Future<void> _openRecordPaymentDialog(
   WidgetRef ref,
   PharmacyOrder order,
 ) async {
+  // Select workflow first — [recordOrderBilling] updates the selected order.
+  final PharmacyWorkspaceController controller = ref.read(
+    pharmacyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? selectFailure = await controller.selectOrder(order);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, selectFailure);
+  }
+  if (selectFailure != null || !context.mounted) {
+    return;
+  }
+
   final ClinicalRequestPayerContext? payerContext = await ref
       .read(insuranceCatalogRepositoryProvider)
       .resolvePayerContextForPatient(order.patientId);
@@ -2975,8 +2993,9 @@ List<AppSearchBarFilterChoice> _pharmacyUrgentFilterChoices(
 
 List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
   BuildContext context,
-  PharmacyOrder order,
-) {
+  PharmacyOrder order, {
+  required bool includeBillingStatus,
+}) {
   final AppLocalizations l10n = context.l10n;
 
   return <AppWorkspacePatientContextField>[
@@ -2986,18 +3005,19 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
         value: l10n.pharmacyReadinessAttestationRequired,
         tone: AppWorkspaceStatusTone.warning,
       ),
-    AppWorkspacePatientContextField(
-      label: l10n.pharmacyPaymentClearanceFieldLabel,
-      value: order.hasBillingGate
-          ? clinicalRequestPaymentStatusDisplayLabel(
-              l10n,
-              order.effectivePaymentStatus,
-            )
-          : l10n.pharmacyBillingGateUnavailableTitle,
-      tone: order.hasBillingGate
-          ? AppWorkspaceStatusTone.neutral
-          : AppWorkspaceStatusTone.warning,
-    ),
+    if (includeBillingStatus)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyPaymentClearanceFieldLabel,
+        value: order.hasBillingGate
+            ? clinicalRequestPaymentStatusDisplayLabel(
+                l10n,
+                order.effectivePaymentStatus,
+              )
+            : l10n.pharmacyBillingGateUnavailableTitle,
+        tone: order.hasBillingGate
+            ? AppWorkspaceStatusTone.neutral
+            : AppWorkspaceStatusTone.warning,
+      ),
     AppWorkspacePatientContextField(
       label: l10n.pharmacyOrderFieldLabel,
       value: order.displayId ?? '',
@@ -3013,7 +3033,7 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
         copyTooltip: l10n.opdCopyEncounterIdAction,
         copiedMessage: l10n.opdEncounterIdCopiedMessage,
       ),
-    if (order.hasBillingGate)
+    if (includeBillingStatus && order.hasBillingGate)
       AppWorkspacePatientContextField(
         label: l10n.pharmacyPaymentLabel,
         value: clinicalRequestPaymentStatusDisplayLabel(
@@ -3021,7 +3041,9 @@ List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
           order.effectivePaymentStatus,
         ),
       ),
-    if (order.hasBillingGate && order.billingTotalAmount != null)
+    if (includeBillingStatus &&
+        order.hasBillingGate &&
+        order.billingTotalAmount != null)
       AppWorkspacePatientContextField(
         label: l10n.pharmacyPaymentAmountLabel,
         value: clinicalRequestPriceLabel(

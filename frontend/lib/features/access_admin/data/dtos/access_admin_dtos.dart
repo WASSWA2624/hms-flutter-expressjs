@@ -6,6 +6,7 @@ final class AccessAdminLookupOptionDto {
     required this.id,
     required this.label,
     this.meta,
+    this.displayName,
     this.permissionCount = 0,
   });
 
@@ -14,11 +15,9 @@ final class AccessAdminLookupOptionDto {
       id: _string(json['id']),
       label: _string(json['label']),
       meta: _nullableString(
-        json['description'] ??
-            json['display_name'] ??
-            json['facility_type'] ??
-            json['meta'],
+        json['description'] ?? json['facility_type'] ?? json['meta'],
       ),
+      displayName: _nullableString(json['display_name']),
       permissionCount: _int(json['permission_count']),
     );
   }
@@ -26,6 +25,7 @@ final class AccessAdminLookupOptionDto {
   final String id;
   final String label;
   final String? meta;
+  final String? displayName;
   final int permissionCount;
 
   AccessAdminLookupOption toEntity() {
@@ -33,6 +33,7 @@ final class AccessAdminLookupOptionDto {
       id: id,
       label: label,
       meta: meta,
+      displayName: displayName,
       permissionCount: permissionCount,
     );
   }
