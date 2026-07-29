@@ -12,9 +12,7 @@ bool isTitledSectionWidget(Widget widget) {
   if (widget is AppWorkspaceDetailPanel) {
     return widget.title?.trim().isNotEmpty == true;
   }
-  if (widget is AppSectionPanel) {
-    return widget.title?.trim().isNotEmpty == true;
-  }
+  // Titled AppSectionPanel delegates to AppWorkspaceDetailPanel at build time.
   return false;
 }
 

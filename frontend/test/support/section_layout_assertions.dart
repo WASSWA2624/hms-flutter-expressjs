@@ -10,11 +10,10 @@ bool isTitledSectionWidget(Widget widget) {
     return true;
   }
   if (widget is AppWorkspaceDetailPanel) {
-    return true;
-  }
-  if (widget is AppSectionPanel) {
     return widget.title?.trim().isNotEmpty == true;
   }
+  // Titled AppSectionPanel builds AppWorkspaceDetailPanel — count the built panel
+  // only so delegate wrappers are not treated as section-in-section nesting.
   return false;
 }
 

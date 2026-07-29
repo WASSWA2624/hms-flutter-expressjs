@@ -215,7 +215,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Try again'), findsOneWidget);
+      repo.dashboardResult = Result<HomeDashboard>.success(
+        _billingDashboard(includeWriteActions: false),
+      );
       await tester.tap(find.text('Try again'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Collections today'), findsOneWidget);
       expect(repo.loadCount, greaterThan(1));
     });
   });
