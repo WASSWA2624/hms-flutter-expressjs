@@ -480,7 +480,7 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   }
 }
 
-/// Compact list typography and metrics for [AppListTable] mobile rows.
+/// List typography and metrics for [AppListTable] mobile rows.
 @immutable
 final class AppListTokens extends ThemeExtension<AppListTokens> {
   const AppListTokens({
@@ -495,62 +495,62 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
     required this.mobileMetaLineGap,
   });
 
-  /// Size factors applied to [TextTheme.labelSmall] for dense mobile lists.
-  static const double mobileTitleSizeFactor = 0.95;
-  static const double mobileSecondarySizeFactor = 0.85;
-
-  /// Weights for dense mobile lists (aligned with the app's lighter typography).
-  static const FontWeight mobileTitleWeight = FontWeight.w400;
+  /// Weights for mobile list hierarchy (title stands out from muted meta).
+  static const FontWeight mobileTitleWeight = FontWeight.w600;
   static const FontWeight mobileSecondaryWeight = FontWeight.w400;
-  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w500;
+  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w600;
 
-  /// Metrics for dense mobile list chrome.
-  static const double mobileAvatarExtent = 26;
-  static const double mobileMetaIconExtent = 11;
-  static const double mobileChevronExtent = 16;
-  static const double mobileMetaGap = 2;
+  /// Metrics for mobile list chrome — sized for thumb-friendly readability.
+  static const double mobileAvatarExtent = 36;
+  static const double mobileMetaIconExtent = 14;
+  static const double mobileChevronExtent = 20;
+  static const double mobileMetaGap = 4;
 
-  /// Dense mobile list styles derived from the active [TextTheme]/[ColorScheme].
+  /// Mobile list styles derived from the active [TextTheme]/[ColorScheme].
+  ///
+  /// Titles track [TextTheme.labelLarge] (~14); captions/meta track
+  /// [TextTheme.labelMedium] (~12) so rows stay readable on phones without
+  /// competing with desktop table density.
   factory AppListTokens.compact({
     required TextTheme textTheme,
     required ColorScheme colorScheme,
   }) {
-    final TextStyle labelSmall =
-        textTheme.labelSmall ?? const TextStyle(fontSize: 11, height: 1.2);
-    final double baseSize = labelSmall.fontSize ?? 11;
-    final double titleSize = baseSize * mobileTitleSizeFactor;
-    final double secondarySize = baseSize * mobileSecondarySizeFactor;
+    final TextStyle titleBase =
+        textTheme.labelLarge ??
+        textTheme.bodyMedium ??
+        const TextStyle(fontSize: 14, height: 1.25);
+    final TextStyle secondaryBase =
+        textTheme.labelMedium ??
+        textTheme.bodySmall ??
+        const TextStyle(fontSize: 12, height: 1.25);
+    final double secondarySize = secondaryBase.fontSize ?? 12;
 
     return AppListTokens(
-      mobileTitle: labelSmall.copyWith(
+      mobileTitle: titleBase.copyWith(
         color: colorScheme.onSurface,
-        fontSize: titleSize,
         fontWeight: mobileTitleWeight,
-        height: 1.15,
+        height: 1.25,
       ),
-      mobileCaption: labelSmall.copyWith(
+      mobileCaption: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
-        height: 1.15,
+        height: 1.25,
       ),
-      mobileMeta: labelSmall.copyWith(
+      mobileMeta: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
-        height: 1.15,
+        height: 1.25,
       ),
-      mobileAvatarInitials: labelSmall.copyWith(
+      mobileAvatarInitials: secondaryBase.copyWith(
         color: colorScheme.onSurface,
         fontSize: secondarySize,
         fontWeight: mobileAvatarInitialsWeight,
         height: 1,
       ),
-      mobileRowNumber: labelSmall.copyWith(
+      mobileRowNumber: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
-        height: 1.15,
+        height: 1.25,
       ),
       mobileAvatarSize: mobileAvatarExtent,
       mobileMetaIconSize: mobileMetaIconExtent,

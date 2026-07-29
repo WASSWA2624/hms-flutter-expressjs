@@ -7,13 +7,15 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_panel.dart';
-import 'package:hosspi_hms/features/icu/presentation/widgets/icu_detail_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -84,12 +86,12 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
     final IcuPatientSummary summary = state!.selectedDetail!.summary;
     final IcuWorkspaceSection section =
         IcuWorkspaceSectionX.fromQueryParam(query.section);
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final AccessRequirement writeRequirement =
-        IcuWorkspaceWriteRequirement.writeRequirement;
+        icuWriteRequirementForSection(section);
 
     // Panel-focused deep links open the mutation dialog directly (no empty
-    // detail shell). Bare admission links open detail with the stage
-    // next-action omitted so it is not duplicated inside Quick Actions.
+    // detail shell). Unauthorized write panels fall back to read-only detail.
     if (query.focusPanel != null) {
       await openIcuFocusedAction(
         context,
@@ -97,7 +99,13 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
         state,
         summary,
         query.focusPanel!,
+        writeRequirement: writeRequirement,
+        readRequirement: icuDetailReadRequirement(section),
       );
+      return;
+    }
+
+    if (!icuDetailReadRequirement(section).isAllowed(policy)) {
       return;
     }
 
@@ -107,6 +115,7 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
       state,
       summary,
       writeRequirement,
+      readRequirement: icuDetailReadRequirement(section),
       omitNextActionKind: icuBoardNextActionKind(summary, section),
     );
   }
@@ -269,8 +278,42 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     final IcuWorkspaceController controller = ref.read(
       icuWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<IcuWorkspaceSection> visibleSections = icuAllowedSections(
+      accessPolicy,
+    );
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final IcuWorkspaceSection fallback =
+          icuFallbackSection(accessPolicy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        setState(() => _section = fallback);
+        _updateUrlForSection(fallback);
+        if (fallback.isFollowUps) {
+          return;
+        }
+        final IcuBoardScope? scope = fallback.toBoardScope();
+        if (scope != null) {
+          controller.applyScope(scope);
+        }
+        if (fallback.isBedBoard && state.bedBoard.beds.isEmpty) {
+          controller.loadBedBoard();
+        }
+      });
+    }
     final bool isBedView = _section.isBedBoard;
     final bool isFollowUpsView = _section.isFollowUps;
+    final AccessRequirement writeRequirement =
+        icuWriteRequirementForSection(_section);
+    final bool showNextAction = icuBoardShowsNextActionColumn(
+      accessPolicy,
+      _section,
+    );
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -281,8 +324,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final IcuWorkspaceSection section
-                    in IcuWorkspaceSection.values)
+                for (final IcuWorkspaceSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -301,8 +343,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final IcuWorkspaceSection section
-                    in IcuWorkspaceSection.values) {
+                for (final IcuWorkspaceSection section in visibleSections) {
                   if (section.name == tabId) {
                     setState(() => _section = section);
                     _updateUrlForSection(section);
@@ -326,6 +367,8 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'ICU'),
                 storageKeyPrefix: 'icu_follow_ups',
+                readRequirement: icuFollowUpsRequirement,
+                writeRequirement: icuFollowUpsWriteRequirement,
               )
             else if (isBedView)
               IcuBedBoardPanel(state: state)
@@ -333,7 +376,9 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               IcuBoardPanel(
                 state: state,
                 section: _section,
-                writeRequirement: IcuWorkspaceWriteRequirement.writeRequirement,
+                writeRequirement: writeRequirement,
+                readRequirement: icuDetailReadRequirement(_section),
+                showNextAction: showNextAction,
                 searchController: _searchController,
                 columnVisibilityController: _columnVisibilityController,
                 filterValue: _boardFilterValue,

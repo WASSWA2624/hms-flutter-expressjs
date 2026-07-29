@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -20,6 +24,11 @@ class IcuBedBoardPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!IcuBedBoardAtomPermissions.tab.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final IcuWorkspaceController controller = ref.read(
@@ -154,14 +163,18 @@ class _IcuBedRow extends StatelessWidget {
           ),
           if (occupied) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
-            AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.open_in_new_outlined,
-              label: l10n.icuActionOpenIpd,
-
-              semanticLabel: l10n.icuActionOpenIpd,
-              tooltip: l10n.icuActionOpenIpd,
-              onPressed: () => _openIpd(context, bed),
+            AppAccessActionGate(
+              requirement: IcuBedBoardAtomPermissions.openIpd,
+              builder: (BuildContext context, bool _) {
+                return AppButton(
+                  iconOnly: true,
+                  leadingIcon: Icons.open_in_new_outlined,
+                  label: l10n.icuActionOpenIpd,
+                  semanticLabel: l10n.icuActionOpenIpd,
+                  tooltip: l10n.icuActionOpenIpd,
+                  onPressed: () => _openIpd(context, bed),
+                );
+              },
             ),
           ],
         ],

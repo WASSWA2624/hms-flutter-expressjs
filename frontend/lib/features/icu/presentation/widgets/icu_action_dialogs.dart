@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_detail_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
@@ -27,6 +29,7 @@ Future<void> openIcuDetailDialog(
   IcuWorkspaceState fallbackState,
   IcuPatientSummary summary,
   AccessRequirement writeRequirement, {
+  AccessRequirement readRequirement = icuWorkspaceReadRequirement,
   IcuNextActionKind? omitNextActionKind,
 }) async {
   final IcuWorkspaceController controller = ref.read(
@@ -59,6 +62,7 @@ Future<void> openIcuDetailDialog(
           return IcuStayDetailPanel(
             state: current,
             writeRequirement: writeRequirement,
+            readRequirement: readRequirement,
             omitNextActionKind: omitNextActionKind,
           );
         },
@@ -68,13 +72,18 @@ Future<void> openIcuDetailDialog(
 }
 
 /// Panel deep links open the mutation dialog directly (no empty detail shell).
+///
+/// When the user lacks the mutation gate, falls back to read-only detail
+/// (forbidden deep-link write) instead of mounting the write dialog.
 Future<void> openIcuFocusedAction(
   BuildContext context,
   WidgetRef ref,
   IcuWorkspaceState fallbackState,
   IcuPatientSummary summary,
-  IcuDetailPanel panel,
-) async {
+  IcuDetailPanel panel, {
+  AccessRequirement writeRequirement = icuWorkspaceWriteRequirement,
+  AccessRequirement readRequirement = icuWorkspaceReadRequirement,
+}) async {
   final IcuWorkspaceController controller = ref.read(
     icuWorkspaceControllerProvider.notifier,
   );
@@ -88,6 +97,19 @@ Future<void> openIcuFocusedAction(
 
   final IcuWorkspaceState state = readIcuWorkspaceState(ref) ?? fallbackState;
   if (state.selectedDetail == null) {
+    return;
+  }
+
+  final AccessRequirement panelRequirement = icuFocusedPanelRequirement(panel);
+  if (!panelRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+    await openIcuDetailDialog(
+      context,
+      ref,
+      state,
+      summary,
+      writeRequirement,
+      readRequirement: readRequirement,
+    );
     return;
   }
 

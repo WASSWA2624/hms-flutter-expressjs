@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_columns.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_filters.dart';
@@ -25,12 +27,16 @@ class IcuBoardPanel extends ConsumerWidget {
     required this.columnVisibilityController,
     required this.filterValue,
     required this.onFilterChanged,
+    this.readRequirement = icuWorkspaceReadRequirement,
+    this.showNextAction,
     super.key,
   });
 
   final IcuWorkspaceState state;
   final IcuWorkspaceSection section;
   final AccessRequirement writeRequirement;
+  final AccessRequirement readRequirement;
+  final bool? showNextAction;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IcuPatientSummary>
   columnVisibilityController;
@@ -47,6 +53,12 @@ class IcuBoardPanel extends ConsumerWidget {
       state.board,
       filterValue,
     );
+    final bool includeNextAction =
+        showNextAction ??
+        icuBoardShowsNextActionColumn(
+          ref.watch(appAccessPolicyProvider),
+          section,
+        );
 
     return AppListTable<IcuPatientSummary>(
       page: displayPage,
@@ -88,6 +100,7 @@ class IcuBoardPanel extends ConsumerWidget {
             state,
             summary,
             writeRequirement,
+            readRequirement: readRequirement,
             omitNextActionKind: icuBoardNextActionKind(summary, section),
           ),
         );
@@ -103,11 +116,13 @@ class IcuBoardPanel extends ConsumerWidget {
         l10n,
         section,
         writeRequirement: writeRequirement,
+        showNextAction: includeNextAction,
       ),
       columnChoices: icuColumnChoicesForSection(
         l10n,
         section,
         writeRequirement: writeRequirement,
+        showNextAction: includeNextAction,
       ),
       mobileItemBuilder: (BuildContext context, IcuPatientSummary item) {
         return AppListTableMobileItem(
@@ -145,11 +160,13 @@ class IcuBoardPanel extends ConsumerWidget {
             },
             AppListTableMobileMeta(label: icuStatus(item).label),
           ],
-          trailing: IcuNextActionButton(
-            summary: item,
-            section: section,
-            writeRequirement: writeRequirement,
-          ),
+          trailing: includeNextAction
+              ? IcuNextActionButton(
+                  summary: item,
+                  section: section,
+                  writeRequirement: writeRequirement,
+                )
+              : null,
         );
       },
     );

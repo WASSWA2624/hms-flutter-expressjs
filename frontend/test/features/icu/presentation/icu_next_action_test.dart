@@ -60,6 +60,38 @@ void main() {
       );
     });
 
+    test('discharge section without plan resolves to mark readiness', () {
+      const IcuPatientSummary item = IcuPatientSummary(
+        id: 'ADM-7',
+        admissionId: 'ADM-7',
+        icuStatus: 'ACTIVE',
+        hasActiveBed: true,
+      );
+      expect(
+        icuBoardNextActionKind(item, IcuWorkspaceSection.discharge),
+        IcuNextActionKind.markReadiness,
+      );
+      expect(icuNextActionRequiresWrite(IcuNextActionKind.markReadiness), isTrue);
+    });
+
+    test('discharge section planned resolves to open clearance (no write)', () {
+      const IcuPatientSummary item = IcuPatientSummary(
+        id: 'ADM-8',
+        admissionId: 'ADM-8',
+        icuStatus: 'ACTIVE',
+        hasActiveBed: true,
+        dischargeStatus: 'PLANNED',
+      );
+      expect(
+        icuBoardNextActionKind(item, IcuWorkspaceSection.discharge),
+        IcuNextActionKind.openDischargeClearance,
+      );
+      expect(
+        icuNextActionRequiresWrite(IcuNextActionKind.openDischargeClearance),
+        isFalse,
+      );
+    });
+
     test('eligible non-active patient resolves to start stay', () {
       const IcuPatientSummary item = IcuPatientSummary(
         id: 'ADM-5',

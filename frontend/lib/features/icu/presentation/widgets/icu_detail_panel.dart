@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
@@ -19,28 +19,18 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
-class IcuWorkspaceWriteRequirement {
-  const IcuWorkspaceWriteRequirement._();
-
-  static const AccessRequirement writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.emergencyWrite,
-    ],
-    activeModules: <String>['icu-critical-care'],
-  );
-}
-
 class IcuStayDetailPanel extends ConsumerWidget {
   const IcuStayDetailPanel({
     required this.state,
     required this.writeRequirement,
+    this.readRequirement = icuWorkspaceReadRequirement,
     this.omitNextActionKind,
     super.key,
   });
 
   final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final AccessRequirement readRequirement;
   final IcuNextActionKind? omitNextActionKind;
 
   @override
@@ -137,6 +127,7 @@ class IcuStayDetailPanel extends ConsumerWidget {
           detail: detail,
           state: state,
           writeRequirement: writeRequirement,
+          readRequirement: readRequirement,
           omitNextActionKind: omitNextActionKind,
         ),
         SizedBox(height: theme.spacing.md),
@@ -159,6 +150,7 @@ class IcuActionPanel extends ConsumerWidget {
     required this.detail,
     required this.state,
     required this.writeRequirement,
+    this.readRequirement = icuWorkspaceReadRequirement,
     this.omitNextActionKind,
     super.key,
   });
@@ -166,6 +158,7 @@ class IcuActionPanel extends ConsumerWidget {
   final IcuPatientDetail detail;
   final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final AccessRequirement readRequirement;
   final IcuNextActionKind? omitNextActionKind;
 
   @override
@@ -180,7 +173,7 @@ class IcuActionPanel extends ConsumerWidget {
     final bool hasEncounter = detail.summary.encounterId != null;
     final bool hasOpenTransfer = detail.summary.hasOpenTransfer;
     final IcuNextActionKind? omit = omitNextActionKind;
-    const AccessRequirement navigationRequirement = AccessRequirement();
+    const AccessRequirement navigationRequirement = icuNavigationRequirement;
 
     return AppQuickActions(
       title: l10n.icuActionsTitle,
@@ -329,27 +322,35 @@ class IcuActionPanel extends ConsumerWidget {
           ),
       ],
       extraActions: <Widget>[
-        AppReportActionButton.print(
-          label: l10n.icuPrintSummaryLabel,
-          onPressed: () async {
-            await printFormTemplateDocument(
-              ref: ref,
-              context: context,
-              title: l10n.icuStayDialogTitle,
-              patientContext: buildPrintFormPatientContext(
-                l10n,
-                patientName: detail.summary.displayTitle,
-                patientId: detail.summary.patientId,
-                encounterId: detail.summary.encounterId,
-              ),
-              contextReference: PrintFormContextReference(
-                label: l10n.icuAdmissionLabel,
-                value:
-                    detail.summary.displayId ??
-                    context.l10n.profileUnknownValue,
-              ),
-              bodyHtml: icuSummaryHtml(context, detail),
-              includeSignatures: true,
+        AppAccessActionGate(
+          requirement: readRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppReportActionButton.print(
+              label: l10n.icuPrintSummaryLabel,
+              onPressed: () async {
+                await printFormTemplateDocument(
+                  ref: ref,
+                  context: context,
+                  title: l10n.icuStayDialogTitle,
+                  patientContext: buildPrintFormPatientContext(
+                    l10n,
+                    patientName: detail.summary.displayTitle,
+                    patientId: detail.summary.patientId,
+                    encounterId: detail.summary.encounterId,
+                  ),
+                  contextReference: PrintFormContextReference(
+                    label: l10n.icuAdmissionLabel,
+                    value:
+                        detail.summary.displayId ??
+                        context.l10n.profileUnknownValue,
+                  ),
+                  bodyHtml: icuSummaryHtml(context, detail),
+                  includeSignatures: true,
+                );
+              },
             );
           },
         ),

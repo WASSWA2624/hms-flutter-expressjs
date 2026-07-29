@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -77,6 +78,17 @@ IconData icuNextActionIcon(IcuNextActionKind action) {
 bool icuNextActionRequiresWrite(IcuNextActionKind action) {
   return action != IcuNextActionKind.openIpd &&
       action != IcuNextActionKind.openDischargeClearance;
+}
+
+/// Requirement for a board next-action kind (write ∪ vs navigate).
+AccessRequirement icuNextActionRequirement(
+  IcuNextActionKind kind, [
+  AccessRequirement writeRequirement = icuWorkspaceWriteRequirement,
+]) {
+  if (!icuNextActionRequiresWrite(kind)) {
+    return icuNavigationRequirement;
+  }
+  return writeRequirement;
 }
 
 IcuNextActionKind _resolveIcuNextAction(
@@ -175,27 +187,22 @@ class IcuNextActionButton extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final String label = icuNextActionLabel(l10n, action);
     final IconData icon = icuNextActionIcon(action);
-    final bool requiresWrite = icuNextActionRequiresWrite(action);
-
-    if (!requiresWrite) {
-      return _IcuCompactActionButton(
-        label: label,
-        icon: icon,
-        enabled: true,
-        onPressed: () => unawaited(runIcuNextAction(context, ref, summary, action)),
-      );
-    }
+    final AccessRequirement requirement = icuNextActionRequirement(
+      action,
+      writeRequirement,
+    );
 
     return AppAccessActionGate(
-      requirement: writeRequirement,
+      requirement: requirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return _IcuCompactActionButton(
           label: label,
           icon: icon,
-          enabled: isAllowed,
-          onPressed: isAllowed
-              ? () => unawaited(runIcuNextAction(context, ref, summary, action))
-              : null,
+          onPressed: () =>
+              unawaited(runIcuNextAction(context, ref, summary, action)),
         );
       },
     );
@@ -290,25 +297,21 @@ class _IcuCompactActionButton extends StatelessWidget {
   const _IcuCompactActionButton({
     required this.label,
     required this.icon,
-    required this.enabled,
     required this.onPressed,
   });
 
   final String label;
   final IconData icon;
-  final bool enabled;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color primaryColor = enabled
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    final Color primaryColor = theme.colorScheme.primary;
 
     return Semantics(
       button: true,
-      enabled: enabled,
+      enabled: true,
       label: label,
       child: Tooltip(
         message: label,
@@ -316,9 +319,7 @@ class _IcuCompactActionButton extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: onPressed,
           child: MouseRegion(
-            cursor: enabled
-                ? SystemMouseCursors.click
-                : SystemMouseCursors.basic,
+            cursor: SystemMouseCursors.click,
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: theme.spacing.xs,

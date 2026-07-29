@@ -127,14 +127,20 @@ abstract final class RouteAccessCatalog {
     requirement: roomsBedsEntry,
   );
 
+  /// Route entry ∪ matches [AppRoutes.icu] / Active ICU matrix:
+  /// `clinical:read` | `emergency:read` | `operations:read`.
   static const AccessRequirement icuEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.icuRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.emergencyRead,
+      AppPermissions.operationsRead,
+    ],
     activeModules: <String>['icu-critical-care'],
   );
   static const RouteAccessAtom icu = RouteAccessAtom(
     routeName: 'icu',
     path: '/icu',
-    entryPermission: AppPermissions.icuRead,
+    entryPermission: AppPermissions.clinicalRead,
     requirement: icuEntry,
   );
 

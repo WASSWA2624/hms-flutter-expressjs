@@ -13,35 +13,51 @@ List<AppListTableColumn<IcuPatientSummary>> icuColumnsForSection(
   AppLocalizations l10n,
   IcuWorkspaceSection section, {
   required AccessRequirement writeRequirement,
+  bool showNextAction = true,
 }) {
+  AppListTableColumn<IcuPatientSummary>? nextAction() {
+    if (!showNextAction) {
+      return null;
+    }
+    return icuNextActionColumn(
+      l10n,
+      section,
+      writeRequirement: writeRequirement,
+    );
+  }
+
   return switch (section) {
     IcuWorkspaceSection.critical => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuAlertColumn(l10n),
       icuStatusColumn(l10n),
-      icuNextActionColumn(l10n, section, writeRequirement: writeRequirement),
+      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
+        column,
     ],
     IcuWorkspaceSection.transfers => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuTransferColumn(l10n),
       icuStatusColumn(l10n),
-      icuNextActionColumn(l10n, section, writeRequirement: writeRequirement),
+      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
+        column,
     ],
     IcuWorkspaceSection.discharge => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuAdmittedColumn(l10n),
       icuStatusColumn(l10n),
-      icuNextActionColumn(l10n, section, writeRequirement: writeRequirement),
+      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
+        column,
     ],
     IcuWorkspaceSection.ended => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuIcuStartColumn(l10n),
       icuStatusColumn(l10n),
-      icuNextActionColumn(l10n, section, writeRequirement: writeRequirement),
+      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
+        column,
     ],
     IcuWorkspaceSection.active ||
     IcuWorkspaceSection.all ||
@@ -51,7 +67,8 @@ List<AppListTableColumn<IcuPatientSummary>> icuColumnsForSection(
       icuBedColumn(l10n),
       icuSourceColumn(l10n),
       icuStatusColumn(l10n),
-      icuNextActionColumn(l10n, section, writeRequirement: writeRequirement),
+      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
+        column,
     ],
   };
 }
@@ -60,11 +77,13 @@ List<AppListTableColumn<IcuPatientSummary>> icuColumnChoicesForSection(
   AppLocalizations l10n,
   IcuWorkspaceSection section, {
   required AccessRequirement writeRequirement,
+  bool showNextAction = true,
 }) {
   final Set<String> defaultKeys = icuColumnsForSection(
     l10n,
     section,
     writeRequirement: writeRequirement,
+    showNextAction: showNextAction,
   ).map((AppListTableColumn<IcuPatientSummary> column) => column.key).toSet();
 
   final List<AppListTableColumn<IcuPatientSummary>> choices =

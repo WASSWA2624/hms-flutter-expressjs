@@ -462,7 +462,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
                       ),
                       if (showFilters)
                         _AttachedFilterButton(
-                          borderColor: borderSide.color,
                           enabled: widget.enabled && !widget.isLoading,
                           active:
                               widget.hasActiveFilters ||
@@ -477,7 +476,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
                       for (final AppSearchBarAction action
                           in inlineTrailingActions)
                         _AttachedSearchBarActionButton(
-                          borderColor: borderSide.color,
                           action: action,
                           showLabel: showActionLabels,
                           enabled:
@@ -488,7 +486,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
                         ),
                       if (overflowTrailingActions.isNotEmpty)
                         _AttachedSearchBarOverflowMenu(
-                          borderColor: borderSide.color,
                           actions: overflowTrailingActions,
                           label: widget.trailingActionsOverflowLabel,
                           showLabel: showActionLabels,
@@ -644,13 +641,11 @@ class _AppSearchBarState extends State<AppSearchBar> {
 
 class _AttachedSearchBarActionButton extends StatelessWidget {
   const _AttachedSearchBarActionButton({
-    required this.borderColor,
     required this.action,
     required this.enabled,
     required this.showLabel,
   });
 
-  final Color borderColor;
   final AppSearchBarAction action;
   final bool enabled;
   final bool showLabel;
@@ -659,7 +654,6 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return _AttachedSearchBarButton(
-      borderColor: borderColor,
       enabled: enabled,
       active: action.active,
       showLabel: showLabel,
@@ -674,14 +668,12 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
 
 class _AttachedSearchBarOverflowMenu extends StatelessWidget {
   const _AttachedSearchBarOverflowMenu({
-    required this.borderColor,
     required this.actions,
     required this.label,
     required this.showLabel,
     required this.enabled,
   });
 
-  final Color borderColor;
   final List<AppSearchBarAction> actions;
   final String label;
   final bool showLabel;
@@ -703,7 +695,6 @@ class _AttachedSearchBarOverflowMenu extends StatelessWidget {
       builder:
           (BuildContext context, MenuController controller, Widget? child) {
             return _AttachedSearchBarButton(
-              borderColor: borderColor,
               enabled: enabled,
               active: controller.isOpen,
               showLabel: showLabel,
@@ -740,7 +731,6 @@ class _AttachedSearchBarOverflowMenu extends StatelessWidget {
 
 class _AttachedFilterButton extends StatelessWidget {
   const _AttachedFilterButton({
-    required this.borderColor,
     required this.enabled,
     required this.active,
     required this.activeCount,
@@ -749,7 +739,6 @@ class _AttachedFilterButton extends StatelessWidget {
     required this.onPressed,
   });
 
-  final Color borderColor;
   final bool enabled;
   final bool active;
   final int activeCount;
@@ -766,7 +755,6 @@ class _AttachedFilterButton extends StatelessWidget {
       isLabelVisible: activeCount > 0,
       label: Text('$activeCount'),
       child: _AttachedSearchBarButton(
-        borderColor: borderColor,
         enabled: enabled,
         active: active,
         showLabel: showLabel,
@@ -778,9 +766,9 @@ class _AttachedFilterButton extends StatelessWidget {
   }
 }
 
+/// Flat search-bar chrome action: icon (+ optional label), no fill or divider.
 class _AttachedSearchBarButton extends StatelessWidget {
   const _AttachedSearchBarButton({
-    required this.borderColor,
     required this.enabled,
     required this.active,
     required this.showLabel,
@@ -791,7 +779,6 @@ class _AttachedSearchBarButton extends StatelessWidget {
     this.foregroundColor,
   });
 
-  final Color borderColor;
   final bool enabled;
   final bool active;
   final bool showLabel;
@@ -808,38 +795,49 @@ class _AttachedSearchBarButton extends StatelessWidget {
     final Color foreground =
         foregroundColor ??
         (active ? colorScheme.primary : colorScheme.onSurfaceVariant);
-    final Color background = active
-        ? colorScheme.primaryContainer.withValues(alpha: 0.54)
-        : Colors.transparent;
+    final bool canPress = enabled && onPressed != null;
     final String resolvedTooltip = tooltip ?? label;
-    final Widget button = AppButton(
-      iconOnly: !showLabel,
-      leadingIcon: icon,
-      label: label,
-      semanticLabel: label,
-      tooltip: resolvedTooltip,
-      color: foreground,
-      enabled: enabled,
-      onPressed: enabled ? onPressed : null,
+
+    final Widget button = TextButton(
+      onPressed: canPress ? onPressed : null,
+      style: TextButton.styleFrom(
+        foregroundColor: foreground,
+        disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        minimumSize: Size(theme.spacing.none, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 18),
+          if (showLabel) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        border: BorderDirectional(start: BorderSide(color: borderColor)),
+    return Tooltip(
+      message: resolvedTooltip,
+      child: Semantics(
+        button: true,
+        enabled: canPress,
+        label: label,
+        child: button,
       ),
-      child: showLabel
-          ? Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: theme.spacing.xs,
-                end: theme.spacing.sm,
-              ),
-              child: button,
-            )
-          : SizedBox(
-              width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
-              child: Center(child: button),
-            ),
     );
   }
 }

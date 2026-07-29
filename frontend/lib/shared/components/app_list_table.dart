@@ -38,7 +38,7 @@ enum AppListTablePaginationMode { infinite, buttons }
 const int _maxVisibleTableColumns = 5;
 const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
-const double _mobileRowNumberColumnWidth = 28;
+const double _mobileRowNumberColumnWidth = 32;
 const double _minResizableColumnWidth = 72;
 const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
@@ -569,7 +569,7 @@ final class AppListTableMobileMeta {
   final IconData? icon;
 }
 
-/// Compact two-line flush mobile row for [AppListTable] list layout.
+/// Two-line mobile row for [AppListTable] list layout.
 ///
 /// Line 1: bold [title] with optional muted inline [caption] (caption truncates
 /// after the title as one line).
@@ -623,14 +623,15 @@ class AppListTableMobileItem extends StatelessWidget {
       padding:
           padding ??
           EdgeInsets.symmetric(
-            horizontal: theme.spacing.xs,
-            vertical: theme.spacing.xs,
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.sm,
           ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
-            SizedBox(width: theme.spacing.xs),
+            SizedBox(width: theme.spacing.sm),
           ],
           Expanded(
             child: Column(
@@ -663,7 +664,7 @@ class AppListTableMobileItem extends StatelessWidget {
             ),
           ),
           if (trailing != null) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
+            SizedBox(width: theme.spacing.sm),
             trailing!,
           ],
         ],
@@ -2588,7 +2589,7 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                     Expanded(child: child),
                     Padding(
                       padding: EdgeInsetsDirectional.only(
-                        end: theme.spacing.xs,
+                        end: theme.spacing.sm,
                       ),
                       child: Icon(
                         Icons.chevron_right,

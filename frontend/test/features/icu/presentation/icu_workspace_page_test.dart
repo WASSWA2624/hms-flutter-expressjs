@@ -51,7 +51,9 @@ AppAccessPolicy _icuWritePolicy() {
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(roles: <String>['DOCTOR']),
       permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
+        AppPermissions.emergencyRead,
         AppPermissions.emergencyWrite,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
@@ -65,6 +67,7 @@ AppAccessPolicy _icuWritePolicy() {
         ),
         AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
