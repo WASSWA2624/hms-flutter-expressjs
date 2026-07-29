@@ -701,18 +701,22 @@ bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
 ///
 /// Same-day terminal outpatient encounters (`?section=completed`). Prefer
 /// read; reopen / mutations need write. No dedicated reopen control in
-/// `screens/clinical.md` — [reopen] maps encounter write mutations.
+/// `screens/clinical.md` — [reopen] maps post-completion encounter write
+/// mutations (notes / orders / diagnoses). Vitals and disposition stay
+/// non-terminal-only (hidden for completed rows).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Completed tab | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Completed tab count badge | read | read ∩ |
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
-/// | Next action Open / Review encounter | navigate / read | read ∩ |
-/// | Next action write mutations | create / update | write ∪ source |
+/// | Next action Review encounter | navigate / read | read ∩ |
+/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Next action RECORD_VITALS / disposition | create / update | write ∪ (non-terminal; N/A here) |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source (non-terminal) |
+/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ (non-terminal; absent) |
 /// | Detail Request lab | create / update | lab order ∪ |
 /// | Detail Request radiology | create / update | radiology order ∪ |
 /// | Detail Prescribe | create | pharmacy order ∪ |
@@ -723,8 +727,9 @@ bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
-/// admission rows document prompt narrative ∪ (matrix nested _(n/a)_).
+/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// `clinical:write` alone. Nested order / admission rows document prompt
+/// narrative ∪ (matrix nested write _(n/a)_).
 abstract final class ClinicalCompletedAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -732,6 +737,7 @@ abstract final class ClinicalCompletedAtomPermissions {
   static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
   static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement completedChip = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
