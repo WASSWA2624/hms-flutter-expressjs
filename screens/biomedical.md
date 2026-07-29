@@ -198,9 +198,10 @@ Compliance permission tests in `frontend/test/features/biomedical/presentation/b
 
 Preventive permission tests in `frontend/test/features/biomedical/presentation/biomedical_preventive_permissions_test.dart`:
 
-- [x] ∩ denial: `biomed:read` without write omits **Schedule maintenance** / Perform maintenance next-action / detail writes / print.
+- [x] ∩ denial: `biomed:read` without write omits **Schedule maintenance** / Perform maintenance next-action / detail writes / print; Filters/list chrome remain.
 - [x] Full write ∩ / source ∪: Schedule maintenance, Perform maintenance next-action, detail writes, print mount.
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Preventive write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits Preventive chrome; subscription strip without biomed module omits Preventive.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; PM writes still mount.
-- [x] Authorized Perform maintenance mutation sync, empty/error, mobile+desktop, light+dark.
+- [x] Authorized Perform maintenance mutation sync; Schedule maintenance validation keeps dialog open.
+- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
