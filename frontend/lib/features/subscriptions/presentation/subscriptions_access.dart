@@ -109,11 +109,11 @@ bool canDeleteSubscriptions(AppAccessPolicy policy) {
 /// documents a narrower requirement.
 AccessRequirement subscriptionsPanelTabRequirement(SubscriptionPanel panel) {
   return switch (panel) {
+    SubscriptionPanel.overview => SubscriptionsOverviewAtomPermissions.tab,
+    SubscriptionPanel.catalog => SubscriptionsPlansAtomPermissions.tab,
     SubscriptionPanel.billing => SubscriptionsInvoicesAtomPermissions.tab,
-    SubscriptionPanel.overview ||
-    SubscriptionPanel.catalog ||
-    SubscriptionPanel.operations ||
-    SubscriptionPanel.governance => subscriptionsWorkspaceReadRequirement,
+    SubscriptionPanel.governance => SubscriptionsLicensesAtomPermissions.tab,
+    SubscriptionPanel.operations => subscriptionsWorkspaceReadRequirement,
   };
 }
 
@@ -150,6 +150,162 @@ bool canViewSubscriptionsQueueChip(
   SubscriptionQueueSummary queue,
 ) {
   return canViewSubscriptionsPanel(policy, queue.panel);
+}
+
+/// Overview tab (`panel=overview`) atom → permission mapping (inventory +
+/// matrix). Summary KPIs only; no create primary on the tab strip.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Overview strip tab | navigate | read ∩ `subscriptions:read` ([tab]) |
+/// | Queue chips (shared chrome) | navigate / read | read ∩ ([queueChip]) |
+/// | KPI cohort cards (Active / Not subscribed / Closed) | read | read ∩ ([kpi] / [listChrome]) |
+/// | Usage limits panel | read | read ∩ ([usageLimits]) |
+/// | Recommendations list | read | read ∩ ([recommendations]) |
+/// | Cohort dialog (accounts list) | read / progressive disclosure | read ∩ ([cohortDialog] / [detail]) |
+/// | Cohort New subscription | create | write ∩ ([create] / [nestedWrite]) |
+/// | Cohort Edit subscription | update | write ∩ ([update] / [nestedWrite]) |
+/// | Tab-strip primary create | create | _(none on Overview)_ |
+/// | Destructive delete / void | delete | delete ∩ — **not mounted** |
+/// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Empty / loading / error / retry / success / validation | read chrome | read ∩ |
+/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
+///
+/// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
+/// [subscriptionsWorkspaceRouteEntryRequirement]; atom gates still use
+/// `subscriptions:*` ∩ module so elevated-but-scoped sessions cannot
+/// over-grant. Create / update share write ∩ (`subscriptions:write`).
+abstract final class SubscriptionsOverviewAtomPermissions {
+  static const AccessRequirement tab = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement kpi = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement usageLimits =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement recommendations =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement queueChip =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement cohortDialog =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement detail = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement empty = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement loading =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement retryChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement read = subscriptionsWorkspaceReadRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — cohort New subscription.
+  static const AccessRequirement create =
+      subscriptionsWorkspaceCreateRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — cohort Edit subscription.
+  static const AccessRequirement update =
+      subscriptionsWorkspaceUpdateRequirement;
+  static const AccessRequirement write = subscriptionsWorkspaceWriteRequirement;
+
+  /// Matrix ∩ `subscriptions:delete` — no void/delete control mounted.
+  static const AccessRequirement delete =
+      subscriptionsWorkspaceDeleteRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses workspace read / write ∩.
+  static const AccessRequirement nestedRead =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement nestedWrite =
+      subscriptionsWorkspaceWriteRequirement;
+
+  static const AccessRequirement routeEntry =
+      subscriptionsWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement entry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
+}
+
+/// Plans tab (`panel=catalog` / `resource=subscription-plans`, nested Modules)
+/// atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Plans strip tab (catalog) | navigate | read ∩ `subscriptions:read` ([tab]) |
+/// | Nested Plans / Modules resource tabs | navigate | read ∩ ([nestedResourceTabs]) |
+/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome]) |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Row select → plan detail | read | read ∩ ([rowSelect] / [detail]) |
+/// | Detail metrics / included modules / tenant accounts | read | read ∩ ([detail]) |
+/// | Create plan (tab primary) | create | write ∩ ([create]) |
+/// | Edit plan (detail dialog action + form) | update | write ∩ ([edit] / [update]) |
+/// | Manage modules (detail + dialog) | update | write ∩ ([manageModules] / [update]) |
+/// | Destructive delete / void | delete | delete ∩ — **not mounted** |
+/// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Overview KPI active plans (shared chrome) | read | read ∩ ([overviewKpi]) |
+/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
+///
+/// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
+/// [subscriptionsWorkspaceRouteEntryRequirement]; atom gates still use
+/// `subscriptions:*` ∩ module so elevated-but-scoped sessions cannot
+/// over-grant. Create / edit / manage-modules share write ∩
+/// (`subscriptions:write`).
+abstract final class SubscriptionsPlansAtomPermissions {
+  static const AccessRequirement tab = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement nestedResourceTabs =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement search = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement filters =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement columns =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement empty = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement loading =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement retryChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement detail = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement overviewKpi =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement read = subscriptionsWorkspaceReadRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — Create plan primary.
+  static const AccessRequirement create =
+      subscriptionsWorkspaceCreateRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — Edit plan.
+  static const AccessRequirement edit =
+      subscriptionsWorkspaceUpdateRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — Manage included modules.
+  static const AccessRequirement manageModules =
+      subscriptionsWorkspaceUpdateRequirement;
+
+  static const AccessRequirement update =
+      subscriptionsWorkspaceUpdateRequirement;
+  static const AccessRequirement write = subscriptionsWorkspaceWriteRequirement;
+
+  /// Matrix ∩ `subscriptions:delete` — no void/delete control mounted.
+  static const AccessRequirement delete =
+      subscriptionsWorkspaceDeleteRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses workspace read / write ∩.
+  static const AccessRequirement nestedRead =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement nestedWrite =
+      subscriptionsWorkspaceWriteRequirement;
+
+  static const AccessRequirement routeEntry =
+      subscriptionsWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement entry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
 }
 
 /// Invoices tab (`panel=billing` / subscription invoices) atom → permission
@@ -216,6 +372,85 @@ abstract final class SubscriptionsInvoicesAtomPermissions {
 
   /// Matrix ∩ `subscriptions:delete` — no void/delete control mounted.
   static const AccessRequirement delete =
+      subscriptionsWorkspaceDeleteRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses workspace read / write ∩.
+  static const AccessRequirement nestedRead =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement nestedWrite =
+      subscriptionsWorkspaceWriteRequirement;
+
+  static const AccessRequirement routeEntry =
+      subscriptionsWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement entry =
+      subscriptionsWorkspaceCatalogEntryRequirement;
+}
+
+/// Licenses tab (`panel=governance` / `resource=licenses`) atom → permission
+/// mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Licenses strip tab | navigate | read ∩ `subscriptions:read` ([tab]) |
+/// | Expiring licenses queue chip | navigate / read | read ∩ ([expiringLicensesChip]) |
+/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome]) |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ ([rowSelect] / [detail]) |
+/// | Detail fields / timeline | read | read ∩ ([detail]) |
+/// | Add license (toolbar + dialog) | create | write ∩ ([create] / [addLicense]) |
+/// | Update license (detail + dialog) | update | write ∩ ([update] / [updateLicense]) |
+/// | Revoke license (detail + confirm) | delete | delete ∩ ([delete] / [revoke]) |
+/// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
+/// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
+///
+/// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
+/// [subscriptionsWorkspaceRouteEntryRequirement]; atom gates still use
+/// `subscriptions:*` ∩ module so elevated-but-scoped sessions cannot
+/// over-grant. Status→CANCELLED in the update form remains write ∩ (soft
+/// revoke via update); destructive [revoke] uses HTTP delete ∩.
+abstract final class SubscriptionsLicensesAtomPermissions {
+  static const AccessRequirement tab = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement search = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement filters =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement columns =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement empty = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement loading =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement retryChrome =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement detail = subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement expiringLicensesChip =
+      subscriptionsWorkspaceReadRequirement;
+  static const AccessRequirement read = subscriptionsWorkspaceReadRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — Add license.
+  static const AccessRequirement create =
+      subscriptionsWorkspaceCreateRequirement;
+  static const AccessRequirement addLicense =
+      subscriptionsWorkspaceCreateRequirement;
+
+  /// Matrix ∩ `subscriptions:write` — Update license.
+  static const AccessRequirement update =
+      subscriptionsWorkspaceUpdateRequirement;
+  static const AccessRequirement updateLicense =
+      subscriptionsWorkspaceUpdateRequirement;
+  static const AccessRequirement write = subscriptionsWorkspaceWriteRequirement;
+
+  /// Matrix ∩ `subscriptions:delete` — Revoke / delete license.
+  static const AccessRequirement delete =
+      subscriptionsWorkspaceDeleteRequirement;
+  static const AccessRequirement revoke =
       subscriptionsWorkspaceDeleteRequirement;
 
   /// Nested cross-module — matrix _(n/a)_; reuses workspace read / write ∩.

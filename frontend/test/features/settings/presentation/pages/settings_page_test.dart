@@ -37,7 +37,10 @@ void main() {
       );
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(
         session,
-      ).copyWithPermissions(<AppPermission>[AppPermissions.hrWrite]);
+      ).copyWithPermissions(<AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.hrWrite,
+      ]);
 
       await pumpLocalizedWidget(
         tester,

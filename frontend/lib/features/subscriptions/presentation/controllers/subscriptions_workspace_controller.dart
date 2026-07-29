@@ -404,6 +404,19 @@ final class SubscriptionsWorkspaceController
     );
   }
 
+  Future<AppFailure?> deleteSelectedLicense() {
+    final SubscriptionItem? selected = _requireSelected(
+      SubscriptionResource.licenses,
+    );
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(
+      () => _repository.deleteLicense(selected.id),
+      refreshSession: true,
+    );
+  }
+
   Future<AppFailure?> collectSelectedInvoice(SubscriptionActionDraft draft) {
     final SubscriptionItem? selected = _requireSelected(
       SubscriptionResource.subscriptionInvoices,

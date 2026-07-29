@@ -52,6 +52,8 @@ abstract interface class SubscriptionsRepository {
 
   Future<Result<void>> updateLicense(String licenseId, LicenseDraft draft);
 
+  Future<Result<void>> deleteLicense(String licenseId);
+
   Future<Result<void>> collectInvoice(
     String subscriptionInvoiceId,
     SubscriptionActionDraft draft,

@@ -16,8 +16,6 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/preferences/app_preferences_store.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/core/storage/storage_readiness.dart';
-import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
-import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -252,49 +250,58 @@ void main() {
         tab: 'preferences',
       );
 
+      // Preferences shares profile:read ∩ — both tabs collapse together.
       expect(find.text('Preferences'), findsNothing);
       expect(find.text('Accessibility'), findsNothing);
     },
   );
 
-  test('feature helpers match AccessRequirement matrix keys', () {
-    expect(
-      SettingsAccessibilityAtomPermissions.tab,
-      same(profileReadRequirement),
-    );
-    expect(
-      SettingsAccessibilityAtomPermissions.update,
-      same(profileUpdateRequirement),
-    );
-    expect(
-      SettingsAccessibilityAtomPermissions.tab.allPermissions,
-      <AppPermission>[AppPermissions.profileRead],
-    );
-    expect(SettingsAccessibilityAtomPermissions.tab.anyPermissions, isEmpty);
-    expect(
-      SettingsAccessibilityAtomPermissions.update.allPermissions,
-      <AppPermission>[AppPermissions.profileUpdate],
-    );
-    expect(SettingsAccessibilityAtomPermissions.update.anyPermissions, isEmpty);
-    expect(
-      SettingsAccessibilityAtomPermissions.create.allPermissions,
-      <AppPermission>[AppPermissions.facilityAdmin],
-    );
-    expect(
-      SettingsAccessibilityAtomPermissions.delete.allPermissions,
-      <AppPermission>[AppPermissions.facilityAdmin],
-    );
-    // Matrix has no union / nested cross-module rows for this tab.
-    expect(
-      SettingsAccessibilityAtomPermissions.nestedRead.anyPermissions,
-      isEmpty,
-    );
-    expect(
-      SettingsAccessibilityAtomPermissions.nestedWrite,
-      same(profileUpdateRequirement),
-    );
-    // profile:* keys are core/platform (not plan-module mapped).
-  });
+  testWidgets(
+    'empty subscription modules still show core accessibility atoms',
+    (WidgetTester tester) async {
+      await _pumpSettings(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+        tab: 'accessibility',
+      );
+
+      expect(find.text('Accessibility'), findsWidgets);
+      expect(find.byType(AppCheckboxField), findsNWidgets(2));
+      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized bold text toggle syncs provider state',
+    (WidgetTester tester) async {
+      final _MemoryPreferencesStore store = _MemoryPreferencesStore();
+      await _pumpSettings(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+        tab: 'accessibility',
+        store: store,
+      );
+
+      final Finder boldTextTile = find.widgetWithText(
+        CheckboxListTile,
+        'Bold text',
+      );
+      expect(boldTextTile, findsOneWidget);
+
+      await tester.tap(boldTextTile);
+      await tester.pumpAndSettle();
+
+      final CheckboxListTile tile = tester.widget(boldTextTile);
+      expect(tile.value, isTrue);
+      expect(store.getBool(AppPreferenceKeys.boldText), isTrue);
+    },
+  );
 
   testWidgets(
     'SettingsAccessibilitySection integrates AppAccessGate helpers',
@@ -436,6 +443,8 @@ AuthSession _session(List<AppPermission> permissions) {
       facilityId: 'facility-1',
       roles: <String>['doctor'],
     ),
+    // Explicit empty list documents AC4: profile:* is not plan-module mapped.
+    moduleEntitlements: const <AppModuleEntitlement>[],
   );
 }
 

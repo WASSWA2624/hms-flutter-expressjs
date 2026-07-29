@@ -270,6 +270,14 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
+  Future<Result<void>> deleteLicense(String licenseId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.licenses, licenseId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> collectInvoice(
     String subscriptionInvoiceId,
     SubscriptionActionDraft draft,

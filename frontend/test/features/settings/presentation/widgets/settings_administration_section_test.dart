@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -13,7 +16,6 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/settings/data/repositories/settings_workspace_repository_impl.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/domain/repositories/settings_workspace_repository.dart';
-import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_administration_section.dart';
@@ -175,6 +177,98 @@ void main() {
   );
 
   testWidgets(
+    'ABAC: missing facility strips Tenant and facility setup tile',
+    (WidgetTester tester) async {
+      await _pumpSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+          AppPermissions.setupRead,
+          AppPermissions.accessAdminRead,
+        ],
+        settingsWorkspaceVisible: false,
+        facilityId: null,
+      );
+
+      expect(find.text('Administration boundaries'), findsOneWidget);
+      expect(find.text('Tenant and facility setup'), findsNothing);
+      expect(find.text('Users and access'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing tenant strips Users and access tile',
+    (WidgetTester tester) async {
+      // Facility present so setup remains; tenant absent strips access admin.
+      await _pumpSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.tenantAdmin,
+          AppPermissions.setupRead,
+          AppPermissions.accessAdminRead,
+        ],
+        settingsWorkspaceVisible: false,
+        tenantId: null,
+        facilityId: 'facility-1',
+      );
+
+      expect(find.text('Administration boundaries'), findsOneWidget);
+      expect(find.text('Tenant and facility setup'), findsOneWidget);
+      expect(find.text('Users and access'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized navigate flow opens Subscription plans destination',
+    (WidgetTester tester) async {
+      await _pumpSectionWithRouter(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+          AppPermissions.subscriptionsRead,
+        ],
+        modules: _subscriptionModule,
+        settingsWorkspaceVisible: true,
+      );
+
+      expect(find.text('Subscription plans'), findsOneWidget);
+      await tester.tap(find.text('Subscription plans'));
+      await tester.pumpAndSettle();
+      expect(find.text('Subscriptions destination'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'navigate-only tab has no mutation chrome (post-mutation sync N/A)',
+    (WidgetTester tester) async {
+      await _pumpSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+          AppPermissions.setupRead,
+          AppPermissions.subscriptionsRead,
+          AppPermissions.accessAdminRead,
+          AppPermissions.profileUpdate,
+        ],
+        modules: _subscriptionModule,
+        settingsWorkspaceVisible: false,
+      );
+
+      expect(find.text('Create'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Save'), findsNothing);
+      expect(find.text('Reset'), findsNothing);
+      expect(find.byType(Form), findsNothing);
+    },
+  );
+
+  testWidgets(
     'workspace mode keeps Subscription plans only under Administration',
     (WidgetTester tester) async {
       await _pumpSection(
@@ -309,7 +403,11 @@ void main() {
     'settingsAdministrationSectionVisible requires read ∩ and a destination',
     () {
       final AppAccessPolicy denied = AppAccessPolicy.fromSession(
-        _session(permissions: <AppPermission>[AppPermissions.profileRead]),
+        _session(
+          permissions: <AppPermission>[AppPermissions.profileRead],
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
       ).copyWithPermissions(<AppPermission>[AppPermissions.profileRead]);
 
       expect(
@@ -326,6 +424,8 @@ void main() {
           AppPermissions.facilityAdmin,
           AppPermissions.setupRead,
         ],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
       );
       final AppAccessPolicy allowed = AppAccessPolicy.fromSession(
         allowedSession,
@@ -355,12 +455,18 @@ Future<void> _pumpSection(
   required List<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
   required bool settingsWorkspaceVisible,
+  String? tenantId = 'tenant-1',
+  String? facilityId = 'facility-1',
+  List<String> roles = const <String>['doctor'],
   Size size = const Size(900, 1000),
   ThemeMode themeMode = ThemeMode.light,
 }) async {
   final AuthSession session = _session(
     permissions: permissions,
     modules: modules,
+    roles: roles,
+    tenantId: tenantId,
+    facilityId: facilityId,
   );
   final AppAccessPolicy policy = AppAccessPolicy.fromSession(
     session,
@@ -399,6 +505,74 @@ Future<void> _pumpSection(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpSectionWithRouter(
+  WidgetTester tester, {
+  required List<AppPermission> permissions,
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
+  required bool settingsWorkspaceVisible,
+  Size size = const Size(900, 1000),
+}) async {
+  final AuthSession session = _session(
+    permissions: permissions,
+    modules: modules,
+    tenantId: 'tenant-1',
+    facilityId: 'facility-1',
+  );
+  final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+    session,
+  ).copyWithPermissions(permissions);
+
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
+
+  final GoRouter router = GoRouter(
+    initialLocation: AppRoutes.settings.location(),
+    routes: <RouteBase>[
+      GoRoute(
+        path: AppRoutes.settings.path,
+        builder: (BuildContext context, GoRouterState state) {
+          return Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: SettingsAdministrationSection(
+                settingsWorkspaceVisible: settingsWorkspaceVisible,
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.subscriptions.path,
+        builder: (BuildContext context, GoRouterState state) {
+          return const Scaffold(body: Text('Subscriptions destination'));
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appAccessPolicyProvider.overrideWithValue(policy),
+        initialSessionStateProvider.overrideWithValue(
+          SessionState.authenticated(session: session),
+        ),
+      ],
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.light,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pumpSettingsPage(
   WidgetTester tester, {
   required List<AppPermission> permissions,
@@ -407,10 +581,13 @@ Future<void> _pumpSettingsPage(
   String tab = 'administration',
   Size size = const Size(900, 1000),
 }) async {
+  final bool elevated = roles.contains('SUPER_ADMIN');
   final AuthSession session = _session(
     permissions: permissions,
     modules: modules,
     roles: roles,
+    tenantId: elevated ? null : 'tenant-1',
+    facilityId: elevated ? null : 'facility-1',
   );
   final AppAccessPolicy policy = AppAccessPolicy.fromSession(
     session,
@@ -455,6 +632,8 @@ AuthSession _session({
   required List<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
   List<String> roles = const <String>['doctor'],
+  String? tenantId,
+  String? facilityId,
 }) {
   return AuthSession(
     tokens: SessionTokens(accessToken: 'access-token'),
@@ -466,8 +645,8 @@ AuthSession _session({
       email: 'alex@example.com',
       firstName: 'Alex',
       lastName: 'Demo',
-      tenantId: roles.contains('SUPER_ADMIN') ? null : 'tenant-1',
-      facilityId: roles.contains('SUPER_ADMIN') ? null : 'facility-1',
+      tenantId: tenantId,
+      facilityId: facilityId,
       roles: roles,
     ),
   );

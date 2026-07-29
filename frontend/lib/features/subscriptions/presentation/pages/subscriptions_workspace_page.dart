@@ -276,7 +276,7 @@ class _SubscriptionsWorkspaceContentState
                 );
               },
               primaryAction: canShowCurrentPanel
-                  ? _primaryAction(context, canWrite, state)
+                  ? _primaryAction(context, accessPolicy, state)
                   : null,
             ),
             SizedBox(height: theme.spacing.sm),
@@ -293,7 +293,7 @@ class _SubscriptionsWorkspaceContentState
                 SizedBox(height: theme.spacing.md),
               ],
               if (isOverview)
-                _SubscriptionOverviewPanel(state: state, canWrite: canWrite)
+                _SubscriptionOverviewPanel(state: state)
               else ...<Widget>[
                 if (panelResources.length > 1) ...<Widget>[
                   _SubscriptionsResourceTabBar(
@@ -324,12 +324,28 @@ class _SubscriptionsWorkspaceContentState
                             .isAllowed(accessPolicy)) {
                       return;
                     }
+                    if (state.query.panel == SubscriptionPanel.catalog &&
+                        !SubscriptionsPlansAtomPermissions.rowSelect
+                            .isAllowed(accessPolicy)) {
+                      return;
+                    }
+                    if (state.query.panel == SubscriptionPanel.governance &&
+                        !SubscriptionsLicensesAtomPermissions.rowSelect
+                            .isAllowed(accessPolicy)) {
+                      return;
+                    }
+                    final bool itemCanWrite =
+                        item.resource ==
+                            SubscriptionResource.subscriptionPlans
+                        ? SubscriptionsPlansAtomPermissions.update
+                              .isAllowed(accessPolicy)
+                        : canWrite;
                     unawaited(
                       _openSubscriptionDetailDialog(
                         context,
                         ref,
                         item,
-                        canWrite,
+                        itemCanWrite,
                       ),
                     );
                   },
@@ -344,23 +360,46 @@ class _SubscriptionsWorkspaceContentState
 
   Widget? _primaryAction(
     BuildContext context,
-    bool canWrite,
+    AppAccessPolicy accessPolicy,
     SubscriptionsWorkspaceState state,
   ) {
-    if (!canWrite || state.query.panel == SubscriptionPanel.overview) {
+    // Overview: summary KPIs only — no tab-strip create primary
+    // ([SubscriptionsOverviewAtomPermissions.create] is cohort-only).
+    if (state.query.panel == SubscriptionPanel.overview) {
       return null;
     }
     // Invoices: no create primary — Collect/Retry live on detail only.
     if (state.query.panel == SubscriptionPanel.billing) {
       return null;
     }
-    return switch (state.query.resource) {
-      SubscriptionResource.subscriptionPlans => AppTabToolbarPrimary(
+    if (state.query.resource == SubscriptionResource.licenses) {
+      if (!SubscriptionsLicensesAtomPermissions.create.isAllowed(
+        accessPolicy,
+      )) {
+        return null;
+      }
+      return AppTabToolbarPrimary(
+        label: _SubscriptionsText.addLicense,
+        icon: Icons.key_outlined,
+        enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
+        onPressed: () => _showLicenseDialog(context, ref, state),
+      );
+    }
+    if (state.query.resource == SubscriptionResource.subscriptionPlans) {
+      if (!SubscriptionsPlansAtomPermissions.create.isAllowed(accessPolicy)) {
+        return null;
+      }
+      return AppTabToolbarPrimary(
         label: _SubscriptionsText.createPlan,
         icon: Icons.add,
         enabled: !state.isSaving,
         onPressed: () => _showPlanDialog(context, ref),
-      ),
+      );
+    }
+    if (!canWriteSubscriptions(accessPolicy)) {
+      return null;
+    }
+    return switch (state.query.resource) {
       SubscriptionResource.subscriptions => AppTabToolbarPrimary(
         label: _SubscriptionsText.newSubscription,
         icon: Icons.add,
@@ -372,12 +411,6 @@ class _SubscriptionsWorkspaceContentState
         icon: Icons.extension_outlined,
         enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
         onPressed: () => _showModuleSubscriptionDialog(context, ref, state),
-      ),
-      SubscriptionResource.licenses => AppTabToolbarPrimary(
-        label: _SubscriptionsText.addLicense,
-        icon: Icons.key_outlined,
-        enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
-        onPressed: () => _showLicenseDialog(context, ref, state),
       ),
       _ => null,
     };
@@ -577,81 +610,106 @@ class _SubscriptionsResourceTabBar extends StatelessWidget {
 }
 
 class _SubscriptionOverviewPanel extends ConsumerWidget {
-  const _SubscriptionOverviewPanel({
-    required this.state,
-    required this.canWrite,
-  });
+  const _SubscriptionOverviewPanel({required this.state});
 
   final SubscriptionsWorkspaceState state;
-  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    if (!SubscriptionsOverviewAtomPermissions.tab.isAllowed(accessPolicy)) {
+      return const SizedBox.shrink();
+    }
+
     final SubscriptionsOverview overview = state.overview;
     final ThemeData theme = Theme.of(context);
+    final bool canCreate = SubscriptionsOverviewAtomPermissions.create
+        .isAllowed(accessPolicy);
+    final bool canUpdate = SubscriptionsOverviewAtomPermissions.update
+        .isAllowed(accessPolicy);
+    final bool showKpis =
+        SubscriptionsOverviewAtomPermissions.kpi.isAllowed(accessPolicy);
+    final bool showUsage =
+        overview.usageSummary != null &&
+        SubscriptionsOverviewAtomPermissions.usageLimits.isAllowed(
+          accessPolicy,
+        );
+    final bool showRecommendations =
+        overview.recommendations.isNotEmpty &&
+        SubscriptionsOverviewAtomPermissions.recommendations.isAllowed(
+          accessPolicy,
+        );
+
+    if (!showKpis && !showUsage && !showRecommendations) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppResponsiveWrap(
-          maxColumns: 3,
-          minItemWidth: 200,
-          children: <Widget>[
-            _SubscriptionMetricCard(
-              label: _SubscriptionsText.activePlans,
-              value: overview.activePlanTenants.count.toString(),
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onTap: () => unawaited(
-                _openTenantCohortDialog(
-                  context,
-                  ref,
-                  state: state,
-                  cohort: SubscriptionTenantCohort.active,
-                  canWrite: canWrite,
+        if (showKpis)
+          AppResponsiveWrap(
+            maxColumns: 3,
+            minItemWidth: 200,
+            children: <Widget>[
+              _SubscriptionMetricCard(
+                label: _SubscriptionsText.activePlans,
+                value: overview.activePlanTenants.count.toString(),
+                icon: Icons.verified_outlined,
+                tone: AppWorkspaceStatusTone.success,
+                onTap: () => unawaited(
+                  _openTenantCohortDialog(
+                    context,
+                    ref,
+                    state: state,
+                    cohort: SubscriptionTenantCohort.active,
+                    canCreate: canCreate,
+                    canUpdate: canUpdate,
+                  ),
                 ),
               ),
-            ),
-            _SubscriptionMetricCard(
-              label: _SubscriptionsText.notSubscribed,
-              value: overview.notSubscribedTenants.count.toString(),
-              icon: Icons.person_off_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onTap: () => unawaited(
-                _openTenantCohortDialog(
-                  context,
-                  ref,
-                  state: state,
-                  cohort: SubscriptionTenantCohort.notSubscribed,
-                  canWrite: canWrite,
+              _SubscriptionMetricCard(
+                label: _SubscriptionsText.notSubscribed,
+                value: overview.notSubscribedTenants.count.toString(),
+                icon: Icons.person_off_outlined,
+                tone: AppWorkspaceStatusTone.warning,
+                onTap: () => unawaited(
+                  _openTenantCohortDialog(
+                    context,
+                    ref,
+                    state: state,
+                    cohort: SubscriptionTenantCohort.notSubscribed,
+                    canCreate: canCreate,
+                    canUpdate: canUpdate,
+                  ),
                 ),
               ),
-            ),
-            _SubscriptionMetricCard(
-              label: _SubscriptionsText.closedSubscriptions,
-              value: overview.closedSubscriptionTenants.count.toString(),
-              icon: Icons.cancel_outlined,
-              tone: AppWorkspaceStatusTone.neutral,
-              onTap: () => unawaited(
-                _openTenantCohortDialog(
-                  context,
-                  ref,
-                  state: state,
-                  cohort: SubscriptionTenantCohort.closed,
-                  canWrite: canWrite,
+              _SubscriptionMetricCard(
+                label: _SubscriptionsText.closedSubscriptions,
+                value: overview.closedSubscriptionTenants.count.toString(),
+                icon: Icons.cancel_outlined,
+                tone: AppWorkspaceStatusTone.neutral,
+                onTap: () => unawaited(
+                  _openTenantCohortDialog(
+                    context,
+                    ref,
+                    state: state,
+                    cohort: SubscriptionTenantCohort.closed,
+                    canCreate: canCreate,
+                    canUpdate: canUpdate,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        if (overview.usageSummary != null) ...<Widget>[
+            ],
+          ),
+        if (showUsage) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           _UsageLimitPanel(
             usage: overview.usageSummary!,
             subscription: overview.currentSubscription,
           ),
         ],
-        if (overview.recommendations.isNotEmpty) ...<Widget>[
+        if (showRecommendations) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           _RecommendationList(recommendations: overview.recommendations),
         ],
@@ -1105,8 +1163,8 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
       children: <Widget>[
         _DetailHeader(item: item),
         SizedBox(height: Theme.of(context).spacing.md),
-        if (canWrite) _DetailActions(item: item, state: state),
-        if (canWrite) SizedBox(height: Theme.of(context).spacing.md),
+        _DetailActions(item: item, state: state, canWrite: canWrite),
+        SizedBox(height: Theme.of(context).spacing.md),
         _DetailFields(item: item),
         if (state.timeline.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
@@ -1286,7 +1344,9 @@ class _PlanDetailContent extends ConsumerWidget {
           description: _SubscriptionsText.includedModulesAccessHint,
           titleIcon: Icons.extension_outlined,
           actions: <Widget>[
-            if (canWrite)
+            if (SubscriptionsPlansAtomPermissions.manageModules.isAllowed(
+              ref.watch(appAccessPolicyProvider),
+            ))
               AppButton.secondary(
                 label: _SubscriptionsText.manageModules,
                 leadingIcon: Icons.extension_outlined,
@@ -1672,17 +1732,22 @@ class _DetailHeader extends StatelessWidget {
 }
 
 class _DetailActions extends ConsumerWidget {
-  const _DetailActions({required this.item, required this.state});
+  const _DetailActions({
+    required this.item,
+    required this.state,
+    required this.canWrite,
+  });
 
   final SubscriptionItem item;
   final SubscriptionsWorkspaceState state;
+  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = canWriteSubscriptions(accessPolicy);
     final List<Widget> actions = <Widget>[
-      if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
+      if (item.resource == SubscriptionResource.subscriptions &&
+          canWrite) ...<Widget>[
         AppButton.secondary(
           label: _SubscriptionsText.editSubscription,
           leadingIcon: Icons.edit_outlined,
@@ -1725,6 +1790,7 @@ class _DetailActions extends ConsumerWidget {
           ),
       ],
       if (item.resource == SubscriptionResource.moduleSubscriptions &&
+          canWrite &&
           item.canToggleModule)
         AppButton.secondary(
           label: item.isActive == true
@@ -1736,14 +1802,27 @@ class _DetailActions extends ConsumerWidget {
           enabled: !state.isSaving,
           onPressed: () => _showToggleModuleDialog(context, ref, item),
         ),
-      if (item.resource == SubscriptionResource.licenses)
-        AppButton.secondary(
-          label: _SubscriptionsText.updateLicense,
-          leadingIcon: Icons.key_outlined,
-          enabled: !state.isSaving,
-          onPressed: () =>
-              _showLicenseDialog(context, ref, state, initial: item),
-        ),
+      if (item.resource == SubscriptionResource.licenses) ...<Widget>[
+        if (SubscriptionsLicensesAtomPermissions.update.isAllowed(
+          accessPolicy,
+        ))
+          AppButton.secondary(
+            label: _SubscriptionsText.updateLicense,
+            leadingIcon: Icons.key_outlined,
+            enabled: !state.isSaving,
+            onPressed: () =>
+                _showLicenseDialog(context, ref, state, initial: item),
+          ),
+        if (SubscriptionsLicensesAtomPermissions.delete.isAllowed(
+          accessPolicy,
+        ))
+          AppButton.secondary(
+            label: _SubscriptionsText.revokeLicense,
+            leadingIcon: Icons.key_off_outlined,
+            enabled: !state.isSaving,
+            onPressed: () => _showRevokeLicenseDialog(context, ref),
+          ),
+      ],
       if (item.resource == SubscriptionResource.subscriptionInvoices &&
           canWrite) ...<Widget>[
         if (item.canCollectInvoice &&
@@ -3409,7 +3488,10 @@ Future<void> _openSubscriptionDetailDialog(
         },
       ),
       actions: <Widget>[
-        if (isPlan && canWrite)
+        if (isPlan &&
+            SubscriptionsPlansAtomPermissions.edit.isAllowed(
+              ref.read(appAccessPolicyProvider),
+            ))
           AppButton.secondary(
             label: _SubscriptionsText.editPlan,
             leadingIcon: Icons.edit_outlined,
@@ -3586,8 +3668,14 @@ Future<void> _openTenantCohortDialog(
   WidgetRef ref, {
   required SubscriptionsWorkspaceState state,
   required SubscriptionTenantCohort cohort,
-  required bool canWrite,
+  required bool canCreate,
+  required bool canUpdate,
 }) async {
+  if (!SubscriptionsOverviewAtomPermissions.cohortDialog.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionTenantCohortSummary summary = state.overview.cohortSummary(
     cohort,
   );
@@ -3634,25 +3722,36 @@ Future<void> _openTenantCohortDialog(
             else ...<Widget>[
               for (final SubscriptionTenantAccount account
                   in summary.accounts) ...<Widget>[
-                _CohortAccountCard(
-                  account: account,
-                  canWrite: canWrite,
-                  isSaving: state.isSaving,
-                  onAction: canWrite
-                      ? () async {
-                          await Navigator.of(dialogContext).maybePop();
-                          if (!context.mounted) {
-                            return;
-                          }
-                          await _handleCohortAccountAction(
-                            context,
-                            ref,
-                            state: state,
-                            account: account,
-                            canWrite: canWrite,
-                          );
-                        }
-                      : null,
+                Builder(
+                  builder: (BuildContext context) {
+                    final bool hasSubscription =
+                        account.subscriptionId != null &&
+                        account.subscriptionId!.isNotEmpty;
+                    final bool canMutate = hasSubscription
+                        ? canUpdate
+                        : canCreate;
+                    return _CohortAccountCard(
+                      account: account,
+                      canMutate: canMutate,
+                      isSaving: state.isSaving,
+                      onAction: canMutate
+                          ? () async {
+                              await Navigator.of(dialogContext).maybePop();
+                              if (!context.mounted) {
+                                return;
+                              }
+                              await _handleCohortAccountAction(
+                                context,
+                                ref,
+                                state: state,
+                                account: account,
+                                canCreate: canCreate,
+                                canUpdate: canUpdate,
+                              );
+                            }
+                          : null,
+                    );
+                  },
                 ),
                 SizedBox(height: theme.spacing.sm),
               ],
@@ -3673,13 +3772,13 @@ Future<void> _openTenantCohortDialog(
 class _CohortAccountCard extends StatelessWidget {
   const _CohortAccountCard({
     required this.account,
-    required this.canWrite,
+    required this.canMutate,
     required this.isSaving,
     required this.onAction,
   });
 
   final SubscriptionTenantAccount account;
-  final bool canWrite;
+  final bool canMutate;
   final bool isSaving;
   final Future<void> Function()? onAction;
 
@@ -3742,7 +3841,7 @@ class _CohortAccountCard extends StatelessWidget {
                 leadingIcon: account.subscriptionId == null
                     ? Icons.add_circle_outline
                     : Icons.edit_outlined,
-                enabled: canWrite && !isSaving,
+                enabled: canMutate && !isSaving,
                 onPressed: onAction == null
                     ? null
                     : () => unawaited(onAction!()),
@@ -3790,19 +3889,24 @@ Future<void> _handleCohortAccountAction(
   WidgetRef ref, {
   required SubscriptionsWorkspaceState state,
   required SubscriptionTenantAccount account,
-  required bool canWrite,
+  required bool canCreate,
+  required bool canUpdate,
 }) async {
-  if (!canWrite) {
-    return;
-  }
   final String? subscriptionId = account.subscriptionId;
   if (subscriptionId == null || subscriptionId.isEmpty) {
+    if (!canCreate) {
+      return;
+    }
     await _showSubscriptionDialog(
       context,
       ref,
       state,
       initialTenantId: account.tenantId,
     );
+    return;
+  }
+
+  if (!canUpdate) {
     return;
   }
 
@@ -3929,6 +4033,30 @@ Future<void> _showLicenseDialog(
             .updateSelectedLicense(draft);
   if (context.mounted) {
     _showMutationResult(context, failure);
+  }
+}
+
+Future<void> _showRevokeLicenseDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppConfirmActionDialog(
+      title: _SubscriptionsText.revokeLicense,
+      body: _SubscriptionsText.revokeLicenseBody,
+      submitLabel: _SubscriptionsText.revokeLicense,
+      icon: const Icon(Icons.key_off_outlined),
+      destructive: true,
+      submitLeadingIcon: Icons.key_off_outlined,
+      onConfirm: () => ref
+          .read(subscriptionsWorkspaceControllerProvider.notifier)
+          .deleteSelectedLicense(),
+    ),
+  );
+  if (confirmed == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -4982,6 +5110,9 @@ abstract final class _SubscriptionsText {
   static const String assignModule = 'Assign module';
   static const String addLicense = 'Add license';
   static const String updateLicense = 'Update license';
+  static const String revokeLicense = 'Revoke license';
+  static const String revokeLicenseBody =
+      'Revoke this license? The tenant loses license access according to plan rules.';
   static const String renew = 'Renew';
   static const String changePlan = 'Change plan';
   static const String activate = 'Activate';

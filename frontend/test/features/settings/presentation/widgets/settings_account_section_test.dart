@@ -373,6 +373,26 @@ void main() {
   );
 
   testWidgets(
+    'no nested cross-module write entry points on account tab',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+      );
+
+      // Matrix nested cross-module rows are _(n/a)_ — admin navigate tiles
+      // from Administration must not appear on this surface.
+      expect(find.text('Users and access'), findsNothing);
+      expect(find.text('Tenant and facility setup'), findsNothing);
+      expect(find.text('Subscription plans'), findsNothing);
+      expect(find.text('Administrative setup workspace'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'empty subscription modules still show core profile atoms (no plan strip)',
     (WidgetTester tester) async {
       final AuthSession session = AuthSession(

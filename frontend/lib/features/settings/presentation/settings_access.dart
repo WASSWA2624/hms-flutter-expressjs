@@ -136,20 +136,26 @@ const AccessRequirement settingsAccountDeleteRequirement =
 
 /// Accessibility tab (`/settings?tab=accessibility`) atom → permission map.
 ///
-/// Reuses [profileReadRequirement] / [profileUpdateRequirement]. No nested
-/// dialogs. Create/delete ∩ `facility:admin` are documented but **not mounted**.
-/// View ∪ / nested cross-module rows are _(n/a)_.
+/// Authenticated profile prefs. Reuses [profileReadRequirement] /
+/// [profileUpdateRequirement]. No nested dialogs. Create/delete ∩
+/// `facility:admin` are documented but **not mounted**. View ∪ / nested
+/// cross-module rows are _(n/a)_. Profile rights are core/platform (not
+/// plan-module mapped); subscription stripping does not apply. Own-scoped
+/// via local accessibility prefs for the current user.
 ///
 /// | Atom | Intent | Gate |
 /// | --- | --- | --- |
-/// | Tab strip / section chrome | read | `profile:read` ∩ |
+/// | Tab strip / section chrome | read | `profile:read` ∩ ([tab] / [listChrome]) |
 /// | Reduce motion / Bold text / Text size values | read | `profile:read` ∩ |
 /// | Reduce motion / Bold text checkboxes | update | `profile:update` ∩ |
 /// | Text size select | update | `profile:update` ∩ |
-/// | Save-error snackbar | visible feedback | update path |
+/// | Save-error snackbar | visible feedback | update path ([success]/[validation]) |
+/// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 abstract final class SettingsAccessibilityAtomPermissions {
   static const AccessRequirement tab = profileReadRequirement;
   static const AccessRequirement read = profileReadRequirement;
+  static const AccessRequirement listChrome = profileReadRequirement;
   static const AccessRequirement reduceMotionValue = profileReadRequirement;
   static const AccessRequirement boldTextValue = profileReadRequirement;
   static const AccessRequirement textScaleValue = profileReadRequirement;

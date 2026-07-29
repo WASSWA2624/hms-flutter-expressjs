@@ -23,6 +23,9 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+/// Account and security tab (`/settings?tab=account`).
+///
+/// See [SettingsAccountAtomPermissions] for the inventory → matrix map.
 class SettingsAccountSection extends ConsumerStatefulWidget {
   const SettingsAccountSection({
     this.initialPanel,
