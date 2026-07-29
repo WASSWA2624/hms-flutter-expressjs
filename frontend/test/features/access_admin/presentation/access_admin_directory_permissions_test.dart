@@ -653,9 +653,14 @@ void main() {
       );
       final AppLocalizations l10n = context.l10n;
 
-      expect(find.text(l10n.accessAdminCreateUserAction), findsOneWidget);
+      // Compact toolbar is icon-only; semantics keep the Create label.
+      expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.accessAdminCreateUserAction),
+        findsOneWidget,
+      );
       expect(find.text(l10n.accessAdminDeactivateAction), findsWidgets);
-      expect(find.text('Ada Lovelace'), findsWidgets);
+      expect(find.byType(AppListTableMobileItem), findsWidgets);
     });
 
     testWidgets('dark theme: authorized Directory atoms remain visible', (
