@@ -2,7 +2,9 @@
 
 Primary surface: `DischargeWorkspacePage` (`frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart`).
 
-Write gate: `_dischargeClinicalWriteRequirement` (clinical write + inpatient-bed-management module; doctor/nurse/admin roles). Planning / finalize mutations use this gate. Print and detail browse remain available without write.
+Write gate: `dischargeClinicalWriteRequirement` (source: role pack ∪ + `clinical:write` + `inpatient-bed-management`; matrix create/update/delete ∩ `clinical:write`). Planning / finalize / request mutations use this gate. Print and detail browse remain available without write when the tab read ∪ allows.
+
+Atom maps: `DischargeAllPatientsAtomPermissions`, `DischargePlannedAtomPermissions`, `DischargePendingClearanceAtomPermissions`, `DischargeCompletedAtomPermissions`, `DischargeFollowUpsAtomPermissions` in `discharge_access.dart`. Tab strip uses `dischargeAllowedSections` / `dischargeSectionTabRequirement`.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -29,7 +31,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, filters rows.
-  - Condition: Always when workspace loads.
+  - Condition: Each tab mounts only when its `*AtomPermissions.tab` read requirement allows; unauthorized tabs omitted. Empty strip when no section is allowed.
 
 Tab-strip toolbar actions were removed. Queue work refreshes after mutations, realtime sync, and scaffold **Try again**.
 
@@ -37,7 +39,7 @@ Tab-strip toolbar actions were removed. Queue work refreshes after mutations, re
   - Location: `AsyncStateScaffold`.
   - Opens modal: No.
   - Immediate result: Retries workspace load.
-  - Condition: Load failure.
+  - Condition: Load failure; same as active section read ∪.
 
 ### Search / filters / table chrome
 
@@ -45,7 +47,7 @@ Tab-strip toolbar actions were removed. Queue work refreshes after mutations, re
   - Location: `AppListTable` / `AppSearchBar` chrome.
   - Opens modal: Advanced filters (status); Table Settings dialog.
   - Immediate result: Search / status filter / column visibility for the active section.
-  - Condition: Queue sections only (not Follow-ups).
+  - Condition: Queue sections only (not Follow-ups); section read ∪ (e.g. Planned → `DischargePlannedAtomPermissions.listChrome`).
 
 ### Row activation
 
@@ -53,13 +55,13 @@ Tab-strip toolbar actions were removed. Queue work refreshes after mutations, re
   - Location: Table row / mobile list item.
   - Opens modal: Discharge detail dialog (context, checklist, summary, meds, billing, timeline, print).
   - Immediate result: Loads detail; shows status-primary continue when permitted.
-  - Condition: Always when rows exist.
+  - Condition: Section read ∪; rows exist.
 
 - **Next action** (labeled primary row control)
   - Location: Next-action column.
   - Opens modal: Planning dialog (incomplete) or print flow (completed with summary).
   - Immediate result: Opens planning without an empty detail shell; completed prints when summary exists else opens detail.
-  - Condition: Write gate for plan/clearance; print has no write gate; unauthorized write control absent.
+  - Condition: Planned → `DischargePlannedAtomPermissions.nextActionClearance` (write source ∩); pending → plan write ∩; completed → print read ∪. Unauthorized write control absent (no disabled stub).
 
 ### Detail dialog
 
@@ -67,33 +69,58 @@ Tab-strip toolbar actions were removed. Queue work refreshes after mutations, re
   - Location: Detail patient actions (sole planning entry).
   - Opens modal: Shared `DischargePlanningDialog`.
   - Immediate result: Plans or finalizes discharge; snackbar; queue refresh.
-  - Condition: Write gate; omitted when completed or unauthorized.
+  - Condition: Write source ∩ (`continueDischarge`); omitted when completed or unauthorized.
 
 - **Request billing** / **Request pharmacy**
   - Location: Detail patient actions.
   - Opens modal: Billing amount form / pharmacy prescription form.
-  - Immediate result: Creates billing or pharmacy request; snackbar.
-  - Condition: Always when detail is open (backend auth authoritative).
+  - Immediate result: Creates billing or pharmacy request; snackbar; queue refresh.
+  - Condition: Write source ∩ (`requestBilling` / `requestPharmacy`); unauthorized actions absent.
 
 - **Print discharge summary**
   - Location: Detail dialog actions.
   - Opens modal: Print flow.
   - Immediate result: Prints summary document.
-  - Condition: Enabled when `detail.hasSummary`.
+  - Condition: Section read ∪ (`printSummary`); enabled when `detail.hasSummary`.
+
+- **Clearance checklist / meds / bills panels**
+  - Location: Detail body (stepper + related records).
+  - Opens modal: No.
+  - Immediate result: Shows permission-filtered clearance steps and nested panels.
+  - Condition: Union across sections, ∩ within section — pharmacy:read (meds), billing:read (bills), operations:read (room turnover); clinical/last_office steps use workspace read ∪. Empty filtered checklist collapses.
 
 - **Cross-module links** (IPD / Nursing / Pharmacy / Billing / Housekeeping)
   - Location: Detail quick actions (navigation only).
   - Opens modal: No — routes to linked workspace.
   - Immediate result: Leaves discharge for the linked module.
-  - Condition: Always when detail is open.
+  - Condition: Per-link navigate gates (`openIpd` ∪ / `openNursing` ∩ last_office / `openPharmacy` ∩ pharmacy / `openBilling` ∩ billing / `openHousekeeping` ∩ operations). Section collapses when all links filtered.
 
 ### Planning dialog (from next-action or detail primary)
 
 - **Save plan** / **Finalize discharge** (+ Cancel / Refresh)
   - Location: Planning dialog actions.
   - Opens modal: N/A (already open).
-  - Immediate result: Persists plan or finalizes after clearance sync; closes on success.
-  - Condition: Validation + blockers / override; backend auth.
+  - Immediate result: Persists plan or finalizes after clearance sync; closes on success; snackbar; queue refresh.
+  - Condition: Write source ∩ (`dischargeClinicalWriteRequirement`); validation + blockers / override; nested clearance panels use same ∩ reads as detail. Unauthorized save/finalize absent.
+
+### Planned tab
+
+Reachable when Planned strip tab is selected (`?section=planned`). Rows are planned discharges; next-action is **Manage clearance**. Nested detail / planning / billing / pharmacy UI opens from this tab only via row select or next-action.
+
+- **Planned** (strip tab + count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Filters queue to planned discharges.
+  - Condition: Read ∪ `clinical:read` | `last_office:read` + `inpatient-bed-management` (`DischargePlannedAtomPermissions.tab`); omitted otherwise.
+
+- **Search / Filters / Settings (columns)** / empty / loading / error / **Try again**
+  - Location: Planned `AppListTable` chrome / scaffold.
+  - Condition: Same read ∪ as the tab.
+
+- **Row select** → detail; **Manage clearance** next-action → planning
+  - Condition: Read ∪ for detail; write source ∩ for Manage clearance / Continue / Request billing|pharmacy / Save|Finalize. Nested meds/bills/room-turnover and cross-links as above. Route entry keeps catalog ∩ `discharge:read` (not prompt module-read ∪).
+
+Helpers: `DischargePlannedAtomPermissions`, `canViewDischargePlanned`. Widget tests: `frontend/test/features/discharge/presentation/discharge_planned_permissions_test.dart`.
 
 ### Follow-ups tab
 
@@ -144,7 +171,10 @@ Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Ne
 - [ ] Next action on a planned row opens planning (clearance / finalize) directly.
 - [ ] Next action on a completed row with summary starts print.
 - [ ] Row select opens detail; detail shows one continue primary (not three planning buttons).
-- [ ] Without clinical write, next-action plan/clearance and detail continue are absent; print still available on completed.
-- [ ] After save/finalize, queue refreshes and success snackbar appears.
+- [ ] Without clinical write, next-action plan/clearance and detail continue / request billing|pharmacy are absent; print still available when read ∪ allows.
+- [ ] Without pharmacy/billing/operations read, nested meds/bills/room-turnover panels and matching cross-links are absent on Planned detail.
+- [ ] Planned tab omitted without `clinical:read` | `last_office:read` (or without inpatient module).
+- [ ] After save/finalize / request billing, queue refreshes and success snackbar appears.
 - [ ] Loading / empty / error-retry / validation states still render on workspace and planning dialog.
-- [ ] Mobile and desktop layouts keep next-action and row select reachable; theme tokens only.
+- [ ] Mobile and desktop layouts keep next-action and row select reachable; light + dark; theme tokens only.
+- [x] Planned permission widget tests: `discharge_planned_permissions_test.dart` (∩ denial, ∪ allowance, nested, subscription, sync, viewports, themes).
