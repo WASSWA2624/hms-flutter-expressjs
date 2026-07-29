@@ -300,6 +300,14 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalWaitingReviewAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalWaitingReviewAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalWaitingReviewAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
@@ -862,6 +870,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
+      // Detail remains mounted after opening write dialog (sync path ready).
+      expect(find.text('Waiting Review Tab Patient'), findsWidgets);
+      verify(() => clinicalRepository.loadEncounterBundle(any())).called(
+        greaterThan(0),
+      );
     },
   );
 }

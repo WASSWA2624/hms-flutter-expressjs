@@ -118,7 +118,7 @@ Resolution order:
   - Location: Next-action column (table / non-mobile list presentation).
   - Opens modal: **Sometimes** — only for dialog-mode actions with a registered opener; otherwise navigates to another module route.
   - Immediate result: `WorkflowActionExecutor.execute`. Dialog-mode with opener: inline dialog. Otherwise: `context.go` to target route (billing, nursing, clinical, lab, radiology, pharmacy, IPD, discharge, emergency, theater, physiotherapy, claims, rooms/beds, etc.).
-  - Condition: Encounter id present and registry resolves a code from `stage` / `nextStep`. Disabled (lock icon) when permission/module denied. Front-desk fallback may remap denied clinical-owned steps to **Assign doctor** / **Change doctor**.
+  - Condition: Encounter id present and registry resolves a code from `stage` / `nextStep`. Denied permission/module actions are **absent** (not disabled lock stubs). Front-desk fallback may remap denied clinical-owned steps to **Assign doctor** / **Change doctor**.
 
   Common labels (from registry; actual label depends on backend `nextStep` / stage aliases):
 
@@ -309,7 +309,7 @@ Write / nested-order actions below are **absent** when their gate fails (not dis
   - Location: Encounter quick actions.
   - Opens modal: No in-app dialog (calls `printFormTemplateDocument` → `printHtmlDocument`).
   - Immediate result: Builds consultation summary HTML and triggers print pipeline.
-  - Condition: Always enabled (not write-gated).
+  - Condition: Read gate (`clinicalWorkspaceReadRequirement` / `clinical:read`); absent when not allowed.
 
 ### Lab orders panel (`ClinicalLabOrdersTablePanel`)
 
@@ -766,6 +766,6 @@ When planned, additional resolve actions:
 
 ## Notes on non-button surfaces
 
-- Status badges, triage handoff, and generic clinical record rows are display-only (no row actions except where order/diagnosis panels expose cancel/delete). **Workflow progress** is its own section (not nested under Triage). Titled `AppWorkspaceDetailPanel` sections are collapsible app-wide (header-only when collapsed). **Results timeline** appears only when the encounter has ready lab and/or radiology results (not notes, procedures, or open orders). Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
+- Status badges, triage handoff, and generic clinical record rows are display-only (no row actions except where order/diagnosis panels expose cancel/delete). **Workflow progress** is its own section (not nested under Triage). Titled `AppWorkspaceDetailPanel` sections are collapsible app-wide (header-only when collapsed). **Results timeline** appears only when the encounter has ready lab and/or radiology results (not notes, procedures, or open orders); lab vs imaging rows and Lab / Radiology order panels also respect Results ready panel read gates (`ClinicalResultsReadyAtomPermissions.labResultsPanel` / `radiologyResultsPanel` → ∩ `clinical:read`; matrix nested read _(n/a)_ — not separate `lab:read` / `radiology:read`). Empty filtered sections collapse. Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
 - Copyable patient/encounter/admission identifiers in context tiles expose copy affordances from shared `AppCopyableIdentifier` / field `copyable: true` (not separate labeled page actions).
 - Empty clinical worklist has no primary empty-state button (state panel only).

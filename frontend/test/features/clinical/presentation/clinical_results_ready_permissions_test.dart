@@ -99,12 +99,14 @@ AppAccessPolicy _policy({
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
     AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
   ],
+  String? userId,
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(
-        roles: <String>['DOCTOR'],
+      user: AuthUserProfile(
+        id: userId,
+        roles: const <String>['DOCTOR'],
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
       ),
@@ -225,6 +227,7 @@ Future<void> _pumpResultsReadyTab(
   Result<ClinicalReferenceData>? referenceOverride,
   bool failOpdLists = false,
   ClinicalEncounterBundle? bundle,
+  SessionState sessionState = const SessionState.ready(),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -271,9 +274,7 @@ Future<void> _pumpResultsReadyTab(
           (Ref ref, FollowUpWorklistScope scope) => null,
         ),
         sharedPreferencesProvider.overrideWithValue(preferences),
-        initialSessionStateProvider.overrideWithValue(
-          const SessionState.ready(),
-        ),
+        initialSessionStateProvider.overrideWithValue(sessionState),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
@@ -319,11 +320,23 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalResultsReadyAtomPermissions.listChrome,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.search,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalResultsReadyAtomPermissions.nextActionReview,
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
         ClinicalResultsReadyAtomPermissions.resultsReadyChip,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.resultsTimeline,
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
@@ -335,7 +348,35 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalResultsReadyAtomPermissions.printSummary,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.nestedRead,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalResultsReadyAtomPermissions.write,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.create,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.update,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.delete,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.success,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.validation,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
@@ -353,6 +394,10 @@ void main() {
       expect(
         ClinicalResultsReadyAtomPermissions.requestAdmission,
         same(clinicalAdmissionWriteRequirement),
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.nestedLabWrite,
+        same(clinicalLabOrderWriteRequirement),
       );
       expect(
         ClinicalResultsReadyAtomPermissions.labResultsPanel,
@@ -409,7 +454,17 @@ void main() {
         isFalse,
       );
       expect(
+        ClinicalResultsReadyAtomPermissions.resultsReadyChip.isAllowed(
+          writeOnly,
+        ),
+        isFalse,
+      );
+      expect(
         ClinicalResultsReadyAtomPermissions.write.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.create.isAllowed(writeOnly),
         isTrue,
       );
       expect(
@@ -417,8 +472,67 @@ void main() {
         isTrue,
       );
       expect(canViewClinicalResultsReady(writeOnly), isFalse);
+
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(canViewClinicalResultsReady(reader), isTrue);
+      expect(
+        ClinicalResultsReadyAtomPermissions.write.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClinicalResultsReadyAtomPermissions.success.isAllowed(reader),
+        isFalse,
+      );
     });
 
+    test(
+      'matrix nested read n/a: lab:read / radiology:read alone do not open panels',
+      () {
+        final AppAccessPolicy labReader = _policy(
+          permissions: <AppPermission>{AppPermissions.labRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(
+          ClinicalResultsReadyAtomPermissions.labResultsPanel.isAllowed(
+            labReader,
+          ),
+          isFalse,
+        );
+        expect(canViewClinicalLabResultsPanel(labReader), isFalse);
+
+        final AppAccessPolicy radiologyReader = _policy(
+          permissions: <AppPermission>{AppPermissions.radiologyRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'radiology-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(
+          ClinicalResultsReadyAtomPermissions.radiologyResultsPanel.isAllowed(
+            radiologyReader,
+          ),
+          isFalse,
+        );
+        expect(canViewClinicalRadiologyResultsPanel(radiologyReader), isFalse);
+      },
+    );
     test('∪ allowance: lab:write + modules satisfies nested lab order write', () {
       final AppAccessPolicy labWriter = _policy(
         permissions: <AppPermission>{AppPermissions.labWrite},

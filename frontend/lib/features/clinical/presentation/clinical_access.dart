@@ -429,10 +429,12 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 ///
 /// Worklist `?section=results-ready` (`screens/clinical.md`). Same outpatient
 /// encounter chrome as All; distinctive surfaces are results-ready chips,
-/// Results timeline, and lab / radiology order panels (prompt context names
-/// lab:read / radiology:read domain panels — matrix nested read _(n/a)_, so
-/// panel **read** stays ∩ `clinical:read`; nested **writes** use prompt ∪
-/// helpers: lab/radiology/pharmacy/admission).
+/// Results timeline, and lab / radiology order panels. Prompt context names
+/// lab:read / radiology:read **domain** panels; matrix nested cross-module
+/// read is _(n/a)_, so panel **read** stays ∩ `clinical:read` (+
+/// `encounters-vitals`) — not a separate `lab:read` / `radiology:read` gate.
+/// Nested **writes** use prompt narrative ∪ helpers (matrix nested write
+/// _(n/a)_): lab / radiology / pharmacy / admission.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -440,19 +442,21 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Results-ready summary chip / badge | read | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
-/// | Next action WorkflowActionButton | navigate / write | registry requirement |
-/// | Detail Results timeline (lab rows) | read | [labResultsPanel] ∩ clinical:read |
-/// | Detail Results timeline (imaging rows) | read | [radiologyResultsPanel] ∩ clinical:read |
+/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
+/// | Detail Results timeline (lab rows) | read | [labResultsPanel] |
+/// | Detail Results timeline (imaging rows) | read | [radiologyResultsPanel] |
 /// | Detail Lab orders panel (data) | read | [labResultsPanel] |
 /// | Detail Radiology orders panel (data) | read | [radiologyResultsPanel] |
+/// | Detail Pharmacy orders / diagnoses panels | read | nestedRead ∩ |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
@@ -475,16 +479,21 @@ abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
   static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
       clinicalWorkspaceReadRequirement;
   static const AccessRequirement resultsTimeline =
       clinicalWorkspaceReadRequirement;
-  /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a).
+  /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a → clinical:read).
   static const AccessRequirement labResultsPanel =
       clinicalWorkspaceReadRequirement;
-  /// Imaging-domain results / orders panel (context radiology:read; nested n/a).
+  /// Imaging-domain results / orders panel (context radiology:read; nested n/a → clinical:read).
   static const AccessRequirement radiologyResultsPanel =
       clinicalWorkspaceReadRequirement;
   static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
@@ -641,7 +650,7 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
 /// | Waiting review tab | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Waiting review tab count / summary badge | read | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -670,6 +679,8 @@ abstract final class ClinicalWaitingReviewAtomPermissions {
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
   static const AccessRequirement waitingReviewChip =
       clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
