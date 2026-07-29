@@ -823,10 +823,10 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
 
     listCompleter.complete(
-      Result<AppPage<TheaterCase>>.success(
+      const Result<AppPage<TheaterCase>>.success(
         AppPage<TheaterCase>(
-          items: const <TheaterCase>[_scheduledCase],
-          request: const AppPageRequest(pageSize: 12),
+          items: <TheaterCase>[_scheduledCase],
+          request: AppPageRequest(pageSize: 12),
           totalItemCount: 1,
         ),
       ),
@@ -1122,7 +1122,7 @@ void _stubTheater(
   ) async {
     final String id = invocation.positionalArguments.single as String;
     if (cases.isEmpty) {
-      return Result<TheaterCase>.success(_scheduledCase);
+      return const Result<TheaterCase>.success(_scheduledCase);
     }
     final TheaterCase match = cases.firstWhere(
       (TheaterCase item) => item.id == id || item.effectiveDisplayId == id,

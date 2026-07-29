@@ -69,6 +69,18 @@ final class SubscriptionsWorkspaceController
     final SubscriptionsWorkspaceQuery resolved = await _resolveRouteQuery(
       query,
     );
+    if (_currentState == null) {
+      // Route queries can arrive while the initial load is still in flight
+      // (deep links land in a post-frame callback). Wait for it so the route
+      // query is applied on top instead of being dropped for the default
+      // panel/resource.
+      try {
+        await future;
+      } on Object catch (_) {
+        // Initial load surfaced an error state; fall through so _loadQuery
+        // retries with the route query.
+      }
+    }
     return _loadQuery(
       resolved.copyWith(pageRequest: resolved.pageRequest.first()),
       preserveSelectedId: resolved.recordId,

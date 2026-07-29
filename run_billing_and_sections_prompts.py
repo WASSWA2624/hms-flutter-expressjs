@@ -40,7 +40,7 @@ MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
-MODEL = "auto"
+MODEL = "gpt-5.6-luna"
 GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json", "screens")
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 

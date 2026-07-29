@@ -988,8 +988,8 @@ Future<void> _pumpFollowUpsTab(
 
 void _stubTheater(_MockTheaterRepository repository) {
   when(() => repository.listCases(any())).thenAnswer(
-    (_) async => Result<AppPage<TheaterCase>>.success(
-      const AppPage<TheaterCase>(
+    (_) async => const Result<AppPage<TheaterCase>>.success(
+      AppPage<TheaterCase>(
         items: <TheaterCase>[],
         request: AppPageRequest(pageSize: 12),
         totalItemCount: 0,

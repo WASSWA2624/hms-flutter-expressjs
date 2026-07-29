@@ -159,6 +159,15 @@ void _stubWorkspace(
     (_) async =>
         const Result<SubscriptionLookups>.success(SubscriptionLookups()),
   );
+  when(() => repository.resolveLegacyRoute(any(), any())).thenAnswer(
+    (_) async => const Result<SubscriptionLegacyRouteResolution>.success(
+      SubscriptionLegacyRouteResolution(
+        panel: SubscriptionPanel.catalog,
+        resource: SubscriptionResource.subscriptionPlans,
+        id: 'plan-1',
+      ),
+    ),
+  );
   when(() => repository.getPlanDetail(any())).thenAnswer(
     (_) async => const Result<SubscriptionPlanDetail>.success(
       SubscriptionPlanDetail(plan: _planItem),
@@ -244,6 +253,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const SubscriptionsWorkspaceQuery());
+    registerFallbackValue(SubscriptionResource.subscriptionPlans);
     registerFallbackValue(
       const SubscriptionPlanDraft(
         name: 'fallback',

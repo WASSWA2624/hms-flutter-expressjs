@@ -892,20 +892,28 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        await tester.tap(find.text('Tenant').first);
+        final Finder tenantField = find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> && widget.labelText == 'Tenant',
+        );
+        expect(tenantField, findsOneWidget);
+        tester
+            .widget<AppSelectField<String>>(tenantField)
+            .onChanged
+            ?.call('tenant-1');
         await tester.pumpAndSettle();
-        final Finder tenantOption = find.text('Acme Clinic').last;
-        if (tenantOption.evaluate().isNotEmpty) {
-          await tester.tap(tenantOption);
-          await tester.pumpAndSettle();
-        }
-        await tester.tap(find.text('Plan').first);
+
+        final Finder planField = find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> && widget.labelText == 'Plan',
+        );
+        expect(planField, findsOneWidget);
+        tester
+            .widget<AppSelectField<String>>(planField)
+            .onChanged
+            ?.call('plan-1');
         await tester.pumpAndSettle();
-        final Finder planOption = find.text('Starter Plan').last;
-        if (planOption.evaluate().isNotEmpty) {
-          await tester.tap(planOption);
-          await tester.pumpAndSettle();
-        }
+
         await tester.tap(find.text('New subscription').last);
         await tester.pumpAndSettle();
 
