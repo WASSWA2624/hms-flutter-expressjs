@@ -64,6 +64,10 @@ AppAccessPolicy _dischargeReadOnlyPolicy() {
           code: 'inpatient-bed-management',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
     ),
   );

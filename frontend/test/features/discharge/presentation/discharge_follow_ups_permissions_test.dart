@@ -345,9 +345,10 @@ void main() {
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      // Queue tabs remain via route entry ∪.
+      // Queue tabs that use entry ∪ remain (All/Completed need read ∪).
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(_tab('All patients'), findsOneWidget);
+      expect(find.textContaining('Planned'), findsWidgets);
+      expect(find.textContaining('All patients'), findsNothing);
     },
   );
 
@@ -744,7 +745,7 @@ void main() {
 
       expect(_tab('Follow-ups'), findsNothing);
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
-      expect(_tab('All patients'), findsOneWidget);
+      expect(find.textContaining('Planned'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

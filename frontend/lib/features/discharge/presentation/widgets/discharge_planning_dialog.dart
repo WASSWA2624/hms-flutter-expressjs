@@ -8,7 +8,6 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
@@ -496,42 +495,45 @@ class _RelatedRecordsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (detail.hasOpenPharmacyOrders)
-          AppWorkspaceDetailPanel(
-            title: l10n.dischargeMedicinesSectionTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (final DischargeRelatedRecord record
-                    in detail.pharmacyOrders.where(
-                      (DischargeRelatedRecord item) =>
-                          item.isOpenPharmacyOrder,
-                    ))
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.medication_outlined, size: 20),
-                    title: Text(
-                      (record.title ?? '').trim().isNotEmpty
-                          ? record.title!.trim()
-                          : record.kind,
+          AppAccessGate(
+            requirement: dischargePharmacyClearanceReadRequirement,
+            child: AppWorkspaceDetailPanel(
+              title: l10n.dischargeMedicinesSectionTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final DischargeRelatedRecord record
+                      in detail.pharmacyOrders.where(
+                        (DischargeRelatedRecord item) =>
+                            item.isOpenPharmacyOrder,
+                      ))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.medication_outlined, size: 20),
+                      title: Text(
+                        (record.title ?? '').trim().isNotEmpty
+                            ? record.title!.trim()
+                            : record.kind,
+                      ),
+                      subtitle: Text(record.status ?? ''),
+                      trailing: AppButton.tertiary(
+                        label: l10n.patientsActiveWorkContinueAction,
+                        enabled: enabled,
+                        onPressed: () => onResolve(AppRoutes.pharmacy.path),
+                      ),
                     ),
-                    subtitle: Text(record.status ?? ''),
-                    trailing: AppButton.tertiary(
-                      label: l10n.patientsActiveWorkContinueAction,
-                      enabled: enabled,
-                      onPressed: () => onResolve(AppRoutes.pharmacy.path),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         if (detail.hasOpenPharmacyOrders && detail.hasOpenInvoices)
           AppAccessGate(
-            requirement: billingReadRequirement,
+            requirement: dischargeBillingClearanceReadRequirement,
             child: SizedBox(height: theme.spacing.md),
           ),
         if (detail.hasOpenInvoices)
           AppAccessGate(
-            requirement: billingReadRequirement,
+            requirement: dischargeBillingClearanceReadRequirement,
             child: AppWorkspaceDetailPanel(
               title: l10n.dischargeBillingSectionTitle,
               child: Column(
@@ -593,20 +595,26 @@ class _ResolveLinksSection extends StatelessWidget {
         spacing: theme.spacing.sm,
         runSpacing: theme.spacing.sm,
         children: <Widget>[
-          AppButton.tertiary(
-            label: l10n.dischargeOpenNursingAction,
-            leadingIcon: Icons.health_and_safety_outlined,
-            enabled: enabled,
-            onPressed: () => onResolve(AppRoutes.nursing.path),
-          ),
-          AppButton.tertiary(
-            label: l10n.dischargeOpenPharmacyAction,
-            leadingIcon: Icons.medication_outlined,
-            enabled: enabled,
-            onPressed: () => onResolve(AppRoutes.pharmacy.path),
+          AppAccessGate(
+            requirement: dischargeNursingNavigateRequirement,
+            child: AppButton.tertiary(
+              label: l10n.dischargeOpenNursingAction,
+              leadingIcon: Icons.health_and_safety_outlined,
+              enabled: enabled,
+              onPressed: () => onResolve(AppRoutes.nursing.path),
+            ),
           ),
           AppAccessGate(
-            requirement: billingReadRequirement,
+            requirement: dischargePharmacyNavigateRequirement,
+            child: AppButton.tertiary(
+              label: l10n.dischargeOpenPharmacyAction,
+              leadingIcon: Icons.medication_outlined,
+              enabled: enabled,
+              onPressed: () => onResolve(AppRoutes.pharmacy.path),
+            ),
+          ),
+          AppAccessGate(
+            requirement: dischargeBillingNavigateRequirement,
             child: AppButton.tertiary(
               label: l10n.dischargeOpenBillingAction,
               leadingIcon: Icons.receipt_long_outlined,
@@ -615,13 +623,16 @@ class _ResolveLinksSection extends StatelessWidget {
             ),
           ),
           if (admissionId.isNotEmpty)
-            AppButton.tertiary(
-              label: l10n.dischargeOpenIpdAction,
-              leadingIcon: Icons.local_hotel_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(
-                AppRoutes.ipd.location(
-                  queryParameters: <String, String>{'id': admissionId},
+            AppAccessGate(
+              requirement: dischargeIpdNavigateRequirement,
+              child: AppButton.tertiary(
+                label: l10n.dischargeOpenIpdAction,
+                leadingIcon: Icons.local_hotel_outlined,
+                enabled: enabled,
+                onPressed: () => onResolve(
+                  AppRoutes.ipd.location(
+                    queryParameters: <String, String>{'id': admissionId},
+                  ),
                 ),
               ),
             ),
