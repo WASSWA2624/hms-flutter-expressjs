@@ -207,6 +207,37 @@ abstract final class BillingAllFinancialInventory {
     repositoryMethod: 'getInvoiceDocument',
   );
 
+  static const BillingAllFinancialAtom routePayDeepLink = BillingAllFinancialAtom(
+    id: 'route_pay',
+    label: 'Deep link action=pay → receive payment dialog',
+    actionClass: BillingAllActionClass.settle,
+    requirement: BillingAllAtomPermissions.receivePayment,
+    repositoryMethod: 'receivePayment',
+    auditNote: 'Opens payment dialog only when write-authorized',
+  );
+
+  static const BillingAllFinancialAtom claimsPendingTab =
+      BillingAllFinancialAtom(
+    id: 'claims_pending_tab',
+    label: 'Claims pending tab strip navigation',
+    actionClass: BillingAllActionClass.notBillable,
+    requirement: BillingAllAtomPermissions.claimsPendingTab,
+  );
+
+  static const BillingAllFinancialAtom emptyState = BillingAllFinancialAtom(
+    id: 'empty_state',
+    label: 'Empty queue state',
+    actionClass: BillingAllActionClass.notBillable,
+    requirement: BillingAllAtomPermissions.listChrome,
+  );
+
+  static const BillingAllFinancialAtom errorRetry = BillingAllFinancialAtom(
+    id: 'error_retry',
+    label: 'Error / retry surface',
+    actionClass: BillingAllActionClass.notBillable,
+    requirement: BillingAllAtomPermissions.listChrome,
+  );
+
   /// Every atom inventoried for the All tab scan.
   static const List<BillingAllFinancialAtom> all = <BillingAllFinancialAtom>[
     tab,
@@ -229,6 +260,10 @@ abstract final class BillingAllFinancialInventory {
     viewLedger,
     printInvoice,
     downloadInvoice,
+    routePayDeepLink,
+    claimsPendingTab,
+    emptyState,
+    errorRetry,
   ];
 
   /// Billable mutations that must post through Billing (no inline bypass).
@@ -244,7 +279,8 @@ abstract final class BillingAllFinancialInventory {
       BillingAllActionClass.settle ||
       BillingAllActionClass.adjust ||
       BillingAllActionClass.reverse ||
-      BillingAllActionClass.createCharge => true,
+      BillingAllActionClass.createCharge ||
+      BillingAllActionClass.defer => true,
       _ => false,
     };
   }

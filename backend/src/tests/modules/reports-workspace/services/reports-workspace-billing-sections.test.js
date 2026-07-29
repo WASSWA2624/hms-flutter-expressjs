@@ -22,6 +22,7 @@ jest.mock('@lib/storage', () => ({
 jest.mock('@lib/reports/runtime', () => ({
   cancelQueuedRun: jest.fn(),
   enqueueReportRun: jest.fn(),
+  getNextScheduledTime: jest.fn(() => new Date('2026-03-09T08:00:00.000Z')),
 }));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),

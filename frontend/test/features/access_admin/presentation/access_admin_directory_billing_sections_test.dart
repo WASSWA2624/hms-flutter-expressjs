@@ -127,10 +127,13 @@ Future<void> _pumpDirectory(
   AccessAdminWorkspaceData? data,
   Size viewport = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
+  bool stubWorkspace = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, data: data);
+  if (stubWorkspace) {
+    _stubWorkspace(repository, data: data);
+  }
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -544,7 +547,11 @@ void main() {
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      expectFlatSections(tester);
+      expectFlatTitledSectionLayout(
+        tester,
+        scope: find.byType(AppDialog),
+        contextLabel: 'directory create-user similarity dialog',
+      );
     });
 
     testWidgets('light theme: flat sections on authorized UI', (
@@ -576,24 +583,27 @@ void main() {
     testWidgets('status toggle syncs worklist without billing repository calls', (
       WidgetTester tester,
     ) async {
-      var call = 0;
+      var deactivated = false;
       when(() => repository.getWorkspace(any())).thenAnswer((_) async {
-        call += 1;
-        final AccessAdminItem item = call <= 1
-            ? _directoryUser
-            : _directoryUser.copyWith(status: 'INACTIVE');
+        final AccessAdminItem item = deactivated
+            ? _directoryUser.copyWith(status: 'INACTIVE')
+            : _directoryUser;
         return Result<AccessAdminWorkspaceData>.success(
           _directoryData(items: <AccessAdminItem>[item]),
         );
       });
       when(
         () => repository.setUserStatus(any(), any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
+      ).thenAnswer((_) async {
+        deactivated = true;
+        return const Result<void>.success(null);
+      });
 
       await _pumpDirectory(
         tester,
         repository: repository,
         policy: _policy(),
+        stubWorkspace: false,
       );
 
       final BuildContext context = tester.element(
@@ -612,17 +622,26 @@ void main() {
     testWidgets('status toggle idempotent replay calls setUserStatus each time without billing', (
       WidgetTester tester,
     ) async {
+      var status = 'ACTIVE';
+      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+        return Result<AccessAdminWorkspaceData>.success(
+          _directoryData(
+            items: <AccessAdminItem>[_directoryUser.copyWith(status: status)],
+          ),
+        );
+      });
       when(
         () => repository.setUserStatus(any(), any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-      when(() => repository.getWorkspace(any())).thenAnswer(
-        (_) async => Result<AccessAdminWorkspaceData>.success(_directoryData()),
-      );
+      ).thenAnswer((Invocation invocation) async {
+        status = invocation.positionalArguments[1] as String;
+        return const Result<void>.success(null);
+      });
 
       await _pumpDirectory(
         tester,
         repository: repository,
         policy: _policy(),
+        stubWorkspace: false,
       );
 
       final BuildContext context = tester.element(
