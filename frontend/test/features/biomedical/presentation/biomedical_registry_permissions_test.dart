@@ -529,6 +529,88 @@ void main() {
     },
   );
 
+  testWidgets('authorized loading then success on Registry', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<BiomedicalWorkbench>.success(
+        BiomedicalWorkbench(
+          summary: const BiomedicalSummary(totalEquipment: 1),
+          queues: const <BiomedicalQueueSummary>[],
+          panels: const <BiomedicalPanelSummary>[],
+          lookups: BiomedicalLookupData.empty,
+          assets: AppPage<BiomedicalAsset>(
+            items: const <BiomedicalAsset>[_registryAsset],
+            request: const AppPageRequest(pageSize: 20),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/biomedical',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biomedical',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: BiomedicalWorkspacePage(
+                initialQuery: BiomedicalRouteQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          biomedicalRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.biomedRead,
+                AppPermissions.biomedWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+          find.textContaining('Loading').evaluate().isNotEmpty ||
+          find.textContaining('Biomedical').evaluate().isNotEmpty,
+      isTrue,
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pumpAndSettle();
+    expect(find.text('Defibrillator'), findsOneWidget);
+    expect(find.text('Registry'), findsWidgets);
+    expect(find.byTooltip('Register asset'), findsOneWidget);
+  });
+
   testWidgets('mobile viewport: authorized Registry chrome remains', (
     WidgetTester tester,
   ) async {

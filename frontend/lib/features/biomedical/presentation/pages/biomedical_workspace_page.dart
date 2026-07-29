@@ -381,8 +381,6 @@ class _BiomedicalWorkspaceContentState
           BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
         BiomedicalPanels.compliance =>
           BiomedicalComplianceAtomPermissions.recordCalibration,
-        // Analytics has no tab-strip primary; keep write gate if one is added.
-        BiomedicalPanels.analytics => BiomedicalAnalyticsAtomPermissions.write,
         _ => biomedicalWriteRequirement,
       },
       builder: (BuildContext context, bool isAllowed) {
@@ -1206,6 +1204,10 @@ enum _BiomedicalActionKind {
 }
 
 /// Maps row next-action kinds to feature `*AtomPermissions` write gates.
+///
+/// All branches resolve to the source ∪ write requirement (same as
+/// [BiomedicalOverviewAtomPermissions.write]); named atom fields document
+/// which inventory control is gated.
 AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
   return switch (kind) {
     _BiomedicalActionKind.calibration ||

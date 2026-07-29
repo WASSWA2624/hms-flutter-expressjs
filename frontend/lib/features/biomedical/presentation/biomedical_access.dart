@@ -196,7 +196,8 @@ abstract final class BiomedicalRegistryAtomPermissions {
 /// | --- | --- | --- |
 /// | Overview tab | navigate | read ∩ `biomed:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Risk / status list columns (KPI-style) | read | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Next action Review | navigate / read | read ∩ |
 /// | Next action write (maintain / WO / …) | create / update | write ∪ source |
@@ -208,6 +209,7 @@ abstract final class BiomedicalRegistryAtomPermissions {
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
 /// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+/// Exports keep source ∩ `evidence:export` (matrix notes reports:read | evidence:export).
 abstract final class BiomedicalOverviewAtomPermissions {
   static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;

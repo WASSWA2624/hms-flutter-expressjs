@@ -145,7 +145,7 @@ Registry permission tests in `frontend/test/features/biomedical/presentation/bio
 - [x] ∩ denial: `biomed:read` without write omits Register asset / detail writes / print.
 - [x] Source write ∪: `operations:write` (+ facilities module) mounts Register / Edit; print needs `evidence:export`.
 - [x] Route entry ∪ without tab read ∩ omits Registry chrome; subscription strip without module denies.
-- [x] Authorized Register / Edit mutations sync; empty/loading/error, mobile+desktop, light+dark.
+- [x] Authorized Register / Edit mutations sync; empty/loading→success/error-retry, mobile+desktop, light+dark.
 
 Analytics permission tests in `frontend/test/features/biomedical/presentation/biomedical_analytics_permissions_test.dart`:
 
@@ -171,6 +171,15 @@ Work orders permission tests in `frontend/test/features/biomedical/presentation/
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; WO writes still mount.
 - [x] Authorized Create WO dialog, start-WO mutation sync, empty/error, mobile+desktop, light+dark.
 
+Overview permission tests in `frontend/test/features/biomedical/presentation/biomedical_overview_permissions_test.dart`:
+
+- [x] ∩ denial: `biomed:read` without write omits write next-actions / detail writes / create primaries / print.
+- [x] Full write ∩ / source ∪: Work order follow-up next-action, detail writes, print mount; no Overview create primary.
+- [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Overview write atoms without `biomed:write`.
+- [x] Route entry ∪ write-only omits Overview chrome; subscription strip without biomed module omits Overview.
+- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; nested writes still mount.
+- [x] Authorized next-action mutation sync; empty/loading/error, mobile+desktop, light+dark.
+
 Compliance permission tests in `frontend/test/features/biomedical/presentation/biomedical_compliance_permissions_test.dart`:
 
 - [x] ∩ denial: `biomed:read` without write omits **Record calibration** / write next-actions / detail writes / print.
@@ -179,3 +188,12 @@ Compliance permission tests in `frontend/test/features/biomedical/presentation/b
 - [x] Route entry ∪ write-only omits Compliance chrome; subscription strip without biomed module omits Compliance.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; recall/calibration writes still mount.
 - [x] Authorized calibration next-action mutation sync, empty/error, mobile+desktop, light+dark.
+
+Preventive permission tests in `frontend/test/features/biomedical/presentation/biomedical_preventive_permissions_test.dart`:
+
+- [x] ∩ denial: `biomed:read` without write omits **Schedule maintenance** / Perform maintenance next-action / detail writes / print.
+- [x] Full write ∩ / source ∪: Schedule maintenance, Perform maintenance next-action, detail writes, print mount.
+- [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Preventive write atoms without `biomed:write`.
+- [x] Route entry ∪ write-only omits Preventive chrome; subscription strip without biomed module omits Preventive.
+- [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; PM writes still mount.
+- [x] Authorized Perform maintenance mutation sync, empty/error, mobile+desktop, light+dark.
