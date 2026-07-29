@@ -274,6 +274,34 @@ void main() {
       );
       expect(
         identical(
+          BillingAllAtomPermissions.refund,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.adjust,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.voidInvoice,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.send,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingAllAtomPermissions.approve,
           billingApprovalDecisionRequirement,
         ),
@@ -325,13 +353,47 @@ void main() {
         },
       );
       expect(BillingAllAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingAllAtomPermissions.document.isAllowed(reader), isTrue);
       expect(BillingAllAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.close.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.receivePayment.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.refund.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.adjust.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.voidInvoice.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.send.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.nestedWrite.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.create.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.update.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.delete.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.close.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.receivePayment.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.refund.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.adjust.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.voidInvoice.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.send.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.routeEntry.isAllowed(writer), isTrue);
+      // Writer without insurance-claims: nested claim write stays denied.
+      final AppAccessPolicy writerNoClaims = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        BillingAllAtomPermissions.nestedWrite.isAllowed(writerNoClaims),
+        isFalse,
+      );
+      expect(BillingAllAtomPermissions.write.isAllowed(writerNoClaims), isTrue);
     });
 
     test('Approval required atom map reuses feature *Requirement helpers', () {
@@ -513,6 +575,27 @@ void main() {
       );
       expect(
         identical(
+          BillingAwaitingPaymentAtomPermissions.write,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.update,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingAwaitingPaymentAtomPermissions.close,
           billingWorkspaceWriteRequirement,
         ),
@@ -528,6 +611,13 @@ void main() {
       expect(
         identical(
           BillingAwaitingPaymentAtomPermissions.listChrome,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.detail,
           billingWorkspaceReadRequirement,
         ),
         isTrue,
@@ -593,6 +683,26 @@ void main() {
       );
       expect(BillingAwaitingPaymentAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
+        BillingAwaitingPaymentAtomPermissions.document.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.create.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.update.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.delete.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingAwaitingPaymentAtomPermissions.write.isAllowed(reader),
         isFalse,
       );
@@ -601,11 +711,32 @@ void main() {
         isFalse,
       );
       expect(
+        BillingAwaitingPaymentAtomPermissions.approve.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.create.isAllowed(writer),
+        isTrue,
+      );
+      expect(
         BillingAwaitingPaymentAtomPermissions.write.isAllowed(writer),
         isTrue,
       );
       expect(
         BillingAwaitingPaymentAtomPermissions.close.isAllowed(writer),
+        isTrue,
+      );
+      // Default fixtures include insurance-claims — nested claim write ∩ allows.
+      expect(
+        BillingAwaitingPaymentAtomPermissions.nestedWrite.isAllowed(writer),
         isTrue,
       );
     });

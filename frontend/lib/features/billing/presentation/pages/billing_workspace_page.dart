@@ -676,31 +676,28 @@ class _BillingLiveDetailDialogState
         onDenyPreAuthorization: canClaimsWrite && item.canDenyPreAuthorization
             ? () => _showPreAuthStatusDialog(context, ref, status: 'DENIED')
             : null,
-        onViewLedger: (item.patientId ?? item.effectivePatientNumber) != null
+        onViewLedger: canViewBillingLedger(accessPolicy, item) &&
+                (item.patientId ?? item.effectivePatientNumber) != null
             ? () => showBillingLedgerDialog(context, ref, item: item)
             : null,
       ),
+      // Inventory: Print / Download only when item is an invoice and
+      // canReadBillingDocument — do not mount disabled stubs on approvals.
       actions: <Widget>[
-        if (canDocument) ...<Widget>[
+        if (canDocument && item.isInvoice) ...<Widget>[
           AppReportActionButton.print(
             label: l10n.billingPrintInvoiceAction,
-            enabled: item.isInvoice,
             tooltip: l10n.billingPrintInvoiceTooltip,
-            onPressed: item.isInvoice
-                ? () => printBillingInvoice(
-                    ref: ref,
-                    context: context,
-                    item: item,
-                  )
-                : null,
+            onPressed: () => printBillingInvoice(
+              ref: ref,
+              context: context,
+              item: item,
+            ),
           ),
           AppReportActionButton.download(
             label: l10n.billingInvoiceLabel,
-            enabled: item.isInvoice,
             tooltip: l10n.billingDocumentTooltip,
-            onPressed: item.isInvoice
-                ? () => _downloadInvoiceDocument(context, ref, item)
-                : null,
+            onPressed: () => _downloadInvoiceDocument(context, ref, item),
           ),
         ],
       ],

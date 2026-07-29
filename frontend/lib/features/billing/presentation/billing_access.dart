@@ -140,6 +140,15 @@ bool canReadBillingDocument(AppAccessPolicy policy) {
   return canReadBilling(policy);
 }
 
+/// View ledger — invoices use billing read; claim / pre-auth use nested claims
+/// read (`billing:read` ∩ `insurance-claims`) per Claims pending inventory.
+bool canViewBillingLedger(AppAccessPolicy policy, BillingWorkItem item) {
+  if (item.isClaim || item.isPreAuthorization) {
+    return canReadBillingClaimsNested(policy);
+  }
+  return canReadBilling(policy);
+}
+
 /// Whether [item] exposes a permission-allowed next action.
 bool billingNextActionIsAllowed(
   AppAccessPolicy policy,
@@ -151,13 +160,16 @@ bool billingNextActionIsAllowed(
 /// Whether the Next action column mounts for [queue].
 ///
 /// Approval required rows only expose approve/reject — write alone must not
-/// mount an empty mutation column. Other queues keep write / approve / claims.
+/// mount an empty mutation column. Claims pending rows only expose claim /
+/// pre-auth mutations — write alone without insurance must not mount an empty
+/// column. Other queues keep write / approve / claims.
 bool billingQueueShowsNextActionColumn(
   AppAccessPolicy policy,
   BillingQueueType queue,
 ) {
   return switch (queue) {
     BillingQueueType.approvalRequired => canDecideBillingApproval(policy),
+    BillingQueueType.claimsPending => canMutateBillingClaims(policy),
     _ =>
       canWriteBilling(policy) ||
       canDecideBillingApproval(policy) ||
@@ -168,7 +180,12 @@ bool billingQueueShowsNextActionColumn(
 /// All tab atom → permission mapping (inventory + matrix).
 ///
 /// Full billing queue (`?queue=all` or default). Mixed next-actions inherit
-/// per-item gates via [billingNextActionRequirement].
+/// per-item gates via [billingNextActionRequirement]. Secondary invoice
+/// mutations (refund / adjust / void / send) share write ∩ when the item
+/// exposes them. Deep link `action=pay` opens payment only when write-
+/// authorized. Approval holds need [approve] (`billing:write` ∩
+/// `financial:approve`) — matrix alone lists write; source keeps the
+/// intersection when both apply.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -176,19 +193,20 @@ bool billingQueueShowsNextActionColumn(
 /// | Search / filters / columns | read chrome | read ∩ |
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
-/// | Close shift / Close day | update | write ∩ `billing:write` |
+/// | Close shift / Close day | update | write ∩ `billing:write` ([close]) |
 /// | Next action Issue / Pay / Refund / Adjust / Void / Send | create / update / delete | write ∩ |
 /// | Next action Approve | approve | write ∩ financial:approve |
-/// | Detail invoice mutations | CRUD | write ∩ |
+/// | Detail invoice mutations | CRUD | write ∩ ([issue]/[receivePayment]/[refund]/[adjust]/[voidInvoice]/[send]) |
 /// | Detail Approve / Reject | approve | write ∩ financial:approve |
 /// | Nested mutation dialogs | create / update / delete | write ∩ / approval ∩ / claims write |
-/// | Claim / pre-auth mutations | nested write | claims write |
+/// | Claim / pre-auth mutations | nested write | claims write ([nestedWrite]) |
 /// | Claims pending tab (strip) | navigate | claims pending tab |
 /// | View ledger / Print / Download | read / export | document read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | read ∪ write ([routeEntry]) |
 ///
 /// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
-/// [billingClaimsPendingTabRequirement] when insurance is entitled.
+/// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
+/// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
 abstract final class BillingAllAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -200,6 +218,10 @@ abstract final class BillingAllAtomPermissions {
   static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement issue = billingWorkspaceWriteRequirement;
   static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
+  static const AccessRequirement refund = billingWorkspaceWriteRequirement;
+  static const AccessRequirement adjust = billingWorkspaceWriteRequirement;
+  static const AccessRequirement voidInvoice = billingWorkspaceWriteRequirement;
+  static const AccessRequirement send = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
@@ -258,7 +280,10 @@ abstract final class BillingApprovalRequiredAtomPermissions {
 /// Awaiting payment tab atom → permission mapping (inventory + matrix).
 ///
 /// Record payment / receipt, refund, adjust, void, and send need `billing:write`.
-/// Deep link `action=pay` opens payment only when write-authorized.
+/// Deep link `action=pay` opens payment only when write-authorized. Matrix
+/// nested cross-module rows are _(n/a)_; Claims pending strip still uses
+/// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
+/// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -275,10 +300,7 @@ abstract final class BillingApprovalRequiredAtomPermissions {
 /// | Print / Download | export / read | document read ∩ |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
 /// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
-///
-/// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
-/// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
-/// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
+/// | Route entry (deep link) | navigate | read ∪ write |
 abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -404,12 +426,15 @@ abstract final class BillingNeedsIssueAtomPermissions {
 /// | Empty / error / retry | read chrome | tab read ∩ |
 /// | Row select → detail | read | tab read ∩ |
 /// | Close shift / Close day | update / delete | write ∩ `billing:write` ([close]) |
-/// | Next action Submit / Reconcile / Pre-auth | create / update | claims write |
+/// | Next action Submit claim | create / update | [submit] / claims write |
+/// | Next action Record insurer response | create / update | [reconcile] / claims write |
+/// | Next action Approve / Deny authorization | create / update | [preAuth] / claims write |
 /// | Detail claim / pre-auth actions | create / update | claims write |
 /// | Nested claim submit / reconcile / pre-auth dialogs | create / update | claims write |
-/// | View ledger | read | nested claims read ∩ |
-/// | Print / Download | export / read | document read ∩ |
+/// | View ledger | read | nested claims read ∩ ([nestedRead]) |
+/// | Print / Download | export / read | document read ∩ (invoices only) |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
+/// | Route entry (deep link) | navigate | read ∪ write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_; Claims pending still requires
 /// `insurance-claims` via [billingClaimsPendingTabRequirement] /
@@ -428,6 +453,12 @@ abstract final class BillingClaimsPendingAtomPermissions {
   /// Close shift / Close day — matrix update/delete ∩ `billing:write`.
   static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement claimWrite = billingClaimsWriteRequirement;
+  /// Submit claim — same ∩ as [claimWrite] (matrix create/update + insurance).
+  static const AccessRequirement submit = billingClaimsWriteRequirement;
+  /// Record insurer response / reconcile — same ∩ as [claimWrite].
+  static const AccessRequirement reconcile = billingClaimsWriteRequirement;
+  /// Pre-auth Approve / Deny — same ∩ as [claimWrite].
+  static const AccessRequirement preAuth = billingClaimsWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;

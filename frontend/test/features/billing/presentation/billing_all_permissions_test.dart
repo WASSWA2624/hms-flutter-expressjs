@@ -62,6 +62,16 @@ const BillingWorkItem _issuedFromDraft = BillingWorkItem(
   financials: BillingFinancials(balanceDue: 175),
 );
 
+const BillingWorkItem _approvalItem = BillingWorkItem(
+  id: 'apr-all',
+  displayId: 'APR-ALL',
+  kind: BillingWorkItemKind.approval,
+  patientDisplayName: 'All Approval Patient',
+  patientDisplayId: 'PT-APR',
+  status: 'PENDING',
+  amount: 100,
+);
+
 const BillingSummary _summary = BillingSummary(
   needsIssue: 1,
   pendingPayment: 0,
@@ -216,8 +226,14 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(BillingAllAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingAllAtomPermissions.document.isAllowed(reader), isTrue);
       expect(BillingAllAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.refund.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.send.isAllowed(reader), isFalse);
 
       await _pumpAllTab(
         tester,
@@ -239,6 +255,14 @@ void main() {
       );
       expect(find.text('Claims pending'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('All Queue Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Issue'), findsNothing);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -252,7 +276,14 @@ void main() {
         },
       );
       expect(BillingAllAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.create.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.update.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.delete.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.receivePayment.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.refund.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.adjust.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.voidInvoice.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.send.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.close.isAllowed(writer), isTrue);
 
       await _pumpAllTab(
@@ -270,8 +301,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsWidgets);
+      expect(find.text('Print invoice'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'full write ∩: issued invoice detail exposes Pay / Adjust / Void / Send',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        items: const <BillingWorkItem>[_issuedInvoice],
+      );
+
+      expect(find.byTooltip('Receive payment'), findsWidgets);
+
+      await tester.tap(find.text('All Pay Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Adjust'), findsWidgets);
+      expect(find.text('Send'), findsWidgets);
+      expect(find.text('Void'), findsWidgets);
+      expect(find.text('Finalize financial clearance'), findsNothing);
     },
   );
 
@@ -489,9 +549,9 @@ void main() {
             AppPermissions.billingWrite,
           },
         ),
+        items: const <BillingWorkItem>[_approvalItem],
       );
 
-      expect(find.byTooltip('Issue'), findsWidgets);
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         BillingAllAtomPermissions.approve.isAllowed(
@@ -504,6 +564,37 @@ void main() {
         ),
         isFalse,
       );
+    },
+  );
+
+  testWidgets(
+    'approve ∩: billing:write + financial:approve mounts Approve on All',
+    (WidgetTester tester) async {
+      final AppAccessPolicy approver = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(BillingAllAtomPermissions.approve.isAllowed(approver), isTrue);
+
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: approver,
+        items: const <BillingWorkItem>[_approvalItem],
+      );
+
+      expect(find.text('All Approval Patient'), findsOneWidget);
+      expect(find.byTooltip('Approve'), findsWidgets);
+
+      await tester.tap(find.text('All Approval Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Approve'), findsWidgets);
+      expect(find.text('Reject'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -522,6 +613,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No billing items'), findsOneWidget);
       expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -615,6 +707,33 @@ void main() {
       );
       expect(find.text('Claims pending'), findsNothing);
       expect(find.text('Close shift'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied on All',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        BillingAllAtomPermissions.nestedWrite.isAllowed(writerNoClaims),
+        isFalse,
+      );
+      expect(BillingAllAtomPermissions.write.isAllowed(writerNoClaims), isTrue);
+
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Issue'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

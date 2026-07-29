@@ -12,7 +12,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
 | Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close/routeEntry) |
-| All atom map | `BillingAllAtomPermissions` (tab/list/detail/issue/receivePayment/close/approve/claims) |
+| All atom map | `BillingAllAtomPermissions` (tab/list/detail/issue/receivePayment/refund/adjust/void/send/close/approve/claims/document) |
 | Awaiting payment atom map | `BillingAwaitingPaymentAtomPermissions` (tab/list/detail/receivePayment/refund/adjust/void/send/close/approve/claims) |
 | Overdue atom map | `BillingOverdueAtomPermissions` (tab/list/detail/receivePayment/adjust/waive/void/dunningSend/close) |
 | Needs issue atom map | `BillingNeedsIssueAtomPermissions` (tab/list/detail/issue/close) |
@@ -110,7 +110,7 @@ Fields: patient ID, invoice #, encounter #; source module; billing status; issue
 Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingApprovalDecisionRequirement`); claim/pre-auth (`billingClaimsWriteRequirement`). Progressive disclosure: financial summary, line items, payments, adjustments.
 
 - **View ledger** — nested ledger dialog when patient id known (read chrome).
-- **Print** / **Download** invoice — dialog footer when item is an invoice and `canReadBillingDocument`.
+- **Print** / **Download** invoice — dialog footer mounts only when item is an invoice and `canReadBillingDocument` (absent on approval / claim / pre-auth rows; no disabled stubs).
 - Nested forms: receive payment, issue notes, refund, adjustment, void reason, send email, approval notes/reason, claim submit/reconcile, pre-auth notes.
 - Deep link `action=pay` opens payment only when write-authorized.
 
@@ -126,16 +126,16 @@ Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingAp
 ## Verification (Req 7)
 
 - Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart`, `billing_access_test.dart`, `billing_all_permissions_test.dart`, `billing_needs_issue_permissions_test.dart`, and `billing_approval_required_permissions_test.dart` prove:
-  - `BillingAllAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_all_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, Issue sync path, `action=pay` write gate, empty/error/retry, light/dark, mobile/desktop).
+  - `BillingAllAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_all_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, nestedWrite denial without insurance, Issue sync path, document Print/Download for readers, approve ∩ with `financial:approve`, secondary detail mutations, `action=pay` write gate, empty/error/retry, light/dark, mobile/desktop).
   - **Refresh** is absent from the tab strip on every queue (desktop/mobile).
   - **Close shift** is the sole primary and **Close day** the sole secondary, stable across tabs when write-authorized.
   - Unauthorized users see no Close shift / Close day / next-action controls.
   - Writer without `financial:approve` sees no Approve next-action / detail buttons; approver with both sees them.
-  - `BillingApprovalRequiredAtomPermissions` reuses approve/write helpers; widget tests in `billing_approval_required_permissions_test.dart` (∩ denial for write-without-approve and financial-approve-without-write, ∪ route entry, subscription strip, nested Claims pending, approve dialog sync path, light/dark, mobile/desktop).
+  - `BillingApprovalRequiredAtomPermissions` reuses approve/write helpers; widget tests in `billing_approval_required_permissions_test.dart` (∩ denial for write-without-approve and financial-approve-without-write, ∪ route entry, subscription strip, nested Claims pending, View ledger for readers, Print/Download absent on approval detail, approve/reject dialog sync paths, light/dark, mobile/desktop).
   - Claims pending tab and claim mutations absent without `insurance-claims`.
   - `BillingClaimsPendingAtomPermissions` reuses tab/claim-write/close/route-entry helpers; widget tests in `billing_claims_pending_permissions_test.dart` (∩ denial for read-only and missing `insurance-claims`, ∪ route entry, subscription strip, Record insurer response for SUBMITTED, pre-auth Approve/Deny, submit-claim sync path, empty/error/retry, light/dark, mobile/desktop).
   - `BillingNeedsIssueAtomPermissions` reuses read/write/issue helpers; widget tests in `billing_needs_issue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending absent/restored, nestedWrite denial without insurance, Issue mutation sync path, document Print/Download for readers, empty/error/retry, light/dark, mobile/desktop).
-  - `BillingAwaitingPaymentAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_awaiting_payment_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, receive-payment sync path, empty/error chrome, `action=pay` write gate, light/dark, mobile/desktop).
+  - `BillingAwaitingPaymentAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_awaiting_payment_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending absent/restored, nestedWrite denial without insurance, receive-payment sync path, document Print/Download for readers, empty/error/retry, `action=pay` write gate, light/dark, mobile/desktop).
   - `BillingOverdueAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_overdue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, receive-payment sync path, empty/error chrome, `action=pay` write gate, light/dark, mobile/desktop).
   - Advanced filters omit a Queue group; clearing filters does not reset the active tab queue.
   - Finalize financial clearance is absent from next-action and detail actions.

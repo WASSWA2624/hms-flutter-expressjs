@@ -209,7 +209,23 @@ void main() {
       );
       expect(BillingAwaitingPaymentAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
+        BillingAwaitingPaymentAtomPermissions.document.isAllowed(reader),
+        isTrue,
+      );
+      expect(
         BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.create.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.update.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.delete.isAllowed(reader),
         isFalse,
       );
       expect(
@@ -241,6 +257,18 @@ void main() {
       );
       expect(find.text('Claims pending'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('Ben Payment'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Adjust'), findsNothing);
+      expect(find.text('Void'), findsNothing);
+      expect(find.text('Send'), findsNothing);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -255,6 +283,18 @@ void main() {
       );
       expect(
         BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.create.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.update.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.delete.isAllowed(writer),
         isTrue,
       );
       expect(BillingAwaitingPaymentAtomPermissions.adjust.isAllowed(writer), isTrue);
@@ -283,6 +323,7 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
+      expect(find.text('Print invoice'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -593,6 +634,38 @@ void main() {
       );
 
       expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied on Awaiting payment',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.nestedWrite.isAllowed(
+          writerNoClaims,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.write.isAllowed(writerNoClaims),
+        isTrue,
+      );
+
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

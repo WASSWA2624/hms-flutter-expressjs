@@ -30,6 +30,7 @@ const BillingWorkItem _approvalItem = BillingWorkItem(
   id: 'apr-1',
   displayId: 'APR-001',
   kind: BillingWorkItemKind.approval,
+  patientId: 'patient-apr-1',
   patientDisplayName: 'Dana Approval',
   patientDisplayId: 'PT-APR',
   status: 'PENDING',
@@ -97,6 +98,15 @@ void _stubRepository(
   });
   when(
     () => repository.approveApproval(any(), any()),
+  ).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(
+        approval: _approvalItem,
+      ),
+    ),
+  );
+  when(
+    () => repository.rejectApproval(any(), any()),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
       BillingMutationResult(
@@ -223,6 +233,15 @@ void main() {
       expect(find.text('Approval required'), findsWidgets);
       expect(find.text('Claims pending'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('Dana Approval'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.text('Approve'), findsNothing);
+      expect(find.text('Reject'), findsNothing);
+      expect(find.text('Print invoice'), findsNothing);
+      expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
 
@@ -319,6 +338,10 @@ void main() {
         BillingApprovalRequiredAtomPermissions.create.isAllowed(approver),
         isTrue,
       );
+      expect(
+        BillingApprovalRequiredAtomPermissions.document.isAllowed(approver),
+        isTrue,
+      );
 
       await _pumpApprovalTab(
         tester,
@@ -340,6 +363,10 @@ void main() {
 
       expect(find.text('Approve'), findsWidgets);
       expect(find.text('Reject'), findsWidgets);
+      expect(find.text('View ledger'), findsOneWidget);
+      // Approval items are not invoices — document actions must not mount.
+      expect(find.text('Print invoice'), findsNothing);
+      expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -609,6 +636,44 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => repository.approveApproval(any(), any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'authorized Reject from detail submits and syncs (mutation path)',
+    (WidgetTester tester) async {
+      await _pumpApprovalTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Dana Approval'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Reject').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+
+      await tester.enterText(find.byType(TextFormField).first, 'Policy hold');
+      await tester.pumpAndSettle();
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Reject');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Reject').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.rejectApproval(any(), any())).called(1);
     },
   );
 
