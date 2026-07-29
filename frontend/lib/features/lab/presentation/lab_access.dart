@@ -131,7 +131,8 @@ AccessRequirement labStripConfigureRequirement(LabDeskSection section) {
       LabPendingVerificationAtomPermissions.configure,
     LabDeskSection.critical => LabCriticalAtomPermissions.configure,
     LabDeskSection.completed => LabVerifiedAtomPermissions.configure,
-    LabDeskSection.followUps => labConfigurationsWriteRequirement,
+    // Follow-ups mounts no Configurations chrome; keep write ∩ if ever reused.
+    LabDeskSection.followUps => LabFollowUpsAtomPermissions.write,
   };
 }
 

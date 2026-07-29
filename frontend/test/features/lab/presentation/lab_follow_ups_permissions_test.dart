@@ -381,6 +381,29 @@ void main() {
   );
 
   testWidgets(
+    'subscription strips Follow-ups tab when lab-workflows inactive',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        labRepository: labRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+          },
+          modules: const <AppModuleEntitlement>[],
+        ),
+      );
+
+      expect(_tab('Follow-ups'), findsNothing);
+      expect(find.byType(FollowUpWorklistPanel), findsNothing);
+      expect(find.text('Mark completed'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized read ∩: lab:read mounts list; write actions absent',
     (WidgetTester tester) async {
       await _pumpFollowUpsTab(

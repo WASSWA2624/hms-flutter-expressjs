@@ -143,6 +143,16 @@ Readers with only `clinical:read` keep the All strip via route-entry ∪ but
 must not see create/config. Tests:
 `frontend/test/features/lab/presentation/lab_all_permissions_test.dart`.
 
+### Awaiting results tab (`?section=awaiting-results|collection`)
+
+Collection / pending sample queue (`LabQueueScope.collection`). Atom map:
+`LabAwaitingResultsAtomPermissions` (`lab:read` ∩ / `lab:write` ∩ + `lab-workflows`).
+Strip create/configure use `labStripCreateRequirement` / `labStripConfigureRequirement`
+for `LabDeskSection.collection`. Nested result-entry writes gated by `canMutate` /
+`labWorkspaceWriteRequirement`; preview ∪ `lab:read`|`lab:write`. Route entry ∪ may
+open this tab without create/config when `lab:read` is missing. Tests:
+`frontend/test/features/lab/presentation/lab_awaiting_results_permissions_test.dart`.
+
 ### Follow-ups tab (`FollowUpWorklistPanel`)
 
 Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Hosted via
@@ -195,6 +205,7 @@ configurations / critical-notify UI is **not** opened from this tab. Route entry
 
 - [ ] Unauthorized user: Create, Configurations, and dialog write actions absent; view toggle remains.
 - [ ] All (`?section=all`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; clinical-only route entry keeps All without create.
+- [ ] Awaiting results (`?section=awaiting-results`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts Collect/edit/delete; clinical-only route entry keeps tab without create; post-collect sync keeps detail open.
 - [ ] Every worklist tab: one **Create Lab Order** primary and one **Lab Configurations** secondary; no Refresh.
 - [ ] Ordered row **Next action** opens result entry; Collect runs without a confirm shell.
 - [ ] Deep link `/lab?orderId=…` opens result entry without hunting the row.

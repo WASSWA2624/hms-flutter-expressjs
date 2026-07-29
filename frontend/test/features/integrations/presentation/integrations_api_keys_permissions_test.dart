@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -86,6 +87,7 @@ void _stubWorkspace(
   List<ApiKeyRecord> apiKeys = const <ApiKeyRecord>[_apiKey, _warningApiKey],
   List<ApiKeyPermissionRecord> permissions =
       const <ApiKeyPermissionRecord>[_apiKeyPermission],
+  Result<List<ApiKeyRecord>>? apiKeysOverride,
 }) {
   when(() => repository.listIntegrations()).thenAnswer(
     (_) async => const Result<List<IntegrationRecord>>.success(
@@ -93,7 +95,8 @@ void _stubWorkspace(
     ),
   );
   when(() => repository.listApiKeys()).thenAnswer(
-    (_) async => Result<List<ApiKeyRecord>>.success(apiKeys),
+    (_) async =>
+        apiKeysOverride ?? Result<List<ApiKeyRecord>>.success(apiKeys),
   );
   when(() => repository.listApiKeyPermissions()).thenAnswer(
     (_) async => Result<List<ApiKeyPermissionRecord>>.success(permissions),
@@ -128,10 +131,16 @@ Future<void> _pumpApiKeysTab(
   List<ApiKeyRecord> apiKeys = const <ApiKeyRecord>[_apiKey, _warningApiKey],
   List<ApiKeyPermissionRecord> permissions =
       const <ApiKeyPermissionRecord>[_apiKeyPermission],
+  Result<List<ApiKeyRecord>>? apiKeysOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, apiKeys: apiKeys, permissions: permissions);
+  _stubWorkspace(
+    repository,
+    apiKeys: apiKeys,
+    permissions: permissions,
+    apiKeysOverride: apiKeysOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -201,6 +210,20 @@ void main() {
       );
       expect(
         identical(
+          IntegrationsApiKeysAtomPermissions.listChrome,
+          integrationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.viewNextAction,
+          integrationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           IntegrationsApiKeysAtomPermissions.create,
           integrationsManageRequirement,
         ),
@@ -210,6 +233,34 @@ void main() {
       expect(
         identical(
           IntegrationsApiKeysAtomPermissions.update,
+          integrationsWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.writeNextAction,
+          integrationsWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.managePermissions,
+          integrationsWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.enableDisable,
+          integrationsWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.secretReveal,
           integrationsWorkspaceManageRequirement,
         ),
         isTrue,
@@ -228,6 +279,20 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.nestedRead,
+          integrationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsApiKeysAtomPermissions.nestedWrite,
+          integrationsManageRequirement,
+        ),
+        isTrue,
+      );
     });
 
     test('∩ denial: missing integration:read fails tab / list chrome', () {
@@ -243,8 +308,10 @@ void main() {
         IntegrationsApiKeysAtomPermissions.listChrome.isAllowed(writeOnly),
         isFalse,
       );
-      expect(canViewIntegrationsSection(writeOnly, IntegrationDeskSection.apiKeys),
-          isFalse);
+      expect(
+        canViewIntegrationsSection(writeOnly, IntegrationDeskSection.apiKeys),
+        isFalse,
+      );
     });
 
     test('∪ allowance: facility:admin alone satisfies manage create', () {
@@ -256,6 +323,12 @@ void main() {
       );
       expect(
         IntegrationsApiKeysAtomPermissions.create.isAllowed(facilityAdmin),
+        isTrue,
+      );
+      expect(
+        IntegrationsApiKeysAtomPermissions.writeNextAction.isAllowed(
+          facilityAdmin,
+        ),
         isTrue,
       );
       expect(canManageIntegrations(facilityAdmin), isTrue);
@@ -328,7 +401,7 @@ void main() {
       expect(find.text('Revoke key'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      // Healthy key keeps view-only next-action.
+      // Healthy key keeps view-only next-action; warning falls back to view.
       expect(find.text('Rotate or monitor'), findsWidgets);
 
       await tester.tap(find.text('Billing Export Key'));
@@ -340,6 +413,27 @@ void main() {
       expect(find.text('Revoke key'), findsNothing);
       expect(find.text('Billing read'), findsOneWidget);
       expect(find.byTooltip('Remove permission'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '∩ denial: warning key shows view next-action, not Review key',
+    (WidgetTester tester) async {
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.integrationRead},
+        ),
+        apiKeys: const <ApiKeyRecord>[_warningApiKey],
+        permissions: const <ApiKeyPermissionRecord>[],
+      );
+
+      expect(find.text('Inactive Export Key'), findsWidgets);
+      expect(find.text('Review key'), findsNothing);
+      expect(find.text('Rotate or monitor'), findsWidgets);
+      expect(find.byTooltip('Create API key'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -376,6 +470,41 @@ void main() {
   );
 
   testWidgets(
+    'delete ∩ alone: no Create/Manage; revoke absent without write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy deleter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.integrationRead,
+          AppPermissions.integrationDelete,
+        },
+      );
+      expect(IntegrationsApiKeysAtomPermissions.create.isAllowed(deleter), isFalse);
+      expect(IntegrationsApiKeysAtomPermissions.delete.isAllowed(deleter), isTrue);
+
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: deleter,
+      );
+
+      expect(find.byTooltip('Create API key'), findsNothing);
+      expect(find.text('Review key'), findsNothing);
+      expect(find.text('Rotate or monitor'), findsWidgets);
+
+      await tester.tap(find.text('Billing Export Key'));
+      await tester.pumpAndSettle();
+
+      // Revoke needs delete; Enable/Manage need manage — with delete-only,
+      // detail still shows Revoke (canDelete) but not manage writes.
+      expect(find.text('Manage permissions'), findsNothing);
+      expect(find.text('Disable'), findsNothing);
+      expect(find.text('Revoke key'), findsOneWidget);
+      expect(find.byTooltip('Remove permission'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'full write+delete: revoke and create mount; authorized flow syncs',
     (WidgetTester tester) async {
       final AppAccessPolicy manager = _policy(
@@ -405,8 +534,26 @@ void main() {
       expect(find.text('Manage permissions'), findsOneWidget);
       expect(find.text('Disable'), findsOneWidget);
       expect(find.byTooltip('Remove permission'), findsOneWidget);
-      // Controller deleteApiKey / createApiKey refresh lists after mutations
-      // (integrations_workspace_controller.dart) — UI entry points above mount.
+    },
+  );
+
+  testWidgets(
+    '∪ allowance widget: facility:admin mounts Create API key',
+    (WidgetTester tester) async {
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.integrationRead,
+            AppPermissions.facilityAdmin,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Create API key'), findsOneWidget);
+      expect(find.text('Review key'), findsWidgets);
+      expect(find.text('Revoke key'), findsNothing);
     },
   );
 
@@ -434,6 +581,98 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip: integrations-core missing omits API keys tab',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.integrationRead,
+          AppPermissions.integrationWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+      expect(IntegrationsApiKeysAtomPermissions.tab.isAllowed(noModule), isFalse);
+
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(_tab('API keys'), findsNothing);
+      expect(find.text('Billing Export Key'), findsNothing);
+      expect(find.byTooltip('Create API key'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'plan BASIC strips integrations-core: API keys absent despite grants',
+    (WidgetTester tester) async {
+      final AppAccessPolicy basic = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.integrationRead,
+          AppPermissions.integrationWrite,
+          AppPermissions.integrationDelete,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: integrationsActiveModule,
+            licenseStatus: 'ACTIVE',
+            planTierCode: 'BASIC',
+          ),
+        ],
+      );
+      expect(IntegrationsApiKeysAtomPermissions.tab.isAllowed(basic), isFalse);
+      expect(
+        IntegrationsApiKeysAtomPermissions.create.isAllowed(basic),
+        isFalse,
+      );
+
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: basic,
+      );
+
+      expect(_tab('API keys'), findsNothing);
+      expect(find.byTooltip('Create API key'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows API keys read chrome '
+    '(row/own scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{AppPermissions.integrationRead},
+        facilityId: null,
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        IntegrationsApiKeysAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        IntegrationsApiKeysAtomPermissions.create.isAllowed(noFacility),
+        isFalse,
+      );
+
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(_tab('API keys'), findsOneWidget);
+      expect(find.text('Billing Export Key'), findsWidgets);
+      expect(find.text('Rotate or monitor'), findsWidgets);
+      expect(find.byTooltip('Create API key'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'nested cross-module matrix n/a: no foreign-module atoms on API keys',
     (WidgetTester tester) async {
       await _pumpApiKeysTab(
@@ -456,7 +695,7 @@ void main() {
     },
   );
 
-  testWidgets('empty / loading UI states remain for authorized readers', (
+  testWidgets('authorized empty API keys keeps chrome; no write affordances', (
     WidgetTester tester,
   ) async {
     await _pumpApiKeysTab(
@@ -469,9 +708,72 @@ void main() {
       permissions: const <ApiKeyPermissionRecord>[],
     );
 
+    expect(_tab('API keys'), findsOneWidget);
     expect(find.text('No integration items'), findsOneWidget);
+    expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Create API key'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
   });
+
+  testWidgets(
+    'authorized error/retry surface remains observable on API keys',
+    (WidgetTester tester) async {
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.integrationRead},
+        ),
+        apiKeysOverride: const Result<List<ApiKeyRecord>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: Disable API key updates list after confirm',
+    (WidgetTester tester) async {
+      const ApiKeyRecord disabled = ApiKeyRecord(
+        id: 'api-key-1',
+        name: 'Billing Export Key',
+        userId: 'user-1',
+        humanFriendlyId: 'key_billing',
+      );
+      when(() => repository.updateApiKey(any(), any())).thenAnswer(
+        (_) async => const Result<ApiKeyRecord>.success(disabled),
+      );
+
+      await _pumpApiKeysTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.integrationRead,
+            AppPermissions.integrationWrite,
+          },
+        ),
+        apiKeys: const <ApiKeyRecord>[_apiKey],
+      );
+
+      await tester.tap(find.text('Billing Export Key'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Disable'), findsOneWidget);
+      await tester.tap(find.text('Disable'));
+      await tester.pumpAndSettle();
+
+      final Finder confirm = find.widgetWithText(AppButton, 'Disable');
+      expect(confirm, findsWidgets);
+      await tester.tap(confirm.last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateApiKey('api-key-1', any())).called(1);
+    },
+  );
 
   testWidgets('mobile viewport keeps API keys chrome without clipping', (
     WidgetTester tester,
@@ -491,7 +793,50 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(_tab('API keys'), findsOneWidget);
     expect(find.text('Billing Export Key'), findsWidgets);
+    expect(find.text('Review key'), findsWidgets);
     expect(find.byTooltip('Create API key'), findsOneWidget);
+  });
+
+  testWidgets('desktop viewport: API keys columns and Create primary present', (
+    WidgetTester tester,
+  ) async {
+    await _pumpApiKeysTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.integrationRead,
+          AppPermissions.integrationWrite,
+        },
+      ),
+    );
+
+    expect(_tab('API keys'), findsOneWidget);
+    expect(find.byTooltip('Create API key'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Billing Export Key'), findsWidgets);
+  });
+
+  testWidgets('light theme: API keys authorized chrome mounts', (
+    WidgetTester tester,
+  ) async {
+    await _pumpApiKeysTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.integrationRead},
+      ),
+    );
+
+    expect(_tab('API keys'), findsOneWidget);
+    expect(find.text('Billing Export Key'), findsOneWidget);
+    expect(find.byTooltip('Create API key'), findsNothing);
   });
 
   testWidgets('dark theme keeps authorized API keys chrome', (
