@@ -169,7 +169,9 @@ Work orders permission tests in `frontend/test/features/biomedical/presentation/
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits tab chrome; subscription strip without biomed module omits Work orders.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; WO writes still mount.
-- [x] Authorized Create WO dialog, start-WO mutation sync, empty/error, mobile+desktop, light+dark.
+- [x] IN_PROGRESS: Return to service next-action ∩ denial / write ∪ presence; omitted from detail when next-action.
+- [x] Authorized Create WO dialog, validation (required fields), start-WO mutation sync.
+- [x] Empty / error-retry / loading→success, mobile+desktop, light+dark.
 
 Overview permission tests in `frontend/test/features/biomedical/presentation/biomedical_overview_permissions_test.dart`:
 

@@ -448,6 +448,85 @@ void main() {
   );
 
   testWidgets(
+    'IN_PROGRESS ∩ denial: Return to service next-action absent for read-only',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.biomedRead},
+      );
+      expect(
+        BiomedicalWorkOrdersAtomPermissions.returnToService.isAllowed(reader),
+        isFalse,
+      );
+
+      await _pumpWorkOrdersTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        assets: const <BiomedicalAsset>[_startedWorkOrder],
+      );
+
+      expect(find.text('Pump repair'), findsOneWidget);
+      expect(find.text('Return to service'), findsNothing);
+      expect(find.text('Review record'), findsWidgets);
+      expect(find.byTooltip('Create work order'), findsNothing);
+
+      await tester.tap(find.text('Pump repair'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update work order'), findsNothing);
+      expect(find.text('Return to service'), findsNothing);
+      expect(find.text('Start work order'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'IN_PROGRESS write ∪: Return to service next-action mounts; omitted from detail',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.biomedRead,
+          AppPermissions.biomedWrite,
+        },
+      );
+      expect(
+        BiomedicalWorkOrdersAtomPermissions.returnToService.isAllowed(writer),
+        isTrue,
+      );
+
+      await _pumpWorkOrdersTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        assets: const <BiomedicalAsset>[_startedWorkOrder],
+      );
+
+      expect(find.text('Return to service'), findsWidgets);
+      expect(find.text('Work order follow-up'), findsNothing);
+
+      await tester.tap(find.text('Pump repair'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update work order'), findsOneWidget);
+      // Return is the row next-action — omitted from complementary detail writes.
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Return to service'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Start work order'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
     'authorized Work orders next-action opens dialog and mutation syncs list',
     (WidgetTester tester) async {
       when(
@@ -479,6 +558,35 @@ void main() {
 
       verify(() => repository.startWorkOrder(any(), any())).called(1);
       expect(find.text('Biomedical changes saved.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Create work order validation keeps dialog open without mutation',
+    (WidgetTester tester) async {
+      await _pumpWorkOrdersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Create work order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CREATE WORK ORDER'), findsOneWidget);
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CREATE WORK ORDER'), findsOneWidget);
+      expect(find.textContaining('is required'), findsWidgets);
+      verifyNever(() => repository.createResource(any(), any()));
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -522,6 +630,88 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets('authorized loading then success on Work orders', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<BiomedicalWorkbench>.success(
+        BiomedicalWorkbench(
+          summary: const BiomedicalSummary(
+            totalEquipment: 1,
+            openWorkOrders: 1,
+          ),
+          queues: const <BiomedicalQueueSummary>[],
+          panels: const <BiomedicalPanelSummary>[],
+          lookups: _lookups,
+          assets: AppPage<BiomedicalAsset>(
+            items: const <BiomedicalAsset>[_openWorkOrder],
+            request: const AppPageRequest(pageSize: 20),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/biomedical?panel=work-orders',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biomedical',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: BiomedicalWorkspacePage(
+                initialQuery: BiomedicalRouteQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          biomedicalRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{AppPermissions.biomedRead},
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+          find.textContaining('Loading').evaluate().isNotEmpty ||
+          find.textContaining('Biomedical').evaluate().isNotEmpty,
+      isTrue,
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pumpAndSettle();
+    expect(find.text('Pump repair'), findsOneWidget);
+    expect(find.text('Work orders'), findsWidgets);
+    expect(find.byTooltip('Create work order'), findsNothing);
+  });
 
   testWidgets('mobile viewport: authorized Work orders chrome remains', (
     WidgetTester tester,
