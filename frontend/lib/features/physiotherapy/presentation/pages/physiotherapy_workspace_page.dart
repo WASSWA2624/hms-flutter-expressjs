@@ -460,7 +460,11 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       attendanceStatus: payload.attendanceStatus,
     );
     if (!context.mounted) return;
-    if (failure != null) _showFailure(context, failure);
+    if (failure != null) {
+      _showFailure(context, failure);
+      return;
+    }
+    _showSaved(context);
   }
 
   Future<void> _openScheduleFollowUp(
@@ -1236,8 +1240,10 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.scheduleFollowUp)
           AppPermissionActionItem(
+            // Active plans / Follow-up due share Schedule follow-up (identical
+            // write ∩); Follow-up due atom map is the inventory gate here.
             requirement:
-                PhysiotherapyActivePlansAtomPermissions.scheduleFollowUp,
+                PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp,
             label: l10n.physiotherapyScheduleFollowUpAction,
             icon: Icons.notification_add_outlined,
             isLoading: isSaving,
@@ -1294,6 +1300,7 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.printInstructions)
           AppPermissionActionItem(
+            // Print is read ∪ — Completed owns row next-action; Today/others ≡.
             requirement:
                 PhysiotherapyCompletedAtomPermissions.printInstructions,
             label: l10n.physiotherapyPrintInstructionsAction,

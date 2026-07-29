@@ -173,10 +173,12 @@ class _ReceptionWorkspaceContentState
     }
     _appliedRouteSignature = query.signature;
 
+    final policy = ref.read(appAccessPolicyProvider);
     final ReceptionDeskSection? section = receptionDeskSectionFromQuery(
       query.section,
     );
-    if (section != null) {
+    if (section != null &&
+        receptionDeskSectionRequirement(section).isAllowed(policy)) {
       setState(() {
         _section = section;
       });
@@ -185,7 +187,8 @@ class _ReceptionWorkspaceContentState
       _searchController.text = query.search;
     }
 
-    if (query.flowId.isNotEmpty) {
+    if (query.flowId.isNotEmpty &&
+        ReceptionActiveVisitsAtomPermissions.rowSelect.isAllowed(policy)) {
       final OpdFlowSummary? flow = _findFlow(query.flowId);
       if (flow != null && mounted) {
         await _openFlowActions(flow);
@@ -686,7 +689,7 @@ class _ReceptionWorkspaceContentState
 
   Widget _buildPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
-      requirement: receptionPatientWriteRequirement,
+      requirement: ReceptionAppointmentsAtomPermissions.register,
       builder: (BuildContext context, bool isAllowed) {
         if (!isAllowed) {
           return const SizedBox.shrink();
@@ -707,7 +710,7 @@ class _ReceptionWorkspaceContentState
     // data refreshes after mutations via [_refreshWorkspace].
     return <Widget>[
       AppAccessActionGate(
-        requirement: receptionPatientWriteRequirement,
+        requirement: ReceptionAppointmentsAtomPermissions.schedule,
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -723,6 +726,12 @@ class _ReceptionWorkspaceContentState
         },
       ),
     ];
+  }
+
+  bool get _canShowAppointmentsNextAction {
+    return receptionAppointmentsShowsNextActionColumn(
+      ref.watch(appAccessPolicyProvider),
+    );
   }
 
   List<ReceptionDeskSection> _visibleSections() {
@@ -743,7 +752,8 @@ class _ReceptionWorkspaceContentState
           _receptionPatientColumn(l10n),
           _receptionScheduledTimeColumn(l10n, locale),
           _receptionAppointmentCurrentStepColumn(l10n),
-          _receptionAppointmentNextActionColumn(l10n),
+          if (_canShowAppointmentsNextAction)
+            _receptionAppointmentNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
       case ReceptionDeskSection.highPriority:
@@ -1464,19 +1474,23 @@ class _ReceptionWorkspaceContentState
   }
 
   Widget _mobileItemBuilder(BuildContext context, _ReceptionDeskRow row) {
+    final bool allowAppointmentNextAction =
+        _section == ReceptionDeskSection.appointments &&
+        _canShowAppointmentsNextAction &&
+        row.appointment != null;
     return _ReceptionDeskMobileRow(
       section: _section,
       row: row,
-      onAppointmentNextAction: row.appointment == null
-          ? null
-          : () {
+      onAppointmentNextAction: allowAppointmentNextAction
+          ? () {
               final OpdAppointmentPrimaryAction primary =
                   resolveOpdAppointmentPrimaryAction(
                     appointment: row.appointment!,
                     linkedFlow: row.flow,
                   );
               unawaited(_runAppointmentNextAction(row, primary));
-            },
+            }
+          : null,
     );
   }
 
@@ -2029,6 +2043,7 @@ class _ReceptionWorkspaceContentState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await _refreshWorkspace();
     }
   }
 

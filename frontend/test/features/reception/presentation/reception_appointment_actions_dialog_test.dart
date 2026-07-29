@@ -69,7 +69,10 @@ void main() {
         .widget<OpdAppointmentActionsDialog>(
           find.byType(OpdAppointmentActionsDialog),
         );
-    expect(hub.actionRequirement, same(receptionFrontDeskWriteRequirement));
+    expect(
+      hub.actionRequirement,
+      same(ReceptionAppointmentsAtomPermissions.frontDesk),
+    );
     expect(hub.omitPrimaryAction, isTrue);
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);

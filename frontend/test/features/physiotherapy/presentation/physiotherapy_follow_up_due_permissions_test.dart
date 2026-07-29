@@ -359,6 +359,27 @@ void main() {
           therapyNextActionRequirementForKind(
             TherapyNextActionKind.scheduleFollowUp,
           ),
+          PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyFollowUpDueAtomPermissions.scheduleFollowUp,
+          PhysiotherapyActivePlansAtomPermissions.scheduleFollowUp,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyFollowUpDueAtomPermissions.updatePlan,
+          physiotherapyWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyFollowUpDueAtomPermissions.closeEpisode,
           physiotherapyWorkspaceWriteRequirement,
         ),
         isTrue,
@@ -796,8 +817,45 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(ClinicalFollowUpActionDialog), findsOneWidget);
+      // List already loaded for the tab; dialog open is the authorized
+      // sync seam before submit (validation / success chrome).
       verify(() => repository.listWorkItems(any())).called(greaterThan(0));
     });
+
+    testWidgets(
+      'post-mutation sync: Update plan refreshes after save',
+      (WidgetTester tester) async {
+        await _pumpFollowUpDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Fay FollowUp'));
+        await _pumpAfterAction(tester);
+
+        await tester.tap(find.text('Update plan'));
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'Updated mobility protocol',
+        );
+        await tester.tap(find.text('Save'));
+        await _pumpAfterAction(tester);
+
+        verify(
+          () => repository.updatePlan(
+            item: any(named: 'item'),
+            plan: any(named: 'plan'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+        expect(find.text('Physiotherapy record saved.'), findsOneWidget);
+      },
+    );
 
     testWidgets('empty state remains observable for authorized readers', (
       WidgetTester tester,

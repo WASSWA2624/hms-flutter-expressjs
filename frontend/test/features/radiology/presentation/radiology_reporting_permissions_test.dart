@@ -213,6 +213,18 @@ void main() {
         RadiologyReportingAtomPermissions.requestFromClinical,
         same(clinicalRadiologyOrderWriteRequirement),
       );
+      expect(
+        RadiologyReportingAtomPermissions.success,
+        same(radiologyWorkspaceWriteRequirement),
+      );
+      expect(
+        RadiologyReportingAtomPermissions.validation,
+        same(radiologyWorkspaceWriteRequirement),
+      );
+      expect(
+        RadiologyReportingAtomPermissions.printReport,
+        same(RadiologyReportingAtomPermissions.read),
+      );
     });
 
     test('∩ denial: missing radiology:write hides Reporting write atoms', () {
@@ -624,8 +636,68 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Request imaging / Configurations / Draft report mount; '
-    'draft syncs detail',
+    'full write ∩: Request imaging / Configurations / Draft report mount',
+    (WidgetTester tester) async {
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Request imaging'), findsOneWidget);
+      expect(find.byTooltip('Configurations'), findsOneWidget);
+      expect(find.text('Rita Reporting'), findsOneWidget);
+
+      await _openReportingDetail(tester);
+
+      expect(find.text('Cancel order'), findsOneWidget);
+      expect(find.text('Draft report'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized draft validation: empty findings keeps dialog open',
+    (WidgetTester tester) async {
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+
+      await _openReportingDetail(tester);
+      await tester.ensureVisible(find.text('Draft report'));
+      await tester.tap(find.text('Draft report'));
+      await tester.pumpAndSettle();
+
+      final Finder submit = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.widgetWithText(AppButton, 'Draft report'),
+      );
+      expect(submit, findsOneWidget);
+      final AppButton submitButton = tester.widget<AppButton>(submit);
+      expect(submitButton.onPressed, isNotNull);
+      submitButton.onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Findings is required.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+      verifyNever(() => radiologyRepository.draftResult(any(), any()));
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: draft shows success snackbar and refreshes workflow',
     (WidgetTester tester) async {
       when(() => radiologyRepository.draftResult(any(), any())).thenAnswer((
         _,
@@ -659,37 +731,106 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Configurations'), findsOneWidget);
-      expect(find.text('Rita Reporting'), findsOneWidget);
-
-      await tester.tap(find.text('Rita Reporting'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cancel order'), findsOneWidget);
-
-      // Writers default to imaging floor; switch to Reporting view for draft CTA.
-      final Finder reportingMode = find.descendant(
-        of: find.byType(AppDialog),
-        matching: find.text('Reporting'),
-      );
-      expect(reportingMode, findsOneWidget);
-      await tester.ensureVisible(reportingMode);
-      await tester.tap(reportingMode);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Draft report'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-
+      await _openReportingDetail(tester);
       await tester.ensureVisible(find.text('Draft report'));
       await tester.tap(find.text('Draft report'));
       await tester.pumpAndSettle();
 
-      // Nested draft dialog / form entry for authorized writers.
-      expect(find.textContaining('no access'), findsNothing);
+      final Finder findingsField = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.byType(TextField),
+      );
+      expect(findingsField, findsWidgets);
+      await tester.enterText(findingsField.first, 'No acute bleed');
+      await tester.pumpAndSettle();
+
+      final Finder submit = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.widgetWithText(AppButton, 'Draft report'),
+      );
+      final AppButton submitButton = tester.widget<AppButton>(submit);
+      submitButton.onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Radiology workflow updated.'), findsOneWidget);
+      verify(() => radiologyRepository.draftResult(any(), any())).called(1);
       verify(
         () => radiologyRepository.getWorkflow(any()),
       ).called(greaterThan(0));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: release report updates selected workflow',
+    (WidgetTester tester) async {
+      when(() => radiologyRepository.getWorkflow(any())).thenAnswer(
+        (_) async => Result<RadiologyWorkflow>.success(
+          _reportingWorkflow(
+            nextActions: const RadiologyNextActions(
+              canFinalizeResult: true,
+              canCancel: true,
+            ),
+            results: const <RadiologyResult>[
+              RadiologyResult(
+                id: 'RES-DRAFT',
+                displayId: 'RES-DRAFT',
+                status: 'DRAFT',
+                reportText: 'Preliminary findings',
+              ),
+            ],
+          ),
+        ),
+      );
+      when(() => radiologyRepository.finalizeResult(any(), any())).thenAnswer((
+        _,
+      ) async {
+        return Result<RadiologyWorkflow>.success(
+          _reportingWorkflow(
+            nextActions: const RadiologyNextActions(canCancel: true),
+            results: const <RadiologyResult>[
+              RadiologyResult(
+                id: 'RES-FINAL',
+                displayId: 'RES-FINAL',
+                status: 'FINAL',
+                reportText: 'Preliminary findings',
+              ),
+            ],
+          ),
+        );
+      });
+
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+
+      await _openReportingDetail(tester);
+      expect(find.text('Release report'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Release report'));
+      await tester.tap(find.text('Release report'));
+      await tester.pumpAndSettle();
+
+      final Finder releaseSubmit = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.widgetWithText(AppButton, 'Release report'),
+      );
+      expect(releaseSubmit, findsOneWidget);
+      final AppButton releaseButton = tester.widget<AppButton>(releaseSubmit);
+      expect(releaseButton.onPressed, isNotNull);
+      releaseButton.onPressed!();
+      await tester.pumpAndSettle();
+
+      verify(() => radiologyRepository.finalizeResult(any(), any())).called(1);
+      expect(find.text('Radiology workflow updated.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

@@ -192,9 +192,33 @@ class _RadiologyWorkspaceContentState
       return;
     }
     final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-    final bool canRequest = canRequestRadiologyImaging(accessPolicy);
-    final bool canWork = canWriteRadiology(accessPolicy);
-    final bool canViewBilling = canViewRadiologyBillingHold(accessPolicy);
+    final RadiologyDeskSection gateSection = section ?? _section;
+    final bool canRequest =
+        radiologyStripCreateRequirement(gateSection).isAllowed(accessPolicy);
+    final bool canWork = switch (gateSection) {
+      RadiologyDeskSection.worklist =>
+        RadiologyWorklistAtomPermissions.write.isAllowed(accessPolicy),
+      RadiologyDeskSection.reporting =>
+        RadiologyReportingAtomPermissions.write.isAllowed(accessPolicy),
+      RadiologyDeskSection.released =>
+        RadiologyReleasedAtomPermissions.write.isAllowed(accessPolicy),
+      RadiologyDeskSection.allOrders =>
+        RadiologyAllOrdersAtomPermissions.write.isAllowed(accessPolicy),
+      RadiologyDeskSection.followUps =>
+        RadiologyFollowUpsAtomPermissions.write.isAllowed(accessPolicy),
+    };
+    final bool canViewBilling = switch (gateSection) {
+      RadiologyDeskSection.worklist =>
+        RadiologyWorklistAtomPermissions.billingHold.isAllowed(accessPolicy),
+      RadiologyDeskSection.reporting =>
+        RadiologyReportingAtomPermissions.billingHold.isAllowed(accessPolicy),
+      RadiologyDeskSection.released =>
+        RadiologyReleasedAtomPermissions.billingHold.isAllowed(accessPolicy),
+      RadiologyDeskSection.allOrders =>
+        RadiologyAllOrdersAtomPermissions.billingHold.isAllowed(accessPolicy),
+      RadiologyDeskSection.followUps =>
+        RadiologyFollowUpsAtomPermissions.billingHold.isAllowed(accessPolicy),
+    };
     await _openRadiologyDetailDialog(
       context,
       ref,

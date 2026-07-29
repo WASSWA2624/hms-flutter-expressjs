@@ -28,7 +28,8 @@ Future<bool?> showReceptionAppointmentActionsDialog({
 /// Reception front-desk appointment actions.
 ///
 /// Composes [OpdAppointmentActionsDialog] with
-/// [receptionFrontDeskWriteRequirement] rather than forking a divergent shell.
+/// [ReceptionAppointmentsAtomPermissions.frontDesk] rather than forking a
+/// divergent shell. Nested billing / clinical panels stay stripped.
 class ReceptionAppointmentActionsDialog extends StatelessWidget {
   const ReceptionAppointmentActionsDialog({
     required this.appointment,
@@ -48,9 +49,10 @@ class ReceptionAppointmentActionsDialog extends StatelessWidget {
     return OpdAppointmentActionsDialog(
       appointment: appointment,
       workspaceState: workspaceState,
-      // Explicit reception gate (alias of OPD front-desk write) for RBAC clarity.
+      // Source front-desk gate (matrix update/delete document patient:write /
+      // patient:delete — keep source; see ReceptionAppointmentsAtomPermissions).
       // ignore: avoid_redundant_argument_values
-      actionRequirement: receptionFrontDeskWriteRequirement,
+      actionRequirement: ReceptionAppointmentsAtomPermissions.frontDesk,
       allowClinicalActions: false,
       allowVitalsActions: false,
       omitPrimaryAction: omitPrimaryAction,

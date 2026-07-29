@@ -248,6 +248,52 @@ void main() {
       expect(receptionPaymentGateRequirement.isAllowed(billingReader), isTrue);
     });
 
+    test('appointments tab uses ∩ patient:read; schedule uses ∩ patient:write', () {
+      final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['CUSTOM_READER']),
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          moduleEntitlements: _activeShellModules,
+          isAuthorizationHydrated: true,
+        ),
+      );
+      final AppAccessPolicy patientWriter = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['CUSTOM_WRITER']),
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+          },
+          moduleEntitlements: _activeShellModules,
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(
+        receptionSchedulingReadRequirement.allPermissions,
+        <AppPermission>[AppPermissions.patientRead],
+      );
+      expect(canViewReceptionAppointments(patientReader), isTrue);
+      expect(
+        ReceptionAppointmentsAtomPermissions.schedule.isAllowed(patientReader),
+        isFalse,
+      );
+      expect(
+        ReceptionAppointmentsAtomPermissions.schedule.isAllowed(patientWriter),
+        isTrue,
+      );
+      expect(
+        ReceptionAppointmentsAtomPermissions.delete.allPermissions,
+        <AppPermission>[AppPermissions.patientDelete],
+      );
+      expect(
+        ReceptionAppointmentsAtomPermissions.cancelAppointment,
+        same(receptionFrontDeskWriteRequirement),
+      );
+    });
+
     test('follow-ups require patient or clinical read', () {
       final AppAccessPolicy lastOfficeOnly = AppAccessPolicy.fromSession(
         AuthSession(

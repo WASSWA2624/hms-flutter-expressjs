@@ -9,7 +9,7 @@ Processing rules:
 - Completed prompt iterations recorded in
   .run_billing_and_sections_prompts_state.json are skipped on resume; pass
   --force to clear state and re-run everything.
-- Model is always "auto".
+- Model is pinned to Kimi K3 Max (kimi-k3-max).
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
-MODEL = "auto"
+MODEL = "kimi-k3-max"
 GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json", "screens")
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
@@ -388,7 +388,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run prompts/billing-and-sections folder-by-folder with Cursor "
-            "model=auto. "
+            f"model={MODEL}. "
             f"Max {MAX_CONCURRENCY} concurrent prompts per folder iteration; "
             f"each prompt runs {ITERATIONS} times; commit+push after each success. "
             "Resume skips completed iterations in "

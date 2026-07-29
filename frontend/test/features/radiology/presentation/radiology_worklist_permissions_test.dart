@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,12 +31,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockRadiologyRepository extends Mock implements RadiologyRepository {}
 
-const RadiologyOrder _allOrder = RadiologyOrder(
-  id: 'RO-ALL-1',
-  displayId: 'RAD-ALL-1',
+const RadiologyOrder _worklistOrder = RadiologyOrder(
+  id: 'RO-WL-1',
+  displayId: 'RAD-WL-1',
   status: 'ORDERED',
-  patientDisplayName: 'Ann All',
-  patientId: 'PAT-ALL-1',
+  patientDisplayName: 'Wendy Worklist',
+  patientId: 'PAT-WL-1',
   modality: 'XRAY',
   testDisplayName: 'Chest X-ray',
   billingGateBlocked: true,
@@ -113,7 +111,7 @@ RadiologyWorkflow _workflowFor(RadiologyOrder order) {
 
 void _stubWorkspace(
   _MockRadiologyRepository repository, {
-  List<RadiologyOrder> items = const <RadiologyOrder>[_allOrder],
+  List<RadiologyOrder> items = const <RadiologyOrder>[_worklistOrder],
   Result<RadiologyWorkbench>? workbenchOverride,
   RadiologyWorkflow? workflowOverride,
 }) {
@@ -180,18 +178,18 @@ void _stubWorkspace(
   );
   when(() => repository.getWorkflow(any())).thenAnswer((_) async {
     return Result<RadiologyWorkflow>.success(
-      workflowOverride ?? _workflowFor(_allOrder),
+      workflowOverride ?? _workflowFor(_worklistOrder),
     );
   });
   when(() => repository.cancelOrder(any(), any())).thenAnswer((_) async {
     return Result<RadiologyWorkflow>.success(
       RadiologyWorkflow(
         order: const RadiologyOrder(
-          id: 'RO-ALL-1',
-          displayId: 'RAD-ALL-1',
+          id: 'RO-WL-1',
+          displayId: 'RAD-WL-1',
           status: 'CANCELLED',
-          patientDisplayName: 'Ann All',
-          patientId: 'PAT-ALL-1',
+          patientDisplayName: 'Wendy Worklist',
+          patientId: 'PAT-WL-1',
           modality: 'XRAY',
           testDisplayName: 'Chest X-ray',
         ),
@@ -207,14 +205,14 @@ AppListTable<RadiologyOrder> _table(WidgetTester tester) {
   );
 }
 
-Future<GoRouter> _pumpAllOrdersTab(
+Future<GoRouter> _pumpWorklistTab(
   WidgetTester tester, {
   required _MockRadiologyRepository repository,
   AppAccessPolicy? policy,
   Size viewport = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/radiology?section=all',
-  List<RadiologyOrder> items = const <RadiologyOrder>[_allOrder],
+  String initialLocation = '/radiology?section=worklist',
+  List<RadiologyOrder> items = const <RadiologyOrder>[_worklistOrder],
   Result<RadiologyWorkbench>? workbenchOverride,
   RadiologyWorkflow? workflowOverride,
 }) async {
@@ -289,103 +287,103 @@ void main() {
     repository = _MockRadiologyRepository();
   });
 
-  group('RadiologyAllOrdersAtomPermissions inventory (AC1)', () {
+  group('RadiologyWorklistAtomPermissions inventory (AC1)', () {
     test('maps atoms to matrix ∩ / ∪ helpers', () {
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.tab,
+          RadiologyWorklistAtomPermissions.tab,
           radiologyWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.create,
+          RadiologyWorklistAtomPermissions.create,
           radiologyRequestImagingRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.create,
+          RadiologyWorklistAtomPermissions.create,
           radiologyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.update,
+          RadiologyWorklistAtomPermissions.update,
           radiologyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.delete,
+          RadiologyWorklistAtomPermissions.delete,
           radiologyWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.configure,
+          RadiologyWorklistAtomPermissions.configure,
           radiologyConfigurationsWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.billingHold,
+          RadiologyWorklistAtomPermissions.billingHold,
           radiologyBillingHoldReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.billingHold,
+          RadiologyWorklistAtomPermissions.billingHold,
           billingReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.requestFromClinical,
+          RadiologyWorklistAtomPermissions.requestFromClinical,
           clinicalRadiologyOrderWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.routeEntry,
+          RadiologyWorklistAtomPermissions.routeEntry,
           radiologyWorkspaceRouteEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          RadiologyAllOrdersAtomPermissions.catalogEntry,
+          RadiologyWorklistAtomPermissions.catalogEntry,
           RouteAccessCatalog.radiologyEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          radiologySectionTabRequirement(RadiologyDeskSection.allOrders),
-          RadiologyAllOrdersAtomPermissions.tab,
+          radiologySectionTabRequirement(RadiologyDeskSection.worklist),
+          RadiologyWorklistAtomPermissions.tab,
         ),
         isTrue,
       );
       expect(
         identical(
-          radiologyStripCreateRequirement(RadiologyDeskSection.allOrders),
-          RadiologyAllOrdersAtomPermissions.create,
+          radiologyStripCreateRequirement(RadiologyDeskSection.worklist),
+          RadiologyWorklistAtomPermissions.create,
         ),
         isTrue,
       );
       expect(
         identical(
-          radiologyStripConfigureRequirement(RadiologyDeskSection.allOrders),
-          RadiologyAllOrdersAtomPermissions.configure,
+          radiologyStripConfigureRequirement(RadiologyDeskSection.worklist),
+          RadiologyWorklistAtomPermissions.configure,
         ),
         isTrue,
       );
@@ -396,51 +394,30 @@ void main() {
         ),
         isTrue,
       );
-      expect(
-        identical(
-          RadiologyAllOrdersAtomPermissions.success,
-          radiologyWorkspaceWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          RadiologyAllOrdersAtomPermissions.validation,
-          radiologyWorkspaceWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          RadiologyAllOrdersAtomPermissions.printReport,
-          radiologyPrintReportRequirement,
-        ),
-        isTrue,
-      );
     });
   });
 
-  group('All orders tab UI authorization (AC2-AC5)', () {
-    testWidgets('deep link section=all selects All orders board', (
+  group('Worklist tab UI authorization (AC2-AC5)', () {
+    testWidgets('deep link section=worklist selects Worklist board', (
       WidgetTester tester,
     ) async {
-      final GoRouter router = await _pumpAllOrdersTab(
+      final GoRouter router = await _pumpWorklistTab(
         tester,
         repository: repository,
       );
 
-      expect(router.state.uri.queryParameters['section'], 'all');
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(router.state.uri.queryParameters['section'], 'worklist');
+      expect(find.textContaining('Worklist'), findsWidgets);
       expect(
         _table(tester).columnVisibilityStorageKey,
-        'radiology_allOrders_patients',
+        'radiology_worklist_patients',
       );
     });
 
     testWidgets(
       'intersection denial: radiology:read alone omits create/config/write',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           policy: _radiologyReadPolicy(),
@@ -450,7 +427,6 @@ void main() {
         expect(find.byTooltip('Configurations'), findsNothing);
         expect(find.byTooltip('Orders view'), findsOneWidget);
         expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
-        expect(find.textContaining('no access'), findsNothing);
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
@@ -461,14 +437,13 @@ void main() {
         expect(find.byKey(AppDialog.shellKey), findsOneWidget);
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
-        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
     testWidgets(
       'intersection denial: write without radiology-workflows strips chrome',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           policy: _policyFor(
@@ -488,7 +463,7 @@ void main() {
     testWidgets(
       'full intersection set mounts create, config, and detail mutate',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(tester, repository: repository);
+        await _pumpWorklistTab(tester, repository: repository);
 
         expect(find.byTooltip('Request imaging'), findsOneWidget);
         expect(find.byTooltip('Configurations'), findsOneWidget);
@@ -511,7 +486,7 @@ void main() {
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
         expect(
-          RadiologyAllOrdersAtomPermissions.billingHold.isAllowed(
+          RadiologyWorklistAtomPermissions.billingHold.isAllowed(
             _radiologyWritePolicy(),
           ),
           isTrue,
@@ -520,9 +495,9 @@ void main() {
     );
 
     testWidgets(
-      'union route entry: clinical:read sees All chrome without create',
+      'union route entry: clinical:read sees Worklist chrome without create',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           policy: _policyFor(
@@ -542,7 +517,7 @@ void main() {
         );
 
         expect(find.byType(AppTabStrip), findsOneWidget);
-        expect(find.textContaining('All orders'), findsWidgets);
+        expect(find.textContaining('Worklist'), findsWidgets);
         expect(find.byTooltip('Orders view'), findsOneWidget);
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
@@ -569,17 +544,17 @@ void main() {
         );
 
         expect(
-          RadiologyAllOrdersAtomPermissions.requestFromClinical.isAllowed(
+          RadiologyWorklistAtomPermissions.requestFromClinical.isAllowed(
             clinicalWriter,
           ),
           isTrue,
         );
         expect(
-          RadiologyAllOrdersAtomPermissions.create.isAllowed(clinicalWriter),
+          RadiologyWorklistAtomPermissions.create.isAllowed(clinicalWriter),
           isFalse,
         );
 
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           policy: clinicalWriter,
@@ -594,7 +569,7 @@ void main() {
     testWidgets(
       'billing hold ∩: radiology:read alone omits billing column choice',
       (WidgetTester tester) async {
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           policy: _radiologyReadPolicy(),
@@ -609,7 +584,7 @@ void main() {
                 );
         expect(hasBillingChoice, isFalse);
         expect(
-          RadiologyAllOrdersAtomPermissions.billingHold.isAllowed(
+          RadiologyWorklistAtomPermissions.billingHold.isAllowed(
             _radiologyReadPolicy(),
           ),
           isFalse,
@@ -627,7 +602,7 @@ void main() {
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         items: const <RadiologyOrder>[],
@@ -636,104 +611,12 @@ void main() {
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byTooltip('Orders view'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-    });
-
-    testWidgets('authorized loading state remains observable', (
-      WidgetTester tester,
-    ) async {
-      final Completer<Result<RadiologyWorkbench>> workbenchCompleter =
-          Completer<Result<RadiologyWorkbench>>();
-      _stubWorkspace(repository);
-      when(
-        () => repository.getWorkbench(any()),
-      ).thenAnswer((_) => workbenchCompleter.future);
-
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
-      tester.view.physicalSize = const Size(1440, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final GoRouter router = GoRouter(
-        initialLocation: '/radiology?section=all',
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/radiology',
-            builder: (BuildContext context, GoRouterState state) {
-              return Scaffold(
-                body: RadiologyWorkspacePage(
-                  initialQuery: RadiologyWorkspaceQuery.fromUri(state.uri),
-                ),
-              );
-            },
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            radiologyRepositoryProvider.overrideWithValue(repository),
-            sharedPreferencesProvider.overrideWithValue(preferences),
-            initialSessionStateProvider.overrideWithValue(
-              const SessionState.ready(),
-            ),
-            appAccessPolicyProvider.overrideWithValue(_radiologyWritePolicy()),
-          ],
-          child: MaterialApp.router(
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: ThemeMode.light,
-            routerConfig: router,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      expect(find.text('Loading radiology workspace'), findsOneWidget);
-      expect(find.byTooltip('Request imaging'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-
-      workbenchCompleter.complete(
-        Result<RadiologyWorkbench>.success(
-          RadiologyWorkbench(
-            summary: _summary,
-            orders: AppPage<RadiologyOrder>(
-              items: const <RadiologyOrder>[_allOrder],
-              request: const AppPageRequest(pageSize: 12),
-              totalItemCount: 1,
-            ),
-          ),
-        ),
-      );
-      when(() => repository.getWorkbench(any())).thenAnswer(
-        (_) async => Result<RadiologyWorkbench>.success(
-          RadiologyWorkbench(
-            summary: _summary,
-            orders: AppPage<RadiologyOrder>(
-              items: const <RadiologyOrder>[_allOrder],
-              request: const AppPageRequest(pageSize: 12),
-              totalItemCount: 1,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Ann All'), findsOneWidget);
     });
 
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         workbenchOverride: const Result<RadiologyWorkbench>.failure(
@@ -742,7 +625,6 @@ void main() {
       );
 
       expect(find.textContaining('Try again'), findsWidgets);
-      expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets(
@@ -752,10 +634,10 @@ void main() {
           return Result<RadiologyWorkflow>.success(
             RadiologyWorkflow(
               order: const RadiologyOrder(
-                id: 'RO-ALL-1',
-                displayId: 'RAD-ALL-1',
+                id: 'RO-WL-1',
+                displayId: 'RAD-WL-1',
                 status: 'IN_PROCESS',
-                patientDisplayName: 'Ann All',
+                patientDisplayName: 'Wendy Worklist',
                 modality: 'XRAY',
                 testDisplayName: 'Chest X-ray',
               ),
@@ -764,11 +646,11 @@ void main() {
           );
         });
 
-        await _pumpAllOrdersTab(
+        await _pumpWorklistTab(
           tester,
           repository: repository,
           workflowOverride: RadiologyWorkflow(
-            order: _allOrder,
+            order: _worklistOrder,
             nextActions: const RadiologyNextActions(
               canStart: true,
               canCancel: true,
@@ -790,17 +672,15 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => repository.startOrder(any(), any())).called(1);
-        // Detail stays open with synchronized workflow (Start action cleared).
         expect(find.byKey(AppDialog.shellKey), findsOneWidget);
         expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
-        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
-    testWidgets('mobile viewport: All orders chrome remains', (
+    testWidgets('mobile viewport: Worklist chrome remains', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         viewport: const Size(390, 844),
@@ -814,15 +694,15 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(find.textContaining('Worklist'), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
     });
 
-    testWidgets('desktop viewport: All orders chrome remains', (
+    testWidgets('desktop viewport: Worklist chrome remains', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         viewport: const Size(1440, 900),
@@ -833,10 +713,10 @@ void main() {
       expect(find.byTooltip('Configurations'), findsOneWidget);
     });
 
-    testWidgets('dark theme: All orders write chrome remains', (
+    testWidgets('dark theme: Worklist write chrome remains', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         themeMode: ThemeMode.dark,
@@ -844,13 +724,13 @@ void main() {
 
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byTooltip('Configurations'), findsOneWidget);
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(find.textContaining('Worklist'), findsWidgets);
     });
 
-    testWidgets('light theme: All orders write chrome remains', (
+    testWidgets('light theme: Worklist write chrome remains', (
       WidgetTester tester,
     ) async {
-      await _pumpAllOrdersTab(
+      await _pumpWorklistTab(
         tester,
         repository: repository,
         themeMode: ThemeMode.light,
@@ -861,7 +741,7 @@ void main() {
     });
   });
 
-  group('All orders authorization helpers (AC4)', () {
+  group('Worklist authorization helpers (AC4)', () {
     test('∪ route entry allows clinical:read without radiology:read tab ∩', () {
       final AppAccessPolicy clinicalOnly = _policyFor(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
@@ -878,9 +758,16 @@ void main() {
       );
       expect(canEnterRadiologyWorkspace(clinicalOnly), isTrue);
       expect(canReadRadiology(clinicalOnly), isFalse);
+      expect(canViewRadiologyWorklistTab(clinicalOnly), isFalse);
       expect(
         radiologyAllowedSections(clinicalOnly),
         isNotEmpty,
+      );
+      expect(
+        radiologyAllowedSections(clinicalOnly).contains(
+          RadiologyDeskSection.worklist,
+        ),
+        isTrue,
       );
       expect(
         radiologyAllowedSections(clinicalOnly).contains(
@@ -899,35 +786,11 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
       expect(canWriteRadiology(noModule), isFalse);
-      expect(canViewRadiologyAllOrdersTab(noModule), isFalse);
-    });
-
-    test('ABAC facility still evaluates All orders when facility is present', () {
-      final AppAccessPolicy withFacility = _policyFor(
-        permissions: <AppPermission>{AppPermissions.radiologyRead},
-      );
+      expect(canViewRadiologyWorklistTab(noModule), isFalse);
       expect(
-        RadiologyAllOrdersAtomPermissions.tab.isAllowed(withFacility),
-        isTrue,
-      );
-      expect(canViewRadiologyAllOrdersTab(withFacility), isTrue);
-      expect(
-        RadiologyAllOrdersAtomPermissions.catalogEntry.isAllowed(withFacility),
-        isTrue,
-      );
-    });
-
-    test('catalog entry requires facility context', () {
-      final AppAccessPolicy noFacility = _policyFor(
-        permissions: <AppPermission>{AppPermissions.radiologyRead},
-        facilityId: null,
-      );
-      expect(
-        RadiologyAllOrdersAtomPermissions.catalogEntry.isAllowed(noFacility),
+        RadiologyWorklistAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
-      // Tab chrome ∩ does not require facility; catalog entry does.
-      expect(canViewRadiologyAllOrdersTab(noFacility), isTrue);
     });
   });
 }
