@@ -69,6 +69,16 @@ const AccessRequirement accessAdminEntitlementsReadRequirement =
 const AccessRequirement accessAdminEntitlementsWriteRequirement =
     accessAdminWriteRequirement;
 
+/// Permissions tab read — same ∪ as workspace entry (catalog is read-focused).
+const AccessRequirement accessAdminPermissionsReadRequirement =
+    accessAdminWorkspaceReadRequirement;
+
+/// Permissions catalog has no create/update/delete UI on this tab (source:
+/// read-only detail). Reserved for nested mutations and ∩ denial tests
+/// (matrix ∩ `tenant:admin`). Elevations still use [canWriteAccessAdmin].
+const AccessRequirement accessAdminPermissionsWriteRequirement =
+    accessAdminWriteRequirement;
+
 bool canReadAccessAdmin(AppAccessPolicy policy) {
   return accessAdminWorkspaceReadRequirement.isAllowed(policy) ||
       policy.isElevated;
@@ -121,6 +131,19 @@ bool canMutateAccessAdminEntitlements(
   return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
+bool canReadAccessAdminPermissions(AppAccessPolicy policy) {
+  return accessAdminPermissionsReadRequirement.isAllowed(policy) ||
+      policy.isElevated;
+}
+
+/// Permissions mutations (none mounted on this tab); enforces ∩ + canWrite.
+bool canMutateAccessAdminPermissions(
+  AppAccessPolicy policy, {
+  bool workspaceCanWrite = true,
+}) {
+  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+}
+
 /// Registrations tab: elevated (super-admin) only — source inventory.
 bool canAccessAccessAdminRegistrations(AppAccessPolicy policy) {
   return policy.isElevated;
@@ -129,7 +152,8 @@ bool canAccessAccessAdminRegistrations(AppAccessPolicy policy) {
 /// Whether [panel] may appear in the tab strip for [policy].
 ///
 /// Overview is never shown. Registrations requires elevated (super-admin).
-/// All other panels (including Directory / Entitlements) use the read ∪ gate.
+/// All other panels (Directory / Roles / Permissions / Entitlements / Demo)
+/// use the read ∪ gate.
 bool canAccessAccessAdminPanel(
   AppAccessPolicy policy,
   AccessAdminPanel panel,
@@ -221,4 +245,27 @@ abstract final class AccessAdminEntitlementsAtomPermissions {
   static const AccessRequirement detail = accessAdminEntitlementsReadRequirement;
   static const AccessRequirement write =
       accessAdminEntitlementsWriteRequirement;
+}
+
+/// Permissions tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Permissions tab | navigate / progressive-disclosure | read ∪ |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry | read chrome | read ∪ |
+/// | Row select → read-only catalog detail | read | read ∪ |
+/// | Detail Close | progressive-disclosure | read ∪ |
+/// | Create / update / delete / next-action | write | _(absent)_ ; write ∩ if added |
+/// | Nested cross-module | n/a | _(n/a)_ |
+abstract final class AccessAdminPermissionsAtomPermissions {
+  static const AccessRequirement tab = accessAdminPermissionsReadRequirement;
+  static const AccessRequirement listChrome =
+      accessAdminPermissionsReadRequirement;
+  static const AccessRequirement detail = accessAdminPermissionsReadRequirement;
+  static const AccessRequirement create = accessAdminCreateRequirement;
+  static const AccessRequirement update = accessAdminUpdateRequirement;
+  static const AccessRequirement delete = accessAdminDeleteRequirement;
+  static const AccessRequirement write =
+      accessAdminPermissionsWriteRequirement;
 }

@@ -127,8 +127,10 @@ Future<void> _pumpDemo(
       GoRoute(
         path: '/admin/access',
         builder: (BuildContext context, GoRouterState state) {
-          return AccessAdminWorkspacePage(
-            initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+          return Scaffold(
+            body: AccessAdminWorkspacePage(
+              initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+            ),
           );
         },
       ),
@@ -446,19 +448,21 @@ void main() {
       final AppAccessPolicy tenant = _policy(
         permissions: <AppPermission>{AppPermissions.tenantAdmin},
       );
-      var call = 0;
+      var deactivated = false;
       when(() => repository.getWorkspace(any())).thenAnswer((_) async {
-        call += 1;
-        final AccessAdminItem item = call <= 1
-            ? _demoUser
-            : _demoUser.copyWith(status: 'INACTIVE');
+        final AccessAdminItem item = deactivated
+            ? _demoUser.copyWith(status: 'INACTIVE')
+            : _demoUser;
         return Result<AccessAdminWorkspaceData>.success(
           _demoData(items: <AccessAdminItem>[item]),
         );
       });
-      when(
-        () => repository.setUserStatus(any(), any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(() => repository.setUserStatus(any(), any())).thenAnswer((
+        _,
+      ) async {
+        deactivated = true;
+        return const Result<void>.success(null);
+      });
 
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final SharedPreferences preferences =
@@ -475,8 +479,10 @@ void main() {
           GoRoute(
             path: '/admin/access',
             builder: (BuildContext context, GoRouterState state) {
-              return AccessAdminWorkspacePage(
-                initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+              return Scaffold(
+                body: AccessAdminWorkspacePage(
+                  initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+                ),
               );
             },
           ),
@@ -501,6 +507,8 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       final BuildContext context = tester.element(
@@ -585,8 +593,10 @@ void main() {
           GoRoute(
             path: '/admin/access',
             builder: (BuildContext context, GoRouterState state) {
-              return AccessAdminWorkspacePage(
-                initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+              return Scaffold(
+                body: AccessAdminWorkspacePage(
+                  initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+                ),
               );
             },
           ),
@@ -611,9 +621,15 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Network'), findsWidgets);
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+      expect(find.text(l10n.errorNetworkMessage), findsWidgets);
     });
   });
 

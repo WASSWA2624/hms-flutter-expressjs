@@ -181,7 +181,13 @@ class _AccessAdminWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final bool isEntitlementsPanel =
         state.query.panel == AccessAdminPanel.entitlements;
+    final bool isPermissionsPanel =
+        state.query.panel == AccessAdminPanel.permissions;
     final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
+    final bool canReadPermissions = canReadAccessAdminPermissions(policy);
+    final bool hideFilteredPanelWorklist =
+        (isEntitlementsPanel && !canReadEntitlements) ||
+        (isPermissionsPanel && !canReadPermissions);
 
     _ensureAuthorizedPanel(controller, state, policy);
 
@@ -210,7 +216,7 @@ class _AccessAdminWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (isEntitlementsPanel && !canReadEntitlements)
+            if (hideFilteredPanelWorklist)
               const SizedBox.shrink()
             else if (state.isTenantContextRequired &&
                 state.query.panel != AccessAdminPanel.registrations)
