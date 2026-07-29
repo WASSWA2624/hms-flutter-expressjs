@@ -118,6 +118,34 @@ void main() {
       );
     });
 
+    test('homeQueueItemRequirement / homeAlertRequirement map catalog keys', () {
+      final AppAccessPolicy clinical = _policy(<AppPermission>[
+        AppPermissions.clinicalRead,
+        AppPermissions.profileRead,
+      ]);
+      final AppAccessPolicy lab = _policy(<AppPermission>[
+        AppPermissions.labRead,
+        AppPermissions.profileRead,
+      ]);
+
+      expect(
+        homeQueueItemRequirement(id: 'guided_clinical_queue').isAllowed(clinical),
+        isTrue,
+      );
+      expect(
+        homeQueueItemRequirement(id: 'guided_clinical_queue').isAllowed(lab),
+        isFalse,
+      );
+      expect(
+        homeAlertRequirement(id: 'guided_critical_labs').isAllowed(lab),
+        isTrue,
+      );
+      expect(
+        homeAlertRequirement(id: 'guided_critical_labs').isAllowed(clinical),
+        isFalse,
+      );
+    });
+
     test(
       'subscription strips billing KPI when billing-payments module inactive',
       () {

@@ -17,7 +17,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -330,8 +330,7 @@ void main() {
           Result<HomeDashboard>.success(_doctorDashboard()),
         );
 
-        late ProviderContainer container;
-        await _pumpHome(
+        final ProviderContainer container = await _pumpHome(
           tester,
           permissions: <AppPermission>[
             AppPermissions.profileRead,
@@ -339,13 +338,22 @@ void main() {
             AppPermissions.labRead,
           ],
           repository: repository,
-          onContainer: (ProviderContainer c) => container = c,
         );
 
         expect(find.text('Assigned today'), findsOneWidget);
         expect(repository.callCount, 1);
 
-        homeRefreshDashboard(container as dynamic, HomeDashboardRequest.empty);
+        // Mirrors [homeOnDashboardMutationSuccess] / [homeRefreshDashboard].
+        container.invalidate(
+          homeControllerProvider(HomeDashboardRequest.empty),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(repository.callCount, greaterThanOrEqualTo(2));
+        expect(find.text('Assigned today'), findsOneWidget);
+        expect(find.text('Collections today'), findsNothing);
+        expect(find.textContaining('No access'), findsNothing);
       },
     );
 
@@ -372,7 +380,7 @@ void main() {
   });
 }
 
-Future<void> _pumpHome(
+Future<ProviderContainer> _pumpHome(
   WidgetTester tester, {
   required List<AppPermission> permissions,
   HomeDashboard? dashboard,
@@ -381,6 +389,7 @@ Future<void> _pumpHome(
   List<AppModuleEntitlement> modules = _fullModules,
   Size size = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
+  bool settle = true,
 }) async {
   final AuthSession session = AuthSession(
     tokens: SessionTokens(accessToken: 'access-token'),
@@ -413,18 +422,23 @@ Future<void> _pumpHome(
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
 
+  final ProviderContainer container = ProviderContainer(
+    overrides: [
+      appAccessPolicyProvider.overrideWithValue(policy),
+      initialSessionStateProvider.overrideWithValue(
+        SessionState.authenticated(session: session),
+      ),
+      secureSessionStorageProvider.overrideWithValue(
+        _TestSecureSessionStorage(),
+      ),
+      homeRepositoryProvider.overrideWithValue(repo),
+    ],
+  );
+  addTearDown(container.dispose);
+
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        appAccessPolicyProvider.overrideWithValue(policy),
-        initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(session: session),
-        ),
-        secureSessionStorageProvider.overrideWithValue(
-          _TestSecureSessionStorage(),
-        ),
-        homeRepositoryProvider.overrideWithValue(repo),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
@@ -436,8 +450,11 @@ Future<void> _pumpHome(
     ),
   );
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 50));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+  }
+  return container;
 }
 
 HomeDashboard _doctorDashboard() {
@@ -553,9 +570,10 @@ HomeDashboard _mixedClinicalBillingDashboard() {
 }
 
 final class _FakeHomeRepository implements HomeRepository {
-  _FakeHomeRepository(this.nextResult);
+  _FakeHomeRepository(this.nextResult, {this.delay});
 
   Result<HomeDashboard> nextResult;
+  final Duration? delay;
   int callCount = 0;
 
   @override
@@ -563,6 +581,10 @@ final class _FakeHomeRepository implements HomeRepository {
     HomeDashboardRequest request,
   ) async {
     callCount += 1;
+    final Duration? wait = delay;
+    if (wait != null) {
+      await Future<void>.delayed(wait);
+    }
     return nextResult;
   }
 
