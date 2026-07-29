@@ -2248,6 +2248,8 @@ bool _billingColumnAllowed(
       PhysiotherapyCompletedAtomPermissions.billingColumn.isAllowed(policy),
     PhysiotherapyQueueScope.activePlans =>
       PhysiotherapyActivePlansAtomPermissions.billingColumn.isAllowed(policy),
+    PhysiotherapyQueueScope.followUpDue =>
+      PhysiotherapyFollowUpDueAtomPermissions.billingColumn.isAllowed(policy),
     _ => canViewPhysiotherapyBilling(policy),
   };
 }

@@ -911,45 +911,53 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Dana Done'));
-        await tester.pumpAndSettle();
-
         await tester.tap(
-          find.descendant(
-            of: find.byType(AppDialog),
-            matching: find.text('Return'),
-          ),
+          find
+              .descendant(
+                of: find.byType(DataTable),
+                matching: find.text('Return'),
+              )
+              .first,
         );
         await tester.pumpAndSettle();
 
         expect(find.text('RETURN MEDICINES'), findsOneWidget);
+        verify(() => repository.loadOrderWorkflow('order-done')).called(1);
 
-        final Finder reasonField = find.descendant(
+        // Reason is the first text field; notes is the second.
+        final Finder returnFields = find.descendant(
           of: find.byType(AppDialog),
           matching: find.byType(TextField),
         );
-        await tester.enterText(
-          reasonField.first,
-          'Patient returned unused pack',
-        );
+        await tester.enterText(returnFields.at(0), 'Patient returned unused pack');
 
-        await tester.tap(find.text('Edit').first);
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Edit'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('EDIT RETURN LINE'), findsOneWidget);
-        final Finder qtyField = find.descendant(
+        final Finder editFields = find.descendant(
           of: find.byType(AppDialog).last,
           matching: find.byType(TextField),
         );
-        await tester.enterText(qtyField.first, '2');
-        await tester.tap(find.text('Save'));
+        await tester.enterText(editFields.first, '2');
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppDialog).last,
+            matching: find.text('Save'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(
           find.descendant(
             of: find.byType(AppDialog),
-            matching: find.text('Return'),
-          ).last,
+            matching: find.widgetWithText(AppButton, 'Return'),
+          ),
         );
         await tester.pumpAndSettle();
 

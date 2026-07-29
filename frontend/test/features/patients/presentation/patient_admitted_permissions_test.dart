@@ -141,9 +141,12 @@ AppAccessPolicy _fullCrudPolicy() {
         licenseStatus: 'ACTIVE',
       ),
       AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'lab', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'radiology', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'theater', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(
+        code: 'radiology-workflows',
+        licenseStatus: 'ACTIVE',
+      ),
+      AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
@@ -566,6 +569,35 @@ void main() {
     });
 
     test(
+      'subscription/ABAC strip: patient:read without patient-registry denies tab',
+      () {
+        final AppAccessPolicy noModule = _policy(
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          modules: const <AppModuleEntitlement>[],
+        );
+        expect(PatientAdmittedAtomPermissions.tab.isAllowed(noModule), isFalse);
+        expect(canViewPatientAdmittedTab(noModule), isFalse);
+        expect(patientRegistryAllowedSections(noModule), isEmpty);
+      },
+    );
+
+    test('ABAC: missing facility context still allows tab when not required', () {
+      // Admitted tab read does not set requiresFacilityContext; facility ABAC
+      // is enforced by backend + session hydration, not this atom.
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{AppPermissions.patientRead},
+        facilityId: null,
+      );
+      expect(PatientAdmittedAtomPermissions.tab.isAllowed(noFacility), isTrue);
+      expect(canViewPatientAdmittedTab(noFacility), isTrue);
+    });
+
+    test('canViewPatientAdmittedTab mirrors tab atom', () {
+      expect(canViewPatientAdmittedTab(_readPolicy()), isTrue);
+      expect(canViewPatientAdmittedTab(_fullCrudPolicy()), isTrue);
+    });
+
+    test(
       'nested cross-module write: admit needs clinical write ∩ IPD module',
       () {
         final AppAccessPolicy clinicalNoIpd = _policy(
@@ -951,6 +983,7 @@ void main() {
 
         expect(find.byTooltip('Register patient'), findsOneWidget);
         expect(find.text('Visit'), findsOneWidget);
+        expect(find.textContaining('Admitted In Bed'), findsWidgets);
 
         await tester.tap(find.text('Ada Admitted').first);
         await tester.pumpAndSettle();
@@ -960,6 +993,26 @@ void main() {
         expect(find.text('Schedule appointment'), findsOneWidget);
         expect(find.text('Request lab'), findsOneWidget);
         expect(find.text('Patient report'), findsOneWidget);
+        // Admitted visit → discharge planning (not request admission) when no
+        // Active Work admission row (source clinical write + IPD module).
+        expect(find.text('Request admission'), findsNothing);
+        expect(find.text('Discharge planning'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'admission status badge absent without nested ∪ clinical|billing read',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _readPolicy(),
+        );
+
+        expect(find.textContaining('Admitted In Bed'), findsNothing);
+        expect(find.text('Visit'), findsNothing);
+        expect(find.text('Active'), findsWidgets);
       },
     );
 

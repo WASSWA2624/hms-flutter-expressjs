@@ -562,9 +562,10 @@ void main() {
         'physiotherapy_activePlans',
       );
       expect(
-        _table(tester).columnChoices.any(
-          (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
-        ),
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
         isFalse,
       );
     });
@@ -581,9 +582,10 @@ void main() {
       expect(find.byTooltip('Schedule follow-up'), findsWidgets);
       expect(find.text('Alex ActivePlan'), findsOneWidget);
       expect(
-        _table(tester).columnChoices.any(
-          (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
-        ),
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
         isTrue,
       );
     });
