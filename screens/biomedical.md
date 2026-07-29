@@ -147,7 +147,7 @@ Registry permission tests in `frontend/test/features/biomedical/presentation/bio
 - [x] Route entry ∪ without tab read ∩ omits Registry chrome; subscription strip without module denies.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; nested writes still mount.
 - [x] Authorized Register / Edit mutations sync; Register validation keeps dialog open.
-- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
+- [x] Empty (read omits primary / write keeps Register asset) / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Analytics permission tests in `frontend/test/features/biomedical/presentation/biomedical_analytics_permissions_test.dart`:
 

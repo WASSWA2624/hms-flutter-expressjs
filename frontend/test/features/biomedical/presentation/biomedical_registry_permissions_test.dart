@@ -543,6 +543,28 @@ void main() {
   );
 
   testWidgets(
+    'empty write-authorized Registry keeps Register asset primary',
+    (WidgetTester tester) async {
+      await _pumpRegistryTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Register asset'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized error/retry surface remains observable on Registry',
     (WidgetTester tester) async {
       await _pumpRegistryTab(
