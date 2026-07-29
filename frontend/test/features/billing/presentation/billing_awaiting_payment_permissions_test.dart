@@ -628,18 +628,22 @@ void main() {
         ),
       );
 
+      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
       await tester.tap(find.byTooltip('Receive payment').first);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Amount received'), findsOneWidget);
-
-      final Finder amountField = find.widgetWithText(
-        TextFormField,
-        'Amount received',
+      expect(
+        find.byType(AppDialog).evaluate().length,
+        greaterThan(dialogsBefore),
       );
-      expect(amountField, findsOneWidget);
-      await tester.enterText(amountField, '');
+      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
+
+      final Finder amountInput = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      expect(amountInput, findsOneWidget);
+      await tester.enterText(amountInput, '');
       await tester.pump();
 
       final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
@@ -648,7 +652,8 @@ void main() {
 
       // Validation keeps the dialog mounted; mutation must not fire.
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Amount received'), findsOneWidget);
+      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
+      expect(find.text('This field is required.'), findsOneWidget);
       verifyNever(() => repository.receivePayment(any(), any()));
     },
   );

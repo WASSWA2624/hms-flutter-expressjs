@@ -900,8 +900,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final int dialogsBefore = find.byType(AppDialog).evaluate().length;
-      await tester.ensureVisible(find.text('Deny authorization'));
-      await tester.tap(find.text('Deny authorization').last);
+      final Finder denyAction = find.text('Deny authorization').last;
+      await tester.ensureVisible(denyAction);
+      await tester.tap(denyAction);
       await tester.pumpAndSettle();
 
       expect(
@@ -970,8 +971,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final int dialogsBefore = find.byType(AppDialog).evaluate().length;
-      await tester.ensureVisible(find.text('Record insurer response'));
-      await tester.tap(find.text('Record insurer response').last);
+      final Finder reconcileAction = find.text('Record insurer response').last;
+      await tester.ensureVisible(reconcileAction);
+      await tester.tap(reconcileAction);
       await tester.pumpAndSettle();
 
       expect(
