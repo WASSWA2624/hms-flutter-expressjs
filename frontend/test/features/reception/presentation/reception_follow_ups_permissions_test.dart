@@ -936,6 +936,12 @@ void main() {
       // OPD may settle first; Follow-ups async load still in flight.
       await tester.pump(const Duration(milliseconds: 100));
       expect(_tab('Follow-ups'), findsOneWidget);
+      expect(
+        ReceptionFollowUpsAtomPermissions.loading.isAllowed(_readerPolicy()),
+        isTrue,
+      );
+      // Delayed Future does not schedule frames — advance past it explicitly.
+      await tester.pump(const Duration(milliseconds: 900));
       await tester.pumpAndSettle();
       expect(find.text('Follow Up Patient'), findsOneWidget);
     });

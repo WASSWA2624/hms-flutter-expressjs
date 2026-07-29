@@ -15,9 +15,9 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
 import 'package:hosspi_hms/features/profile/presentation/controllers/user_profile_controller.dart';
-import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/profile/presentation/state/user_profile_state.dart';
 import 'package:hosspi_hms/features/profile/presentation/widgets/edit_user_profile_dialog.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -84,7 +84,7 @@ class _SettingsAccountSectionState
     // Clear the deep-link panel so rebuilds stay on the profile surface.
     widget.onPanelChanged?.call(SettingsAccountSection.profilePanel);
     final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-    if (!profileUpdateRequirement.isAllowed(accessPolicy)) {
+    if (!SettingsAccountAtomPermissions.changePassword.isAllowed(accessPolicy)) {
       // Restricted deep link: surface forbidden feedback once, then stay read-only.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,11 +165,12 @@ class _SettingsAccountSectionState
       orElse: () => false,
     );
 
-    final bool canUpdate = profileUpdateRequirement.isAllowed(accessPolicy);
+    final bool canUpdate =
+        SettingsAccountAtomPermissions.update.isAllowed(accessPolicy);
     final UserProfileRecord? editableRecord = canUpdate ? record : null;
 
     return AppAccessGate(
-      requirement: profileReadRequirement,
+      requirement: SettingsAccountAtomPermissions.tab,
       child: AppScreenSection(
         title: l10n.settingsAccountSectionTitle,
         body: l10n.settingsAccountSectionBody,
@@ -185,7 +186,8 @@ class _SettingsAccountSectionState
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
                     AppAccessActionGate(
-                      requirement: profileUpdateRequirement,
+                      requirement:
+                          SettingsAccountAtomPermissions.changePassword,
                       builder: (BuildContext context, bool _) {
                         return AppTabToolbarAction(
                           label: l10n.settingsChangePasswordActionTitle,
@@ -196,7 +198,7 @@ class _SettingsAccountSectionState
                     ),
                     if (editableRecord != null)
                       AppAccessActionGate(
-                        requirement: profileUpdateRequirement,
+                        requirement: SettingsAccountAtomPermissions.editProfile,
                         builder: (BuildContext context, bool _) {
                           return AppTabToolbarPrimary(
                             label: l10n.profileEditActionTitle,

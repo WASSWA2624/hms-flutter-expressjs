@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
@@ -126,7 +127,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final bool showConfiguration =
         _configTenantRequirement.isAllowed(accessPolicy) ||
         _configFacilityRequirement.isAllowed(accessPolicy);
-    final bool showAccount = profileReadRequirement.isAllowed(accessPolicy);
+    final bool showAccount =
+        SettingsAccountAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccessibility = profileReadRequirement.isAllowed(
       accessPolicy,
     );

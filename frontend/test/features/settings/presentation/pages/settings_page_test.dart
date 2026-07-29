@@ -187,6 +187,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Account and security'), findsNothing);
+      expect(find.text('Accessibility'), findsNothing);
       expect(find.text('Preferences'), findsWidgets);
       expect(find.text('App theme'), findsOneWidget);
     },

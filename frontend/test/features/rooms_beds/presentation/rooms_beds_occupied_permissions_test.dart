@@ -689,7 +689,7 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(_tabLabel('Occupied'), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsOneWidget);
-      expect(find.bySemanticsLabel('Release bed'), findsWidgets);
+      expect(find.byTooltip('Release bed'), findsWidgets);
       expect(_toolbarAction('Manage catalog'), findsNothing);
     });
 

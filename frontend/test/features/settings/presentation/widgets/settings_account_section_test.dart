@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/profile/data/repositories/user_profile_repos
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
 import 'package:hosspi_hms/features/profile/domain/repositories/user_profile_repository.dart';
 import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -331,18 +332,116 @@ void main() {
     },
   );
 
+  testWidgets(
+    'facility:admin alone does not mount create/delete or unlock update',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+        ],
+      );
+
+      expect(find.text('Alex Demo'), findsWidgets);
+      expect(find.text('Edit profile'), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+      expect(find.textContaining('Create'), findsNothing);
+      expect(find.textContaining('Delete'), findsNothing);
+      expect(find.textContaining('Void'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'full read+update intersection mounts update atoms; create/delete stay absent',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+          AppPermissions.facilityAdmin,
+        ],
+      );
+
+      expect(find.text('Change password'), findsOneWidget);
+      expect(find.text('Edit profile'), findsOneWidget);
+      expect(find.textContaining('Delete'), findsNothing);
+      expect(find.textContaining('Void'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'empty subscription modules still show core profile atoms (no plan strip)',
+    (WidgetTester tester) async {
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        permissions: <AppPermission>{
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        },
+        isAuthorizationHydrated: true,
+        user: const AuthUserProfile(
+          id: 'user-1',
+          displayId: 'USR-1',
+          email: 'alex@example.com',
+          firstName: 'Alex',
+          lastName: 'Demo',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['doctor'],
+        ),
+        moduleEntitlements: const <AppModuleEntitlement>[],
+      );
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+        session: session,
+      );
+
+      expect(find.text('Alex Demo'), findsWidgets);
+      expect(find.text('Change password'), findsOneWidget);
+      expect(find.text('Edit profile'), findsOneWidget);
+    },
+  );
+
   test('feature helpers match AccessRequirement matrix keys', () {
     expect(
-      profileReadRequirement.allPermissions,
+      SettingsAccountAtomPermissions.tab,
+      same(profileReadRequirement),
+    );
+    expect(
+      SettingsAccountAtomPermissions.update,
+      same(profileUpdateRequirement),
+    );
+    expect(
+      SettingsAccountAtomPermissions.tab.allPermissions,
       <AppPermission>[AppPermissions.profileRead],
     );
-    expect(profileReadRequirement.anyPermissions, isEmpty);
+    expect(SettingsAccountAtomPermissions.tab.anyPermissions, isEmpty);
     expect(
-      profileUpdateRequirement.allPermissions,
+      SettingsAccountAtomPermissions.update.allPermissions,
       <AppPermission>[AppPermissions.profileUpdate],
     );
-    expect(profileUpdateRequirement.anyPermissions, isEmpty);
-    // Matrix has no union / nested cross-module rows for this tab.
+    expect(SettingsAccountAtomPermissions.update.anyPermissions, isEmpty);
+    expect(
+      SettingsAccountAtomPermissions.create.allPermissions,
+      <AppPermission>[AppPermissions.facilityAdmin],
+    );
+    expect(
+      SettingsAccountAtomPermissions.delete.allPermissions,
+      <AppPermission>[AppPermissions.facilityAdmin],
+    );
+    // Matrix view ∪ / nested cross-module rows are _(n/a)_ for this tab.
+    expect(SettingsAccountAtomPermissions.nestedRead.anyPermissions, isEmpty);
+    expect(
+      SettingsAccountAtomPermissions.nestedWrite,
+      same(profileUpdateRequirement),
+    );
   });
 }
 

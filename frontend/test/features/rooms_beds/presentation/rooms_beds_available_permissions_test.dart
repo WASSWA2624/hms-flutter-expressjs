@@ -219,10 +219,13 @@ Future<void> _pumpAvailable(
   required AppAccessPolicy accessPolicy,
   Size viewport = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
+  bool stubRepository = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  if (stubRepository) {
+    _stubRepository(repository);
+  }
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -427,7 +430,7 @@ void main() {
         );
 
         expect(_toolbarPrimary('Create bed'), findsNothing);
-        expect(find.bySemanticsLabel('Assign bed'), findsOneWidget);
+        expect(find.text('Assign bed'), findsWidgets);
       },
     );
 
@@ -441,7 +444,7 @@ void main() {
         );
 
         expect(_toolbarPrimary('Create bed'), findsNothing);
-        expect(find.bySemanticsLabel('Assign bed'), findsOneWidget);
+        expect(find.text('Assign bed'), findsWidgets);
       },
     );
 
@@ -478,14 +481,20 @@ void main() {
           ),
         ),
       );
+      when(() => repository.listBedAssignmentsForBed(any())).thenAnswer(
+        (_) async => const Result<List<BedAssignmentRecord>>.success(
+          <BedAssignmentRecord>[],
+        ),
+      );
 
       await _pumpAvailable(
         tester,
         repository: repository,
         accessPolicy: _clinicalReader(),
+        stubRepository: false,
       );
 
-      expect(find.textContaining('No beds'), findsWidgets);
+      expect(find.text('No beds found'), findsOneWidget);
     });
 
     testWidgets('mobile viewport: Assign next-action for occupancy writer', (
@@ -499,7 +508,7 @@ void main() {
       );
 
       expect(find.byType(RoomsBedsNextActionButton), findsWidgets);
-      expect(find.bySemanticsLabel('Assign bed'), findsOneWidget);
+      expect(find.byTooltip('Assign bed'), findsWidgets);
     });
 
     testWidgets('desktop dark theme: Create bed present for facility admin', (
@@ -517,7 +526,7 @@ void main() {
       expect(find.text('Bed A1'), findsWidgets);
     });
 
-    testWidgets('post-mutation sync: assign refreshes board feedback path', (
+    testWidgets('post-mutation sync: assign dialog mounts for writer', (
       WidgetTester tester,
     ) async {
       await _pumpAvailable(
@@ -526,12 +535,33 @@ void main() {
         accessPolicy: _occupancyClinicalWriter(),
       );
 
-      await tester.tap(find.bySemanticsLabel('Assign bed'));
+      await tester.tap(find.bySemanticsLabel('Assign bed').first);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Assign'), findsWidgets);
-      // Dialog validation / form chrome remains for authorized writers.
-      expect(find.byType(Form), findsWidgets);
+      expect(find.byType(AppDialog), findsOneWidget);
+      final Finder admissionField = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.byType(TextFormField),
+      );
+      expect(admissionField, findsOneWidget);
+      await tester.enterText(admissionField, 'ADM-200');
+      await tester.pump();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.widgetWithText(AppButton, 'Assign bed'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.assignBed(
+          bedId: any(named: 'bedId'),
+          admissionId: any(named: 'admissionId'),
+        ),
+      ).called(1);
+      expect(find.textContaining('Rooms and beds updated'), findsWidgets);
     });
   });
 
