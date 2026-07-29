@@ -235,7 +235,26 @@ void main() {
       expect(find.text('Issue'), findsNothing);
       expect(find.text('Print invoice'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'list chrome (search) remains for authorized Needs issue readers',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(find.byType(AppSearchBar), findsOneWidget);
+      expect(find.text('Ada Draft'), findsOneWidget);
+      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
     },
   );
 
@@ -488,6 +507,30 @@ void main() {
       verify(
         () => repository.issueInvoice(any(), notes: any(named: 'notes')),
       ).called(1);
+    },
+  );
+
+  testWidgets(
+    'authorized Close shift opens form chrome (validation surface)',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Close shift'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Expected amount'), findsOneWidget);
+      expect(find.text('Actual amount'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

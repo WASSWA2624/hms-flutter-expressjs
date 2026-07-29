@@ -376,6 +376,26 @@ void main() {
       expect(BillingAllAtomPermissions.voidInvoice.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.send.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.routeEntry.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.approve.isAllowed(writer), isFalse);
+      // Source keeps approve ∩ (billing:write ∩ financial:approve).
+      final AppAccessPolicy approveOnly = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(BillingAllAtomPermissions.approve.isAllowed(approveOnly), isFalse);
+      expect(BillingAllAtomPermissions.close.isAllowed(approveOnly), isFalse);
+      final AppAccessPolicy approver = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(BillingAllAtomPermissions.approve.isAllowed(approver), isTrue);
+      // Default fixtures include insurance-claims — nested claim write ∩ allows.
+      expect(BillingAllAtomPermissions.nestedWrite.isAllowed(writer), isTrue);
       // Writer without insurance-claims: nested claim write stays denied.
       final AppAccessPolicy writerNoClaims = _policyFor(
         permissions: <AppPermission>{

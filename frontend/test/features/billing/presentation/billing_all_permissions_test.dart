@@ -254,14 +254,20 @@ void main() {
         findsNothing,
       );
       expect(find.text('Claims pending'), findsNothing);
+      expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('All Queue Patient'));
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsNothing);
+      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Adjust'), findsNothing);
+      expect(find.text('Void'), findsNothing);
+      expect(find.text('Send'), findsNothing);
       expect(find.text('Print invoice'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -302,6 +308,8 @@ void main() {
 
       expect(find.text('Issue'), findsWidgets);
       expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -331,6 +339,9 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
     },
   );
@@ -568,6 +579,34 @@ void main() {
   );
 
   testWidgets(
+    'financial:approve without billing:write: Approve absent (source ∩ denial)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy approveOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(BillingAllAtomPermissions.approve.isAllowed(approveOnly), isFalse);
+      expect(BillingAllAtomPermissions.close.isAllowed(approveOnly), isFalse);
+      expect(BillingAllAtomPermissions.issue.isAllowed(approveOnly), isFalse);
+
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: approveOnly,
+        items: const <BillingWorkItem>[_approvalItem],
+      );
+
+      expect(find.text('All Approval Patient'), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'approve ∩: billing:write + financial:approve mounts Approve on All',
     (WidgetTester tester) async {
       final AppAccessPolicy approver = _policy(
@@ -594,7 +633,44 @@ void main() {
 
       expect(find.text('Approve'), findsWidgets);
       expect(find.text('Reject'), findsWidgets);
+      expect(find.text('View ledger'), findsOneWidget);
+      // Approval items are not invoices — document actions must not mount.
+      expect(find.text('Print invoice'), findsNothing);
+      expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Receive payment next-action submits and syncs (mutation path)',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        items: const <BillingWorkItem>[_issuedInvoice],
+      );
+
+      await tester.tap(find.byTooltip('Receive payment').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Receive payment').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.receivePayment(any(), any())).called(1);
     },
   );
 
