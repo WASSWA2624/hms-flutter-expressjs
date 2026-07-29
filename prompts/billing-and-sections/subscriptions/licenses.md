@@ -4,7 +4,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Context
 
-- Screen inventory: `screens/subscriptions.md` (read-only reference for reachable controls; do not modify).
 - Target tab: **Licenses** (`licenses`).
 - Feature code: `frontend/lib/features/subscriptions/`
 - Module entitlement: `platform subscriptions`
@@ -14,6 +13,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 - Financial focus for this tab: Tenant/facility subscription invoices, plan charges, license fees, and payment collection are commercial billing—ensure they use the subscriptions invoice path without corrupting patient Billing ledgers, and that patient Billing remains the clinical revenue path. Tab role: Add/revoke licenses; delete needs subscriptions:delete.
 - Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
 - Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
+- Inventory atoms from feature presentation code, routes, and tests—do not recreate `screens/`.
 
 ## Requirements
 
@@ -30,7 +30,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
+- Do not recreate the removed `screens/` inventory folder.
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
@@ -48,7 +48,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Relevant Files
 
-- `screens/subscriptions.md`
 - `frontend/lib/features/subscriptions/`
 - `frontend/lib/features/billing/`
 - `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`

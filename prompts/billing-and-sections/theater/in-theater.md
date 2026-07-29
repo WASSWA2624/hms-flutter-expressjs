@@ -4,7 +4,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Context
 
-- Screen inventory: `screens/theater.md` (read-only reference for reachable controls; do not modify).
 - Target tab: **In theater** (`in-theater`).
 - Feature code: `frontend/lib/features/theater/`
 - Module entitlement: `theatre-anesthesia`
@@ -14,6 +13,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 - Financial focus for this tab: Theatre/procedure packages, consumables, implants, and pre-op billing gates must create Billing lines; recovery completion must not skip unsettled required charges without documented deferral. Tab role: Intra-op stage actions.
 - Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
 - Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
+- Inventory atoms from feature presentation code, routes, and tests—do not recreate `screens/`.
 
 ## Requirements
 
@@ -30,7 +30,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
+- Do not recreate the removed `screens/` inventory folder.
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
@@ -48,7 +48,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Relevant Files
 
-- `screens/theater.md`
 - `frontend/lib/features/theater/`
 - `frontend/lib/features/billing/`
 - `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`

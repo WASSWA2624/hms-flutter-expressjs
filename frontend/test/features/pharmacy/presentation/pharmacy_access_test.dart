@@ -8,7 +8,6 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
-import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
@@ -21,7 +20,6 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,16 +58,25 @@ const PharmacyOrder _readyOrder = PharmacyOrder(
   quantityPrescribedTotal: 24,
 );
 
-const PharmacyOrder _pendingPaymentOrder = PharmacyOrder(
+const PharmacyOrder _unpaidOrder = PharmacyOrder(
   id: 'order-pay',
   displayId: 'PHO-PAY',
   patientDisplayName: 'Cathy Payment',
   location: 'OUTPATIENT',
   status: 'ORDERED',
-  paymentStatus: 'PENDING',
+  paymentStatus: 'UNPAID',
   itemCount: 1,
   quantityPrescribedTotal: 5,
 );
+
+const PharmacyInventoryWorkbench _inventoryWorkbench =
+    PharmacyInventoryWorkbench(
+      summary: PharmacyInventoryStockSummary(),
+      stocks: AppPage<PharmacyInventoryStock>(
+        items: <PharmacyInventoryStock>[],
+        request: AppPageRequest(),
+      ),
+    );
 
 class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
@@ -79,19 +86,16 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   ) async {
     final PharmacyWorkbenchQuery query =
         invocation.positionalArguments.single as PharmacyWorkbenchQuery;
-    List<PharmacyOrder> items = <PharmacyOrder>[
-      _readyOrder,
-      _pendingPaymentOrder,
-    ];
+    List<PharmacyOrder> items = <PharmacyOrder>[_readyOrder, _unpaidOrder];
     if (query.pendingPayment == true) {
       items = items
           .where((PharmacyOrder order) => order.requiresPaymentBeforeDispense)
           .toList(growable: false);
     }
-    return Result.success(
+    return Result<PharmacyWorkbench>.success(
       PharmacyWorkbench(
         summary: PharmacyWorkbenchSummary(
-          readyQueue: 1,
+          orderedQueue: 1,
           partiallyDispensedQueue: 0,
           pendingPaymentQueue: 1,
           dispensedOrders: 0,
@@ -105,46 +109,33 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
       ),
     );
   });
-  when(() => repository.loadInventoryWorkbench(any())).thenAnswer(
-    (_) async => Result.success(
-      const PharmacyInventoryWorkbench(
-        summary: PharmacyInventoryStockSummary(),
-        stocks: AppPage<PharmacyInventoryStock>(
-          items: <PharmacyInventoryStock>[],
-          request: AppPageRequest(),
-        ),
-      ),
-    ),
-  );
   when(() => repository.loadOrderWorkflow(any())).thenAnswer(
-    (_) async => Result.success(
+    (_) async => Result<PharmacyOrderWorkflow>.success(
       PharmacyOrderWorkflow(
         order: _readyOrder,
-        items: const <PharmacyOrderItem>[],
-        nextActions: const PharmacyOrderNextActions(canCancel: true),
+        nextActions: const PharmacyNextActions(canCancel: true),
       ),
     ),
   );
-  when(() => repository.listDrugs(any())).thenAnswer(
-    (_) async => Result.success(
-      const AppPage<PharmacyDrug>(
-        items: <PharmacyDrug>[],
-        request: AppPageRequest(),
-      ),
+  when(() => repository.searchDrugs(any())).thenAnswer(
+    (_) async => const Result<AppPage<PharmacyDrug>>.success(
+      AppPage<PharmacyDrug>(items: <PharmacyDrug>[], request: AppPageRequest()),
     ),
   );
-  when(() => repository.listFormulary(any())).thenAnswer(
-    (_) async => Result.success(
-      const AppPage<PharmacyFormularyItem>(
+  when(() => repository.getInventoryStock(any())).thenAnswer(
+    (_) async =>
+        const Result<PharmacyInventoryWorkbench>.success(_inventoryWorkbench),
+  );
+  when(
+    () => repository.loadStorageLayout(facilityId: any(named: 'facilityId')),
+  ).thenAnswer(
+    (_) async =>
+        const Result<PharmacyStorageLayout>.success(PharmacyStorageLayout()),
+  );
+  when(() => repository.listFormularyItems(any())).thenAnswer(
+    (_) async => const Result<AppPage<PharmacyFormularyItem>>.success(
+      AppPage<PharmacyFormularyItem>(
         items: <PharmacyFormularyItem>[],
-        request: AppPageRequest(),
-      ),
-    ),
-  );
-  when(() => repository.listStorageLocations(any())).thenAnswer(
-    (_) async => Result.success(
-      const AppPage<PharmacyStorageLocation>(
-        items: <PharmacyStorageLocation>[],
         request: AppPageRequest(),
       ),
     ),
@@ -161,16 +152,19 @@ Finder _toolbarPrimary(String label) => find.descendant(
 
 Future<void> _pumpAllOrdersWorkspace(
   WidgetTester tester, {
-  required PharmacyRepository repository,
+  required _MockPharmacyRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1280, 800),
   ThemeMode themeMode = ThemeMode.light,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
+  _stubPharmacyRepository(repository);
+
   tester.view.physicalSize = physicalSize;
-  tester.view.devicePixelRatio = 1.0;
+  tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
     initialLocation: '/pharmacy?section=all',
@@ -178,9 +172,9 @@ Future<void> _pumpAllOrdersWorkspace(
       GoRoute(
         path: '/pharmacy',
         builder: (BuildContext context, GoRouterState state) {
-          return PharmacyWorkspacePage(
-            initialQuery: PharmacyWorkspaceQuery(
-              section: state.uri.queryParameters['section'] ?? 'all',
+          return Scaffold(
+            body: PharmacyWorkspacePage(
+              initialQuery: PharmacyWorkspaceQuery.fromUri(state.uri),
             ),
           );
         },
@@ -192,51 +186,25 @@ Future<void> _pumpAllOrdersWorkspace(
     ProviderScope(
       overrides: <Override>[
         pharmacyRepositoryProvider.overrideWithValue(repository),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        appAccessPolicyProvider.overrideWithValue(accessPolicy),
-        sessionControllerProvider.overrideWith(
-          (Ref ref) => _FakeSessionController(accessPolicy),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
         ),
+        appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
         theme: ThemeData.light(useMaterial3: true),
         darkTheme: ThemeData.dark(useMaterial3: true),
         themeMode: themeMode,
+        routerConfig: router,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: router,
-        builder: (BuildContext context, Widget? child) {
-          return AppBreakpointScope(
-            breakpoint: physicalSize.width < 600
-                ? AppBreakpoint.mobile
-                : AppBreakpoint.desktop,
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
       ),
     ),
   );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
-}
-
-class _FakeSessionController extends SessionController {
-  _FakeSessionController(this._policy);
-
-  final AppAccessPolicy _policy;
-
-  @override
-  SessionState build() {
-    return SessionState(
-      status: SessionStatus.authenticated,
-      session: AuthSession(
-        tokens: SessionTokens(accessToken: 'token'),
-        user: _policy.session.user,
-        permissions: _policy.session.permissions,
-        moduleEntitlements: _policy.session.moduleEntitlements,
-        isAuthorizationHydrated: true,
-      ),
-    );
-  }
 }
 
 void main() {
@@ -410,23 +378,20 @@ void main() {
       },
     );
 
-    test(
-      'controlled-drug audit ∩ denial when compliance:read missing',
-      () {
-        final AppAccessPolicy pharmacyReader = _policyFor(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
-        );
-        final AppAccessPolicy withCompliance = _policyFor(
-          permissions: <AppPermission>{
-            AppPermissions.pharmacyRead,
-            AppPermissions.complianceRead,
-          },
-        );
+    test('controlled-drug audit ∩ denial when compliance:read missing', () {
+      final AppAccessPolicy pharmacyReader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.pharmacyRead},
+      );
+      final AppAccessPolicy withCompliance = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.pharmacyRead,
+          AppPermissions.complianceRead,
+        },
+      );
 
-        expect(canViewPharmacyControlledDrugAudit(pharmacyReader), isFalse);
-        expect(canViewPharmacyControlledDrugAudit(withCompliance), isTrue);
-      },
-    );
+      expect(canViewPharmacyControlledDrugAudit(pharmacyReader), isFalse);
+      expect(canViewPharmacyControlledDrugAudit(withCompliance), isTrue);
+    });
 
     test('subscription strips write without pharmacy-dispensing module', () {
       final AppAccessPolicy writerNoModule = _policyFor(
@@ -540,7 +505,10 @@ void main() {
           contains(PharmacyDeskSection.allOrders),
         );
         expect(canWritePharmacy(operationsReader), isFalse);
-        expect(pharmacyFallbackSection(pharmacyReader), PharmacyDeskSection.queue);
+        expect(
+          pharmacyFallbackSection(pharmacyReader),
+          PharmacyDeskSection.queue,
+        );
       },
     );
   });
@@ -550,10 +518,13 @@ void main() {
 
     setUp(() {
       repository = _MockPharmacyRepository();
+    });
+
+    setUpAll(() {
       registerFallbackValue(const PharmacyWorkbenchQuery());
-      registerFallbackValue(const PharmacyInventoryQuery());
-      registerFallbackValue('');
-      _stubPharmacyRepository(repository);
+      registerFallbackValue(const PharmacyDrugQuery());
+      registerFallbackValue(const PharmacyFormularyQuery());
+      registerFallbackValue(const PharmacyInventoryStockQuery());
     });
 
     testWidgets(

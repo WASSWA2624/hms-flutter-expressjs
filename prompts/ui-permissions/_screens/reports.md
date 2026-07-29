@@ -41,6 +41,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Constraints
 
+- Do not recreate the removed `screens/` inventory folder.
 - Scope: this tab's UI tree and nested dialogs opened from it only; do not redesign unrelated screens.
 - Reuse `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate` / `AppAccessActionGate`, design-system components, routes, and feature `*Requirement` helpers; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or inaccessible actions; light and dark.

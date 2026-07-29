@@ -212,7 +212,7 @@ def _commit_and_push(iteration_key: str) -> dict:
             _run_git(["add", "-A"])
             for exclude in GIT_EXCLUDES:
                 _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
-            # screens/ is read-only inventory — discard accidental agent edits.
+            # Discard accidental recreation of the removed screens/ inventory.
             _run_git(["checkout", "--", "screens"], check=False)
             _run_git(["clean", "-fd", "--", "screens"], check=False)
 

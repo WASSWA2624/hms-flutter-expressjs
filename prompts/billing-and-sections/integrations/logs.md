@@ -13,6 +13,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 - Financial focus for this tab: Interop payloads that create orders or payments must invoke the same Billing engine/idempotency paths as UI; webhooks must not acknowledge settlement without a Billing ledger entry. Tab role: Read-only delivery/audit logs.
 - Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
 - Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
+- Inventory atoms from feature presentation code, routes, and tests—do not recreate `screens/`.
 
 ## Requirements
 
@@ -29,6 +30,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
+- Do not recreate the removed `screens/` inventory folder.
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
