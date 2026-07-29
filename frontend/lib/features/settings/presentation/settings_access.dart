@@ -20,8 +20,31 @@ const AccessRequirement settingsFacilityAdminRequirement = AccessRequirement(
 
 /// Account and security tab atom → permission mapping (inventory + matrix).
 ///
-/// Reuses [profileReadRequirement] / [profileUpdateRequirement]. Matrix
-/// create/delete ∩ `facility:admin` are documented but **not mounted**.
+/// Settings accordion tab `account` (`/settings?tab=account`). Reuses profile
+/// feature helpers [profileReadRequirement] / [profileUpdateRequirement] for
+/// view ∩ `profile:read` and update ∩ `profile:update`. Matrix create/delete
+/// ∩ `facility:admin` are documented here but **not mounted** on this tab.
+/// Nested cross-module and view ∪ rows are _(n/a)_. Profile rights are
+/// core/platform (not plan-module mapped); subscription stripping does not
+/// apply. Surface is own-scoped via the current-user profile API.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Account and security strip tab | navigate | read ∩ ([tab]) |
+/// | Section title / body chrome | read chrome | ([listChrome]) |
+/// | Profile summary (identity) | read | ([summary]) |
+/// | Account / professional detail panels | read | ([detail]) |
+/// | Roles / permissions badges | read | ([roles] / [permissions]) |
+/// | Empty roles / permissions copy | read chrome | ([empty]) |
+/// | Loading / error / retry | read chrome | ([loading] / [retry]) |
+/// | Copy user id / staff number | read chrome | ([copyIdentifier]) |
+/// | Change password (toolbar + dialog) | update | ∩ profile:update ([changePassword]) |
+/// | Edit profile (toolbar + dialog) | update | ∩ profile:update ([editProfile]) |
+/// | Success / validation snackbars | visible feedback | update ∩ (authorized) |
+/// | Deep link `panel=change-password` | update | ∩ profile:update; forbidden when denied |
+/// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Settings route entry | navigate | authenticated core ([routeEntry]) |
 abstract final class SettingsAccountAtomPermissions {
   static const AccessRequirement tab = profileReadRequirement;
   static const AccessRequirement listChrome = profileReadRequirement;
@@ -70,7 +93,19 @@ const AccessRequirement settingsAccountDeleteRequirement =
 // Accessibility (`/settings?tab=accessibility`)
 // ---------------------------------------------------------------------------
 
-/// Accessibility tab atom → permission mapping.
+/// Accessibility tab (`/settings?tab=accessibility`) atom → permission map.
+///
+/// Reuses [profileReadRequirement] / [profileUpdateRequirement]. No nested
+/// dialogs. Create/delete ∩ `facility:admin` are documented but **not mounted**.
+/// View ∪ / nested cross-module rows are _(n/a)_.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | `profile:read` ∩ |
+/// | Reduce motion / Bold text / Text size values | read | `profile:read` ∩ |
+/// | Reduce motion / Bold text checkboxes | update | `profile:update` ∩ |
+/// | Text size select | update | `profile:update` ∩ |
+/// | Save-error snackbar | visible feedback | update path |
 abstract final class SettingsAccessibilityAtomPermissions {
   static const AccessRequirement tab = profileReadRequirement;
   static const AccessRequirement read = profileReadRequirement;

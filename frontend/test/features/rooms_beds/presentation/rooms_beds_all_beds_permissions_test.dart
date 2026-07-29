@@ -343,10 +343,21 @@ void main() {
     );
     expect(
       identical(
+        RoomsBedsAllBedsAtomPermissions.catalogEntry,
+        RouteAccessCatalog.roomsBedsEntry,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
         RoomsBedsAllBedsAtomPermissions.routeUnion,
         roomsBedsWorkspaceRouteUnionRequirement,
       ),
       isTrue,
+    );
+    expect(
+      roomsBedsSectionTabRequirement(RoomsBedsSection.all),
+      same(RoomsBedsAllBedsAtomPermissions.tab),
     );
     expect(
       RoomsBedsAllBedsAtomPermissions.tab.anyPermissions,
@@ -379,6 +390,78 @@ void main() {
         roomsBedsWorkspaceCreateRequirement,
       ),
       isTrue,
+    );
+    expect(
+      RoomsBedsAllBedsAtomPermissions.nestedWrite,
+      same(RoomsBedsAllBedsAtomPermissions.manageCatalog),
+    );
+    expect(
+      RoomsBedsAllBedsAtomPermissions.nestedRead,
+      same(RoomsBedsAllBedsAtomPermissions.tab),
+    );
+  });
+
+  test('inventory atoms map to matrix verbs (read ∪ / admin ∪ / occupancy ∪)', () {
+    expect(RoomsBedsAllBedsAtomPermissions.tab, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.listChrome, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.search, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.filters, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.columns, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.settings, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.pagination, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.empty, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.loading, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.retry, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.success, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.validation, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.rowSelect, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.detail, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.nextAction, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.createRoom, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.createBed, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.manageCatalog, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.updateBedStatus, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.markAvailable, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.assign, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.release, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.transfer, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.completeTransfer, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.nestedOccupancyWrite, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.nestedWrite, isNotNull);
+    expect(RoomsBedsAllBedsAtomPermissions.navigateCrossModule, isNotNull);
+  });
+
+  test('nested cross-module matrix rows are n/a (empty navigate gate)', () {
+    expect(
+      RoomsBedsAllBedsAtomPermissions.navigateCrossModule.anyPermissions,
+      isEmpty,
+    );
+    expect(
+      RoomsBedsAllBedsAtomPermissions.navigateCrossModule.allPermissions,
+      isEmpty,
+    );
+    expect(
+      RoomsBedsAllBedsAtomPermissions.navigateCrossModule.isAllowed(
+        _readerPolicy(),
+      ),
+      isTrue,
+    );
+  });
+
+  test('route AppRoutes ∪ integrates with All beds routeUnion atom', () {
+    expect(
+      RoomsBedsAllBedsAtomPermissions.routeUnion.anyPermissions,
+      containsAll(<AppPermission>[
+        AppPermissions.clinicalRead,
+        AppPermissions.operationsRead,
+        AppPermissions.tenantAdmin,
+        AppPermissions.facilityAdmin,
+        AppPermissions.systemAdmin,
+      ]),
+    );
+    expect(
+      AppRoutes.roomsBeds.requiredActiveModules,
+      contains(roomsBedsInpatientBedManagementModule),
     );
   });
 
@@ -520,6 +603,116 @@ void main() {
       expect(_toolbarAction('Manage catalog'), findsOneWidget);
       expect(find.text('Assign bed'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'unit:manage ∪ grant shows Create room (matrix ∩ → source ∪)',
+    (WidgetTester tester) async {
+      await _pumpAllBedsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _unitManageOnlyPolicy(),
+      );
+
+      expect(_toolbarPrimary('Create room'), findsOneWidget);
+      expect(_toolbarAction('Create bed'), findsOneWidget);
+      expect(_toolbarAction('Manage catalog'), findsOneWidget);
+      expect(find.text('Assign bed'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: facility admin without inpatient module hides All beds',
+    (WidgetTester tester) async {
+      await _pumpAllBedsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _adminWithoutModulePolicy(),
+      );
+
+      expect(_toolbarPrimary('Create room'), findsNothing);
+      expect(_toolbarAction('Manage catalog'), findsNothing);
+      expect(find.text('All beds'), findsNothing);
+      expect(find.text('Bed A1'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested occupancy write absent without clinical/operations write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _readerPolicy();
+      expect(
+        RoomsBedsAllBedsAtomPermissions.nestedOccupancyWrite.isAllowed(reader),
+        isFalse,
+      );
+
+      await _pumpAllBedsTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+
+      await tester.tap(find.text('Bed A1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Assign bed'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Request transfer'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Mark available'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    '∪ occupancy: Release next-action mounts on occupied row',
+    (WidgetTester tester) async {
+      await _pumpAllBedsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _occupancyWriterPolicy(),
+      );
+
+      expect(find.text('Bed O1'), findsWidgets);
+      expect(find.text('Release bed'), findsWidgets);
+      expect(_toolbarPrimary('Create room'), findsNothing);
+
+      await tester.tap(find.text('Bed O1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      // Primary next-action twin (Release) is omitted in detail.
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Release bed'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Request transfer'),
+        ),
+        findsOneWidget,
+      );
     },
   );
 
@@ -666,5 +859,44 @@ void main() {
 
     expect(find.text('No beds found'), findsOneWidget);
     expect(_toolbarPrimary('Create room'), findsNothing);
+  });
+
+  testWidgets('error/retry state remains for authorized reader', (
+    WidgetTester tester,
+  ) async {
+    when(
+      () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+    ).thenAnswer(
+      (_) async => const Result<FacilitySetupSnapshot>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    await _pumpAllBedsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _readerPolicy(),
+      stubRepository: false,
+    );
+
+    expect(find.text('Try again'), findsOneWidget);
+    expect(_toolbarPrimary('Create room'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('light theme desktop: reader list chrome without mutations', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAllBedsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _readerPolicy(),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('All beds'), findsWidgets);
+    expect(find.text('Bed A1'), findsWidgets);
+    expect(_toolbarPrimary('Create room'), findsNothing);
+    expect(find.bySemanticsLabel('Assign bed'), findsNothing);
   });
 }

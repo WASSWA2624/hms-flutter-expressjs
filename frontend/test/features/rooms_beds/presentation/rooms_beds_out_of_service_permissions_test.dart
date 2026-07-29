@@ -418,6 +418,71 @@ void main() {
     );
   });
 
+  test('inventory atoms map to matrix verbs (read ∪ / admin ∪ / occupancy ∪)', () {
+    expect(RoomsBedsOutOfServiceAtomPermissions.tab, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.listChrome, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.search, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.filters, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.columns, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.settings, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.pagination, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.empty, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.loading, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.retry, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.success, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.validation, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.rowSelect, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.detail, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.nextAction, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.create, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.update, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.delete, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.markAvailable, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.markOutOfService, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.manageCatalog, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.assign, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.openOperations, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.nestedWrite, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.nestedOccupancyWrite, isNotNull);
+    expect(RoomsBedsOutOfServiceAtomPermissions.navigateCrossModule, isNotNull);
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.navigateCrossModule.isEmpty,
+      isTrue,
+    );
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.nestedWrite,
+      same(RoomsBedsOutOfServiceAtomPermissions.manageCatalog),
+    );
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.markAvailable.anyPermissions,
+      contains(AppPermissions.unitManage),
+    );
+  });
+
+  test('catalog entry ABAC: facility context required (∩ rooms_beds:read)', () {
+    final AppAccessPolicy withFacility = _policy(
+      permissions: <AppPermission>{AppPermissions.roomsBedsRead},
+    );
+    final AppAccessPolicy withoutFacility = _policy(
+      permissions: <AppPermission>{AppPermissions.roomsBedsRead},
+      facilityId: null,
+    );
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.catalogEntry.isAllowed(withFacility),
+      isTrue,
+    );
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.catalogEntry.isAllowed(
+        withoutFacility,
+      ),
+      isFalse,
+    );
+    expect(
+      RoomsBedsOutOfServiceAtomPermissions.catalogEntry.requiresFacilityContext,
+      isTrue,
+    );
+  });
+
   test('read ∪ allowance: clinical or operations or facility admin', () {
     expect(
       RoomsBedsOutOfServiceAtomPermissions.tab.isAllowed(_readerPolicy()),
@@ -759,5 +824,89 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  testWidgets(
+    'without inpatient module Out of service strip collapses (subscription ∩)',
+    (WidgetTester tester) async {
+      await _pumpOutOfServiceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _adminWithoutModulePolicy(),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byType(AppListTable<BedBoardItem>), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'admin detail: Mark available on OOS row; reader detail omits writes',
+    (WidgetTester tester) async {
+      await _pumpOutOfServiceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _facilityAdminPolicy(),
+      );
+
+      await tester.tap(find.text('Bed X1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Mark available'),
+        ),
+        findsWidgets,
+      );
+    },
+  );
+
+  testWidgets('reader detail omits status and occupancy write actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOutOfServiceTab(
+      tester,
+      repository: repository,
+      accessPolicy: _readerPolicy(),
+    );
+
+    await tester.tap(find.text('Bed B1').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Mark available'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Assign bed'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('light theme: operations:read ∪ shows OOS board without writes', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOutOfServiceTab(
+      tester,
+      repository: repository,
+      accessPolicy: _operationsReaderPolicy(),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Out of service'), findsWidgets);
+    expect(find.text('Bed B1'), findsWidgets);
+    expect(find.text('Open operations'), findsWidgets);
+    expect(find.text('Mark available'), findsNothing);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
   });
 }

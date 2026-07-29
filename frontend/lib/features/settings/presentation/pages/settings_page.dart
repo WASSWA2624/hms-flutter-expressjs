@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_accessibility_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
