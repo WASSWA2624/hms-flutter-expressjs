@@ -195,6 +195,20 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.entry,
+          claimsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.nextActionColumn,
+          claimsActiveClaimsNextActionColumnRequirement,
+        ),
+        isTrue,
+      );
     });
 
     test('Active Claims nested cross-module matrix rows are n/a (document = read ∩)', () {
@@ -281,6 +295,10 @@ void main() {
         isFalse,
       );
       expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         claimsSectionShowsNextActionColumn(
           writer,
           ClaimsDeskSection.activeClaims,
@@ -292,6 +310,15 @@ void main() {
           approver,
           ClaimsDeskSection.activeClaims,
         ),
+        isTrue,
+      );
+      // Union allowance: either write or approve satisfies column chrome.
+      expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(approver),
         isTrue,
       );
     });

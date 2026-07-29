@@ -209,6 +209,9 @@ void _stubRepository(
   when(() => repository.reconcileClaim(any(), any())).thenAnswer(
     (_) async => Result<InsuranceClaimRecord>.success(_approvedClaim.claim!),
   );
+  when(() => repository.prepareClaim(any())).thenAnswer(
+    (_) async => Result<InsuranceClaimRecord>.success(_draftClaim.claim!),
+  );
 }
 
 Future<void> _pumpActiveClaimsTab(
@@ -987,4 +990,248 @@ void main() {
     expect(find.textContaining('Approved ('), findsWidgets);
     expect(find.byTooltip('Prepare claim'), findsNothing);
   });
+
+  testWidgets(
+    'authorized Prepare claim dialog shows validation when invoice catalog empty',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Prepare claim'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('PREPARE'), findsWidgets);
+      // Reference fixture has schemes but no invoices → validation panel;
+      // submit stays disabled so prepareClaim is never called.
+      expect(find.text('Claim inputs unavailable'), findsOneWidget);
+      expect(find.textContaining('PREPARE'), findsWidgets);
+    },
+  );
+
+  testWidgets('authorized loading then success on Active Claims', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    when(() => repository.listQueue(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final ClaimsQueueQuery query =
+          invocation.positionalArguments.single as ClaimsQueueQuery;
+      final List<ClaimsQueueItem> items = _itemsForQuery(query);
+      return Result<AppPage<ClaimsQueueItem>>.success(
+        AppPage<ClaimsQueueItem>(
+          items: items,
+          request: query.pageRequest,
+          totalItemCount: items.length,
+        ),
+      );
+    });
+    when(() => repository.loadReferenceData()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsReferenceData>.success(_referenceData);
+    });
+    when(() => repository.loadWorkspaceSummary()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsWorkspaceSummary>.success(_summary);
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=active-claims',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.billingRead,
+                AppPermissions.billingWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Loading claims'), findsWidgets);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CLM-SUB'), findsOneWidget);
+    expect(find.byTooltip('Prepare claim'), findsOneWidget);
+  });
+
+  testWidgets(
+    'inactive insurance-claims entitlement strips Active Claims (subscription ∩)',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'EXPIRED',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('CLM-SUB'), findsNothing);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Active Claims read chrome '
+    '(row scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(ClaimsActiveClaimsAtomPermissions.tab.isAllowed(noFacility), isTrue);
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(find.textContaining('Active Claims'), findsWidgets);
+      expect(find.text('CLM-SUB'), findsOneWidget);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nextActionColumn ∪: approve-only mounts column; Prepare still absent',
+    (WidgetTester tester) async {
+      final AppAccessPolicy settler = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(settler),
+        isTrue,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: settler,
+      );
+
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'visible feedback: Sync success shows snackbar for authorized writer',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('CLM-SUB'));
+      await tester.pumpAndSettle();
+
+      clearInteractions(repository);
+      _stubRepository(repository);
+
+      await tester.tap(find.text('Sync insurer status'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      verify(() => repository.syncClaimStatus(any())).called(1);
+    },
+  );
 }

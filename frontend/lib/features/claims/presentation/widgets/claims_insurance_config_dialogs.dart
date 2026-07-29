@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
+import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -12,11 +14,24 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+/// Nested catalog creates require write ∩ (`billing:write` + modules).
+///
+/// Entry points are already filtered; this blocks stale/deep callers from
+/// mounting write dialogs without an authorized affordance.
+bool _canOpenClaimsInsuranceCatalogWrite(WidgetRef ref) {
+  return ClaimsInsuranceSetupAtomPermissions.create.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  );
+}
+
 Future<void> openClaimsInsuranceCompanyDialog({
   required BuildContext context,
   required WidgetRef ref,
   required ClaimsReferenceData referenceData,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -50,6 +65,9 @@ Future<void> openClaimsSchemeDialog({
   required WidgetRef ref,
   required ClaimsReferenceData referenceData,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -84,6 +102,9 @@ Future<void> openClaimsSchemeOfferDialog({
   required WidgetRef ref,
   required ClaimsReferenceData referenceData,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -120,6 +141,9 @@ Future<void> openClaimsEnrollmentDialog({
   required ClaimsReferenceData referenceData,
   String? patientId,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -779,6 +803,9 @@ Future<void> openClaimsPriceBookEntryDialog({
   required WidgetRef ref,
   required ClaimsReferenceData referenceData,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -814,6 +841,9 @@ Future<void> openClaimsInsurerIntegrationDialog({
   required WidgetRef ref,
   required ClaimsReferenceData referenceData,
 }) async {
+  if (!_canOpenClaimsInsuranceCatalogWrite(ref)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,

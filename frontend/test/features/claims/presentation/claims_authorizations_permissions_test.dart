@@ -287,6 +287,20 @@ void main() {
       );
       expect(
         identical(
+          ClaimsAuthorizationsAtomPermissions.update,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsAuthorizationsAtomPermissions.delete,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsAuthorizationsAtomPermissions.nextAction,
           claimsWorkspaceWriteRequirement,
         ),
@@ -294,8 +308,30 @@ void main() {
       );
       expect(
         identical(
+          ClaimsAuthorizationsAtomPermissions.document,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsAuthorizationsAtomPermissions.approve,
+          claimsFinancialApproveRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsAuthorizationsAtomPermissions.routeEntry,
           claimsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      // Print helper must reuse the Authorizations document atom (read ∩).
+      expect(
+        identical(
+          claimsDetailPrintRequirement(ClaimsDeskSection.authorizations),
+          ClaimsAuthorizationsAtomPermissions.document,
         ),
         isTrue,
       );
@@ -608,6 +644,82 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(find.byTooltip('Update status'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+      // Tab strip collapses Authorizations; Insurance Setup remains.
+      expect(find.textContaining('Insurance Setup'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(AppTabStrip),
+          matching: find.textContaining('Authorizations'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'nested cross-module _(n/a)_: Authorizations Print stays read ∩ (not Settled export ∪)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.document.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        ClaimsSettledAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+
+      await tester.tap(find.text('AUTH-PENDING'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Update status'), findsNothing);
+      expect(find.text('Sync insurer status'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'financial:approve alone never mounts Authorizations Update status (approve is Active Claims)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy approver = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.nextAction.isAllowed(approver),
+        isFalse,
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.approve.isAllowed(approver),
+        isTrue,
+      );
+
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: approver,
+      );
+
+      expect(find.text('AUTH-PENDING'), findsOneWidget);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+      expect(find.byTooltip('Update status'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsNothing,
+      );
     },
   );
 
@@ -645,6 +757,49 @@ void main() {
 
       verify(() => repository.updatePreAuthorization(any(), any())).called(1);
       verify(() => repository.listQueue(any())).called(greaterThanOrEqualTo(1));
+      expect(find.text('Claims workspace updated.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Request authorization succeeds with snackbar + queue sync',
+    (WidgetTester tester) async {
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Request authorization'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('REQUEST'), findsWidgets);
+
+      // Select the only coverage scheme, then submit create ∩.
+      await tester.tap(find.byType(EditableText).last);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(MenuItemButton),
+          matching: find.textContaining('Standard Plan'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      clearInteractions(repository);
+      _stubRepository(repository);
+
+      await tester.tap(find.text('Request authorization').last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.requestPreAuthorization(any())).called(1);
+      verify(() => repository.listQueue(any())).called(greaterThanOrEqualTo(1));
+      expect(find.text('Claims workspace updated.'), findsOneWidget);
     },
   );
 
@@ -916,4 +1071,105 @@ void main() {
       expect(find.byTooltip('Request authorization'), findsNothing);
     },
   );
+
+  testWidgets('authorized loading then success on Authorizations', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    when(() => repository.listQueue(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final ClaimsQueueQuery query =
+          invocation.positionalArguments.single as ClaimsQueueQuery;
+      List<ClaimsQueueItem> filtered = <ClaimsQueueItem>[
+        _pendingAuth,
+        _approvedAuth,
+      ];
+      final String? authStatus = preAuthorizationStatusForFilter(query.filter);
+      if (authStatus != null) {
+        filtered = filtered
+            .where(
+              (ClaimsQueueItem item) =>
+                  item.isAuthorization &&
+                  item.status.toUpperCase() == authStatus,
+            )
+            .toList(growable: false);
+      }
+      return Result<AppPage<ClaimsQueueItem>>.success(
+        AppPage<ClaimsQueueItem>(
+          items: filtered,
+          request: query.pageRequest,
+          totalItemCount: filtered.length,
+        ),
+      );
+    });
+    when(() => repository.loadReferenceData()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsReferenceData>.success(_referenceData);
+    });
+    when(() => repository.loadWorkspaceSummary()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsWorkspaceSummary>.success(_summary);
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=authorizations',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.billingRead,
+                AppPermissions.billingWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Loading claims'), findsWidgets);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AUTH-PENDING'), findsOneWidget);
+    expect(find.byTooltip('Request authorization'), findsOneWidget);
+  });
 }

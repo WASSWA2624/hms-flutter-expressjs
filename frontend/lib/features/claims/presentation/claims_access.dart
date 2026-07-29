@@ -134,13 +134,17 @@ bool canExportClaimsSettledDocument(AppAccessPolicy policy) {
 }
 
 /// Print gate for the detail dialog opened from [section].
+///
+/// Authorizations / Active Claims reuse the tab [document] read ∩ helper.
+/// Settled uses nested export ∪ ([ClaimsSettledAtomPermissions.export]).
 AccessRequirement claimsDetailPrintRequirement(ClaimsDeskSection section) {
   return switch (section) {
-    ClaimsDeskSection.settled => claimsNestedExportRequirement,
-    ClaimsDeskSection.authorizations ||
-    ClaimsDeskSection.activeClaims ||
-    ClaimsDeskSection.insuranceSetup =>
-      claimsWorkspaceReadRequirement,
+    ClaimsDeskSection.settled => ClaimsSettledAtomPermissions.export,
+    ClaimsDeskSection.authorizations =>
+      ClaimsAuthorizationsAtomPermissions.document,
+    ClaimsDeskSection.activeClaims =>
+      ClaimsActiveClaimsAtomPermissions.document,
+    ClaimsDeskSection.insuranceSetup => claimsWorkspaceReadRequirement,
   };
 }
 
@@ -163,6 +167,17 @@ bool claimsNextActionIsAllowed(
   return claimsNextActionRequirement(item).isAllowed(policy);
 }
 
+/// Progressive-disclosure chrome for Active Claims next-action column /
+/// mobile trailing: write ∪ financial:approve (inventory + matrix).
+const AccessRequirement claimsActiveClaimsNextActionColumnRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.billingWrite,
+        AppPermissions.financialApprove,
+      ],
+      activeModules: <String>[claimsInsuranceClaimsModule],
+    );
+
 /// Whether the Next action column / mobile trailing mounts for [section].
 bool claimsSectionShowsNextActionColumn(
   AppAccessPolicy policy,
@@ -173,7 +188,7 @@ bool claimsSectionShowsNextActionColumn(
     ClaimsDeskSection.insuranceSetup => false,
     ClaimsDeskSection.authorizations => canWriteClaims(policy),
     ClaimsDeskSection.activeClaims =>
-      canWriteClaims(policy) || canApproveClaimsSettlement(policy),
+      claimsActiveClaimsNextActionColumnRequirement.isAllowed(policy),
   };
 }
 
@@ -234,7 +249,9 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 ///
 /// Nested cross-module matrix rows are _(n/a)_ — no Settled-style export ∪
 /// on this tab. Settlement uses [claimsFinancialApproveRequirement] (source
-/// inventory), not write alone.
+/// inventory), not write alone. Column chrome uses
+/// [claimsActiveClaimsNextActionColumnRequirement] (∪); per-row buttons still
+/// use [claimsNextActionRequirement].
 abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
@@ -250,7 +267,10 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement sync = claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement closeAsPaid = claimsFinancialApproveRequirement;
+  static const AccessRequirement nextActionColumn =
+      claimsActiveClaimsNextActionColumnRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;
+  static const AccessRequirement entry = claimsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;
 }
 
@@ -301,7 +321,7 @@ abstract final class ClaimsSettledAtomPermissions {
 /// | Enroll patient | create | write ∩ |
 /// | Add price book entry | create | write ∩ |
 /// | Insurer API integration | create | write ∩ |
-/// | Nested catalog create dialogs | create | write ∩ |
+/// | Nested catalog create dialogs | create | write ∩ (+ opener gate) |
 /// | Tab-strip primary / Refresh | _(absent on this tab)_ | — |
 /// | Queue search / filters / rows | _(absent on this tab)_ | — |
 /// | Nested cross-module | _(n/a)_ | — |
@@ -309,7 +329,8 @@ abstract final class ClaimsSettledAtomPermissions {
 ///
 /// Matrix read ∩ (`billing:read`) is [read]. Tab visibility uses [tab] (∪) so
 /// facility/tenant admins without `billing:read` still see setup chrome.
-/// Catalog edits reuse [claimsWorkspaceWriteRequirement] (source inventory).
+/// Catalog edits reuse [claimsWorkspaceWriteRequirement] (source inventory);
+/// dialog openers also check [create] before mounting.
 abstract final class ClaimsInsuranceSetupAtomPermissions {
   static const AccessRequirement tab =
       claimsInsuranceSetupReadAnyRequirement;

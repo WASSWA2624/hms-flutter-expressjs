@@ -165,7 +165,7 @@ class _ClaimsWorkspaceContentState
       final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
       if (ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(policy)) {
         unawaited(
-          _openPrepareClaimDialog(context, controller, widget.state),
+          _openPrepareClaimDialog(context, ref, controller, widget.state),
         );
       }
     }
@@ -421,7 +421,7 @@ class _ClaimsWorkspaceContentState
           tooltip: l10n.claimsPrepareClaimAction,
           isLoading: state.isSaving,
           onPressed: () => unawaited(
-            _openPrepareClaimDialog(context, controller, state),
+            _openPrepareClaimDialog(context, ref, controller, state),
           ),
         ),
       ClaimsDeskSection.authorizations ||
@@ -1301,7 +1301,7 @@ Future<void> _openClaimsDetailDialog(
   final AppLocalizations l10n = context.l10n;
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   // Settled Print → [ClaimsSettledAtomPermissions.export] (nested ∪);
-  // Authorizations / Active Claims → read ∩ via [claimsDetailPrintRequirement].
+  // Authorizations / Active Claims → document/read ∩ (atom maps + helper).
   final bool canPrint = claimsDetailPrintRequirement(section).isAllowed(
     accessPolicy,
   );
@@ -2176,6 +2176,16 @@ Future<void> _openRequestAuthorizationDialog(
   ClaimsWorkspaceController controller,
   ClaimsWorkspaceState state,
 ) async {
+  // Defense in depth: strip primary / deep-link must not open create without write ∩.
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!ClaimsAuthorizationsAtomPermissions.requestAuthorization.isAllowed(
+    policy,
+  )) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2197,9 +2207,16 @@ Future<void> _openRequestAuthorizationDialog(
 
 Future<void> _openPrepareClaimDialog(
   BuildContext context,
+  WidgetRef ref,
   ClaimsWorkspaceController controller,
   ClaimsWorkspaceState state,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  // Defense in depth: never open prepare for read-only / stripped policies.
+  if (!ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2221,6 +2238,14 @@ Future<void> _openAuthorizationStatusDialog(
   ClaimsWorkspaceController controller,
   ClaimsQueueDetail detail,
 ) async {
+  // Defense in depth: next-action must not open update without write ∩.
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!ClaimsAuthorizationsAtomPermissions.update.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
