@@ -354,7 +354,7 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 /// write / read rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
 /// radiology / pharmacy / admission. Discharge Open billing reuses
 /// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
-/// `billing-payments`).
+/// `billing-payments`); dialog host reuses billing read requirement.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -376,11 +376,12 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
 ///
 /// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
 /// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_).
+/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
+/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
 abstract final class ClinicalInConsultationAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;

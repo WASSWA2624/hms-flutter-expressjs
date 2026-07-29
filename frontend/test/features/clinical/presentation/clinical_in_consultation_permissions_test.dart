@@ -388,9 +388,10 @@ void main() {
         ClinicalInConsultationAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
       );
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
       expect(
         ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
 
       final AppAccessPolicy reader = _policy(
@@ -400,6 +401,10 @@ void main() {
       expect(
         ClinicalInConsultationAtomPermissions.write.isAllowed(reader),
         isFalse,
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(reader),
+        isTrue,
       );
     });
 
@@ -608,19 +613,21 @@ void main() {
       expect(find.text('Prescribe'), findsWidgets);
       expect(find.text('Request admission'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
+      expect(find.byTooltip('Edit order'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits chrome',
+    'route entry ∩: clinical:write alone without clinical:read omits chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      // Catalog entry is ∩ clinical:read (prompt ∪ read|write → keep catalog).
       expect(
         ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClinicalInConsultationAtomPermissions.tab.isAllowed(writeOnly),

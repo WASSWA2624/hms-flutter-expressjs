@@ -16,7 +16,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** (Material close toolt
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, and for non–Follow-ups tabs applies worklist scope (clears search). Follow-ups shows `FollowUpWorklistPanel` instead of the clinical worklist.
-  - Condition: Always shown; count badges vary by section (Follow-ups count from `followUpTabCountProvider`).
+  - Condition: Each tab mounts only when `clinicalSectionTabRequirement` allows (∩ `clinical:read` + `encounters-vitals`; Follow-ups uses `clinicalFollowUpsRequirement`). Count badges vary by section (Follow-ups count from `followUpTabCountProvider`). Empty strip when no section is allowed.
 
 - **Try again** (page load failure)
   - Location: `AsyncStateScaffold` failure state.
