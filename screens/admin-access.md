@@ -94,6 +94,22 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
   - Immediate result: Updates role identity/scope; worklist syncs (no auto detail reopen).
   - Condition: `canWrite` and role is not system-critical.
 
+### Roles tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Roles tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Search / filters / columns / pagination | read chrome | read ∪ |
+| Empty / error / retry | read chrome | read ∪ |
+| Row select → role detail | read | read ∪ |
+| Create role (tab primary) | create | write ∩ `tenant:admin` + workspace `canWrite` |
+| Edit role (next-action / mobile trailing) | update | write ∩ + `canWrite`; not system-critical |
+| Delete role (detail footer + confirm) | delete | write ∩ + `canWrite`; not system-critical |
+| Detail Close | progressive-disclosure | read ∪ |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminRolesAtomPermissions`, `canReadAccessAdminRoles`, `canMutateAccessAdminRoles`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
+
 ### Registrations
 
 - **Activate registration** (next-action)
@@ -165,4 +181,4 @@ Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions
 - **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
 
-Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`.
+Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`.

@@ -436,6 +436,14 @@ class _AccessAdminWorkspaceContentState
     if (role.isSystemCritical) {
       return;
     }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    // Roles delete ∩: tenant:admin (+ elevated) and workspace canWrite.
+    if (!canMutateAccessAdminRoles(
+      policy,
+      workspaceCanWrite: widget.state.data.permissions.canWrite,
+    )) {
+      return;
+    }
     final AppLocalizations l10n = context.l10n;
     final AccessAdminWorkspaceController controller = ref.read(
       accessAdminWorkspaceControllerProvider.notifier,

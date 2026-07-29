@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -570,6 +571,73 @@ void main() {
         final AppLocalizations readL10n = readContext.l10n;
         expect(find.text(readL10n.accessAdminDeleteRoleAction), findsNothing);
         expect(find.text(readL10n.commonCloseActionLabel), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nested write dialogs refuse open without mutate ∩',
+      (WidgetTester tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final SharedPreferences preferences =
+            await SharedPreferences.getInstance();
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        AccessAdminItem? createResult = _roleItem;
+        AccessAdminItem? editResult = _roleItem;
+        final AccessAdminWorkspaceData data = _rolesData(canWrite: true);
+        final AccessAdminWorkspaceState state = AccessAdminWorkspaceState(
+          data: data,
+          query: data.query,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              accessAdminRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(facilityOnly),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.light,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Consumer(
+                  builder: (BuildContext context, WidgetRef ref, _) {
+                    return TextButton(
+                      onPressed: () async {
+                        createResult = await openAccessAdminCreateRoleDialog(
+                          context,
+                          ref,
+                          state,
+                        );
+                        editResult = await openAccessAdminEditRoleDialog(
+                          context,
+                          ref,
+                          state,
+                          _roleItem,
+                        );
+                      },
+                      child: const Text('probe-roles-mutate'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('probe-roles-mutate'));
+        await tester.pumpAndSettle();
+
+        expect(createResult, isNull);
+        expect(editResult, isNull);
+        expect(find.byType(AppDialog), findsNothing);
       },
     );
 

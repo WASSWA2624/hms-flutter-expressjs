@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/entities/role_similarity.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/user_similarity.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
@@ -767,6 +768,13 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
   AccessAdminWorkspaceState state,
 ) async {
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  // Roles create ∩: tenant:admin (+ elevated) and workspace canWrite.
+  if (!canMutateAccessAdminRoles(
+    accessPolicy,
+    workspaceCanWrite: state.data.permissions.canWrite,
+  )) {
+    return null;
+  }
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final bool allowTenantWideScope = accessPolicy.canCreateTenantWideRole();
   final String? workspaceTenantId = state.query.tenantId;
@@ -1292,8 +1300,18 @@ Future<AccessAdminItem?> openAccessAdminEditRoleDialog(
   if (!context.mounted) {
     return null;
   }
+  if (role.isSystemCritical) {
+    return null;
+  }
 
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  // Roles update ∩: tenant:admin (+ elevated) and workspace canWrite.
+  if (!canMutateAccessAdminRoles(
+    accessPolicy,
+    workspaceCanWrite: state.data.permissions.canWrite,
+  )) {
+    return null;
+  }
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final bool allowTenantWideScope = accessPolicy.canCreateTenantWideRole();
   // Prefill from the role's actual ABAC scope — never session/workspace tenant
