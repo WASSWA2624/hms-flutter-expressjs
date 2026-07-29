@@ -7,11 +7,13 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
+import 'package:hosspi_hms/features/housekeeping/presentation/housekeeping_access.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/widgets/housekeeping_triage_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -135,13 +137,38 @@ class _HousekeepingWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final HousekeepingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final _HousekeepingCapabilities capabilities = _capabilities(accessPolicy);
+    final HousekeepingCapabilities capabilities =
+        HousekeepingCapabilities.fromPolicy(accessPolicy);
+    final List<HousekeepingSection> visibleSections =
+        housekeepingAllowedSections(accessPolicy);
+    if (visibleSections.isEmpty) {
+      // No authorized sections — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    final bool canShowCurrentSection = visibleSections.contains(_section);
+    if (!canShowCurrentSection) {
+      final HousekeepingSection fallback =
+          housekeepingFallbackSection(accessPolicy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        setState(() => _section = fallback);
+        _updateUrlForSection(fallback);
+        ref
+            .read(housekeepingWorkspaceControllerProvider.notifier)
+            .applyResource(fallback.resource);
+      });
+    }
     final controller = ref.read(
       housekeepingWorkspaceControllerProvider.notifier,
     );
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    final HousekeepingSection activeSection = canShowCurrentSection
+        ? _section
+        : visibleSections.first;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -152,8 +179,7 @@ class _HousekeepingWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final HousekeepingSection section
-                    in HousekeepingSection.values)
+                for (final HousekeepingSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -162,10 +188,9 @@ class _HousekeepingWorkspaceContentState
                     countTone: _sectionCountTone(section),
                   ),
               ],
-              selectedId: _section.name,
+              selectedId: activeSection.name,
               onTabTapped: (String tabId) {
-                for (final HousekeepingSection section
-                    in HousekeepingSection.values) {
+                for (final HousekeepingSection section in visibleSections) {
                   if (section.name == tabId) {
                     setState(() => _section = section);
                     _updateUrlForSection(section);
@@ -175,13 +200,20 @@ class _HousekeepingWorkspaceContentState
                 }
               },
               secondaryActions: <Widget>[
-                if (capabilities.canReport)
-                  AppReportActionButton.preview(
+                AppAccessGate(
+                  requirement: housekeepingReportRequirement,
+                  child: AppReportActionButton.preview(
                     label: l10n.housekeepingReportSummaryAction,
                     onPressed: () => _showReportPreviewDialog(context, state),
                   ),
+                ),
               ],
-              primaryAction: _primaryActionButton(l10n, capabilities, state),
+              primaryAction: _primaryActionButton(
+                l10n,
+                capabilities,
+                state,
+                activeSection,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -191,18 +223,19 @@ class _HousekeepingWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _HousekeepingWorklistPanel(
-              state: state,
-              section: _section,
-              capabilities: capabilities,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              onItemSelected: (HousekeepingWorkItem item) {
-                unawaited(
-                  _openTaskDetailDialog(context, ref, item, capabilities),
-                );
-              },
-            ),
+            if (canShowCurrentSection)
+              _HousekeepingWorklistPanel(
+                state: state,
+                section: activeSection,
+                capabilities: capabilities,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                onItemSelected: (HousekeepingWorkItem item) {
+                  unawaited(
+                    _openTaskDetailDialog(context, ref, item, capabilities),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -211,10 +244,11 @@ class _HousekeepingWorkspaceContentState
 
   Widget? _primaryActionButton(
     AppLocalizations l10n,
-    _HousekeepingCapabilities capabilities,
+    HousekeepingCapabilities capabilities,
     HousekeepingWorkspaceState state,
+    HousekeepingSection section,
   ) {
-    return switch (_section) {
+    return switch (section) {
       HousekeepingSection.tasks => capabilities.canManage
           ? AppTabToolbarPrimary(
               label: l10n.housekeepingCreateTaskAction,
@@ -231,6 +265,9 @@ class _HousekeepingWorkspaceContentState
               onPressed: () => _showScheduleDialog(context, ref, state),
             )
           : null,
+      // Source inventory: Request maintenance uses canUpdateTasks (manage or
+      // housekeeper + read). Matrix create ∩ write is covered by canManage;
+      // housekeeper path is intentional source mapping.
       HousekeepingSection.maintenance => capabilities.canUpdateTasks
           ? AppTabToolbarPrimary(
               label: l10n.housekeepingRequestMaintenanceAction,
@@ -296,7 +333,7 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
 
   final HousekeepingWorkspaceState state;
   final HousekeepingSection section;
-  final _HousekeepingCapabilities capabilities;
+  final HousekeepingCapabilities capabilities;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HousekeepingWorkItem>
   columnVisibilityController;
@@ -418,7 +455,7 @@ List<AppListTableColumn<HousekeepingWorkItem>> _columnsForSection(
   BuildContext context,
   AppLocalizations l10n,
   HousekeepingSection section,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   switch (section) {
     case HousekeepingSection.tasks:
@@ -434,7 +471,7 @@ List<AppListTableColumn<HousekeepingWorkItem>> _columnChoicesForSection(
   BuildContext context,
   AppLocalizations l10n,
   HousekeepingSection section,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   switch (section) {
     case HousekeepingSection.tasks:
@@ -455,7 +492,7 @@ List<AppListTableColumn<HousekeepingWorkItem>> _columnChoicesForSection(
 
 List<AppListTableColumn<HousekeepingWorkItem>> _taskColumns(
   AppLocalizations l10n,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   return <AppListTableColumn<HousekeepingWorkItem>>[
     _housekeepingTaskColumn(l10n),
@@ -468,7 +505,7 @@ List<AppListTableColumn<HousekeepingWorkItem>> _taskColumns(
 
 List<AppListTableColumn<HousekeepingWorkItem>> _scheduleColumns(
   AppLocalizations l10n,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   return <AppListTableColumn<HousekeepingWorkItem>>[
     _housekeepingScheduleColumn(l10n),
@@ -481,7 +518,7 @@ List<AppListTableColumn<HousekeepingWorkItem>> _scheduleColumns(
 
 List<AppListTableColumn<HousekeepingWorkItem>> _maintenanceColumns(
   AppLocalizations l10n,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   return <AppListTableColumn<HousekeepingWorkItem>>[
     _housekeepingRequestColumn(l10n),
@@ -690,7 +727,7 @@ AppListTableColumn<HousekeepingWorkItem> _housekeepingStatusColumn(
 
 AppListTableColumn<HousekeepingWorkItem> _housekeepingNextActionColumn(
   AppLocalizations l10n,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   return AppListTableColumn<HousekeepingWorkItem>(
     id: 'next_action',
@@ -726,7 +763,7 @@ class _HousekeepingNextActionCell extends ConsumerWidget {
   });
 
   final HousekeepingWorkItem item;
-  final _HousekeepingCapabilities capabilities;
+  final HousekeepingCapabilities capabilities;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -759,7 +796,7 @@ class _HousekeepingNextActionCell extends ConsumerWidget {
 bool Function(HousekeepingWorkItem, String) _housekeepingSearchMatcher(
   BuildContext context,
   HousekeepingSection section,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   final AppLocalizations l10n = context.l10n;
   return (HousekeepingWorkItem item, String query) {
@@ -780,7 +817,7 @@ bool _matchesHousekeepingSearch(
   String query,
   HousekeepingSection section,
   AppLocalizations l10n,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   final String needle = query.trim().toLowerCase();
   if (needle.isEmpty) {
@@ -813,7 +850,7 @@ Future<void> _handleHousekeepingNextAction(
   BuildContext context,
   WidgetRef ref,
   HousekeepingWorkItem item,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) async {
   final _HousekeepingNextActionKind kind = _nextActionKind(
     item,
@@ -856,7 +893,7 @@ Future<void> _openTaskDetailDialog(
   BuildContext context,
   WidgetRef ref,
   HousekeepingWorkItem item,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) async {
   ref.read(housekeepingWorkspaceControllerProvider.notifier).selectItem(item);
   await showAppDialog<void>(
@@ -988,7 +1025,7 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
   });
 
   final HousekeepingWorkspaceState state;
-  final _HousekeepingCapabilities capabilities;
+  final HousekeepingCapabilities capabilities;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1064,7 +1101,7 @@ class _DetailActions extends ConsumerWidget {
 
   final HousekeepingWorkItem item;
   final bool isSaving;
-  final _HousekeepingCapabilities capabilities;
+  final HousekeepingCapabilities capabilities;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1919,39 +1956,6 @@ List<AppSelectOption<String>> _selectOptions(
 }
 
 // ---------------------------------------------------------------------------
-// Capabilities
-// ---------------------------------------------------------------------------
-
-_HousekeepingCapabilities _capabilities(AppAccessPolicy policy) {
-  final bool isHousekeepingRole =
-      policy.hasRole(AppRole.houseKeeper) ||
-      policy.hasRole(AppRole.housekeepingManager);
-  final bool canManage =
-      policy.grants(AppPermissions.operationsWrite) ||
-      policy.hasRole(AppRole.operations) ||
-      policy.hasRole(AppRole.housekeepingManager);
-  return _HousekeepingCapabilities(
-    canManage: canManage,
-    canUpdateTasks: canManage || isHousekeepingRole,
-    canReport:
-        policy.grants(AppPermissions.reportsRead) ||
-        policy.grants(AppPermissions.operationsRead),
-  );
-}
-
-final class _HousekeepingCapabilities {
-  const _HousekeepingCapabilities({
-    required this.canManage,
-    required this.canUpdateTasks,
-    required this.canReport,
-  });
-
-  final bool canManage;
-  final bool canUpdateTasks;
-  final bool canReport;
-}
-
-// ---------------------------------------------------------------------------
 // Label / icon helpers
 // ---------------------------------------------------------------------------
 
@@ -2055,7 +2059,7 @@ String _nextActionLabel(
 
 _HousekeepingNextActionKind _nextActionKind(
   HousekeepingWorkItem item,
-  _HousekeepingCapabilities capabilities,
+  HousekeepingCapabilities capabilities,
 ) {
   if (item.isSchedule) {
     return _HousekeepingNextActionKind.review;

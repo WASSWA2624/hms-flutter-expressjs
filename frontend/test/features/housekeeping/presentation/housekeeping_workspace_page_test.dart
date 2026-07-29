@@ -116,7 +116,11 @@ AppAccessPolicy _housekeepingWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['HOUSEKEEPING_MANAGER']),
+      user: const AuthUserProfile(
+        roles: <String>['HOUSEKEEPING_MANAGER'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
       permissions: <AppPermission>{
         AppPermissions.operationsRead,
         AppPermissions.operationsWrite,
@@ -128,6 +132,7 @@ AppAccessPolicy _housekeepingWritePolicy() {
           licenseStatus: 'ACTIVE',
         ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -136,7 +141,11 @@ AppAccessPolicy _housekeepingReadOnlyPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['VIEWER']),
+      user: const AuthUserProfile(
+        roles: <String>['VIEWER'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
       permissions: <AppPermission>{AppPermissions.operationsRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
@@ -144,6 +153,7 @@ AppAccessPolicy _housekeepingReadOnlyPolicy() {
           licenseStatus: 'ACTIVE',
         ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }

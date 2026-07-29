@@ -272,8 +272,14 @@ abstract final class RouteAccessCatalog {
     requirement: operationsEntry,
   );
 
+  /// Route entry matches [AppRoutes.housekeeping]: ∪ `operations:read` |
+  /// `operations:write` + facilities-maintenance + facility context.
+  /// Unique shell domain stays `housekeeping` via [entryPermission].
   static const AccessRequirement housekeepingEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.housekeepingRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
     activeModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );
