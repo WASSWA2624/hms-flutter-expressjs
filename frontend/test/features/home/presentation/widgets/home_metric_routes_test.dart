@@ -128,6 +128,131 @@ void main() {
       );
     });
 
+    test('doctor secondary cards navigate when grants and modules allow', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['CUSTOM'],
+          ),
+          permissions: const <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.radiologyRead,
+            AppPermissions.pharmacyRead,
+            AppPermissions.emergencyRead,
+            AppPermissions.rosterRead,
+            AppPermissions.hrRead,
+          ],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'radiology-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'pharmacy-dispensing',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'scheduling-queue',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'radiology_pending',
+            label: 'Radiology results',
+            value: 1,
+            requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.radiology,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'prescriptions_pending',
+            label: 'Prescriptions pending',
+            value: 2,
+            requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.pharmacy,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'emergency_cases_today',
+            label: 'Emergency calls',
+            value: 1,
+            requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.emergency,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'shifts_today',
+            label: 'My schedule',
+            value: 1,
+            requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.hr,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'prescriptions_pending',
+            label: 'Prescriptions pending',
+            value: 2,
+            requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+          ),
+          policy: AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'access-token'),
+              user: const AuthUserProfile(
+                tenantId: 'tenant-1',
+                facilityId: 'facility-1',
+                roles: <String>['CUSTOM'],
+              ),
+              permissions: const <AppPermission>[AppPermissions.clinicalRead],
+              moduleEntitlements: const <AppModuleEntitlement>[
+                AppModuleEntitlement(
+                  code: 'pharmacy-dispensing',
+                  licenseStatus: 'ACTIVE',
+                ),
+              ],
+              isAuthorizationHydrated: true,
+            ),
+          ),
+        ),
+        isNull,
+      );
+    });
+
     test('pharmacist profile cards navigate to pharmacy workspace', () {
       final HomeDashboardProfile profile = homeProfileForRole(
         AppRole.pharmacist,

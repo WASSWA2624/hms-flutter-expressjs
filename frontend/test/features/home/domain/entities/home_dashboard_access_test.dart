@@ -225,6 +225,116 @@ void main() {
       expect(_cardIds(filtered), contains('assigned'));
     });
 
+    test(
+      'doctor secondary atoms require radiology/pharmacy/emergency/roster grants',
+      () {
+        final AppAccessPolicy clinicalLabOnly = _policy(
+          roles: <String>['CUSTOM_CLINICIAN'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+          ],
+        );
+        final AppAccessPolicy withSecondary = _policy(
+          roles: <String>['CUSTOM_CLINICIAN'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+            AppPermissions.radiologyRead,
+            AppPermissions.pharmacyRead,
+            AppPermissions.emergencyRead,
+            AppPermissions.rosterRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+
+        final Set<String> without = _cardIds(
+          filterHomeDashboardForAccess(
+            _dashboardForProfile(profile),
+            clinicalLabOnly,
+          ),
+        );
+        expect(without, containsAll(<String>['assigned', 'results_pending_review']));
+        expect(without, isNot(contains('radiology_pending')));
+        expect(without, isNot(contains('prescriptions_pending')));
+        expect(without, isNot(contains('emergency_cases_today')));
+        expect(without, isNot(contains('shifts_today')));
+        expect(without, isNot(contains('pending_dispense')));
+
+        final Set<String> withAll = _cardIds(
+          filterHomeDashboardForAccess(
+            _dashboardForProfile(profile),
+            withSecondary,
+          ),
+        );
+        expect(
+          withAll,
+          containsAll(<String>[
+            'assigned',
+            'radiology_pending',
+            'prescriptions_pending',
+            'emergency_cases_today',
+            'shifts_today',
+          ]),
+        );
+        // pharmacy:read surfaces prescriptions_pending, not pharmacy:write dispense.
+        expect(withAll, isNot(contains('pending_dispense')));
+      },
+    );
+
+    test(
+      'pharmacy:read prescriptions_pending stays distinct from pharmacy:write dispense',
+      () {
+        final AppAccessPolicy readOnly = _policy(
+          roles: <String>['CUSTOM'],
+          permissions: <AppPermission>[AppPermissions.pharmacyRead],
+        );
+        final AppAccessPolicy write = _policy(
+          roles: <String>['CUSTOM'],
+          permissions: <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          ],
+        );
+        final HomeDashboard dashboard = HomeDashboard(
+          state: HomeDashboardLoadState.ready,
+          profile: homeProfileForRole(AppRole.doctor),
+          context: const HomeDashboardContext(),
+          statusCards: const <HomeStatusCard>[
+            HomeStatusCard(
+              id: 'prescriptions_pending',
+              label: 'Prescriptions pending',
+              value: 3,
+              requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+            ),
+            HomeStatusCard(
+              id: 'pending_dispense',
+              label: 'Pending dispense',
+              value: 2,
+              requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
+            ),
+          ],
+          trend: HomeDashboardTrend.empty,
+          distribution: HomeDashboardDistribution.empty,
+          quickActionIds: const <String>[],
+          shortcutIds: const <String>[],
+          queuePreview: const <HomeQueueItem>[],
+          alerts: const <HomeAlertItem>[],
+          activity: const <HomeActivityItem>[],
+          tenantOptions: const <HomeTenantOption>[],
+        );
+
+        expect(
+          _cardIds(filterHomeDashboardForAccess(dashboard, readOnly)),
+          <String>{'prescriptions_pending'},
+        );
+        expect(
+          _cardIds(filterHomeDashboardForAccess(dashboard, write)),
+          <String>{'prescriptions_pending', 'pending_dispense'},
+        );
+      },
+    );
+
     test('actions and shortcuts omit unauthorized ids', () {
       final AppAccessPolicy policy = _policy(
         roles: <String>['CUSTOM'],

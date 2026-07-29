@@ -901,12 +901,47 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       },
     };
 
+    // Dashboard.md §4 secondary atoms — live provider / facility sources only.
+    const providerPharmacyPendingWhere = {
+      ...pharmacyOrderWhere,
+      status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] },
+      encounter: {
+        is: {
+          deleted_at: null,
+          provider_user_id: providerUserId,
+          ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+          ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        },
+      },
+    };
+    const shiftScope = directScope(scope, { includeTenant: true, includeFacility: true });
+    const providerShiftWhereToday = {
+      ...shiftScope,
+      start_time: { gte: todayStart, lt: endOfToday },
+      assignments: {
+        some: {
+          deleted_at: null,
+          staff_profile: {
+            is: {
+              deleted_at: null,
+              user_id: providerUserId,
+              ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+            },
+          },
+        },
+      },
+    };
+
     const [
       assigned,
       inProgress,
       completed,
       resultsPendingReview,
+      radiologyPending,
       followUpsDue,
+      prescriptionsPending,
+      emergencyCasesToday,
+      shiftsToday,
     ] = await Promise.all([
       prisma.appointment.count({ where: providerTodayWhere }),
       prisma.appointment.count({ where: { ...providerWhere, status: 'IN_PROGRESS' } }),
@@ -917,11 +952,19 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           scheduled_start: { gte: todayStart, lt: endOfToday },
         },
       }),
-      Promise.all([
-        prisma.lab_result.count({ where: providerReleasedLabWhere }),
-        prisma.radiology_result.count({ where: providerRadiologyReadyWhere }),
-      ]).then(([labCount, radiologyCount]) => labCount + radiologyCount),
+      // Lab Results Awaiting Review (Dashboard.md §4 → lab:read)
+      prisma.lab_result.count({ where: providerReleasedLabWhere }),
+      // Radiology Results (Dashboard.md §4 → radiology:read)
+      prisma.radiology_result.count({ where: providerRadiologyReadyWhere }),
       prisma.follow_up.count({ where: followUpWhere }),
+      // Prescriptions Pending (Dashboard.md §4 → pharmacy:read)
+      prisma.pharmacy_order.count({ where: providerPharmacyPendingWhere }),
+      // Emergency Calls (Dashboard.md §4 → emergency:read)
+      prisma.emergency_case.count({
+        where: { ...emergencyCaseWhere, created_at: { gte: todayStart } },
+      }),
+      // My Schedule (Dashboard.md §4 → roster:read)
+      prisma.shift.count({ where: providerShiftWhereToday }),
     ]);
 
     return {
@@ -930,7 +973,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         inProgress,
         completed,
         resultsPendingReview,
+        radiologyPending,
         followUpsDue,
+        prescriptionsPending,
+        emergencyCasesToday,
+        shiftsToday,
       },
       trendDates: await selectDateSeries(
         prisma.appointment,

@@ -675,12 +675,37 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'in_progress', label: 'Consultations in progress', value: metrics.inProgress || 0, required_permissions: ['clinical:read'] },
       {
         id: 'results_pending_review',
-        label: 'Results to review',
+        label: 'Lab results to review',
         value: metrics.resultsPendingReview || 0,
         required_permissions: ['lab:read'],
       },
       { id: 'follow_ups_due', label: 'Follow-ups due', value: metrics.followUpsDue || 0, required_permissions: ['clinical:read'] },
       { id: 'completed', label: 'Completed today', value: metrics.completed || 0, required_permissions: ['clinical:read'] },
+      // Dashboard.md §4 — secondary atoms with live provider/facility sources.
+      {
+        id: 'radiology_pending',
+        label: 'Radiology results',
+        value: metrics.radiologyPending || 0,
+        required_permissions: ['radiology:read'],
+      },
+      {
+        id: 'prescriptions_pending',
+        label: 'Prescriptions pending',
+        value: metrics.prescriptionsPending || 0,
+        required_permissions: ['pharmacy:read'],
+      },
+      {
+        id: 'emergency_cases_today',
+        label: 'Emergency calls',
+        value: metrics.emergencyCasesToday || 0,
+        required_permissions: ['emergency:read'],
+      },
+      {
+        id: 'shifts_today',
+        label: 'My schedule',
+        value: metrics.shiftsToday || 0,
+        required_permissions: ['roster:read'],
+      },
     ];
   }
 

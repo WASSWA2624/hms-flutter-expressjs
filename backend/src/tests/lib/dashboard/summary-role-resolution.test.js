@@ -196,6 +196,50 @@ describe('per-card required_permissions (Dashboard.md)', () => {
     );
   });
 
+  it('emits doctor secondary Dashboard.md atoms with per-card permissions', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.DOCTOR, {
+      assigned: 3,
+      inProgress: 1,
+      resultsPendingReview: 2,
+      radiologyPending: 4,
+      prescriptionsPending: 5,
+      emergencyCasesToday: 1,
+      shiftsToday: 2,
+      followUpsDue: 0,
+      completed: 1,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'results_pending_review',
+          required_permissions: ['lab:read'],
+          value: 2,
+        }),
+        expect.objectContaining({
+          id: 'radiology_pending',
+          required_permissions: ['radiology:read'],
+          value: 4,
+        }),
+        expect.objectContaining({
+          id: 'prescriptions_pending',
+          required_permissions: ['pharmacy:read'],
+          value: 5,
+        }),
+        expect.objectContaining({
+          id: 'emergency_cases_today',
+          required_permissions: ['emergency:read'],
+          value: 1,
+        }),
+        expect.objectContaining({
+          id: 'shifts_today',
+          required_permissions: ['roster:read'],
+          value: 2,
+        }),
+      ])
+    );
+  });
+
   it('gates biomed work orders on biomed:write and ambulance fleet_out on operations:read', () => {
     const biomed = metricsToRoleSummary(ROLE_PACKS.BIOMED, {
       openWorkOrders: 3,

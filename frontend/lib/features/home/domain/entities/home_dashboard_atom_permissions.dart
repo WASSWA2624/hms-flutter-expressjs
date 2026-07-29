@@ -48,8 +48,10 @@ abstract final class HomeDashboardAtomPermissions {
         'follow_ups_due': <AppPermission>[AppPermissions.clinicalRead],
         'completed': <AppPermission>[AppPermissions.clinicalRead],
         'critical_labs': <AppPermission>[AppPermissions.labRead],
-        // Gap: radiology_results / prescriptions_pending / emergency_calls /
-        // my_schedule — no dedicated doctor KPI payloads yet.
+        // radiology_pending / emergency_cases_today / shifts_today shared ids —
+        // declared on doctor templates + nurse/HR packs with matching keys.
+        'prescriptions_pending': <AppPermission>[AppPermissions.pharmacyRead],
+        // Gap: recent clinical notes as a named KPI — no dedicated metric yet.
 
         // Nurse (Dashboard.md §5)
         'inpatient_flow': <AppPermission>[AppPermissions.clinicalRead],

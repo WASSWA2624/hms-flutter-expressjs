@@ -47,6 +47,11 @@ HomeMetricNavigation? homeMetricNavigation({
             const <String, String>{},
       );
     }
+    // Department / clinical packs declare routes explicitly — do not fall
+    // through to the HR workspace when the mapped shell route is denied.
+    if (profile.id != 'hr') {
+      return null;
+    }
   }
   final HomeMetricRouteTarget? target = profile.metricRouteTargets[card.id];
   if (target == null) {
@@ -94,6 +99,15 @@ AppRouteData? _clinicalMetricRoute({
         AppRoutes.clinical,
       'results_pending_review' when policy.grants(AppPermissions.labRead) =>
         AppRoutes.lab,
+      'radiology_pending' when policy.grants(AppPermissions.radiologyRead) =>
+        AppRoutes.radiology,
+      'prescriptions_pending' when policy.grants(AppPermissions.pharmacyRead) =>
+        AppRoutes.pharmacy,
+      'emergency_cases_today'
+          when policy.grants(AppPermissions.emergencyRead) =>
+        AppRoutes.emergency,
+      'shifts_today' when policy.grants(AppPermissions.rosterRead) =>
+        AppRoutes.hr,
       _ => null,
     };
   }

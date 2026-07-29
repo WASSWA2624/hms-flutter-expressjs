@@ -269,10 +269,31 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.labRead],
       ),
       HomeStatusCardTemplate(
+        id: 'radiology_pending',
+        label: 'Radiology results',
+        requiredPermissions: <AppPermission>[AppPermissions.radiologyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'prescriptions_pending',
+        label: 'Prescriptions pending',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'emergency_cases_today',
+        label: 'Emergency calls',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'shifts_today',
+        label: 'My schedule',
+        requiredPermissions: <AppPermission>[AppPermissions.rosterRead],
+      ),
+      HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
         requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
+      // Gap: recent clinical notes as a named KPI — no dedicated metric yet.
     ],
     quickActionIds: <String>[
       'continue_consultation',
@@ -286,6 +307,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'emergency',
       'lab',
       'radiology',
+      'pharmacy',
       'ipd',
     ],
     emptyActionIds: const <String>[],
@@ -294,6 +316,10 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'in_progress': HomeMetricRouteTarget(),
       'results_pending_review': HomeMetricRouteTarget(),
       'follow_ups_due': HomeMetricRouteTarget(),
+      'radiology_pending': HomeMetricRouteTarget(),
+      'prescriptions_pending': HomeMetricRouteTarget(),
+      'emergency_cases_today': HomeMetricRouteTarget(),
+      'shifts_today': HomeMetricRouteTarget(),
     },
   ),
   AppRole.nurse: HomeDashboardProfile(
@@ -1662,6 +1688,11 @@ List<HomeStatusCardTemplate> _prioritizeCrossDomainCards(
     'results_pending_review': 11,
     'orders_today': 12,
     'critical_results': 13,
+    // Doctor secondary atoms when granted onto clinical bases (Dashboard.md §4).
+    'radiology_pending': 14,
+    'prescriptions_pending': 15,
+    'emergency_cases_today': 16,
+    'shifts_today': 17,
   };
   final List<HomeStatusCardTemplate> sorted = cards.toList(growable: false);
   sorted.sort((HomeStatusCardTemplate left, HomeStatusCardTemplate right) {
