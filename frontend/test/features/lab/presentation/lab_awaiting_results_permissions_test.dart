@@ -118,7 +118,7 @@ void _stubWorkspace(
       ),
     );
   });
-  when(() => repository.collectSample(any())).thenAnswer((_) async {
+  when(() => repository.collectOrder(any(), any())).thenAnswer((_) async {
     return const Result<LabOrderWorkflow>.success(
       LabOrderWorkflow(
         order: _awaitingOrder,
@@ -205,6 +205,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const LabWorkbenchQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -528,7 +529,7 @@ void main() {
         tester,
         repository: repository,
         workbenchOverride: Result<LabWorkbenchBundle>.failure(
-          AppFailure.unexpected(message: 'workbench failed'),
+          AppFailure.network(),
         ),
       );
 
@@ -552,7 +553,7 @@ void main() {
       await tester.tap(find.text(l10n.labCollectSampleAction));
       await tester.pumpAndSettle();
 
-      verify(() => repository.collectSample(any())).called(1);
+      verify(() => repository.collectOrder(any(), any())).called(1);
       verify(() => repository.loadWorkbench(any())).called(greaterThan(0));
     });
 

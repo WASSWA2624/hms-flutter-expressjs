@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
@@ -298,22 +299,36 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         actions: workflows.isEmpty || isLoading
             ? const <Widget>[]
             : <Widget>[
-                AppReportActionButton.preview(
-                  label: l10n.labPreviewReportAction,
-                  enabled: !_isSaving,
-                  onPressed: () => _openPrintPreview(context, workflows),
+                AppAccessActionGate(
+                  requirement: labReportPreviewRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppReportActionButton.preview(
+                      label: l10n.labPreviewReportAction,
+                      enabled: isAllowed && !_isSaving,
+                      onPressed: isAllowed && !_isSaving
+                          ? () => _openPrintPreview(context, workflows)
+                          : null,
+                    );
+                  },
                 ),
                 if (workflows.length == 1 &&
                     canMutate &&
                     widget.onCreateAdditionalOrder != null)
-                  AppButton.secondary(
-                    label: l10n.labCreateAction,
-                    leadingIcon: Icons.add_circle_outline,
-                    enabled: !_isSaving,
-                    onPressed: () => widget.onCreateAdditionalOrder?.call(
-                      context,
-                      workflows.first,
-                    ),
+                  AppAccessActionGate(
+                    requirement: labWorkspaceWriteRequirement,
+                    builder: (BuildContext context, bool isAllowed) {
+                      return AppButton.secondary(
+                        label: l10n.labCreateAction,
+                        leadingIcon: Icons.add_circle_outline,
+                        enabled: isAllowed && !_isSaving,
+                        onPressed: isAllowed && !_isSaving
+                            ? () => widget.onCreateAdditionalOrder?.call(
+                                  context,
+                                  workflows.first,
+                                )
+                            : null,
+                      );
+                    },
                   ),
               ],
       ),

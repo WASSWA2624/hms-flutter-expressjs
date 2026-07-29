@@ -213,6 +213,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(),
                 storageKeyPrefix: 'lab_follow_ups',
+                readRequirement: LabFollowUpsAtomPermissions.tab,
+                writeRequirement: LabFollowUpsAtomPermissions.write,
               )
             else
               _LabWorklistPanel(

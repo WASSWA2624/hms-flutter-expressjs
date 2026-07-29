@@ -319,6 +319,10 @@ void main() {
         same(ipdBedManageRequirement),
       );
       expect(
+        IpdBedBoardAtomPermissions.nestedRead,
+        same(ipdWorkspaceReadRequirement),
+      );
+      expect(
         IpdBedBoardAtomPermissions.billingPanel,
         same(ipdBillingPanelReadRequirement),
       );

@@ -102,7 +102,7 @@ AccessRequirement labSectionTabRequirement(LabDeskSection section) {
     LabDeskSection.collection => LabAwaitingResultsAtomPermissions.tab,
     LabDeskSection.processing => labWorkspaceReadRequirement,
     LabDeskSection.verification => labWorkspaceReadRequirement,
-    LabDeskSection.critical => labWorkspaceReadRequirement,
+    LabDeskSection.critical => LabCriticalAtomPermissions.tab,
     LabDeskSection.completed => labWorkspaceReadRequirement,
   };
 }
@@ -112,6 +112,7 @@ AccessRequirement labStripCreateRequirement(LabDeskSection section) {
   return switch (section) {
     LabDeskSection.worklist => LabAllAtomPermissions.create,
     LabDeskSection.collection => LabAwaitingResultsAtomPermissions.create,
+    LabDeskSection.critical => LabCriticalAtomPermissions.create,
     LabDeskSection.followUps => labWorkspaceWriteRequirement,
     _ => labWorkspaceWriteRequirement,
   };
@@ -122,6 +123,7 @@ AccessRequirement labStripConfigureRequirement(LabDeskSection section) {
   return switch (section) {
     LabDeskSection.worklist => LabAllAtomPermissions.configure,
     LabDeskSection.collection => LabAwaitingResultsAtomPermissions.configure,
+    LabDeskSection.critical => LabCriticalAtomPermissions.configure,
     LabDeskSection.followUps => labConfigurationsWriteRequirement,
     _ => labConfigurationsWriteRequirement,
   };
@@ -153,6 +155,10 @@ bool canNotifyLabCritical(AppAccessPolicy policy) {
 
 bool canRequestLabFromClinical(AppAccessPolicy policy) {
   return labRequestFromClinicalWriteRequirement.isAllowed(policy);
+}
+
+bool canViewLabFollowUps(AppAccessPolicy policy) {
+  return LabFollowUpsAtomPermissions.tab.isAllowed(policy);
 }
 
 bool canReadLabFollowUps(AppAccessPolicy policy) {
@@ -352,11 +358,138 @@ bool canViewLabAwaitingResultsTab(AppAccessPolicy policy) {
   return LabAwaitingResultsAtomPermissions.tab.isAllowed(policy);
 }
 
-/// Follow-ups atom map stub (shared panel; gated for strip collapse).
+/// Atom → requirement map for Lab Critical (`/lab?section=critical`).
+///
+/// Inventory: `screens/lab.md` → Critical tab (critical values; notify /
+/// acknowledge). Nested cross-module matrix rows are _(n/a)_; request-from-
+/// clinical ∪ is [requestFromClinical] for reuse (not strip chrome). Clinician
+/// notify / acknowledge ∩ is [criticalNotify] (`lab:write` ∩ `clinical:read`).
+/// Result release verify stays ∩ `lab:write` so LAB_TECH can release; notify
+/// side-effect chrome uses [criticalNotify]. Readers with only `clinical:read`
+/// must not see config/create.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Critical strip tab / count | navigate | read ∩ `lab:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Orders view / Patients view toggle | navigate | read ∩ |
+/// | Create Lab Order (primary) | create | write ∩ `lab:write` |
+/// | Lab Configurations (secondary) | update | write ∩ |
+/// | Row select / Next action (Review critical) → result entry | read / navigate | read ∩ |
+/// | Detail Preview report | export / read | preview ∪ lab read\|write |
+/// | Detail Create additional order | create | write ∩ |
+/// | Detail Edit / Delete order | update / delete | write ∩ |
+/// | Workflow Collect / Receive / Verify / Reverse | update | write ∩ |
+/// | Bulk / item result save / submit / verify / reject / delete | create / update / delete | write ∩ |
+/// | Critical notify / acknowledge chrome | approve / update | lab:write ∩ clinical:read |
+/// | Nested configurations catalog enable | update | write ∩ |
+/// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
+/// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write |
+abstract final class LabCriticalAtomPermissions {
+  static const AccessRequirement tab = labWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = labWorkspaceReadRequirement;
+  static const AccessRequirement search = labWorkspaceReadRequirement;
+  static const AccessRequirement filters = labWorkspaceReadRequirement;
+  static const AccessRequirement settings = labWorkspaceReadRequirement;
+  static const AccessRequirement pagination = labWorkspaceReadRequirement;
+  static const AccessRequirement empty = labWorkspaceReadRequirement;
+  static const AccessRequirement loading = labWorkspaceReadRequirement;
+  static const AccessRequirement retry = labWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = labWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation = labWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = labWorkspaceReadRequirement;
+  static const AccessRequirement detail = labWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = labWorkspaceReadRequirement;
+  static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
+  static const AccessRequirement create = labWorkspaceWriteRequirement;
+  static const AccessRequirement update = labWorkspaceWriteRequirement;
+  static const AccessRequirement delete = labWorkspaceWriteRequirement;
+  static const AccessRequirement write = labWorkspaceWriteRequirement;
+  static const AccessRequirement configure = labConfigurationsWriteRequirement;
+  static const AccessRequirement previewReport = labReportPreviewRequirement;
+  static const AccessRequirement createAdditionalOrder =
+      labWorkspaceWriteRequirement;
+  static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
+  static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
+  static const AccessRequirement workflowMutate = labWorkspaceWriteRequirement;
+  static const AccessRequirement resultEntry = labWorkspaceWriteRequirement;
+  /// Clinician notify / acknowledge — ∩ `lab:write` + `clinical:read`.
+  static const AccessRequirement criticalNotify = labCriticalNotifyRequirement;
+  static const AccessRequirement acknowledge = labCriticalNotifyRequirement;
+  /// Nested cross-module write — matrix _(n/a)_ on Critical; reuse clinical ∪.
+  static const AccessRequirement requestFromClinical =
+      labRequestFromClinicalWriteRequirement;
+  static const AccessRequirement nestedWrite = labWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = labWorkspaceReadRequirement;
+  static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;
+  static const AccessRequirement routeEntry = labWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      labWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement read = labWorkspaceReadRequirement;
+}
+
+bool canViewLabCriticalTab(AppAccessPolicy policy) {
+  return LabCriticalAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Atom → requirement map for Lab Follow-ups (`/lab?section=follow-ups`).
+///
+/// Inventory: `screens/lab.md` → Follow-ups tab (`FollowUpWorklistPanel`).
+/// No Create Lab Order / Lab Configurations / Orders↔Patients strip actions on
+/// this tab. Nested result-entry / configurations / critical-notify chrome is
+/// **not** reachable from Follow-ups (matrix nested rows _(n/a)_). Shared panel
+/// defaults remain reception ∪; lab host overrides with these gates.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Follow-ups strip tab / count badge | navigate | read ∩ `lab:read` |
+/// | Search / Clear / Settings / columns | read chrome | read ∩ ([listChrome]) |
+/// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → Follow-up details | read | ([detail]) |
+/// | Detail Close (read-only footer) | progressive disclosure | ([close]) |
+/// | Reschedule follow-up | update | write ∩ ([reschedule]) |
+/// | Mark completed | update | write ∩ ([markCompleted]) |
+/// | Save follow-up (nested reschedule dialog) | update | write ∩ ([saveFollowUp]) |
+/// | Hard delete / void | delete | write ∩ ([delete]) — not mounted |
+/// | Create Lab Order / Configurations | create / update | absent on this tab |
+/// | Request-from-clinical / critical notify | nested write | _(n/a)_ — not reachable |
+/// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write ([routeEntry]) |
 abstract final class LabFollowUpsAtomPermissions {
   static const AccessRequirement tab = labFollowUpsRequirement;
   static const AccessRequirement listChrome = labFollowUpsRequirement;
+  static const AccessRequirement search = labFollowUpsRequirement;
+  static const AccessRequirement settings = labFollowUpsRequirement;
+  static const AccessRequirement empty = labFollowUpsRequirement;
+  static const AccessRequirement loading = labFollowUpsRequirement;
+  static const AccessRequirement retry = labFollowUpsRequirement;
+  /// Authorized success path after complete / reschedule (write-gated entry).
+  static const AccessRequirement success = labFollowUpsWriteRequirement;
+  /// Authorized form validation feedback (nested reschedule dialog).
+  static const AccessRequirement validation = labFollowUpsWriteRequirement;
+  static const AccessRequirement rowSelect = labFollowUpsRequirement;
+  static const AccessRequirement detail = labFollowUpsRequirement;
+  static const AccessRequirement close = labFollowUpsRequirement;
+  static const AccessRequirement create = labFollowUpsWriteRequirement;
+  static const AccessRequirement update = labFollowUpsWriteRequirement;
+  static const AccessRequirement delete = labFollowUpsWriteRequirement;
+  static const AccessRequirement reschedule = labFollowUpsWriteRequirement;
+  static const AccessRequirement markCompleted = labFollowUpsWriteRequirement;
+  static const AccessRequirement saveFollowUp = labFollowUpsWriteRequirement;
   static const AccessRequirement write = labFollowUpsWriteRequirement;
+  /// Nested cross-module — matrix _(n/a)_; documented for reuse only.
+  static const AccessRequirement requestFromClinical =
+      labRequestFromClinicalWriteRequirement;
+  static const AccessRequirement criticalNotify = labCriticalNotifyRequirement;
+  static const AccessRequirement nestedWrite = labFollowUpsWriteRequirement;
+  static const AccessRequirement nestedRead = labFollowUpsRequirement;
   static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;
   static const AccessRequirement routeEntry = labWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      labWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement read = labFollowUpsRequirement;
 }
