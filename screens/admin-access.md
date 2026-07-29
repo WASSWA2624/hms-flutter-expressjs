@@ -107,7 +107,7 @@ Helpers: `AccessAdminDirectoryAtomPermissions`, `canReadAccessAdminDirectory`, `
 
 | Atom | Kind | Gate |
 | --- | --- | --- |
-| Demo tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Demo tab | navigate / progressive-disclosure | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
 | Search / filters / columns / pagination | read chrome | read ∪ |
 | Empty / error / retry | read chrome | read ∪ |
 | Row select → demo user detail | read | read ∪ |
@@ -119,7 +119,7 @@ Helpers: `AccessAdminDirectoryAtomPermissions`, `canReadAccessAdminDirectory`, `
 | Detail Close | progressive-disclosure | read ∪ |
 | Nested cross-module | — | _(n/a)_ |
 
-Helpers: `AccessAdminDemoAtomPermissions`, `canReadAccessAdminDemo`, `canWriteAccessAdmin`, `canResetDemoPasswordAccessAdmin`. Same write gate as Directory. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`.
+Helpers: `AccessAdminDemoAtomPermissions`, `canReadAccessAdminDemo`, `canMutateAccessAdminDemo`, `canResetDemoPasswordAccessAdmin`. Same write gate as Directory. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin` / `canMutateAccessAdminDemo`. Workspace Demo panel write chrome uses `canMutateAccessAdminDemo`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
 
 ### Roles
 

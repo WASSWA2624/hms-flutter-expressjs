@@ -185,10 +185,17 @@ Future<AccessAdminItem?> openAccessAdminCreateUserDialog(
   }
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   // Directory/Demo create ∩: tenant:admin (+ elevated) and workspace canWrite.
-  if (!canMutateAccessAdminDirectory(
-    accessPolicy,
-    workspaceCanWrite: state.data.permissions.canWrite,
-  )) {
+  // Same write gate; panel-specific helpers keep inventory/AC tracing clear.
+  final bool canCreateUser = state.query.panel == AccessAdminPanel.demo
+      ? canMutateAccessAdminDemo(
+          accessPolicy,
+          workspaceCanWrite: state.data.permissions.canWrite,
+        )
+      : canMutateAccessAdminDirectory(
+          accessPolicy,
+          workspaceCanWrite: state.data.permissions.canWrite,
+        );
+  if (!canCreateUser) {
     return null;
   }
 

@@ -198,10 +198,15 @@ class _AccessAdminWorkspaceContentState
                         policy,
                         workspaceCanWrite: workspaceCanWrite,
                       )
-                    : canWriteAccessAdmin(
-                        policy,
-                        workspaceCanWrite: workspaceCanWrite,
-                      );
+                    : isDemoPanel
+                        ? canMutateAccessAdminDemo(
+                            policy,
+                            workspaceCanWrite: workspaceCanWrite,
+                          )
+                        : canWriteAccessAdmin(
+                            policy,
+                            workspaceCanWrite: workspaceCanWrite,
+                          );
     final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
       policy,
       workspaceCanWrite: workspaceCanWrite,

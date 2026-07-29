@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -74,6 +75,7 @@ AppAccessPolicy _policy({
   List<String> roles = const <String>['TENANT_ADMIN'],
   String? tenantId = 'tenant-1',
   String? facilityId = 'facility-1',
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -88,6 +90,7 @@ AppAccessPolicy _policy({
             AppPermissions.tenantAdmin,
             AppPermissions.facilityAdmin,
           },
+      moduleEntitlements: modules,
       isAuthorizationHydrated: true,
     ),
   );
@@ -197,6 +200,10 @@ void main() {
       expect(canReadAccessAdminDemo(facilityOnly), isTrue);
       expect(accessAdminDemoReadRequirement.isAllowed(facilityOnly), isTrue);
       expect(
+        AccessAdminDemoAtomPermissions.tab.isAllowed(facilityOnly),
+        isTrue,
+      );
+      expect(
         accessAdminAllowedPanels(facilityOnly).contains(AccessAdminPanel.demo),
         isTrue,
       );
@@ -229,18 +236,40 @@ void main() {
       );
       // Source canWrite may be true; matrix still requires tenant:admin.
       expect(
+        canMutateAccessAdminDemo(facilityOnly, workspaceCanWrite: true),
+        isFalse,
+      );
+      expect(
         canWriteAccessAdmin(facilityOnly, workspaceCanWrite: true),
         isFalse,
       );
       expect(accessAdminWriteRequirement.isAllowed(facilityOnly), isFalse);
+      expect(
+        AccessAdminDemoAtomPermissions.create.isAllowed(facilityOnly),
+        isFalse,
+      );
+      expect(
+        AccessAdminDemoAtomPermissions.update.isAllowed(facilityOnly),
+        isFalse,
+      );
+      expect(
+        AccessAdminDemoAtomPermissions.delete.isAllowed(facilityOnly),
+        isFalse,
+      );
     });
 
     test('∩ write: tenant:admin + workspace canWrite allows Demo write', () {
       final AppAccessPolicy tenant = _policy(
         permissions: <AppPermission>{AppPermissions.tenantAdmin},
       );
+      expect(canMutateAccessAdminDemo(tenant, workspaceCanWrite: true), isTrue);
+      expect(
+        canMutateAccessAdminDemo(tenant, workspaceCanWrite: false),
+        isFalse,
+      );
       expect(canWriteAccessAdmin(tenant, workspaceCanWrite: true), isTrue);
       expect(canWriteAccessAdmin(tenant, workspaceCanWrite: false), isFalse);
+      expect(AccessAdminDemoAtomPermissions.create.isAllowed(tenant), isTrue);
     });
 
     test('Demo reset requires write ∩ and backend reset flag', () {
@@ -285,11 +314,37 @@ void main() {
       expect(accessAdminDemoReadRequirement.isAllowed(noTenant), isFalse);
     });
 
+    test(
+      'subscription commercial modules do not gate admin keys (platform)',
+      () {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canReadAccessAdminDemo(tenant), isTrue);
+        expect(canMutateAccessAdminDemo(tenant, workspaceCanWrite: true), isTrue);
+        expect(accessAdminModuleLabel, 'access administration');
+        expect(accessAdminActiveModule, 'access_admin');
+      },
+    );
+
     test('Demo reuses shared AccessRequirement helpers (no second vocabulary)', () {
       expect(
         identical(
           accessAdminDemoReadRequirement,
           accessAdminWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDemoAtomPermissions.tab,
+          accessAdminDemoReadRequirement,
         ),
         isTrue,
       );
@@ -345,6 +400,13 @@ void main() {
       expect(
         AccessAdminDemoAtomPermissions.delete.allPermissions,
         AccessAdminDemoAtomPermissions.write.allPermissions,
+      );
+      expect(
+        identical(
+          AccessAdminDemoAtomPermissions.create,
+          accessAdminCreateRequirement,
+        ),
+        isTrue,
       );
     });
   });
@@ -469,6 +531,157 @@ void main() {
         expect(find.text('Demo Nurse'), findsWidgets);
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested write dialogs refuse open without Demo mutate ∩',
+      (WidgetTester tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final SharedPreferences preferences =
+            await SharedPreferences.getInstance();
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        AccessAdminItem? createResult = _demoUser;
+        final AccessAdminWorkspaceData data = _demoData(canWrite: true);
+        final AccessAdminWorkspaceState state = AccessAdminWorkspaceState(
+          data: data,
+          query: data.query,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              accessAdminRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(facilityOnly),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.light,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Consumer(
+                  builder: (BuildContext context, WidgetRef ref, _) {
+                    return TextButton(
+                      onPressed: () async {
+                        createResult = await openAccessAdminCreateUserDialog(
+                          context,
+                          ref,
+                          state,
+                        );
+                      },
+                      child: const Text('probe-demo-mutate'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('probe-demo-mutate'));
+        await tester.pumpAndSettle();
+
+        expect(createResult, isNull);
+        expect(find.byType(AppDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'desktop authorized reader: search chrome present, write absent (∪)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _demoData(canWrite: true),
+          viewport: const Size(1280, 900),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        expect(find.byType(AppListTable<AccessAdminItem>), findsOneWidget);
+        expect(find.text(l10n.accessAdminSearchHint), findsOneWidget);
+        expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
+        expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'detail Close remains for readers; Open HR when staffProfileId set',
+      (WidgetTester tester) async {
+        const AccessAdminItem linked = AccessAdminItem(
+          id: 'demo-hr',
+          resource: AccessAdminResource.demoUsers,
+          displayId: 'DEM-HR',
+          title: 'HR Linked Demo',
+          email: 'demo.hr@example.com',
+          status: 'ACTIVE',
+          facilityName: 'Main Campus',
+          isDemo: true,
+          staffProfileId: 'staff-1',
+        );
+        when(
+          () => repository.getUserDetail(
+            any(),
+            tenantId: any(named: 'tenantId'),
+            facilityId: any(named: 'facilityId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<AccessAdminUserDetail>.success(
+            AccessAdminUserDetail(item: linked),
+          ),
+        );
+
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _demoData(
+            canWrite: true,
+            items: const <AccessAdminItem>[linked],
+          ),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        table.onRowSelected!(linked);
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.commonCloseActionLabel), findsOneWidget);
+        expect(find.text(l10n.accessAdminOpenHrProfileAction), findsOneWidget);
+        expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+        expect(find.text(l10n.accessAdminActivateAction), findsNothing);
+        expect(
+          find.text(l10n.accessAdminResetDemoPasswordAction),
+          findsNothing,
+        );
       },
     );
 

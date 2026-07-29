@@ -334,7 +334,7 @@ abstract final class AccessAdminRolesAtomPermissions {
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → detail | read | read ∪ |
 /// | Create user | create | write ∩ + canWrite |
-/// | Activate / Deactivate | update | write ∩ + canWrite |
+/// | Activate / Deactivate (next-action / mobile trailing) | update | write ∩ + canWrite |
 /// | Reset demo password | update | write ∩ + canResetDemoPasswords |
 /// | Delete | delete | write ∩ (matrix; no delete UI on Demo today) |
 /// | Open HR profile | navigate | linked profile (nested n/a) |
@@ -343,7 +343,9 @@ abstract final class AccessAdminRolesAtomPermissions {
 ///
 /// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
 /// `tenant:admin` is applied via [canWriteAccessAdmin] /
-/// [canResetDemoPasswordAccessAdmin]. Same write gate as Directory.
+/// [canMutateAccessAdminDemo] / [canResetDemoPasswordAccessAdmin]. Same write
+/// gate as Directory. Assignable rights stay within actor ceiling /
+/// subscription (backend authoritative).
 abstract final class AccessAdminDemoAtomPermissions {
   static const AccessRequirement tab = accessAdminDemoReadRequirement;
   static const AccessRequirement listChrome = accessAdminDemoReadRequirement;
