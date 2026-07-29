@@ -125,9 +125,11 @@ class _SubscriptionsWorkspacePageState
           return;
         }
         _openedRouteDetailSignature = signature;
-        final bool canWrite = canWriteSubscriptions(
-          ref.read(appAccessPolicyProvider),
-        );
+        final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+        final bool canWrite =
+            item.resource == SubscriptionResource.subscriptionPlans
+            ? SubscriptionsPlansAtomPermissions.update.isAllowed(policy)
+            : canWriteSubscriptions(policy);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
