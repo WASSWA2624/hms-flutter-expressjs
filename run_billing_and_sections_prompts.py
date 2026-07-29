@@ -9,7 +9,7 @@ Processing rules:
 - Completed prompt iterations recorded in
   .run_billing_and_sections_prompts_state.json are skipped on resume; pass
   --force to clear state and re-run everything.
-- Model is set to Claude Fable 5 Thinking High (claude-fable-5-thinking-high).
+- Model is set to Composer 2.5 (composer-2.5).
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
-MODEL = "fable-5"
+MODEL = "composer-2.5"
 GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json", "screens")
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
