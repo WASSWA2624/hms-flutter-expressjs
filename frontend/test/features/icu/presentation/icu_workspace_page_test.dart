@@ -218,7 +218,8 @@ void main() {
     expect(find.textContaining('Transfers'), findsWidgets);
     expect(find.textContaining('Discharge ready'), findsWidgets);
     expect(find.textContaining('Ended stays'), findsWidgets);
-    expect(find.textContaining('All ICU'), findsWidgets);
+    // All ICU / Bed board / Follow-ups may sit in the tab-strip overflow.
+    expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Ada Active'), findsOneWidget);
     expect(find.text('Chris Critical'), findsOneWidget);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
