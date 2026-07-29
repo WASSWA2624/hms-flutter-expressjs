@@ -280,7 +280,9 @@ abstract final class BillingApprovalRequiredAtomPermissions {
 /// Awaiting payment tab atom → permission mapping (inventory + matrix).
 ///
 /// Record payment / receipt, refund, adjust, void, and send need `billing:write`.
-/// Deep link `action=pay` opens payment only when write-authorized. Matrix
+/// Deep link `action=pay` opens payment only when write-authorized. Approval
+/// nested holds need [approve] (`billing:write` ∩ `financial:approve`) — matrix
+/// alone lists write; source keeps the intersection when both apply. Matrix
 /// nested cross-module rows are _(n/a)_; Claims pending strip still uses
 /// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
 /// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
@@ -288,19 +290,19 @@ abstract final class BillingApprovalRequiredAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Awaiting payment tab | navigate | read ∩ `billing:read` |
-/// | Search / filters / columns | read chrome | read ∩ |
+/// | Search / filters / columns | read chrome | read ∩ ([listChrome]) |
 /// | Empty / error / retry | read chrome | read ∩ |
-/// | Row select → detail | read | read ∩ |
-/// | Close shift / Close day | update | write ∩ `billing:write` |
-/// | Next action Receive payment | create / update | write ∩ |
+/// | Row select → detail | read | read ∩ ([detail]) |
+/// | Close shift / Close day | update / delete | write ∩ `billing:write` ([close]) |
+/// | Next action Receive payment | create / update | write ∩ ([receivePayment]) |
 /// | Detail Receive payment / refund / adjust / void / send | CRUD | write ∩ |
 /// | Nested payment / refund / adjustment / send dialogs | create / update | write ∩ |
-/// | Deep link `action=pay` | create / update | write ∩ |
-/// | View ledger / financial panels | read | read ∩ |
-/// | Print / Download | export / read | document read ∩ |
-/// | Approve nested (other kinds) | approve | write ∩ financial:approve |
+/// | Deep link `action=pay` | create / update | write ∩ ([receivePayment]) |
+/// | View ledger / financial panels | read | read ∩ ([detail]) |
+/// | Print / Download | export / read | document read ∩ ([document]) |
+/// | Approve nested (other kinds) | approve | write ∩ financial:approve ([approve]) |
 /// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | read ∪ write ([routeEntry]) |
 abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;

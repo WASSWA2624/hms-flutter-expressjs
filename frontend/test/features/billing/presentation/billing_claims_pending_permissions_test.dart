@@ -157,7 +157,7 @@ void _stubRepository(
     () => repository.updatePreAuthorization(any(), any()),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(preAuthorization: _preAuthItem),
+      BillingMutationResult(claim: _preAuthItem),
     ),
   );
 }
@@ -234,6 +234,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
     registerFallbackValue(const BillingClaimActionDraft());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {

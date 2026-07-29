@@ -846,6 +846,28 @@ void main() {
         BillingAwaitingPaymentAtomPermissions.nestedWrite.isAllowed(writer),
         isTrue,
       );
+
+      final AppAccessPolicy approveOnly = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      // Source keeps billing:write ∩ financial:approve for approve atoms.
+      expect(
+        BillingAwaitingPaymentAtomPermissions.approve.isAllowed(approveOnly),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(
+          approveOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.routeEntry.isAllowed(approveOnly),
+        isTrue,
+      );
     });
 
     test('Overdue atom map reuses feature *Requirement helpers', () {

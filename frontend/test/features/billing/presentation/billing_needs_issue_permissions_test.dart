@@ -524,14 +524,17 @@ void main() {
         ),
       );
 
+      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
       await tester.ensureVisible(find.byTooltip('Close shift'));
       await tester.tap(find.byTooltip('Close shift'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppDialog), findsWidgets);
+      expect(
+        find.byType(AppDialog).evaluate().length,
+        greaterThan(dialogsBefore),
+      );
+      expect(find.byType(AppCurrencyAmountField), findsWidgets);
       expect(find.byType(AppTextField), findsWidgets);
-      expect(find.bySemanticsLabel('Expected amount'), findsWidgets);
-      expect(find.bySemanticsLabel('Actual amount'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
