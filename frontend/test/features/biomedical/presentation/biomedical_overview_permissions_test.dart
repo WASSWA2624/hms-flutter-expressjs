@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/biomedical/domain/repositories/biomedical_re
 import 'package:hosspi_hms/features/biomedical/presentation/biomedical_access.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
@@ -194,6 +195,14 @@ void main() {
       expect(BiomedicalOverviewAtomPermissions.update.isAllowed(reader), isFalse);
       expect(BiomedicalOverviewAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BiomedicalOverviewAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(
+        BiomedicalOverviewAtomPermissions.workOrderFollowUp.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BiomedicalOverviewAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
+      );
 
       await _pumpOverviewTab(
         tester,
@@ -234,6 +243,10 @@ void main() {
         },
       );
       expect(BiomedicalOverviewAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(
+        BiomedicalOverviewAtomPermissions.workOrderFollowUp.isAllowed(writer),
+        isTrue,
+      );
       expect(BiomedicalOverviewAtomPermissions.print.isAllowed(writer), isTrue);
 
       await _pumpOverviewTab(
@@ -252,6 +265,14 @@ void main() {
 
       expect(find.text('Schedule maintenance'), findsOneWidget);
       expect(find.text('Update work order'), findsOneWidget);
+      // Start WO is the row next-action — omitted from complementary detail.
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Start work order'),
+        ),
+        findsNothing,
+      );
       expect(find.text('Print report'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -415,6 +436,32 @@ void main() {
   );
 
   testWidgets(
+    'authorized Overview detail Schedule maintenance opens nested dialog',
+    (WidgetTester tester) async {
+      await _pumpOverviewTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Infusion pump repair'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schedule maintenance'), findsOneWidget);
+      await tester.tap(find.text('Schedule maintenance'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCHEDULE MAINTENANCE'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'empty authorized Overview still shows chrome and empty state',
     (WidgetTester tester) async {
       await _pumpOverviewTab(
@@ -429,6 +476,29 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No equipment records'), findsOneWidget);
       expect(find.byTooltip('Create work order'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'empty write-authorized Overview still omits create primary',
+    (WidgetTester tester) async {
+      await _pumpOverviewTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Create work order'), findsNothing);
+      expect(find.byTooltip('Register asset'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

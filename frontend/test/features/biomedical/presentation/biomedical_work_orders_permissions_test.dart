@@ -273,6 +273,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Update work order'), findsOneWidget);
+      expect(
+        BiomedicalWorkOrdersAtomPermissions.updateWorkOrder.isAllowed(writer),
+        isTrue,
+      );
       expect(find.text('Transfer location'), findsOneWidget);
       expect(find.text('Schedule maintenance'), findsOneWidget);
       expect(find.text('Print report'), findsOneWidget);
@@ -610,6 +614,34 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No equipment records'), findsOneWidget);
       expect(find.byTooltip('Create work order'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'empty write-authorized Work orders keeps Create work order primary',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.biomedRead,
+          AppPermissions.biomedWrite,
+        },
+      );
+      expect(
+        BiomedicalWorkOrdersAtomPermissions.createWorkOrder.isAllowed(writer),
+        isTrue,
+      );
+
+      await _pumpWorkOrdersTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Create work order'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

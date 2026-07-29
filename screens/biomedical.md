@@ -178,16 +178,18 @@ Work orders permission tests in `frontend/test/features/biomedical/presentation/
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; WO writes still mount.
 - [x] IN_PROGRESS: Return to service next-action ∩ denial / write ∪ presence; omitted from detail when next-action.
 - [x] Authorized Create WO dialog, validation (required fields), start-WO mutation sync.
-- [x] Empty / error-retry / loading→success, mobile+desktop, light+dark.
+- [x] Empty (read omits primary / write keeps Create work order) / error-retry / loading→success, mobile+desktop, light+dark.
+- [x] Detail Update WO maps to `BiomedicalWorkOrdersAtomPermissions.updateWorkOrder` (same ∪ write gate as create).
 
 Overview permission tests in `frontend/test/features/biomedical/presentation/biomedical_overview_permissions_test.dart`:
 
-- [x] ∩ denial: `biomed:read` without write omits write next-actions / detail writes / create primaries / print.
-- [x] Full write ∩ / source ∪: Work order follow-up next-action, detail writes, print mount; no Overview create primary.
+- [x] ∩ denial: `biomed:read` without write omits write next-actions / detail writes / create primaries / print; Filters/list chrome remain.
+- [x] Full write ∩ / source ∪: Work order follow-up next-action, detail writes, print mount; no Overview create primary; Start WO omitted from detail when next-action.
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Overview write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits Overview chrome; subscription strip without biomed module omits Overview.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; nested writes still mount.
-- [x] Authorized next-action mutation sync; empty/loading/error, mobile+desktop, light+dark.
+- [x] Authorized next-action mutation sync; nested Schedule maintenance dialog; empty write omits create primary.
+- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Compliance permission tests in `frontend/test/features/biomedical/presentation/biomedical_compliance_permissions_test.dart`:
 
