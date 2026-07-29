@@ -11,7 +11,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Approve / reject financial holds | `billingApprovalDecisionRequirement` (`billing:write` ∩ `financial:approve` ∩ `billing-payments`) |
 | Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
-| Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close/routeEntry) |
+| Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/submit/reconcile/preAuth/close/routeEntry) |
 | All atom map | `BillingAllAtomPermissions` (tab/list/detail/issue/receivePayment/refund/adjust/void/send/close/approve/claims/document) |
 | Awaiting payment atom map | `BillingAwaitingPaymentAtomPermissions` (tab/list/detail/receivePayment/refund/adjust/void/send/close/approve/claims) |
 | Overdue atom map | `BillingOverdueAtomPermissions` (tab/list/detail/receivePayment/adjust/waive/void/dunningSend/close) |
