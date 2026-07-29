@@ -194,22 +194,24 @@ abstract final class BiomedicalRegistryAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Overview tab | navigate | read ∩ `biomed:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Risk / status list columns (KPI-style) | read | read ∩ |
-/// | Empty / error / retry / loading | read chrome | read ∩ |
-/// | Row select → detail | read | read ∩ |
-/// | Next action Review | navigate / read | read ∩ |
-/// | Next action write (maintain / WO / …) | create / update | write ∪ source |
-/// | Detail complementary writes | create / update / delete | write ∪ source |
-/// | Print report | export | print (evidence:export ∩ …) |
+/// | Overview tab | navigate | [tab] read ∩ `biomed:read` |
+/// | Search / filters / columns / pagination | read chrome | [listChrome] |
+/// | Risk / status list columns (KPI-style) | read | [listChrome] |
+/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
+/// | Row select → detail | read | [detail] |
+/// | Next action Review record | navigate / read | [detail] |
+/// | Next action Work order follow-up (start) | update | [workOrderFollowUp] write ∪ source |
+/// | Next action other writes (PM / recall / …) | create / update | [write] / resource atom gates |
+/// | Detail complementary writes | create / update / delete | [nestedWrite] |
+/// | Print report | export | [export]/[print] (evidence:export ∩ …) |
 /// | Tab-strip primary | create | _(none on Overview)_ |
-/// | Nested mutation dialogs | create / update / delete | write ∪ source |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
+/// | Route entry (deep link) | navigate | [routeEntry]/[entry] read ∪ write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
 /// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
 /// Exports keep source ∩ `evidence:export` (matrix notes reports:read | evidence:export).
+/// Overview has no create primary (Work Orders owns Create WO).
 abstract final class BiomedicalOverviewAtomPermissions {
   static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;
@@ -218,6 +220,12 @@ abstract final class BiomedicalOverviewAtomPermissions {
   static const AccessRequirement update = biomedicalWorkspaceWriteRequirement;
   static const AccessRequirement delete = biomedicalWorkspaceWriteRequirement;
   static const AccessRequirement write = biomedicalWorkspaceWriteRequirement;
+  /// OPEN/PENDING work-order row next-action on Overview.
+  ///
+  /// Same ∪ write as [BiomedicalWorkOrdersAtomPermissions.startWorkOrder];
+  /// page wiring reuses that WO atom gate.
+  static const AccessRequirement workOrderFollowUp =
+      biomedicalWorkspaceWriteRequirement;
   static const AccessRequirement export = biomedicalWorkspacePrintRequirement;
   static const AccessRequirement print = biomedicalWorkspacePrintRequirement;
   static const AccessRequirement nestedWrite = biomedicalWorkspaceWriteRequirement;

@@ -343,6 +343,13 @@ void main() {
       );
       expect(
         identical(
+          BiomedicalOverviewAtomPermissions.workOrderFollowUp,
+          BiomedicalWorkOrdersAtomPermissions.startWorkOrder,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BiomedicalOverviewAtomPermissions.export,
           biomedicalWorkspacePrintRequirement,
         ),

@@ -374,6 +374,9 @@ class _BiomedicalWorkspaceContentState
           BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
         BiomedicalPanels.compliance =>
           BiomedicalComplianceAtomPermissions.recordCalibration,
+        // Overview / Analytics have no tab-strip primary; gate unused.
+        BiomedicalPanels.overview => BiomedicalOverviewAtomPermissions.create,
+        BiomedicalPanels.analytics => BiomedicalAnalyticsAtomPermissions.create,
         _ => biomedicalWriteRequirement,
       },
       builder: (BuildContext context, bool isAllowed) {
@@ -867,13 +870,17 @@ class _DetailActions extends ConsumerWidget {
       required _BiomedicalActionKind kind,
       required String label,
       required IconData icon,
+      AccessRequirement? requirement,
     }) {
       // Omit when this kind is the row next-action, or when the atom's
       // *Requirement (e.g. Support [logIncident]) denies the policy.
       if (kind == nextKind) {
         return null;
       }
-      if (!_nextActionWriteRequirement(kind).isAllowed(policy)) {
+      final AccessRequirement gate =
+          requirement ??
+          _writeRequirementForAction(kind, asset: asset);
+      if (!gate.isAllowed(policy)) {
         return null;
       }
       return AppButton.secondary(
@@ -909,6 +916,9 @@ class _DetailActions extends ConsumerWidget {
             ? l10n.biomedicalUpdateWorkOrderAction
             : l10n.biomedicalCreateWorkOrderAction,
         icon: Icons.build_outlined,
+        requirement: isWorkOrder
+            ? BiomedicalWorkOrdersAtomPermissions.updateWorkOrder
+            : BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
       ),
       if (isWorkOrder &&
           (workOrderStatus == 'OPEN' || workOrderStatus == 'PENDING'))
@@ -960,7 +970,7 @@ class _DetailActions extends ConsumerWidget {
         label: l10n.biomedicalDisposeTransferAction,
         icon: Icons.move_down_outlined,
       ),
-      if (biomedicalPrintRequirement.isAllowed(policy))
+      if (BiomedicalOverviewAtomPermissions.print.isAllowed(policy))
         AppReportActionButton.print(
           label: l10n.biomedicalPrintReportAction,
           onPressed: () => unawaited(_printBiomedicalReport(context, ref, asset)),
@@ -1128,7 +1138,10 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
     final _BiomedicalActionKind? actionKind = _nextActionKindForAsset(asset);
     final bool hasWriteAction =
         actionKind != null &&
-        _nextActionWriteRequirement(actionKind).isAllowed(policy);
+        _writeRequirementForAction(
+          actionKind,
+          asset: asset,
+        ).isAllowed(policy);
     final String label = hasWriteAction
         ? _nextActionLabel(l10n, asset)
         : l10n.biomedicalNextActionReview;
@@ -1170,9 +1183,11 @@ enum _BiomedicalActionKind {
 
 /// Maps row next-action / detail write kinds to feature `*AtomPermissions`.
 ///
-/// All branches resolve to the source ∪ write requirement (same as
+/// Branches resolve to the source ∪ write requirement (same effective gate as
 /// [BiomedicalWorkOrdersAtomPermissions.write]); named atom fields document
-/// which inventory control is gated.
+/// which inventory control is gated. Prefer
+/// [_writeRequirementForAction] when [asset] is known so Update WO uses
+/// [BiomedicalWorkOrdersAtomPermissions.updateWorkOrder].
 AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
   return switch (kind) {
     _BiomedicalActionKind.calibration ||
@@ -1185,8 +1200,7 @@ AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
     _BiomedicalActionKind.downtime => BiomedicalComplianceAtomPermissions.create,
     _BiomedicalActionKind.maintenance =>
       BiomedicalPreventiveAtomPermissions.performMaintenance,
-    // Create / Update WO share the same write ∪ requirement; named fields
-    // document Create (tab primary / complementary) vs Update (detail).
+    // Default Create WO; Update WO is selected via [_writeRequirementForAction].
     _BiomedicalActionKind.workOrder =>
       BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
     _BiomedicalActionKind.startWorkOrder =>
@@ -1201,6 +1215,20 @@ AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
     _BiomedicalActionKind.disposal =>
       BiomedicalRegistryAtomPermissions.write,
   };
+}
+
+/// Same as [_nextActionWriteRequirement], but maps existing work-order rows to
+/// [BiomedicalWorkOrdersAtomPermissions.updateWorkOrder] (create vs update
+/// verbs share the source ∪ write gate; named fields aid AC tracing).
+AccessRequirement _writeRequirementForAction(
+  _BiomedicalActionKind kind, {
+  BiomedicalAsset? asset,
+}) {
+  if (kind == _BiomedicalActionKind.workOrder &&
+      asset?.resource == BiomedicalResources.workOrders) {
+    return BiomedicalWorkOrdersAtomPermissions.updateWorkOrder;
+  }
+  return _nextActionWriteRequirement(kind);
 }
 
 BiomedicalWorkspaceState? _biomedicalStateFromAsync(
@@ -1221,7 +1249,7 @@ Future<void> _openActionDialog(
 }) async {
   final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
   // Belt-and-suspenders: nested write dialogs never open without the atom gate.
-  if (!_nextActionWriteRequirement(kind).isAllowed(policy)) {
+  if (!_writeRequirementForAction(kind, asset: asset).isAllowed(policy)) {
     return;
   }
   final bool? saved = await showAppDialog<bool>(
