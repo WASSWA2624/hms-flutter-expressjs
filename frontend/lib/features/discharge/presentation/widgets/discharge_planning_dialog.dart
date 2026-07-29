@@ -5,6 +5,8 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
@@ -513,35 +515,44 @@ class _RelatedRecordsSection extends StatelessWidget {
             ),
           ),
         if (detail.hasOpenPharmacyOrders && detail.hasOpenInvoices)
-          SizedBox(height: theme.spacing.md),
+          AppAccessGate(
+            requirement: billingReadRequirement,
+            child: SizedBox(height: theme.spacing.md),
+          ),
         if (detail.hasOpenInvoices)
-          AppWorkspaceDetailPanel(
-            title: l10n.dischargeBillingSectionTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (final DischargeRelatedRecord record
-                    in detail.invoices.where(
-                      (DischargeRelatedRecord item) => item.isOpenInvoice,
-                    ))
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.receipt_long_outlined, size: 20),
-                    title: Text(
-                      (record.title ?? '').trim().isNotEmpty
-                          ? record.title!.trim()
-                          : record.kind,
+          AppAccessGate(
+            requirement: billingReadRequirement,
+            child: AppWorkspaceDetailPanel(
+              title: l10n.dischargeBillingSectionTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final DischargeRelatedRecord record
+                      in detail.invoices.where(
+                        (DischargeRelatedRecord item) => item.isOpenInvoice,
+                      ))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 20,
+                      ),
+                      title: Text(
+                        (record.title ?? '').trim().isNotEmpty
+                            ? record.title!.trim()
+                            : record.kind,
+                      ),
+                      subtitle: Text(
+                        record.status ?? record.billingStatus ?? '',
+                      ),
+                      trailing: AppButton.tertiary(
+                        label: l10n.patientsActiveWorkContinueAction,
+                        enabled: enabled,
+                        onPressed: () => onResolve(AppRoutes.billing.path),
+                      ),
                     ),
-                    subtitle: Text(
-                      record.status ?? record.billingStatus ?? '',
-                    ),
-                    trailing: AppButton.tertiary(
-                      label: l10n.patientsActiveWorkContinueAction,
-                      enabled: enabled,
-                      onPressed: () => onResolve(AppRoutes.billing.path),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
       ],
@@ -584,11 +595,14 @@ class _ResolveLinksSection extends StatelessWidget {
             enabled: enabled,
             onPressed: () => onResolve(AppRoutes.pharmacy.path),
           ),
-          AppButton.tertiary(
-            label: l10n.dischargeOpenBillingAction,
-            leadingIcon: Icons.receipt_long_outlined,
-            enabled: enabled,
-            onPressed: () => onResolve(AppRoutes.billing.path),
+          AppAccessGate(
+            requirement: billingReadRequirement,
+            child: AppButton.tertiary(
+              label: l10n.dischargeOpenBillingAction,
+              leadingIcon: Icons.receipt_long_outlined,
+              enabled: enabled,
+              onPressed: () => onResolve(AppRoutes.billing.path),
+            ),
           ),
           if (admissionId.isNotEmpty)
             AppButton.tertiary(

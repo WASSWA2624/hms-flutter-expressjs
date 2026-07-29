@@ -1358,12 +1358,20 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     final ClinicalWorklistEntry entry = bundle.entry;
     final AppWorkspaceStatus primaryStatus = _entryStatus(entry);
     final ClinicalTriageHandoff? triageHandoff = bundle.triageHandoff;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canViewLabResults = canViewClinicalLabResultsPanel(accessPolicy);
+    final bool canViewRadiologyResults =
+        canViewClinicalRadiologyResultsPanel(accessPolicy);
     final bool canRecordVitalsFromWorkflow =
-        clinicalEncounterWriteRequirement.isAllowed(
-          ref.watch(appAccessPolicyProvider),
-        ) &&
+        clinicalEncounterWriteRequirement.isAllowed(accessPolicy) &&
         !entry.isTerminal &&
         clinicalOpdFlowApiId(entry) != null;
+    final List<AppClinicalResultPreviewEntry> previewEntries =
+        _clinicalResultsPreviewEntries(
+          bundle,
+          includeLaboratory: canViewLabResults,
+          includeRadiology: canViewRadiologyResults,
+        );
     final List<Widget> sections = <Widget>[
       _ClinicalEncounterContextPanel(
         entry: entry,
@@ -1396,8 +1404,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (triageHandoff?.hasTriageDetails ?? false)
         _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
       _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
-      if (_clinicalResultsPreviewEntries(bundle) case final previewEntries
-          when previewEntries.isNotEmpty)
+      if (previewEntries.isNotEmpty)
         AppWorkspaceDetailPanel(
           title: l10n.clinicalResultsChronologyTitle,
           actions: <Widget>[
@@ -1439,7 +1446,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
             ],
           ),
         ),
-      if (bundle.labOrders.isNotEmpty)
+      if (canViewLabResults && bundle.labOrders.isNotEmpty)
         ClinicalLabOrdersTablePanel(
           orders: bundle.labOrders,
           onEdit: (BuildContext context, ClinicalRelatedRecord order) =>
@@ -1516,7 +1523,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     },
                   ),
         ),
-      if (bundle.radiologyOrders.isNotEmpty)
+      if (canViewRadiologyResults && bundle.radiologyOrders.isNotEmpty)
         ClinicalRadiologyOrdersTablePanel(
           orders: bundle.radiologyOrders,
           onCancel: (BuildContext context, ClinicalRelatedRecord order) =>
@@ -3531,66 +3538,76 @@ bool _hasText(String? value) {
 }
 
 /// Lab and radiology result rows only — hide the timeline when none are ready.
+///
+/// [includeLaboratory] / [includeRadiology] enforce Results ready panel read
+/// gates ([ClinicalResultsReadyAtomPermissions.labResultsPanel] /
+/// [ClinicalResultsReadyAtomPermissions.radiologyResultsPanel]).
 List<AppClinicalResultPreviewEntry> _clinicalResultsPreviewEntries(
-  ClinicalEncounterBundle bundle,
-) {
+  ClinicalEncounterBundle bundle, {
+  bool includeLaboratory = true,
+  bool includeRadiology = true,
+}) {
   final List<AppClinicalResultPreviewEntry> entries =
       <AppClinicalResultPreviewEntry>[];
 
-  for (final ClinicalRelatedRecord order in bundle.labOrders) {
-    for (final ClinicalLabOrderItem item in order.labOrderItems) {
-      final String? value = _firstNonEmpty(<String?>[
-        item.resultValue,
-        item.resultText,
-      ]);
-      if (value == null) {
+  if (includeLaboratory) {
+    for (final ClinicalRelatedRecord order in bundle.labOrders) {
+      for (final ClinicalLabOrderItem item in order.labOrderItems) {
+        final String? value = _firstNonEmpty(<String?>[
+          item.resultValue,
+          item.resultText,
+        ]);
+        if (value == null) {
+          continue;
+        }
+        entries.add(
+          AppClinicalResultPreviewEntry(
+            id: item.id,
+            module: AppClinicalResultModule.laboratory,
+            title: item.displayTitle,
+            status: _clinicalResultStatusFromRecordStatus(
+              item.resultStatus ?? item.status ?? order.status,
+            ),
+            occurredAt: item.updatedAt ?? item.createdAt ?? order.occurredAt,
+            subtitle: item.displaySubtitle,
+            laboratory: AppClinicalLaboratoryResultContent(
+              value: value,
+              unit: item.unit,
+              flag: _clinicalResultFlagFromStatus(item.resultStatus),
+              flagLabel: item.resultStatus,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  if (includeRadiology) {
+    for (final ClinicalRelatedRecord order in bundle.radiologyOrders) {
+      final String status = (order.status ?? '').toUpperCase();
+      if (status != 'COMPLETED' && status != 'FINAL' && status != 'AMENDED') {
         continue;
       }
       entries.add(
         AppClinicalResultPreviewEntry(
-          id: item.id,
-          module: AppClinicalResultModule.laboratory,
-          title: item.displayTitle,
-          status: _clinicalResultStatusFromRecordStatus(
-            item.resultStatus ?? item.status ?? order.status,
-          ),
-          occurredAt: item.updatedAt ?? item.createdAt ?? order.occurredAt,
-          subtitle: item.displaySubtitle,
-          laboratory: AppClinicalLaboratoryResultContent(
-            value: value,
-            unit: item.unit,
-            flag: _clinicalResultFlagFromStatus(item.resultStatus),
-            flagLabel: item.resultStatus,
+          id: order.id,
+          module: AppClinicalResultModule.radiology,
+          title: order.title ?? order.id,
+          status: _clinicalResultStatusFromRecordStatus(order.status),
+          occurredAt: order.occurredAt,
+          subtitle: order.subtitle,
+          radiology: AppClinicalRadiologyReportContent(
+            reportText: order.subtitle,
+            modality: order.radiologyOrderItems.isEmpty
+                ? null
+                : order.radiologyOrderItems.first.modality,
+            bodyRegion: order.radiologyOrderItems.isEmpty
+                ? null
+                : order.radiologyOrderItems.first.bodyRegion,
           ),
         ),
       );
     }
-  }
-
-  for (final ClinicalRelatedRecord order in bundle.radiologyOrders) {
-    final String status = (order.status ?? '').toUpperCase();
-    if (status != 'COMPLETED' && status != 'FINAL' && status != 'AMENDED') {
-      continue;
-    }
-    entries.add(
-      AppClinicalResultPreviewEntry(
-        id: order.id,
-        module: AppClinicalResultModule.radiology,
-        title: order.title ?? order.id,
-        status: _clinicalResultStatusFromRecordStatus(order.status),
-        occurredAt: order.occurredAt,
-        subtitle: order.subtitle,
-        radiology: AppClinicalRadiologyReportContent(
-          reportText: order.subtitle,
-          modality: order.radiologyOrderItems.isEmpty
-              ? null
-              : order.radiologyOrderItems.first.modality,
-          bodyRegion: order.radiologyOrderItems.isEmpty
-              ? null
-              : order.radiologyOrderItems.first.bodyRegion,
-        ),
-      ),
-    );
   }
 
   return entries;

@@ -94,6 +94,9 @@ const AccessRequirement clinicalAdmissionWriteRequirement = AccessRequirement(
 );
 
 /// Discharge planning financial-clearance / Open billing nested read.
+///
+/// Aligns with [billingReadRequirement] (`billing:read` ∩ `billing-payments`);
+/// kept here so clinical atom maps do not import billing.
 const AccessRequirement clinicalDischargeFinancialReadRequirement =
     AccessRequirement(
       allPermissions: <AppPermission>[AppPermissions.billingRead],
@@ -284,4 +287,193 @@ abstract final class ClinicalFollowUpsAtomPermissions {
       clinicalFollowUpsWriteRequirement;
   static const AccessRequirement write = clinicalFollowUpsWriteRequirement;
   static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+/// Atom → requirement map for In consultation (`/clinical?section=in-consultation`).
+///
+/// Active outpatient consultation worklist; same encounter detail / action bar
+/// as All (richest nested writes). Inventory: `screens/clinical.md`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | In consultation tab | navigate | read ∩ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → encounter detail | read | read ∩ |
+/// | Next action Review encounter | navigate / read | read ∩ |
+/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
+/// | Detail Request lab | create / update | lab order ∪ |
+/// | Detail Request radiology | create / update | radiology order ∪ |
+/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request admission | create | admission ∪ |
+/// | Detail Print summary | export / read | read ∩ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
+/// | Diagnosis delete | delete | write ∪ source |
+/// | Discharge Open billing / financial | nested read | billing:read ∩ |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
+/// admission rows document prompt narrative ∪ (lab/radiology/pharmacy/
+/// operations), not matrix nested _(n/a)_.
+abstract final class ClinicalInConsultationAtomPermissions {
+  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addDiagnosis =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordProcedure =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement disposition =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
+  static const AccessRequirement requestRadiology =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement requestAdmission =
+      clinicalAdmissionWriteRequirement;
+  static const AccessRequirement printSummary =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nestedLabWrite =
+      clinicalLabOrderWriteRequirement;
+  static const AccessRequirement nestedRadiologyWrite =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement nestedPharmacyWrite =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement dischargeFinancialRead =
+      clinicalDischargeFinancialReadRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+/// Results ready tab atom → permission mapping (inventory + matrix).
+///
+/// Worklist `?section=results-ready`. Same outpatient encounter chrome as All;
+/// distinctive surfaces are results-ready chips, Results timeline, and lab /
+/// radiology order panels (prompt context: lab:read / radiology:read domain
+/// panels — matrix nested read _(n/a)_, so panel **read** stays ∩
+/// `clinical:read`; nested **writes** use prompt ∪ helpers).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Results ready tab | navigate | read ∩ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Results-ready summary chip / badge | read | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → encounter detail | read | read ∩ |
+/// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read ∩ |
+/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Detail Results timeline (lab rows) | read | [labResultsPanel] ∩ clinical:read |
+/// | Detail Results timeline (imaging rows) | read | [radiologyResultsPanel] ∩ clinical:read |
+/// | Detail Lab orders panel (data) | read | [labResultsPanel] |
+/// | Detail Radiology orders panel (data) | read | [radiologyResultsPanel] |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
+/// | Detail Request lab | create / update | lab order ∪ |
+/// | Detail Request radiology | create / update | radiology order ∪ |
+/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request admission | create | admission ∪ |
+/// | Detail Print summary | export / read | read ∩ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
+/// | Diagnosis delete | delete | write ∪ source |
+/// | Discharge Open billing / financial | nested read | billing:read ∩ |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
+/// admission rows document prompt ∪ (matrix nested write _(n/a)_).
+abstract final class ClinicalResultsReadyAtomPermissions {
+  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement resultsReadyChip =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement resultsTimeline =
+      clinicalWorkspaceReadRequirement;
+  /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a).
+  static const AccessRequirement labResultsPanel =
+      clinicalWorkspaceReadRequirement;
+  /// Imaging-domain results / orders panel (context radiology:read; nested n/a).
+  static const AccessRequirement radiologyResultsPanel =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addDiagnosis =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordProcedure =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement disposition =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
+  static const AccessRequirement requestRadiology =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement requestAdmission =
+      clinicalAdmissionWriteRequirement;
+  static const AccessRequirement printSummary =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nestedLabWrite =
+      clinicalLabOrderWriteRequirement;
+  static const AccessRequirement nestedRadiologyWrite =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement nestedPharmacyWrite =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement dischargeFinancialRead =
+      clinicalDischargeFinancialReadRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+bool canViewClinicalResultsReady(AppAccessPolicy policy) {
+  return ClinicalResultsReadyAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewClinicalLabResultsPanel(AppAccessPolicy policy) {
+  return ClinicalResultsReadyAtomPermissions.labResultsPanel.isAllowed(policy);
+}
+
+bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
+  return ClinicalResultsReadyAtomPermissions.radiologyResultsPanel.isAllowed(
+    policy,
+  );
 }
