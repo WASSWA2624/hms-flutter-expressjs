@@ -348,6 +348,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
               scope: FollowUpWorklistScope(),
               storageKeyPrefix: 'physiotherapy_follow_ups',
               readRequirement: physiotherapyWorkspaceReadRequirement,
+              writeRequirement: physiotherapyWorkspaceWriteRequirement,
             )
           else
             _buildWorklist(context, ref, controller, policy),
@@ -627,7 +628,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       isLoading: state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: _columns(context, locale, ref, policy),
+      columns: _columns(context, locale, ref),
       columnChoices: _optionalColumns(context, locale, policy),
       columnVisibilityController: columnVisibilityController,
       columnVisibilityStorageKey: 'physiotherapy_${section.name}',
@@ -670,8 +671,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
               label: _workspaceStatusForStatus(l10n, item.status).label,
             ),
             if (canViewPhysiotherapyBilling(policy) &&
-                item.billingStatus != null &&
-                item.billingStatus!.trim().isNotEmpty)
+                item.billingStatus.trim().isNotEmpty)
               AppListTableMobileMeta(
                 label: _billingLabel(l10n, item.billingStatus),
                 icon: Icons.price_check_outlined,
@@ -807,6 +807,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     final TherapyWorkItem item = detail.item;
     final TherapyNextActionKind omit =
         omitNextActionKind ?? therapyResolveNextActionKind(item);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool showBilling = canViewPhysiotherapyBilling(policy);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -836,12 +838,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
               value: _value(item.therapistName, l10n),
               icon: Icons.badge_outlined,
             ),
-            AppWorkspacePatientContextField(
-              label: l10n.physiotherapyBillingAuthorizationLabel,
-              value: _billingLabel(l10n, item.billingStatus),
-              icon: Icons.price_check_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-            ),
+            if (showBilling)
+              AppWorkspacePatientContextField(
+                label: l10n.physiotherapyBillingAuthorizationLabel,
+                value: _billingLabel(l10n, item.billingStatus),
+                icon: Icons.price_check_outlined,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
@@ -963,6 +966,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
   List<AppListTableColumn<TherapyWorkItem>> _optionalColumns(
     BuildContext context,
     Locale locale,
+    AppAccessPolicy policy,
   ) {
     final l10n = context.l10n;
     return <AppListTableColumn<TherapyWorkItem>>[
@@ -981,12 +985,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         cellBuilder: (BuildContext context, TherapyWorkItem item) =>
             Text(_attendanceLabel(l10n, item.attendanceStatus)),
       ),
-      AppListTableColumn<TherapyWorkItem>(
-        id: 'billing',
-        label: l10n.physiotherapyBillingColumnLabel,
-        cellBuilder: (BuildContext context, TherapyWorkItem item) =>
-            Text(_billingLabel(l10n, item.billingStatus)),
-      ),
+      if (canViewPhysiotherapyBilling(policy))
+        AppListTableColumn<TherapyWorkItem>(
+          id: 'billing',
+          label: l10n.physiotherapyBillingColumnLabel,
+          cellBuilder: (BuildContext context, TherapyWorkItem item) =>
+              Text(_billingLabel(l10n, item.billingStatus)),
+        ),
       AppListTableColumn<TherapyWorkItem>(
         id: 'therapist',
         label: l10n.physiotherapyTherapistColumnLabel,
@@ -1032,7 +1037,7 @@ class _ActionsPanel extends ConsumerWidget {
       permissionActions: <AppPermissionActionItem>[
         if (omit != TherapyNextActionKind.acceptReferral)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyAcceptReferralAction,
             icon: Icons.assignment_turned_in_outlined,
             isLoading: isSaving,
@@ -1053,7 +1058,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.scheduleSession && canSchedule)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyScheduleSessionAction,
             icon: Icons.event_available_outlined,
             isLoading: isSaving,
@@ -1085,7 +1090,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.recordAssessment)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyRecordAssessmentAction,
             icon: Icons.assignment_outlined,
             isLoading: isSaving,
@@ -1116,7 +1121,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.recordSession)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyRecordSessionAction,
             icon: Icons.directions_walk_outlined,
             isLoading: isSaving,
@@ -1145,7 +1150,7 @@ class _ActionsPanel extends ConsumerWidget {
           ),
         if (omit != TherapyNextActionKind.markAttendance && canMarkAttendance)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyMarkAttendanceAction,
             icon: Icons.fact_check_outlined,
             isLoading: isSaving,
@@ -1173,7 +1178,7 @@ class _ActionsPanel extends ConsumerWidget {
                   },
           ),
         AppPermissionActionItem(
-          requirement: _therapyWriteRequirement,
+          requirement: physiotherapyWorkspaceWriteRequirement,
           label: l10n.physiotherapyUpdatePlanAction,
           icon: Icons.playlist_add_check_outlined,
           isLoading: isSaving,
@@ -1202,7 +1207,7 @@ class _ActionsPanel extends ConsumerWidget {
                 },
         ),
         AppPermissionActionItem(
-          requirement: _therapyWriteRequirement,
+          requirement: physiotherapyWorkspaceWriteRequirement,
           label: l10n.physiotherapyAddProgressNoteAction,
           icon: Icons.note_add_outlined,
           isLoading: isSaving,
@@ -1220,7 +1225,7 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.scheduleFollowUp)
           AppPermissionActionItem(
-            requirement: _therapyWriteRequirement,
+            requirement: physiotherapyWorkspaceWriteRequirement,
             label: l10n.physiotherapyScheduleFollowUpAction,
             icon: Icons.notification_add_outlined,
             isLoading: isSaving,
@@ -1259,7 +1264,7 @@ class _ActionsPanel extends ConsumerWidget {
                   },
           ),
         AppPermissionActionItem(
-          requirement: _therapyWriteRequirement,
+          requirement: physiotherapyWorkspaceWriteRequirement,
           label: l10n.physiotherapyCloseEpisodeAction,
           icon: Icons.task_alt_outlined,
           isLoading: isSaving,
@@ -1277,7 +1282,7 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.printInstructions)
           AppPermissionActionItem(
-            requirement: _therapyReadRequirement,
+            requirement: physiotherapyWorkspaceReadRequirement,
             label: l10n.physiotherapyPrintInstructionsAction,
             icon: Icons.print_outlined,
             onPressed: () {

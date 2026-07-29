@@ -299,23 +299,6 @@ Future<void> _pumpPharmacyWorkspace(
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpAllOrdersWorkspace(
-  WidgetTester tester, {
-  required _MockPharmacyRepository repository,
-  required AppAccessPolicy accessPolicy,
-  Size physicalSize = const Size(1280, 800),
-  ThemeMode themeMode = ThemeMode.light,
-}) {
-  return _pumpPharmacyWorkspace(
-    tester,
-    repository: repository,
-    accessPolicy: accessPolicy,
-    physicalSize: physicalSize,
-    themeMode: themeMode,
-    initialLocation: '/pharmacy?section=all',
-  );
-}
-
 Future<void> _pumpPendingPaymentWorkspace(
   WidgetTester tester, {
   required _MockPharmacyRepository repository,

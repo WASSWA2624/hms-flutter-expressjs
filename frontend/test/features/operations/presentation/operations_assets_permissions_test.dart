@@ -622,12 +622,14 @@ void main() {
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
 
-      // Text fields in dialog: facility, asset search, location, issue, notes.
-      final Finder dialogFields = find.descendant(
-        of: find.byType(AppDialog),
+      final Finder issueField = find.descendant(
+        of: find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppTextField && widget.labelText == 'Issue',
+        ),
         matching: find.byType(TextFormField),
       );
-      await tester.enterText(dialogFields.at(3), 'Generator alarm');
+      await tester.enterText(issueField, 'Generator alarm');
       await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
