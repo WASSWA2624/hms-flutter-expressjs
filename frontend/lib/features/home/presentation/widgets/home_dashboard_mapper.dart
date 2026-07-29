@@ -173,26 +173,26 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               .toList(growable: false),
         )
       : const <DashboardWorklistItemData>[];
+  final List<DashboardQuickActionData> emptyActions = homeDashboardEmptyActions(
+    context,
+    ref,
+    profile,
+    policy,
+    request: request,
+    excludeActionIds: actions.map((HomeActionDefinition a) => a.id),
+  );
+  // Management strips: buttons already state the action — no tutorial body.
+  // Keep empty copy only for true work queues with no management actions.
+  final String emptyMessage = emptyActions.isNotEmpty ? '' : profile.emptyMessage;
 
   return DashboardPriorityPanelData(
     queueTitle: profile.showQueuePanelTitle
         ? homeQueueTitle(profile.role)
         : null,
     queueItems: worklistItems,
-    emptySectionTitle: profile.id == 'super_admin'
-        ? l10n.homePlatformManagementTitle
-        : null,
-    emptyMessage: profile.id == 'super_admin'
-        ? l10n.homePlatformManagementDescription
-        : profile.emptyMessage,
-    emptyActions: homeDashboardEmptyActions(
-      context,
-      ref,
-      profile,
-      policy,
-      request: request,
-      excludeActionIds: actions.map((HomeActionDefinition a) => a.id),
-    ),
+    emptySectionTitle: homeEmptyManagementSectionTitle(profile, l10n),
+    emptyMessage: emptyMessage,
+    emptyActions: emptyActions,
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,
     alertItems: showAlerts

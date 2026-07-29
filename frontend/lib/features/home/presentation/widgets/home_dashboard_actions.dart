@@ -26,6 +26,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
     show FacilityProfile, TenantProfile;
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -1191,6 +1192,45 @@ HomeActionDefinition? homeResolveAction(String id) {
   return homeActionLibrary[canonical] ?? homeActionLibrary[id];
 }
 
+/// Create / narrow next-step ids whose outcomes are reachable from a Manage hub.
+///
+/// Prefer the management hub on the same dashboard and drop the redundant Quick
+/// actions entry when the covering Manage action is authorized.
+const Map<String, String> homeCreateCoveredByManageHub = <String, String>{
+  'create_tenant': 'manage_tenants',
+  'create_facility': 'manage_facilities',
+  'create_role': 'manage_roles_access',
+  'create_user': 'manage_users',
+};
+
+/// Drops Create / narrow next-steps already covered by authorized Manage hubs.
+List<HomeActionDefinition> homeDeduplicateQuickActionsAgainstManage(
+  List<HomeActionDefinition> quickActions,
+  List<String> emptyActionIds,
+  AppAccessPolicy policy,
+) {
+  if (quickActions.isEmpty || emptyActionIds.isEmpty) {
+    return quickActions;
+  }
+  final Set<String> authorizedManageIds = homeVisibleEmptyActions(
+    emptyActionIds,
+    policy,
+  ).map((HomeActionDefinition action) => action.id).toSet();
+  if (authorizedManageIds.isEmpty) {
+    return quickActions;
+  }
+  return quickActions
+      .where((HomeActionDefinition action) {
+        final String? coveringManage = homeCreateCoveredByManageHub[action.id];
+        if (coveringManage == null) {
+          return true;
+        }
+        // Keep the Create when no authorized Manage hub covers it.
+        return !authorizedManageIds.contains(coveringManage);
+      })
+      .toList(growable: false);
+}
+
 List<HomeActionDefinition> homeVisibleActions(
   List<String> ids,
   AppAccessPolicy policy, {
@@ -1604,8 +1644,8 @@ String homeDistributionTitle(AppRole role, String fallback) {
 
 String homeQueueTitle(AppRole role) {
   return switch (role) {
-    AppRole.superAdmin => 'Follow-up',
-    AppRole.tenantAdmin => 'Facility follow-up',
+    AppRole.superAdmin => 'Platform management',
+    AppRole.tenantAdmin => 'Facility management',
     AppRole.facilityAdmin => 'Operations',
     AppRole.doctor => 'Worklist',
     AppRole.nurse => 'Tasks',
@@ -1621,6 +1661,21 @@ String homeQueueTitle(AppRole role) {
     AppRole.ambulanceOperator => 'Dispatch',
     AppRole.patient => 'Updates',
     _ => 'Queue',
+  };
+}
+
+/// Localized management empty-strip title when Manage hubs own the section.
+String? homeEmptyManagementSectionTitle(
+  HomeDashboardProfile profile,
+  AppLocalizations l10n,
+) {
+  if (profile.emptyActionIds.isEmpty) {
+    return null;
+  }
+  return switch (profile.role) {
+    AppRole.superAdmin => l10n.homePlatformManagementTitle,
+    AppRole.tenantAdmin => l10n.homeFacilityManagementTitle,
+    _ => null,
   };
 }
 
@@ -1664,7 +1719,10 @@ String homeFormatMetricValue(HomeStatusCard card) {
     return '${NumberFormat.compact().format(card.value)} / ${NumberFormat.compact().format(total)}';
   }
   if (card.format == 'currency') {
-    return NumberFormat.compactCurrency(symbol: 'UGX ').format(card.value);
+    return NumberFormat.compactCurrency(
+      symbol: 'UGX',
+      decimalDigits: 0,
+    ).format(card.value);
   }
   if (card.format == 'percent') {
     final num value = card.value <= 1 && card.value >= 0

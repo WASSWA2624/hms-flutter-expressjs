@@ -47,12 +47,7 @@ void main() {
     test('super admin profile uses platform create and manage actions', () {
       final profile = homeProfileForRole(AppRole.superAdmin);
 
-      expect(profile.quickActionIds, <String>[
-        'create_tenant',
-        'create_facility',
-        'create_role',
-        'create_user',
-      ]);
+      expect(profile.quickActionIds, isEmpty);
       expect(profile.emptyActionIds, <String>[
         'manage_tenants',
         'manage_facilities',
@@ -60,17 +55,13 @@ void main() {
         'manage_users',
       ]);
       expect(profile.quickActionIds, isNot(contains('select_context')));
+      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
     });
 
     test('tenant admin profile uses facility governance actions only', () {
       final profile = homeProfileForRole(AppRole.tenantAdmin);
 
-      expect(profile.quickActionIds, <String>[
-        'create_facility',
-        'create_role',
-        'create_user',
-        'add_staff_profile',
-      ]);
+      expect(profile.quickActionIds, isEmpty);
       expect(profile.quickActionIds, isNot(contains('manage_subscription')));
       expect(profile.quickActionIds, isNot(contains('manage_users_roles')));
       expect(profile.quickActionIds, isNot(contains('manage_users')));
@@ -78,6 +69,7 @@ void main() {
         'manage_facilities',
         'manage_roles_access',
         'manage_users',
+        'add_staff_profile',
       ]);
       expect(
         profile.shortcutIds,
@@ -94,6 +86,7 @@ void main() {
         'module_adoption',
         'subscription_health',
       ]);
+      expect(profile.emptyMessage, isEmpty);
       for (final actionId in <String>[
         'start_consultation',
         'record_vitals',
@@ -195,7 +188,12 @@ void main() {
         'enter_lab_result',
         'flag_critical_lab',
       ]);
-      expect(profile.shortcutIds, <String>['lab']);
+      expect(profile.shortcutIds, <String>[
+        'lab',
+        'patients',
+        'reports',
+        'settings',
+      ]);
       expect(profile.maxStatusCards, 4);
       expect(
         profile.statusCards.map((template) => template.id),

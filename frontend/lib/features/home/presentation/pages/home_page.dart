@@ -88,10 +88,14 @@ class _HomeDashboardContent extends ConsumerWidget {
       policy,
     );
     final profile = authorized.profile;
-    final actions = homeVisibleActions(
-      authorized.quickActionIds,
+    final actions = homeDeduplicateQuickActionsAgainstManage(
+      homeVisibleActions(
+        authorized.quickActionIds,
+        policy,
+        maxCount: profile.maxQuickActions,
+      ),
+      profile.emptyActionIds,
       policy,
-      maxCount: profile.maxQuickActions,
     );
     final shortcuts = homeShortcutsExcludingQuickActions(
       homeVisibleShortcuts(authorized.shortcutIds, policy),

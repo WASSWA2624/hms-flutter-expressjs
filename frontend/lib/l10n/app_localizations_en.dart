@@ -5609,6 +5609,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage tenants, facilities, roles, and users.';
 
   @override
+  String get homeFacilityManagementTitle => 'Facility management';
+
+  @override
   String get homeManageUsersTitle => 'Manage users';
 
   @override

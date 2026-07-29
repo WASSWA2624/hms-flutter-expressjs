@@ -77,15 +77,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
       ),
     ],
-    quickActionIds: <String>[
-      'create_tenant',
-      'create_facility',
-      'create_role',
-      'create_user',
-    ],
+    // Create intents are covered by Platform management Manage hubs.
+    quickActionIds: const <String>[],
     shortcutIds: <String>[
       'subscriptions',
       'tenant_facility_setup',
+      'integrations',
       'settings',
       'reports',
     ],
@@ -101,8 +98,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.tenantAdmin,
     roleLabel: 'Organization administrator',
     homeTitle: 'Organization',
-    emptyMessage:
-        'Create facilities, assign roles, and onboard users across your organization.',
+    emptyMessage: '',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -129,22 +125,20 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
       ),
     ],
-    quickActionIds: <String>[
-      'create_facility',
-      'create_role',
-      'create_user',
-      'add_staff_profile',
-    ],
+    // Create facility/role/user covered by Facility management Manage hubs.
+    quickActionIds: const <String>[],
     shortcutIds: <String>[
       'tenant_facility_setup',
       'settings',
       'reports',
       'subscriptions',
+      'hr',
     ],
     emptyActionIds: <String>[
       'manage_facilities',
       'manage_roles_access',
       'manage_users',
+      'add_staff_profile',
     ],
   ),
   AppRole.facilityAdmin: HomeDashboardProfile(
@@ -152,8 +146,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.facilityAdmin,
     roleLabel: 'Facility administrator',
     homeTitle: 'Facility ops',
-    emptyMessage:
-        'Facility setup is ready for daily work once patients, services, beds, and staff are configured.',
+    emptyMessage: 'No facility items need action right now.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -227,7 +220,15 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'register_patient',
       'book_appointment',
     ],
-    shortcutIds: <String>['opd', 'patients', 'reports'],
+    shortcutIds: <String>[
+      'opd',
+      'patients',
+      'emergency',
+      'billing',
+      'reports',
+      'settings',
+      'hr',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.doctor: HomeDashboardProfile(
@@ -455,7 +456,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'enter_lab_result',
       'flag_critical_lab',
     ],
-    shortcutIds: <String>['lab'],
+    shortcutIds: <String>['lab', 'patients', 'reports', 'settings'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -515,7 +516,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'add_radiology_report',
       'run_report',
     ],
-    shortcutIds: <String>['radiology', 'reports'],
+    shortcutIds: <String>['radiology', 'patients', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.pharmacist: HomeDashboardProfile(
@@ -566,7 +567,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'receive_pharmacy_stock',
       'adjust_pharmacy_stock',
     ],
-    shortcutIds: <String>['pharmacy', 'patients', 'billing'],
+    shortcutIds: <String>['pharmacy', 'patients', 'billing', 'reports', 'settings'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -683,8 +684,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.billing,
     roleLabel: 'Billing / cashier',
     homeTitle: 'Billing',
-    emptyMessage:
-        'No billing queue items right now. Jump into overdue invoices, open balances, claims, or patient accounts.',
+    emptyMessage: '',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -831,7 +831,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'assign_maintenance',
       'update_bed_readiness',
     ],
-    shortcutIds: <String>['operations'],
+    shortcutIds: <String>[
+      'operations',
+      'rooms_beds',
+      'housekeeping',
+      'reports',
+      'settings',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.hr: HomeDashboardProfile(
@@ -894,7 +900,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>[],
-    shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports'],
+    shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports', 'settings'],
     suppressHomeQuickActions: true,
     toolbarActionIds: <HomeToolbarActionId>[
       HomeToolbarActionId.openHrWorkspace,
@@ -980,7 +986,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['acknowledge_work_order', 'update_work_order'],
-    shortcutIds: <String>['biomedical', 'reports'],
+    shortcutIds: <String>['biomedical', 'operations', 'reports', 'settings'],
     emptyActionIds: <String>['report_equipment_issue'],
   ),
   AppRole.houseKeeper: HomeDashboardProfile(
@@ -1018,7 +1024,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['start_cleaning_task', 'complete_cleaning_task'],
-    shortcutIds: <String>['housekeeping', 'reports'],
+    shortcutIds: <String>['housekeeping', 'rooms_beds', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.ambulanceOperator: HomeDashboardProfile(
@@ -1056,7 +1062,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
-    shortcutIds: <String>['emergency', 'reports'],
+    shortcutIds: <String>['emergency', 'operations', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.unitManager: HomeDashboardProfile(
@@ -1283,7 +1289,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'review_audit',
       'run_report',
     ],
-    shortcutIds: <String>['biomedical', 'reports'],
+    shortcutIds: <String>['biomedical', 'operations', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryStaff: HomeDashboardProfile(
@@ -1334,7 +1340,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'schedule_viewing',
       'add_mortuary_billable_event',
     ],
-    shortcutIds: <String>['mortuary'],
+    shortcutIds: <String>['mortuary', 'reports', 'settings', 'communications'],
     emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryManager: HomeDashboardProfile(
@@ -1383,7 +1389,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'open_mortuary_case',
       'run_report',
     ],
-    shortcutIds: <String>['mortuary', 'reports'],
+    shortcutIds: <String>['mortuary', 'reports', 'settings', 'communications'],
     emptyActionIds: const <String>[],
   ),
   AppRole.patient: HomeDashboardProfile(
@@ -1437,7 +1443,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.integrationAdmin,
     roleLabel: 'Integration administrator',
     homeTitle: 'Integrations',
-    emptyMessage: 'No integration work is pending. Open Integrations to manage connections.',
+    emptyMessage: 'No integration work is pending.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -1462,7 +1468,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: const <String>[],
-    shortcutIds: <String>['integrations', 'reports', 'settings'],
+    shortcutIds: <String>['integrations', 'reports', 'settings', 'subscriptions'],
     emptyActionIds: const <String>[],
   ),
   AppRole.other: HomeDashboardProfile(

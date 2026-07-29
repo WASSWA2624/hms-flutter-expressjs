@@ -38,6 +38,7 @@ class DashboardMetricStrip extends StatelessWidget {
 
         if (wide) {
           return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               for (
                 int index = 0;
@@ -87,12 +88,59 @@ class _DashboardMetricCard extends StatelessWidget {
       applyHeightToLastDescent: false,
     );
 
+    final TextStyle? valueStyle =
+        (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
+            ?.copyWith(
+              color: card.accent,
+              fontWeight: FontWeight.w600,
+              height: 1.15,
+              letterSpacing: -0.2,
+              leadingDistribution: TextLeadingDistribution.even,
+            );
+    final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+      height: 1.2,
+      leadingDistribution: TextLeadingDistribution.even,
+    );
+
+    // Stack value above label so both stay readable at 4–6 card densities.
+    // FittedBox scales long currency/ratio strings without ellipsizing to "U…".
+    final Widget textColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            card.value,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            textHeightBehavior: tightTextHeight,
+            style: valueStyle,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          card.label,
+          maxLines: 2,
+          softWrap: true,
+          overflow: TextOverflow.ellipsis,
+          textHeightBehavior: tightTextHeight,
+          style: labelStyle,
+        ),
+      ],
+    );
+
     final Widget cardBody = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? theme.spacing.sm : theme.spacing.md,
         vertical: compact ? theme.spacing.sm : theme.spacing.md,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
             width: iconBox,
@@ -102,48 +150,16 @@ class _DashboardMetricCard extends StatelessWidget {
             child: Icon(card.icon, color: card.accent, size: iconGlyph),
           ),
           SizedBox(width: theme.spacing.sm),
-          Flexible(
-            child: Text(
-              card.value,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              textHeightBehavior: tightTextHeight,
-              style:
-                  (compact
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(
-                        color: card.accent,
-                        fontWeight: FontWeight.w600,
-                        height: 1,
-                        letterSpacing: -0.3,
-                        leadingDistribution: TextLeadingDistribution.even,
-                      ),
-            ),
-          ),
-          SizedBox(width: theme.spacing.xs),
-          Expanded(
-            child: Text(
-              card.label,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              textHeightBehavior: tightTextHeight,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-                height: 1.1,
-                leadingDistribution: TextLeadingDistribution.even,
-              ),
-            ),
-          ),
+          Expanded(child: textColumn),
           if (isActionable) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+              ),
             ),
           ],
         ],

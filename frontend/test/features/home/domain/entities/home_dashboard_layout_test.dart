@@ -38,7 +38,8 @@ void main() {
       expect(profile.layoutTier, HomeDashboardLayoutTier.facilityCommand);
       expect(profile.showCharts, isTrue);
       expect(profile.effectiveMaxStatusCards, 4);
-      expect(profile.maxShortcutTiles, 2);
+      expect(profile.maxShortcutTiles, 5);
+      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
       expect(profile.showQueuePanelFor(const []), isTrue);
     });
 
@@ -50,7 +51,7 @@ void main() {
       expect(profile.maxQuickActions, 3);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
-      expect(profile.maxShortcutTiles, 3);
+      expect(profile.maxShortcutTiles, 4);
       expect(profile.showQueuePanelFor(const []), isTrue);
       expect(profile.quickActionIds, <String>[
         'receive_sample',
@@ -86,6 +87,8 @@ void main() {
       ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
       expect(profile.emptyMessage, contains('No pending orders'));
+      expect(profile.maxShortcutTiles, greaterThanOrEqualTo(4));
+      expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
     });
 
     test(

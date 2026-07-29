@@ -60,10 +60,14 @@ void main() {
       );
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.superAdmin);
 
-      final List<HomeActionDefinition> quick = homeVisibleActions(
-        profile.quickActionIds,
+      final List<HomeActionDefinition> quick = homeDeduplicateQuickActionsAgainstManage(
+        homeVisibleActions(
+          profile.quickActionIds,
+          policy,
+          maxCount: profile.maxQuickActions,
+        ),
+        profile.emptyActionIds,
         policy,
-        maxCount: profile.maxQuickActions,
       );
       final List<HomeActionDefinition> empty = homeVisibleEmptyActions(
         profile.emptyActionIds,
@@ -71,15 +75,7 @@ void main() {
         excludeActionIds: quick.map((HomeActionDefinition a) => a.id),
       );
 
-      expect(
-        quick.map((HomeActionDefinition action) => action.id),
-        <String>[
-          'create_tenant',
-          'create_facility',
-          'create_role',
-          'create_user',
-        ],
-      );
+      expect(quick, isEmpty);
       expect(
         empty.map((HomeActionDefinition action) => action.id),
         <String>[
@@ -88,15 +84,6 @@ void main() {
           'manage_roles_access',
           'manage_users',
         ],
-      );
-      expect(
-        empty
-            .map((HomeActionDefinition action) => action.id)
-            .toSet()
-            .intersection(
-              quick.map((HomeActionDefinition action) => action.id).toSet(),
-            ),
-        isEmpty,
       );
     });
 

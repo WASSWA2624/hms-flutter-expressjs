@@ -10630,11 +10630,17 @@ abstract class AppLocalizations {
   /// **'Platform management'**
   String get homePlatformManagementTitle;
 
-  /// Description shown under platform management shortcuts on the super-admin home dashboard.
+  /// Legacy description for platform management; home summary UI no longer shows this body copy.
   ///
   /// In en, this message translates to:
   /// **'Manage tenants, facilities, roles, and users.'**
   String get homePlatformManagementDescription;
+
+  /// Section title for tenant-admin facility management actions on the home dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility management'**
+  String get homeFacilityManagementTitle;
 
   /// Title for the focused user management dialog.
   ///
