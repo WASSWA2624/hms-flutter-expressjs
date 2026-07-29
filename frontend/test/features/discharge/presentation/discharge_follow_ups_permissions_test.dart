@@ -326,13 +326,17 @@ void main() {
         dischargeRepository: dischargeRepository,
         followUpRepository: followUpRepository,
         accessPolicy: _policy(
-          // Entry ∩ discharge:read keeps Pending clearance (still entry-gated);
-          // Follow-ups / All / Planned / Completed need clinical|last_office read ∪.
-          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          // Pending clearance read ∪ includes pharmacy:read; Follow-ups / All /
+          // Planned / Completed still need clinical|last_office read ∪.
+          permissions: <AppPermission>{AppPermissions.pharmacyRead},
           roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
           ],
@@ -726,11 +730,16 @@ void main() {
         dischargeRepository: dischargeRepository,
         followUpRepository: followUpRepository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          // Pharmacy desk can open Pending clearance but not Follow-ups.
+          permissions: <AppPermission>{AppPermissions.pharmacyRead},
           roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
           ],

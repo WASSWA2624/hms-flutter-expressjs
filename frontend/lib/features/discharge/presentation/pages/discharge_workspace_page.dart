@@ -522,11 +522,17 @@ Future<void> _openDischargeDetailDialog(
       maxWidth: 980,
       content: _DischargeDetailContent(state: state, detail: detail),
       actions: <Widget>[
-        AppReportActionButton.print(
-          label: l10n.dischargePrintSummaryAction,
-          onPressed: detail.hasSummary
-              ? () => unawaited(_printDischargeSummary(context, ref, detail))
-              : null,
+        AppAccessActionGate(
+          requirement: DischargeAllPatientsAtomPermissions.printSummary,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppReportActionButton.print(
+              label: l10n.dischargePrintSummaryAction,
+              onPressed: detail.hasSummary
+                  ? () =>
+                      unawaited(_printDischargeSummary(context, ref, detail))
+                  : null,
+            );
+          },
         ),
       ],
     ),
