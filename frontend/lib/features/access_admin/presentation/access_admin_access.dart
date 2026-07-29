@@ -72,8 +72,9 @@ const AccessRequirement accessAdminRolesWriteRequirement =
 const AccessRequirement accessAdminEntitlementsReadRequirement =
     accessAdminWorkspaceReadRequirement;
 
-/// Entitlements has no create/update/delete UI today; reserved for nested
-/// mutations and ∩ denial tests (matrix ∩ `tenant:admin`).
+/// Entitlements has no create/update/delete UI today (read-only catalog);
+/// reserved for nested mutations and ∩ denial tests (matrix ∩ `tenant:admin`).
+/// Elevations still use [canWriteAccessAdmin] / [canMutateAccessAdminEntitlements].
 const AccessRequirement accessAdminEntitlementsWriteRequirement =
     accessAdminWriteRequirement;
 
@@ -196,13 +197,15 @@ bool canReadAccessAdminRegistrations(AppAccessPolicy policy) {
   return policy.isElevated;
 }
 
-/// Registrations create / update / delete: write ∩ + workspace `canWrite`.
-/// Elevated writers qualify via [canWriteAccessAdmin].
+/// Registrations create / update / delete: elevated tab gate + write ∩ +
+/// workspace `canWrite`. Bare `tenant:admin` writers do not unlock mutations
+/// when they cannot open the Registrations panel (source: elevated-only).
 bool canMutateAccessAdminRegistrations(
   AppAccessPolicy policy, {
   bool workspaceCanWrite = true,
 }) {
-  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+  return canReadAccessAdminRegistrations(policy) &&
+      canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
 /// Registrations tab: elevated (super-admin) only — source inventory.
@@ -385,18 +388,20 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Registrations tab | navigate | elevated (source); matrix ∩ `system:admin` |
+/// | Registrations tab | navigate / progressive-disclosure | elevated (source); matrix ∩ `system:admin` |
 /// | Search / filters / columns / pagination | read chrome | elevated |
 /// | Empty / error / retry | read chrome | elevated |
 /// | Row select → registration detail | read | elevated |
-/// | Activate registration (next-action) | update | write ∩ + canWrite |
-/// | Reject registration (detail) | delete | write ∩ + canWrite |
-/// | Create user / Create role primary | create | _(absent on this resource)_ |
+/// | Activate registration (next-action) | update | elevated + write ∩ + canWrite |
+/// | Reject registration (detail) | delete | elevated + write ∩ + canWrite |
+/// | Create user / Create role primary | create | _(absent on this resource)_ ; create ∩ if added |
 /// | Detail Close | progressive-disclosure | elevated |
 /// | Nested cross-module | n/a | _(n/a)_ |
 ///
 /// Workspace entry remains read ∪ (`tenant:admin` \| `facility:admin` \|
-/// `system:admin`). This tab is stricter than that union.
+/// `system:admin`). This tab is stricter than that union. Source inventory
+/// maps write chrome to workspace `canWrite`; matrix ∩ `tenant:admin` plus
+/// elevated tab gate via [canMutateAccessAdminRegistrations].
 abstract final class AccessAdminRegistrationsAtomPermissions {
   static const AccessRequirement tab = accessAdminRegistrationsReadRequirement;
   static const AccessRequirement listChrome =

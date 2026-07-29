@@ -164,21 +164,7 @@ class _AccessAdminWorkspaceContentState
       accessAdminWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    // Source inventory: workspace canWrite. Matrix write ∩: tenant:admin.
-    final bool canWrite = canWriteAccessAdmin(
-      policy,
-      workspaceCanWrite: state.data.permissions.canWrite,
-    );
-    final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
-      policy,
-      workspaceCanWrite: state.data.permissions.canWrite,
-      workspaceCanResetDemoPasswords:
-          state.data.permissions.canResetDemoPasswords,
-    );
-    final AppFailure? lastFailure = state.lastFailure is AppFailure
-        ? state.lastFailure! as AppFailure
-        : null;
-    final ThemeData theme = Theme.of(context);
+    final bool workspaceCanWrite = state.data.permissions.canWrite;
     final bool isRolesPanel = state.query.panel == AccessAdminPanel.roles;
     final bool isEntitlementsPanel =
         state.query.panel == AccessAdminPanel.entitlements;
@@ -187,6 +173,27 @@ class _AccessAdminWorkspaceContentState
     final bool isRegistrationsPanel =
         state.query.panel == AccessAdminPanel.registrations;
     final bool isDemoPanel = state.query.panel == AccessAdminPanel.demo;
+    // Source inventory: workspace canWrite. Matrix write ∩: tenant:admin.
+    // Registrations additionally requires the elevated tab gate.
+    final bool canWrite = isRegistrationsPanel
+        ? canMutateAccessAdminRegistrations(
+            policy,
+            workspaceCanWrite: workspaceCanWrite,
+          )
+        : canWriteAccessAdmin(
+            policy,
+            workspaceCanWrite: workspaceCanWrite,
+          );
+    final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
+      policy,
+      workspaceCanWrite: workspaceCanWrite,
+      workspaceCanResetDemoPasswords:
+          state.data.permissions.canResetDemoPasswords,
+    );
+    final AppFailure? lastFailure = state.lastFailure is AppFailure
+        ? state.lastFailure! as AppFailure
+        : null;
+    final ThemeData theme = Theme.of(context);
     final bool canReadRoles = canReadAccessAdminRoles(policy);
     final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
     final bool canReadPermissions = canReadAccessAdminPermissions(policy);

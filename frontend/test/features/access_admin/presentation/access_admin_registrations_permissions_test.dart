@@ -263,6 +263,21 @@ void main() {
       );
     });
 
+    test(
+      'source elevated-only: tenant:admin write ∩ alone cannot mutate Registrations',
+      () {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        // Directory write ∩ would pass; Registrations also needs elevated.
+        expect(canWriteAccessAdmin(tenant, workspaceCanWrite: true), isTrue);
+        expect(
+          canMutateAccessAdminRegistrations(tenant, workspaceCanWrite: true),
+          isFalse,
+        );
+      },
+    );
+
     test('∩ write: elevated + workspace canWrite allows Registrations mutate', () {
       final AppAccessPolicy elevated = _elevatedPolicy();
       expect(
@@ -272,6 +287,35 @@ void main() {
       expect(
         canMutateAccessAdminRegistrations(elevated, workspaceCanWrite: false),
         isFalse,
+      );
+    });
+
+    test(
+      'subscription commercial modules do not gate admin keys (platform)',
+      () {
+        final AppAccessPolicy elevated = _elevatedPolicy();
+        expect(canReadAccessAdminRegistrations(elevated), isTrue);
+        expect(
+          canMutateAccessAdminRegistrations(elevated, workspaceCanWrite: true),
+          isTrue,
+        );
+        expect(accessAdminModuleLabel, 'access administration');
+        expect(accessAdminActiveModule, 'access_admin');
+      },
+    );
+
+    test('elevated read does not require tenant ABAC context', () {
+      final AppAccessPolicy platformElevated = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+        roles: const <String>['SUPER_ADMIN'],
+        tenantId: null,
+        facilityId: null,
+      );
+      expect(canReadAccessAdminRegistrations(platformElevated), isTrue);
+      expect(
+        accessAdminAllowedPanels(platformElevated)
+            .contains(AccessAdminPanel.registrations),
+        isTrue,
       );
     });
 
@@ -304,13 +348,28 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          AccessAdminRegistrationsAtomPermissions.write,
+          accessAdminRegistrationsWriteRequirement,
+        ),
+        isTrue,
+      );
       expect(accessAdminModuleLabel, 'access administration');
     });
 
     test('nested cross-module rows are n/a for Registrations matrix', () {
+      // Matrix nested rows are n/a; write ∩ remains the reserved vocabulary.
       expect(
         AccessAdminRegistrationsAtomPermissions.write.allPermissions,
         isNotEmpty,
+      );
+      expect(
+        identical(
+          AccessAdminRegistrationsAtomPermissions.create,
+          accessAdminRegistrationsCreateRequirement,
+        ),
+        isTrue,
       );
     });
 
@@ -407,6 +466,127 @@ void main() {
         final AppLocalizations l10n = context.l10n;
 
         expect(find.text(l10n.accessAdminPanelRegistrations), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'deep link panel=registrations: non-elevated hides Registrations atoms',
+      (WidgetTester tester) async {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        when(() => repository.getWorkspace(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final AccessAdminWorkspaceQuery query =
+              invocation.positionalArguments.first as AccessAdminWorkspaceQuery;
+          if (query.panel == AccessAdminPanel.registrations) {
+            return Result<AccessAdminWorkspaceData>.success(
+              _registrationsData(canWrite: true),
+            );
+          }
+          return Result<AccessAdminWorkspaceData>.success(
+            AccessAdminWorkspaceData(
+              permissions: const AccessAdminWorkspacePermissions(
+                canRead: true,
+                canWrite: true,
+              ),
+              lookups: const AccessAdminLookups(
+                userStatuses: <String>['ACTIVE', 'INACTIVE'],
+              ),
+              items: const <AccessAdminItem>[],
+              page: const AppPage<AccessAdminItem>(
+                items: <AccessAdminItem>[],
+                request: AppPageRequest(pageSize: 12),
+                totalItemCount: 0,
+              ),
+              query: query.copyWith(
+                panel: AccessAdminPanel.directory,
+                resource: AccessAdminResource.users,
+              ),
+            ),
+          );
+        });
+
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final SharedPreferences preferences =
+            await SharedPreferences.getInstance();
+
+        tester.view.physicalSize = const Size(1280, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final GoRouter router = GoRouter(
+          initialLocation: '/admin/access?panel=registrations',
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/admin/access',
+              builder: (BuildContext context, GoRouterState state) {
+                return Scaffold(
+                  body: AccessAdminWorkspacePage(
+                    initialQuery:
+                        AccessAdminWorkspaceQuery.fromUri(state.uri),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              accessAdminRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(tenant),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.light,
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        // Forbidden deep link: no Registrations chrome / row data mounted.
+        expect(find.text(l10n.accessAdminPanelRegistrations), findsNothing);
+        expect(find.text('Pending Clinic'), findsNothing);
+        expect(
+          find.text(l10n.accessAdminActivateRegistrationAction),
+          findsNothing,
+        );
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'missing admin permissions: workspace gate hides Registrations surface',
+      (WidgetTester tester) async {
+        final AppAccessPolicy none = _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          roles: const <String>['DOCTOR'],
+        );
+        await _pumpRegistrations(
+          tester,
+          repository: repository,
+          policy: none,
+        );
+
+        expect(find.text('Pending Clinic'), findsNothing);
+        expect(find.byType(AppTabStrip), findsNothing);
       },
     );
 
@@ -660,6 +840,86 @@ void main() {
       expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
     });
 
+    testWidgets('detail Reject syncs worklist after mutation', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy elevated = _elevatedPolicy();
+      var rejected = false;
+      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+        final List<AccessAdminItem> items = rejected
+            ? const <AccessAdminItem>[]
+            : const <AccessAdminItem>[_registration];
+        return Result<AccessAdminWorkspaceData>.success(
+          _registrationsData(items: items),
+        );
+      });
+      when(() => repository.rejectRegistration(any())).thenAnswer((_) async {
+        rejected = true;
+        return const Result<void>.success(null);
+      });
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/admin/access?panel=registrations',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/admin/access',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: AccessAdminWorkspacePage(
+                  initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            accessAdminRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(elevated),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
+      await tester.tap(find.text('Pending Clinic').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.accessAdminRejectRegistrationAction));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.rejectRegistration('REG-1')).called(1);
+      expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
+    });
+
     testWidgets('detail Reject present for elevated writer', (
       WidgetTester tester,
     ) async {
@@ -705,6 +965,31 @@ void main() {
       expect(
         find.text(l10n.accessAdminRejectRegistrationAction),
         findsNothing,
+      );
+    });
+
+    testWidgets('mobile viewport: Activate present for elevated writer', (
+      WidgetTester tester,
+    ) async {
+      await _pumpRegistrations(
+        tester,
+        repository: repository,
+        policy: _elevatedPolicy(),
+        data: _registrationsData(canWrite: true),
+        viewport: const Size(390, 844),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
+      expect(find.byType(AccessAdminWorkspacePage), findsOneWidget);
+      expect(find.text(l10n.accessAdminPanelRegistrations), findsOneWidget);
+      expect(find.byType(AppListTableMobileItem), findsWidgets);
+      expect(
+        find.text(l10n.accessAdminActivateRegistrationAction),
+        findsWidgets,
       );
     });
 
