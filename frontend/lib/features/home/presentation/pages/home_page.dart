@@ -191,16 +191,20 @@ class _HomeDashboardContent extends ConsumerWidget {
                   ],
                 ),
                 priorityPanel: DashboardPriorityPanel(data: priorityData),
-                charts: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    return DashboardChartsRow(
-                      data: homeDashboardChartsData(
-                        dashboard: authorized,
-                        l10n: l10n,
-                      ),
-                      twoColumns: constraints.maxWidth >= 980,
-                    );
-                  },
+                charts: AppAccessGate(
+                  requirement: homeChartsRequirement,
+                  child: LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                      return DashboardChartsRow(
+                        data: homeDashboardChartsData(
+                          dashboard: authorized,
+                          l10n: l10n,
+                        ),
+                        twoColumns: constraints.maxWidth >= 980,
+                      );
+                    },
+                  ),
                 ),
               ),
           ],

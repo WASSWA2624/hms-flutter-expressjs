@@ -604,7 +604,6 @@ class _ReportSchedulesPanel extends ConsumerWidget {
       reportsWorkspaceControllerProvider.notifier,
     );
     final bool canWrite = canWriteReports(policy);
-    final bool canExport = canExportEvidence(policy);
 
     return AppWorkspaceDetailPanel(
       title: l10n.reportsSchedulesTitle,
@@ -641,7 +640,7 @@ class _ReportSchedulesPanel extends ConsumerWidget {
           ref,
           l10n,
           canWrite: canWrite,
-          canExport: canExport,
+          canExport: false,
           isSaving: state.isSaving,
           onNextAction:
               (BuildContext actionContext, WidgetRef actionRef, item) {
@@ -659,7 +658,7 @@ class _ReportSchedulesPanel extends ConsumerWidget {
             l10n,
             item,
             canWrite: canWrite,
-            canExport: canExport,
+            canExport: false,
           );
           return AppListTableMobileItem(
             title: item.title,
@@ -679,7 +678,7 @@ class _ReportSchedulesPanel extends ConsumerWidget {
                 : ReportNextActionCell(
                     item: item,
                     canWrite: canWrite,
-                    canExport: canExport,
+                    canExport: false,
                     isSaving: state.isSaving,
                     onPressed: () => _handleReportNextAction(
                       context,

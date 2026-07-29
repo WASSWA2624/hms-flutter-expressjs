@@ -23,14 +23,39 @@ const AccessRequirement homeChartsRequirement = AccessRequirement(
 
 /// Builds an all-of requirement for a home atom permission list.
 ///
-/// Empty lists are never treated as public — callers must deny separately
-/// (see [HomeDashboardAtomPermissions.isGranted]).
+/// Empty lists are never treated as public — evaluate with [homeAllows]
+/// (or [HomeDashboardAtomPermissions.isGranted]), not bare [AccessRequirement.isAllowed].
 AccessRequirement homeAtomRequirement(
   Iterable<AppPermission> allPermissions,
 ) {
   return AccessRequirement(
     allPermissions: List<AppPermission>.unmodifiable(allPermissions),
   );
+}
+
+/// Home-atom gate: denies empty permission lists, then applies [requirement].
+///
+/// Prefer this (or catalog helpers below) at presentation call sites so KPI /
+/// queue / alert / shortcut atoms never render as public when unresolved.
+bool homeAllows(AppAccessPolicy policy, AccessRequirement requirement) {
+  final List<AppPermission> all = requirement.allPermissions.toList(
+    growable: false,
+  );
+  final List<AppPermission> any = requirement.anyPermissions.toList(
+    growable: false,
+  );
+  if (all.isEmpty && any.isEmpty) {
+    return false;
+  }
+  return requirement.isAllowed(policy);
+}
+
+/// Convenience: all-of list via [homeAtomRequirement] + [homeAllows].
+bool homeAllowsAll(
+  AppAccessPolicy policy,
+  Iterable<AppPermission> allPermissions,
+) {
+  return homeAllows(policy, homeAtomRequirement(allPermissions));
 }
 
 /// Status / KPI card requirement from catalog or declared permissions.

@@ -710,4 +710,303 @@ void main() {
       );
     },
   );
+
+  testWidgets('mobile read-only omits Run next-action (∩ denial)', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReports(
+      tester,
+      repository: repository,
+      policy: _policy(),
+      viewport: const Size(390, 844),
+    );
+
+    expect(find.text('Run report'), findsNothing);
+    expect(find.text('Daily census'), findsWidgets);
+    final List<AppListTable<ReportsWorkspaceItem>> tables = tester
+        .widgetList<AppListTable<ReportsWorkspaceItem>>(
+          find.byType(AppListTable<ReportsWorkspaceItem>),
+        )
+        .toList();
+    expect(tables, isNotEmpty);
+    expect(
+      tables.first.columns.any(
+        (AppListTableColumn<ReportsWorkspaceItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('module strip hides export affordances despite evidence:export', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy stripped = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.complianceRead,
+        AppPermissions.evidenceExport,
+      },
+      includeModule: false,
+    );
+    await _pumpReports(tester, repository: repository, policy: stripped);
+
+    expect(canExportEvidence(stripped), isFalse);
+    expect(find.text('Export evidence'), findsNothing);
+  });
+
+  testWidgets(
+    'compliance:review alone opens compliance panels (∪ compliance read)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reviewer = _policy(
+        permissions: <AppPermission>{AppPermissions.complianceReview},
+      );
+      await _pumpReports(tester, repository: repository, policy: reviewer);
+      await tester.pumpAndSettle();
+
+      expect(canReadReportsCompliance(reviewer), isTrue);
+      expect(canReadReportsCatalog(reviewer), isFalse);
+      expect(find.text('Daily census email'), findsNothing);
+      expect(find.text('EXPORT | REPORT_RUN'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'compliance-only hides schedules and timeline; catalog shows both',
+    (WidgetTester tester) async {
+      final AppAccessPolicy complianceOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.complianceRead},
+      );
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: complianceOnly,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schedules'), findsNothing);
+      expect(find.text('Recent report activity'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      await _pumpReports(tester, repository: repository, policy: _policy());
+      expect(find.text('Schedules'), findsOneWidget);
+      expect(find.text('Recent report activity'), findsOneWidget);
+      expect(find.text('Run queued'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Download next-action gated by evidence:export (∪ export)',
+    (WidgetTester tester) async {
+      const ReportsWorkspaceItem completedRun = ReportsWorkspaceItem(
+        id: 'run-done',
+        kind: ReportItemKind.run,
+        title: 'Census run',
+        status: 'COMPLETED',
+        downloadAvailable: true,
+      );
+
+      when(() => repository.getWorkspace(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ReportsWorkspaceQuery query =
+            invocation.positionalArguments.single as ReportsWorkspaceQuery;
+        return Result<ReportsWorkspaceOverview>.success(
+          ReportsWorkspaceOverview(
+            summary: const <ReportsSummaryCard>[],
+            items: AppPage<ReportsWorkspaceItem>(
+              items: const <ReportsWorkspaceItem>[completedRun],
+              request: query.pageRequest,
+              totalItemCount: 1,
+            ),
+          ),
+        );
+      });
+      _stubSchedules(repository);
+      _stubCompliance(repository);
+
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: _policy(),
+        stubDefaults: false,
+      );
+      expect(find.text('Download'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      final AppAccessPolicy exporter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: exporter,
+        stubDefaults: false,
+      );
+      expect(find.text('Download'), findsWidgets);
+
+      final AppListTable<ReportsWorkspaceItem> table = tester
+          .widgetList<AppListTable<ReportsWorkspaceItem>>(
+            find.byType(AppListTable<ReportsWorkspaceItem>),
+          )
+          .first;
+      table.onRowSelected!(completedRun);
+      await tester.pumpAndSettle();
+
+      // Download is the row next-action; detail omits it but keeps Print.
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Download'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Print'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('compliance detail Print absent without export; present with', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReports(
+      tester,
+      repository: repository,
+      policy: _policy(permissions: <AppPermission>{AppPermissions.complianceRead}),
+    );
+    await tester.pumpAndSettle();
+
+    final AppListTable<ComplianceLogItem> table = tester
+        .widgetList<AppListTable<ComplianceLogItem>>(
+          find.byType(AppListTable<ComplianceLogItem>),
+        )
+        .first;
+    table.onRowSelected!(_auditLog);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Export evidence'),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    final AppAccessPolicy exporter = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.complianceRead,
+        AppPermissions.evidenceExport,
+      },
+    );
+    await _pumpReports(tester, repository: repository, policy: exporter);
+    await tester.pumpAndSettle();
+
+    final AppListTable<ComplianceLogItem> exportTable = tester
+        .widgetList<AppListTable<ComplianceLogItem>>(
+          find.byType(AppListTable<ComplianceLogItem>),
+        )
+        .first;
+    exportTable.onRowSelected!(_auditLog);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsOneWidget,
+    );
+    // Export evidence is the row next-action, so detail omits the duplicate.
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Export evidence'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'export-only catalog mounts next_action for Download, not Run',
+    (WidgetTester tester) async {
+      const ReportsWorkspaceItem completedRun = ReportsWorkspaceItem(
+        id: 'run-done',
+        kind: ReportItemKind.run,
+        title: 'Census run',
+        status: 'COMPLETED',
+        downloadAvailable: true,
+      );
+
+      when(() => repository.getWorkspace(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ReportsWorkspaceQuery query =
+            invocation.positionalArguments.single as ReportsWorkspaceQuery;
+        return Result<ReportsWorkspaceOverview>.success(
+          ReportsWorkspaceOverview(
+            summary: const <ReportsSummaryCard>[],
+            items: AppPage<ReportsWorkspaceItem>(
+              items: const <ReportsWorkspaceItem>[
+                _definitionItem,
+                completedRun,
+              ],
+              request: query.pageRequest,
+              totalItemCount: 2,
+            ),
+          ),
+        );
+      });
+      _stubSchedules(repository);
+      _stubCompliance(repository);
+
+      final AppAccessPolicy exportOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: exportOnly,
+        stubDefaults: false,
+      );
+
+      expect(find.text('Run report'), findsNothing);
+      expect(find.text('Download'), findsWidgets);
+      final AppListTable<ReportsWorkspaceItem> itemsTable = tester
+          .widgetList<AppListTable<ReportsWorkspaceItem>>(
+            find.byType(AppListTable<ReportsWorkspaceItem>),
+          )
+          .first;
+      expect(
+        itemsTable.columns.any(
+          (AppListTableColumn<ReportsWorkspaceItem> column) =>
+              column.id == 'next_action',
+        ),
+        isTrue,
+      );
+    },
+  );
 }

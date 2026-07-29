@@ -376,6 +376,29 @@ void main() {
         homeAlertRequirement(id: 'guided_critical_labs').allPermissions,
         contains(AppPermissions.labRead),
       );
+      expect(
+        homeAllowsAll(
+          AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'access-token'),
+              permissions: const <AppPermission>[
+                AppPermissions.profileRead,
+                AppPermissions.clinicalRead,
+              ],
+              moduleEntitlements: _fullModules,
+              isAuthorizationHydrated: true,
+              user: const AuthUserProfile(
+                id: 'user-1',
+                tenantId: 'tenant-1',
+                facilityId: 'facility-1',
+                roles: <String>['DOCTOR'],
+              ),
+            ),
+          ),
+          const <AppPermission>[AppPermissions.clinicalRead],
+        ),
+        isTrue,
+      );
     });
   });
 }

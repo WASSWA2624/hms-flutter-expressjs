@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
+import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -44,15 +44,17 @@ List<DashboardMetricCardData> homeDashboardMetrics({
   final AppLocalizations l10n = context.l10n;
   final ThemeData theme = Theme.of(context);
 
-  // Defense-in-depth: never render KPI values that fail grantsAll, even if a
+  // Defense-in-depth: never render KPI values that fail homeAllows, even if a
   // caller skipped [filterHomeDashboardForAccess].
   return dashboard.statusCards
       .where(
-        (HomeStatusCard card) =>
-            HomeDashboardAtomPermissions.isGranted(
-              policy,
-              card.effectiveRequiredPermissions,
-            ),
+        (HomeStatusCard card) => homeAllows(
+          policy,
+          homeStatusCardRequirement(
+            id: card.id,
+            declared: card.requiredPermissions,
+          ),
+        ),
       )
       .take(profile.effectiveMaxStatusCards)
       .map((HomeStatusCard card) {
@@ -126,12 +128,18 @@ List<DashboardWorklistItemData> homeDashboardWorklistItems({
   required AppAccessPolicy policy,
   required List<HomeQueueItem> items,
 }) {
-  // Defense-in-depth: never render queue rows that fail grantsAll.
+  // Defense-in-depth: never render queue rows that fail homeAllows.
   return items
       .where(
-        (HomeQueueItem item) => HomeDashboardAtomPermissions.isGranted(
+        (HomeQueueItem item) => homeAllows(
           policy,
-          item.effectiveRequiredPermissions,
+          homeQueueItemRequirement(
+            id: item.id,
+            moduleSlug: item.moduleSlug.isNotEmpty
+                ? item.moduleSlug
+                : item.target?.moduleSlug,
+            declared: item.requiredPermissions,
+          ),
         ),
       )
       .map(
@@ -197,9 +205,13 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   final List<DashboardWorklistItemData> alertItems = alertsAllowed
       ? dashboard.alerts
             .where(
-              (HomeAlertItem alert) => HomeDashboardAtomPermissions.isGranted(
+              (HomeAlertItem alert) => homeAllows(
                 policy,
-                alert.effectiveRequiredPermissions,
+                homeAlertRequirement(
+                  id: alert.id,
+                  moduleSlug: alert.target?.moduleSlug,
+                  declared: alert.requiredPermissions,
+                ),
               ),
             )
             .take(3)
@@ -328,9 +340,13 @@ DashboardPriorityPanelData homeDashboardAlertsPanelData({
 
   final List<DashboardWorklistItemData> alertItems = dashboard.alerts
       .where(
-        (HomeAlertItem alert) => HomeDashboardAtomPermissions.isGranted(
+        (HomeAlertItem alert) => homeAllows(
           policy,
-          alert.effectiveRequiredPermissions,
+          homeAlertRequirement(
+            id: alert.id,
+            moduleSlug: alert.target?.moduleSlug,
+            declared: alert.requiredPermissions,
+          ),
         ),
       )
       .take(3)

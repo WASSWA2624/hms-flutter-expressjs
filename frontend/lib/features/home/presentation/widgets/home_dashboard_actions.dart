@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_per
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
+import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
@@ -103,8 +104,7 @@ final class HomeShortcutDefinition {
 
   bool isAllowed(AppAccessPolicy policy) {
     final List<AppPermission> required = effectiveRequiredPermissions;
-    if (required.isEmpty ||
-        !HomeDashboardAtomPermissions.isGranted(policy, required)) {
+    if (!homeAllows(policy, homeShortcutRequirement(id: id, declared: required))) {
       return false;
     }
     return canAccessShellRoute(route, policy);

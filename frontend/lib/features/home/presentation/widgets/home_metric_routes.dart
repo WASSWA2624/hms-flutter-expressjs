@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -26,7 +27,13 @@ HomeMetricNavigation? homeMetricNavigation({
   required HomeStatusCard card,
   required AppAccessPolicy policy,
 }) {
-  if (!policy.grantsAll(card.effectiveRequiredPermissions) ||
+  if (!homeAllows(
+        policy,
+        homeStatusCardRequirement(
+          id: card.id,
+          declared: card.requiredPermissions,
+        ),
+      ) ||
       card.effectiveRequiredPermissions.isEmpty) {
     return null;
   }
@@ -73,7 +80,13 @@ HomeMetricAction? homeMetricAction({
   required HomeStatusCard card,
   required AppAccessPolicy policy,
 }) {
-  if (!policy.grantsAll(card.effectiveRequiredPermissions) ||
+  if (!homeAllows(
+        policy,
+        homeStatusCardRequirement(
+          id: card.id,
+          declared: card.requiredPermissions,
+        ),
+      ) ||
       card.effectiveRequiredPermissions.isEmpty) {
     return null;
   }

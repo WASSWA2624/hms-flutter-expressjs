@@ -6,8 +6,8 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 ///
 /// Semantics are **all-of**: a widget renders only when
 /// `AccessRequirement(allPermissions: …).isAllowed(policy)` is true.
-/// Prefer [homeAtomRequirement] from `home_access.dart` at call sites that
-/// already import feature access helpers.
+/// Prefer [homeAtomRequirement] / [homeAllows] from `home_access.dart` at
+/// presentation call sites that already import feature access helpers.
 ///
 /// Empty lists after resolution mean **deny** for KPIs, queues, alerts, and
 /// activity — never silently public.

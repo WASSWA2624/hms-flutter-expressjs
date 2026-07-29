@@ -48,6 +48,68 @@ void main() {
   });
 
   group('homeAtomRequirement / Dashboard.md mapping', () {
+    test('homeAllows denies empty atom requirements (never public)', () {
+      final AppAccessPolicy policy = _policy(<AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.clinicalRead,
+      ]);
+      expect(
+        homeAllows(policy, homeAtomRequirement(const <AppPermission>[])),
+        isFalse,
+      );
+      expect(
+        homeAllowsAll(policy, const <AppPermission>[]),
+        isFalse,
+      );
+      expect(
+        homeAllows(policy, homeStatusCardRequirement(id: 'unknown_metric_xyz')),
+        isFalse,
+      );
+    });
+
+    test('homeAllows matches homeChartsRequirement for reports:read', () {
+      expect(
+        homeAllows(
+          _policy(<AppPermission>[AppPermissions.clinicalRead]),
+          homeChartsRequirement,
+        ),
+        isFalse,
+      );
+      expect(
+        homeAllows(
+          _policy(<AppPermission>[AppPermissions.reportsRead]),
+          homeChartsRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'ABAC facility context: homeTabRead still allows without facility when '
+      'matrix has no facility gate',
+      () {
+        final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: null,
+              roles: <String>['CUSTOM'],
+            ),
+            permissions: <AppPermission>[AppPermissions.profileRead],
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        );
+        expect(homeTabReadRequirement.isAllowed(noFacility), isTrue);
+      },
+    );
+
     test('intersection denial: financial:approve missing hides approvals atom', () {
       final AppAccessPolicy policy = _policy(<AppPermission>[
         AppPermissions.billingRead,

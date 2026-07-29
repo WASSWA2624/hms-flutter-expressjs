@@ -390,7 +390,8 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
         );
       },
     ),
-    if (canWrite || canExport)
+    // Schedules only expose write next-actions (create/update schedule).
+    if (canWrite)
       _reportNextActionColumn(
         ref: ref,
         l10n: l10n,
