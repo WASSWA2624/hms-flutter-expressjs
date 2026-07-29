@@ -116,6 +116,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   radiology: 'radiology-workflows',
   'facility-radiology-catalog': 'radiology-workflows',
   'radiology-tests': 'radiology-workflows',
+  'radiology-procedures': 'radiology-workflows',
   'radiology-orders': 'radiology-workflows',
   'radiology-results': 'radiology-workflows',
   'imaging-studies': 'radiology-workflows',

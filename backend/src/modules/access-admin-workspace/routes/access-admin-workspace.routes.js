@@ -38,56 +38,56 @@ router.use(requireAccessAdminWorkspaceV1);
 router.get(
   '/workspace',
   validateRequest({ query: workspaceQuerySchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.getWorkspace
 );
 
 router.get(
   '/reference-data',
   validateRequest({ query: referenceDataQuerySchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.getReferenceData
 );
 
 router.get(
   '/users/:userIdentifier/detail',
   validateRequest({ params: userIdentifierParamsSchema, query: referenceDataQuerySchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.getUserDetail
 );
 
 router.post(
   '/demo-users/:userIdentifier/reset-password',
   validateRequest({ params: userIdentifierParamsSchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.resetDemoUserPassword
 );
 
 router.post(
   '/registrations/:userIdentifier/activate',
   validateRequest({ params: userIdentifierParamsSchema }),
-  authorize(SUPER_ADMIN_ONLY, 'role'),
+  authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.activateRegistration
 );
 
 router.post(
   '/registrations/:userIdentifier/reject',
   validateRequest({ params: userIdentifierParamsSchema }),
-  authorize(SUPER_ADMIN_ONLY, 'role'),
+  authorize(PLATFORM_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.rejectRegistration
 );
 
 router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyParamsSchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.resolveLegacyRoute
 );
 
 router.post(
   '/restore-defaults',
   validateRequest({ body: restoreAccessDefaultsSchema }),
-  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   accessAdminWorkspaceController.restoreAccessDefaults
 );
 

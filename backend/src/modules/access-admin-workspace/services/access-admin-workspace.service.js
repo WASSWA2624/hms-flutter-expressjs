@@ -2,7 +2,8 @@ const { HttpError } = require('@lib/errors');
 const { hashPassword } = require('@lib/crypto/hashPassword');
 const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
-const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { ROLE_PERMISSIONS, PERMISSIONS } = require('@config/permissions');
+const { resolveRequestPermissionNames } = require('@lib/authorization/effective-access');
 const {
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
@@ -103,6 +104,16 @@ const buildPagination = (page, limit, total) => ({
   hasPreviousPage: page > 1,
 });
 
+// Permissions are the only determinant of access: custom roles carrying the
+// same grants as predefined admin roles must behave identically.
+const permissionList = (user = {}) => resolveRequestPermissionNames(user);
+
+const ADMIN_WRITE_PERMISSIONS = new Set([
+  PERMISSIONS.SYSTEM_ADMIN,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+]);
+
 const canWriteAccess = (user = {}) => {
   const writeRoles = new Set([
     ROLES.SUPER_ADMIN,
@@ -110,10 +121,19 @@ const canWriteAccess = (user = {}) => {
     ROLES.FACILITY_ADMIN,
     ROLES.OPERATIONS,
   ]);
-  return roleList(user).some((entry) => writeRoles.has(entry));
+  return (
+    roleList(user).some((entry) => writeRoles.has(entry)) ||
+    permissionList(user).some((permission) => ADMIN_WRITE_PERMISSIONS.has(permission))
+  );
 };
 
-const isSuperAdmin = (user = {}) => roleList(user).includes(ROLES.SUPER_ADMIN);
+const isSuperAdmin = (user = {}) =>
+  roleList(user).includes(ROLES.SUPER_ADMIN) ||
+  permissionList(user).includes(PERMISSIONS.SYSTEM_ADMIN);
+
+const hasTenantAdminScope = (user = {}) =>
+  roleList(user).includes(ROLES.TENANT_ADMIN) ||
+  permissionList(user).includes(PERMISSIONS.TENANT_ADMIN);
 
 const requireSuperAdmin = (user = {}) => {
   if (!isSuperAdmin(user)) {
@@ -578,7 +598,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   const scopeResult = isRegistrationQueue || isPaymentRequestQueue
     ? { state: 'ready', scope: { tenant_id: null, facility_id: null } }
     : await repository.resolveWorkspaceScope({ filters: query, user });
-  const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
+  const includeAllTenants = isSuperAdmin(user);
 
   if (!isRegistrationQueue && !isPaymentRequestQueue && scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);
@@ -784,7 +804,7 @@ const loadAssignablePermissionCatalog = async (tenantId, user = {}) => {
 };
 
 const getReferenceData = async (query = {}, user = {}) => {
-  const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
+  const includeAllTenants = isSuperAdmin(user);
   const requestedTenantId = text(query.tenant_id || query.tenantId);
   const requestedFacilityId = text(query.facility_id || query.facilityId) || null;
   const canAssignPermissions = canWriteAccess(user);
@@ -880,7 +900,7 @@ const getUserDetail = async (identifier, query = {}, user = {}) => {
       filters: {
         ...query,
         allFacilities:
-          roleList(user).includes(ROLES.TENANT_ADMIN) ||
+          hasTenantAdminScope(user) ||
           query.allFacilities === true ||
           query.allFacilities === 'true' ||
           query.all_facilities === true ||
@@ -895,7 +915,7 @@ const getUserDetail = async (identifier, query = {}, user = {}) => {
     }
     lookupScope = {
       tenant_id: scopeResult.scope.tenant_id,
-      facility_id: roleList(user).includes(ROLES.TENANT_ADMIN)
+      facility_id: hasTenantAdminScope(user)
         ? null
         : scopeResult.scope.facility_id,
     };
@@ -1059,11 +1079,7 @@ const rejectRegistration = async (userIdentifier, actor = {}, ip = null) => {
 };
 
 const restoreAccessDefaults = async (payload = {}, actor = {}, ip = null) => {
-  const actorRoles = roleList(actor);
-  const canRestore = actorRoles.some((role) =>
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS].includes(role)
-  );
-  if (!canRestore) {
+  if (!canWriteAccess(actor)) {
     throw new HttpError('errors.auth.insufficient_permissions', 403);
   }
 
@@ -1078,7 +1094,7 @@ const restoreAccessDefaults = async (payload = {}, actor = {}, ip = null) => {
   }
 
   if (
-    !actorRoles.includes(ROLES.SUPER_ADMIN) &&
+    !isSuperAdmin(actor) &&
     String(actor.tenant_id || actor.tenantId || '') !== String(tenantId)
   ) {
     throw new HttpError('errors.auth.insufficient_permissions', 403);
