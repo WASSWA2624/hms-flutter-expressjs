@@ -31,14 +31,14 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, loads resource via controller.
-  - Condition: Always when workspace loads.
+  - Condition: Each tab requires workspace read ∩ (`operations:read` + `facilities-maintenance`); unauthorized sections omitted from the strip.
   - Counts: pending tasks / active schedules / open requests.
 
 - **Create task** (primary on Tasks)
   - Location: Tab-strip primary.
   - Opens modal: Yes — task form.
   - Immediate result: Creates task; snackbar; worklist refresh.
-  - Condition: `canManage`; omitted when unauthorized.
+  - Condition: `canManage` / `HousekeepingTasksAtomPermissions.createTask` (∩ `operations:write`); omitted when unauthorized.
 
 - **Create schedule** (primary on Schedules)
   - Location: Tab-strip primary.

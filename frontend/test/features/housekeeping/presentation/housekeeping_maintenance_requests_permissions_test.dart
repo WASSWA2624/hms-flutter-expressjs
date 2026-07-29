@@ -274,6 +274,15 @@ void main() {
   test('atom map covers inventory verbs (AC1)', () {
     expect(HousekeepingMaintenanceRequestsAtomPermissions.tab, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.listChrome, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.search, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.filters, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.settings, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.empty, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.loading, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.retry, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.rowSelect, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.detail, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.nextAction, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.create, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.update, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.delete, isNotNull);
@@ -292,6 +301,7 @@ void main() {
     );
     expect(HousekeepingMaintenanceRequestsAtomPermissions.report, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.nestedWrite, isNotNull);
+    expect(HousekeepingMaintenanceRequestsAtomPermissions.nestedRead, isNotNull);
     expect(HousekeepingMaintenanceRequestsAtomPermissions.routeEntry, isNotNull);
   });
 
@@ -524,6 +534,33 @@ void main() {
   );
 
   testWidgets(
+    'ABAC facility strip: missing facility context fails route entry ∪',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
+        facilityId: null,
+      );
+      // In-page atoms follow biomedical: facility ABAC on route entry only.
+      expect(
+        HousekeepingMaintenanceRequestsAtomPermissions.tab.isAllowed(
+          noFacility,
+        ),
+        isTrue,
+      );
+      expect(
+        HousekeepingMaintenanceRequestsAtomPermissions.routeEntry.isAllowed(
+          noFacility,
+        ),
+        isFalse,
+      );
+      expect(canEnterHousekeepingWorkspace(noFacility), isFalse);
+    },
+  );
+
+  testWidgets(
     'nested cross-module matrix _(n/a)_: no extra nested module chrome on Maintenance',
     (WidgetTester tester) async {
       await _pumpMaintenanceTab(
@@ -646,6 +683,58 @@ void main() {
             that: predicate<Map<String, Object?>>(
               (Map<String, Object?> payload) =>
                   payload['status'] == 'COMPLETED',
+            ),
+          ),
+        ),
+      ).called(1);
+      expect(find.text('Housekeeping changes saved.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Cancel request confirms then mutates and syncs',
+    (WidgetTester tester) async {
+      when(() => repository.updateMaintenanceRequest(any(), any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+
+      await _pumpMaintenanceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          roles: const <String>['HOUSEKEEPING_MANAGER'],
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Fix leaking tap'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel request'));
+      await tester.pumpAndSettle();
+
+      // Confirm dialog must appear before mutation (inventory keeps confirm).
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(AppDialog),
+              matching: find.text('Cancel request'),
+            )
+            .last,
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.updateMaintenanceRequest(
+          'HK-MR-1',
+          any(
+            that: predicate<Map<String, Object?>>(
+              (Map<String, Object?> payload) =>
+                  payload['status'] == 'CANCELLED',
             ),
           ),
         ),

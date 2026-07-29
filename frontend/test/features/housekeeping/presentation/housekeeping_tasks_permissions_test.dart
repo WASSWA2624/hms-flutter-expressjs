@@ -232,6 +232,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const HousekeepingWorkspaceQuery());
+    registerFallbackValue(const HousekeepingTaskDraft(status: 'PENDING'));
     registerFallbackValue(<String, Object?>{});
   });
 
@@ -256,8 +257,43 @@ void main() {
     );
     expect(
       identical(
+        HousekeepingTasksAtomPermissions.createTask,
+        housekeepingWorkspaceManageRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
         HousekeepingTasksAtomPermissions.routeEntry,
         housekeepingWorkspaceEntryRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        HousekeepingTasksAtomPermissions.report,
+        housekeepingReportRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        HousekeepingTasksAtomPermissions.nextAction,
+        housekeepingWorkspaceReadRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        HousekeepingTasksAtomPermissions.success,
+        housekeepingWorkspaceManageRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        HousekeepingTasksAtomPermissions.validation,
+        housekeepingWorkspaceManageRequirement,
       ),
       isTrue,
     );
@@ -268,6 +304,13 @@ void main() {
     expect(
       HousekeepingTasksAtomPermissions.tab.allPermissions,
       contains(AppPermissions.operationsRead),
+    );
+    expect(
+      HousekeepingTasksAtomPermissions.report.anyPermissions,
+      containsAll(<AppPermission>[
+        AppPermissions.reportsRead,
+        AppPermissions.operationsRead,
+      ]),
     );
   });
 
@@ -409,36 +452,22 @@ void main() {
   );
 
   testWidgets(
-    'report ∪: reports:read without operations:read mounts Report when module entitled',
+    'report ∪: operations:read alone mounts Report summary on Tasks',
     (WidgetTester tester) async {
-      // Source canReport ∪; matrix nested export _(n/a)_. operations:read also
-      // satisfies report via the same union — covered by read-only tests above.
-      final AppAccessPolicy reporter = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.operationsRead,
-          AppPermissions.reportsRead,
-        },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: housekeepingFacilitiesMaintenanceModule,
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'reporting-analytics',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
+      // Source canReport ∪ reports:read | operations:read. Nested export _(n/a)_.
+      final AppAccessPolicy opsReader = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
       );
       expect(
-        HousekeepingTasksAtomPermissions.report.isAllowed(reporter),
+        HousekeepingTasksAtomPermissions.report.isAllowed(opsReader),
         isTrue,
       );
-      expect(canManageHousekeeping(reporter), isFalse);
+      expect(canManageHousekeeping(opsReader), isFalse);
 
       await _pumpTasksTab(
         tester,
         repository: repository,
-        accessPolicy: reporter,
+        accessPolicy: opsReader,
       );
 
       expect(find.textContaining('Report'), findsWidgets);
@@ -600,6 +629,74 @@ void main() {
       verify(() => repository.updateTask('HK-TASK-1', any())).called(1);
       // Worklist refresh after mutation.
       verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      expect(find.text('Housekeeping changes saved.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Start next-action mutates, syncs list, and shows success',
+    (WidgetTester tester) async {
+      when(() => repository.updateTask(any(), any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+
+      await _pumpTasksTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
+        ),
+        taskItems: const <HousekeepingWorkItem>[_assignedPending],
+      );
+
+      expect(find.text('Start cleaning'), findsWidgets);
+      await tester.tap(find.text('Start cleaning').first);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateTask('HK-TASK-2', any())).called(1);
+      verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      expect(find.text('Housekeeping changes saved.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Create task persists draft, syncs list, and shows success',
+    (WidgetTester tester) async {
+      when(() => repository.createTask(any())).thenAnswer(
+        (_) async => const Result<void>.success(null),
+      );
+
+      await _pumpTasksTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.operationsRead,
+            AppPermissions.operationsWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Create task'));
+      await tester.pumpAndSettle();
+      expect(find.text('CREATE HOUSEKEEPING TASK'), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Create task'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createTask(any())).called(1);
+      verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      expect(find.text('Housekeeping changes saved.'), findsOneWidget);
     },
   );
 

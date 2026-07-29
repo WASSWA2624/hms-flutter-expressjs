@@ -249,14 +249,18 @@ class _HousekeepingWorkspaceContentState
     HousekeepingSection section,
   ) {
     return switch (section) {
-      HousekeepingSection.tasks => capabilities.canManage
-          ? AppTabToolbarPrimary(
+      // Tasks: gate via atom map create ∩ (AppAccessActionGate hides when denied).
+      HousekeepingSection.tasks => AppAccessActionGate(
+          requirement: HousekeepingTasksAtomPermissions.createTask,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarPrimary(
               label: l10n.housekeepingCreateTaskAction,
               icon: Icons.add_task_outlined,
               enabled: !state.isSaving,
               onPressed: () => _showTaskDialog(context, ref, state),
-            )
-          : null,
+            );
+          },
+        ),
       HousekeepingSection.schedules => capabilities.canManage
           ? AppTabToolbarPrimary(
               label: l10n.housekeepingCreateScheduleAction,

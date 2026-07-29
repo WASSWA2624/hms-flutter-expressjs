@@ -232,6 +232,72 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          HousekeepingTasksAtomPermissions.nextAction,
+          housekeepingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingTasksAtomPermissions.success,
+          housekeepingWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Maintenance atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.tab,
+          housekeepingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.requestMaintenance,
+          housekeepingWorkspaceManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.triage,
+          housekeepingManageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.cancelRequest,
+          housekeepingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.report,
+          housekeepingReportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.routeEntry,
+          housekeepingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HousekeepingMaintenanceRequestsAtomPermissions.nextAction,
+          housekeepingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
     });
 
     test('all sections share read ∩; allowed list collapses without it', () {

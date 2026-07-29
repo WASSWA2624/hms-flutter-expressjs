@@ -178,16 +178,25 @@ HousekeepingSection? housekeepingFallbackSection(AppAccessPolicy policy) {
 /// | --- | --- | --- |
 /// | Tasks tab | navigate | read ∩ `operations:read` |
 /// | Create task (tab primary) | create | manage ∩ `operations:write` |
-/// | Report summary | read | report ∪ |
+/// | Report summary | read | report ∪ `reports:read` \| `operations:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | read ∩ / write ∩ |
 /// | Row select → detail | read | read ∩ |
+/// | Next action column chrome | progressive disclosure | read ∩ |
 /// | Next action Assign | update | manage ∩ |
 /// | Next action Start / Complete | update | source `canUpdateTasks` |
 /// | Next action View details | navigate | read ∩ |
-/// | Detail complementary writes | update / delete | manage / updateTasks |
+/// | Detail complementary Assign / Cancel | update / delete | manage ∩ |
+/// | Detail complementary Start / Complete | update | source `canUpdateTasks` |
 /// | Nested assign / cancel / create dialogs | create / update / delete | as above |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
+///
+/// Matrix nested cross-module rows are _(n/a)_. Start / Complete keep source
+/// `canUpdateTasks` (manage **or** housekeeper + read) rather than matrix
+/// update ∩ `operations:write` alone — note mapping in tests. Assign / Cancel /
+/// Create stay matrix write ∩ via [canManageHousekeeping].
 abstract final class HousekeepingTasksAtomPermissions {
   static const AccessRequirement tab = housekeepingWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -199,9 +208,15 @@ abstract final class HousekeepingTasksAtomPermissions {
   static const AccessRequirement empty = housekeepingWorkspaceReadRequirement;
   static const AccessRequirement loading = housekeepingWorkspaceReadRequirement;
   static const AccessRequirement retry = housekeepingWorkspaceReadRequirement;
+  static const AccessRequirement success =
+      housekeepingWorkspaceManageRequirement;
+  static const AccessRequirement validation =
+      housekeepingWorkspaceManageRequirement;
   static const AccessRequirement rowSelect =
       housekeepingWorkspaceReadRequirement;
   static const AccessRequirement detail = housekeepingWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      housekeepingWorkspaceReadRequirement;
   static const AccessRequirement create = housekeepingWorkspaceManageRequirement;
   static const AccessRequirement update = housekeepingWorkspaceManageRequirement;
   static const AccessRequirement delete = housekeepingWorkspaceManageRequirement;
@@ -211,7 +226,7 @@ abstract final class HousekeepingTasksAtomPermissions {
       housekeepingWorkspaceManageRequirement;
   static const AccessRequirement assign = housekeepingWorkspaceManageRequirement;
   static const AccessRequirement cancel = housekeepingWorkspaceManageRequirement;
-  /// Start / complete — matrix ∩ write; UI uses source [canUpdateHousekeepingTasks].
+  /// Matrix update ∩ write; UI Start/Complete use source [canUpdateHousekeepingTasks].
   static const AccessRequirement updateTask =
       housekeepingWorkspaceManageRequirement;
   static const AccessRequirement startTask =
@@ -302,11 +317,13 @@ abstract final class HousekeepingSchedulesAtomPermissions {
 /// | Detail Triage (complementary; omitted when next-action) | update | manage ∩ |
 /// | Nested triage / create / cancel-request dialogs | create / update / delete | as above |
 /// | Nested cross-module read/write | — | _(n/a)_ |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Request maintenance keeps
 /// source `canUpdateTasks` (manage **or** housekeeper + read) rather than
 /// matrix create ∩ `operations:write` alone — note mapping in tests.
+/// Facility ABAC is enforced on route entry only (same pattern as biomedical /
+/// Tasks tab); in-page atoms reuse module + permission.
 abstract final class HousekeepingMaintenanceRequestsAtomPermissions {
   static const AccessRequirement tab = housekeepingWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -325,6 +342,8 @@ abstract final class HousekeepingMaintenanceRequestsAtomPermissions {
   static const AccessRequirement rowSelect =
       housekeepingWorkspaceReadRequirement;
   static const AccessRequirement detail = housekeepingWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      housekeepingWorkspaceReadRequirement;
   /// Matrix create ∩ write; UI create primary uses source [canUpdateTasks].
   static const AccessRequirement create = housekeepingWorkspaceManageRequirement;
   static const AccessRequirement update = housekeepingWorkspaceManageRequirement;
