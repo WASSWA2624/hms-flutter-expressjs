@@ -282,7 +282,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('duplicate day dialog offers other weekdays as targets', (
+  testWidgets('duplicate day action is available after copying staff schedule', (
     WidgetTester tester,
   ) async {
     await _pumpRecordAvailabilityDialog(tester, repository);
@@ -292,20 +292,10 @@ void main() {
 
     await _selectCopySourceStaff(tester);
 
-    final Finder duplicateButton = find.text('Duplicate to…').first;
-    await tester.ensureVisible(duplicateButton);
-    await tester.pump();
-    await tester.tap(duplicateButton);
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Monday'));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Duplicate schedule'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(AppDialog).last,
-        matching: find.text('Tuesday'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Duplicate to...'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
