@@ -300,6 +300,14 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalUrgentAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalUrgentAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalUrgentAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
@@ -788,6 +796,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
+      // Detail remains mounted after opening write dialog (sync path ready).
+      expect(find.text('Urgent Tab Patient'), findsWidgets);
+      verify(() => clinicalRepository.loadEncounterBundle(any())).called(
+        greaterThan(0),
+      );
     },
   );
 }

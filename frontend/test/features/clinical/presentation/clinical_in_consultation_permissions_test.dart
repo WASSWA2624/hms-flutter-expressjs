@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -327,6 +330,10 @@ void main() {
         same(clinicalDischargeFinancialReadRequirement),
       );
       expect(
+        ClinicalInConsultationAtomPermissions.dischargeFinancialRead,
+        same(billingReadRequirement),
+      );
+      expect(
         ClinicalInConsultationAtomPermissions.routeEntry,
         same(clinicalWorkspaceEntryRequirement),
       );
@@ -438,6 +445,25 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('∪ write: system:admin satisfies encounter write (source gate)', () {
+      final AppAccessPolicy admin = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.write.isAllowed(admin),
+        isTrue,
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.addNote.isAllowed(admin),
+        isTrue,
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.tab.isAllowed(admin),
+        isFalse,
+      );
+      expect(canViewClinicalInConsultation(admin), isFalse);
     });
 
     test('discharge financial read ∩ billing:read + billing-payments', () {
@@ -755,6 +781,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'nested cross-module ∪: pharmacy:write shows Prescribe without clinical:write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy pharmacyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.pharmacyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.prescribe.isAllowed(pharmacyOnly),
+        isTrue,
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.addNote.isAllowed(pharmacyOnly),
+        isFalse,
+      );
+
+      await _pumpInConsultationTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: pharmacyOnly,
+      );
+
+      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prescribe'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Print summary'), findsWidgets);
+    },
+  );
+
   testWidgets('mobile viewport keeps authorized In consultation chrome', (
     WidgetTester tester,
   ) async {
@@ -879,6 +949,107 @@ void main() {
 
       expect(find.text('Try again'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized loading chrome remains observable on In consultation',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+
+      final Completer<Result<AppPage<ClinicalWorklistEntry>>> listCompleter =
+          Completer<Result<AppPage<ClinicalWorklistEntry>>>();
+      when(() => clinicalRepository.listEncounters(any())).thenAnswer(
+        (_) => listCompleter.future,
+      );
+      when(() => clinicalRepository.listAdmissions(any())).thenAnswer(
+        (invocation) async => Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[],
+            request:
+                (invocation.positionalArguments.single as ClinicalWorklistQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(clinicalRepository.loadReferenceData).thenAnswer(
+        (_) async =>
+            const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
+      );
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/clinical?section=in-consultation',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/clinical',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ClinicalWorkspacePage(
+                  initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            ipdRepositoryProvider.overrideWithValue(ipdRepository),
+            followUpTabCountProvider.overrideWith(
+              (Ref ref, FollowUpWorklistScope scope) => null,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{AppPermissions.clinicalRead},
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Loading clinical workspace'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+
+      listCompleter.complete(
+        Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[_encounter],
+            request: const ClinicalWorklistQuery().pageRequest,
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Consult Tab Patient'), findsOneWidget);
     },
   );
 

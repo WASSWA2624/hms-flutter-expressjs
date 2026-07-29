@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 
 /// Module entitlement for the clinical workspace route and encounter worklists.
@@ -95,13 +96,10 @@ const AccessRequirement clinicalAdmissionWriteRequirement = AccessRequirement(
 
 /// Discharge planning financial-clearance / Open billing nested read.
 ///
-/// Aligns with [billingReadRequirement] (`billing:read` ∩ `billing-payments`);
-/// kept here so clinical atom maps do not import billing.
+/// Reuses [billingReadRequirement] (`billing:read` ∩ `billing-payments`) so
+/// clinical atom maps and the discharge planning dialog share one gate.
 const AccessRequirement clinicalDischargeFinancialReadRequirement =
-    AccessRequirement(
-      allPermissions: <AppPermission>[AppPermissions.billingRead],
-      activeModules: <String>['billing-payments'],
-    );
+    billingReadRequirement;
 
 /// Follow-ups tab / panel read on clinical host (matrix ∩ `clinical:read`).
 ///
@@ -553,7 +551,7 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
 /// | Urgent tab | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Urgent summary chip / badge | read | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -581,6 +579,8 @@ abstract final class ClinicalUrgentAtomPermissions {
   static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
   static const AccessRequirement urgentChip = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
