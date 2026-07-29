@@ -539,6 +539,52 @@ void main() {
     );
 
     testWidgets(
+      'restricted deep link: route ∪ grant alone does not mount plan detail',
+      (WidgetTester tester) async {
+        final AppAccessPolicy systemOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.systemAdmin},
+          roles: const <String>['OTHER'],
+        );
+
+        await _pumpPlansTab(
+          tester,
+          repository: repository,
+          accessPolicy: systemOnly,
+          initialLocation:
+              '/subscriptions?panel=catalog&resource=subscription-plans'
+              '&id=plan-1',
+        );
+
+        expect(find.byType(AppDialog), findsNothing);
+        expect(find.text('Edit plan'), findsNothing);
+        expect(find.text('Manage modules'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'authorized deep link: reader mounts read-only plan detail dialog',
+      (WidgetTester tester) async {
+        final AppAccessPolicy reader = _policy(
+          permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+        );
+
+        await _pumpPlansTab(
+          tester,
+          repository: repository,
+          accessPolicy: reader,
+          initialLocation:
+              '/subscriptions?panel=catalog&resource=subscription-plans'
+              '&id=plan-1',
+        );
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(find.textContaining('Starter Plan'), findsWidgets);
+        expect(find.text('Edit plan'), findsNothing);
+        expect(find.text('Manage modules'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'nested cross-module UI absent without nested rights (n/a → none)',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _policy(

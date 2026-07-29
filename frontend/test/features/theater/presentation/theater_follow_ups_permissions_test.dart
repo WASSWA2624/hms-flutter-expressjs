@@ -28,7 +28,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,7 +45,6 @@ final ReceptionFollowUpEntry _followUp = ReceptionFollowUpEntry(
   patientPhone: '+256700000001',
   scheduledAt: DateTime.utc(2026, 7, 29, 9, 30),
   notes: 'Theatre callback',
-  status: 'SCHEDULED',
 );
 
 Finder _tab(String label) =>
@@ -445,8 +443,8 @@ void main() {
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
-      // Other board tabs remain (not yet permission-scanned).
-      expect(find.byType(AppTabStrip), findsOneWidget);
+      // Every board tab is read-gated; the strip collapses entirely.
+      expect(find.byType(AppTabStrip), findsNothing);
     },
   );
 
@@ -803,7 +801,6 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       ),
-      physicalSize: const Size(1440, 900),
     );
 
     expect(find.text('Follow Up Patient'), findsOneWidget);
@@ -823,7 +820,6 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       ),
-      themeMode: ThemeMode.light,
     );
 
     expect(find.text('Follow Up Patient'), findsOneWidget);
@@ -861,7 +857,6 @@ void main() {
           permissions: <AppPermission>{AppPermissions.billingRead},
           roles: const <String>['BILLING'],
         ),
-        initialLocation: '/theater?section=follow-ups',
       );
 
       expect(_tab('Follow-ups'), findsNothing);
@@ -994,9 +989,9 @@ Future<void> _pumpFollowUpsTab(
 void _stubTheater(_MockTheaterRepository repository) {
   when(() => repository.listCases(any())).thenAnswer(
     (_) async => Result<AppPage<TheaterCase>>.success(
-      AppPage<TheaterCase>(
-        items: const <TheaterCase>[],
-        request: const AppPageRequest(pageSize: 12),
+      const AppPage<TheaterCase>(
+        items: <TheaterCase>[],
+        request: AppPageRequest(pageSize: 12),
         totalItemCount: 0,
       ),
     ),

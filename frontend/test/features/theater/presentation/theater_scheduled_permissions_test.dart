@@ -31,16 +31,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTheaterRepository extends Mock implements TheaterRepository {}
 
-const TheaterCase _inTheaterCase = TheaterCase(
-  id: 'TC-OR',
-  displayId: 'TC-OR',
-  patientDisplayName: 'Ira InTheater',
-  status: 'IN_PROGRESS',
-  workflowStage: 'INTRA_OP',
+const TheaterCase _scheduledCase = TheaterCase(
+  id: 'TC-SCH',
+  displayId: 'TC-SCH',
+  patientDisplayName: 'Sam Scheduled',
+  status: 'SCHEDULED',
+  workflowStage: 'PRE_OP',
+  checklistTotal: 2,
+  checklistCompleted: 1,
+);
+
+const TheaterCase _readyScheduledCase = TheaterCase(
+  id: 'TC-SCH-READY',
+  displayId: 'TC-SCH-READY',
+  patientDisplayName: 'Pat Ready',
+  status: 'SCHEDULED',
+  workflowStage: 'PRE_OP',
   checklistTotal: 2,
   checklistCompleted: 2,
-  anesthesiaStatus: 'DRAFT',
-  roomDisplayLabel: 'OR-1',
 );
 
 Finder _tab(String label) =>
@@ -50,6 +58,11 @@ Finder _toolbarPrimary(String label) => find.descendant(
   of: find.byType(AppTabToolbarPrimary),
   matching: find.text(label),
 );
+
+AppListTable<TheaterCase> _table(WidgetTester tester) =>
+    tester.widget<AppListTable<TheaterCase>>(
+      find.byType(AppListTable<TheaterCase>),
+    );
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -78,9 +91,6 @@ AppAccessPolicy _policy({
         permission == AppPermissions.operationsRead ||
         permission == AppPermissions.operationsWrite,
   );
-  final bool needsTheater = permissions.any(
-    (AppPermission permission) => permission == AppPermissions.theaterRead,
-  );
   final List<AppModuleEntitlement> resolvedModules =
       modules ??
       <AppModuleEntitlement>[
@@ -106,11 +116,6 @@ AppAccessPolicy _policy({
         if (needsOperations)
           const AppModuleEntitlement(
             code: 'facilities-maintenance',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsTheater)
-          const AppModuleEntitlement(
-            code: theaterTheatreAnesthesiaModule,
             licenseStatus: 'ACTIVE',
           ),
       ];
@@ -143,86 +148,96 @@ void main() {
     _stubTheater(theaterRepository);
   });
 
-  group('TheaterInTheaterAtomPermissions helpers', () {
-    test('reuses Theater In theater requirements (no second vocabulary)', () {
+  group('TheaterScheduledAtomPermissions helpers', () {
+    test('reuses Theater Scheduled requirements (no second vocabulary)', () {
       expect(
-        TheaterInTheaterAtomPermissions.tab,
+        TheaterScheduledAtomPermissions.tab,
         same(theaterWorkspaceReadRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.write,
+        TheaterScheduledAtomPermissions.write,
         same(theaterClinicalWriteRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.scheduleCase,
+        TheaterScheduledAtomPermissions.scheduleCase,
         same(theaterScheduleCaseRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.success,
+        TheaterScheduledAtomPermissions.success,
         same(theaterClinicalWriteRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.validation,
+        TheaterScheduledAtomPermissions.validation,
         same(theaterClinicalWriteRequirement),
       );
       expect(
-        theaterBoardTabRequirement(TheaterSection.inTheater),
-        same(TheaterInTheaterAtomPermissions.tab),
+        theaterBoardTabRequirement(TheaterSection.scheduled),
+        same(TheaterScheduledAtomPermissions.tab),
       );
       expect(
-        theaterWriteRequirementForSection(TheaterSection.inTheater),
-        same(TheaterInTheaterAtomPermissions.write),
+        theaterWriteRequirementForSection(TheaterSection.scheduled),
+        same(TheaterScheduledAtomPermissions.write),
       );
       expect(
-        TheaterInTheaterAtomPermissions.routeEntry,
+        theaterDetailReadRequirement(TheaterSection.scheduled),
+        same(TheaterScheduledAtomPermissions.detail),
+      );
+      expect(
+        TheaterScheduledAtomPermissions.routeEntry,
         same(theaterWorkspaceEntryRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.catalogEntry,
+        TheaterScheduledAtomPermissions.catalogEntry,
         same(RouteAccessCatalog.theaterEntry),
       );
       expect(
-        TheaterInTheaterAtomPermissions.routeEntryUnion,
+        TheaterScheduledAtomPermissions.routeEntryUnion,
         same(theaterWorkspaceRouteUnionRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.billingHolds,
+        TheaterScheduledAtomPermissions.billingHolds,
         same(theaterBillingHoldReadRequirement),
       );
       expect(
-        TheaterInTheaterAtomPermissions.roomContext,
+        TheaterScheduledAtomPermissions.roomContext,
         same(theaterRoomContextReadRequirement),
       );
       expect(theaterRouteEntryMatchesAppRoutes(), isTrue);
     });
 
-    test('∩ denial: missing clinical:write hides In theater write atoms', () {
+    test('∩ denial: missing clinical:write hides Scheduled write atoms', () {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(TheaterInTheaterAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(TheaterInTheaterAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(TheaterScheduledAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(TheaterScheduledAtomPermissions.write.isAllowed(reader), isFalse);
       expect(
-        TheaterInTheaterAtomPermissions.scheduleCase.isAllowed(reader),
+        TheaterScheduledAtomPermissions.scheduleCase.isAllowed(reader),
         isFalse,
       );
       expect(
-        TheaterInTheaterAtomPermissions.nextActionAnesthesia.isAllowed(reader),
+        TheaterScheduledAtomPermissions.nextActionUpdateReadiness.isAllowed(
+          reader,
+        ),
         isFalse,
       );
       expect(
-        TheaterInTheaterAtomPermissions.cancelCase.isAllowed(reader),
+        TheaterScheduledAtomPermissions.nextActionStartCase.isAllowed(reader),
         isFalse,
       );
-      expect(canWriteTheaterInTheater(reader), isFalse);
       expect(
-        theaterBoardShowsNextActionColumn(reader, TheaterSection.inTheater),
+        TheaterScheduledAtomPermissions.cancelCase.isAllowed(reader),
+        isFalse,
+      );
+      expect(canWriteTheaterScheduled(reader), isFalse);
+      expect(
+        theaterBoardShowsNextActionColumn(reader, TheaterSection.scheduled),
         isFalse,
       );
     });
 
     test(
-      '∩ denial: patient:write alone does not unlock In theater mutations',
+      '∩ denial: patient:write alone does not unlock Scheduled mutations',
       () {
         final AppAccessPolicy patientWriter = _policy(
           permissions: <AppPermission>{
@@ -232,14 +247,14 @@ void main() {
           roles: const <String>['RECEPTIONIST'],
         );
         expect(
-          TheaterInTheaterAtomPermissions.tab.isAllowed(patientWriter),
+          TheaterScheduledAtomPermissions.tab.isAllowed(patientWriter),
           isTrue,
         );
         expect(
-          TheaterInTheaterAtomPermissions.write.isAllowed(patientWriter),
+          TheaterScheduledAtomPermissions.write.isAllowed(patientWriter),
           isFalse,
         );
-        expect(canWriteTheaterInTheater(patientWriter), isFalse);
+        expect(canWriteTheaterScheduled(patientWriter), isFalse);
       },
     );
 
@@ -250,22 +265,26 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
-      expect(TheaterInTheaterAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(TheaterScheduledAtomPermissions.write.isAllowed(writer), isTrue);
       expect(
-        TheaterInTheaterAtomPermissions.nextAction.isAllowed(writer),
+        TheaterScheduledAtomPermissions.nextAction.isAllowed(writer),
         isTrue,
       );
       expect(
-        TheaterInTheaterAtomPermissions.anesthesia.isAllowed(writer),
+        TheaterScheduledAtomPermissions.updateReadiness.isAllowed(writer),
         isTrue,
       );
       expect(
-        TheaterInTheaterAtomPermissions.panelDeepLink.isAllowed(writer),
+        TheaterScheduledAtomPermissions.startCase.isAllowed(writer),
         isTrue,
       );
-      expect(canWriteTheaterInTheater(writer), isTrue);
       expect(
-        theaterBoardShowsNextActionColumn(writer, TheaterSection.inTheater),
+        TheaterScheduledAtomPermissions.panelDeepLink.isAllowed(writer),
+        isTrue,
+      );
+      expect(canWriteTheaterScheduled(writer), isTrue);
+      expect(
+        theaterBoardShowsNextActionColumn(writer, TheaterSection.scheduled),
         isTrue,
       );
     });
@@ -282,89 +301,74 @@ void main() {
       );
     });
 
-    test('∪ allowance: clinical:read alone satisfies In theater read', () {
+    test('∪ allowance: clinical:read alone satisfies Scheduled read', () {
       final AppAccessPolicy clinical = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(TheaterInTheaterAtomPermissions.tab.isAllowed(clinical), isTrue);
+      expect(TheaterScheduledAtomPermissions.tab.isAllowed(clinical), isTrue);
       expect(
-        TheaterInTheaterAtomPermissions.search.isAllowed(clinical),
+        TheaterScheduledAtomPermissions.search.isAllowed(clinical),
         isTrue,
       );
-      expect(canViewTheaterInTheater(clinical), isTrue);
-      expect(canReadTheaterInTheater(clinical), isTrue);
+      expect(canViewTheaterScheduled(clinical), isTrue);
+      expect(canReadTheaterScheduled(clinical), isTrue);
     });
 
-    test('∪ allowance: patient:read alone satisfies In theater read', () {
+    test('∪ allowance: patient:read alone satisfies Scheduled read', () {
       final AppAccessPolicy patient = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
         roles: const <String>['RECEPTIONIST'],
       );
-      expect(TheaterInTheaterAtomPermissions.tab.isAllowed(patient), isTrue);
-      expect(
-        TheaterInTheaterAtomPermissions.loading.isAllowed(patient),
-        isTrue,
-      );
-      expect(TheaterInTheaterAtomPermissions.empty.isAllowed(patient), isTrue);
-      expect(TheaterInTheaterAtomPermissions.write.isAllowed(patient), isFalse);
-      expect(
-        canViewTheaterTab(patient, TheaterSection.inTheater),
-        isTrue,
-      );
+      expect(TheaterScheduledAtomPermissions.tab.isAllowed(patient), isTrue);
+      expect(TheaterScheduledAtomPermissions.loading.isAllowed(patient), isTrue);
+      expect(TheaterScheduledAtomPermissions.empty.isAllowed(patient), isTrue);
+      expect(TheaterScheduledAtomPermissions.write.isAllowed(patient), isFalse);
+      expect(canViewTheaterTab(patient, TheaterSection.scheduled), isTrue);
     });
 
     test(
-      'route entry ∪: billing:read satisfies routeEntryUnion, not In theater tab',
+      'route entry ∪: billing:read satisfies routeEntryUnion, not Scheduled tab',
       () {
         final AppAccessPolicy entryOnly = _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
           roles: const <String>['BILLING'],
         );
         expect(
-          TheaterInTheaterAtomPermissions.routeEntryUnion.isAllowed(entryOnly),
+          TheaterScheduledAtomPermissions.routeEntryUnion.isAllowed(entryOnly),
           isTrue,
         );
         expect(
-          TheaterInTheaterAtomPermissions.tab.isAllowed(entryOnly),
+          TheaterScheduledAtomPermissions.tab.isAllowed(entryOnly),
           isFalse,
         );
-        expect(canViewTheaterInTheater(entryOnly), isFalse);
+        expect(canViewTheaterScheduled(entryOnly), isFalse);
         expect(
-          TheaterInTheaterAtomPermissions.catalogEntry.isAllowed(entryOnly),
+          TheaterScheduledAtomPermissions.catalogEntry.isAllowed(entryOnly),
           isFalse,
         );
       },
     );
 
-    test(
-      'subscription strips In theater when theatre-anesthesia inactive',
-      () {
-        final AppAccessPolicy noModule = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-          },
-          modules: const <AppModuleEntitlement>[
-            AppModuleEntitlement(
-              code: 'encounters-vitals',
-              licenseStatus: 'ACTIVE',
-            ),
-          ],
-        );
-        expect(
-          TheaterInTheaterAtomPermissions.tab.isAllowed(noModule),
-          isFalse,
-        );
-        expect(
-          TheaterInTheaterAtomPermissions.write.isAllowed(noModule),
-          isFalse,
-        );
-        expect(canViewTheaterInTheater(noModule), isFalse);
-      },
-    );
+    test('subscription strips Scheduled when theatre-anesthesia inactive', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(TheaterScheduledAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(TheaterScheduledAtomPermissions.write.isAllowed(noModule), isFalse);
+      expect(canViewTheaterScheduled(noModule), isFalse);
+    });
 
     test(
-      'ABAC: missing facility still allows In theater chrome '
+      'ABAC: missing facility still allows Scheduled chrome '
       '(row/own scope remains backend-authoritative)',
       () {
         final AppAccessPolicy noFacility = _policy(
@@ -375,19 +379,16 @@ void main() {
           facilityId: null,
         );
         expect(noFacility.hasFacilityContext, isFalse);
+        expect(TheaterScheduledAtomPermissions.tab.isAllowed(noFacility), isTrue);
         expect(
-          TheaterInTheaterAtomPermissions.tab.isAllowed(noFacility),
-          isTrue,
-        );
-        expect(
-          TheaterInTheaterAtomPermissions.write.isAllowed(noFacility),
+          TheaterScheduledAtomPermissions.write.isAllowed(noFacility),
           isTrue,
         );
       },
     );
 
     test(
-      'nested cross-module _(n/a)_: In theater write does not grant billing',
+      'nested cross-module _(n/a)_: Scheduled write does not grant billing',
       () {
         final AppAccessPolicy writer = _policy(
           permissions: <AppPermission>{
@@ -395,14 +396,14 @@ void main() {
             AppPermissions.clinicalWrite,
           },
         );
-        expect(TheaterInTheaterAtomPermissions.write.isAllowed(writer), isTrue);
+        expect(TheaterScheduledAtomPermissions.write.isAllowed(writer), isTrue);
         expect(writer.grants(AppPermissions.billingRead), isFalse);
         expect(
-          TheaterInTheaterAtomPermissions.billingHolds.isAllowed(writer),
+          TheaterScheduledAtomPermissions.billingHolds.isAllowed(writer),
           isFalse,
         );
         expect(
-          TheaterInTheaterAtomPermissions.roomContext.isAllowed(writer),
+          TheaterScheduledAtomPermissions.roomContext.isAllowed(writer),
           isFalse,
         );
         final AppAccessPolicy billingOnly = _policy(
@@ -410,11 +411,11 @@ void main() {
           roles: const <String>['BILLING'],
         );
         expect(
-          TheaterInTheaterAtomPermissions.tab.isAllowed(billingOnly),
+          TheaterScheduledAtomPermissions.tab.isAllowed(billingOnly),
           isFalse,
         );
         expect(
-          TheaterInTheaterAtomPermissions.write.isAllowed(billingOnly),
+          TheaterScheduledAtomPermissions.write.isAllowed(billingOnly),
           isFalse,
         );
       },
@@ -429,13 +430,10 @@ void main() {
         },
       );
       expect(
-        TheaterInTheaterAtomPermissions.billingHolds.isAllowed(billingReader),
+        TheaterScheduledAtomPermissions.billingHolds.isAllowed(billingReader),
         isTrue,
       );
-      expect(
-        canViewTheaterBillingHolds(billingReader),
-        isTrue,
-      );
+      expect(canViewTheaterBillingHolds(billingReader), isTrue);
     });
 
     test('room/asset operations context requires operations:read', () {
@@ -446,13 +444,13 @@ void main() {
         },
       );
       expect(
-        TheaterInTheaterAtomPermissions.roomContext.isAllowed(opsReader),
+        TheaterScheduledAtomPermissions.roomContext.isAllowed(opsReader),
         isTrue,
       );
       expect(canViewTheaterRoomContext(opsReader), isTrue);
-      // Core room column stays on workspace read ∪ (not operations).
+      // Core time column stays on workspace read ∪ (not operations).
       expect(
-        TheaterInTheaterAtomPermissions.roomColumn.isAllowed(
+        TheaterScheduledAtomPermissions.timeColumn.isAllowed(
           _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
         ),
         isTrue,
@@ -461,9 +459,9 @@ void main() {
   });
 
   testWidgets(
-    '∪ denial: without clinical:read or patient:read, In theater absent',
+    '∪ denial: without clinical:read or patient:read, Scheduled absent',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -472,19 +470,20 @@ void main() {
         ),
       );
 
-      expect(_tab('In theater'), findsNothing);
-      expect(find.text('Ira InTheater'), findsNothing);
+      expect(_tab('Scheduled'), findsNothing);
+      expect(find.text('Sam Scheduled'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
-      // Every board tab is read-gated; the strip collapses entirely.
-      expect(find.byType(AppTabStrip), findsNothing);
+      // Unscanned Recovery remains once route is entered.
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(_tab('Recovery'), findsOneWidget);
     },
   );
 
   testWidgets(
     'authorized read ∪: clinical:read mounts list; write actions absent',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -492,14 +491,16 @@ void main() {
         ),
       );
 
-      expect(_tab('In theater'), findsOneWidget);
-      expect(find.text('Ira InTheater'), findsOneWidget);
+      expect(_tab('Scheduled'), findsOneWidget);
+      expect(find.text('Sam Scheduled'), findsOneWidget);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
-      expect(find.text('Anesthesia'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Update readiness'),
+        findsNothing,
+      );
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.text('Ira InTheater'));
+      await tester.tap(find.text('Sam Scheduled'));
       await _pumpAfterAction(tester);
 
       expect(find.text('CASE DETAIL'), findsOneWidget);
@@ -511,9 +512,9 @@ void main() {
   );
 
   testWidgets(
-    '∪ allowance: patient:read mounts In theater; write actions absent',
+    '∪ allowance: patient:read mounts Scheduled; write actions absent',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -522,12 +523,15 @@ void main() {
         ),
       );
 
-      expect(_tab('In theater'), findsOneWidget);
-      expect(find.text('Ira InTheater'), findsOneWidget);
+      expect(_tab('Scheduled'), findsOneWidget);
+      expect(find.text('Sam Scheduled'), findsOneWidget);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Update readiness'),
+        findsNothing,
+      );
 
-      await tester.tap(find.text('Ira InTheater'));
+      await tester.tap(find.text('Sam Scheduled'));
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppQuickActions), findsNothing);
@@ -536,9 +540,9 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Schedule / Anesthesia / detail Quick Actions mount',
+    'full write ∩: Schedule case / next-action / detail Quick Actions mount',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -549,11 +553,14 @@ void main() {
         ),
       );
 
-      expect(find.text('Ira InTheater'), findsOneWidget);
+      expect(find.text('Sam Scheduled'), findsOneWidget);
       expect(_toolbarPrimary('Schedule case'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Anesthesia'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppButton, 'Update readiness'),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.text('Ira InTheater'));
+      await tester.tap(find.text('Sam Scheduled'));
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppQuickActions), findsOneWidget);
@@ -571,11 +578,12 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Next-action Anesthesia is omitted from Quick Actions when opened from row.
+      // Next-action Update readiness is omitted from Quick Actions when
+      // opened from a row.
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
-          matching: find.text('Anesthesia'),
+          matching: find.text('Update readiness'),
         ),
         findsNothing,
       );
@@ -583,26 +591,14 @@ void main() {
   );
 
   testWidgets(
-    'authorized Anesthesia next-action syncs after Save record',
+    'ready case shows Start case next-action for writers only',
     (WidgetTester tester) async {
-      when(
-        () => theaterRepository.upsertAnesthesiaRecord(any(), any()),
-      ).thenAnswer(
-        (_) async => Result<TheaterCase>.success(
-          TheaterCase(
-            id: _inTheaterCase.id,
-            displayId: _inTheaterCase.displayId,
-            patientDisplayName: _inTheaterCase.patientDisplayName,
-            status: 'IN_PROGRESS',
-            workflowStage: 'INTRA_OP',
-            checklistTotal: 2,
-            checklistCompleted: 2,
-            anesthesiaStatus: 'FINAL',
-          ),
-        ),
+      _stubTheater(
+        theaterRepository,
+        cases: const <TheaterCase>[_readyScheduledCase],
       );
 
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -613,9 +609,46 @@ void main() {
         ),
       );
 
-      final Finder anesthesia = find.widgetWithText(AppButton, 'Anesthesia');
-      await tester.ensureVisible(anesthesia);
-      await tester.tap(anesthesia);
+      expect(find.widgetWithText(AppButton, 'Start case'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Update readiness next-action syncs after save',
+    (WidgetTester tester) async {
+      when(
+        () => theaterRepository.toggleChecklistItem(any(), any()),
+      ).thenAnswer(
+        (_) async => Result<TheaterCase>.success(
+          TheaterCase(
+            id: _scheduledCase.id,
+            displayId: _scheduledCase.displayId,
+            patientDisplayName: _scheduledCase.patientDisplayName,
+            status: 'SCHEDULED',
+            workflowStage: 'PRE_OP',
+            checklistTotal: 2,
+            checklistCompleted: 2,
+          ),
+        ),
+      );
+
+      await _pumpScheduledTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final Finder readiness = find.widgetWithText(
+        AppButton,
+        'Update readiness',
+      );
+      await tester.ensureVisible(readiness);
+      await tester.tap(readiness);
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsOneWidget);
@@ -626,12 +659,17 @@ void main() {
         matching: find.byType(TextField),
       );
       expect(dialogFields, findsWidgets);
-      await tester.enterText(dialogFields.last, 'Stable under GA');
-      await tester.tap(find.widgetWithText(AppButton, 'Save record'));
+      await tester.enterText(dialogFields.first, 'WHO-SIGN-IN');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.widgetWithText(AppButton, 'Update readiness'),
+        ),
+      );
       await _pumpAfterAction(tester);
 
       verify(
-        () => theaterRepository.upsertAnesthesiaRecord(any(), any()),
+        () => theaterRepository.toggleChecklistItem(any(), any()),
       ).called(1);
       expect(find.textContaining('Theater changes saved'), findsWidgets);
     },
@@ -640,7 +678,7 @@ void main() {
   testWidgets(
     'authorized validation feedback remains on cancel without reason',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -651,7 +689,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Ira InTheater'));
+      await tester.tap(find.text('Sam Scheduled'));
       await _pumpAfterAction(tester);
       await tester.ensureVisible(
         find.descendant(
@@ -677,14 +715,14 @@ void main() {
     },
   );
 
-  testWidgets('error / retry state remains for authorized In theater users', (
+  testWidgets('error / retry state remains for authorized Scheduled users', (
     WidgetTester tester,
   ) async {
     when(() => theaterRepository.listCases(any())).thenAnswer(
       (_) async => const Result<AppPage<TheaterCase>>.failure(NetworkFailure()),
     );
 
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -693,17 +731,17 @@ void main() {
     );
 
     expect(find.textContaining('Try again'), findsWidgets);
-    expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
     expect(_toolbarPrimary('Schedule case'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('empty state remains for authorized In theater users', (
+  testWidgets('empty state remains for authorized Scheduled users', (
     WidgetTester tester,
   ) async {
     _stubTheater(theaterRepository, cases: const <TheaterCase>[]);
 
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -712,11 +750,11 @@ void main() {
     );
 
     expect(find.text('No theater cases'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
     expect(_toolbarPrimary('Schedule case'), findsNothing);
   });
 
-  testWidgets('authorized loading chrome remains observable on In theater', (
+  testWidgets('authorized loading chrome remains observable on Scheduled', (
     WidgetTester tester,
   ) async {
     final Completer<Result<AppPage<TheaterCase>>> listCompleter =
@@ -734,7 +772,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final GoRouter router = GoRouter(
-      initialLocation: '/theater?section=in-theater',
+      initialLocation: '/theater?section=scheduled',
       routes: <RouteBase>[
         GoRoute(
           path: '/theater',
@@ -781,13 +819,13 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('Loading'), findsWidgets);
-    expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
 
     listCompleter.complete(
       Result<AppPage<TheaterCase>>.success(
         AppPage<TheaterCase>(
-          items: const <TheaterCase>[_inTheaterCase],
+          items: const <TheaterCase>[_scheduledCase],
           request: const AppPageRequest(pageSize: 12),
           totalItemCount: 1,
         ),
@@ -796,13 +834,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Ira InTheater'), findsOneWidget);
+    expect(find.text('Sam Scheduled'), findsOneWidget);
   });
 
-  testWidgets('mobile viewport: authorized In theater list remains usable', (
+  testWidgets('mobile viewport: authorized Scheduled list remains usable', (
     WidgetTester tester,
   ) async {
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -814,16 +852,19 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(_tab('In theater'), findsOneWidget);
+    expect(_tab('Scheduled'), findsOneWidget);
     expect(find.byType(AppListTableMobileItem), findsWidgets);
-    expect(find.textContaining('Ira'), findsWidgets);
-    expect(find.widgetWithText(AppButton, 'Anesthesia'), findsOneWidget);
+    expect(find.textContaining('Sam'), findsWidgets);
+    expect(
+      find.widgetWithText(AppButton, 'Update readiness'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('desktop viewport: authorized In theater chrome remains', (
+  testWidgets('desktop viewport: authorized Scheduled chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -835,15 +876,15 @@ void main() {
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.text('Ira InTheater'), findsOneWidget);
-    expect(_tab('In theater'), findsOneWidget);
+    expect(find.text('Sam Scheduled'), findsOneWidget);
+    expect(_tab('Scheduled'), findsOneWidget);
     expect(_toolbarPrimary('Schedule case'), findsOneWidget);
   });
 
-  testWidgets('light theme: authorized In theater chrome remains', (
+  testWidgets('light theme: authorized Scheduled chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -855,14 +896,14 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(find.text('Ira InTheater'), findsOneWidget);
-    expect(_tab('In theater'), findsOneWidget);
+    expect(find.text('Sam Scheduled'), findsOneWidget);
+    expect(_tab('Scheduled'), findsOneWidget);
   });
 
-  testWidgets('dark theme: authorized In theater chrome remains', (
+  testWidgets('dark theme: authorized Scheduled chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpInTheaterTab(
+    await _pumpScheduledTab(
       tester,
       theaterRepository: theaterRepository,
       accessPolicy: _policy(
@@ -874,33 +915,33 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.text('Ira InTheater'), findsOneWidget);
-    expect(_tab('In theater'), findsOneWidget);
+    expect(find.text('Sam Scheduled'), findsOneWidget);
+    expect(_tab('Scheduled'), findsOneWidget);
   });
 
   testWidgets(
-    'deep link section=in-theater without read falls back off In theater',
+    'deep link section=scheduled without read falls back off Scheduled',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
           roles: const <String>['BILLING'],
         ),
-        initialLocation: '/theater?section=in-theater',
+        initialLocation: '/theater?section=scheduled',
       );
 
-      expect(_tab('In theater'), findsNothing);
-      expect(find.text('Ira InTheater'), findsNothing);
+      expect(_tab('Scheduled'), findsNothing);
+      expect(find.text('Sam Scheduled'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'subscription strips In theater tab when theatre-anesthesia inactive',
+    'subscription strips Scheduled tab when theatre-anesthesia inactive',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -922,16 +963,16 @@ void main() {
         ),
       );
 
-      expect(_tab('In theater'), findsNothing);
-      expect(find.text('Ira InTheater'), findsNothing);
+      expect(_tab('Scheduled'), findsNothing);
+      expect(find.text('Sam Scheduled'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'integration: In theater board uses section write ∩ for next-action column',
+    'integration: Scheduled board uses section write ∩ for next-action column',
     (WidgetTester tester) async {
-      await _pumpInTheaterTab(
+      await _pumpScheduledTab(
         tester,
         theaterRepository: theaterRepository,
         accessPolicy: _policy(
@@ -942,11 +983,8 @@ void main() {
         ),
       );
 
-      final AppListTable<TheaterCase> table = tester
-          .widget<AppListTable<TheaterCase>>(
-            find.byType(AppListTable<TheaterCase>),
-          );
-      expect(table.columnVisibilityStorageKey, 'theater_inTheater');
+      final AppListTable<TheaterCase> table = _table(tester);
+      expect(table.columnVisibilityStorageKey, 'theater_scheduled');
       expect(
         table.columns.any(
           (AppListTableColumn<TheaterCase> c) => c.id == 'next_action',
@@ -954,8 +992,29 @@ void main() {
         isTrue,
       );
       expect(
-        table.columns.any((AppListTableColumn<TheaterCase> c) => c.id == 'room'),
+        table.columns.any((AppListTableColumn<TheaterCase> c) => c.id == 'time'),
         isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'integration: read-only Scheduled board omits next-action column',
+    (WidgetTester tester) async {
+      await _pumpScheduledTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = _table(tester);
+      expect(
+        table.columns.any(
+          (AppListTableColumn<TheaterCase> c) => c.id == 'next_action',
+        ),
+        isFalse,
       );
     },
   );
@@ -967,13 +1026,13 @@ Future<void> _pumpAfterAction(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
 }
 
-Future<void> _pumpInTheaterTab(
+Future<void> _pumpScheduledTab(
   WidgetTester tester, {
   required _MockTheaterRepository theaterRepository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/theater?section=in-theater',
+  String initialLocation = '/theater?section=scheduled',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -1030,7 +1089,7 @@ Future<void> _pumpInTheaterTab(
 
 void _stubTheater(
   _MockTheaterRepository repository, {
-  List<TheaterCase> cases = const <TheaterCase>[_inTheaterCase],
+  List<TheaterCase> cases = const <TheaterCase>[_scheduledCase],
 }) {
   when(() => repository.listCases(any())).thenAnswer((
     Invocation invocation,
@@ -1063,7 +1122,7 @@ void _stubTheater(
   ) async {
     final String id = invocation.positionalArguments.single as String;
     if (cases.isEmpty) {
-      return Result<TheaterCase>.success(_inTheaterCase);
+      return Result<TheaterCase>.success(_scheduledCase);
     }
     final TheaterCase match = cases.firstWhere(
       (TheaterCase item) => item.id == id || item.effectiveDisplayId == id,

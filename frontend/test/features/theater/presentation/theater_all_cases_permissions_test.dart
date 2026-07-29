@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
 import 'package:hosspi_hms/features/theater/presentation/theater_next_action.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
@@ -481,11 +482,12 @@ void main() {
 
       expect(_tab('All cases'), findsNothing);
       expect(_tab('In theater'), findsNothing);
+      expect(_tab('Scheduled'), findsNothing);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      // Unscanned Scheduled / Recovery remain once route is entered.
-      expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(_tab('Scheduled'), findsOneWidget);
+      // Every board tab is read-gated; the strip collapses entirely.
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_tab('Recovery'), findsNothing);
     },
   );
 
@@ -590,6 +592,53 @@ void main() {
         ),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'nested billing holds panel absent in Schedule dialog without '
+    'billing:read',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(_toolbarPrimary('Schedule case'));
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(ClinicalRequestBillingPanel), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested billing holds panel mounts in Schedule dialog with billing:read',
+    (WidgetTester tester) async {
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.billingRead,
+          },
+        ),
+      );
+
+      await tester.tap(_toolbarPrimary('Schedule case'));
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(ClinicalRequestBillingPanel), findsOneWidget);
     },
   );
 
@@ -895,9 +944,11 @@ void main() {
       );
 
       expect(_tab('All cases'), findsNothing);
-      expect(_tab('Scheduled'), findsOneWidget);
-      expect(find.byType(AppListTable<TheaterCase>), findsOneWidget);
-      expect(_table(tester).columnVisibilityStorageKey, 'theater_scheduled');
+      // Every board tab is read-gated; no fallback board mounts.
+      expect(_tab('Scheduled'), findsNothing);
+      expect(_tab('Recovery'), findsNothing);
+      expect(find.byType(AppListTable<TheaterCase>), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -931,8 +982,8 @@ void main() {
       expect(_tab('In theater'), findsNothing);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      // Unscanned tabs stay; All cases / In theater / Follow-ups collapse.
-      expect(find.byType(AppTabStrip), findsOneWidget);
+      // Inactive module strips every board tab; the strip collapses.
+      expect(find.byType(AppTabStrip), findsNothing);
     },
   );
 
@@ -1061,6 +1112,11 @@ void _stubCases(
       ),
     );
   });
+  when(() => repository.searchSchedulePatients(any())).thenAnswer(
+    (_) async => const Result<List<TheaterSchedulePatient>>.success(
+      <TheaterSchedulePatient>[],
+    ),
+  );
   when(() => repository.getCase(any())).thenAnswer((
     Invocation invocation,
   ) async {

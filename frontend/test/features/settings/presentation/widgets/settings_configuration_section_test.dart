@@ -118,7 +118,6 @@ void main() {
           AppPermissions.facilityAdmin,
           AppPermissions.tenantAdmin,
         ],
-        tab: 'configuration',
       );
 
       expect(find.text('Configuration'), findsNothing);
@@ -136,7 +135,6 @@ void main() {
       await _pumpSettings(
         tester,
         permissions: <AppPermission>[AppPermissions.profileRead],
-        tab: 'configuration',
       );
 
       expect(find.text('Configuration'), findsNothing);
@@ -195,7 +193,6 @@ void main() {
           AppPermissions.facilityAdmin,
         ],
         facilityId: null,
-        tab: 'configuration',
       );
 
       expect(find.text('Configuration'), findsNothing);
@@ -235,7 +232,6 @@ void main() {
           AppPermissions.facilityAdmin,
         ],
         size: const Size(390, 844),
-        themeMode: ThemeMode.light,
       );
 
       expect(find.text('Configuration'), findsWidgets);
@@ -346,10 +342,10 @@ void main() {
         find.text('Configuration saved successfully.'),
         findsOneWidget,
       );
-      final TextEditingController? amountController =
+      final TextEditingController amountController =
           tester.widget<EditableText>(find.byType(EditableText)).controller;
       expect(
-        amountController?.text.replaceAll(RegExp(r'[^0-9.]'), ''),
+        amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
         '7500',
       );
       expect(
@@ -434,7 +430,6 @@ void main() {
 Future<void> _pumpSettings(
   WidgetTester tester, {
   required List<AppPermission> permissions,
-  String tab = 'configuration',
   String? facilityId = 'facility-1',
   Size size = const Size(900, 1000),
   ThemeMode themeMode = ThemeMode.light,
@@ -471,10 +466,10 @@ Future<void> _pumpSettings(
         themeMode: themeMode,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Scaffold(
+        home: const Scaffold(
           body: SingleChildScrollView(
             child: SettingsPage(
-              initialQuery: SettingsPageQuery(tab: tab),
+              initialQuery: SettingsPageQuery(tab: 'configuration'),
             ),
           ),
         ),
@@ -526,10 +521,10 @@ Future<void> _pumpSection(
         themeMode: themeMode,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Scaffold(
+        home: const Scaffold(
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: const SettingsConfigurationSection(),
+            padding: EdgeInsets.all(24),
+            child: SettingsConfigurationSection(),
           ),
         ),
       ),

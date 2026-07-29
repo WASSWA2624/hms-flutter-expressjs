@@ -225,13 +225,11 @@ void main() {
     test(
       'admin/profile keys are core — no subscription module strip on tab',
       () {
-        final AppAccessPolicy noModules = _policy(
-          <AppPermission>[
-            AppPermissions.profileRead,
-            AppPermissions.facilityAdmin,
-          ],
-          modules: const <AppModuleEntitlement>[],
-        );
+        // `_policy` defaults to an empty subscription module list.
+        final AppAccessPolicy noModules = _policy(<AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+        ]);
         expect(
           SettingsConfigurationAtomPermissions.tab.isAllowed(noModules),
           isTrue,

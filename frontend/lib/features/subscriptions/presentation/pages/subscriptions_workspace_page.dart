@@ -126,6 +126,24 @@ class _SubscriptionsWorkspacePageState
         }
         _openedRouteDetailSignature = signature;
         final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+        // Deep-link detail inherits the tab's read/row-select gate: a route ∪
+        // grant (system:admin) alone must not mount the detail dialog.
+        final bool canOpenDetail = switch (item.resource) {
+          SubscriptionResource.subscriptionPlans ||
+          SubscriptionResource.modules =>
+            SubscriptionsPlansAtomPermissions.rowSelect.isAllowed(policy),
+          SubscriptionResource.subscriptions ||
+          SubscriptionResource.moduleSubscriptions =>
+            SubscriptionsAtomPermissions.rowSelect.isAllowed(policy),
+          SubscriptionResource.licenses =>
+            SubscriptionsLicensesAtomPermissions.rowSelect.isAllowed(policy),
+          SubscriptionResource.subscriptionInvoices =>
+            SubscriptionsInvoicesAtomPermissions.rowSelect.isAllowed(policy),
+          _ => canReadSubscriptions(policy),
+        };
+        if (!canOpenDetail) {
+          return;
+        }
         final bool canWrite = switch (item.resource) {
           SubscriptionResource.subscriptionPlans =>
             SubscriptionsPlansAtomPermissions.update.isAllowed(policy),

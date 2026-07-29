@@ -121,16 +121,15 @@ const AccessRequirement theaterScheduleCaseRequirement =
 
 /// Per-section tab strip gate.
 ///
-/// All / In theater / Follow-ups use matrix read ∪. Scheduled / Recovery are
-/// not yet permission-scanned — keep visible once the route is entered
-/// (`AccessRequirement()`).
+/// All board tabs use matrix read ∪ (`clinical:read` | `patient:read` +
+/// `theatre-anesthesia`).
 AccessRequirement theaterBoardTabRequirement(TheaterSection section) {
   return switch (section) {
     TheaterSection.all => TheaterAllAtomPermissions.tab,
+    TheaterSection.scheduled => TheaterScheduledAtomPermissions.tab,
     TheaterSection.inTheater => TheaterInTheaterAtomPermissions.tab,
     TheaterSection.followUps => TheaterFollowUpsAtomPermissions.tab,
-    TheaterSection.scheduled ||
-    TheaterSection.recovery => const AccessRequirement(),
+    TheaterSection.recovery => TheaterRecoveryAtomPermissions.tab,
   };
 }
 
@@ -147,6 +146,18 @@ bool canViewTheaterAll(AppAccessPolicy policy) {
   return TheaterAllAtomPermissions.tab.isAllowed(policy);
 }
 
+bool canViewTheaterScheduled(AppAccessPolicy policy) {
+  return TheaterScheduledAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canReadTheaterScheduled(AppAccessPolicy policy) {
+  return TheaterScheduledAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canWriteTheaterScheduled(AppAccessPolicy policy) {
+  return TheaterScheduledAtomPermissions.write.isAllowed(policy);
+}
+
 bool canViewTheaterInTheater(AppAccessPolicy policy) {
   return TheaterInTheaterAtomPermissions.tab.isAllowed(policy);
 }
@@ -157,6 +168,18 @@ bool canReadTheaterInTheater(AppAccessPolicy policy) {
 
 bool canWriteTheaterInTheater(AppAccessPolicy policy) {
   return TheaterInTheaterAtomPermissions.write.isAllowed(policy);
+}
+
+bool canViewTheaterRecovery(AppAccessPolicy policy) {
+  return TheaterRecoveryAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canReadTheaterRecovery(AppAccessPolicy policy) {
+  return TheaterRecoveryAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canWriteTheaterRecovery(AppAccessPolicy policy) {
+  return TheaterRecoveryAtomPermissions.write.isAllowed(policy);
 }
 
 bool canViewTheaterFollowUps(AppAccessPolicy policy) {
@@ -236,10 +259,10 @@ TheaterSection? theaterFallbackSection(AppAccessPolicy policy) {
 AccessRequirement theaterWriteRequirementForSection(TheaterSection section) {
   return switch (section) {
     TheaterSection.all => TheaterAllAtomPermissions.write,
+    TheaterSection.scheduled => TheaterScheduledAtomPermissions.write,
     TheaterSection.inTheater => TheaterInTheaterAtomPermissions.write,
     TheaterSection.followUps => TheaterFollowUpsAtomPermissions.write,
-    TheaterSection.scheduled ||
-    TheaterSection.recovery => theaterClinicalWriteRequirement,
+    TheaterSection.recovery => TheaterRecoveryAtomPermissions.write,
   };
 }
 
@@ -247,18 +270,17 @@ AccessRequirement theaterWriteRequirementForSection(TheaterSection section) {
 AccessRequirement theaterDetailReadRequirement(TheaterSection section) {
   return switch (section) {
     TheaterSection.all => TheaterAllAtomPermissions.detail,
+    TheaterSection.scheduled => TheaterScheduledAtomPermissions.detail,
     TheaterSection.inTheater => TheaterInTheaterAtomPermissions.detail,
     TheaterSection.followUps => TheaterFollowUpsAtomPermissions.detail,
-    TheaterSection.scheduled ||
-    TheaterSection.recovery => theaterWorkspaceReadRequirement,
+    TheaterSection.recovery => TheaterRecoveryAtomPermissions.detail,
   };
 }
 
 /// Whether the Next action column mounts for [section].
 ///
-/// In theater / All-cases next-actions are write ∩ only — omit the column for
-/// read-only users so mutation affordances do not mount. Follow-ups has no row
-/// next-action. Unscanned tabs keep write ∩ gating for next-action chrome.
+/// Board next-actions are write ∩ only — omit the column for read-only users
+/// so mutation affordances do not mount. Follow-ups has no row next-action.
 bool theaterBoardShowsNextActionColumn(
   AppAccessPolicy policy,
   TheaterSection section,
@@ -394,6 +416,104 @@ abstract final class TheaterAllAtomPermissions {
   static const AccessRequirement operationsRead =
       theaterOperationsReadRequirement;
   static const AccessRequirement roomColumn = theaterWorkspaceReadRequirement;
+  static const AccessRequirement roomFilter = theaterWorkspaceReadRequirement;
+  static const AccessRequirement navigation = theaterNavigationRequirement;
+  static const AccessRequirement openIpd = theaterNavigationRequirement;
+  static const AccessRequirement openEmergency = theaterNavigationRequirement;
+  /// Nested cross-module — matrix _(n/a)_; reuses theater write/read only.
+  static const AccessRequirement nestedWrite = theaterClinicalWriteRequirement;
+  static const AccessRequirement nestedRead = theaterWorkspaceReadRequirement;
+  static const AccessRequirement panelDeepLink =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement entry = theaterWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = theaterWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      theaterWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.theaterEntry;
+  static const AccessRequirement appRoutesEntry =
+      theaterWorkspaceRouteUnionRequirement;
+  static const AccessRequirement read = theaterWorkspaceReadRequirement;
+}
+
+/// Scheduled tab atom → permission mapping (inventory + matrix).
+///
+/// Pre-op board (`/theater?section=scheduled`, status=SCHEDULED owned by the
+/// tab — no status/stage filter groups). Schedule case is the tab primary
+/// (matrix create ∩ `clinical:write` + `theatre-anesthesia`); reschedule /
+/// stage / readiness / start / cancel use the same write ∩. Nested
+/// cross-module matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse
+/// theater write/read only. Billing holds on schedule form need
+/// [billingHolds] (`billing:read`). Room/asset operations context documents
+/// [roomContext] (`operations:read`); core time column / room filter stay on
+/// workspace read. Route entry keeps catalog ∩ `theater:read`
+/// ([catalogEntry]); AppRoutes ∪ is [routeEntryUnion]. Tab chrome stays ∪
+/// `clinical:read` | `patient:read`. Open IPD / Open Emergency remain
+/// without write.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Scheduled tab / count badge | navigate | read ∪ ([tab]) |
+/// | Schedule case (toolbar primary) | create | write ∩ ([scheduleCase]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Date / room / surgeon / anesthetist filters | read chrome | ([filters]) |
+/// | Time column (default) | read | ([timeColumn]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → case detail | read | ([detail]) |
+/// | Next action Update readiness / Start case | update | write ∩ |
+/// | Detail complementary writes (reschedule, stage, resource, cancel, …) | create / update / delete | write ∩ |
+/// | Detail Open IPD / Open Emergency | navigate | [navigation] |
+/// | Schedule billing holds panel | nested read | ([billingHolds]) |
+/// | Nested mutation dialogs / `panel=` deep link | create / update | write ∩ ([panelDeepLink]) |
+/// | Hard delete / void | delete | write ∩ ([delete]) — cancel uses update |
+/// | Route entry (catalog) | navigate | ∩ theater:read ([catalogEntry]) |
+/// | Route entry (AppRoutes) | navigate | ∪ patient\|clinical\|billing\|operations:read ([appRoutesEntry]) |
+abstract final class TheaterScheduledAtomPermissions {
+  static const AccessRequirement tab = theaterWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = theaterWorkspaceReadRequirement;
+  static const AccessRequirement search = theaterWorkspaceReadRequirement;
+  static const AccessRequirement filters = theaterWorkspaceReadRequirement;
+  static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement empty = theaterWorkspaceReadRequirement;
+  static const AccessRequirement loading = theaterWorkspaceReadRequirement;
+  static const AccessRequirement retry = theaterWorkspaceReadRequirement;
+  static const AccessRequirement success = theaterClinicalWriteRequirement;
+  static const AccessRequirement validation = theaterClinicalWriteRequirement;
+  static const AccessRequirement rowSelect = theaterWorkspaceReadRequirement;
+  static const AccessRequirement detail = theaterWorkspaceReadRequirement;
+  static const AccessRequirement create = theaterClinicalWriteRequirement;
+  static const AccessRequirement update = theaterClinicalWriteRequirement;
+  static const AccessRequirement delete = theaterWorkspaceDeleteRequirement;
+  static const AccessRequirement write = theaterClinicalWriteRequirement;
+  static const AccessRequirement clinicalWrite = theaterClinicalWriteRequirement;
+  static const AccessRequirement scheduleCase = theaterScheduleCaseRequirement;
+  static const AccessRequirement nextAction = theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionUpdateReadiness =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionStartCase =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement reschedule = theaterClinicalWriteRequirement;
+  static const AccessRequirement updateStage = theaterClinicalWriteRequirement;
+  static const AccessRequirement assignResource =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement updateReadiness =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement startCase = theaterClinicalWriteRequirement;
+  static const AccessRequirement anesthesia = theaterClinicalWriteRequirement;
+  static const AccessRequirement postOp = theaterClinicalWriteRequirement;
+  static const AccessRequirement handover = theaterClinicalWriteRequirement;
+  static const AccessRequirement finalize = theaterClinicalWriteRequirement;
+  static const AccessRequirement cancelCase = theaterClinicalWriteRequirement;
+  static const AccessRequirement billingHolds =
+      theaterBillingHoldReadRequirement;
+  static const AccessRequirement scheduleBilling =
+      theaterBillingHoldReadRequirement;
+  static const AccessRequirement billingHold = theaterBillingHoldReadRequirement;
+  static const AccessRequirement roomContext =
+      theaterRoomContextReadRequirement;
+  static const AccessRequirement operationsRead =
+      theaterOperationsReadRequirement;
+  static const AccessRequirement timeColumn = theaterWorkspaceReadRequirement;
   static const AccessRequirement roomFilter = theaterWorkspaceReadRequirement;
   static const AccessRequirement navigation = theaterNavigationRequirement;
   static const AccessRequirement openIpd = theaterNavigationRequirement;
@@ -580,4 +700,106 @@ abstract final class TheaterFollowUpsAtomPermissions {
       theaterWorkspaceRouteUnionRequirement;
   static const AccessRequirement catalogEntry = RouteAccessCatalog.theaterEntry;
   static const AccessRequirement read = theaterFollowUpsRequirement;
+}
+
+/// Recovery tab atom → permission mapping (inventory + matrix).
+///
+/// PACU / recovery board (`/theater?section=recovery`, stage `POST_OP`).
+/// Post-op / handover / readiness / anesthesia / stage / reschedule / cancel
+/// need matrix ∩ `clinical:write` + `theatre-anesthesia`. Nested cross-module
+/// matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse theater
+/// write/read only. Billing holds on schedule form need [billingHolds]
+/// (`billing:read`). Room/asset operations context documents [roomContext]
+/// (`operations:read`); core room column / room filter stay on workspace
+/// read. Route entry keeps catalog ∩ `theater:read` ([catalogEntry]);
+/// AppRoutes ∪ is [routeEntryUnion]. Tab chrome stays ∪ `clinical:read` |
+/// `patient:read`. Open IPD / Open Emergency remain without write.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Recovery tab / count badge | navigate | read ∪ ([tab]) |
+/// | Schedule case (toolbar) | create | write ∩ ([scheduleCase]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
+/// | Room column (default) | read | ([roomColumn]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → case detail | read | ([detail]) |
+/// | Next action post-op / handover / readiness / anesthesia | update | write ∩ |
+/// | Detail complementary writes (reschedule, stage, resource, cancel, …) | create / update / delete | write ∩ |
+/// | Detail Open IPD / Open Emergency | navigate | [navigation] |
+/// | Schedule billing holds panel | nested read | ([billingHolds]) |
+/// | Nested mutation dialogs / `panel=` deep link | create / update | write ∩ ([panelDeepLink]) |
+/// | Hard delete / void | delete | write ∩ ([delete]) — cancel uses update |
+/// | Route entry (catalog) | navigate | ∩ theater:read ([catalogEntry]) |
+/// | Route entry (AppRoutes) | navigate | ∪ patient\|clinical\|billing\|operations:read ([appRoutesEntry]) |
+abstract final class TheaterRecoveryAtomPermissions {
+  static const AccessRequirement tab = theaterWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = theaterWorkspaceReadRequirement;
+  static const AccessRequirement search = theaterWorkspaceReadRequirement;
+  static const AccessRequirement filters = theaterWorkspaceReadRequirement;
+  static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement empty = theaterWorkspaceReadRequirement;
+  static const AccessRequirement loading = theaterWorkspaceReadRequirement;
+  static const AccessRequirement retry = theaterWorkspaceReadRequirement;
+  static const AccessRequirement success = theaterClinicalWriteRequirement;
+  static const AccessRequirement validation = theaterClinicalWriteRequirement;
+  static const AccessRequirement rowSelect = theaterWorkspaceReadRequirement;
+  static const AccessRequirement detail = theaterWorkspaceReadRequirement;
+  static const AccessRequirement create = theaterClinicalWriteRequirement;
+  static const AccessRequirement update = theaterClinicalWriteRequirement;
+  static const AccessRequirement delete = theaterWorkspaceDeleteRequirement;
+  static const AccessRequirement write = theaterClinicalWriteRequirement;
+  static const AccessRequirement clinicalWrite = theaterClinicalWriteRequirement;
+  static const AccessRequirement scheduleCase = theaterScheduleCaseRequirement;
+  static const AccessRequirement nextAction = theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionUpdateReadiness =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionStartCase =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionAnesthesia =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionPostOp =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement nextActionHandover =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement reschedule = theaterClinicalWriteRequirement;
+  static const AccessRequirement updateStage = theaterClinicalWriteRequirement;
+  static const AccessRequirement assignResource =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement updateReadiness =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement anesthesia = theaterClinicalWriteRequirement;
+  static const AccessRequirement postOp = theaterClinicalWriteRequirement;
+  static const AccessRequirement handover = theaterClinicalWriteRequirement;
+  static const AccessRequirement finalize = theaterClinicalWriteRequirement;
+  static const AccessRequirement cancelCase = theaterClinicalWriteRequirement;
+  static const AccessRequirement billingHolds =
+      theaterBillingHoldReadRequirement;
+  static const AccessRequirement scheduleBilling =
+      theaterBillingHoldReadRequirement;
+  static const AccessRequirement billingHold = theaterBillingHoldReadRequirement;
+  static const AccessRequirement roomContext =
+      theaterRoomContextReadRequirement;
+  static const AccessRequirement operationsRead =
+      theaterOperationsReadRequirement;
+  static const AccessRequirement roomColumn = theaterWorkspaceReadRequirement;
+  static const AccessRequirement roomFilter = theaterWorkspaceReadRequirement;
+  static const AccessRequirement navigation = theaterNavigationRequirement;
+  static const AccessRequirement openIpd = theaterNavigationRequirement;
+  static const AccessRequirement openEmergency = theaterNavigationRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses theater write/read only.
+  static const AccessRequirement nestedWrite = theaterClinicalWriteRequirement;
+  static const AccessRequirement nestedRead = theaterWorkspaceReadRequirement;
+  static const AccessRequirement panelDeepLink =
+      theaterClinicalWriteRequirement;
+  static const AccessRequirement entry = theaterWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = theaterWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      theaterWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.theaterEntry;
+  static const AccessRequirement appRoutesEntry =
+      theaterWorkspaceRouteUnionRequirement;
+  static const AccessRequirement read = theaterWorkspaceReadRequirement;
 }

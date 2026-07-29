@@ -727,7 +727,7 @@ void main() {
         tester,
         repository: repository,
         accessPolicy: reader,
-        loadFailure: const AppFailure.network(message: 'Network unavailable'),
+        loadFailure: const AppFailure.network(),
       );
 
       expect(find.text('Try again'), findsOneWidget);
