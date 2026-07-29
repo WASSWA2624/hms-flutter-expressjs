@@ -573,8 +573,8 @@ void main() {
   testWidgets(
     'route entry ∩ without Completed tab read omits Completed chrome',
     (WidgetTester tester) async {
-      // Entry ∩ discharge:read keeps Planned/Pending; Completed needs
-      // clinical:read | last_office:read.
+      // Entry ∩ discharge:read is not enough for desk tabs (read ∪
+      // clinical:read | last_office:read); strip collapses.
       await _pumpCompletedTab(
         tester,
         repository: repository,
@@ -593,9 +593,8 @@ void main() {
 
       expect(find.text('Carol Completed'), findsNothing);
       expect(find.textContaining('Completed'), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('Planned'), findsWidgets);
     },
   );
 

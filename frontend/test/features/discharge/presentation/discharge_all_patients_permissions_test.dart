@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -767,4 +768,53 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets('authorized empty All queue state remains observable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAllTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      ),
+      items: const <IpdAdmissionSummary>[],
+    );
+
+    expect(find.text('No discharges in this view'), findsOneWidget);
+    expect(find.text('Adjust filters to find discharge work.'), findsOneWidget);
+    expect(find.byType(AppTabStrip), findsOneWidget);
+  });
+
+  testWidgets('authorized load error + Try again remains observable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAllTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      ),
+      listOverride: const Result<AppPage<IpdAdmissionSummary>>.failure(
+        NetworkFailure(),
+      ),
+    );
+
+    expect(find.text('Try again'), findsOneWidget);
+
+    when(() => repository.listQueue(any())).thenAnswer(
+      (_) async => Result<AppPage<IpdAdmissionSummary>>.success(
+        AppPage<IpdAdmissionSummary>(
+          items: const <IpdAdmissionSummary>[_planned],
+          request: const AppPageRequest(pageSize: 12),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alice Planned'), findsOneWidget);
+  });
 }

@@ -1533,7 +1533,7 @@ class _DischargeNextActionButton extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: planned
           ? DischargePlannedAtomPermissions.nextActionClearance
-          : DischargeAllPatientsAtomPermissions.nextActionPlan,
+          : DischargePendingClearanceAtomPermissions.nextActionPlan,
       builder: (BuildContext context, bool isAllowed) {
         final String label = planned
             ? l10n.dischargeManageClearanceAction
