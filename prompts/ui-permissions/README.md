@@ -2,8 +2,11 @@
 
 Per-tab (and single-surface) prompts that deep-scan nested UI and enforce
 permission-based access. Shared rules: [`_shared-rules.md`](_shared-rules.md).
+Every prompt must follow [`../.cursor/prompt.mdc`](../.cursor/prompt.mdc)
+(structure, states, verification, and AC↔requirement tracing).
 
-Run one prompt at a time with the target tab’s file as the agent instruction.
+Run via `run_prompts.py`, or one prompt at a time with the target tab’s file
+as the agent instruction.
 
 ## Index
 
