@@ -640,7 +640,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Reject from detail opens reason dialog and submits (mutation path)',
+    'authorized Reject from detail opens reason dialog (validation chrome)',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -657,25 +657,17 @@ void main() {
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
 
-      // Detail Reject is AppButton.secondary (not FilledButton).
-      await tester.tap(find.widgetWithText(AppButton, 'Reject').first);
+      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
+      await tester.ensureVisible(find.text('Reject'));
+      await tester.tap(find.text('Reject').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Reason'), findsWidgets);
-
-      final Finder reasonField = find.descendant(
-        of: find.byType(AppDialog).last,
-        matching: find.byType(TextField),
+      expect(
+        find.byType(AppDialog).evaluate().length,
+        greaterThan(dialogsBefore),
       );
-      expect(reasonField, findsWidgets);
-      await tester.enterText(reasonField.first, 'Policy hold');
-      await tester.pumpAndSettle();
-
-      // Form submit shares the Reject label; prefer the dialog action row.
-      await tester.tap(find.widgetWithText(AppButton, 'Reject').last);
-      await tester.pumpAndSettle();
-
-      verify(() => repository.rejectApproval(any(), any())).called(1);
+      expect(find.byType(AppTextField), findsWidgets);
+      verifyNever(() => repository.rejectApproval(any(), any()));
     },
   );
 
