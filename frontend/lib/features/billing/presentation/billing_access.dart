@@ -337,6 +337,12 @@ abstract final class BillingOverdueAtomPermissions {
 
 /// Needs issue tab atom → permission mapping (inventory + matrix).
 ///
+/// Invoices awaiting issue; Issue needs `billing:write`. Close shift/day need
+/// write. Matrix nested cross-module rows are _(n/a)_; Claims pending strip
+/// still uses [billingClaimsPendingTabRequirement] when insurance is entitled.
+/// Route entry ∪ (`billing:read` \| `billing:write`) is
+/// [billingWorkspaceEntryRequirement].
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Needs issue tab | navigate | read ∩ `billing:read` |
@@ -359,6 +365,7 @@ abstract final class BillingNeedsIssueAtomPermissions {
   static const AccessRequirement update = billingWorkspaceWriteRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement issue = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
@@ -385,9 +392,12 @@ abstract final class BillingNeedsIssueAtomPermissions {
 /// | Print / Download | export / read | document read ∩ |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
 ///
-/// Claim mutations reuse [billingClaimsWriteRequirement] →
-/// [claimsWorkspaceWriteRequirement] (`billing:write` + `insurance-claims`);
-/// matrix create/update ∩ is `billing:write` — module is the nested entitlement.
+/// Matrix nested cross-module rows are _(n/a)_; Claims pending still requires
+/// `insurance-claims` via [billingClaimsPendingTabRequirement] /
+/// [billingClaimsWriteRequirement]. Matrix create/update ∩ is `billing:write`
+/// — module is the nested entitlement (source keeps claims write helper).
+/// Route entry ∪ (`billing:read` \| `billing:write`) is
+/// [billingWorkspaceEntryRequirement].
 abstract final class BillingClaimsPendingAtomPermissions {
   static const AccessRequirement tab = billingClaimsPendingTabRequirement;
   static const AccessRequirement listChrome = billingClaimsPendingTabRequirement;
@@ -401,4 +411,5 @@ abstract final class BillingClaimsPendingAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }

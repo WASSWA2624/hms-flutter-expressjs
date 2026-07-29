@@ -47,14 +47,6 @@ const BillingWorkItem _issuedFromDraft = BillingWorkItem(
   financials: BillingFinancials(balanceDue: 200),
 );
 
-const BillingSummary _summary = BillingSummary(
-  needsIssue: 1,
-  pendingPayment: 0,
-  claimsPending: 1,
-  approvalRequired: 0,
-  overdue: 0,
-);
-
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -76,18 +68,29 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubRepository(_MockBillingRepository repository) {
+void _stubRepository(
+  _MockBillingRepository repository, {
+  List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => const Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(summary: _summary),
+    (_) async => Result<BillingWorkspaceOverview>.success(
+      BillingWorkspaceOverview(
+        summary: BillingSummary(
+          needsIssue: items.length,
+          pendingPayment: 0,
+          claimsPending: 1,
+          approvalRequired: 0,
+          overdue: 0,
+        ),
+      ),
     ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
-    return const Result<AppPage<BillingWorkItem>>.success(
+    return Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
-        items: <BillingWorkItem>[_draftInvoice],
-        request: AppPageRequest(pageSize: 20),
-        totalItemCount: 1,
+        items: items,
+        request: const AppPageRequest(pageSize: 20),
+        totalItemCount: items.length,
       ),
     );
   });
@@ -106,10 +109,11 @@ Future<void> _pumpNeedsIssueTab(
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
+  List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(repository, items: items);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -171,20 +175,18 @@ void main() {
   testWidgets(
     'read-only: Needs issue list visible; Issue / close atoms absent (∩ denial)',
     (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.close.isAllowed(reader), isFalse);
+
       await _pumpNeedsIssueTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        ),
+        accessPolicy: reader,
       );
-
-      expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(
-        _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-      ), isTrue);
-      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(
-        _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-      ), isFalse);
 
       expect(find.text('Ada Draft'), findsOneWidget);
       expect(find.text('Needs issue'), findsWidgets);
@@ -213,6 +215,7 @@ void main() {
         },
       );
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.close.isAllowed(writer), isTrue);
 
       await _pumpNeedsIssueTab(
         tester,
@@ -450,4 +453,44 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'empty authorized Needs issue queue still shows chrome and empty state',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        items: const <BillingWorkItem>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No billing items'), findsOneWidget);
+      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('light theme: authorized Needs issue chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNeedsIssueTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Ada Draft'), findsOneWidget);
+    expect(find.text('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Issue'), findsWidgets);
+  });
 }

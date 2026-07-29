@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -36,6 +37,17 @@ const BillingWorkItem _claimItem = BillingWorkItem(
   financials: BillingFinancials(balanceDue: 800),
 );
 
+const BillingWorkItem _submittedClaim = BillingWorkItem(
+  id: 'claim-2',
+  displayId: 'CLM-002',
+  kind: BillingWorkItemKind.claim,
+  patientDisplayName: 'Sam Submitted',
+  patientDisplayId: 'PT-SUB',
+  status: 'SUBMITTED',
+  amount: 400,
+  financials: BillingFinancials(balanceDue: 400),
+);
+
 const BillingWorkItem _paymentItem = BillingWorkItem(
   id: 'inv-pay',
   displayId: 'INV-PAY',
@@ -52,6 +64,14 @@ const BillingSummary _summary = BillingSummary(
   needsIssue: 0,
   pendingPayment: 1,
   claimsPending: 1,
+  approvalRequired: 0,
+  overdue: 0,
+);
+
+const BillingSummary _emptySummary = BillingSummary(
+  needsIssue: 0,
+  pendingPayment: 0,
+  claimsPending: 0,
   approvalRequired: 0,
   overdue: 0,
 );
@@ -78,11 +98,18 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubRepository(_MockBillingRepository repository) {
+void _stubRepository(
+  _MockBillingRepository repository, {
+  List<BillingWorkItem> claimItems = const <BillingWorkItem>[_claimItem],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => const Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(summary: _summary),
-    ),
+    (_) async =>
+        workspaceOverride ??
+        Result<BillingWorkspaceOverview>.success(
+          BillingWorkspaceOverview(summary: summary),
+        ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((
     Invocation invocation,
@@ -91,8 +118,8 @@ void _stubRepository(_MockBillingRepository repository) {
         invocation.positionalArguments.single as BillingWorkspaceQuery;
     final List<BillingWorkItem> items =
         query.queue == BillingQueueType.claimsPending
-        ? const <BillingWorkItem>[_claimItem]
-        : const <BillingWorkItem>[_paymentItem];
+            ? claimItems
+            : const <BillingWorkItem>[_paymentItem];
     return Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
         items: items,
@@ -108,6 +135,13 @@ void _stubRepository(_MockBillingRepository repository) {
       BillingMutationResult(claim: _claimItem),
     ),
   );
+  when(
+    () => repository.reconcileClaim(any(), any()),
+  ).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(claim: _submittedClaim),
+    ),
+  );
 }
 
 Future<void> _pumpClaimsPendingTab(
@@ -117,10 +151,18 @@ Future<void> _pumpClaimsPendingTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/billing?queue=claims-pending',
+  List<BillingWorkItem> claimItems = const <BillingWorkItem>[_claimItem],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(
+    repository,
+    claimItems: claimItems,
+    summary: summary,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -181,27 +223,46 @@ void main() {
   });
 
   testWidgets(
-    'read-only ∩ insurance: Claims pending list visible; mutate atoms absent',
+    'read-only ∩ insurance: Claims pending list visible; mutate atoms absent (∩ denial)',
     (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      expect(BillingClaimsPendingAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(
+        BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.delete.isAllowed(reader),
+        isFalse,
+      );
+
       await _pumpClaimsPendingTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        ),
+        accessPolicy: reader,
       );
 
       expect(find.text('Cara Claim'), findsOneWidget);
+      expect(find.text('Claims pending'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
       expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsNothing,
+      );
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Cara Claim'));
       await tester.pumpAndSettle();
 
       expect(find.text('Submit claim'), findsNothing);
-      expect(find.text('Reconcile claim'), findsNothing);
+      expect(find.text('Record insurer response'), findsNothing);
     },
   );
 
@@ -237,15 +298,22 @@ void main() {
   testWidgets(
     'full claim write ∩: Submit claim next-action and detail actions mount',
     (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(writer),
+        isTrue,
+      );
+      expect(BillingClaimsPendingAtomPermissions.delete.isAllowed(writer), isTrue);
+
       await _pumpClaimsPendingTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.billingRead,
-            AppPermissions.billingWrite,
-          },
-        ),
+        accessPolicy: writer,
       );
 
       expect(find.text('Cara Claim'), findsOneWidget);
@@ -257,6 +325,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Submit claim'), findsWidgets);
+      expect(find.text('Finalize financial clearance'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -266,8 +336,14 @@ void main() {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingWrite},
       );
-      expect(billingWorkspaceEntryRequirement.isAllowed(writeOnly), isTrue);
-      expect(BillingClaimsPendingAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(
+        BillingClaimsPendingAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
 
       await _pumpClaimsPendingTab(
         tester,
@@ -277,6 +353,7 @@ void main() {
 
       expect(find.text('Cara Claim'), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('Submit claim'), findsNothing);
     },
   );
 
@@ -286,7 +363,10 @@ void main() {
       final AppAccessPolicy readOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
-      expect(billingWorkspaceEntryRequirement.isAllowed(readOnly), isTrue);
+      expect(
+        BillingClaimsPendingAtomPermissions.routeEntry.isAllowed(readOnly),
+        isTrue,
+      );
       expect(BillingClaimsPendingAtomPermissions.tab.isAllowed(readOnly), isTrue);
       expect(
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(readOnly),
@@ -306,6 +386,98 @@ void main() {
       );
       expect(find.text('Cara Claim'), findsOneWidget);
       expect(find.byTooltip('Submit claim'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: billing-payments missing omits Claims pending chrome',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Cara Claim'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'billing-payments only role pack without insurance strips Claims pending',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        BillingClaimsPendingAtomPermissions.tab.isAllowed(
+          _policy(
+            permissions: <AppPermission>{AppPermissions.billingRead},
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        ),
+        isFalse,
+      );
+      expect(find.text('Claims pending'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'SUBMITTED claim: Record insurer response next-action mounts with claim write ∩',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_submittedClaim],
+      );
+
+      expect(find.text('Sam Submitted'), findsOneWidget);
+      expect(find.byTooltip('Record insurer response'), findsWidgets);
+      expect(find.byTooltip('Submit claim'), findsNothing);
+
+      await tester.tap(find.text('Sam Submitted'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Record insurer response'), findsWidgets);
     },
   );
 
@@ -347,6 +519,27 @@ void main() {
     );
 
     expect(find.text('Cara Claim'), findsOneWidget);
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byTooltip('Submit claim'), findsWidgets);
+    expect(find.byTooltip('Close shift'), findsOneWidget);
+  });
+
+  testWidgets('light theme: authorized Claims pending chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsPendingTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+    );
+
+    expect(find.text('Cara Claim'), findsOneWidget);
+    expect(find.text('Close shift'), findsOneWidget);
     expect(find.byTooltip('Submit claim'), findsWidgets);
   });
 
@@ -371,7 +564,48 @@ void main() {
   });
 
   testWidgets(
-    'authorized submit-claim next-action opens nested dialog (sync path)',
+    'authorized empty Claims pending queue remains observable',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        claimItems: const <BillingWorkItem>[],
+        summary: _emptySummary,
+      );
+
+      expect(find.text('No billing items'), findsOneWidget);
+      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Claims pending',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized submit-claim next-action opens nested dialog and syncs (mutation)',
     (WidgetTester tester) async {
       await _pumpClaimsPendingTab(
         tester,
@@ -385,15 +619,27 @@ void main() {
       );
 
       await tester.tap(find.byTooltip('Submit claim').first);
+      await tester.pump();
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Submit claim'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Submit claim');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Submit claim').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.submitClaim(any(), any())).called(1);
     },
   );
 
   testWidgets(
-    'billing-payments only role pack without insurance strips Claims pending',
+    'write without financial:approve keeps claim actions; approve atoms stay absent',
     (WidgetTester tester) async {
       await _pumpClaimsPendingTab(
         tester,
@@ -402,32 +648,44 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.billingRead,
             AppPermissions.billingWrite,
-            AppPermissions.financialApprove,
           },
-          modules: const <AppModuleEntitlement>[
-            AppModuleEntitlement(
-              code: 'billing-payments',
-              licenseStatus: 'ACTIVE',
-            ),
-          ],
         ),
       );
 
+      expect(find.byTooltip('Submit claim'), findsWidgets);
+      expect(find.byTooltip('Approve'), findsNothing);
       expect(
-        BillingClaimsPendingAtomPermissions.tab.isAllowed(
+        BillingClaimsPendingAtomPermissions.approve.isAllowed(
           _policy(
-            permissions: <AppPermission>{AppPermissions.billingRead},
-            modules: const <AppModuleEntitlement>[
-              AppModuleEntitlement(
-                code: 'billing-payments',
-                licenseStatus: 'ACTIVE',
-              ),
-            ],
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
           ),
         ),
         isFalse,
       );
-      expect(find.text('Claims pending'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'claims-pending queue slug keeps authorized Submit claim (integration)',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        initialLocation: '/billing?queue=claims-pending',
+      );
+
+      expect(find.text('Cara Claim'), findsOneWidget);
+      expect(find.byTooltip('Submit claim'), findsWidgets);
+      expect(find.text('Close shift'), findsOneWidget);
     },
   );
 }

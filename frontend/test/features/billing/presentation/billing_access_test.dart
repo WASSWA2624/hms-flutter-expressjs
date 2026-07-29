@@ -537,6 +537,13 @@ void main() {
       );
       expect(
         identical(
+          BillingNeedsIssueAtomPermissions.close,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingNeedsIssueAtomPermissions.tab,
           billingWorkspaceReadRequirement,
         ),
@@ -577,6 +584,21 @@ void main() {
         ),
         isTrue,
       );
+
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writer = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.close.isAllowed(writer), isTrue);
     });
 
     test('Claims pending atom map reuses feature *Requirement helpers', () {
@@ -596,6 +618,13 @@ void main() {
       );
       expect(
         identical(
+          BillingClaimsPendingAtomPermissions.create,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingClaimsPendingAtomPermissions.delete,
           billingWorkspaceWriteRequirement,
         ),
@@ -605,6 +634,13 @@ void main() {
         identical(
           BillingClaimsPendingAtomPermissions.nestedRead,
           billingClaimsNestedReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );

@@ -11,7 +11,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Approve / reject financial holds | `billingApprovalDecisionRequirement` (`billing:write` ∩ `financial:approve` ∩ `billing-payments`) |
 | Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
-| Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close) |
+| Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close/routeEntry) |
 | All atom map | `BillingAllAtomPermissions` (tab/list/detail/issue/receivePayment/close/approve/claims) |
 | Awaiting payment atom map | `BillingAwaitingPaymentAtomPermissions` (tab/list/detail/receivePayment/refund/adjust/void/send/close) |
 | Overdue atom map | `BillingOverdueAtomPermissions` (tab/list/detail/receivePayment/adjust/dunningSend/close) |
@@ -133,7 +133,7 @@ Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingAp
   - Writer without `financial:approve` sees no Approve next-action / detail buttons; approver with both sees them.
   - `BillingApprovalRequiredAtomPermissions` reuses approve/write helpers; widget tests in `billing_approval_required_permissions_test.dart` (∩ denial for write-without-approve and financial-approve-without-write, ∪ route entry, subscription strip, nested Claims pending, approve dialog sync path, light/dark, mobile/desktop).
   - Claims pending tab and claim mutations absent without `insurance-claims`.
-  - `BillingClaimsPendingAtomPermissions` reuses tab/claim-write helpers; widget tests in `billing_claims_pending_permissions_test.dart`.
+  - `BillingClaimsPendingAtomPermissions` reuses tab/claim-write/route-entry helpers; widget tests in `billing_claims_pending_permissions_test.dart` (∩ denial for read-only and missing `insurance-claims`, ∪ route entry, subscription strip, Record insurer response for SUBMITTED, submit-claim sync path, empty/error/retry, light/dark, mobile/desktop).
   - `BillingNeedsIssueAtomPermissions` reuses read/write/issue helpers; widget tests in `billing_needs_issue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, Issue sync path, light/dark, mobile/desktop).
   - `BillingAwaitingPaymentAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_awaiting_payment_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, receive-payment sync path, light/dark, mobile/desktop).
   - `BillingOverdueAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_overdue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, receive-payment sync path, light/dark, mobile/desktop).
