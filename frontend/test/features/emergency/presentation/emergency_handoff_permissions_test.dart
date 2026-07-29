@@ -816,7 +816,6 @@ void main() {
       tester,
       repository: repository,
       accessPolicy: writer,
-      physicalSize: const Size(1440, 900),
     );
     expect(find.text('Quick arrival'), findsOneWidget);
     expect(find.text('Handoff Tab Patient'), findsOneWidget);
@@ -838,7 +837,6 @@ void main() {
       tester,
       repository: repository,
       accessPolicy: writer,
-      themeMode: ThemeMode.light,
     );
     expect(find.text('Quick arrival'), findsOneWidget);
 
