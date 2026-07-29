@@ -34,7 +34,7 @@ from cursor_sdk import (
 PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "billing-and-sections"
 STATE_FILE = PROJECT_DIR / ".run_billing_and_sections_prompts_state.json"
-ITERATIONS = 3
+ITERATIONS = 1
 MAX_CONCURRENCY = 10
 MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10

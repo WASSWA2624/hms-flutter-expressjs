@@ -104,7 +104,7 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final String label = roomsBedsNextActionKindLabel(l10n, kind);
+    final String label = roomsBedsPrimaryNextActionLabel(l10n, item);
     final bool enabled = roomsBedsNextActionIsEnabled(
       kind: kind,
       item: item,
@@ -112,7 +112,8 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
       canIpdWrite: canIpdWrite,
       isSaving: state.isSaving,
     );
-    final bool isNarrow = compact || MediaQuery.sizeOf(context).width < 600;
+    final bool isNarrow =
+        compact || MediaQuery.sizeOf(context).width < 600;
 
     return AppButton.secondary(
       label: label,

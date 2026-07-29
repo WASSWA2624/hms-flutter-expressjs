@@ -202,10 +202,7 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
       title: l10n.settingsConfigurationTenantTitle,
       leadingIcon: Icons.domain_outlined,
       children: <Widget>[
-<<<<<<< Updated upstream
         // One currency+fee control — avoids a parallel standalone currency field.
-=======
->>>>>>> Stashed changes
         AppCurrencyAmountField(
           amountController: _feeController,
           currency: resolvedCurrency,

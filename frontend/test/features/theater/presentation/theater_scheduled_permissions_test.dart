@@ -474,9 +474,9 @@ void main() {
       expect(find.text('Sam Scheduled'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(_toolbarPrimary('Schedule case'), findsNothing);
-      // Unscanned Recovery remains once route is entered.
-      expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(_tab('Recovery'), findsOneWidget);
+      // Every board tab is read-gated; the strip collapses entirely.
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_tab('Recovery'), findsNothing);
     },
   );
 
@@ -659,7 +659,9 @@ void main() {
         matching: find.byType(TextField),
       );
       expect(dialogFields, findsWidgets);
-      await tester.enterText(dialogFields.first, 'WHO-SIGN-IN');
+      // First TextField is the phase dropdown's inner field; the required
+      // item-code field is the second.
+      await tester.enterText(dialogFields.at(1), 'WHO-SIGN-IN');
       await tester.tap(
         find.descendant(
           of: find.byType(AppDialog),

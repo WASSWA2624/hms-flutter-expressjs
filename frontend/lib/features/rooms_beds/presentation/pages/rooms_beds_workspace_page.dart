@@ -431,7 +431,6 @@ class _RoomsBedsWorkspaceContentState
                     page.totalItemCount ?? page.items.length,
                   );
                 },
-<<<<<<< Updated upstream
                 emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
                   title: l10n.roomsBedsEmptyTitle,
                   body: l10n.roomsBedsEmptyBody,
@@ -477,83 +476,6 @@ class _RoomsBedsWorkspaceContentState
                   final Widget? trailing =
                       roomsBedsNextActionShouldRender(
                         kind: kind,
-=======
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                enableDateFilter: false,
-                allFieldsLabel: l10n.roomsBedsAllFilterLabel,
-                filterGroups: _filterGroups(l10n, state, section: _section),
-                filterValue: _filterValue(state.query, section: _section),
-                hasActiveFilters: _hasActiveFilters(state.query, _section),
-                onFilterChanged: (AppSearchBarFilterValue value) async {
-                  AppFailure? failure;
-                  final String? facilityId = value.option(_facilityFilterKey);
-                  final String? wardId = value.option(_wardFilterKey);
-                  final String? roomId = value.option(_roomFilterKey);
-                  final BedSetupStatus? status = _section == RoomsBedsSection.all
-                      ? roomsBedsStatusFromFilter(
-                          value.option(_statusFilterKey),
-                        )
-                      : state.query.status;
-                  if (facilityId != state.query.facilityId) {
-                    failure = await controller.applyFacility(facilityId);
-                  }
-                  if (wardId != state.query.wardId) {
-                    failure ??= await controller.applyWard(wardId);
-                  }
-                  if (roomId != state.query.roomId) {
-                    failure ??= await controller.applyRoom(roomId);
-                  }
-                  if (_section == RoomsBedsSection.all &&
-                      status != state.query.status) {
-                    failure ??= await controller.applyStatus(status);
-                  }
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-              ),
-              itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
-              onPageChanged: (AppPageRequest request) {
-                unawaited(controller.changePage(request));
-              },
-              onRowSelected: (BedBoardItem item) {
-                unawaited(
-                  _openBedDetailDialog(
-                    context,
-                    ref,
-                    state,
-                    item,
-                    canAdminBeds: canAdminBeds,
-                    canIpdWrite: canIpdWrite,
-                  ),
-                );
-              },
-              previousPageLabel: l10n.roomsBedsPreviousPageLabel,
-              nextPageLabel: l10n.roomsBedsNextPageLabel,
-              pageLabelBuilder: (AppPage<BedBoardItem> page) {
-                return l10n.roomsBedsPageLabel(
-                  page.firstItemNumber,
-                  page.lastItemNumber,
-                  page.totalItemCount ?? page.items.length,
-                );
-              },
-              emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-                title: l10n.roomsBedsEmptyTitle,
-                body: l10n.roomsBedsEmptyBody,
-                icon: Icons.bed_outlined,
-              ),
-              columns: roomsBedsBedBoardColumns(
-                l10n: l10n,
-                nextActionCellBuilder:
-                    (BuildContext context, BedBoardItem item) {
-                      return RoomsBedsNextActionButton(
-                        item: item,
-                        state: state,
->>>>>>> Stashed changes
                         canAdminBeds: canAdminBeds,
                         canIpdWrite: canIpdWrite,
                       )
@@ -874,12 +796,11 @@ class _BedDetailContent extends ConsumerWidget {
                 ),
               if (canAdminBeds &&
                   !item.isAvailable &&
-                  !item.isOccupied &&
                   omitNextActionKind != RoomsBedsNextActionKind.markAvailable)
                 AppButton.secondary(
                   label: l10n.roomsBedsMarkAvailableAction,
                   leadingIcon: Icons.check_circle_outline,
-                  enabled: !state.isSaving,
+                  enabled: !state.isSaving && !item.isOccupied,
                   onPressed: () => _updateBedStatus(
                     context,
                     controller,
@@ -946,23 +867,20 @@ class _BedDetailContent extends ConsumerWidget {
                   onPressed: () => context.go(AppRoutes.operations.location()),
                 ),
               if (canIpdWrite &&
-                  item.isAvailable &&
                   omitNextActionKind != RoomsBedsNextActionKind.assign)
                 AppButton.secondary(
                   label: l10n.roomsBedsAssignAction,
                   leadingIcon: Icons.login_outlined,
-                  enabled: !state.isSaving,
+                  enabled: !state.isSaving && item.isAvailable,
                   onPressed: () => _showAssignDialog(context, controller, item),
                 ),
               if (canIpdWrite &&
-                  item.isOccupied &&
-                  admissionId != null &&
-                  !item.hasOpenTransfer &&
                   omitNextActionKind != RoomsBedsNextActionKind.release)
                 AppButton.secondary(
                   label: l10n.roomsBedsReleaseAction,
                   leadingIcon: Icons.logout_outlined,
-                  enabled: !state.isSaving,
+                  enabled:
+                      !state.isSaving && item.isOccupied && admissionId != null,
                   onPressed: () => _showReleaseDialog(
                     context,
                     controller,
@@ -971,11 +889,12 @@ class _BedDetailContent extends ConsumerWidget {
                     admissionDisplayId: admissionDisplayId,
                   ),
                 ),
-              if (canIpdWrite && item.isOccupied && admissionId != null)
+              if (canIpdWrite)
                 AppButton.secondary(
                   label: l10n.roomsBedsRequestTransferAction,
                   leadingIcon: Icons.alt_route_outlined,
-                  enabled: !state.isSaving,
+                  enabled:
+                      !state.isSaving && item.isOccupied && admissionId != null,
                   onPressed: () => _showTransferDialog(
                     context,
                     controller,

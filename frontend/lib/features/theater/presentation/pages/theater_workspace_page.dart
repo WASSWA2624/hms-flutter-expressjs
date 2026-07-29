@@ -626,10 +626,15 @@ class _TheaterCaseBoard extends ConsumerWidget {
             ),
           ],
           trailing: showNextAction
-              ? FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: _TheaterNextActionButton(theaterCase: item),
+              // Bounded width lets FittedBox scale long next-action labels
+              // down instead of overflowing narrow mobile rows.
+              ? ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 148),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: _TheaterNextActionButton(theaterCase: item),
+                  ),
                 )
               : null,
         );
