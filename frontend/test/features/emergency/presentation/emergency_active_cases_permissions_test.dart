@@ -346,6 +346,11 @@ void main() {
       final SharedPreferences preferences =
           await SharedPreferences.getInstance();
 
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -361,19 +366,21 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmergencyDetailPanel(
-                state: EmergencyWorkspaceState(
-                  query: const EmergencyBoardQuery(),
-                  board: AppPage<EmergencyCaseSummary>(
-                    items: const <EmergencyCaseSummary>[_activeCase],
-                    request: const AppPageRequest(pageSize: 20),
-                    totalItemCount: 1,
+              body: SingleChildScrollView(
+                child: EmergencyDetailPanel(
+                  state: EmergencyWorkspaceState(
+                    query: const EmergencyBoardQuery(),
+                    board: AppPage<EmergencyCaseSummary>(
+                      items: const <EmergencyCaseSummary>[_activeCase],
+                      request: const AppPageRequest(pageSize: 20),
+                      totalItemCount: 1,
+                    ),
+                    selectedDetail: _activeDetail,
                   ),
-                  selectedDetail: _activeDetail,
+                  writeRequirement: emergencyWriteRequirement,
+                  isDialog: true,
+                  omitNextActionKind: EmergencyNextActionKind.triage,
                 ),
-                writeRequirement: emergencyWriteRequirement,
-                isDialog: true,
-                omitNextActionKind: EmergencyNextActionKind.triage,
               ),
             ),
           ),
@@ -451,6 +458,11 @@ void main() {
       final SharedPreferences preferences =
           await SharedPreferences.getInstance();
 
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -466,19 +478,21 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmergencyDetailPanel(
-                state: EmergencyWorkspaceState(
-                  query: const EmergencyBoardQuery(),
-                  board: AppPage<EmergencyCaseSummary>(
-                    items: const <EmergencyCaseSummary>[_activeCase],
-                    request: const AppPageRequest(pageSize: 20),
-                    totalItemCount: 1,
+              body: SingleChildScrollView(
+                child: EmergencyDetailPanel(
+                  state: EmergencyWorkspaceState(
+                    query: const EmergencyBoardQuery(),
+                    board: AppPage<EmergencyCaseSummary>(
+                      items: const <EmergencyCaseSummary>[_activeCase],
+                      request: const AppPageRequest(pageSize: 20),
+                      totalItemCount: 1,
+                    ),
+                    selectedDetail: _activeDetail,
                   ),
-                  selectedDetail: _activeDetail,
+                  writeRequirement: emergencyWriteRequirement,
+                  isDialog: true,
+                  omitNextActionKind: EmergencyNextActionKind.triage,
                 ),
-                writeRequirement: emergencyWriteRequirement,
-                isDialog: true,
-                omitNextActionKind: EmergencyNextActionKind.triage,
               ),
             ),
           ),

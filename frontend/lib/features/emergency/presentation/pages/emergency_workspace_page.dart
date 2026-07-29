@@ -374,7 +374,18 @@ class _EmergencyWorkspaceContentState
       return null;
     }
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    if (!EmergencyAllAtomPermissions.quickArrival.isAllowed(policy)) {
+    final AccessRequirement quickArrivalRequirement = switch (_currentTab) {
+      EmergencyBoardTab.handoff => EmergencyHandoffAtomPermissions.quickArrival,
+      EmergencyBoardTab.ambulance =>
+        EmergencyAmbulanceAtomPermissions.quickArrival,
+      EmergencyBoardTab.critical =>
+        EmergencyCriticalAtomPermissions.quickArrival,
+      EmergencyBoardTab.closed => EmergencyClosedAtomPermissions.quickArrival,
+      EmergencyBoardTab.active =>
+        EmergencyActiveCasesAtomPermissions.quickArrival,
+      EmergencyBoardTab.all => EmergencyAllAtomPermissions.quickArrival,
+    };
+    if (!quickArrivalRequirement.isAllowed(policy)) {
       return null;
     }
     return AppTabToolbarPrimary(

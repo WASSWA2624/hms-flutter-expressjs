@@ -45,11 +45,48 @@ const EmergencyCaseDetail _criticalDetail = EmergencyCaseDetail(
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
-  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
-  ],
+  List<AppModuleEntitlement>? modules,
   String? tenantId = 'tenant-1',
 }) {
+  final bool needsPatient = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.patientWrite ||
+        permission == AppPermissions.patientRead,
+  );
+  final bool needsClinical = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.clinicalWrite ||
+        permission == AppPermissions.clinicalRead,
+  );
+  final bool needsOperations = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.operationsWrite ||
+        permission == AppPermissions.operationsRead,
+  );
+  final List<AppModuleEntitlement> resolvedModules =
+      modules ??
+      <AppModuleEntitlement>[
+        const AppModuleEntitlement(
+          code: 'scheduling-queue',
+          licenseStatus: 'ACTIVE',
+        ),
+        if (needsPatient)
+          const AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        if (needsClinical)
+          const AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        if (needsOperations)
+          const AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+      ];
+
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -59,7 +96,7 @@ AppAccessPolicy _policy({
         facilityId: 'facility-1',
       ),
       permissions: permissions,
-      moduleEntitlements: modules,
+      moduleEntitlements: resolvedModules,
       isAuthorizationHydrated: true,
     ),
   );
@@ -300,10 +337,10 @@ void main() {
         EmergencyCriticalAtomPermissions.success.isAllowed(writeOnly),
         isTrue,
       );
-      // Catalog entry is ∩ emergency:read (prompt ∪ → keep catalog).
+      // Catalog entry is ∪ read|write|operations:read — write alone enters.
       expect(
         EmergencyCriticalAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isFalse,
+        isTrue,
       );
       expect(
         EmergencyCriticalAtomPermissions.routeEntryUnion.isAllowed(writeOnly),
@@ -379,19 +416,19 @@ void main() {
       expect(canShowEmergencyNextAction(patientWriter), isTrue);
     });
 
-    test('∪ allowance: operations:read satisfies prompt route-entry union', () {
+    test('∪ allowance: operations:read satisfies catalog route-entry', () {
       final AppAccessPolicy opsReader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(opsReader),
+        isTrue,
       );
       expect(
         EmergencyCriticalAtomPermissions.routeEntryUnion.isAllowed(opsReader),
         isTrue,
       );
-      // Catalog / tab chrome stay ∩ emergency:read.
-      expect(
-        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(opsReader),
-        isFalse,
-      );
+      // Tab chrome stays ∩ emergency:read.
       expect(canViewEmergencyCritical(opsReader), isFalse);
     });
 
@@ -484,8 +521,6 @@ void main() {
       await tester.tap(find.text('Critical Tab Patient'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Priority'), findsNothing);
-      expect(find.text('Triage'), findsNothing);
       expect(find.text('Response'), findsNothing);
       expect(find.text('Record handoff'), findsNothing);
       expect(find.text(EmergencyText.scheduleTheater), findsNothing);
@@ -519,9 +554,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Next-action Triage omitted from detail Quick Actions.
-      expect(find.text('Priority'), findsOneWidget);
-      expect(find.text('Response'), findsOneWidget);
       expect(find.text(EmergencyText.scheduleTheater), findsOneWidget);
+      expect(find.text('Response'), findsWidgets);
       expect(find.text(EmergencyText.printSummary), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },

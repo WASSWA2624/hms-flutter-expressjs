@@ -161,7 +161,6 @@ void _stubRepository(
     () => repository.startAmbulanceTrip(
       detail: any(named: 'detail'),
       ambulanceId: any(named: 'ambulanceId'),
-      startedAt: any(named: 'startedAt'),
     ),
   ).thenAnswer((_) async => Result<EmergencyCaseDetail>.success(detail));
 }
@@ -671,18 +670,17 @@ void main() {
   test(
     'post-mutation sync: startAmbulanceTrip patches board via controller',
     () async {
+      _stubRepository(repository);
       var started = false;
       when(
         () => repository.startAmbulanceTrip(
           detail: any(named: 'detail'),
           ambulanceId: any(named: 'ambulanceId'),
-          startedAt: any(named: 'startedAt'),
         ),
       ).thenAnswer((_) async {
         started = true;
         return Result<EmergencyCaseDetail>.success(_ambulanceDetail);
       });
-      _stubRepository(repository);
 
       final ProviderContainer container = ProviderContainer(
         overrides: [
@@ -717,7 +715,12 @@ void main() {
             success: (EmergencyWorkspaceState value) => value,
             failure: (AppFailure err) => throw StateError(err.code),
           );
-      expect(state.board.items.any((EmergencyCaseSummary item) => item.id == 'EME-AMB-1'), isTrue);
+      expect(
+        state.board.items.any(
+          (EmergencyCaseSummary item) => item.id == 'EME-AMB-1',
+        ),
+        isTrue,
+      );
       expect(state.isSaving, isFalse);
     },
   );
