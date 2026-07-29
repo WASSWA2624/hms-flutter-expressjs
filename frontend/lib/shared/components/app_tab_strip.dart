@@ -3,7 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 
-/// Semantic tone for tab count superscripts.
+/// Semantic tone for tab count badges.
 enum AppTabCountTone { info, warning, danger }
 
 /// Visual weight for [AppTabStrip].
@@ -26,7 +26,7 @@ final class AppTabItem {
   final String label;
   final int? count;
 
-  /// Color of the count superscript when [count] is non-null.
+  /// Color of the count badge when [count] is non-null.
   final AppTabCountTone countTone;
 
   /// Optional leading icon shown beside the tab label.
@@ -75,7 +75,7 @@ class AppTabStrip extends StatelessWidget {
     final Color activeFill = nested
         ? colorScheme.surface
         : Color.alphaBlend(
-            colorScheme.primary.withValues(alpha: 0.10),
+            colorScheme.primary.withValues(alpha: 0.12),
             colorScheme.surface,
           );
 
@@ -354,7 +354,8 @@ double _estimateTabWidth({
 }) {
   // Match _AppTabChip horizontal padding, including selected flare insets.
   const double flareRadius = 8;
-  double width = theme.spacing.sm * 2;
+  final double horizontalPad = nested ? theme.spacing.sm : theme.spacing.md;
+  double width = horizontalPad * 2;
   if (!nested && isSelected) {
     if (!isFirst) {
       width += flareRadius;
@@ -362,14 +363,14 @@ double _estimateTabWidth({
     width += flareRadius;
   }
   if (tab.icon != null) {
-    width += (nested ? 16.0 : 18.0) + theme.spacing.xs;
+    width += (nested ? 18.0 : 20.0) + theme.spacing.xs;
   }
 
   final TextPainter labelPainter = TextPainter(
     text: TextSpan(
       text: tab.label.trim(),
       style: (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
-          ?.copyWith(fontWeight: FontWeight.w400),
+          ?.copyWith(fontWeight: FontWeight.w500),
     ),
     maxLines: 1,
     textDirection: textDirection,
@@ -382,16 +383,18 @@ double _estimateTabWidth({
       text: TextSpan(
         text: '${tab.count}',
         style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           fontSize: _tabCountFontSize,
-          height: 1,
+          height: 1.1,
         ),
       ),
       maxLines: 1,
       textDirection: textDirection,
       textScaler: textScaler,
     )..layout();
-    width += 1 + countPainter.width;
+    // Gap before badge + horizontal pill padding on both sides.
+    width +=
+        theme.spacing.xs + (_tabCountBadgePaddingX * 2) + countPainter.width;
   }
 
   // Font metrics can be a couple of pixels wider than TextPainter estimates.
@@ -582,9 +585,11 @@ bool _showToolbarLabel(BuildContext context, {required bool hasIcon}) {
   return AppBreakpoints.of(context).showsToolbarActionLabels;
 }
 
-/// Tab count superscript size. Kept above tiny caption scale so queue
-/// totals stay readable without competing with the tab label.
+/// Tab count badge type size. Readable beside the label without overpowering it.
 const double _tabCountFontSize = 12;
+
+/// Horizontal inset inside the count pill.
+const double _tabCountBadgePaddingX = 6;
 
 Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
   final AppStatusColors status = theme.statusColors;
@@ -598,10 +603,47 @@ Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
 TextStyle? _tabCountStyle(ThemeData theme, AppTabCountTone tone) {
   return theme.textTheme.labelSmall?.copyWith(
     color: _countToneColor(theme, tone),
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     fontSize: _tabCountFontSize,
-    height: 1,
+    height: 1.1,
   );
+}
+
+/// Compact tone-tinted count pill shown beside a tab label.
+class _TabCountBadge extends StatelessWidget {
+  const _TabCountBadge({
+    required this.count,
+    required this.tone,
+  });
+
+  final int count;
+  final AppTabCountTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color toneColor = _countToneColor(theme, tone);
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: theme.spacing.xs),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: toneColor.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: _tabCountBadgePaddingX,
+            vertical: 2,
+          ),
+          child: Text(
+            '$count',
+            style: _tabCountStyle(theme, tone),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Chrome-style tab silhouette for the selected tab: rounded top corners and
@@ -712,6 +754,7 @@ class _AppTabChip extends StatefulWidget {
 
 class _AppTabChipState extends State<_AppTabChip> {
   static const double _flareRadius = 8;
+  static const double _topRadius = 8;
 
   bool _isHovered = false;
 
@@ -746,12 +789,11 @@ class _AppTabChipState extends State<_AppTabChip> {
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
-    // One tier heavier than the toolbar buttons (w400 actions / w500
-    // primary) so the tab labels read as the dominant level of the strip.
-    // The bundled font ships 400/500/700 only, so stick to those weights.
+    // Selected uses the heaviest available weight; inactive stays medium so
+    // tabs still read as controls rather than body copy.
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w600
-        : FontWeight.w400;
+        ? FontWeight.w700
+        : FontWeight.w500;
     final bool flareLeft = widget.isSelected && !widget.isFirst;
     final bool flareRight = widget.isSelected;
 
@@ -763,55 +805,60 @@ class _AppTabChipState extends State<_AppTabChip> {
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: CustomPaint(
-            painter: _FlaredTabPainter(
-              fill: backgroundColor,
-              // Square top corners; only the bottom flares are curved.
-              topRadius: 0,
-              flareRadius: _flareRadius,
-              flareLeft: flareLeft,
-              flareRight: flareRight,
-            ),
-            child: Padding(
-              // Horizontal padding widens by the flare so the label never
-              // overlaps the curved corners.
-              padding: EdgeInsets.only(
-                left: theme.spacing.sm + (flareLeft ? _flareRadius : 0),
-                right: theme.spacing.sm + (flareRight ? _flareRadius : 0),
-                top: theme.spacing.xs + 4,
-                bottom: theme.spacing.xs + 4,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            splashColor: colorScheme.primary.withValues(alpha: 0.10),
+            highlightColor: colorScheme.primary.withValues(alpha: 0.06),
+            child: CustomPaint(
+              painter: _FlaredTabPainter(
+                fill: backgroundColor,
+                topRadius: widget.isSelected ? _topRadius : 0,
+                flareRadius: _flareRadius,
+                flareLeft: flareLeft,
+                flareRight: flareRight,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (widget.icon != null) ...<Widget>[
-                    Icon(
-                      widget.icon,
-                      size: 18,
-                      color: foregroundColor,
-                    ),
-                    SizedBox(width: theme.spacing.xs),
-                  ],
-                  Text(
-                    fullLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: fontWeight,
-                    ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Padding(
+                  // Horizontal padding widens by the flare so the label never
+                  // overlaps the curved corners.
+                  padding: EdgeInsets.only(
+                    left: theme.spacing.md + (flareLeft ? _flareRadius : 0),
+                    right: theme.spacing.md + (flareRight ? _flareRadius : 0),
+                    top: theme.spacing.sm,
+                    bottom: theme.spacing.sm,
                   ),
-                  if (widget.count != null)
-                    Transform.translate(
-                      offset: const Offset(1, -5),
-                      child: Text(
-                        '${widget.count}',
-                        style: _tabCountStyle(theme, widget.countTone),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (widget.icon != null) ...<Widget>[
+                        Icon(
+                          widget.icon,
+                          size: 20,
+                          color: foregroundColor,
+                        ),
+                        SizedBox(width: theme.spacing.xs),
+                      ],
+                      Text(
+                        fullLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: foregroundColor,
+                          fontWeight: fontWeight,
+                          letterSpacing: widget.isSelected ? 0.1 : 0,
+                        ),
                       ),
-                    ),
-                ],
+                      if (widget.count != null)
+                        _TabCountBadge(
+                          count: widget.count!,
+                          tone: widget.countTone,
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -831,8 +878,8 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
     final FontWeight fontWeight = widget.isSelected
-        ? FontWeight.w500
-        : FontWeight.w400;
+        ? FontWeight.w700
+        : FontWeight.w500;
     final Color hoverFill = _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.04)
         : Colors.transparent;
@@ -845,50 +892,55 @@ class _AppTabChipState extends State<_AppTabChip> {
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: hoverFill,
-              border: Border(
-                bottom: BorderSide(
-                  color: widget.isSelected
-                      ? colorScheme.primary
-                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  width: widget.isSelected ? 2 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            splashColor: colorScheme.primary.withValues(alpha: 0.08),
+            highlightColor: colorScheme.primary.withValues(alpha: 0.04),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: hoverFill,
+                border: Border(
+                  bottom: BorderSide(
+                    color: widget.isSelected
+                        ? colorScheme.primary
+                        : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    width: widget.isSelected ? 2.5 : 1,
+                  ),
                 ),
               ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
-                vertical: theme.spacing.xs + 2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (widget.icon != null) ...<Widget>[
-                    Icon(widget.icon, size: 16, color: foregroundColor),
-                    SizedBox(width: theme.spacing.xs),
-                  ],
-                  Text(
-                    fullLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: fontWeight,
-                    ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 40),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.sm,
+                    vertical: theme.spacing.sm,
                   ),
-                  if (widget.count != null)
-                    Transform.translate(
-                      offset: const Offset(1, -5),
-                      child: Text(
-                        '${widget.count}',
-                        style: _tabCountStyle(theme, widget.countTone),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (widget.icon != null) ...<Widget>[
+                        Icon(widget.icon, size: 18, color: foregroundColor),
+                        SizedBox(width: theme.spacing.xs),
+                      ],
+                      Text(
+                        fullLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: foregroundColor,
+                          fontWeight: fontWeight,
+                        ),
                       ),
-                    ),
-                ],
+                      if (widget.count != null)
+                        _TabCountBadge(
+                          count: widget.count!,
+                          tone: widget.countTone,
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

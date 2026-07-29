@@ -367,8 +367,8 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'ICU'),
                 storageKeyPrefix: 'icu_follow_ups',
-                readRequirement: icuFollowUpsRequirement,
-                writeRequirement: icuFollowUpsWriteRequirement,
+                readRequirement: IcuFollowUpsAtomPermissions.tab,
+                writeRequirement: IcuFollowUpsAtomPermissions.write,
               )
             else if (isBedView)
               IcuBedBoardPanel(state: state)
