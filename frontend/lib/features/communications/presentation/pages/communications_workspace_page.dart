@@ -485,6 +485,8 @@ class _NotificationsTable extends ConsumerWidget {
         CommunicationsNotificationsAtomPermissions.markRead.isAllowed(policy);
     final bool canDelete =
         CommunicationsNotificationsAtomPermissions.archive.isAllowed(policy);
+    final bool canSelectRow =
+        CommunicationsNotificationsAtomPermissions.rowSelect.isAllowed(policy);
     final AppLocalizations l10n = context.l10n;
 
     return AppListTable<NotificationItem>(
@@ -517,22 +519,19 @@ class _NotificationsTable extends ConsumerWidget {
               .changePage(request),
         );
       },
-      onRowSelected: (NotificationItem item) {
-        if (!CommunicationsNotificationsAtomPermissions.rowSelect.isAllowed(
-          policy,
-        )) {
-          return;
-        }
-        unawaited(
-          showCommunicationsNotificationDetailDialog(
-            context,
-            ref,
-            state,
-            item,
-            canDelete: canDelete,
-          ),
-        );
-      },
+      onRowSelected: canSelectRow
+          ? (NotificationItem item) {
+              unawaited(
+                showCommunicationsNotificationDetailDialog(
+                  context,
+                  ref,
+                  state,
+                  item,
+                  canDelete: canDelete,
+                ),
+              );
+            }
+          : null,
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoNotificationsTitle,
         body: l10n.communicationsNoNotificationsBody,
@@ -1185,11 +1184,16 @@ Future<void> _handleNotificationNextAction(
   WidgetRef ref,
   NotificationItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  // Mark read/unread share write ∩; deny must not mount a mutation path.
+  if (!CommunicationsNotificationsAtomPermissions.markRead.isAllowed(policy)) {
+    return;
+  }
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
   );
   controller.selectNotification(item);
-  // Mark read/unread is non-destructive — skip confirm (Req 4).
+  // Mark read/unread is non-destructive — skip confirm (inventory).
   final AppFailure? failure = item.isRead
       ? await controller.markSelectedNotificationUnread()
       : await controller.markSelectedNotificationRead();

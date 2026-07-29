@@ -194,6 +194,13 @@ class _ThreadHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canThreadMenu =
+        canWrite &&
+        CommunicationsMessagesAtomPermissions.threadMenu.isAllowed(policy);
+    final bool canManageMembers =
+        canThreadMenu &&
+        CommunicationsMessagesAtomPermissions.manageMembers.isAllowed(policy);
     final CommunicationsWorkspaceController controller = ref.read(
       communicationsWorkspaceControllerProvider.notifier,
     );
@@ -239,7 +246,7 @@ class _ThreadHeader extends ConsumerWidget {
               ],
             ),
           ),
-          if (canWrite)
+          if (canThreadMenu)
             PopupMenuButton<String>(
               tooltip: context.l10n.communicationsThreadMenuAction,
               onSelected: (String value) =>
@@ -275,7 +282,7 @@ class _ThreadHeader extends ConsumerWidget {
                           : context.l10n.communicationsArchiveAction,
                     ),
                   ),
-                  if (conversation.isGroup)
+                  if (conversation.isGroup && canManageMembers)
                     PopupMenuItem<String>(
                       value: 'members',
                       child: Text(
@@ -296,6 +303,11 @@ class _ThreadHeader extends ConsumerWidget {
     CommunicationsWorkspaceController controller,
     String value,
   ) async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.threadMenu.isAllowed(policy)) {
+      return;
+    }
     switch (value) {
       case 'favorite':
         await controller.toggleSelectedConversationFavorite();
@@ -308,6 +320,11 @@ class _ThreadHeader extends ConsumerWidget {
       case 'unarchive':
         await controller.unarchiveSelectedConversation();
       case 'members':
+        if (!CommunicationsMessagesAtomPermissions.manageMembers.isAllowed(
+          policy,
+        )) {
+          return;
+        }
         await showCommunicationsManageMembersDialogImpl(
           context,
           ref,

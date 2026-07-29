@@ -240,6 +240,13 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsNotificationsAtomPermissions.openLinked,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsNotificationsAtomPermissions.markRead,
           communicationsWorkspaceWriteRequirement,
         ),
@@ -314,6 +321,27 @@ void main() {
       expect(
         identical(
           CommunicationsDeliveriesAtomPermissions.detail,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.view,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.empty,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.retry,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,

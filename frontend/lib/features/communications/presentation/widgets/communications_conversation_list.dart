@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/config/communications_message_filters.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_formatters.dart';
@@ -21,6 +24,13 @@ class CommunicationsConversationList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Search / filters / Load more / rows — read chrome ∩ (matrix + inventory).
+    if (!CommunicationsMessagesAtomPermissions.listChrome.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    final bool canSelectRow =
+        CommunicationsMessagesAtomPermissions.rowSelect.isAllowed(policy);
     final ThemeData theme = Theme.of(context);
     final CommunicationsWorkspaceController controller = ref.read(
       communicationsWorkspaceControllerProvider.notifier,
@@ -88,7 +98,9 @@ class CommunicationsConversationList extends ConsumerWidget {
                     return _ConversationRow(
                       conversation: item,
                       selected: selected,
-                      onTap: () => controller.selectConversation(item),
+                      onTap: canSelectRow
+                          ? () => controller.selectConversation(item)
+                          : null,
                     );
                   },
                 ),
@@ -117,7 +129,7 @@ class _ConversationRow extends StatelessWidget {
 
   final CommunicationsConversation conversation;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

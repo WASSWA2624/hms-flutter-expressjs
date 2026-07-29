@@ -261,6 +261,13 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsNotificationsAtomPermissions.openLinked,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsNotificationsAtomPermissions.markRead,
           communicationsWorkspaceWriteRequirement,
         ),
@@ -276,6 +283,27 @@ void main() {
       expect(
         identical(
           CommunicationsNotificationsAtomPermissions.archive,
+          communicationsWorkspaceDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.create,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.update,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.delete,
           communicationsWorkspaceDeleteRequirement,
         ),
         isTrue,
@@ -398,6 +426,7 @@ void main() {
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('NOTIFICATION DETAIL'), findsWidgets);
+      expect(find.text('Open linked record'), findsWidgets);
       expect(find.text('Archive'), findsNothing);
       expect(find.text('Mark read'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -798,6 +827,70 @@ void main() {
       expect(find.text('Communication action saved.'), findsOneWidget);
       expect(find.text('Mark as read'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Mark unread syncs list after write ∩ mutation',
+    (WidgetTester tester) async {
+      when(
+        () => repository.markNotificationUnread('notification-1'),
+      ).thenAnswer(
+        (_) async => const Result<NotificationItem>.success(_notification),
+      );
+      when(() => repository.getNotificationMetrics()).thenAnswer(
+        (_) async => const Result<NotificationMetrics>.success(
+          NotificationMetrics(total: 1),
+        ),
+      );
+
+      await _pumpNotificationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.communicationsRead,
+            AppPermissions.communicationsWrite,
+          },
+        ),
+        notifications: <NotificationItem>[_readNotification],
+      );
+
+      expect(find.text('Mark unread'), findsWidgets);
+      await tester.tap(find.text('Mark unread').first);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.markNotificationUnread('notification-1'),
+      ).called(1);
+      expect(find.text('Communication action saved.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'detail Open linked mounts when openLinked ∩ allows',
+    (WidgetTester tester) async {
+      await _pumpNotificationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        physicalSize: const Size(1024, 900),
+      );
+
+      await tester.tap(_tableRowInkWell().first);
+      await tester.pumpAndSettle();
+
+      final Finder openLinked = find.text('Open linked record');
+      expect(openLinked, findsWidgets);
+      await tester.ensureVisible(openLinked.first);
+      await tester.pumpAndSettle();
+      await tester.tap(openLinked.first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patient detail'), findsOneWidget);
     },
   );
 

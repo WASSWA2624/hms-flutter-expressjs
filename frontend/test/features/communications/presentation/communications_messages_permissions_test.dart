@@ -143,16 +143,27 @@ void _stubWorkspace(
           request: query.pageRequest,
           totalItemCount: 1,
         ),
-        selectedConversation: query.conversationId == _conversation.id
-            ? _conversation
-            : null,
+        selectedConversation: query.conversationId == null
+            ? null
+            : conversations
+                  .where(
+                    (CommunicationsConversation item) =>
+                        item.id == query.conversationId,
+                  )
+                  .firstOrNull,
       ),
     );
   });
-  when(() => repository.getConversation(_conversation.id)).thenAnswer(
-    (_) async =>
-        const Result<CommunicationsConversation>.success(_conversation),
-  );
+  when(() => repository.getConversation(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final String id = invocation.positionalArguments.single as String;
+    final CommunicationsConversation match = conversations.firstWhere(
+      (CommunicationsConversation item) => item.id == id,
+      orElse: () => _conversation,
+    );
+    return Result<CommunicationsConversation>.success(match);
+  });
   when(() => repository.getReferenceStaff(search: any(named: 'search')))
       .thenAnswer(
         (_) async =>
@@ -161,22 +172,35 @@ void _stubWorkspace(
             ),
       );
   when(
-    () => repository.markConversationRead(_conversation.id),
-  ).thenAnswer(
-    (_) async => const Result<CommunicationsConversation>.success(
+    () => repository.markConversationRead(any()),
+  ).thenAnswer((Invocation invocation) async {
+    final String id = invocation.positionalArguments.single as String;
+    final CommunicationsConversation match = conversations.firstWhere(
+      (CommunicationsConversation item) => item.id == id,
+      orElse: () => _conversation,
+    );
+    return Result<CommunicationsConversation>.success(
       CommunicationsConversation(
-        id: 'conversation-1',
-        title: 'Critical lab follow-up',
+        id: match.id,
+        title: match.title,
+        subject: match.subject,
+        conversationType: match.conversationType,
+        status: match.status,
+        isSensitive: match.isSensitive,
+        archived: match.archived,
         unread: false,
-        messages: <CommunicationMessage>[
-          CommunicationMessage(
-            id: 'message-1',
-            content: 'Please review potassium',
-          ),
-        ],
+        isFavorite: match.isFavorite,
+        isFlagged: match.isFlagged,
+        lastMessageAt: match.lastMessageAt,
+        createdAt: match.createdAt,
+        targetPath: match.targetPath,
+        participants: match.participants,
+        lastMessage: match.lastMessage,
+        messages: match.messages,
+        attachmentCount: match.attachmentCount,
       ),
-    ),
-  );
+    );
+  });
   when(
     () => repository.sendMessage(any(), any()),
   ).thenAnswer(
@@ -739,6 +763,159 @@ void main() {
         () => repository.sendMessage(_conversation.id, any()),
       ).called(1);
       expect(find.byType(CommunicationsComposeBar), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: EXPIRED notifications-communications omits Messages',
+    (WidgetTester tester) async {
+      final AppAccessPolicy expired = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'EXPIRED',
+          ),
+        ],
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.tab.isAllowed(expired),
+        isFalse,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: expired,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.text('Critical lab follow-up'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ABAC: missing facility context still allows Messages read chrome '
+    '(row/own scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['NURSE'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: communicationsActiveModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        CommunicationsMessagesAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.listChrome.isAllowed(noFacility),
+        isTrue,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(_tab('Messages'), findsOneWidget);
+      expect(find.text('Critical lab follow-up'), findsOneWidget);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '∩ denial: manage members nested write absent for read-only thread',
+    (WidgetTester tester) async {
+      const CommunicationsConversation group = CommunicationsConversation(
+        id: 'conversation-1',
+        title: 'Critical lab follow-up',
+        unread: true,
+        conversationType: 'GROUP',
+        messages: <CommunicationMessage>[
+          CommunicationMessage(
+            id: 'message-1',
+            content: 'Please review potassium',
+            sentAt: null,
+          ),
+        ],
+      );
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        conversations: const <CommunicationsConversation>[group],
+      );
+
+      await tester.tap(find.text('Critical lab follow-up'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Conversation actions'), findsNothing);
+      expect(find.text('Manage members'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized group thread mounts Manage members under write ∩',
+    (WidgetTester tester) async {
+      const CommunicationsConversation group = CommunicationsConversation(
+        id: 'conversation-1',
+        title: 'Critical lab follow-up',
+        unread: false,
+        conversationType: 'GROUP',
+        messages: <CommunicationMessage>[
+          CommunicationMessage(
+            id: 'message-1',
+            content: 'Please review potassium',
+            sentAt: null,
+          ),
+        ],
+      );
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.communicationsRead,
+            AppPermissions.communicationsWrite,
+          },
+        ),
+        conversations: const <CommunicationsConversation>[group],
+      );
+
+      await tester.tap(find.text('Critical lab follow-up'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Conversation actions'), findsOneWidget);
+      await tester.tap(find.byTooltip('Conversation actions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Manage members'), findsOneWidget);
+      expect(find.text('Archive'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

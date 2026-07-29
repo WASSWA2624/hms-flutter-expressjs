@@ -208,7 +208,8 @@ abstract final class CommunicationsMessagesAtomPermissions {
 /// | Row select → detail | read | [rowSelect] / [detail] |
 /// | Next action Mark read / Mark unread | update | [markRead] / [update] write ∩ |
 /// | Next action View (read-only) | read / navigate | [view] / [nextAction] read ∩ |
-/// | Detail content / linked record / delivery history | read | [detail] |
+/// | Detail content / delivery history | read | [detail] |
+/// | Detail Open linked record (body) | navigate | [openLinked] read ∩ |
 /// | Detail Archive (+ confirm) | delete | [archive] / [delete] delete ∩ |
 /// | Tab-strip New message / New group | create | _(Messages only)_ [create] |
 /// | Nested cross-module read / write | — | _(n/a)_ |
@@ -237,6 +238,8 @@ abstract final class CommunicationsNotificationsAtomPermissions {
   static const AccessRequirement view = communicationsWorkspaceReadRequirement;
   static const AccessRequirement nextAction =
       communicationsWorkspaceReadRequirement;
+  static const AccessRequirement openLinked =
+      communicationsWorkspaceReadRequirement;
   static const AccessRequirement create = communicationsWorkspaceWriteRequirement;
   static const AccessRequirement update = communicationsWorkspaceWriteRequirement;
   static const AccessRequirement delete =
@@ -262,13 +265,14 @@ abstract final class CommunicationsNotificationsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Deliveries tab | navigate | read ∩ `communications:read` |
-/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Deliveries tab | navigate | [tab] read ∩ `communications:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
 /// | Empty / error / retry / loading | read chrome | [empty] / [retry] / [loading] |
 /// | Row select → delivery detail | read | [rowSelect] / [detail] |
-/// | Next action View / View error / Open linked | navigate / read | [nextAction] |
-/// | Detail Open linked record (body) | navigate | [openLinked] |
-/// | Detail error panel | progressive disclosure | [detail] |
+/// | Next action View / View error | read / navigate | [view] / [nextAction] |
+/// | Next action Open linked (path present) | navigate | [nextAction] / [openLinked] |
+/// | Detail metadata / error panel | read / progressive disclosure | [detail] |
+/// | Detail Open linked record (body, path present) | navigate | [openLinked] |
 /// | Tab-strip New message / New group | create | _(Messages only)_ [create] |
 /// | Create / update / delete on this tab | — | _(none — read-only logs)_ |
 /// | Nested cross-module read / write | — | _(n/a)_ |
@@ -276,7 +280,8 @@ abstract final class CommunicationsNotificationsAtomPermissions {
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Deliveries prefer read; write /
 /// delete requirements exist for Messages / Templates elsewhere and must not
-/// mount mutation controls on this tab.
+/// mount mutation controls on this tab. Unauthorized detail entry no-ops (no
+/// routine "no access" banner).
 abstract final class CommunicationsDeliveriesAtomPermissions {
   static const AccessRequirement tab = communicationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -294,6 +299,7 @@ abstract final class CommunicationsDeliveriesAtomPermissions {
   static const AccessRequirement rowSelect =
       communicationsWorkspaceReadRequirement;
   static const AccessRequirement detail = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement view = communicationsWorkspaceReadRequirement;
   static const AccessRequirement nextAction =
       communicationsWorkspaceReadRequirement;
   static const AccessRequirement openLinked =

@@ -320,6 +320,83 @@ void main() {
   );
 
   testWidgets(
+    'full ∩ read: detail with path shows Open linked once in body; no footer mutations',
+    (WidgetTester tester) async {
+      Finder tableRowInkWell() => find.byWidgetPredicate(
+        (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+      );
+
+      await tester.tap(tableRowInkWell().first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('DELIVERY DETAIL'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Open linked record'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Archive'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Open linked record'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patient detail'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '∩ write without read: write rights alone omit Deliveries detail/next-action atoms',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsWrite},
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.view.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        CommunicationsDeliveriesAtomPermissions.create.isAllowed(writeOnly),
+        isTrue,
+      );
+
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.text('Open linked record'), findsNothing);
+      expect(find.text('View delivery'), findsNothing);
+      expect(find.text('View error'), findsNothing);
+      expect(find.text('DELIVERY DETAIL'), findsNothing);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'route entry ∪: communications:write alone enters; Deliveries chrome omitted',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
@@ -721,6 +798,45 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
+  testWidgets(
+    'Deliveries mobile: row select opens detail; Open linked navigates',
+    (WidgetTester tester) async {
+      await _pumpDeliveriesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        physicalSize: const Size(390, 844),
+      );
+
+      await tester.tap(find.textContaining('Critical lab').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('DELIVERY DETAIL'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Open linked record'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Archive'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Open linked record'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patient detail'), findsOneWidget);
+    },
+  );
+
   testWidgets('Deliveries desktop dark theme keeps authorized atoms', (
     WidgetTester tester,
   ) async {
@@ -788,6 +904,13 @@ void main() {
       expect(
         identical(
           CommunicationsDeliveriesAtomPermissions.openLinked,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsDeliveriesAtomPermissions.view,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,

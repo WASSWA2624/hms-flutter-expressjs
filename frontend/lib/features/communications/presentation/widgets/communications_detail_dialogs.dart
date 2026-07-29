@@ -125,7 +125,7 @@ Future<void> showCommunicationsTemplateDetailDialog(
   );
 }
 
-class CommunicationsNotificationDetailContent extends StatelessWidget {
+class CommunicationsNotificationDetailContent extends ConsumerWidget {
   const CommunicationsNotificationDetailContent({
     required this.notification,
     super.key,
@@ -134,7 +134,16 @@ class CommunicationsNotificationDetailContent extends StatelessWidget {
   final NotificationItem notification;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsNotificationsAtomPermissions.detail.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    final bool canOpenLinked =
+        CommunicationsNotificationsAtomPermissions.openLinked.isAllowed(
+          policy,
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -202,8 +211,10 @@ class CommunicationsNotificationDetailContent extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        CommunicationsLinkedRecordAction(targetPath: notification.targetPath),
+        if (canOpenLinked) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          CommunicationsLinkedRecordAction(targetPath: notification.targetPath),
+        ],
         if (notification.deliveries.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
           CommunicationsDeliveryHistory(deliveries: notification.deliveries),
@@ -224,8 +235,14 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Defense in depth: dialog entry already gates [detail]; omit data panels
+    // when read ∩ is lost (stale permissions / embedded reuse).
+    if (!CommunicationsDeliveriesAtomPermissions.detail.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
     final bool canOpenLinked =
-        CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(policy);
+        CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(policy) &&
+        communicationsInternalPath(delivery.targetPath) != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
