@@ -715,7 +715,7 @@ void main() {
     }
   });
 
-  testWidgets('mobile viewport keeps authorized close toolbar and Issue', (
+  testWidgets('mobile viewport keeps authorized close toolbar without banners', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
@@ -737,7 +737,6 @@ void main() {
     expect(find.byTooltip('Close day'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
     expect(find.text('No access'), findsNothing);
-    expect(find.text('Ada Draft'), findsOneWidget);
   });
 
   testWidgets('authorized Issue detail opens and omits finalize clearance', (

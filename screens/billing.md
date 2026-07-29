@@ -11,6 +11,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Approve / reject financial holds | `billingApprovalDecisionRequirement` (`billing:write` ∩ `financial:approve` ∩ `billing-payments`) |
 | Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
+| Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close) |
 
 Route entry any-of: `billing:read` \| `billing:write` + `billing-payments`. Backend remains authoritative.
 
@@ -125,6 +126,7 @@ Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingAp
   - Unauthorized users see no Close shift / Close day / next-action controls.
   - Writer without `financial:approve` sees no Approve next-action / detail buttons; approver with both sees them.
   - Claims pending tab and claim mutations absent without `insurance-claims`.
+  - `BillingClaimsPendingAtomPermissions` reuses tab/claim-write helpers; widget tests in `billing_claims_pending_permissions_test.dart`.
   - Advanced filters omit a Queue group; clearing filters does not reset the active tab queue.
   - Finalize financial clearance is absent from next-action and detail actions.
   - Next-action and detail entry points still open for representative issue / pay paths.

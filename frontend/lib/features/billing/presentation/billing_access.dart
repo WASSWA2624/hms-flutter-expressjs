@@ -148,6 +148,39 @@ bool billingNextActionIsAllowed(
   return billingNextActionRequirement(item).isAllowed(policy);
 }
 
+/// All tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | All tab | navigate | read ∩ `billing:read` |
+/// | Search / filters / columns | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Close shift / Close day | update | write ∩ `billing:write` |
+/// | Next action Issue / Pay / Refund / … | create / update / delete | write ∩ |
+/// | Next action Approve | approve | write ∩ financial:approve |
+/// | Detail invoice mutations | CRUD | write ∩ |
+/// | Detail Approve / Reject | approve | write ∩ financial:approve |
+/// | Claim / pre-auth mutations | nested write | claims write |
+/// | Claims pending tab (strip) | navigate | claims pending tab |
+/// | View ledger / Print / Download | read / export | document read ∩ |
+abstract final class BillingAllAtomPermissions {
+  static const AccessRequirement tab = billingWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
+  static const AccessRequirement detail = billingWorkspaceReadRequirement;
+  static const AccessRequirement create = billingWorkspaceWriteRequirement;
+  static const AccessRequirement update = billingWorkspaceWriteRequirement;
+  static const AccessRequirement delete = billingWorkspaceWriteRequirement;
+  static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement approve = billingApprovalDecisionRequirement;
+  static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
+  static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+  static const AccessRequirement claimsPendingTab =
+      billingClaimsPendingTabRequirement;
+  static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement entry = billingWorkspaceEntryRequirement;
+}
+
 /// Approval required tab atom → permission mapping (inventory + matrix).
 ///
 /// | Atom | Kind | Gate |
@@ -200,6 +233,74 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
   static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
+  static const AccessRequirement approve = billingApprovalDecisionRequirement;
+  static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
+  static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+  static const AccessRequirement document = billingWorkspaceReadRequirement;
+}
+
+/// Needs issue tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Needs issue tab | navigate | read ∩ `billing:read` |
+/// | Search / filters / columns | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Close shift / Close day | update | write ∩ `billing:write` |
+/// | Next action Issue | create / update | write ∩ |
+/// | Detail Issue (+ refund / adjust / void / send if applicable) | CRUD | write ∩ |
+/// | Nested issue notes dialog | create / update | write ∩ |
+/// | View ledger / financial panels | read | read ∩ |
+/// | Print / Download | export / read | document read ∩ |
+/// | Approve / claims nested | approve / write | approval ∩ / claims write |
+/// | Claims pending strip tab | navigate | claims pending tab ∩ |
+abstract final class BillingNeedsIssueAtomPermissions {
+  static const AccessRequirement tab = billingWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
+  static const AccessRequirement detail = billingWorkspaceReadRequirement;
+  static const AccessRequirement create = billingWorkspaceWriteRequirement;
+  static const AccessRequirement update = billingWorkspaceWriteRequirement;
+  static const AccessRequirement delete = billingWorkspaceWriteRequirement;
+  static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement issue = billingWorkspaceWriteRequirement;
+  static const AccessRequirement approve = billingApprovalDecisionRequirement;
+  static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
+  static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+  static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement claimsPendingTab =
+      billingClaimsPendingTabRequirement;
+  static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
+}
+
+/// Claims pending tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Claims pending tab | navigate | read ∩ `billing:read` ∩ `insurance-claims` |
+/// | Search / filters / columns | read chrome | tab read ∩ |
+/// | Empty / error / retry | read chrome | tab read ∩ |
+/// | Row select → detail | read | tab read ∩ |
+/// | Close shift / Close day | update / delete | write ∩ `billing:write` |
+/// | Next action Submit / Reconcile / Pre-auth | create / update | claims write |
+/// | Detail claim / pre-auth actions | create / update | claims write |
+/// | Nested claim submit / reconcile / pre-auth dialogs | create / update | claims write |
+/// | View ledger | read | nested claims read ∩ |
+/// | Print / Download | export / read | document read ∩ |
+/// | Approve nested (other kinds) | approve | write ∩ financial:approve |
+///
+/// Claim mutations reuse [billingClaimsWriteRequirement] →
+/// [claimsWorkspaceWriteRequirement] (`billing:write` + `insurance-claims`);
+/// matrix create/update ∩ is `billing:write` — module is the nested entitlement.
+abstract final class BillingClaimsPendingAtomPermissions {
+  static const AccessRequirement tab = billingClaimsPendingTabRequirement;
+  static const AccessRequirement listChrome = billingClaimsPendingTabRequirement;
+  static const AccessRequirement detail = billingClaimsPendingTabRequirement;
+  static const AccessRequirement create = billingClaimsWriteRequirement;
+  static const AccessRequirement update = billingClaimsWriteRequirement;
+  static const AccessRequirement delete = billingWorkspaceWriteRequirement;
+  static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement claimWrite = billingClaimsWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;

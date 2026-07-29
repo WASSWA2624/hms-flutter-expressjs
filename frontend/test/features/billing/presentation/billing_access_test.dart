@@ -194,6 +194,34 @@ void main() {
       expect(billingWorkspaceEntryRequirement.isAllowed(neither), isFalse);
     });
 
+    test('All tab atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(BillingAllAtomPermissions.write, billingWorkspaceWriteRequirement),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.approve,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.claimsPendingTab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.entry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('Approval required atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
@@ -237,6 +265,80 @@ void main() {
         identical(
           BillingAwaitingPaymentAtomPermissions.approve,
           billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Claims pending atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.tab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.claimWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.nestedRead,
+          billingClaimsNestedReadRequirement,
+        ),
+        isTrue,
+      );
+
+      final AppAccessPolicy readerWithInsurance = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writerNoInsurance = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      final AppAccessPolicy writerWithInsurance = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+
+      expect(
+        BillingClaimsPendingAtomPermissions.tab.isAllowed(readerWithInsurance),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.tab.isAllowed(writerNoInsurance),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(
+          readerWithInsurance,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(
+          writerWithInsurance,
         ),
         isTrue,
       );
