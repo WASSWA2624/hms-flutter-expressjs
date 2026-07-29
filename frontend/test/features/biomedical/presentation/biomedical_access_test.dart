@@ -260,6 +260,131 @@ void main() {
       );
     });
 
+    test('Preventive panel tab shares read requirement', () {
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.biomedRead},
+      );
+      expect(
+        canViewBiomedicalPanel(reader, BiomedicalPanels.preventive),
+        isTrue,
+      );
+      expect(
+        identical(
+          biomedicalPanelTabRequirement(BiomedicalPanels.preventive),
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Preventive atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.tab,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.listChrome,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.detail,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.create,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.update,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.delete,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.write,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.scheduleMaintenance,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.performMaintenance,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.export,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.print,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.nestedWrite,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.nestedRead,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.entry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalPreventiveAtomPermissions.routeEntry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('Compliance panel tab shares read requirement', () {
       final AppAccessPolicy reader = _policyFor(
         permissions: <AppPermission>{AppPermissions.biomedRead},
@@ -404,6 +529,14 @@ void main() {
       expect(BiomedicalOverviewAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(
         BiomedicalOverviewAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        BiomedicalPreventiveAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        BiomedicalPreventiveAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
       expect(
