@@ -167,6 +167,13 @@ void _stubOpd(_MockOpdRepository repository, {bool failLists = false}) {
       ),
     );
   });
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(
+        summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001'),
+      ),
+    ),
+  );
 }
 
 void _stubIpd(_MockIpdRepository repository) {
