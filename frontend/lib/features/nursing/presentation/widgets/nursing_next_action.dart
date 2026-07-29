@@ -41,9 +41,9 @@ NursingNextActionKind nursingResolveNextActionKind(
 
 /// Requirement for the stage next-action control on a row.
 ///
-/// When [scope] is provided, scope-specific write gates apply (e.g. transfer
-/// pending ∩ `clinical:write`). Kind alone still maps transfer/discharge to
-/// their atom write requirements.
+/// When [scope] is provided, scope-specific write gates apply (e.g. handover /
+/// transfer / discharge pending ∩ `clinical:write`). Kind alone still maps
+/// handover/transfer/discharge to their atom write requirements.
 AccessRequirement nursingNextActionRequirement(
   NursingNextActionKind kind, {
   NursingQueueScope? scope,
@@ -106,11 +106,11 @@ AccessRequirement nursingNextActionRequirement(
     NursingNextActionKind.medication =>
       NursingAllAtomPermissions.nextActionMedication,
     NursingNextActionKind.handover =>
-      NursingAllAtomPermissions.nextActionHandover,
+      NursingHandoverPendingAtomPermissions.nextActionHandover,
     NursingNextActionKind.transfer =>
-      NursingAllAtomPermissions.nextActionTransfer,
+      NursingTransferPendingAtomPermissions.nextActionTransfer,
     NursingNextActionKind.discharge =>
-      NursingAllAtomPermissions.nextActionDischarge,
+      NursingDischargePendingAtomPermissions.nextActionDischarge,
     NursingNextActionKind.escalate =>
       NursingAllAtomPermissions.nextActionEscalate,
     NursingNextActionKind.vitals => NursingAllAtomPermissions.nextActionVitals,
