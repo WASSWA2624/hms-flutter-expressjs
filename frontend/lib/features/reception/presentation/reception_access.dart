@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 
@@ -84,20 +85,44 @@ const AccessRequirement receptionPaymentGateRequirement = AccessRequirement(
   activeModules: <String>['billing-payments'],
 );
 
+/// Nested emergency handoff / emergency-visit chrome on High priority.
+///
+/// Matrix nested cross-module read ∪ `emergency:read` (+ `scheduling-queue`).
+/// Does not unlock the High priority tab itself (tab stays ∩ `patient:read`).
+const AccessRequirement receptionHighPriorityEmergencyNestedReadRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      activeModules: <String>['scheduling-queue'],
+    );
+
 AccessRequirement receptionDeskSectionRequirement(
   ReceptionDeskSection section,
 ) {
   return switch (section) {
     ReceptionDeskSection.appointments => ReceptionAppointmentsAtomPermissions.tab,
-    ReceptionDeskSection.queue ||
-    ReceptionDeskSection.highPriority => receptionSchedulingReadRequirement,
+    ReceptionDeskSection.queue => ReceptionDeskQueueAtomPermissions.tab,
+    ReceptionDeskSection.highPriority => ReceptionHighPriorityAtomPermissions.tab,
     ReceptionDeskSection.activeVisits => ReceptionActiveVisitsAtomPermissions.tab,
-    ReceptionDeskSection.followUps => receptionFollowUpsRequirement,
+    ReceptionDeskSection.followUps => ReceptionFollowUpsAtomPermissions.tab,
     ReceptionDeskSection.paymentGate => receptionPaymentGateRequirement,
   };
 }
 
-/// Follow-ups worklist: patient or clinical read (matches follow-up list auth).
+/// Whether [flow] carries emergency indicators for High priority nested chrome.
+bool isReceptionEmergencyFlow(OpdFlowSummary flow) {
+  return flow.emergencyIndicator ||
+      (flow.encounterType ?? '').toUpperCase() == 'EMERGENCY' ||
+      (flow.triageLevel ?? '').toUpperCase() == 'LEVEL_1' ||
+      (flow.triageLevel ?? '').toUpperCase() == 'IMMEDIATE';
+}
+
+/// Follow-ups worklist read — source ∪ `patient:read` | `clinical:read`
+/// (matches backend follow-up list auth).
+///
+/// Prompt matrix documents ∪ `patient:read` | `last_office:read` and ∩
+/// `patient:read`; keep this source ∪ (backend list) and note the mapping in
+/// tests. `last_office:read` alone may enter the reception shell but cannot
+/// list follow-ups.
 const AccessRequirement receptionFollowUpsRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.patientRead,
@@ -105,6 +130,15 @@ const AccessRequirement receptionFollowUpsRequirement = AccessRequirement(
   ],
   activeModules: <String>['patient-registry', 'scheduling-queue'],
 );
+
+/// Follow-ups complete / reschedule — matrix ∩ `patient:write`.
+///
+/// Backend complete accepts ∪ `clinical:write` | `patient:write`; PUT update
+/// (reschedule) currently requires `clinical:write` alone. Reception chrome
+/// keeps matrix ∩ via [receptionPatientWriteRequirement]. Readers with only
+/// `last_office:read` / read grants cannot mutate.
+const AccessRequirement receptionFollowUpsWriteRequirement =
+    receptionPatientWriteRequirement;
 
 /// Front-desk insurance enrollment capture (not claims finalize).
 const AccessRequirement receptionInsuranceCaptureRequirement =
@@ -118,6 +152,34 @@ const AccessRequirement receptionInsuranceCaptureRequirement =
 
 bool canViewReceptionAppointments(AppAccessPolicy policy) {
   return ReceptionAppointmentsAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewReceptionDeskQueue(AppAccessPolicy policy) {
+  return ReceptionDeskQueueAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewReceptionHighPriority(AppAccessPolicy policy) {
+  return ReceptionHighPriorityAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Desk queue next-action cells are read-only guidance labels (not mutation
+/// buttons). Mount whenever the tab is readable.
+bool receptionDeskQueueShowsNextActionColumn(AppAccessPolicy policy) {
+  return ReceptionDeskQueueAtomPermissions.nextActionLabel.isAllowed(policy);
+}
+
+/// High priority next-action cells are read-only guidance labels.
+bool receptionHighPriorityShowsNextActionColumn(AppAccessPolicy policy) {
+  return ReceptionHighPriorityAtomPermissions.nextActionLabel.isAllowed(policy);
+}
+
+bool canViewReceptionFollowUps(AppAccessPolicy policy) {
+  return ReceptionFollowUpsAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Whether Follow-ups complete / reschedule may mount.
+bool canWriteReceptionFollowUps(AppAccessPolicy policy) {
+  return ReceptionFollowUpsAtomPermissions.write.isAllowed(policy);
 }
 
 bool canViewReceptionActiveVisits(AppAccessPolicy policy) {
@@ -213,6 +275,86 @@ abstract final class ReceptionAppointmentsAtomPermissions {
   static const AccessRequirement routeEntryUnion = receptionWorkspaceRequirement;
 }
 
+/// Desk queue tab atom → permission mapping (inventory + matrix).
+///
+/// Waiting queue + hub mutations (`/reception?section=desk-queue`). Nested
+/// cross-module matrix rows are _(n/a)_. Register + Schedule use matrix ∩
+/// `patient:write`. Hub prioritize / change status / assign doctor keep source
+/// [receptionFrontDeskWriteRequirement] rather than matrix ∩ alone (role packs
+/// authorize front-desk queue work; matrix delete ∩ `patient:delete` has no
+/// delete atom on this tab). Route entry stays ∪ `patient:read` |
+/// `last_office:read`. Tab chrome stays ∩ `patient:read`. Next-action column is
+/// progressive-disclosure read chrome (guidance labels only).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Desk queue strip tab / count | navigate | read ∩ ([tab]) |
+/// | Register patient (primary) | create | write ∩ ([register]) |
+/// | Schedule appointment (secondary) | create | write ∩ ([schedule]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → Queue Actions hub | read | ([rowSelect] / [detail]) |
+/// | Row select → Flow Actions (linked visit) | read | ([rowSelect] / [detail]) |
+/// | Next action guidance label | progressive disclosure | read ∩ ([nextActionLabel]) |
+/// | Nested hub Prioritize | update | source front-desk ([prioritize]) |
+/// | Nested hub Change status | update | source front-desk ([changeStatus]) |
+/// | Nested hub Assign / Change doctor | update | source front-desk ([assignDoctor]) |
+/// | Nested billing / clinical panels from hub | nested write | _(n/a)_ — hub strips them |
+/// | Route entry (deep link) | navigate | ∪ patient:read \| last_office:read |
+abstract final class ReceptionDeskQueueAtomPermissions {
+  static const AccessRequirement tab = receptionSchedulingReadRequirement;
+  static const AccessRequirement listChrome = receptionSchedulingReadRequirement;
+  static const AccessRequirement search = receptionSchedulingReadRequirement;
+  static const AccessRequirement filters = receptionSchedulingReadRequirement;
+  static const AccessRequirement settings = receptionSchedulingReadRequirement;
+  static const AccessRequirement empty = receptionSchedulingReadRequirement;
+  static const AccessRequirement loading = receptionSchedulingReadRequirement;
+  static const AccessRequirement retry = receptionSchedulingReadRequirement;
+  static const AccessRequirement success = receptionPatientWriteRequirement;
+  static const AccessRequirement validation = receptionPatientWriteRequirement;
+  static const AccessRequirement rowSelect = receptionSchedulingReadRequirement;
+  static const AccessRequirement detail = receptionSchedulingReadRequirement;
+  static const AccessRequirement close = receptionSchedulingReadRequirement;
+
+  /// Read-only next-action guidance (not a mutation control).
+  static const AccessRequirement nextActionLabel =
+      receptionSchedulingReadRequirement;
+
+  /// Matrix ∩ `patient:write`.
+  static const AccessRequirement create = receptionPatientWriteRequirement;
+  static const AccessRequirement update = receptionPatientWriteRequirement;
+
+  /// Matrix ∩ `patient:delete` (documented); queue hub has no delete atom.
+  static const AccessRequirement delete = receptionPatientDeleteRequirement;
+
+  static const AccessRequirement register = receptionPatientWriteRequirement;
+  static const AccessRequirement schedule = receptionPatientWriteRequirement;
+  static const AccessRequirement write = receptionPatientWriteRequirement;
+
+  /// Source front-desk gate for queue hub writes (keep source).
+  static const AccessRequirement frontDesk = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement nextAction = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement prioritize = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement changeStatus =
+      receptionFrontDeskWriteRequirement;
+  static const AccessRequirement moveQueue = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement assignDoctor =
+      receptionFrontDeskWriteRequirement;
+
+  /// Nested cross-module write — matrix _(n/a)_; hub uses front-desk only.
+  static const AccessRequirement nestedWrite =
+      receptionFrontDeskWriteRequirement;
+
+  /// Nested cross-module read — matrix _(n/a)_; reuses scheduling read ∩.
+  static const AccessRequirement nestedRead = receptionSchedulingReadRequirement;
+
+  static const AccessRequirement entry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntryUnion = receptionWorkspaceRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.receptionEntry;
+}
+
 /// Active visits tab atom → permission mapping (inventory + matrix).
 ///
 /// In-facility same-day visits (`/reception?section=active` /
@@ -288,6 +430,156 @@ abstract final class ReceptionActiveVisitsAtomPermissions {
       opdReceptionActionRequirement;
   static const AccessRequirement nestedCorrectStage =
       opdReceptionActionRequirement;
+
+  static const AccessRequirement entry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntryUnion = receptionWorkspaceRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.receptionEntry;
+}
+
+/// Follow-ups tab atom → permission mapping (inventory + matrix).
+///
+/// Call worklist (`/reception?section=follow-ups`). Prompt matrix view ∪
+/// `patient:read` | `last_office:read` (and ∩ `patient:read`) maps to source ∪
+/// [receptionFollowUpsRequirement] (`patient:read` | `clinical:read` — backend
+/// list auth; keep source). Create / update keep ∩ `patient:write`
+/// ([receptionFollowUpsWriteRequirement]). Delete maps ∩ `patient:delete`
+/// ([delete]) — no delete control on this tab (complete is update). Nested
+/// cross-module matrix rows are _(n/a)_. Register / Schedule strip actions
+/// reuse ∩ `patient:write`. Route entry keeps workspace ∪ `patient:read` |
+/// `last_office:read`. Complete / reschedule gated by write ∩; read-only
+/// detail shows Close only (no mutation affordances).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Follow-ups strip tab / count | navigate | read ∪ ([tab]) |
+/// | Register patient (strip primary) | create | ∩ patient:write ([register]) |
+/// | Schedule appointment (strip secondary) | create | ∩ patient:write ([schedule]) |
+/// | Search / Clear / Settings / columns | read chrome | ([listChrome] / [search]) |
+/// | Advanced filters / date filter | read chrome | omitted on this tab |
+/// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → follow-up detail | read | ([rowSelect] / [detail]) |
+/// | Detail patient / schedule / notes panels | read | ([detail]) |
+/// | Detail Close (read-only footer) | progressive disclosure | ([close]) |
+/// | Reschedule follow-up | update | write ∩ ([reschedule]) |
+/// | Mark completed | update | write ∩ ([markCompleted] / [complete]) |
+/// | Save follow-up (nested reschedule dialog) | update | write ∩ ([saveFollowUp]) |
+/// | Hard delete / void | delete | ∩ patient:delete ([delete]) — not mounted |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Deep link `section=follow-ups` | navigate | ([tab] / [rowSelect]) |
+/// | Route entry (workspace) | navigate | ([entry] / [routeEntryUnion]) |
+abstract final class ReceptionFollowUpsAtomPermissions {
+  static const AccessRequirement tab = receptionFollowUpsRequirement;
+  static const AccessRequirement listChrome = receptionFollowUpsRequirement;
+  static const AccessRequirement search = receptionFollowUpsRequirement;
+  static const AccessRequirement filters = receptionFollowUpsRequirement;
+  static const AccessRequirement settings = receptionFollowUpsRequirement;
+  static const AccessRequirement empty = receptionFollowUpsRequirement;
+  static const AccessRequirement loading = receptionFollowUpsRequirement;
+  static const AccessRequirement retry = receptionFollowUpsRequirement;
+  static const AccessRequirement success = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement validation = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement rowSelect = receptionFollowUpsRequirement;
+  static const AccessRequirement detail = receptionFollowUpsRequirement;
+  static const AccessRequirement close = receptionFollowUpsRequirement;
+
+  /// Matrix ∩ `patient:write` (Register / Schedule strip + mutations).
+  static const AccessRequirement create = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement update = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement delete = receptionPatientDeleteRequirement;
+  static const AccessRequirement write = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement register = receptionPatientWriteRequirement;
+  static const AccessRequirement schedule = receptionPatientWriteRequirement;
+  static const AccessRequirement reschedule = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement markCompleted =
+      receptionFollowUpsWriteRequirement;
+  static const AccessRequirement complete = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement saveFollowUp =
+      receptionFollowUpsWriteRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses follow-ups read ∪ / write ∩.
+  static const AccessRequirement nestedWrite = receptionFollowUpsWriteRequirement;
+  static const AccessRequirement nestedRead = receptionFollowUpsRequirement;
+
+  static const AccessRequirement entry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntry = receptionWorkspaceRequirement;
+  static const AccessRequirement routeEntryUnion = receptionWorkspaceRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.receptionEntry;
+  static const AccessRequirement read = receptionFollowUpsRequirement;
+}
+
+/// High priority tab atom → permission mapping (inventory + matrix).
+///
+/// Escalated desk-queue items (`/reception?section=high-priority`). Tab chrome
+/// stays ∩ `patient:read` ([receptionSchedulingReadRequirement]). Register /
+/// Schedule use matrix ∩ `patient:write`. Hub prioritize / change status /
+/// assign doctor keep source [receptionFrontDeskWriteRequirement] rather than
+/// matrix ∩ alone. Delete maps ∩ `patient:delete` ([delete]) — no hard-delete
+/// control on this tab. Nested cross-module read matrix ∪ `emergency:read`
+/// ([nestedEmergencyRead] / [nestedRead]); emergency-linked Flow Actions open
+/// only when that grant is present — otherwise Queue Actions (front-desk) open.
+/// Nested cross-module write matrix rows are _(n/a)_. Route entry keeps
+/// workspace ∪ `patient:read` | `last_office:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | High priority strip tab / count | navigate | read ∩ ([tab]) |
+/// | Register patient (strip primary) | create | ∩ patient:write ([register]) |
+/// | Schedule appointment (strip secondary) | create | ∩ patient:write ([schedule]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Status / next-action / staff / payment filters | read chrome | ([filters]) |
+/// | High priority badge (prioritized) | read chrome | ([listChrome]) |
+/// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → Queue Actions / Flow Actions | read | ([rowSelect] / [detail]) |
+/// | Next-action column (label only) | read chrome | ([nextActionLabel]) |
+/// | Nested prioritize / change status / assign doctor | update | source front-desk |
+/// | Nested emergency Flow Actions / visit chrome | nested read | ∪ emergency:read |
+/// | Nested cross-module write | nested write | _(n/a)_ ([nestedWrite] front-desk) |
+/// | Deep link `section=high-priority` | navigate | ([tab]) |
+/// | Route entry (workspace) | navigate | ([entry] / [routeEntryUnion]) |
+abstract final class ReceptionHighPriorityAtomPermissions {
+  static const AccessRequirement tab = receptionSchedulingReadRequirement;
+  static const AccessRequirement listChrome = receptionSchedulingReadRequirement;
+  static const AccessRequirement search = receptionSchedulingReadRequirement;
+  static const AccessRequirement filters = receptionSchedulingReadRequirement;
+  static const AccessRequirement settings = receptionSchedulingReadRequirement;
+  static const AccessRequirement empty = receptionSchedulingReadRequirement;
+  static const AccessRequirement loading = receptionSchedulingReadRequirement;
+  static const AccessRequirement retry = receptionSchedulingReadRequirement;
+  static const AccessRequirement success = receptionPatientWriteRequirement;
+  static const AccessRequirement validation = receptionPatientWriteRequirement;
+  static const AccessRequirement rowSelect = receptionSchedulingReadRequirement;
+  static const AccessRequirement detail = receptionSchedulingReadRequirement;
+  static const AccessRequirement close = receptionSchedulingReadRequirement;
+
+  /// Matrix ∩ `patient:write`.
+  static const AccessRequirement create = receptionPatientWriteRequirement;
+  static const AccessRequirement update = receptionPatientWriteRequirement;
+  static const AccessRequirement delete = receptionPatientDeleteRequirement;
+  static const AccessRequirement write = receptionPatientWriteRequirement;
+  static const AccessRequirement register = receptionPatientWriteRequirement;
+  static const AccessRequirement schedule = receptionPatientWriteRequirement;
+
+  /// Next-action column is read-only guidance text (not a mutation control).
+  static const AccessRequirement nextActionLabel =
+      receptionSchedulingReadRequirement;
+
+  /// Source front-desk gate for queue hub writes (keep source).
+  static const AccessRequirement frontDesk = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement prioritize = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement changeStatus = receptionFrontDeskWriteRequirement;
+  static const AccessRequirement assignDoctor = receptionFrontDeskWriteRequirement;
+
+  /// Matrix nested read ∪ `emergency:read`.
+  static const AccessRequirement nestedEmergencyRead =
+      receptionHighPriorityEmergencyNestedReadRequirement;
+  static const AccessRequirement nestedRead =
+      receptionHighPriorityEmergencyNestedReadRequirement;
+
+  /// Nested cross-module write — matrix _(n/a)_; hub uses front-desk.
+  static const AccessRequirement nestedWrite = receptionFrontDeskWriteRequirement;
 
   static const AccessRequirement entry = receptionWorkspaceRequirement;
   static const AccessRequirement routeEntry = receptionWorkspaceRequirement;

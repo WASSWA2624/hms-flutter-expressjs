@@ -207,12 +207,48 @@ void main() {
           moduleEntitlements: _activeShellModules,
         ),
       );
+      final AppAccessPolicy clinicalWriter = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          permissions: <AppPermission>{AppPermissions.clinicalWrite},
+          moduleEntitlements: <AppModuleEntitlement>[
+            ..._activeShellModules,
+            const AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
 
       expect(
         receptionActiveVisitsRequirement.isAllowed(lastOfficeOnly),
         isFalse,
       );
       expect(receptionActiveVisitsRequirement.isAllowed(patientReader), isTrue);
+      expect(canViewReceptionActiveVisits(patientReader), isTrue);
+      expect(
+        identical(
+          receptionDeskSectionRequirement(ReceptionDeskSection.activeVisits),
+          ReceptionActiveVisitsAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      // Nested matrix ∪ clinical:write | patient:write.
+      expect(
+        ReceptionActiveVisitsAtomPermissions.nestedWrite.isAllowed(
+          clinicalWriter,
+        ),
+        isTrue,
+      );
+      expect(
+        ReceptionActiveVisitsAtomPermissions.nestedWrite.isAllowed(
+          patientReader,
+        ),
+        isFalse,
+      );
     });
 
     test('consultation billing actions stay unavailable to receptionists', () {
@@ -294,13 +330,14 @@ void main() {
       );
     });
 
-    test('follow-ups require patient or clinical read', () {
+    test('follow-ups require patient or clinical read (source ∪)', () {
       final AppAccessPolicy lastOfficeOnly = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 'token'),
           user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
           permissions: <AppPermission>{AppPermissions.lastOfficeRead},
           moduleEntitlements: _activeShellModules,
+          isAuthorizationHydrated: true,
         ),
       );
       final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
@@ -309,6 +346,7 @@ void main() {
           user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
           permissions: <AppPermission>{AppPermissions.patientRead},
           moduleEntitlements: _activeShellModules,
+          isAuthorizationHydrated: true,
         ),
       );
       final AppAccessPolicy clinicalReader = AppAccessPolicy.fromSession(
@@ -323,17 +361,29 @@ void main() {
               licenseStatus: 'ACTIVE',
             ),
           ],
+          isAuthorizationHydrated: true,
         ),
       );
 
+      // Matrix ∪ last_office:read maps to source ∪ patient|clinical (backend).
       expect(receptionFollowUpsRequirement.isAllowed(lastOfficeOnly), isFalse);
+      expect(canViewReceptionFollowUps(lastOfficeOnly), isFalse);
       expect(receptionFollowUpsRequirement.isAllowed(patientReader), isTrue);
       expect(receptionFollowUpsRequirement.isAllowed(clinicalReader), isTrue);
+      expect(canViewReceptionFollowUps(patientReader), isTrue);
       expect(
         receptionDeskSectionRequirement(
           ReceptionDeskSection.followUps,
-        ).isAllowed(patientReader),
-        isTrue,
+        ),
+        same(ReceptionFollowUpsAtomPermissions.tab),
+      );
+      expect(
+        ReceptionFollowUpsAtomPermissions.write,
+        same(receptionPatientWriteRequirement),
+      );
+      expect(
+        canWriteReceptionFollowUps(patientReader),
+        isFalse,
       );
     });
 

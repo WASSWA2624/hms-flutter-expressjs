@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -52,9 +53,8 @@ class ReceptionWorkspacePage extends ConsumerWidget {
         canReadPaymentGate
         ? ref.watch(receptionPaymentGateControllerProvider)
         : null;
-    final bool canReadFollowUps = receptionFollowUpsRequirement.isAllowed(
-      ref.watch(appAccessPolicyProvider),
-    );
+    final bool canReadFollowUps = ReceptionFollowUpsAtomPermissions.tab
+        .isAllowed(ref.watch(appAccessPolicyProvider));
     final AsyncValue<Result<ReceptionFollowUpState>>? followUpState =
         canReadFollowUps
         ? ref.watch(receptionFollowUpControllerProvider)
@@ -687,9 +687,22 @@ class _ReceptionWorkspaceContentState
     ];
   }
 
+  AccessRequirement get _stripWriteRequirement {
+    return switch (_section) {
+      ReceptionDeskSection.queue => ReceptionDeskQueueAtomPermissions.register,
+      ReceptionDeskSection.highPriority =>
+        ReceptionHighPriorityAtomPermissions.register,
+      ReceptionDeskSection.activeVisits =>
+        ReceptionActiveVisitsAtomPermissions.register,
+      ReceptionDeskSection.followUps =>
+        ReceptionFollowUpsAtomPermissions.register,
+      _ => ReceptionAppointmentsAtomPermissions.register,
+    };
+  }
+
   Widget _buildPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
-      requirement: ReceptionAppointmentsAtomPermissions.register,
+      requirement: _stripWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         if (!isAllowed) {
           return const SizedBox.shrink();
@@ -708,9 +721,19 @@ class _ReceptionWorkspaceContentState
     // Cross-module nav (Patient registry / OPD) and Refresh were removed as
     // redundant shortcuts — those destinations stay in app navigation; desk
     // data refreshes after mutations via [_refreshWorkspace].
+    final AccessRequirement scheduleRequirement = switch (_section) {
+      ReceptionDeskSection.queue => ReceptionDeskQueueAtomPermissions.schedule,
+      ReceptionDeskSection.highPriority =>
+        ReceptionHighPriorityAtomPermissions.schedule,
+      ReceptionDeskSection.activeVisits =>
+        ReceptionActiveVisitsAtomPermissions.scheduleAppointment,
+      ReceptionDeskSection.followUps =>
+        ReceptionFollowUpsAtomPermissions.schedule,
+      _ => ReceptionAppointmentsAtomPermissions.schedule,
+    };
     return <Widget>[
       AppAccessActionGate(
-        requirement: ReceptionAppointmentsAtomPermissions.schedule,
+        requirement: scheduleRequirement,
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -730,6 +753,12 @@ class _ReceptionWorkspaceContentState
 
   bool get _canShowAppointmentsNextAction {
     return receptionAppointmentsShowsNextActionColumn(
+      ref.watch(appAccessPolicyProvider),
+    );
+  }
+
+  bool get _canShowDeskQueueNextAction {
+    return receptionDeskQueueShowsNextActionColumn(
       ref.watch(appAccessPolicyProvider),
     );
   }
@@ -756,6 +785,13 @@ class _ReceptionWorkspaceContentState
             _receptionAppointmentNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          _receptionPatientColumn(l10n),
+          _receptionQueuedAtColumn(l10n, locale),
+          _receptionQueueCurrentStepColumn(l10n),
+          if (_canShowDeskQueueNextAction)
+            _receptionQueueNextActionColumn(l10n),
+        ];
       case ReceptionDeskSection.highPriority:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
@@ -1915,6 +1951,7 @@ class _ReceptionWorkspaceContentState
       final bool? changed = await showReceptionFollowUpDetailDialog(
         context: context,
         entry: row.followUpEntry!,
+        writeRequirement: ReceptionFollowUpsAtomPermissions.write,
       );
       if (changed == true && mounted) {
         await _refreshWorkspace();

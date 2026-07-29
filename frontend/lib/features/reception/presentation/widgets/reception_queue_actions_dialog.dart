@@ -18,8 +18,9 @@ Future<bool?> showReceptionQueueActionsDialog({
 
 /// Reception front-desk queue actions.
 ///
-/// Composes [QueueActionsDialog] with [receptionFrontDeskWriteRequirement]
-/// rather than forking a divergent reception shell.
+/// Composes [QueueActionsDialog] with
+/// [ReceptionDeskQueueAtomPermissions.frontDesk] rather than forking a
+/// divergent reception shell. Nested billing / clinical panels stay stripped.
 class ReceptionQueueActionsDialog extends StatelessWidget {
   const ReceptionQueueActionsDialog({required this.entry, super.key});
 
@@ -29,9 +30,10 @@ class ReceptionQueueActionsDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return QueueActionsDialog(
       entry: entry,
-      // Explicit reception gate (alias of OPD front-desk write) for RBAC clarity.
+      // Source front-desk gate (matrix update documents patient:write — keep
+      // source; see ReceptionDeskQueueAtomPermissions).
       // ignore: avoid_redundant_argument_values
-      actionRequirement: receptionFrontDeskWriteRequirement,
+      actionRequirement: ReceptionDeskQueueAtomPermissions.frontDesk,
     );
   }
 }

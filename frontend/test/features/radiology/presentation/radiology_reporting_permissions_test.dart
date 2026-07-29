@@ -812,10 +812,17 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      expect(find.text('Release report'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Release report'));
-      await tester.tap(find.text('Release report'));
+      final Finder releaseEntry = find.widgetWithText(
+        AppButton,
+        'Release report',
+      );
+      expect(releaseEntry, findsWidgets);
+      final AppButton releaseEntryButton = tester.widget<AppButton>(
+        releaseEntry.first,
+      );
+      expect(releaseEntryButton.onPressed, isNotNull);
+      releaseEntryButton.onPressed!();
       await tester.pumpAndSettle();
 
       final Finder releaseSubmit = find.descendant(

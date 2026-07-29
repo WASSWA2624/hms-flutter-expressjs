@@ -19,7 +19,8 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 Future<bool?> showReceptionFollowUpDetailDialog({
   required BuildContext context,
   required ReceptionFollowUpEntry entry,
-  AccessRequirement writeRequirement = receptionFrontDeskWriteRequirement,
+  AccessRequirement writeRequirement =
+      ReceptionFollowUpsAtomPermissions.write,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -35,7 +36,7 @@ Future<bool?> showReceptionFollowUpDetailDialog({
 class ReceptionFollowUpDetailDialog extends ConsumerStatefulWidget {
   const ReceptionFollowUpDetailDialog({
     required this.entry,
-    this.writeRequirement = receptionFrontDeskWriteRequirement,
+    this.writeRequirement = ReceptionFollowUpsAtomPermissions.write,
     super.key,
   });
 

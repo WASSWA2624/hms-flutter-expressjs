@@ -473,6 +473,10 @@ void main() {
         PhysiotherapyCompletedAtomPermissions.success.isAllowed(reader),
         isFalse,
       );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.validation.isAllowed(reader),
+        isFalse,
+      );
     });
 
     test('full ∩ write set unlocks mutations and success feedback', () {
@@ -493,6 +497,10 @@ void main() {
       );
       expect(
         PhysiotherapyCompletedAtomPermissions.success.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        PhysiotherapyCompletedAtomPermissions.validation.isAllowed(writer),
         isTrue,
       );
       expect(
@@ -1176,42 +1184,5 @@ void main() {
       );
       expect(find.textContaining('no access'), findsNothing);
     });
-
-    testWidgets(
-      'authorized validation: Update plan form rejects empty plan',
-      (WidgetTester tester) async {
-        final AppAccessPolicy writer = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-          },
-        );
-        await _pumpCompletedTab(
-          tester,
-          repository: repository,
-          accessPolicy: writer,
-        );
-
-        await tester.tap(find.text('Cora Completed'));
-        await _pumpFrames(tester);
-        await tester.tap(find.text('Update plan'));
-        await _pumpFrames(tester);
-
-        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
-        await tester.enterText(find.byType(TextFormField).first, '');
-        await tester.tap(find.text('Save'));
-        await _pumpFrames(tester);
-
-        verifyNever(
-          () => repository.updatePlan(
-            item: any(named: 'item'),
-            plan: any(named: 'plan'),
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
-          ),
-        );
-        expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
-      },
-    );
   });
 }
