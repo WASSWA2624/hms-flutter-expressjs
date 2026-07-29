@@ -1,15 +1,14 @@
 """Run prompts/billing-and-sections/**/*.md with Cursor agents.
 
 Processing rules:
-- One folder at a time; never start the next folder until every prompt in
-  the current folder has finished all iterations.
-- Within a folder iteration, at most MAX_CONCURRENCY prompts run at once.
-- Each folder is iterated ITERATIONS times so every prompt runs that many times.
-- After each successful prompt run, commit and push to GitHub.
-- Completed prompt iterations recorded in
-  .run_billing_and_sections_prompts_state.json are skipped on resume; pass
-  --force to clear state and re-run everything.
-- Model is set to Composer 2.5 (composer-2.5).
+- One folder at a time; never start the next until every prompt in the
+  current folder has finished.
+- Within a folder, at most MAX_CONCURRENCY prompts run at once.
+- Each prompt runs once.
+- After each successful prompt, commit and push to GitHub.
+- Completed prompt files in .run_billing_and_sections_prompts_state.json
+  are skipped on resume; pass --force to clear state and re-run everything.
+- Model is Composer 2.5 (composer-2.5).
 """
 
 from __future__ import annotations
@@ -34,7 +33,6 @@ from cursor_sdk import (
 PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "billing-and-sections"
 STATE_FILE = PROJECT_DIR / ".run_billing_and_sections_prompts_state.json"
-ITERATIONS = 1
 MAX_CONCURRENCY = 10
 MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
@@ -50,21 +48,31 @@ def _prompt_rel(path: Path) -> str:
     return path.relative_to(PROJECT_DIR).as_posix()
 
 
-def _iteration_key(prompt_rel: str, iteration: int) -> str:
-    """Stable id for state tracking of one prompt iteration."""
-    return f"{prompt_rel}#{iteration}/{ITERATIONS}"
+def _short_name(prompt_path: Path) -> str:
+    """Folder-relative label like '_screens/home.md'."""
+    try:
+        return prompt_path.relative_to(PROMPTS_ROOT).as_posix()
+    except ValueError:
+        return prompt_path.name
+
+
+def _is_finished(prompt_rel: str, finished: set[str]) -> bool:
+    """True if this prompt file is recorded done (bare path or legacy #N/M)."""
+    if prompt_rel in finished:
+        return True
+    prefix = f"{prompt_rel}#"
+    return any(entry.startswith(prefix) for entry in finished)
 
 
 def _discover_folders() -> list[Path]:
-    """Return prompt folders under billing-and-sections, sorted, one folder at a time."""
+    """Return prompt folders under billing-and-sections, sorted."""
     if not PROMPTS_ROOT.is_dir():
         return []
     folders: list[Path] = []
     for child in sorted(PROMPTS_ROOT.iterdir(), key=lambda p: p.name.lower()):
         if not child.is_dir():
             continue
-        prompts = _folder_prompts(child)
-        if prompts:
+        if _folder_prompts(child):
             folders.append(child)
     return folders
 
@@ -79,17 +87,6 @@ def _folder_prompts(folder: Path) -> list[Path]:
         ),
         key=lambda p: p.name.lower(),
     )
-
-
-def _all_jobs() -> list[tuple[Path, Path, int]]:
-    """(folder, prompt_path, iteration) for every planned run, folder-major order."""
-    jobs: list[tuple[Path, Path, int]] = []
-    for folder in _discover_folders():
-        prompts = _folder_prompts(folder)
-        for iteration in range(1, ITERATIONS + 1):
-            for prompt in prompts:
-                jobs.append((folder, prompt, iteration))
-    return jobs
 
 
 def _load_finished() -> set[str]:
@@ -110,20 +107,24 @@ def _save_finished(finished: set[str]) -> None:
     )
 
 
-def _mark_finished(finished: set[str], key: str) -> None:
-    """Record one completed iteration and persist state immediately."""
-    finished.add(key)
+def _mark_finished(finished: set[str], prompt_rel: str) -> None:
+    """Record one completed prompt and persist state immediately."""
+    finished.add(prompt_rel)
+    # Drop legacy iteration keys for the same file.
+    stale = [e for e in finished if e.startswith(f"{prompt_rel}#")]
+    for entry in stale:
+        finished.discard(entry)
     _save_finished(finished)
+
+
+def _log(message: str, *, err: bool = False) -> None:
+    print(message, file=sys.stderr if err else sys.stdout, flush=True)
 
 
 def _error_text(err: BaseException) -> str:
     if isinstance(err, CursorAgentError):
-        parts = [err.message or str(err) or type(err).__name__]
-        if err.code:
-            parts.append(f"code={err.code}")
-        if err.is_retryable:
-            parts.append("retryable")
-        return " | ".join(parts)
+        msg = err.message or str(err) or type(err).__name__
+        return msg
     return str(err) or type(err).__name__
 
 
@@ -161,7 +162,7 @@ def _clear_stale_index_lock(*, max_age_seconds: float = 30.0) -> bool:
 
     try:
         INDEX_LOCK_PATH.unlink(missing_ok=True)
-        print("[GIT] removed stale .git/index.lock", flush=True)
+        _log("  git    cleared stale lock")
         return True
     except OSError:
         return False
@@ -186,11 +187,7 @@ def _run_git(args: list[str], *, check: bool = True) -> subprocess.CompletedProc
             if check and _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
                 _clear_stale_index_lock()
                 delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
-                print(
-                    f"[GIT] index.lock busy on `git {' '.join(args)}`; "
-                    f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
-                    flush=True,
-                )
+                _log(f"  git    lock busy, retry in {delay:.1f}s")
                 time.sleep(delay)
                 continue
             raise
@@ -204,55 +201,40 @@ def _git_has_staged_changes() -> bool:
     return staged.returncode != 0
 
 
-def _commit_and_push(iteration_key: str) -> dict:
+def _commit_and_push(prompt_rel: str) -> dict:
     """Stage, commit, and push workspace changes after a successful prompt run."""
+    short = prompt_rel
+    prefix = f"prompts/{PROMPTS_ROOT.name}/"
+    if short.startswith(prefix):
+        short = short[len(prefix) :]
+
     last_error = ""
     for attempt in range(1, GIT_LOCK_RETRIES + 1):
         try:
             _run_git(["add", "-A"])
             for exclude in GIT_EXCLUDES:
                 _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
-            # Discard accidental recreation of the removed screens/ inventory.
             _run_git(["checkout", "--", "screens"], check=False)
             _run_git(["clean", "-fd", "--", "screens"], check=False)
 
             if not _git_has_staged_changes():
-                leftover = _run_git(
-                    ["ls-files", "--others", "--exclude-standard"],
-                    check=True,
-                ).stdout.strip()
-                if leftover:
-                    print(
-                        f"[GIT] {iteration_key}: no staged changes "
-                        f"(untracked still present; skipped commit)",
-                        flush=True,
-                    )
-                else:
-                    print(f"[GIT] {iteration_key}: no changes to commit", flush=True)
                 return {"committed": False, "pushed": False}
 
-            message = f"Apply prompt: {iteration_key}"
+            message = f"Apply prompt: {prompt_rel}"
             try:
                 _run_git(["commit", "-m", message])
             except subprocess.CalledProcessError as err:
                 detail = _git_detail(err)
                 if "nothing to commit" in detail.lower():
-                    print(f"[GIT] {iteration_key}: no changes to commit", flush=True)
                     return {"committed": False, "pushed": False}
                 if _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
                     last_error = detail
                     _clear_stale_index_lock()
                     delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
-                    print(
-                        f"[GIT] {iteration_key}: commit lock busy; "
-                        f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
-                        flush=True,
-                    )
+                    _log(f"  git    commit lock busy, retry in {delay:.1f}s")
                     time.sleep(delay)
                     continue
                 raise RuntimeError(f"git commit failed: {detail}") from err
-
-            print(f"[GIT] {iteration_key}: committed", flush=True)
 
             try:
                 _run_git(["push", "-u", "origin", "HEAD"])
@@ -260,7 +242,6 @@ def _commit_and_push(iteration_key: str) -> dict:
                 detail = _git_detail(err)
                 raise RuntimeError(f"git push failed: {detail}") from err
 
-            print(f"[GIT] {iteration_key}: pushed", flush=True)
             return {"committed": True, "pushed": True}
         except RuntimeError as err:
             detail = str(err)
@@ -268,11 +249,7 @@ def _commit_and_push(iteration_key: str) -> dict:
                 last_error = detail
                 _clear_stale_index_lock()
                 delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
-                print(
-                    f"[GIT] {iteration_key}: lock busy; "
-                    f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
-                    flush=True,
-                )
+                _log(f"  git    lock busy, retry in {delay:.1f}s")
                 time.sleep(delay)
                 continue
             raise
@@ -284,24 +261,23 @@ def _commit_and_push(iteration_key: str) -> dict:
 
 async def run_prompt(
     prompt_path: Path,
-    iteration: int,
     client: AsyncClient,
     finished: set[str],
     git_lock: asyncio.Lock,
     sem: asyncio.Semaphore,
 ) -> dict:
-    """Run one billing-and-sections prompt iteration, then commit and push."""
+    """Run one prompt once, then commit and push."""
     prompt_rel = _prompt_rel(prompt_path)
-    key = _iteration_key(prompt_rel, iteration)
+    short = _short_name(prompt_path)
 
-    if key in finished:
-        return {"file": key, "status": "finished", "skipped": True}
+    if _is_finished(prompt_rel, finished):
+        return {"file": prompt_rel, "status": "finished", "skipped": True}
 
     async with sem:
-        # Re-check after waiting for a slot in case another task finished it.
-        if key in finished:
-            return {"file": key, "status": "finished", "skipped": True}
-        print(f"[START] {key}", flush=True)
+        if _is_finished(prompt_rel, finished):
+            return {"file": prompt_rel, "status": "finished", "skipped": True}
+
+        _log(f"  start  {short}")
         last_error = ""
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
@@ -314,41 +290,34 @@ async def run_prompt(
                     )
                 ) as agent:
                     run = await agent.send(prompt_text)
-                    print(
-                        f"[RUN] {key}: agent={agent.agent_id} run={run.id} "
-                        f"model={MODEL}",
-                        flush=True,
-                    )
                     result = await run.wait()
                 status = result.status
-                print(f"[{status.upper()}] {key}", flush=True)
                 if status != "finished":
                     last_error = f"agent status={status}"
-                    result_id = getattr(result, "id", None)
-                    if result_id:
-                        last_error = f"{last_error} run={result_id}"
                     if attempt < MAX_ATTEMPTS:
                         wait_s = 2 ** (attempt - 1)
-                        print(
-                            f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                            f"{last_error} (sleep {wait_s}s)",
-                            file=sys.stderr,
-                            flush=True,
+                        _log(
+                            f"  retry  {short} ({attempt}/{MAX_ATTEMPTS})",
+                            err=True,
                         )
                         await asyncio.sleep(wait_s)
                         continue
-                    print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
+                    _log(f"  fail   {short} - {last_error}", err=True)
                     return {
-                        "file": key,
+                        "file": prompt_rel,
                         "status": "error",
                         "message": last_error,
                     }
 
                 async with git_lock:
-                    git_info = await asyncio.to_thread(_commit_and_push, key)
-                _mark_finished(finished, key)
+                    git_info = await asyncio.to_thread(_commit_and_push, prompt_rel)
+                _mark_finished(finished, prompt_rel)
+                if git_info.get("committed"):
+                    _log(f"  done   {short} - committed")
+                else:
+                    _log(f"  done   {short} - no changes")
                 return {
-                    "file": key,
+                    "file": prompt_rel,
                     "status": "finished",
                     **git_info,
                 }
@@ -356,57 +325,48 @@ async def run_prompt(
                 last_error = _error_text(err)
                 if attempt < MAX_ATTEMPTS and _is_retryable(err):
                     wait_s = 2 ** (attempt - 1)
-                    print(
-                        f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                        f"{last_error} (sleep {wait_s}s)",
-                        file=sys.stderr,
-                        flush=True,
+                    _log(
+                        f"  retry  {short} ({attempt}/{MAX_ATTEMPTS})",
+                        err=True,
                     )
                     await asyncio.sleep(wait_s)
                     continue
-                print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
-                return {"file": key, "status": "error", "message": last_error}
+                _log(f"  fail   {short} - {last_error}", err=True)
+                return {"file": prompt_rel, "status": "error", "message": last_error}
             except Exception as err:
                 last_error = _error_text(err)
                 if attempt < MAX_ATTEMPTS and _is_retryable(err):
                     wait_s = 2 ** (attempt - 1)
-                    print(
-                        f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                        f"{last_error} (sleep {wait_s}s)",
-                        file=sys.stderr,
-                        flush=True,
+                    _log(
+                        f"  retry  {short} ({attempt}/{MAX_ATTEMPTS})",
+                        err=True,
                     )
                     await asyncio.sleep(wait_s)
                     continue
-                print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
-                return {"file": key, "status": "error", "message": last_error}
+                _log(f"  fail   {short} - {last_error}", err=True)
+                return {"file": prompt_rel, "status": "error", "message": last_error}
 
-        return {"file": key, "status": "error", "message": last_error}
+        return {"file": prompt_rel, "status": "error", "message": last_error}
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run prompts/billing-and-sections folder-by-folder with Cursor "
-            f"model={MODEL}. "
-            f"Max {MAX_CONCURRENCY} concurrent prompts per folder iteration; "
-            f"each prompt runs {ITERATIONS} times; commit+push after each success. "
-            "Resume skips completed iterations in "
+            f"model={MODEL}. Each prompt once; commit+push after success. "
+            "Resume skips finished files in "
             ".run_billing_and_sections_prompts_state.json."
         )
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help=(
-            "Ignore .run_billing_and_sections_prompts_state.json and re-run "
-            "all prompt iterations."
-        ),
+        help="Clear saved progress and re-run all prompts.",
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="Print the planned folder/prompt/iteration keys and exit.",
+        help="Print the planned folders/prompts and exit.",
     )
     parser.add_argument(
         "--folder",
@@ -441,28 +401,17 @@ async def main(argv: list[str] | None = None):
     if not folders:
         sys.exit(f"No prompt folders found under {PROMPTS_ROOT}")
 
-    all_keys: list[str] = []
-    for folder in folders:
-        for iteration in range(1, ITERATIONS + 1):
-            for prompt in _folder_prompts(folder):
-                all_keys.append(_iteration_key(_prompt_rel(prompt), iteration))
+    prompts_by_folder = {folder: _folder_prompts(folder) for folder in folders}
+    all_prompts = [p for folder in folders for p in prompts_by_folder[folder]]
+    all_rels = [_prompt_rel(p) for p in all_prompts]
 
     if args.list:
-        print(
-            f"Plan: {len(folders)} folder(s), {ITERATIONS} iterations each, "
-            f"max concurrency {MAX_CONCURRENCY}, model={MODEL}"
-        )
+        _log(f"{len(folders)} folders - {len(all_prompts)} prompts - {MODEL}")
         for folder in folders:
-            prompts = _folder_prompts(folder)
-            print(
-                f"\n[{folder.name}] {len(prompts)} prompt(s) "
-                f"x {ITERATIONS} = {len(prompts) * ITERATIONS} runs"
-            )
-            for iteration in range(1, ITERATIONS + 1):
-                print(f"  iteration {iteration}/{ITERATIONS}:")
-                for prompt in prompts:
-                    print(f"    {_iteration_key(_prompt_rel(prompt), iteration)}")
-        print(f"\nTotal planned runs: {len(all_keys)}")
+            prompts = prompts_by_folder[folder]
+            _log(f"\n{folder.name} ({len(prompts)})")
+            for prompt in prompts:
+                _log(f"  {_short_name(prompt)}")
         return
 
     api_key = os.environ.get("CURSOR_API_KEY", "").strip()
@@ -472,50 +421,34 @@ async def main(argv: list[str] | None = None):
             "'cursor_...' example value."
         )
 
-    known = set(all_keys)
     if args.force:
         finished: set[str] = set()
         if STATE_FILE.exists():
             STATE_FILE.unlink()
-            print(
-                "Cleared .run_billing_and_sections_prompts_state.json (--force).\n",
-                flush=True,
-            )
+            _log("Cleared saved progress (--force).\n")
     else:
-        # Keep the full state set so --folder / stop-restart never wipes
-        # finished iterations outside the current plan.
         finished = _load_finished()
         _save_finished(finished)
 
-    pending_keys = [k for k in all_keys if k not in finished]
-    skipped = len(all_keys) - len(pending_keys)
+    pending_prompts = [
+        p for p in all_prompts if not _is_finished(_prompt_rel(p), finished)
+    ]
+    skipped = len(all_prompts) - len(pending_prompts)
 
-    print(
-        f"Root={PROMPTS_ROOT.relative_to(PROJECT_DIR).as_posix()}; "
-        f"folders={len(folders)}; iterations={ITERATIONS}; "
-        f"concurrency={MAX_CONCURRENCY}; model={MODEL}",
-        flush=True,
+    _log(
+        f"Billing & sections - {len(folders)} folders - "
+        f"{len(all_prompts)} prompts - {MODEL}"
     )
-    print(
-        f"Total runs={len(all_keys)} "
-        f"({skipped} already finished, {len(pending_keys)} pending).",
-        flush=True,
-    )
-    print(
-        "Commit+push after each successful prompt; one folder at a time.\n",
-        flush=True,
-    )
+    _log(f"{skipped} done - {len(pending_prompts)} left - up to {MAX_CONCURRENCY} at once\n")
 
-    if not pending_keys:
-        print(
-            "Nothing left to run. Pass --force to rerun all, "
-            "or delete .run_billing_and_sections_prompts_state.json."
-        )
+    if not pending_prompts:
+        _log("Nothing left to run. Use --force to start over.")
         return
 
     results: list[dict] = [
-        {"file": name, "status": "finished", "skipped": True}
-        for name in sorted(finished & known)
+        {"file": rel, "status": "finished", "skipped": True}
+        for rel in all_rels
+        if _is_finished(rel, finished)
     ]
     git_lock = asyncio.Lock()
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
@@ -528,157 +461,93 @@ async def main(argv: list[str] | None = None):
             max_retries=2,
         ) as client:
             for folder in folders:
-                prompts = _folder_prompts(folder)
-                folder_keys = [
-                    _iteration_key(_prompt_rel(p), i)
-                    for i in range(1, ITERATIONS + 1)
+                prompts = prompts_by_folder[folder]
+                batch = [
+                    p
                     for p in prompts
+                    if not _is_finished(_prompt_rel(p), finished)
                 ]
-                folder_pending = [k for k in folder_keys if k not in finished]
-                if not folder_pending:
-                    print(
-                        f"[FOLDER] {folder.name}: all "
-                        f"{len(folder_keys)} runs already finished; skipping.",
-                        flush=True,
-                    )
+                if not batch:
                     continue
 
-                print(
-                    f"[FOLDER] {folder.name}: {len(prompts)} prompt(s), "
-                    f"{len(folder_pending)}/{len(folder_keys)} runs pending",
-                    flush=True,
+                _log(f"{folder.name} ({len(batch)} left)")
+                batch_results = await asyncio.gather(
+                    *[
+                        run_prompt(
+                            prompt_path=prompt,
+                            client=client,
+                            finished=finished,
+                            git_lock=git_lock,
+                            sem=sem,
+                        )
+                        for prompt in batch
+                    ]
                 )
+                results.extend(batch_results)
 
-                for iteration in range(1, ITERATIONS + 1):
-                    batch = [
-                        p
-                        for p in prompts
-                        if _iteration_key(_prompt_rel(p), iteration)
-                        not in finished
-                    ]
-                    if not batch:
-                        print(
-                            f"[FOLDER] {folder.name} iteration "
-                            f"{iteration}/{ITERATIONS}: already finished",
-                            flush=True,
-                        )
-                        continue
-
-                    print(
-                        f"[FOLDER] {folder.name} iteration "
-                        f"{iteration}/{ITERATIONS}: starting {len(batch)} "
-                        f"prompt(s) (max {MAX_CONCURRENCY} concurrent)",
-                        flush=True,
+                errors = [r for r in batch_results if r["status"] != "finished"]
+                if errors:
+                    failed = True
+                    _log(
+                        f"\nStopped in {folder.name} "
+                        f"({len(errors)} failed). Re-run to continue.",
+                        err=True,
                     )
-                    batch_results = await asyncio.gather(
-                        *[
-                            run_prompt(
-                                prompt_path=prompt,
-                                iteration=iteration,
-                                client=client,
-                                finished=finished,
-                                git_lock=git_lock,
-                                sem=sem,
-                            )
-                            for prompt in batch
-                        ]
-                    )
-                    results.extend(batch_results)
-
-                    errors = [
-                        r for r in batch_results if r["status"] != "finished"
-                    ]
-                    if errors:
-                        failed = True
-                        print(
-                            f"\nStopping: {len(errors)} prompt(s) failed in "
-                            f"{folder.name} iteration {iteration}/{ITERATIONS}. "
-                            "Re-run to resume remaining work. "
-                            "Not advancing to later iterations/folders.",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        break
-
-                if failed:
                     break
 
-                still_open = [k for k in folder_keys if k not in finished]
+                still_open = [
+                    p
+                    for p in prompts
+                    if not _is_finished(_prompt_rel(p), finished)
+                ]
                 if still_open:
                     failed = True
-                    print(
-                        f"\nStopping: folder {folder.name} still has "
-                        f"{len(still_open)} unfinished run(s); "
-                        "not proceeding to the next folder.",
-                        file=sys.stderr,
-                        flush=True,
+                    _log(
+                        f"\nStopped: {folder.name} still has "
+                        f"{len(still_open)} unfinished. Re-run to continue.",
+                        err=True,
                     )
                     break
 
-                print(
-                    f"[FOLDER] {folder.name}: completed all "
-                    f"{len(folder_keys)} runs.\n",
-                    flush=True,
-                )
+                _log("")
     except (asyncio.CancelledError, KeyboardInterrupt):
         _save_finished(finished)
-        print(
-            f"\nStopped. Progress saved ({len(finished & known)}/"
-            f"{len(all_keys)} in-scope iterations done). "
-            "Re-run to continue without repeating finished work.",
-            file=sys.stderr,
-            flush=True,
+        done = sum(1 for rel in all_rels if _is_finished(rel, finished))
+        _log(
+            f"\nStopped. Saved {done}/{len(all_rels)}. Re-run to continue.",
+            err=True,
         )
         sys.exit(130)
 
     results.sort(key=lambda r: r["file"])
     this_run = [r for r in results if not r.get("skipped")]
     errors = [r for r in this_run if r["status"] != "finished"]
-    finished_count = sum(1 for k in all_keys if k in finished)
+    finished_count = sum(1 for rel in all_rels if _is_finished(rel, finished))
 
-    print("\n--- Summary ---")
+    _log("Summary")
     if this_run:
         ok = sum(1 for r in this_run if r["status"] == "finished")
         bad = sum(1 for r in this_run if r["status"] != "finished")
         committed = sum(1 for r in this_run if r.get("committed"))
-        print(
-            f"  this run: {ok} ok - {bad} failed - "
-            f"{committed} committed - {skipped} skipped from before",
-            flush=True,
+        _log(
+            f"  {ok} ok - {bad} failed - {committed} committed - "
+            f"{skipped} skipped"
         )
         for r in this_run:
             if r["status"] != "finished":
-                print(
-                    f"  fail   {r['file']}: {r.get('message', '')}",
-                    flush=True,
-                )
-            else:
-                extra = ""
-                if r.get("committed"):
-                    extra = " (committed+pushed)"
-                elif r.get("committed") is False:
-                    extra = " (no git changes)"
-                print(f"  {r['file']}: {r['status']}{extra}", flush=True)
+                name = r["file"]
+                prefix = f"prompts/{PROMPTS_ROOT.name}/"
+                if name.startswith(prefix):
+                    name = name[len(prefix) :]
+                _log(f"  fail   {name} - {r.get('message', '')}")
     else:
-        print(
-            f"  {finished_count}/{len(all_keys)} complete - "
-            "nothing new this session",
-            flush=True,
-        )
+        _log(f"  {finished_count}/{len(all_rels)} complete - nothing new")
 
-    if errors or failed or finished_count < len(all_keys):
-        print(
-            f"\n{finished_count}/{len(all_keys)} complete. "
-            "Re-run to finish the rest (already-done iterations are skipped)."
-        )
+    if errors or failed or finished_count < len(all_rels):
+        _log(f"\n{finished_count}/{len(all_rels)} complete. Re-run for the rest.")
         sys.exit(1)
 
-    print(
-        f"\nAll {len(all_keys)} billing-and-sections prompt runs completed "
-        "successfully."
-    )
-    # Keep .run_billing_and_sections_prompts_state.json so a later start
-    # skips completed runs. Use --force (or delete the state file) to re-run.
+    _log(f"\nAll {len(all_rels)} prompts done.")
 
 
 if __name__ == "__main__":
