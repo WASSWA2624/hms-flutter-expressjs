@@ -79,6 +79,46 @@ Tab-strip **Refresh** was removed.
   - Immediate result: Persists via controller / navigates; snackbar; refresh where needed. No empty hub shell for the primary goal.
   - Condition: Matching write gate; unauthorized next-action absent. Queue rows have no next-action control (use row select).
 
+### Arrivals tab
+
+Check-in / arrival processing (`?section=arrivals`). Gates: `OpdArrivalsAtomPermissions` — read ∪ `patient:read` | `clinical:read`; matrix create/update/delete ∩ `clinical:write`. Start OPD keeps source `opdEncounterPermissionRequirement`; appointment hub / check-in next-action keep source `opdFrontDeskActionRequirement`. Nested cross-module rows _(n/a)_.
+
+- **Arrivals** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to Arrivals section.
+  - Condition: Read ∪; tab hidden when denied.
+
+- **Start OPD encounter** (toolbar)
+  - Location: Tab-strip primary.
+  - Opens modal: Yes — encounter dialog.
+  - Immediate result: Creates/continues encounter; snackbar; refresh.
+  - Condition: Source encounter gate; unauthorized control absent.
+
+- **Search**, **Clear**, **Filters**, **Settings** (columns)
+  - Location: `AppListTable` chrome.
+  - Opens modal: Advanced filters / Table Settings when used.
+  - Immediate result: Client search / filters / column visibility.
+  - Condition: Read ∪; Arrivals body mounted.
+
+- **Empty / loading / error / Try again**
+  - Location: Table / scaffold body.
+  - Opens modal: No.
+  - Immediate result: Empty copy / spinner / retry reload.
+  - Condition: Authorized read; no write affordances in empty for denied users.
+
+- **Row select** → Appointment Actions
+  - Location: Table row / mobile item.
+  - Opens modal: Yes — `OpdAppointmentActionsDialog` (primary Start omitted).
+  - Immediate result: Shows appointment context; write actions when front-desk allowed.
+  - Condition: Read ∪; nested Reschedule / Cancel use front-desk; unauthorized writes absent.
+
+- **Next action** (Start OPD encounter / Continue)
+  - Location: `next_action` column (and mobile trailing).
+  - Opens modal: Encounter dialog / stage mutation directly (no empty hub).
+  - Immediate result: Persists; snackbar; refresh.
+  - Condition: Source front-desk; unauthorized next-action absent.
+
 ### Follow-ups tab
 
 Shared follow-up worklist (`FollowUpWorklistPanel`, OPD scope). No **Start OPD encounter** primary. Gates: `OpdFollowUpsAtomPermissions` — read ∪ `patient:read` | `clinical:read`; complete / reschedule ∩ `clinical:write`.
@@ -135,3 +175,7 @@ Shared follow-up worklist (`FollowUpWorklistPanel`, OPD scope). No **Start OPD e
   - Deep link `flowId` + `panel=vitals` opens the vitals dialog without a Flow Actions shell.
   - Unauthorized users see no Start OPD encounter / Record vitals.
   - Queue row still opens the shared queue hub; cancel performs no mutation.
+- Arrivals permission tests in `frontend/test/features/opd/presentation/opd_arrivals_permissions_test.dart` prove:
+  - ∪ read (`patient:read` | `clinical:read`) shows Arrivals chrome; ∩ denial hides Start / next-action / hub writes.
+  - Full writer presence; subscription strip without `scheduling-queue`; nested billing/admission absent without those modules.
+  - Authorized empty / error-retry; mobile + desktop dark; post-mutation Start dialog; row-select hub omits Start duplicate.

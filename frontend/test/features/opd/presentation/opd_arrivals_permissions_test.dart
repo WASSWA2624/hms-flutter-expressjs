@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart'
 import 'package:hosspi_hms/features/opd/presentation/opd_access.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -43,7 +44,19 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
+  String? tenantId = 'tenant-1',
+  String? facilityId = 'facility-1',
 }) {
+  final bool needsPatient = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.patientRead ||
+        permission == AppPermissions.patientWrite,
+  );
+  final bool needsClinical = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.clinicalRead ||
+        permission == AppPermissions.clinicalWrite,
+  );
   final bool needsBilling = permissions.any(
     (AppPermission permission) =>
         permission == AppPermissions.billingRead ||
@@ -56,6 +69,16 @@ AppAccessPolicy _policy({
           code: 'scheduling-queue',
           licenseStatus: 'ACTIVE',
         ),
+        if (needsPatient)
+          const AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        if (needsClinical)
+          const AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
         if (needsBilling)
           const AppModuleEntitlement(
             code: 'billing-payments',
@@ -68,8 +91,8 @@ AppAccessPolicy _policy({
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
+        tenantId: tenantId,
+        facilityId: facilityId,
       ),
       permissions: permissions,
       moduleEntitlements: resolvedModules,
@@ -101,6 +124,7 @@ AppAccessPolicy _writerPolicy() {
     roles: const <String>['RECEPTIONIST', 'NURSE', 'DOCTOR'],
     modules: const <AppModuleEntitlement>[
       AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(
@@ -497,6 +521,31 @@ void main() {
         same(opdBillingActionRequirement),
       );
     });
+
+    test(
+      'ABAC: missing facility still allows Arrivals chrome '
+      '(row/own scope remains backend-authoritative)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(OpdArrivalsAtomPermissions.tab.isAllowed(noFacility), isTrue);
+        expect(
+          OpdArrivalsAtomPermissions.clinicalWrite.isAllowed(noFacility),
+          isTrue,
+        );
+        expect(
+          OpdArrivalsAtomPermissions.routeEntryUnion.isAllowed(noFacility),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('Opd Arrivals tab UI gates', () {
@@ -683,8 +732,35 @@ void main() {
       await tester.tap(find.text('Arrivals Patient'));
       await tester.pumpAndSettle();
 
-      // Appointment hub opens; primary Start is omitted (worklist next-action).
-      expect(find.text('Appointment actions'), findsOneWidget);
+      expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Start OPD encounter'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('Reschedule'), findsOneWidget);
     });
+
+    testWidgets(
+      'nested write: read-only hub omits Reschedule/Cancel (∩ denial)',
+      (WidgetTester tester) async {
+        await _pumpArrivalsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        await tester.tap(find.text('Arrivals Patient'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+        expect(find.text('Reschedule'), findsNothing);
+        expect(find.text('Cancel appointment'), findsNothing);
+        expect(find.text('Check in'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
   });
 }
