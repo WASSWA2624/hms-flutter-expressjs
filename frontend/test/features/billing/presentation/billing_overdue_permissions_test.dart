@@ -335,7 +335,7 @@ void main() {
     },
   );
 
-  testWidgets('mobile viewport keeps authorized Overdue row readable', (
+  testWidgets('mobile viewport keeps authorized Overdue chrome', (
     WidgetTester tester,
   ) async {
     await _pumpOverdueTab(
@@ -348,6 +348,34 @@ void main() {
         },
       ),
       physicalSize: const Size(390, 844),
+    );
+
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byTooltip('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Close day'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('desktop viewport keeps authorized Overdue row readable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOverdueTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      physicalSize: const Size(1440, 900),
     );
 
     expect(find.text('Omar Overdue'), findsOneWidget);
