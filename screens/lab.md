@@ -2,7 +2,7 @@
 
 Primary surface: `LabWorkspacePage` (`frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`).
 
-Write gate: `labWrite` with active module `lab-workflows` (`_mutationRequirement`). Unauthorized write controls do not render (`AppAccessActionGate` / `canMutate`). Backend auth remains authoritative.
+Write gate: `labWrite` with active module `lab-workflows` (`_mutationRequirement` / `Lab*AtomPermissions.write`). Unauthorized write controls do not render (`AppAccessActionGate` / `canMutate`). Per-tab atom maps include `LabAllAtomPermissions`, `LabAwaitingResultsAtomPermissions`, `LabFollowUpsAtomPermissions`. Backend auth remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -132,6 +132,54 @@ Tab-strip **Refresh** was removed.
 - **`?orderId=` / `?encounterId=`** — opens result entry for the matching row (no select-only shell).
 - **`?section=` / `?search=`** — selects tab / pre-fills search.
 
+### Follow-ups tab (`FollowUpWorklistPanel`)
+
+Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Hosted via
+`FollowUpWorklistPanel` (hospital-wide scope, `lab_follow_ups_*` storage keys) with
+`LabFollowUpsAtomPermissions.tab` / `.write` (`lab:read` ∩ / `lab:write` ∩ + `lab-workflows`).
+No Create Lab Order, Lab Configurations, or Orders↔Patients strip actions. Nested result-entry /
+configurations / critical-notify UI is **not** opened from this tab. Route entry ∪
+(`lab:read` | `clinical:read` | `clinical:write`) may open `/lab` without Follow-ups tab when
+`lab:read` is missing. Tests: `frontend/test/features/lab/presentation/lab_follow_ups_permissions_test.dart`.
+
+- **Follow-ups** (strip tab + scoped count)
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to follow-ups section; loads scheduled follow-ups worklist.
+  - Condition: `LabFollowUpsAtomPermissions.tab` (∩ `lab:read` + `lab-workflows`); hidden from strip otherwise.
+
+- **Search** / search clear / **Settings** (columns)
+  - Location: Follow-ups `AppListTable` chrome.
+  - Opens modal: Table Settings when Settings used.
+  - Immediate result: Client search / column visibility for scheduled follow-ups.
+  - Condition: Follow-ups read ∩; when entries exist.
+
+- **Empty / loading / error / Try again**
+  - Location: Follow-ups body / `AppStateView`.
+  - Opens modal: No.
+  - Immediate result: Empty copy; spinner; retry reloads scoped list.
+  - Condition: Authorized Follow-ups readers.
+
+- **Row select**
+  - Location: Follow-ups table / mobile row.
+  - Opens modal: Yes — **Follow-up details** (`ReceptionFollowUpDetailDialog`).
+  - Immediate result: Opens detail; refreshes list if changed.
+  - Condition: Follow-ups read ∩.
+
+#### Follow-up details dialog
+
+- **Reschedule follow-up** / **Mark completed**
+  - Location: Dialog footer.
+  - Opens modal: Reschedule opens nested **Save follow-up** form; Mark completed mutates directly.
+  - Immediate result: Updates or completes follow-up; list syncs on success.
+  - Condition: Write ∩ `lab:write`; absent when not allowed (not disabled).
+
+- **Close**
+  - Location: Dialog footer (read-only path).
+  - Opens modal: No.
+  - Immediate result: Dismisses detail.
+  - Condition: Shown instead of write actions when write is not allowed.
+
 ### Manual checks (Req 7)
 
 - [ ] Unauthorized user: Create, Configurations, and dialog write actions absent; view toggle remains.
@@ -140,3 +188,4 @@ Tab-strip **Refresh** was removed.
 - [ ] Deep link `/lab?orderId=…` opens result entry without hunting the row.
 - [ ] Single-order detail: Edit/Delete appear once (order section), not also in the footer.
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths.
+- [ ] Follow-ups: without `lab:read` (or without `lab-workflows`), tab and panel absent; with `lab:read` alone, list mounts and Mark completed / Reschedule absent; with `lab:write` ∩, mutations mount and sync the list; clinical-only route entry keeps worklist tabs but omits Follow-ups.

@@ -1364,7 +1364,10 @@ class _IntegrationNextActionButton extends ConsumerWidget {
       final String? viewLabel = switch (section) {
         IntegrationDeskSection.webhooks =>
           l10n.integrationsNextActionMonitorDelivery,
-        IntegrationDeskSection.logs => l10n.integrationsNextActionReview,
+        IntegrationDeskSection.logs =>
+          IntegrationsLogsAtomPermissions.viewNextAction.isAllowed(policy)
+              ? l10n.integrationsNextActionReview
+              : null,
         IntegrationDeskSection.apiKeys =>
           l10n.integrationsNextActionRotateOrMonitor,
         _ => null,
@@ -1760,7 +1763,10 @@ List<Widget> _detailActions(
         ),
     ],
     IntegrationWorkItemKind.log => <Widget>[
-      if (nextAction != 'replay_or_escalate')
+      if (nextAction != 'replay_or_escalate' &&
+          IntegrationsLogsAtomPermissions.replay.isAllowed(
+            ProviderScope.containerOf(context).read(appAccessPolicyProvider),
+          ))
         AppButton.secondary(
           label: l10n.integrationsReplayLogAction,
           leadingIcon: Icons.replay_outlined,
@@ -1883,6 +1889,12 @@ Widget _detailBody(
         );
       }
     case IntegrationWorkItemKind.log:
+      final AppAccessPolicy logPolicy = ProviderScope.containerOf(
+        context,
+      ).read(appAccessPolicyProvider);
+      if (!IntegrationsLogsAtomPermissions.sanitizedLog.isAllowed(logPolicy)) {
+        break;
+      }
       final IntegrationLogRecord? log = item.log;
       children.add(
         AppMessagePanel(

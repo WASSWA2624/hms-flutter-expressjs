@@ -536,7 +536,7 @@ void main() {
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('post-mutation sync: collect reloads workbench', (
+    testWidgets('post-mutation sync: collect updates selected workflow in place', (
       WidgetTester tester,
     ) async {
       await _pumpAwaitingResultsTab(tester, repository: repository);
@@ -547,14 +547,13 @@ void main() {
       await tester.tap(find.text(l10n.labNextActionEnterResult).first);
       await tester.pumpAndSettle();
 
-      clearInteractions(repository);
-      _stubWorkspace(repository);
-
       await tester.tap(find.text(l10n.labCollectSampleAction));
       await tester.pumpAndSettle();
 
       verify(() => repository.collectOrder(any(), any())).called(1);
-      verify(() => repository.loadWorkbench(any())).called(greaterThan(0));
+      // Detail stays open with synchronized workflow (in-place worklist replace).
+      expect(find.byType(LabResultEntryDialog), findsOneWidget);
+      expect(find.text(l10n.labCollectSampleAction), findsNothing);
     });
 
     testWidgets('mobile viewport: awaiting-results chrome remains', (

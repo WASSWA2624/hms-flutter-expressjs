@@ -367,22 +367,23 @@ abstract final class IntegrationsWebhooksAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Logs tab | navigate | [tab] read ∩ `integration:read` |
-/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
 /// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
 /// | Row select → log detail | read | [rowSelect] / [detail] |
-/// | Next action Review | read / navigate | [view] / [nextAction] |
-/// | Next action Replay or escalate | update | [replay] manage ∪ (source) |
-/// | Detail sanitized log panel | read | [detail] / [sanitizedLog] |
+/// | Next action Review (healthy / write-denied fallback) | read / navigate | [viewNextAction] / [view] / [nextAction] |
+/// | Next action Replay or escalate | update | [replay] / [update] manage ∪ (source) |
+/// | Detail sanitized log panel | read | [sanitizedLog] / [detail] |
 /// | Detail Replay log (+ confirm) | update | [replay] manage ∪ |
-/// | Tab-strip create primaries | create | _(other tabs)_ [create] |
+/// | Detail Close | progressive disclosure | always (dialog chrome) |
+/// | Tab-strip create primaries | create | _(none on Logs)_ [create] |
 /// | Delete on this tab | — | _(none)_ [delete] matrix ∩ |
 /// | Nested cross-module read / write | — | _(n/a)_ |
 /// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admins |
 ///
 /// Matrix create/update list ∩ `integration:write`; Replay uses source
-/// [integrationsManageRequirement] (write ∪ admins). Nested cross-module
-/// rows are _(n/a)_. Logs has no delete UI. Unauthorized detail / deep-link
-/// entry no-ops (no routine "no access" banner).
+/// [integrationsManageRequirement] (write ∪ admins) — mapping noted in tests.
+/// Nested cross-module rows are _(n/a)_. Logs has no delete / create UI.
+/// Unauthorized detail / deep-link entry no-ops (no routine "no access" banner).
 abstract final class IntegrationsLogsAtomPermissions {
   static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -398,6 +399,8 @@ abstract final class IntegrationsLogsAtomPermissions {
       integrationsWorkspaceReadRequirement;
   static const AccessRequirement detail = integrationsWorkspaceReadRequirement;
   static const AccessRequirement view = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement viewNextAction =
+      integrationsWorkspaceReadRequirement;
   static const AccessRequirement nextAction =
       integrationsWorkspaceReadRequirement;
   static const AccessRequirement sanitizedLog =

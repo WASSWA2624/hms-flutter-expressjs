@@ -814,6 +814,20 @@ void main() {
       );
       expect(
         identical(
+          IntegrationsLogsAtomPermissions.viewNextAction,
+          integrationsReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IntegrationsLogsAtomPermissions.sanitizedLog,
+          integrationsReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           IntegrationsLogsAtomPermissions.replay,
           integrationsManageRequirement,
         ),

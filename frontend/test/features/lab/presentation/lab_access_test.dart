@@ -325,6 +325,170 @@ void main() {
       );
     });
 
+    test('Processing atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          LabProcessingAtomPermissions.tab,
+          labWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.create,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.configure,
+          labConfigurationsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.requestFromClinical,
+          clinicalLabOrderWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.criticalNotify,
+          labCriticalNotifyRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.previewReport,
+          labReportPreviewRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabProcessingAtomPermissions.workflowMutate,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.processing),
+          LabProcessingAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.processing),
+          LabProcessingAtomPermissions.create,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.processing),
+          LabProcessingAtomPermissions.configure,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Critical atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(LabCriticalAtomPermissions.tab, labWorkspaceReadRequirement),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.create,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.configure,
+          labConfigurationsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.requestFromClinical,
+          clinicalLabOrderWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.criticalNotify,
+          labCriticalNotifyRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.acknowledge,
+          labCriticalNotifyRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.previewReport,
+          labReportPreviewRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.workflowMutate,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.critical),
+          LabCriticalAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.critical),
+          LabCriticalAtomPermissions.create,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.critical),
+          LabCriticalAtomPermissions.configure,
+        ),
+        isTrue,
+      );
+    });
+
     test('All tab present for lab:read; clinical-only keeps worklist sections', () {
       final AppAccessPolicy labReader = _policyFor(
         permissions: <AppPermission>{AppPermissions.labRead},
@@ -346,8 +510,12 @@ void main() {
 
       expect(canViewLabAllTab(labReader), isTrue);
       expect(canViewLabAwaitingResultsTab(labReader), isTrue);
+      expect(canViewLabProcessingTab(labReader), isTrue);
+      expect(canViewLabCriticalTab(labReader), isTrue);
       expect(canViewLabAllTab(clinicalReader), isFalse);
       expect(canViewLabAwaitingResultsTab(clinicalReader), isFalse);
+      expect(canViewLabProcessingTab(clinicalReader), isFalse);
+      expect(canViewLabCriticalTab(clinicalReader), isFalse);
       expect(
         labAllowedSections(labReader),
         contains(LabDeskSection.worklist),
@@ -357,12 +525,28 @@ void main() {
         contains(LabDeskSection.collection),
       );
       expect(
+        labAllowedSections(labReader),
+        contains(LabDeskSection.processing),
+      );
+      expect(
+        labAllowedSections(labReader),
+        contains(LabDeskSection.critical),
+      );
+      expect(
         labAllowedSections(clinicalReader),
         contains(LabDeskSection.worklist),
       );
       expect(
         labAllowedSections(clinicalReader),
         contains(LabDeskSection.collection),
+      );
+      expect(
+        labAllowedSections(clinicalReader),
+        contains(LabDeskSection.processing),
+      );
+      expect(
+        labAllowedSections(clinicalReader),
+        contains(LabDeskSection.critical),
       );
       expect(
         labAllowedSections(clinicalReader),

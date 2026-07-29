@@ -1,4 +1,4 @@
-"""Generate prompts/billing-integration/** from ui-permissions tab inventory."""
+"""Generate prompts/billing-and-sections/** from ui-permissions tab inventory."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "prompts" / "ui-permissions"
-DST = ROOT / "prompts" / "billing-integration"
+DST = ROOT / "prompts" / "billing-and-sections"
 
 # Per-folder financial focus (module-level defaults).
 MODULE_FOCUS: dict[str, str] = {
@@ -333,10 +333,13 @@ def render_prompt(meta: dict[str, str]) -> str:
         "frontend/lib/features/billing/",
         "frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart",
         "frontend/lib/shared/patient_actions/patient_billing_quick_dialog.dart",
+        "frontend/lib/shared/layout/app_screen_section.dart",
+        "frontend/lib/shared/components/app_content_panel.dart",
+        "frontend/lib/shared/layout/app_workspace.dart",
         *_backend_paths(meta["folder"]),
         "backend/src/lib/billing/clinical-request-billing.js",
         "backend/src/lib/billing/financials.js",
-        "prompts/billing-integration/_shared-rules.md",
+        "prompts/billing-and-sections/_shared-rules.md",
         "prompts/.cursor/prompt.mdc",
         f"{test_feature}/",
     ]
@@ -350,9 +353,9 @@ def render_prompt(meta: dict[str, str]) -> str:
         relevant_unique.append(item)
     relevant_lines = "\n".join(f"- `{p}`" for p in relevant_unique)
 
-    return f"""# Billing Integration Scan — {screen} / {tab} (`{route}`)
+    return f"""# Billing & Sections Scan — {screen} / {tab} (`{route}`)
 
-Deep-scan every financially relevant action on this tab (frontend + backend) and ensure each charge, payment, refund, adjustment, claim, waiver, deposit, or balance change creates, updates, settles, or reconciles a Billing record—eliminating revenue leakage and bypasses.
+Deep-scan this tab for billing leakage and nested section chrome: wire every financial action into Billing, and keep titled sections flat (siblings only—never nested).
 
 ## Context
 
@@ -362,9 +365,10 @@ Deep-scan every financially relevant action on this tab (frontend + backend) and
 - Module entitlement: `{module}`
 - Billing system of record: `frontend/lib/features/billing/`, `backend/src/modules/billing/`, `backend/src/lib/billing/` (clinical-request billing, price-resolver, coverage-split, financials, realtime).
 - Supported payment methods (normalize via shared validators): `CASH`, `CREDIT_CARD`, `DEBIT_CARD`, `PREPAID_CARD`, `GIFT_CARD`, `VOUCHER`, `BANK_CHECK`, `MOBILE_MONEY`, `BANK_TRANSFER`, `INSURANCE`, `OTHER` (UI may expose the facility-enabled subset from `billingPaymentMethods`).
+- Section chrome: `AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel` (and wrappers that build them). See flat-section rules in shared rules.
 - Financial focus for this tab: {focus}
-- Shared rules: `prompts/billing-integration/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
-- Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing.
+- Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
+- Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
 
 ## Requirements
 
@@ -375,12 +379,14 @@ Deep-scan every financially relevant action on this tab (frontend + backend) and
 5. Close leakage classes on this tab: missing invoices, unbilled fulfilled services, double charges, unpaid required care progressing when policy forbids, discharge/dispense without clearance, and claim settlements that never update patient responsibility.
 6. UX: keep payment/billing affordances clean—minimal copy, only task-needed amounts/status/method, progressive disclosure for ledger detail, consistent design-system payment dialogs; remove redundant pay/issue entry points that duplicate Billing.
 7. Preserve authorized UI states: permission-filtered chrome, loading, empty, error/retry, validation, success, and visible feedback. Honor RBAC ∩ subscription ∩ ABAC; unauthorized financial controls must not render.
-8. Add/update tests: frontend widget/unit tests under `{test_feature}/` and backend tests under `backend/src/tests/` proving (a) billable action posts a Billing record, (b) bypass paths are gone, (c) payment status matches across module UI and Billing, (d) idempotent replay does not duplicate, (e) unauthorized users cannot collect/adjust. Cover integration, reuse of billing helpers, authorization, sync, UI states, one mobile + one desktop viewport, light + dark.
+8. Flat sections: inventory every section component on this tab and dialogs opened from it; un-nest so no section contains another section—siblings only under non-section parents (`Column`/`Row`/`Wrap`/`Flex`/workspace body). Identify content that needs sectioning and wrap each group in its own section without nesting; prefer promoting nested sections to siblings.
+9. Add/update tests: frontend widget/unit tests under `{test_feature}/` and backend tests under `backend/src/tests/` proving (a) billable action posts a Billing record, (b) bypass paths are gone, (c) payment status matches across module UI and Billing, (d) idempotent replay does not duplicate, (e) unauthorized users cannot collect/adjust, (f) no section-in-section nesting remains on authorized UI for this tab. Cover integration, reuse of billing helpers, authorization, sync, UI states, one mobile + one desktop viewport, light + dark.
 
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
+- Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
 - Theme tokens; responsive mobile/tablet/desktop; backend RBAC/ABAC authoritative; no secrets in tests.
 - Follow `.cursor/flows/*` ownership: Billing owns payment; clinical modules must not invent cashier logic.
@@ -391,7 +397,8 @@ Deep-scan every financially relevant action on this tab (frontend + backend) and
 - AC2 (Req 2-5): No billable action bypasses Billing; fulfilled paid services have traceable invoice/payment/adjustment rows; duplicates and leakage paths identified in the scan are fixed.
 - AC3 (Req 3-4): After mutations, this tab and Billing show the same payment/balance status without manual refresh; supported methods work for collect/refund/reconcile where applicable.
 - AC4 (Req 6-7): Payment UX stays minimal and consistent; unauthorized financial controls absent; loading/empty/error/success/validation/feedback remain observable.
-- AC5 (Req 8): Frontend and backend tests prove posting, no-bypass, cross-module status parity, idempotency, and authorization for representative flows on this tab.
+- AC5 (Req 8): No nested sections on this tab; content that needs sectioning lives in sibling sections under non-section layout parents.
+- AC6 (Req 9): Frontend and backend tests prove posting, no-bypass, cross-module status parity, idempotency, authorization, and flat (non-nested) section layout for representative flows on this tab.
 
 ## Relevant Files
 
@@ -400,9 +407,9 @@ Deep-scan every financially relevant action on this tab (frontend + backend) and
 """
 
 
-SHARED_RULES = """# Billing Integration — Shared Rules
+SHARED_RULES = """# Billing & Sections — Shared Rules
 
-Canonical rules for every prompt under `prompts/billing-integration/`. Tab prompts refine financial focus; they must not contradict this file or `prompts/.cursor/prompt.mdc`.
+Canonical rules for every prompt under `prompts/billing-and-sections/`. Tab prompts refine financial and section focus; they must not contradict this file or `prompts/.cursor/prompt.mdc`.
 
 ## Prompt compliance (`prompts/.cursor/prompt.mdc`)
 
@@ -414,11 +421,12 @@ Every tab prompt must:
 - Use imperative language; put shared definitions here—tab prompts reference this file instead of restating everything.
 - State `Optional enhancements: none` unless a tab truly needs a named, non-blocking enhancement.
 - Name permission, loading, empty, error, success, validation, and visible-feedback states for authorized paths.
-- Name verification: frontend + backend tests covering integration, reuse, authorization, synchronization, UI states, viewports, and themes.
+- Name verification: frontend + backend tests covering integration, reuse, authorization, synchronization, UI states, viewports, themes, and flat sections.
 
-## Objective
+## Objectives
 
-Every financially relevant action across HMS must create, update, settle, or reconcile a record in the **Billing** module. Module-local “paid” flags without a Billing ledger entry are defects.
+1. Every financially relevant action across HMS must create, update, settle, or reconcile a record in the **Billing** module. Module-local “paid” flags without a Billing ledger entry are defects.
+2. Titled **section** chrome must stay flat: sections may be siblings under a layout parent, never nested inside another section.
 
 ## Financial action classes
 
@@ -461,9 +469,27 @@ Normalize with shared validators. Full set: `CASH`, `CREDIT_CARD`, `DEBIT_CARD`,
 6. Double charge from retry or dual UI entry points
 7. Balance shown in module UI ≠ Billing balance
 
+## Flat sections (no nesting)
+
+Section components are titled chrome that wraps a content region:
+
+- `AppScreenSection`
+- Titled `AppSectionPanel` (title set)
+- `AppWorkspaceDetailPanel`
+- Feature wrappers that build any of the above
+
+Rules:
+
+- A section’s child tree must **not** contain another section component.
+- Sibling sections may align vertically, horizontally, in grids, or responsive wraps under a **non-section** parent (`Column`, `Row`, `Wrap`, `Flex`, workspace/dialog body).
+- Inventory untitled content groups that deserve titled chrome; wrap each in one section without nesting.
+- Prefer promoting nested sections to siblings over collapsing distinct groups into one opaque section.
+- Lists, tables, form fields, chips, and untitled `AppContentPanel` / tone panels inside a section are fine; nested *sections* are not.
+- Untitled `AppSectionPanel` / `AppContentPanel` used only as tone/padding chrome (no title) are not sections for nesting rules—but do not use them to smuggle nested titled sections.
+
 ## Verification (every tab prompt)
 
-Tests must prove posting, no-bypass, status parity, idempotency, and authorization, plus:
+Tests must prove posting, no-bypass, status parity, idempotency, authorization, and flat sections, plus:
 
 - Integration with Billing routes/services
 - Reuse of shared billing helpers (no second engine)
@@ -472,6 +498,7 @@ Tests must prove posting, no-bypass, status parity, idempotency, and authorizati
 - Authorized UI states
 - Representative mobile and desktop viewports
 - Light and dark themes
+- Widget-tree / finder checks that no section contains another section on this tab
 
 ## Related
 
@@ -480,6 +507,9 @@ Tests must prove posting, no-bypass, status parity, idempotency, and authorizati
 - `.cursor/api-contract.mdc`, `.cursor/flows/*`
 - `backend/src/lib/billing/`
 - `frontend/lib/features/billing/`
+- `frontend/lib/shared/layout/app_screen_section.dart`
+- `frontend/lib/shared/components/app_content_panel.dart`
+- `frontend/lib/shared/layout/app_workspace.dart`
 """
 
 
@@ -525,16 +555,18 @@ def main() -> None:
     readme_rows.sort(key=lambda row: (rank.get(row[2], 10_000), row[2]))
 
     readme = [
-        "# Billing Integration Prompts",
+        "# Billing & Sections Prompts",
         "",
-        "Per-tab prompts that deep-scan payment and billing workflows and",
-        "wire every financially relevant action into the Billing module.",
+        "Per-tab prompts that (1) deep-scan payment and billing workflows and",
+        "wire every financially relevant action into the Billing module, and",
+        "(2) keep titled UI sections flat—siblings only, never nested.",
         "Shared rules: [`_shared-rules.md`](_shared-rules.md).",
         "Every prompt must follow [`../.cursor/prompt.mdc`](../.cursor/prompt.mdc).",
         "",
-        "Mirror of the `prompts/ui-permissions/` tab inventory. Run with a",
-        "dedicated agent runner (point `PROMPTS_ROOT` at this folder) or one",
-        "prompt at a time.",
+        "Mirror of the `prompts/ui-permissions/` tab inventory. Run via",
+        "`python run_billing_and_sections_prompts.py` (one folder at a time,",
+        "up to 10 concurrent prompts, 2 iterations per folder), or one prompt",
+        "at a time with the target tab’s file as the agent instruction.",
         "",
         "## Index",
         "",

@@ -369,9 +369,13 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       case 'verification':
       case 'results':
       case 'pending':
+      case 'pending-verification':
+      case 'pending_verification':
+      case 'pendingverification':
         return LabDeskSection.verification;
       case 'critical':
         return LabDeskSection.critical;
+      case 'verified':
       case 'completed':
       case 'done':
         return LabDeskSection.completed;
@@ -389,9 +393,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => 'worklist',
       LabDeskSection.collection => 'awaiting-results',
       LabDeskSection.processing => 'processing',
-      LabDeskSection.verification => 'verification',
+      LabDeskSection.verification => 'pending-verification',
       LabDeskSection.critical => 'critical',
-      LabDeskSection.completed => 'completed',
+      LabDeskSection.completed => 'verified',
       LabDeskSection.followUps => 'follow-ups',
     };
   }
