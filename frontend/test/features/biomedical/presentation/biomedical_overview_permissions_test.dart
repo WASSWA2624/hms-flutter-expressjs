@@ -462,6 +462,37 @@ void main() {
   );
 
   testWidgets(
+    'authorized Overview Schedule maintenance validation keeps dialog open',
+    (WidgetTester tester) async {
+      await _pumpOverviewTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Infusion pump repair'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Schedule maintenance'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCHEDULE MAINTENANCE'), findsOneWidget);
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCHEDULE MAINTENANCE'), findsOneWidget);
+      expect(find.textContaining('is required'), findsWidgets);
+      verifyNever(() => repository.createResource(any(), any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'empty authorized Overview still shows chrome and empty state',
     (WidgetTester tester) async {
       await _pumpOverviewTab(

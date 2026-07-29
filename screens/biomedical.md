@@ -188,7 +188,7 @@ Overview permission tests in `frontend/test/features/biomedical/presentation/bio
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Overview write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits Overview chrome; subscription strip without biomed module omits Overview.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; nested writes still mount.
-- [x] Authorized next-action mutation sync; nested Schedule maintenance dialog; empty write omits create primary.
+- [x] Authorized next-action mutation sync; nested Schedule maintenance dialog; Schedule maintenance validation keeps dialog open; empty write omits create primary.
 - [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Compliance permission tests in `frontend/test/features/biomedical/presentation/biomedical_compliance_permissions_test.dart`:

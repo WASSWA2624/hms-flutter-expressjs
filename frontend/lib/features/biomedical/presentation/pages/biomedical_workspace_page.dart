@@ -1203,6 +1203,8 @@ AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
     // Default Create WO; Update WO is selected via [_writeRequirementForAction].
     _BiomedicalActionKind.workOrder =>
       BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
+    // Identical to BiomedicalOverviewAtomPermissions.workOrderFollowUp
+    // (Overview reuses this WO atom gate for OPEN/PENDING next-action).
     _BiomedicalActionKind.startWorkOrder =>
       BiomedicalWorkOrdersAtomPermissions.startWorkOrder,
     _BiomedicalActionKind.returnToService =>
