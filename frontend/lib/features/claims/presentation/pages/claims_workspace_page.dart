@@ -9,7 +9,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
@@ -144,9 +145,21 @@ class _ClaimsWorkspaceContentState
       }
     }
     if (query.action == 'preauth' && mounted) {
-      unawaited(
-        _openRequestAuthorizationDialog(context, controller, widget.state),
-      );
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (canWriteClaims(policy)) {
+        unawaited(
+          _openRequestAuthorizationDialog(context, controller, widget.state),
+        );
+      }
+    }
+    if ((query.action == 'prepare' || query.action == 'prepare-claim') &&
+        mounted) {
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (canWriteClaims(policy)) {
+        unawaited(
+          _openPrepareClaimDialog(context, controller, widget.state),
+        );
+      }
     }
   }
 
@@ -245,17 +258,47 @@ class _ClaimsWorkspaceContentState
     };
   }
 
+  void _selectSection(ClaimsDeskSection section) {
+    if (_section != section) {
+      setState(() => _section = section);
+    }
+    _updateUrlForSection(section);
+    unawaited(
+      ref
+          .read(claimsWorkspaceControllerProvider.notifier)
+          .applyFilter(_defaultFilterForSection(section)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ClaimsWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
     );
+    final List<ClaimsDeskSection> visibleSections = <ClaimsDeskSection>[
+      for (final ClaimsDeskSection section in ClaimsDeskSection.values)
+        if (canViewClaimsDeskSection(accessPolicy, section)) section,
+    ];
+    if (visibleSections.isEmpty) {
+      // No authorized sections — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final ClaimsDeskSection fallback = visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        _selectSection(fallback);
+      });
+    }
     final Widget tabStrip = AppTabStrip(
       tabs: <AppTabItem>[
-        for (final ClaimsDeskSection section in ClaimsDeskSection.values)
+        for (final ClaimsDeskSection section in visibleSections)
           AppTabItem(
             id: section.name,
             icon: _sectionIcon(section),
@@ -266,18 +309,19 @@ class _ClaimsWorkspaceContentState
       ],
       selectedId: _section.name,
       onTabTapped: (String tabId) {
-        for (final ClaimsDeskSection section in ClaimsDeskSection.values) {
+        for (final ClaimsDeskSection section in visibleSections) {
           if (section.name == tabId) {
-            setState(() => _section = section);
-            _updateUrlForSection(section);
-            unawaited(
-              controller.applyFilter(_defaultFilterForSection(section)),
-            );
+            _selectSection(section);
             break;
           }
         }
       },
-      primaryAction: _buildPrimaryActionButton(l10n, state, controller),
+      primaryAction: _buildPrimaryActionButton(
+        l10n,
+        state,
+        controller,
+        accessPolicy,
+      ),
       // Refresh and insurance-setup creates were removed from the strip —
       // mutations/realtime refresh the queue; setup actions live on the panel.
     );
@@ -325,48 +369,41 @@ class _ClaimsWorkspaceContentState
     AppLocalizations l10n,
     ClaimsWorkspaceState state,
     ClaimsWorkspaceController controller,
+    AppAccessPolicy accessPolicy,
   ) {
     // Settled is review-only; Insurance Setup actions live on the panel.
     if (_section == ClaimsDeskSection.settled ||
         _section == ClaimsDeskSection.insuranceSetup) {
       return null;
     }
-    return AppAccessActionGate(
-      requirement: claimsWorkspaceWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return switch (_section) {
-          ClaimsDeskSection.authorizations => AppTabToolbarPrimary(
-            label: l10n.claimsRequestAuthorizationAction,
-            icon: Icons.verified_user_outlined,
-            semanticLabel: l10n.claimsRequestAuthorizationAction,
-            tooltip: l10n.claimsRequestAuthorizationAction,
-            isLoading: state.isSaving,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => unawaited(
-                    _openRequestAuthorizationDialog(context, controller, state),
-                  )
-                : null,
-          ),
-          ClaimsDeskSection.activeClaims => AppTabToolbarPrimary(
-            label: l10n.claimsPrepareClaimAction,
-            icon: Icons.receipt_long_outlined,
-            semanticLabel: l10n.claimsPrepareClaimAction,
-            tooltip: l10n.claimsPrepareClaimAction,
-            isLoading: state.isSaving,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => unawaited(
-                    _openPrepareClaimDialog(context, controller, state),
-                  )
-                : null,
-          ),
-          ClaimsDeskSection.settled ||
-          ClaimsDeskSection.insuranceSetup =>
-            const SizedBox.shrink(),
-        };
-      },
-    );
+    // Unauthorized write chrome must not mount (no disabled stub).
+    if (!canWriteClaims(accessPolicy)) {
+      return null;
+    }
+    return switch (_section) {
+      ClaimsDeskSection.authorizations => AppTabToolbarPrimary(
+        label: l10n.claimsRequestAuthorizationAction,
+        icon: Icons.verified_user_outlined,
+        semanticLabel: l10n.claimsRequestAuthorizationAction,
+        tooltip: l10n.claimsRequestAuthorizationAction,
+        isLoading: state.isSaving,
+        onPressed: () => unawaited(
+          _openRequestAuthorizationDialog(context, controller, state),
+        ),
+      ),
+      ClaimsDeskSection.activeClaims => AppTabToolbarPrimary(
+        label: l10n.claimsPrepareClaimAction,
+        icon: Icons.receipt_long_outlined,
+        semanticLabel: l10n.claimsPrepareClaimAction,
+        tooltip: l10n.claimsPrepareClaimAction,
+        isLoading: state.isSaving,
+        onPressed: () => unawaited(
+          _openPrepareClaimDialog(context, controller, state),
+        ),
+      ),
+      ClaimsDeskSection.settled ||
+      ClaimsDeskSection.insuranceSetup => null,
+    };
   }
 
   Future<void> _applySummaryFilter(
@@ -519,109 +556,114 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ClaimsReferenceData referenceData = state.referenceData;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.claimsInsuranceSetupDescription,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+    return AppAccessGate(
+      requirement: ClaimsInsuranceSetupAtomPermissions.tab,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              l10n.claimsInsuranceSetupDescription,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.lg),
-          AppQuickActions(
-            title: l10n.claimsSectionInsuranceSetup,
-            presentation: AppQuickActionsPresentation.detailPanel,
-            permissionActions: <AppPermissionActionItem>[
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddCompanyAction,
-                icon: Icons.business_outlined,
-                variant: AppButtonVariant.primary,
-                onPressed: () {
-                  unawaited(
-                    openClaimsInsuranceCompanyDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddSchemeAction,
-                icon: Icons.account_balance_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsSchemeDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddOfferAction,
-                icon: Icons.local_offer_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsSchemeOfferDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddEnrollmentAction,
-                icon: Icons.badge_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsEnrollmentDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddPriceBookAction,
-                icon: Icons.menu_book_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsPriceBookEntryDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppPermissionActionItem(
-                requirement: claimsWorkspaceWriteRequirement,
-                label: l10n.claimsAddInsurerIntegrationAction,
-                icon: Icons.vpn_key_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsInsurerIntegrationDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: referenceData,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
+            SizedBox(height: theme.spacing.lg),
+            AppQuickActions(
+              title: l10n.claimsSectionInsuranceSetup,
+              presentation: AppQuickActionsPresentation.detailPanel,
+              // Collapses when all create actions are filtered for read-only.
+              hideWhenEmpty: true,
+              permissionActions: <AppPermissionActionItem>[
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddCompanyAction,
+                  icon: Icons.business_outlined,
+                  variant: AppButtonVariant.primary,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsInsuranceCompanyDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddSchemeAction,
+                  icon: Icons.account_balance_outlined,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsSchemeDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddOfferAction,
+                  icon: Icons.local_offer_outlined,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsSchemeOfferDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddEnrollmentAction,
+                  icon: Icons.badge_outlined,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsEnrollmentDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddPriceBookAction,
+                  icon: Icons.menu_book_outlined,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsPriceBookEntryDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+                AppPermissionActionItem(
+                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  label: l10n.claimsAddInsurerIntegrationAction,
+                  icon: Icons.vpn_key_outlined,
+                  onPressed: () {
+                    unawaited(
+                      openClaimsInsurerIntegrationDialog(
+                        context: context,
+                        ref: ref,
+                        referenceData: referenceData,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -644,8 +686,13 @@ class _ClaimsQueuePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
+    );
+    final bool showNextAction = claimsSectionShowsNextActionColumn(
+      accessPolicy,
+      section,
     );
 
     return AppListTable<ClaimsQueueItem>(
@@ -727,7 +774,13 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         body: l10n.claimsEmptyQueueBody,
         icon: Icons.inbox_outlined,
       ),
-      columns: _defaultColumnsForSection(context, ref, l10n, section),
+      columns: _defaultColumnsForSection(
+        context,
+        ref,
+        l10n,
+        section,
+        showNextAction: showNextAction,
+      ),
       columnChoices: _columnChoicesForSection(context, l10n, section),
       mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
         return AppListTableMobileItem(
@@ -747,12 +800,12 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           ],
           showAvatar: false,
           // Same stage write as the desktop next-action column (sole primary).
-          trailing: section == ClaimsDeskSection.settled
-              ? null
-              : _ClaimsNextActionButton(
+          trailing: showNextAction
+              ? _ClaimsNextActionButton(
                   item: item,
                   section: section,
-                ),
+                )
+              : null,
         );
       },
     );
@@ -763,22 +816,23 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
   BuildContext context,
   WidgetRef ref,
   AppLocalizations l10n,
-  ClaimsDeskSection section,
-) {
+  ClaimsDeskSection section, {
+  required bool showNextAction,
+}) {
   return switch (section) {
     ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'auth_reference'),
       _claimsPatientColumn(l10n, id: 'auth_patient'),
       _claimsCoverageColumn(l10n, id: 'auth_coverage'),
       _claimsStatusColumn(l10n),
-      _claimsNextActionColumn(context, ref, section),
+      if (showNextAction) _claimsNextActionColumn(context, ref, section),
     ],
     ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'claim_reference'),
       _claimsPatientColumn(l10n, id: 'claim_patient'),
       _claimsCoverageColumn(l10n, id: 'claim_coverage'),
       _claimsStatusColumn(l10n),
-      _claimsNextActionColumn(context, ref, section),
+      if (showNextAction) _claimsNextActionColumn(context, ref, section),
     ],
     ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'settled_reference'),
@@ -1103,7 +1157,7 @@ class _ClaimsNextActionButton extends ConsumerWidget {
     }
 
     return AppAccessActionGate(
-      requirement: _writeRequirementForItem(item),
+      requirement: claimsNextActionRequirement(item),
       builder: (BuildContext context, bool isAllowed) {
         final bool isNarrow = MediaQuery.sizeOf(context).width < 600;
         return AppButton.tertiary(
@@ -1112,27 +1166,13 @@ class _ClaimsNextActionButton extends ConsumerWidget {
           iconOnly: isNarrow,
           tooltip: label,
           semanticLabel: label,
-          enabled: isAllowed,
-          onPressed: isAllowed
-              ? () => unawaited(
-                  _handleClaimsNextAction(context, ref, item),
-                )
-              : null,
+          onPressed: () => unawaited(
+            _handleClaimsNextAction(context, ref, item),
+          ),
         );
       },
     );
   }
-}
-
-AccessRequirement _writeRequirementForItem(ClaimsQueueItem item) {
-  if (item.isAuthorization) {
-    return claimsWorkspaceWriteRequirement;
-  }
-  // Closing / settling an approved claim requires financial approval.
-  if (item.status.toUpperCase() == 'APPROVED') {
-    return claimsFinancialApproveRequirement;
-  }
-  return claimsWorkspaceWriteRequirement;
 }
 
 Future<void> _handleClaimsNextAction(
@@ -2200,7 +2240,7 @@ List<AppPermissionActionItem> _detailPermissionActions(
 
   return <AppPermissionActionItem>[
     AppPermissionActionItem(
-      requirement: claimsWorkspaceWriteRequirement,
+      requirement: ClaimsActiveClaimsAtomPermissions.sync,
       label: l10n.claimsSyncClaimStatusAction,
       icon: Icons.sync_outlined,
       isLoading: state.isSaving,
