@@ -2275,6 +2275,14 @@ Future<void> _openSubmitClaimDialog(
   BuildContext context,
   ClaimsWorkspaceController controller,
 ) async {
+  // Defense in depth: submit / resubmit need write ∩ (Active Claims update).
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!ClaimsActiveClaimsAtomPermissions.submit.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2298,6 +2306,17 @@ Future<void> _openClaimResponseDialog(
   required String submitLabel,
   bool statusEditable = true,
 }) async {
+  // Defense in depth: record response → write ∩; close-as-paid → approve ∩.
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  final AccessRequirement requirement = statusEditable
+      ? ClaimsActiveClaimsAtomPermissions.recordResponse
+      : ClaimsActiveClaimsAtomPermissions.closeAsPaid;
+  if (!requirement.isAllowed(policy)) {
+    return;
+  }
+
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
     title: Text(title),

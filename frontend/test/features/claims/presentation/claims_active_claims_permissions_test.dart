@@ -305,6 +305,170 @@ void main() {
     repository = _MockClaimsRepository();
   });
 
+  group('ClaimsActiveClaimsAtomPermissions mapping', () {
+    test('atom helpers reuse feature *Requirement vocabulary', () {
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.tab,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.listChrome,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.detail,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.create,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.update,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.delete,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.prepare,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.submit,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.resubmit,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.recordResponse,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.sync,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.closeAsPaid,
+          claimsFinancialApproveRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.approve,
+          claimsFinancialApproveRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.document,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.nextActionColumn,
+          claimsActiveClaimsNextActionColumnRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.routeEntry,
+          claimsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          claimsDetailPrintRequirement(ClaimsDeskSection.activeClaims),
+          ClaimsActiveClaimsAtomPermissions.document,
+        ),
+        isTrue,
+      );
+    });
+
+    test('∩ denial: billing:read alone cannot prepare / sync / close', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      expect(ClaimsActiveClaimsAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(
+        ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.sync.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.closeAsPaid.isAllowed(reader),
+        isFalse,
+      );
+    });
+
+    test('∪ next-action column: write or financial:approve each sufficient', () {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{AppPermissions.billingWrite},
+      );
+      final AppAccessPolicy approver = _policy(
+        permissions: <AppPermission>{AppPermissions.financialApprove},
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(approver),
+        isTrue,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(approver),
+        isFalse,
+      );
+    });
+  });
+
   testWidgets(
     'read-only ∩: Active Claims list visible; mutate atoms absent (∩ denial)',
     (WidgetTester tester) async {
@@ -1232,6 +1396,227 @@ void main() {
 
       expect(find.byType(SnackBar), findsOneWidget);
       verify(() => repository.syncClaimStatus(any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'route entry ∪: billing:write alone without billing:read omits Active Claims',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.billingWrite},
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.text('CLM-SUB'), findsNothing);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: billing-payments missing omits Active Claims (plan ∩)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noBillingModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'insurance-claims',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.tab.isAllowed(noBillingModule),
+        isFalse,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: noBillingModule,
+      );
+
+      expect(find.text('CLM-SUB'), findsNothing);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module write n/a: facility:admin alone cannot prepare',
+    (WidgetTester tester) async {
+      final AppAccessPolicy facilityAdmin = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.facilityAdmin,
+        },
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(facilityAdmin),
+        isFalse,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: facilityAdmin,
+      );
+
+      expect(find.text('CLM-SUB'), findsOneWidget);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.text('Record response'), findsNothing);
+      expect(find.text('Close as paid'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'facility:admin ∪ setup without billing:read never mounts Active Claims body',
+    (WidgetTester tester) async {
+      final AppAccessPolicy setupOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.facilityAdmin},
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.tab.isAllowed(setupOnly),
+        isFalse,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(setupOnly),
+        isTrue,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: setupOnly,
+      );
+
+      expect(find.text('CLM-SUB'), findsNothing);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+      expect(find.textContaining('Insurance Setup'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(AppTabStrip),
+          matching: find.textContaining('Active Claims'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'authorized Close as paid next-action opens nested dialog and syncs queue',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.financialApprove,
+          },
+        ),
+      );
+
+      await tester.tap(find.textContaining('Approved (').first);
+      await tester.pumpAndSettle();
+
+      clearInteractions(repository);
+      _stubRepository(repository);
+
+      final Finder nextAction = find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Close as paid'),
+      );
+      await tester.ensureVisible(nextAction);
+      await tester.tap(nextAction);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('CLOSE'), findsWidgets);
+      verifyNever(() => repository.getDetail(any()));
+
+      await tester.tap(find.text('Close as paid').last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.reconcileClaim(any(), any())).called(1);
+      verify(() => repository.listQueue(any())).called(greaterThanOrEqualTo(1));
+      expect(find.text('Claims workspace updated.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Resubmit next-action mounts for rejected claim when write ∩ allowed',
+    (WidgetTester tester) async {
+      const ClaimsQueueItem rejected = ClaimsQueueItem.claim(
+        InsuranceClaimRecord(
+          id: 'claim-rej',
+          displayId: 'CLM-REJ',
+          coveragePlanId: 'plan-1',
+          coveragePlanDisplayId: 'PLAN-001',
+          invoiceId: 'inv-9',
+          invoiceDisplayId: 'INV-009',
+          status: 'REJECTED',
+          patientDisplayId: 'PT-REJ',
+          claimAmount: 120,
+        ),
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        summary: const ClaimsWorkspaceSummary(
+          submittedClaimsCount: 0,
+          rejectedResubmissionCount: 1,
+        ),
+        queueOverride: Result<AppPage<ClaimsQueueItem>>.success(
+          AppPage<ClaimsQueueItem>(
+            items: const <ClaimsQueueItem>[rejected],
+            request: const AppPageRequest(pageSize: 20),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+
+      expect(find.text('CLM-REJ'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Resubmit claim'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.resubmit.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isTrue,
+      );
     },
   );
 }
