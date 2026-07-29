@@ -232,6 +232,20 @@ void main() {
       );
       expect(
         identical(
+          BillingApprovalRequiredAtomPermissions.create,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.update,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingApprovalRequiredAtomPermissions.delete,
           billingWorkspaceWriteRequirement,
         ),
@@ -244,12 +258,89 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.document,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.claimsPendingTab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingApprovalRequiredAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
     });
+
+    test(
+      'Approval create/update keep source ∩ (write + financial:approve), '
+      'not matrix financial:approve alone',
+      () {
+        final AppAccessPolicy approveOnly = _policyFor(
+          permissions: <AppPermission>{AppPermissions.financialApprove},
+        );
+        final AppAccessPolicy full = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+        );
+        expect(
+          BillingApprovalRequiredAtomPermissions.create.isAllowed(approveOnly),
+          isFalse,
+        );
+        expect(
+          BillingApprovalRequiredAtomPermissions.update.isAllowed(approveOnly),
+          isFalse,
+        );
+        expect(
+          BillingApprovalRequiredAtomPermissions.create.isAllowed(full),
+          isTrue,
+        );
+      },
+    );
 
     test('Awaiting payment atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
           BillingAwaitingPaymentAtomPermissions.receivePayment,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.refund,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.adjust,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.voidInvoice,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.send,
           billingWorkspaceWriteRequirement,
         ),
         isTrue,
@@ -263,9 +354,56 @@ void main() {
       );
       expect(
         identical(
+          BillingAwaitingPaymentAtomPermissions.create,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingAwaitingPaymentAtomPermissions.approve,
           billingApprovalDecisionRequirement,
         ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.nestedWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAwaitingPaymentAtomPermissions.claimsPendingTab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writer = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(BillingAwaitingPaymentAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(
+        BillingAwaitingPaymentAtomPermissions.write.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.write.isAllowed(writer),
         isTrue,
       );
     });

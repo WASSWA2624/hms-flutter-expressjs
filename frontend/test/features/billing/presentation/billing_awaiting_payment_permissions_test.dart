@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -26,28 +25,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
 
-const BillingWorkItem _approvalItem = BillingWorkItem(
-  id: 'apr-1',
-  displayId: 'APR-001',
-  kind: BillingWorkItemKind.approval,
-  patientDisplayName: 'Dana Approval',
-  patientDisplayId: 'PT-APR',
-  status: 'PENDING',
-  amount: 100,
+const BillingWorkItem _pendingInvoice = BillingWorkItem(
+  id: 'inv-pay',
+  displayId: 'INV-PAY',
+  kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
+  patientDisplayName: 'Ben Payment',
+  patientDisplayId: 'PT-PAY',
+  billingStatus: 'ISSUED',
+  amount: 500,
+  financials: BillingFinancials(balanceDue: 500),
+);
+
+const BillingWorkItem _partiallyPaid = BillingWorkItem(
+  id: 'inv-pay',
+  displayId: 'INV-PAY',
+  kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
+  patientDisplayName: 'Ben Payment',
+  patientDisplayId: 'PT-PAY',
+  billingStatus: 'PARTIAL',
+  amount: 500,
+  financials: BillingFinancials(balanceDue: 250, netPaidTotal: 250),
 );
 
 const BillingSummary _summary = BillingSummary(
   needsIssue: 0,
-  pendingPayment: 0,
+  pendingPayment: 1,
   claimsPending: 1,
-  approvalRequired: 1,
-  overdue: 0,
-);
-
-const BillingSummary _emptySummary = BillingSummary(
-  needsIssue: 0,
-  pendingPayment: 0,
-  claimsPending: 0,
   approvalRequired: 0,
   overdue: 0,
 );
@@ -73,57 +78,41 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubRepository(
-  _MockBillingRepository repository, {
-  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
-  BillingSummary summary = _summary,
-  Result<BillingWorkspaceOverview>? workspaceOverride,
-}) {
+void _stubRepository(_MockBillingRepository repository) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async =>
-        workspaceOverride ??
-        Result<BillingWorkspaceOverview>.success(
-          BillingWorkspaceOverview(summary: summary),
-        ),
+    (_) async => const Result<BillingWorkspaceOverview>.success(
+      BillingWorkspaceOverview(summary: _summary),
+    ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
-    return Result<AppPage<BillingWorkItem>>.success(
+    return const Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
-        items: items,
-        request: const AppPageRequest(pageSize: 20),
-        totalItemCount: items.length,
+        items: <BillingWorkItem>[_pendingInvoice],
+        request: AppPageRequest(pageSize: 20),
+        totalItemCount: 1,
       ),
     );
   });
   when(
-    () => repository.approveApproval(any(), any()),
+    () => repository.receivePayment(any(), any()),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(
-        approval: _approvalItem,
-      ),
+      BillingMutationResult(invoice: _partiallyPaid),
     ),
   );
 }
 
-Future<void> _pumpApprovalTab(
+Future<void> _pumpAwaitingPaymentTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
-  BillingSummary summary = _summary,
-  Result<BillingWorkspaceOverview>? workspaceOverride,
+  String initialLocation = '/billing?queue=awaiting-payment',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(
-    repository,
-    items: items,
-    summary: summary,
-    workspaceOverride: workspaceOverride,
-  );
+  _stubRepository(repository);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -131,7 +120,7 @@ Future<void> _pumpApprovalTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=approval-required',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -176,7 +165,12 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
-    registerFallbackValue(const BillingApprovalDecisionDraft());
+    registerFallbackValue(
+      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
+    );
+    registerFallbackValue(
+      const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
+    );
   });
 
   setUp(() {
@@ -184,31 +178,28 @@ void main() {
   });
 
   testWidgets(
-    'read-only: Approval required list visible; close/approve atoms absent',
+    'read-only: Awaiting payment list visible; payment / close atoms absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
-      expect(BillingApprovalRequiredAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingAwaitingPaymentAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
-        BillingApprovalRequiredAtomPermissions.approve.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        BillingApprovalRequiredAtomPermissions.delete.isAllowed(reader),
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(reader),
         isFalse,
       );
 
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
-      expect(find.text('Dana Approval'), findsOneWidget);
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.text('Awaiting payment'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(DataTable),
@@ -216,14 +207,13 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.text('Approval required'), findsWidgets);
       expect(find.text('Claims pending'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'write without financial:approve: close present, Approve absent (∩ denial)',
+    'full write ∩: Receive payment next-action and detail mutations mount',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -232,106 +222,34 @@ void main() {
         },
       );
       expect(
-        BillingApprovalRequiredAtomPermissions.delete.isAllowed(writer),
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(writer),
         isTrue,
       );
+      expect(BillingAwaitingPaymentAtomPermissions.adjust.isAllowed(writer), isTrue);
+      expect(BillingAwaitingPaymentAtomPermissions.send.isAllowed(writer), isTrue);
       expect(
-        BillingApprovalRequiredAtomPermissions.approve.isAllowed(writer),
-        isFalse,
+        BillingAwaitingPaymentAtomPermissions.voidInvoice.isAllowed(writer),
+        isTrue,
       );
 
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
+      expect(find.text('Ben Payment'), findsOneWidget);
       expect(find.text('Close shift'), findsOneWidget);
       expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byType(DataTable),
-          matching: find.text('Next action'),
-        ),
-        findsNothing,
-      );
+      expect(find.byTooltip('Receive payment'), findsWidgets);
 
-      await tester.tap(find.text('Dana Approval'));
+      await tester.tap(find.text('Ben Payment'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Approve'), findsNothing);
-      expect(find.text('Reject'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'financial:approve without billing:write: Approve absent (source ∩ denial)',
-    (WidgetTester tester) async {
-      final AppAccessPolicy approveOnly = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.financialApprove,
-        },
-      );
-      expect(
-        BillingApprovalRequiredAtomPermissions.create.isAllowed(approveOnly),
-        isFalse,
-      );
-
-      await _pumpApprovalTab(
-        tester,
-        repository: repository,
-        accessPolicy: approveOnly,
-      );
-
-      expect(find.text('Dana Approval'), findsOneWidget);
-      expect(find.text('Close shift'), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'full approve ∩: next-action Approve present and detail actions mount',
-    (WidgetTester tester) async {
-      final AppAccessPolicy approver = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.billingWrite,
-          AppPermissions.financialApprove,
-        },
-      );
-      expect(
-        BillingApprovalRequiredAtomPermissions.approve.isAllowed(approver),
-        isTrue,
-      );
-      expect(
-        BillingApprovalRequiredAtomPermissions.create.isAllowed(approver),
-        isTrue,
-      );
-
-      await _pumpApprovalTab(
-        tester,
-        repository: repository,
-        accessPolicy: approver,
-      );
-
-      expect(find.byTooltip('Approve'), findsWidgets);
-      expect(
-        find.descendant(
-          of: find.byType(DataTable),
-          matching: find.text('Next action'),
-        ),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.text('Dana Approval'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Approve'), findsWidgets);
-      expect(find.text('Reject'), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Adjust'), findsWidgets);
+      expect(find.text('Send'), findsWidgets);
+      expect(find.text('Void'), findsWidgets);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -344,69 +262,52 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingWrite},
       );
       expect(
-        BillingApprovalRequiredAtomPermissions.routeEntry.isAllowed(writeOnly),
+        BillingAwaitingPaymentAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
       expect(
-        BillingApprovalRequiredAtomPermissions.tab.isAllowed(writeOnly),
+        BillingAwaitingPaymentAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
       );
 
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Dana Approval'), findsNothing);
+      expect(find.text('Ben Payment'), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
     },
   );
 
   testWidgets(
-    'subscription strip: billing-payments missing omits Approval required chrome',
+    'subscription strip: billing-payments missing omits Awaiting payment chrome',
     (WidgetTester tester) async {
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.billingRead,
             AppPermissions.billingWrite,
-            AppPermissions.financialApprove,
           },
           modules: const <AppModuleEntitlement>[],
         ),
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Dana Approval'), findsNothing);
+      expect(find.text('Ben Payment'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'nested cross-module: Claims pending absent without insurance; present with it',
+    'nested cross-module: insurance restores Claims pending on Awaiting payment strip',
     (WidgetTester tester) async {
-      await _pumpApprovalTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        ),
-      );
-
-      expect(find.text('Claims pending'), findsNothing);
-      expect(
-        BillingApprovalRequiredAtomPermissions.claimsPendingTab.isAllowed(
-          _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-        ),
-        isFalse,
-      );
-
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -430,24 +331,25 @@ void main() {
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Approval')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.contains('Awaiting payment'),
+        ),
         isTrue,
       );
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
     },
   );
 
-  testWidgets('mobile viewport keeps authorized Approval required chrome', (
+  testWidgets('mobile viewport keeps authorized Awaiting payment chrome', (
     WidgetTester tester,
   ) async {
-    await _pumpApprovalTab(
+    await _pumpAwaitingPaymentTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
         permissions: <AppPermission>{
           AppPermissions.billingRead,
           AppPermissions.billingWrite,
-          AppPermissions.financialApprove,
         },
       ),
       physicalSize: const Size(390, 844),
@@ -466,131 +368,117 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('desktop viewport keeps authorized Approval required row readable', (
+  testWidgets('desktop viewport keeps authorized Awaiting payment row readable', (
     WidgetTester tester,
   ) async {
-    await _pumpApprovalTab(
+    await _pumpAwaitingPaymentTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
         permissions: <AppPermission>{
           AppPermissions.billingRead,
           AppPermissions.billingWrite,
-          AppPermissions.financialApprove,
         },
       ),
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.text('Dana Approval'), findsOneWidget);
+    expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
     expect(find.byTooltip('Close shift'), findsOneWidget);
   });
 
-  testWidgets('light theme: authorized Approval required chrome remains', (
+  testWidgets('dark theme: authorized Awaiting payment chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpApprovalTab(
+    await _pumpAwaitingPaymentTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
         permissions: <AppPermission>{
           AppPermissions.billingRead,
           AppPermissions.billingWrite,
-          AppPermissions.financialApprove,
-        },
-      ),
-    );
-
-    expect(find.text('Dana Approval'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
-  });
-
-  testWidgets('dark theme: authorized Approval required chrome remains', (
-    WidgetTester tester,
-  ) async {
-    await _pumpApprovalTab(
-      tester,
-      repository: repository,
-      accessPolicy: _policy(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.billingWrite,
-          AppPermissions.financialApprove,
         },
       ),
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.text('Dana Approval'), findsOneWidget);
+    expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
   });
 
   testWidgets(
-    'authorized empty Approval required queue remains observable',
+    'authorized Receive payment next-action opens nested dialog (sync path)',
     (WidgetTester tester) async {
-      await _pumpApprovalTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        ),
-        items: const <BillingWorkItem>[],
-        summary: _emptySummary,
-      );
-
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'authorized error/retry surface remains observable on Approval required',
-    (WidgetTester tester) async {
-      await _pumpApprovalTab(
+      await _pumpAwaitingPaymentTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.billingRead,
             AppPermissions.billingWrite,
-            AppPermissions.financialApprove,
-          },
-        ),
-        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
-          AppFailure.network(),
-        ),
-      );
-
-      expect(find.text('Try again'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'authorized Approve next-action opens nested dialog (sync path)',
-    (WidgetTester tester) async {
-      await _pumpApprovalTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.billingRead,
-            AppPermissions.billingWrite,
-            AppPermissions.financialApprove,
           },
         ),
       );
 
-      await tester.tap(find.byTooltip('Approve').first);
+      await tester.tap(find.byTooltip('Receive payment').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Approve'), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'write without financial:approve keeps collections; approve atoms stay absent',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.byTooltip('Approve'), findsNothing);
+      expect(
+        BillingAwaitingPaymentAtomPermissions.approve.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'pending-payment queue slug keeps authorized Receive payment (integration)',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        initialLocation: '/billing?queue=pending-payment',
+      );
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.text('Close shift'), findsOneWidget);
     },
   );
 }

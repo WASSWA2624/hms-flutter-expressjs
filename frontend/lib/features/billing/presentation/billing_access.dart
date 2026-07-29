@@ -183,6 +183,12 @@ abstract final class BillingAllAtomPermissions {
 
 /// Approval required tab atom → permission mapping (inventory + matrix).
 ///
+/// Matrix create/update keys list `financial:approve` alone; source inventory
+/// (`screens/billing.md`) and BILLING pack apply `billing:write` ∩
+/// `financial:approve` via [billingApprovalDecisionRequirement] — keep source.
+/// Nested cross-module write matrix ∩ is `billing:write`; claims nested UI
+/// still requires [billingClaimsWriteRequirement] (+ `insurance-claims`).
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Approval required tab | navigate | read ∩ `billing:read` |
@@ -190,12 +196,12 @@ abstract final class BillingAllAtomPermissions {
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Close shift / Close day | delete | write ∩ `billing:write` |
-/// | Next action Approve | approve / update | write ∩ financial:approve |
-/// | Detail Approve / Reject | approve / update | write ∩ financial:approve |
+/// | Next action Approve | approve / create / update | write ∩ financial:approve |
+/// | Detail Approve / Reject | approve / create / update | write ∩ financial:approve |
 /// | Nested approval notes dialogs | update | write ∩ financial:approve |
 /// | View ledger | read | read ∩ |
 /// | Print / Download | export / read | document read ∩ |
-/// | Nested claims UI | navigate / write | claims nested read / write |
+/// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
 abstract final class BillingApprovalRequiredAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -207,9 +213,16 @@ abstract final class BillingApprovalRequiredAtomPermissions {
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
+  static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement claimsPendingTab =
+      billingClaimsPendingTabRequirement;
+  static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }
 
 /// Awaiting payment tab atom → permission mapping (inventory + matrix).
+///
+/// Record payment / receipt, refund, adjust, void, and send need `billing:write`.
+/// Deep link `action=pay` opens payment only when write-authorized.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -220,10 +233,16 @@ abstract final class BillingApprovalRequiredAtomPermissions {
 /// | Close shift / Close day | update | write ∩ `billing:write` |
 /// | Next action Receive payment | create / update | write ∩ |
 /// | Detail Receive payment / refund / adjust / void / send | CRUD | write ∩ |
-/// | Nested payment dialogs | create / update | write ∩ |
+/// | Nested payment / refund / adjustment / send dialogs | create / update | write ∩ |
+/// | Deep link `action=pay` | create / update | write ∩ |
 /// | View ledger / financial panels | read | read ∩ |
 /// | Print / Download | export / read | document read ∩ |
-/// | Approve / claims nested | approve / write | approval ∩ / claims write |
+/// | Approve nested (other kinds) | approve | write ∩ financial:approve |
+/// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
+///
+/// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
+/// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
+/// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
 abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -233,10 +252,17 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
   static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
+  static const AccessRequirement refund = billingWorkspaceWriteRequirement;
+  static const AccessRequirement adjust = billingWorkspaceWriteRequirement;
+  static const AccessRequirement voidInvoice = billingWorkspaceWriteRequirement;
+  static const AccessRequirement send = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement claimsPendingTab =
+      billingClaimsPendingTabRequirement;
+  static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }
 
 /// Overdue tab atom → permission mapping (inventory + matrix).
