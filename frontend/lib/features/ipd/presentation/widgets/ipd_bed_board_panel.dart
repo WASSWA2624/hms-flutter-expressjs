@@ -416,19 +416,20 @@ List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
         );
       },
     ),
-    AppListTableColumn<IpdBedBoardEntry>(
-      id: 'next_action',
-      label: l10n.ipdNextActionColumnLabel,
-      alwaysVisible: true,
-      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-        return _BedActionMenu(
-          bed: bed,
-          canManageBeds: canManageBeds,
-          enabled: enabled,
-          onAction: (_BedAction action) => onAction(action, bed),
-        );
-      },
-    ),
+    if (canManageBeds)
+      AppListTableColumn<IpdBedBoardEntry>(
+        id: 'next_action',
+        label: l10n.ipdNextActionColumnLabel,
+        alwaysVisible: true,
+        cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+          return _BedActionMenu(
+            bed: bed,
+            canManageBeds: canManageBeds,
+            enabled: enabled,
+            onAction: (_BedAction action) => onAction(action, bed),
+          );
+        },
+      ),
   ];
 }
 

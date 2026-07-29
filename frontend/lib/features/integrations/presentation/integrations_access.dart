@@ -184,18 +184,65 @@ bool integrationNextActionRequiresWrite(String nextAction) {
 
 /// Integrations tab atom → permission mapping (inventory + matrix).
 ///
-/// Shared workspace helpers until the Integrations tab prompt deep-scans.
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Integrations tab | navigate | [tab] read ∩ `integration:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
+/// | Row select → detail | read | [rowSelect] / [detail] |
+/// | Next action Test connection / Enable / Sync now | update | [writeNextAction] / [update] manage ∪ |
+/// | Create integration (tab primary) | create | [create] manage ∪ |
+/// | Detail Configure / Test / Sync / Enable·Disable | update | [configure] / [testConnection] / [syncNow] / [enableDisable] |
+/// | Secret reveal | — | _(API keys create only)_ |
+/// | Nested cross-module read / write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admin |
+///
+/// Matrix create/update ∩ `integration:write` maps to source manage ∪
+/// (`integration:write` \| tenant/facility/system admin) + module — noted in
+/// tests. Write-gated next-actions omit when manage denied; view-only next-
+/// actions are not used on failed/disabled/active integration rows (those are
+/// all write-gated). Nested cross-module matrix rows are _(n/a)_.
 abstract final class IntegrationsIntegrationsAtomPermissions {
   static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
       integrationsWorkspaceReadRequirement;
+  static const AccessRequirement search = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement viewNextAction =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement writeNextAction =
+      integrationsWorkspaceManageRequirement;
   static const AccessRequirement create = integrationsWorkspaceManageRequirement;
   static const AccessRequirement update = integrationsWorkspaceManageRequirement;
   static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;
   static const AccessRequirement write = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement manage = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement configure =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement testConnection =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement syncNow =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement enableDisable =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedWrite =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedRead =
+      integrationsWorkspaceReadRequirement;
   static const AccessRequirement entry = integrationsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry =
       integrationsWorkspaceEntryRequirement;
+  static const AccessRequirement read = integrationsReadRequirement;
 }
 
 /// API keys tab atom → permission mapping (inventory + matrix).
@@ -260,44 +307,178 @@ abstract final class IntegrationsApiKeysAtomPermissions {
   static const AccessRequirement read = integrationsReadRequirement;
 }
 
-/// Webhooks tab atom → permission mapping (shared helpers until tab scan).
+/// Webhooks tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Webhooks tab | navigate | [tab] read ∩ `integration:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
+/// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
+/// | Row select → webhook detail | read | [rowSelect] / [detail] |
+/// | Next action Monitor delivery (active) | read / navigate | [nextAction] / [view] |
+/// | Next action Enable webhook (inactive) | update | [enable] / [update] manage ∪ |
+/// | Create webhook (tab-strip primary) | create | [create] manage ∪ |
+/// | Detail Edit / Replay / Enable·Disable | update | [edit] / [replay] / [enable] / [update] |
+/// | Detail Close | progressive disclosure | always (dialog chrome) |
+/// | Delete webhook (API only; not in inventory UI) | delete | [delete] delete ∩ |
+/// | Nested cross-module read / write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admins |
+///
+/// Source inventory gates create / next-action write / detail write on manage
+/// (write ∪ admins). Matrix create/update map to [write] / [create] / [update].
+/// Nested cross-module matrix rows are _(n/a)_.
 abstract final class IntegrationsWebhooksAtomPermissions {
   static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
       integrationsWorkspaceReadRequirement;
+  static const AccessRequirement search = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement view = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      integrationsWorkspaceReadRequirement;
   static const AccessRequirement create = integrationsWorkspaceManageRequirement;
   static const AccessRequirement update = integrationsWorkspaceManageRequirement;
   static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;
   static const AccessRequirement write = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement manage = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement edit = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement replay = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement enable = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedWrite =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedRead =
+      integrationsWorkspaceReadRequirement;
   static const AccessRequirement entry = integrationsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry =
       integrationsWorkspaceEntryRequirement;
+  static const AccessRequirement read = integrationsReadRequirement;
 }
 
-/// Logs tab atom → permission mapping (shared helpers until tab scan).
+/// Logs tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Logs tab | navigate | [tab] read ∩ `integration:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
+/// | Row select → log detail | read | [rowSelect] / [detail] |
+/// | Next action Review | read / navigate | [view] / [nextAction] |
+/// | Next action Replay or escalate | update | [replay] manage ∪ (source) |
+/// | Detail sanitized log panel | read | [detail] / [sanitizedLog] |
+/// | Detail Replay log (+ confirm) | update | [replay] manage ∪ |
+/// | Tab-strip create primaries | create | _(other tabs)_ [create] |
+/// | Delete on this tab | — | _(none)_ [delete] matrix ∩ |
+/// | Nested cross-module read / write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admins |
+///
+/// Matrix create/update list ∩ `integration:write`; Replay uses source
+/// [integrationsManageRequirement] (write ∪ admins). Nested cross-module
+/// rows are _(n/a)_. Logs has no delete UI. Unauthorized detail / deep-link
+/// entry no-ops (no routine "no access" banner).
 abstract final class IntegrationsLogsAtomPermissions {
   static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
       integrationsWorkspaceReadRequirement;
-  static const AccessRequirement create = integrationsWorkspaceManageRequirement;
-  static const AccessRequirement update = integrationsWorkspaceManageRequirement;
-  static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;
-  static const AccessRequirement write = integrationsWorkspaceManageRequirement;
-  static const AccessRequirement entry = integrationsWorkspaceEntryRequirement;
-  static const AccessRequirement routeEntry =
-      integrationsWorkspaceEntryRequirement;
-}
-
-/// Interop tab atom → permission mapping (shared helpers until tab scan).
-abstract final class IntegrationsInteropAtomPermissions {
-  static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
-  static const AccessRequirement listChrome =
+  static const AccessRequirement search = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement view = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement sanitizedLog =
       integrationsWorkspaceReadRequirement;
   static const AccessRequirement create = integrationsWorkspaceManageRequirement;
   static const AccessRequirement update = integrationsWorkspaceManageRequirement;
   static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;
   static const AccessRequirement write = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement replay = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement manage = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedWrite =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedRead =
+      integrationsWorkspaceReadRequirement;
   static const AccessRequirement entry = integrationsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry =
       integrationsWorkspaceEntryRequirement;
+  static const AccessRequirement read = integrationsReadRequirement;
+}
+
+/// Alias for route-entry naming used by Logs / workspace tests.
+bool canEnterIntegrations(AppAccessPolicy policy) {
+  return canEnterIntegrationsWorkspace(policy);
+}
+
+/// Interop tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Interop tab | navigate | [tab] read ∩ `integration:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
+/// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
+/// | Row select → interop detail | read | [rowSelect] / [detail] |
+/// | Next action Run action / Use status logs | read / navigate | [viewNextAction] / [nextAction] (source: open detail) |
+/// | Detail readiness panel | read | [detail] / [readiness] |
+/// | Detail Close | progressive disclosure | always (dialog chrome) |
+/// | Tab-strip create primaries | create | _(none on Interop)_ [create] |
+/// | Detail write / probe run | update | _(none in inventory UI)_ [runProbe] / [update] manage ∪ |
+/// | Delete on this tab | — | _(none)_ [delete] matrix ∩ |
+/// | Nested cross-module read / write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admins |
+///
+/// Prompt notes Interop probes may need write; `screens/integrations.md`
+/// documents next-action as open-detail readiness guidance with **no** detail
+/// write actions — keep source. [runProbe]/[update] stay manage ∪ for helper
+/// parity if probe UI is added later; they do not mount today. Nested
+/// cross-module matrix rows are _(n/a)_.
+abstract final class IntegrationsInteropAtomPermissions {
+  static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement search = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement readiness =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement view = integrationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement viewNextAction =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement create = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement update = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;
+  static const AccessRequirement write = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement manage = integrationsWorkspaceManageRequirement;
+  static const AccessRequirement runProbe =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedWrite =
+      integrationsWorkspaceManageRequirement;
+  static const AccessRequirement nestedRead =
+      integrationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = integrationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      integrationsWorkspaceEntryRequirement;
+  static const AccessRequirement read = integrationsReadRequirement;
 }

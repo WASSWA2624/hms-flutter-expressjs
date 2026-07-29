@@ -328,6 +328,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'IPD'),
                 storageKeyPrefix: 'ipd_follow_ups',
+                readRequirement: IpdFollowUpsAtomPermissions.tab,
+                writeRequirement: IpdFollowUpsAtomPermissions.write,
               )
             else if (_section.isBedBoard)
               IpdBedBoardPanel(
@@ -391,13 +393,13 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     };
   }
 
-  static AppTabCountTone? _sectionCountTone(IpdWorkspaceSection section) {
+  static AppTabCountTone _sectionCountTone(IpdWorkspaceSection section) {
     return switch (section) {
       IpdWorkspaceSection.admissionQueue ||
       IpdWorkspaceSection.transferPending ||
       IpdWorkspaceSection.dischargePlanned ||
       IpdWorkspaceSection.followUps => AppTabCountTone.warning,
-      _ => null,
+      _ => AppTabCountTone.info,
     };
   }
 
@@ -419,8 +421,16 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       );
     }
     return AppAccessActionGate(
-      requirement: IpdAdmissionQueueAtomPermissions.startAdmission,
-      builder: (BuildContext context, bool isAllowed) {
+      requirement: switch (_section) {
+        IpdWorkspaceSection.bedBoard =>
+          IpdBedBoardAtomPermissions.startAdmission,
+        IpdWorkspaceSection.dischargePlanned =>
+          IpdDischargeAtomPermissions.startAdmission,
+        IpdWorkspaceSection.activePatients =>
+          IpdActivePatientsAtomPermissions.startAdmission,
+        _ => IpdAdmissionQueueAtomPermissions.startAdmission,
+      },
+      builder: (BuildContext context, bool _) {
         return AppTabToolbarPrimary(
           label: l10n.ipdStartAdmissionAction,
           icon: AppActionIcons.personAdd,
@@ -443,8 +453,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     }
     return <Widget>[
       AppAccessActionGate(
-        requirement: IpdAdmissionQueueAtomPermissions.startAdmission,
-        builder: (BuildContext context, bool isAllowed) {
+        requirement: IpdBedBoardAtomPermissions.startAdmission,
+        builder: (BuildContext context, bool _) {
           return AppTabToolbarAction(
             label: l10n.ipdStartAdmissionAction,
             icon: AppActionIcons.personAdd,
@@ -768,12 +778,13 @@ class _IpdDetailPanel extends ConsumerWidget {
       if (admission.theatre.handoverSummary != null)
         _IpdTheatreHandoverSection(admission: admission),
       _IpdBedSection(admission: admission),
-      InsuranceAuthorizationPanel(
-        patientId: admission.summary.patientId,
-        admissionId: admission.summary.id,
-        encounterId: admission.summary.encounterId,
-        canManage: canOperate,
-      ),
+      if (canReadIpdBilling(policy))
+        InsuranceAuthorizationPanel(
+          patientId: admission.summary.patientId,
+          admissionId: admission.summary.id,
+          encounterId: admission.summary.encounterId,
+          canManage: canOperate,
+        ),
       _IpdRecordSection(
         title: l10n.ipdTransfersSectionTitle,
         icon: Icons.swap_horiz,
@@ -1584,7 +1595,7 @@ class _WardRoundActionDialogState
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           AppAccessGate(
-            requirement: IpdAdmissionQueueAtomPermissions.billingPanel,
+            requirement: IpdBedBoardAtomPermissions.billingPanel,
             child: ClinicalRequestBillingPanel(
               lineItems: lineItems,
               enabled: !_submitting,

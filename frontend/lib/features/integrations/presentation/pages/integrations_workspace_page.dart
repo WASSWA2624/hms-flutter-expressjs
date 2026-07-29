@@ -8,7 +8,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -18,7 +17,6 @@ import 'package:hosspi_hms/features/integrations/presentation/controllers/integr
 import 'package:hosspi_hms/features/integrations/presentation/integrations_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -243,7 +241,7 @@ class _IntegrationsWorkspaceContentState
     );
     return switch (_section) {
       IntegrationDeskSection.integrations =>
-        canManageIntegrations(policy)
+        IntegrationsIntegrationsAtomPermissions.create.isAllowed(policy)
             ? AppTabToolbarPrimary(
                 label: l10n.integrationsCreateIntegrationAction,
                 icon: Icons.add_link_outlined,
@@ -254,7 +252,7 @@ class _IntegrationsWorkspaceContentState
               )
             : null,
       IntegrationDeskSection.apiKeys =>
-        canManageIntegrations(policy)
+        IntegrationsApiKeysAtomPermissions.create.isAllowed(policy)
             ? AppTabToolbarPrimary(
                 label: l10n.integrationsCreateApiKeyAction,
                 icon: Icons.key_outlined,
@@ -286,7 +284,8 @@ class _IntegrationsWorkspaceContentState
       integrationsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canManage = canManageIntegrations(accessPolicy);
+    final IntegrationsCapabilities caps =
+        IntegrationsCapabilities.fromPolicy(accessPolicy);
     final List<IntegrationDeskSection> visibleSections =
         integrationsAllowedSections(accessPolicy);
     if (visibleSections.isEmpty) {
@@ -345,11 +344,9 @@ class _IntegrationsWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildSectionPrimaryAction(
-                l10n,
-                state,
-                accessPolicy,
-              ),
+              primaryAction: canShowCurrentSection
+                  ? _buildSectionPrimaryAction(l10n, state, accessPolicy)
+                  : null,
             ),
             SizedBox(height: theme.spacing.sm),
             if (canShowCurrentSection)
@@ -358,16 +355,45 @@ class _IntegrationsWorkspaceContentState
                 section: _section,
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
-                canManage: canManage,
+                canManage: caps.canManage,
+                canDelete: caps.canDelete,
                 onItemSelected: (IntegrationWorkItem item) {
+                  if (_section == IntegrationDeskSection.integrations &&
+                      !IntegrationsIntegrationsAtomPermissions.rowSelect
+                          .isAllowed(accessPolicy)) {
+                    return;
+                  }
                   if (_section == IntegrationDeskSection.webhooks &&
                       !IntegrationsWebhooksAtomPermissions.rowSelect.isAllowed(
                         accessPolicy,
                       )) {
                     return;
                   }
+                  if (_section == IntegrationDeskSection.apiKeys &&
+                      !IntegrationsApiKeysAtomPermissions.rowSelect.isAllowed(
+                        accessPolicy,
+                      )) {
+                    return;
+                  }
+                  if (_section == IntegrationDeskSection.logs &&
+                      !IntegrationsLogsAtomPermissions.rowSelect.isAllowed(
+                        accessPolicy,
+                      )) {
+                    return;
+                  }
+                  if (_section == IntegrationDeskSection.interop &&
+                      !IntegrationsInteropAtomPermissions.rowSelect.isAllowed(
+                        accessPolicy,
+                      )) {
+                    return;
+                  }
                   unawaited(
-                    _openIntegrationDetailDialog(context, item, canManage),
+                    _openIntegrationDetailDialog(
+                      context,
+                      item,
+                      canManage: caps.canManage,
+                      canDelete: caps.canDelete,
+                    ),
                   );
                 },
               ),
@@ -379,12 +405,29 @@ class _IntegrationsWorkspaceContentState
 
   Future<void> _openIntegrationDetailDialog(
     BuildContext context,
-    IntegrationWorkItem item,
-    bool canManage,
-  ) async {
+    IntegrationWorkItem item, {
+    required bool canManage,
+    required bool canDelete,
+  }) async {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     if (item.kind == IntegrationWorkItemKind.webhook &&
         !IntegrationsWebhooksAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.apiKey &&
+        !IntegrationsApiKeysAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.integration &&
+        !IntegrationsIntegrationsAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.log &&
+        !IntegrationsLogsAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.interop &&
+        !IntegrationsInteropAtomPermissions.detail.isAllowed(policy)) {
       return;
     }
 
@@ -400,9 +443,24 @@ class _IntegrationsWorkspaceContentState
     }
 
     final AppLocalizations l10n = context.l10n;
-    final bool detailCanManage = item.kind == IntegrationWorkItemKind.webhook
-        ? IntegrationsWebhooksAtomPermissions.update.isAllowed(policy)
-        : canManage;
+    final bool detailCanManage = switch (item.kind) {
+      IntegrationWorkItemKind.webhook =>
+        IntegrationsWebhooksAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.apiKey =>
+        IntegrationsApiKeysAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.integration =>
+        IntegrationsIntegrationsAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.log =>
+        IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
+      IntegrationWorkItemKind.interop =>
+        IntegrationsInteropAtomPermissions.update.isAllowed(policy),
+      _ => canManage,
+    };
+    final bool detailCanDelete = switch (item.kind) {
+      IntegrationWorkItemKind.apiKey =>
+        IntegrationsApiKeysAtomPermissions.delete.isAllowed(policy),
+      _ => canDelete,
+    };
     await showAppDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) => AppDialog(
@@ -420,6 +478,7 @@ class _IntegrationsWorkspaceContentState
             return _IntegrationDetailPanel(
               state: dialogState,
               canManage: detailCanManage,
+              canDelete: detailCanDelete,
             );
           },
         ),
@@ -441,6 +500,7 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.canManage,
+    required this.canDelete,
     required this.onItemSelected,
   });
 
@@ -450,6 +510,7 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<IntegrationWorkItem>
   columnVisibilityController;
   final bool canManage;
+  final bool canDelete;
   final ValueChanged<IntegrationWorkItem> onItemSelected;
 
   @override
@@ -459,6 +520,30 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
     if (section == IntegrationDeskSection.webhooks &&
         (!IntegrationsWebhooksAtomPermissions.listChrome.isAllowed(policy) ||
             !IntegrationsWebhooksAtomPermissions.search.isAllowed(policy))) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.apiKeys &&
+        (!IntegrationsApiKeysAtomPermissions.listChrome.isAllowed(policy) ||
+            !IntegrationsApiKeysAtomPermissions.search.isAllowed(policy))) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.integrations &&
+        (!IntegrationsIntegrationsAtomPermissions.listChrome.isAllowed(
+              policy,
+            ) ||
+            !IntegrationsIntegrationsAtomPermissions.search.isAllowed(
+              policy,
+            ))) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.interop &&
+        (!IntegrationsInteropAtomPermissions.listChrome.isAllowed(policy) ||
+            !IntegrationsInteropAtomPermissions.search.isAllowed(policy))) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.logs &&
+        (!IntegrationsLogsAtomPermissions.listChrome.isAllowed(policy) ||
+            !IntegrationsLogsAtomPermissions.search.isAllowed(policy))) {
       return const SizedBox.shrink();
     }
     final IntegrationsWorkspaceController controller = ref.read(
@@ -560,6 +645,12 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
         icon: Icons.hub_outlined,
       ),
       mobileItemBuilder: (BuildContext context, IntegrationWorkItem item) {
+        final String title = switch (section) {
+          IntegrationDeskSection.interop => item.interop != null
+              ? _interopTitle(context.l10n, item.interop!.title)
+              : item.title,
+          _ => item.title,
+        };
         final String subtitle = switch (section) {
           IntegrationDeskSection.integrations => _scopeLabel(
             context,
@@ -575,7 +666,7 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
           IntegrationDeskSection.interop => _scopeLabel(context, item.scope),
         };
         return AppListTableMobileItem(
-          title: item.title,
+          title: title,
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
               label: _statusLabel(context, item),
@@ -592,6 +683,7 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
             section: section,
             state: state,
             canManage: canManage,
+            canDelete: canDelete,
           ),
         );
       },
@@ -1215,12 +1307,14 @@ class _IntegrationNextActionButton extends ConsumerWidget {
     required this.section,
     required this.state,
     required this.canManage,
+    this.canDelete = false,
   });
 
   final IntegrationWorkItem item;
   final IntegrationDeskSection section;
   final IntegrationWorkspaceState state;
   final bool canManage;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1229,27 +1323,57 @@ class _IntegrationNextActionButton extends ConsumerWidget {
         !IntegrationsWebhooksAtomPermissions.nextAction.isAllowed(policy)) {
       return const SizedBox.shrink();
     }
+    if (section == IntegrationDeskSection.apiKeys &&
+        !IntegrationsApiKeysAtomPermissions.nextAction.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.integrations &&
+        !IntegrationsIntegrationsAtomPermissions.nextAction.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.logs &&
+        !IntegrationsLogsAtomPermissions.nextAction.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
+    if (section == IntegrationDeskSection.interop &&
+        !IntegrationsInteropAtomPermissions.nextAction.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
 
-    final bool requiresWrite = switch (item.nextAction) {
-      'enable' ||
-      'enable_webhook' ||
-      'review_failure' ||
-      'monitor' ||
-      'review_key' ||
-      'replay_or_escalate' => true,
-      _ => false,
+    final bool requiresWrite = integrationNextActionRequiresWrite(
+      item.nextAction,
+    );
+
+    final bool writeAllowed = switch (section) {
+      IntegrationDeskSection.webhooks =>
+        IntegrationsWebhooksAtomPermissions.update.isAllowed(policy),
+      IntegrationDeskSection.apiKeys =>
+        IntegrationsApiKeysAtomPermissions.update.isAllowed(policy),
+      IntegrationDeskSection.integrations =>
+        IntegrationsIntegrationsAtomPermissions.writeNextAction.isAllowed(
+          policy,
+        ),
+      IntegrationDeskSection.logs =>
+        IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
+      IntegrationDeskSection.interop =>
+        IntegrationsInteropAtomPermissions.runProbe.isAllowed(policy),
+      _ => canManage,
     };
-
-    final bool writeAllowed = section == IntegrationDeskSection.webhooks
-        ? IntegrationsWebhooksAtomPermissions.update.isAllowed(policy)
-        : canManage;
 
     // Write-gated next-actions omit when unauthorized; view-only remains.
     if (requiresWrite && !writeAllowed) {
       final AppLocalizations l10n = context.l10n;
-      final String viewLabel = section == IntegrationDeskSection.webhooks
-          ? l10n.integrationsNextActionMonitorDelivery
-          : l10n.integrationsNextActionReview;
+      final String? viewLabel = switch (section) {
+        IntegrationDeskSection.webhooks =>
+          l10n.integrationsNextActionMonitorDelivery,
+        IntegrationDeskSection.logs => l10n.integrationsNextActionReview,
+        IntegrationDeskSection.apiKeys =>
+          l10n.integrationsNextActionRotateOrMonitor,
+        _ => null,
+      };
+      if (viewLabel == null) {
+        return const SizedBox.shrink();
+      }
       return AppButton.tertiary(
         label: viewLabel,
         onPressed: () => unawaited(
@@ -1258,7 +1382,8 @@ class _IntegrationNextActionButton extends ConsumerWidget {
             ref,
             state,
             item,
-            canManage,
+            canManage: canManage,
+            canDelete: canDelete,
             openDetailOnly: true,
           ),
         ),
@@ -1279,34 +1404,26 @@ class _IntegrationNextActionButton extends ConsumerWidget {
             ref,
             state,
             item,
-            canManage,
+            canManage: canManage,
+            canDelete: canDelete,
             openDetailOnly: true,
           ),
         ),
       );
     }
 
-    return AppAccessActionGate(
-      requirement: section == IntegrationDeskSection.webhooks
-          ? IntegrationsWebhooksAtomPermissions.update
-          : integrationsManageRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppButton.tertiary(
-          label: label,
-          onPressed: () => unawaited(
-            _handleIntegrationNextAction(
-              context,
-              ref,
-              state,
-              item,
-              canManage,
-            ),
-          ),
-        );
-      },
+    return AppButton.tertiary(
+      label: label,
+      onPressed: () => unawaited(
+        _handleIntegrationNextAction(
+          context,
+          ref,
+          state,
+          item,
+          canManage: canManage,
+          canDelete: canDelete,
+        ),
+      ),
     );
   }
 }
@@ -1315,8 +1432,9 @@ Future<void> _handleIntegrationNextAction(
   BuildContext context,
   WidgetRef ref,
   IntegrationWorkspaceState state,
-  IntegrationWorkItem item,
-  bool canManage, {
+  IntegrationWorkItem item, {
+  required bool canManage,
+  required bool canDelete,
   bool openDetailOnly = false,
 }) async {
   final IntegrationsWorkspaceController controller = ref.read(
@@ -1329,9 +1447,40 @@ Future<void> _handleIntegrationNextAction(
         !IntegrationsWebhooksAtomPermissions.detail.isAllowed(policy)) {
       return;
     }
-    final bool detailCanManage = item.kind == IntegrationWorkItemKind.webhook
-        ? IntegrationsWebhooksAtomPermissions.update.isAllowed(policy)
-        : canManage;
+    if (item.kind == IntegrationWorkItemKind.apiKey &&
+        !IntegrationsApiKeysAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.integration &&
+        !IntegrationsIntegrationsAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.log &&
+        !IntegrationsLogsAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    if (item.kind == IntegrationWorkItemKind.interop &&
+        !IntegrationsInteropAtomPermissions.detail.isAllowed(policy)) {
+      return;
+    }
+    final bool detailCanManage = switch (item.kind) {
+      IntegrationWorkItemKind.webhook =>
+        IntegrationsWebhooksAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.apiKey =>
+        IntegrationsApiKeysAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.integration =>
+        IntegrationsIntegrationsAtomPermissions.update.isAllowed(policy),
+      IntegrationWorkItemKind.log =>
+        IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
+      IntegrationWorkItemKind.interop =>
+        IntegrationsInteropAtomPermissions.update.isAllowed(policy),
+      _ => canManage,
+    };
+    final bool detailCanDelete = switch (item.kind) {
+      IntegrationWorkItemKind.apiKey =>
+        IntegrationsApiKeysAtomPermissions.delete.isAllowed(policy),
+      _ => canDelete,
+    };
     final AppFailure? failure = await controller.selectItem(item);
     if (!context.mounted) {
       return;
@@ -1357,6 +1506,7 @@ Future<void> _handleIntegrationNextAction(
             return _IntegrationDetailPanel(
               state: dialogState,
               canManage: detailCanManage,
+              canDelete: detailCanDelete,
             );
           },
         ),
@@ -1406,10 +1556,15 @@ Future<void> _handleIntegrationNextAction(
 
 
 class _IntegrationDetailPanel extends ConsumerWidget {
-  const _IntegrationDetailPanel({required this.state, required this.canManage});
+  const _IntegrationDetailPanel({
+    required this.state,
+    required this.canManage,
+    this.canDelete = false,
+  });
 
   final IntegrationWorkspaceState state;
   final bool canManage;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1438,6 +1593,7 @@ class _IntegrationDetailPanel extends ConsumerWidget {
       state,
       item,
       canManage,
+      canDelete: canDelete,
     );
 
     return Column(
@@ -1451,7 +1607,12 @@ class _IntegrationDetailPanel extends ConsumerWidget {
           ),
           SizedBox(height: theme.spacing.md),
         ],
-        _detailBody(context, state, item),
+        _detailBody(
+          context,
+          state,
+          item,
+          canManage: canManage,
+        ),
       ],
     );
   }
@@ -1462,9 +1623,13 @@ List<Widget> _detailActions(
   IntegrationsWorkspaceController controller,
   IntegrationWorkspaceState state,
   IntegrationWorkItem item,
-  bool canManage,
-) {
-  if (!canManage) {
+  bool canManage, {
+  bool canDelete = false,
+}) {
+  if (!canManage && item.kind != IntegrationWorkItemKind.apiKey) {
+    return const <Widget>[];
+  }
+  if (item.kind == IntegrationWorkItemKind.apiKey && !canManage && !canDelete) {
     return const <Widget>[];
   }
 
@@ -1520,7 +1685,7 @@ List<Widget> _detailActions(
         ),
     ],
     IntegrationWorkItemKind.apiKey => <Widget>[
-      if (nextAction != 'review_key')
+      if (canManage && nextAction != 'review_key')
         AppButton.secondary(
           label: l10n.integrationsManagePermissionsAction,
           leadingIcon: Icons.admin_panel_settings_outlined,
@@ -1536,26 +1701,28 @@ List<Widget> _detailActions(
             );
           },
         ),
-      AppButton.secondary(
-        label: item.apiKey?.isActive == true
-            ? l10n.integrationsDisableAction
-            : l10n.integrationsEnableAction,
-        leadingIcon: item.apiKey?.isActive == true
-            ? Icons.pause_circle_outline
-            : Icons.play_circle_outline,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_toggleApiKey(context, controller, item));
-        },
-      ),
-      AppButton.tertiary(
-        label: l10n.integrationsRevokeApiKeyAction,
-        leadingIcon: Icons.block_outlined,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(_confirmRevokeApiKey(context, controller, item));
-        },
-      ),
+      if (canManage)
+        AppButton.secondary(
+          label: item.apiKey?.isActive == true
+              ? l10n.integrationsDisableAction
+              : l10n.integrationsEnableAction,
+          leadingIcon: item.apiKey?.isActive == true
+              ? Icons.pause_circle_outline
+              : Icons.play_circle_outline,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_toggleApiKey(context, controller, item));
+          },
+        ),
+      if (canDelete)
+        AppButton.tertiary(
+          label: l10n.integrationsRevokeApiKeyAction,
+          leadingIcon: Icons.block_outlined,
+          isLoading: state.isSaving,
+          onPressed: () {
+            unawaited(_confirmRevokeApiKey(context, controller, item));
+          },
+        ),
     ],
     IntegrationWorkItemKind.webhook => <Widget>[
       AppButton.secondary(
@@ -1613,8 +1780,9 @@ List<Widget> _detailActions(
 Widget _detailBody(
   BuildContext context,
   IntegrationWorkspaceState state,
-  IntegrationWorkItem item,
-) {
+  IntegrationWorkItem item, {
+  bool canManage = false,
+}) {
   final AppLocalizations l10n = context.l10n;
   final ThemeData theme = Theme.of(context);
   final List<Widget> children = <Widget>[
@@ -1683,7 +1851,11 @@ Widget _detailBody(
             message: l10n.integrationsRotationGapBody,
             icon: Icons.info_outline,
           ),
-          _ApiKeyPermissionsPanel(apiKey: key, state: state),
+          _ApiKeyPermissionsPanel(
+            apiKey: key,
+            state: state,
+            canManage: canManage,
+          ),
         ]);
       }
     case IntegrationWorkItemKind.webhook:
@@ -1844,10 +2016,15 @@ class _RelatedLogsPanel extends StatelessWidget {
 }
 
 class _ApiKeyPermissionsPanel extends ConsumerWidget {
-  const _ApiKeyPermissionsPanel({required this.apiKey, required this.state});
+  const _ApiKeyPermissionsPanel({
+    required this.apiKey,
+    required this.state,
+    required this.canManage,
+  });
 
   final ApiKeyRecord apiKey;
   final IntegrationWorkspaceState state;
+  final bool canManage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1872,24 +2049,29 @@ class _ApiKeyPermissionsPanel extends ConsumerWidget {
                     label:
                         state.permissionOption(permission.permissionId)?.label ??
                         permission.permissionId,
-                    onRemove: () async {
-                      final bool confirmed = await _confirm(
-                        context,
-                        title: l10n.integrationsRemovePermissionDialogTitle,
-                        message: l10n.integrationsRemovePermissionDialogBody,
-                        confirmLabel: l10n.integrationsRemovePermissionAction,
-                        icon: Icons.remove_circle_outline,
-                      );
-                      if (!context.mounted || !confirmed) {
-                        return;
-                      }
-                      final AppFailure? failure = await controller
-                          .removeApiKeyPermission(permission.id);
-                      if (context.mounted) {
-                        _showFailureIfNeeded(context, failure);
-                        _showSavedIfNeeded(context, failure);
-                      }
-                    },
+                    onRemove: canManage
+                        ? () async {
+                            final bool confirmed = await _confirm(
+                              context,
+                              title:
+                                  l10n.integrationsRemovePermissionDialogTitle,
+                              message:
+                                  l10n.integrationsRemovePermissionDialogBody,
+                              confirmLabel:
+                                  l10n.integrationsRemovePermissionAction,
+                              icon: Icons.remove_circle_outline,
+                            );
+                            if (!context.mounted || !confirmed) {
+                              return;
+                            }
+                            final AppFailure? failure = await controller
+                                .removeApiKeyPermission(permission.id);
+                            if (context.mounted) {
+                              _showFailureIfNeeded(context, failure);
+                              _showSavedIfNeeded(context, failure);
+                            }
+                          }
+                        : null,
                   ),
               ],
             ),
@@ -1898,10 +2080,10 @@ class _ApiKeyPermissionsPanel extends ConsumerWidget {
 }
 
 class _PermissionGrantRow extends StatelessWidget {
-  const _PermissionGrantRow({required this.label, required this.onRemove});
+  const _PermissionGrantRow({required this.label, this.onRemove});
 
   final String label;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -1913,16 +2095,17 @@ class _PermissionGrantRow extends StatelessWidget {
         Expanded(
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
-        SizedBox(width: theme.spacing.xs),
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.remove_circle_outline,
-          label: l10n.integrationsRemovePermissionAction,
-
-          semanticLabel: l10n.integrationsRemovePermissionAction,
-          tooltip: l10n.integrationsRemovePermissionAction,
-          onPressed: onRemove,
-        ),
+        if (onRemove != null) ...<Widget>[
+          SizedBox(width: theme.spacing.xs),
+          AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.remove_circle_outline,
+            label: l10n.integrationsRemovePermissionAction,
+            semanticLabel: l10n.integrationsRemovePermissionAction,
+            tooltip: l10n.integrationsRemovePermissionAction,
+            onPressed: onRemove,
+          ),
+        ],
       ],
     );
   }
@@ -2459,6 +2642,16 @@ Future<void> _openIntegrationDialog(
   IntegrationWorkspaceState state, {
   IntegrationRecord? integration,
 }) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  final AccessRequirement requirement = integration == null
+      ? IntegrationsIntegrationsAtomPermissions.create
+      : IntegrationsIntegrationsAtomPermissions.configure;
+  if (!requirement.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2488,6 +2681,13 @@ Future<void> _openApiKeyDialog(
   BuildContext context,
   IntegrationsWorkspaceController controller,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsApiKeysAtomPermissions.create.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final ApiKeyRecord? record = await showAppWorkspaceActionDialog<ApiKeyRecord>(
     context: context,
@@ -2608,6 +2808,14 @@ Future<void> _confirmTestConnection(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsIntegrationsAtomPermissions.testConnection.isAllowed(
+    policy,
+  )) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool confirmed = await _confirm(
     context,
@@ -2631,6 +2839,12 @@ Future<void> _confirmSyncNow(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsIntegrationsAtomPermissions.syncNow.isAllowed(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool confirmed = await _confirm(
     context,
@@ -2656,6 +2870,14 @@ Future<void> _toggleIntegration(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsIntegrationsAtomPermissions.enableDisable.isAllowed(
+    policy,
+  )) {
+    return;
+  }
   final IntegrationRecord? integration = item.integration;
   if (integration == null) {
     return;
@@ -2831,6 +3053,12 @@ Future<void> _confirmReplayLog(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsLogsAtomPermissions.replay.isAllowed(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool confirmed = await _confirm(
     context,

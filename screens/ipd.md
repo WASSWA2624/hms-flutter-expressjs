@@ -2,7 +2,7 @@
 
 Primary surface: `IpdWorkspacePage` (`frontend/lib/features/ipd/presentation/pages/ipd_workspace_page.dart`).
 
-Write gates: `ipdOperationalWriteRequirement` (approve / assign bed / transfer / start admission), `ipdClinicalWriteRequirement` (nursing note / discharge / clinical orders), `_ipdBedManageRequirement` (Manage beds → rooms-beds). Unauthorized write controls do not render.
+Write gates: `ipdOperationalWriteRequirement` (approve / assign bed / transfer / start admission), `ipdClinicalWriteRequirement` (nursing note / discharge / clinical orders / Follow-ups mutations), `_ipdBedManageRequirement` (Manage beds → rooms-beds). Unauthorized write controls do not render.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -102,9 +102,51 @@ Tab-strip **Refresh** was removed.
 
 ### Follow-ups tab
 
-- Follow-up worklist panel (`FollowUpWorklistPanel`, IPD scope)
-  - Location: Follow-ups section body.
-  - Condition: Follow-ups tab selected.
+Shared follow-up worklist (`FollowUpWorklistPanel`, IPD scope). No Start
+admission / Manage beds / admission detail / next-action on this tab.
+
+- **Follow-ups** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to follow-ups section; loads IPD-scoped worklist.
+  - Condition: Board read ∪ (`clinical:read` | `operations:read` + module); tab
+    hidden when gate fails.
+
+- **Search**, **Clear**, **Settings** (columns)
+  - Location: `FollowUpWorklistPanel` / `AppListTable` chrome.
+  - Opens modal: Table Settings dialog.
+  - Immediate result: Search / column visibility for scheduled follow-ups.
+  - Condition: Follow-ups read ∪.
+
+- **Row select** (desktop row / mobile item)
+  - Location: Table row / mobile list item.
+  - Opens modal: Follow-up details dialog.
+  - Immediate result: Loads call details; Close always available.
+  - Condition: Follow-ups read ∪.
+
+- **Mark completed** / **Reschedule follow-up**
+  - Location: Follow-up details footer (write-gated).
+  - Opens modal: Reschedule opens Save follow-up dialog; complete mutates inline.
+  - Immediate result: Persists via follow-up repository; snackbar; list refresh.
+  - Condition: Clinical write ∩ (`clinical:write` + roles + module); unauthorized
+    controls absent (no disabled stubs).
+
+- **Save follow-up** (nested reschedule)
+  - Location: Clinical follow-up action dialog.
+  - Opens modal: Nested from Reschedule.
+  - Immediate result: Updates schedule; closes; list sync.
+  - Condition: Same clinical write ∩.
+
+- **Try again** / empty / loading
+  - Location: Panel body.
+  - Condition: Authorized Follow-ups readers; retry reloads scoped list.
+
+- **Start admission** / **Manage beds** / admission billing panels
+  - Condition: Not mounted on Follow-ups (inventory).
+
+Write gates: `IpdFollowUpsAtomPermissions` → `ipdFollowUpsRequirement` (read ∪),
+`ipdFollowUpsWriteRequirement` (= `ipdClinicalWriteRequirement`, write ∩).
+Unauthorized write controls do not render. Nested cross-module matrix _(n/a)_.
 
 ---
 
@@ -116,7 +158,8 @@ Tab-strip **Refresh** was removed.
 - [ ] Deep link `/ipd?id=…&panel=transfers` opens transfer dialog without an empty detail first.
 - [ ] Bed board: occupied row has no **Open admission** in next-action; row tap opens detail.
 - [ ] Without operational/clinical write, matching next-action and detail writes are absent.
+- [ ] Follow-ups: without clinical|operations read, tab and panel absent; with clinical:read alone, list mounts and Mark completed / Reschedule absent; with clinical:write ∩, mutations mount and sync the list.
 - [ ] Loading / empty / error-retry / validation states still render on workspace and dialogs.
 - [ ] Mobile and desktop keep next-action and row select reachable; theme tokens only.
 
-Automated: `frontend/test/features/ipd/presentation/ipd_workspace_page_test.dart`, `frontend/test/features/ipd/presentation/ipd_workspace_ux_simplify_test.dart`.
+Automated: `frontend/test/features/ipd/presentation/ipd_workspace_page_test.dart`, `frontend/test/features/ipd/presentation/ipd_workspace_ux_simplify_test.dart`, `frontend/test/features/ipd/presentation/ipd_follow_ups_permissions_test.dart`.

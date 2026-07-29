@@ -7,7 +7,9 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
@@ -309,6 +311,17 @@ Future<bool> runIpdFocusedMutation(
   IpdDetailPanel? panel,
   String? action,
 }) async {
+  final AccessRequirement? mutationRequirement = ipdFocusedMutationRequirement(
+    panel: panel,
+    action: action,
+  );
+  if (mutationRequirement != null) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!mutationRequirement.isAllowed(policy)) {
+      return true;
+    }
+  }
+
   final IpdWorkspaceController controller = ref.read(
     ipdWorkspaceControllerProvider.notifier,
   );

@@ -555,7 +555,7 @@ void main() {
     verify(() => repository.getAdmission('adm-queue')).called(1);
   });
 
-  testWidgets('bed board shows five default column headers', (
+  testWidgets('bed board shows four default columns without manage rights', (
     WidgetTester tester,
   ) async {
     await _pumpIpdWorkspace(
@@ -572,7 +572,6 @@ void main() {
       'Ward',
       'Current patient',
       'Status',
-      'Next action',
     ]) {
       expect(
         find.descendant(of: find.byType(DataTable), matching: find.text(label)),
@@ -580,10 +579,40 @@ void main() {
       );
     }
     expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsNothing,
+    );
+    expect(
       find.descendant(of: find.byType(DataTable), matching: find.text('Room')),
       findsNothing,
     );
     expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('bed board shows Next action for bed managers', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _ipdBedManagePolicy(),
+      initialLocation: '/ipd?section=bed-board',
+      initialQuery: IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=bed-board'),
+      ),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Reserve bed'), findsOneWidget);
   });
 
   testWidgets('occupied bed board row tap opens admission detail dialog', (
