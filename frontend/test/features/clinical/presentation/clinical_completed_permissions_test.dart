@@ -37,19 +37,19 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
 
-const ClinicalWorklistEntry _encounter = ClinicalWorklistEntry(
-  id: 'encounter-consult-1',
+final ClinicalWorklistEntry _completedEncounter = ClinicalWorklistEntry(
+  id: 'encounter-completed-1',
   sourceQueue: 'OPD',
-  encounterId: 'encounter-consult-1',
-  encounterPublicId: 'ENC-CONSULT-1',
-  patientDisplayName: 'Consult Tab Patient',
-  patientPublicId: 'PAT-CONSULT-1',
-  providerDisplayName: 'Dr Consult',
+  encounterId: 'encounter-completed-1',
+  encounterPublicId: 'ENC-DONE-1',
+  patientDisplayName: 'Completed Tab Patient',
+  patientPublicId: 'PAT-DONE-1',
+  providerDisplayName: 'Dr Done',
   encounterType: 'OUTPATIENT',
-  currentLocation: 'Clinic B',
-  status: 'OPEN',
-  stage: 'IN_CONSULTATION',
-  opdFlowApiId: 'opd-flow-consult-1',
+  currentLocation: 'Clinic C',
+  status: 'COMPLETED',
+  stage: 'COMPLETED',
+  updatedAt: DateTime.now(),
 );
 
 AppAccessPolicy _policy({
@@ -75,22 +75,23 @@ AppAccessPolicy _policy({
 
 void _stubClinical(
   _MockClinicalRepository repository, {
-  List<ClinicalWorklistEntry> items = const <ClinicalWorklistEntry>[_encounter],
+  List<ClinicalWorklistEntry>? items,
   Result<AppPage<ClinicalWorklistEntry>>? listOverride,
-  Result<ClinicalReferenceData>? referenceOverride,
   ClinicalEncounterBundle? bundle,
 }) {
+  final List<ClinicalWorklistEntry> worklist =
+      items ?? <ClinicalWorklistEntry>[_completedEncounter];
   when(() => repository.listEncounters(any())).thenAnswer((invocation) async {
     if (listOverride != null) {
       return listOverride;
     }
     return Result<AppPage<ClinicalWorklistEntry>>.success(
       AppPage<ClinicalWorklistEntry>(
-        items: items,
+        items: worklist,
         request:
             (invocation.positionalArguments.single as ClinicalWorklistQuery)
                 .pageRequest,
-        totalItemCount: items.length,
+        totalItemCount: worklist.length,
       ),
     );
   });
@@ -107,7 +108,6 @@ void _stubClinical(
   );
   when(repository.loadReferenceData).thenAnswer(
     (_) async =>
-        referenceOverride ??
         const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
   );
   when(() => repository.loadEncounterBundle(any())).thenAnswer((invocation) {
@@ -120,7 +120,7 @@ void _stubClinical(
               entry: entry,
               labOrders: const <ClinicalRelatedRecord>[
                 ClinicalRelatedRecord(
-                  id: 'lab-1',
+                  id: 'lab-done-1',
                   kind: 'LAB_ORDER',
                   status: 'ORDERED',
                   title: 'CBC',
@@ -128,7 +128,7 @@ void _stubClinical(
               ],
               diagnoses: const <ClinicalRelatedRecord>[
                 ClinicalRelatedRecord(
-                  id: 'dx-1',
+                  id: 'dx-done-1',
                   kind: 'DIAGNOSIS',
                   status: 'ACTIVE',
                   title: 'Hypertension',
@@ -140,42 +140,33 @@ void _stubClinical(
   });
 }
 
-void _stubOpd(
-  _MockOpdRepository repository, {
-  Result<AppPage<OpdFlowSummary>>? listOverride,
-}) {
-  when(() => repository.listOpdFlows(any())).thenAnswer(
-    (invocation) async =>
-        listOverride ??
-        Result<AppPage<OpdFlowSummary>>.success(
-          AppPage<OpdFlowSummary>(
-            items: const <OpdFlowSummary>[],
-            request: (invocation.positionalArguments.single as OpdFlowQuery)
-                .pageRequest,
-            totalItemCount: 0,
-          ),
-        ),
-  );
-  when(() => repository.listTriageQueue(any())).thenAnswer(
-    (invocation) async =>
-        listOverride ??
-        Result<AppPage<OpdFlowSummary>>.success(
-          AppPage<OpdFlowSummary>(
-            items: const <OpdFlowSummary>[],
-            request:
-                (invocation.positionalArguments.single as OpdTriageQueueQuery)
-                    .pageRequest,
-            totalItemCount: 0,
-          ),
-        ),
-  );
-  when(() => repository.getOpdFlow(any())).thenAnswer(
-    (_) async => const Result<OpdFlowDetail>.success(
-      OpdFlowDetail(
-        summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001'),
+void _stubOpd(_MockOpdRepository repository, {bool failLists = false}) {
+  when(() => repository.listOpdFlows(any())).thenAnswer((invocation) async {
+    if (failLists) {
+      return const Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
+    }
+    return Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: const <OpdFlowSummary>[],
+        request:
+            (invocation.positionalArguments.single as OpdFlowQuery).pageRequest,
+        totalItemCount: 0,
       ),
-    ),
-  );
+    );
+  });
+  when(() => repository.listTriageQueue(any())).thenAnswer((invocation) async {
+    if (failLists) {
+      return const Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
+    }
+    return Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: const <OpdFlowSummary>[],
+        request: (invocation.positionalArguments.single as OpdTriageQueueQuery)
+            .pageRequest,
+        totalItemCount: 0,
+      ),
+    );
+  });
 }
 
 void _stubIpd(_MockIpdRepository repository) {
@@ -191,17 +182,16 @@ void _stubIpd(_MockIpdRepository repository) {
   );
 }
 
-Future<void> _pumpInConsultationTab(
+Future<void> _pumpCompletedTab(
   WidgetTester tester, {
   required _MockClinicalRepository clinicalRepository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<ClinicalWorklistEntry> items = const <ClinicalWorklistEntry>[_encounter],
-  String initialLocation = '/clinical?section=in-consultation',
+  List<ClinicalWorklistEntry>? items,
+  String initialLocation = '/clinical?section=completed',
   Result<AppPage<ClinicalWorklistEntry>>? listOverride,
-  Result<ClinicalReferenceData>? referenceOverride,
-  Result<AppPage<OpdFlowSummary>>? opdListOverride,
+  bool failOpdLists = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -211,9 +201,8 @@ Future<void> _pumpInConsultationTab(
     clinicalRepository,
     items: items,
     listOverride: listOverride,
-    referenceOverride: referenceOverride,
   );
-  _stubOpd(opdRepository, listOverride: opdListOverride);
+  _stubOpd(opdRepository, failLists: failOpdLists);
   _stubIpd(ipdRepository);
 
   tester.view.physicalSize = physicalSize;
@@ -288,35 +277,27 @@ void main() {
     clinicalRepository = _MockClinicalRepository();
   });
 
-  group('ClinicalInConsultationAtomPermissions helpers', () {
+  group('ClinicalCompletedAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        ClinicalInConsultationAtomPermissions.tab,
+        ClinicalCompletedAtomPermissions.tab,
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
-        ClinicalInConsultationAtomPermissions.write,
+        ClinicalCompletedAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
-        ClinicalInConsultationAtomPermissions.requestLab,
+        ClinicalCompletedAtomPermissions.reopen,
+        same(clinicalWorkspaceWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.requestLab,
         same(clinicalLabOrderWriteRequirement),
       );
       expect(
-        ClinicalInConsultationAtomPermissions.requestAdmission,
-        same(clinicalAdmissionWriteRequirement),
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.dischargeFinancialRead,
-        same(clinicalDischargeFinancialReadRequirement),
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.routeEntry,
+        ClinicalCompletedAtomPermissions.routeEntry,
         same(clinicalWorkspaceEntryRequirement),
-      );
-      expect(
-        clinicalSectionTabRequirement(ClinicalWorkspaceSection.inConsultation),
-        same(clinicalWorkspaceReadRequirement),
       );
     });
 
@@ -324,21 +305,18 @@ void main() {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      expect(ClinicalCompletedAtomPermissions.tab.isAllowed(writeOnly), isFalse);
       expect(
-        ClinicalInConsultationAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.write.isAllowed(writeOnly),
+        ClinicalCompletedAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
       );
       expect(
-        ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(writeOnly),
+        ClinicalCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
     });
 
-    test('∪ allowance: lab:write satisfies nested lab order write', () {
+    test('∪ allowance: lab:write + modules satisfies nested lab order write', () {
       final AppAccessPolicy labWriter = _policy(
         permissions: <AppPermission>{AppPermissions.labWrite},
         modules: const <AppModuleEntitlement>[
@@ -353,135 +331,42 @@ void main() {
         ],
       );
       expect(
-        ClinicalInConsultationAtomPermissions.requestLab.isAllowed(labWriter),
+        ClinicalCompletedAtomPermissions.requestLab.isAllowed(labWriter),
         isTrue,
       );
       expect(
-        ClinicalInConsultationAtomPermissions.addNote.isAllowed(labWriter),
+        ClinicalCompletedAtomPermissions.addNote.isAllowed(labWriter),
         isFalse,
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.requestRadiology.isAllowed(
-          labWriter,
-        ),
-        isFalse,
-      );
-    });
-
-    test('∪ allowance: pharmacy:write / operations:write nested writes', () {
-      final AppAccessPolicy pharmacyWriter = _policy(
-        permissions: <AppPermission>{AppPermissions.pharmacyWrite},
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'pharmacy-dispensing',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.prescribe.isAllowed(
-          pharmacyWriter,
-        ),
-        isTrue,
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.addNote.isAllowed(pharmacyWriter),
-        isFalse,
-      );
-
-      final AppAccessPolicy opsWriter = _policy(
-        permissions: <AppPermission>{AppPermissions.operationsWrite},
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'facilities-maintenance',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.requestAdmission.isAllowed(
-          opsWriter,
-        ),
-        isTrue,
-      );
-    });
-
-    test('discharge financial read ∩ billing:read + billing-payments', () {
-      final AppAccessPolicy clinicalOnly = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.dischargeFinancialRead.isAllowed(
-          clinicalOnly,
-        ),
-        isFalse,
-      );
-
-      final AppAccessPolicy withBilling = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.billingRead,
-        },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'billing-payments',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.dischargeFinancialRead.isAllowed(
-          withBilling,
-        ),
-        isTrue,
       );
     });
   });
 
   testWidgets(
-    'read-only: In consultation list visible; mutation atoms absent (∩ denial)',
+    'read-only: Completed list visible; mutation atoms absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(ClinicalInConsultationAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(
-        ClinicalInConsultationAtomPermissions.write.isAllowed(reader),
-        isFalse,
-      );
+      expect(ClinicalCompletedAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(ClinicalCompletedAtomPermissions.write.isAllowed(reader), isFalse);
 
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: reader,
       );
 
-      expect(find.text('Consult Tab Patient'), findsOneWidget);
+      expect(find.text('Completed Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('In consultation'), findsWidgets);
+      expect(find.text('Completed'), findsWidgets);
+      expect(find.text('Review encounter'), findsWidgets);
 
-      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();
 
       expect(find.text('Add clinical note'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
-      expect(find.text('Request admission'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Edit order'), findsNothing);
@@ -490,7 +375,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: encounter mutations and nested order ∪ mount',
+    'full write ∩: encounter mutations and nested lab ∪ mount on Completed',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -498,67 +383,61 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
+      expect(ClinicalCompletedAtomPermissions.write.isAllowed(writer), isTrue);
       expect(
-        ClinicalInConsultationAtomPermissions.write.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        ClinicalInConsultationAtomPermissions.requestLab.isAllowed(writer),
+        ClinicalCompletedAtomPermissions.requestLab.isAllowed(writer),
         isTrue,
       );
 
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: writer,
       );
 
-      expect(find.text('Consult Tab Patient'), findsOneWidget);
+      expect(find.text('Completed Tab Patient'), findsOneWidget);
 
-      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();
 
       expect(find.text('Add clinical note'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
-      expect(find.text('Request radiology'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
-      expect(find.text('Request admission'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
+      // Terminal completed: vitals / disposition stay absent.
+      expect(find.text('Record vitals'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'route entry ∪: clinical:write alone without clinical:read omits chrome',
+    'route entry ∪: clinical:write alone without clinical:read omits Completed chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
       expect(
-        ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(writeOnly),
+        ClinicalCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
-      expect(
-        ClinicalInConsultationAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
-      );
+      expect(ClinicalCompletedAtomPermissions.tab.isAllowed(writeOnly), isFalse);
 
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Consult Tab Patient'), findsNothing);
+      expect(find.text('Completed Tab Patient'), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'subscription strip: encounters-vitals missing omits In consultation chrome',
+    'subscription strip: encounters-vitals missing omits Completed chrome',
     (WidgetTester tester) async {
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -571,7 +450,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Consult Tab Patient'), findsNothing);
+      expect(find.text('Completed Tab Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -596,21 +475,21 @@ void main() {
         ],
       );
       expect(
-        ClinicalInConsultationAtomPermissions.requestLab.isAllowed(labOnly),
+        ClinicalCompletedAtomPermissions.requestLab.isAllowed(labOnly),
         isTrue,
       );
       expect(
-        ClinicalInConsultationAtomPermissions.addNote.isAllowed(labOnly),
+        ClinicalCompletedAtomPermissions.addNote.isAllowed(labOnly),
         isFalse,
       );
 
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: labOnly,
       );
 
-      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();
 
       expect(find.text('Request lab'), findsWidgets);
@@ -620,32 +499,10 @@ void main() {
     },
   );
 
-  testWidgets(
-    'nested cross-module: radiology/pharmacy absent without those rights',
-    (WidgetTester tester) async {
-      final AppAccessPolicy reader = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalRead},
-      );
-
-      await _pumpInConsultationTab(
-        tester,
-        clinicalRepository: clinicalRepository,
-        accessPolicy: reader,
-      );
-
-      await tester.tap(find.text('Consult Tab Patient'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Request radiology'), findsNothing);
-      expect(find.text('Prescribe'), findsNothing);
-      expect(find.text('Request admission'), findsNothing);
-    },
-  );
-
-  testWidgets('mobile viewport keeps authorized In consultation chrome', (
+  testWidgets('mobile viewport keeps authorized Completed chrome', (
     WidgetTester tester,
   ) async {
-    await _pumpInConsultationTab(
+    await _pumpCompletedTab(
       tester,
       clinicalRepository: clinicalRepository,
       accessPolicy: _policy(
@@ -667,10 +524,10 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('desktop viewport keeps authorized In consultation row readable', (
+  testWidgets('desktop viewport keeps authorized Completed row readable', (
     WidgetTester tester,
   ) async {
-    await _pumpInConsultationTab(
+    await _pumpCompletedTab(
       tester,
       clinicalRepository: clinicalRepository,
       accessPolicy: _policy(
@@ -682,15 +539,16 @@ void main() {
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.text('Consult Tab Patient'), findsOneWidget);
+    expect(find.text('Completed Tab Patient'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Next action'), findsWidgets);
+    expect(find.text('Review encounter'), findsWidgets);
   });
 
-  testWidgets('dark theme: authorized In consultation chrome remains', (
+  testWidgets('dark theme: authorized Completed chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpInConsultationTab(
+    await _pumpCompletedTab(
       tester,
       clinicalRepository: clinicalRepository,
       accessPolicy: _policy(
@@ -702,14 +560,14 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.text('Consult Tab Patient'), findsOneWidget);
+    expect(find.text('Completed Tab Patient'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
   });
 
-  testWidgets('light theme: authorized In consultation chrome remains', (
+  testWidgets('light theme: authorized Completed chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpInConsultationTab(
+    await _pumpCompletedTab(
       tester,
       clinicalRepository: clinicalRepository,
       accessPolicy: _policy(
@@ -721,14 +579,14 @@ void main() {
       themeMode: ThemeMode.light,
     );
 
-    expect(find.text('Consult Tab Patient'), findsOneWidget);
+    expect(find.text('Completed Tab Patient'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
   });
 
   testWidgets(
-    'empty authorized In consultation worklist still shows chrome and empty state',
+    'empty authorized Completed worklist still shows chrome and empty state',
     (WidgetTester tester) async {
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -738,20 +596,15 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Consult Tab Patient'), findsNothing);
+      expect(find.text('Completed Tab Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'authorized error/retry surface remains observable on In consultation',
+    'authorized error/retry surface remains observable on Completed',
     (WidgetTester tester) async {
-      const Result<AppPage<ClinicalWorklistEntry>> encounterFailure =
-          Result<AppPage<ClinicalWorklistEntry>>.failure(AppFailure.network());
-      const Result<AppPage<OpdFlowSummary>> opdFailure =
-          Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
-
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -760,8 +613,10 @@ void main() {
             AppPermissions.clinicalWrite,
           },
         ),
-        listOverride: encounterFailure,
-        opdListOverride: opdFailure,
+        listOverride: const Result<AppPage<ClinicalWorklistEntry>>.failure(
+          AppFailure.network(),
+        ),
+        failOpdLists: true,
       );
 
       expect(find.text('Try again'), findsOneWidget);
@@ -770,9 +625,9 @@ void main() {
   );
 
   testWidgets(
-    'authorized Add clinical note opens dialog (sync path)',
+    'authorized Add clinical note opens dialog from Completed (sync path)',
     (WidgetTester tester) async {
-      await _pumpInConsultationTab(
+      await _pumpCompletedTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -783,7 +638,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Add clinical note').first);

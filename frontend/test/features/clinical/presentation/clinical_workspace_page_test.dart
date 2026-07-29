@@ -37,6 +37,38 @@ class _MockIpdRepository extends Mock implements IpdRepository {}
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+AppAccessPolicy _fullClinicalPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['DOCTOR'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'patient-registry',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'scheduling-queue',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const ClinicalWorklistQuery());

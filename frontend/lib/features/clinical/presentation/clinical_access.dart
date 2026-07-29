@@ -564,3 +564,178 @@ abstract final class ClinicalUrgentAtomPermissions {
 bool canViewClinicalUrgent(AppAccessPolicy policy) {
   return ClinicalUrgentAtomPermissions.tab.isAllowed(policy);
 }
+
+/// Atom → requirement map for Waiting review (`/clinical?section=waiting-review`).
+///
+/// Outpatient encounters awaiting clinician review (`WAITING_DOCTOR_REVIEW` /
+/// review-stage aliases). Same encounter chrome as All / Urgent; distinctive
+/// surfaces are the Waiting review tab (warning count tone) and review-stage
+/// next actions (`DOCTOR_REVIEW` / Clinical notes).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Waiting review tab | navigate | read ∩ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Waiting review tab count / summary badge | read | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → encounter detail | read | read ∩ |
+/// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read ∩ |
+/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
+/// | Detail Request lab | create / update | lab order ∪ |
+/// | Detail Request radiology | create / update | radiology order ∪ |
+/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request admission | create | admission ∪ |
+/// | Detail Print summary | export / read | read ∩ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
+/// | Diagnosis delete | delete | write ∪ source |
+/// | Discharge Open billing / financial | nested read | billing:read ∩ |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// `clinical:write` alone. Nested order / admission rows document prompt ∪
+/// (matrix nested write _(n/a)_).
+abstract final class ClinicalWaitingReviewAtomPermissions {
+  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement waitingReviewChip =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addDiagnosis =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordProcedure =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement disposition =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
+  static const AccessRequirement requestRadiology =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement requestAdmission =
+      clinicalAdmissionWriteRequirement;
+  static const AccessRequirement printSummary =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nestedLabWrite =
+      clinicalLabOrderWriteRequirement;
+  static const AccessRequirement nestedRadiologyWrite =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement nestedPharmacyWrite =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement dischargeFinancialRead =
+      clinicalDischargeFinancialReadRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
+  return ClinicalWaitingReviewAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Completed tab atom → permission mapping (inventory + matrix).
+///
+/// Same-day terminal outpatient encounters (`?section=completed`). Prefer
+/// read; reopen / mutations need write. No dedicated reopen control in
+/// `screens/clinical.md` — [reopen] maps encounter write mutations.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Completed tab | navigate | read ∩ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → encounter detail | read | read ∩ |
+/// | Next action Open / Review encounter | navigate / read | read ∩ |
+/// | Next action write mutations | create / update | write ∪ source |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source (non-terminal) |
+/// | Detail Request lab | create / update | lab order ∪ |
+/// | Detail Request radiology | create / update | radiology order ∪ |
+/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request admission | create | admission ∪ |
+/// | Detail Print summary | export / read | read ∩ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
+/// | Diagnosis delete | delete | write ∪ source |
+/// | Discharge Open billing / financial | nested read | billing:read ∩ |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
+/// admission rows document prompt narrative ∪ (matrix nested _(n/a)_).
+abstract final class ClinicalCompletedAtomPermissions {
+  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement openEncounter =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement reopen = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addDiagnosis =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordProcedure =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement disposition =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
+  static const AccessRequirement requestRadiology =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement requestAdmission =
+      clinicalAdmissionWriteRequirement;
+  static const AccessRequirement printSummary =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nestedLabWrite =
+      clinicalLabOrderWriteRequirement;
+  static const AccessRequirement nestedRadiologyWrite =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement nestedPharmacyWrite =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement dischargeFinancialRead =
+      clinicalDischargeFinancialReadRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+bool canViewClinicalCompleted(AppAccessPolicy policy) {
+  return ClinicalCompletedAtomPermissions.tab.isAllowed(policy);
+}
