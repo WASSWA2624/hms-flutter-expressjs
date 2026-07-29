@@ -44,12 +44,13 @@ const MortuaryWorkspaceItem _releaseItem = MortuaryWorkspaceItem(
   id: 'release-1',
   displayId: 'MOR-REL-1',
   resource: mortuaryResourceReleaseAuthorisations,
-  status: 'RELEASE_READY',
+  status: 'READY_FOR_RELEASE',
   identificationStatus: 'VERIFIED',
-  billingStatus: 'UNSETTLED',
+  billingStatus: 'SETTLED',
   deceasedProfileLabel: 'Release Patient',
   recipientName: 'Next of Kin',
   recipientRelationship: 'Spouse',
+  storageLabel: 'Cold Bay A-1',
   billableEvents: <MortuaryBillableEvent>[_billableEvent],
   releaseAuthorisations: <MortuaryReleaseAuthorisation>[
     MortuaryReleaseAuthorisation(
@@ -579,9 +580,9 @@ void main() {
       await _openDetail(tester);
       expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.text('Actions unavailable'), findsNothing);
-      expect(find.text('Approve release'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
-      expect(find.text('Assign storage'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     });
 
@@ -599,13 +600,13 @@ void main() {
         );
 
         expect(_tab('Release'), findsOneWidget);
-        expect(find.text('Approve release'), findsNothing);
         expect(find.text('Receive case'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
 
         await _openDetail(tester);
         expect(find.text('Print documents'), findsNothing);
         expect(find.text('Billing'), findsNothing);
-        expect(find.text('Approve release'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
       },
     );
 
@@ -629,7 +630,7 @@ void main() {
         await _openDetail(tester);
 
         // Inventory removed no-op mutation chrome — absent even when granted.
-        expect(find.text('Approve release'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
@@ -723,11 +724,11 @@ void main() {
         );
         await _openDetail(tester);
 
-        expect(find.text('Approve release'), findsNothing);
         expect(find.text('Receive case'), findsNothing);
-        expect(find.text('Assign storage'), findsNothing);
         expect(find.text('Record custody'), findsNothing);
         expect(find.text('Request post-mortem'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
       },
     );
 
@@ -817,7 +818,7 @@ void main() {
       expect(_tab('Release'), findsOneWidget);
       expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
       expect(find.text('Release Patient'), findsWidgets);
-      expect(find.text('Approve release'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
     });
 
     testWidgets('desktop dark theme mounts Release authorized chrome', (

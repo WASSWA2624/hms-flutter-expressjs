@@ -43,8 +43,9 @@ const MortuaryWorkspaceItem _overviewItem = MortuaryWorkspaceItem(
   resource: mortuaryResourceCases,
   status: 'IN_STORAGE',
   identificationStatus: 'VERIFIED',
-  billingStatus: 'UNSETTLED',
+  billingStatus: 'SETTLED',
   deceasedProfileLabel: 'Overview Patient',
+  storageLabel: 'Cold Bay A-1',
   billableEvents: <MortuaryBillableEvent>[_billableEvent],
 );
 
@@ -464,19 +465,17 @@ void main() {
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(_table(tester).columnVisibilityStorageKey, 'mortuary_overview');
-      // Next-action may show guidance like "Assign storage" as plain text;
-      // mutation entry points must not mount.
       expect(find.text('Receive case'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Approve release'), findsNothing);
+      expect(find.text('Assign storage'), findsNothing);
+      expect(find.text('Approve release'), findsNothing);
 
       await _openDetail(tester);
       expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.text('Actions unavailable'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
       expect(find.text('Record custody'), findsNothing);
+      expect(find.text('Approve release'), findsNothing);
       expect(find.text('Request post-mortem'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
     });
 
     testWidgets(
@@ -572,15 +571,11 @@ void main() {
         await _openDetail(tester);
 
         expect(find.text('Receive case'), findsNothing);
+        expect(find.text('Assign storage'), findsNothing);
         expect(find.text('Record custody'), findsNothing);
         expect(find.text('Request post-mortem'), findsNothing);
+        expect(find.text('Approve release'), findsNothing);
         expect(find.text('Approve post-mortem'), findsNothing);
-        // Guidance text may include "Assign storage" / "Approve release";
-        // those labels must not appear as actionable buttons.
-        expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
-        expect(find.widgetWithText(OutlinedButton, 'Assign storage'), findsNothing);
-        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
-        expect(find.widgetWithText(OutlinedButton, 'Approve release'), findsNothing);
       },
     );
 

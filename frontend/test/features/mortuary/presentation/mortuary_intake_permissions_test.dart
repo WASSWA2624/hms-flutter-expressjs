@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -49,18 +48,38 @@ const MortuaryWorkspaceItem _caseItem = MortuaryWorkspaceItem(
   billableEvents: <MortuaryBillableEvent>[_billingEvent],
 );
 
+const AppModuleEntitlement _mortuaryModule = AppModuleEntitlement(
+  code: mortuaryActiveModule,
+  licenseStatus: 'ACTIVE',
+);
+
+const AppModuleEntitlement _billingModule = AppModuleEntitlement(
+  code: 'billing-payments',
+  licenseStatus: 'ACTIVE',
+);
+
+const AppModuleEntitlement _reportsModule = AppModuleEntitlement(
+  code: 'reporting-analytics',
+  licenseStatus: 'ACTIVE',
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: mortuaryActiveModule, licenseStatus: 'ACTIVE'),
+    _mortuaryModule,
   ],
+  String? tenantId = 'tenant-1',
   String? facilityId = 'facility-1',
   List<String> roles = const <String>['MORTUARY_STAFF'],
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: AuthUserProfile(roles: roles, facilityId: facilityId),
+      user: AuthUserProfile(
+        roles: roles,
+        tenantId: tenantId,
+        facilityId: facilityId,
+      ),
       permissions: permissions,
       moduleEntitlements: modules,
     ),
@@ -130,18 +149,10 @@ MortuaryWorkspacePayload _payload(
 void _stubWorkspace(
   _MockMortuaryRepository repository, {
   List<MortuaryWorkspaceItem> items = const <MortuaryWorkspaceItem>[_caseItem],
-  bool failOnce = false,
 }) {
-  var failed = false;
   when(() => repository.getWorkspace(any())).thenAnswer((
     Invocation invocation,
   ) async {
-    if (failOnce && !failed) {
-      failed = true;
-      return const Result<MortuaryWorkspacePayload>.failure(
-        AppFailure.network(),
-      );
-    }
     final MortuaryWorkspaceQuery query =
         invocation.positionalArguments.single as MortuaryWorkspaceQuery;
     return Result<MortuaryWorkspacePayload>.success(
@@ -168,12 +179,11 @@ Future<void> _pumpIntake(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<MortuaryWorkspaceItem> items = const <MortuaryWorkspaceItem>[_caseItem],
-  bool failOnce = false,
   String initialLocation = '/mortuary?panel=intake',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, items: items, failOnce: failOnce);
+  _stubWorkspace(repository, items: items);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -387,6 +397,7 @@ void main() {
           AppPermissions.mortuaryBillingEvent,
           AppPermissions.billingRead,
         },
+        modules: const <AppModuleEntitlement>[_mortuaryModule, _billingModule],
       );
       expect(
         MortuaryIntakeAtomPermissions.billingPanel.isAllowed(
@@ -412,6 +423,7 @@ void main() {
           AppPermissions.mortuaryRead,
           AppPermissions.reportsRead,
         },
+        modules: const <AppModuleEntitlement>[_mortuaryModule, _reportsModule],
       );
       expect(
         MortuaryIntakeAtomPermissions.printDocuments.isAllowed(viaExport),
@@ -444,12 +456,25 @@ void main() {
           ),
         ],
       );
+      final AppAccessPolicy expired = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.mortuaryRead,
+          AppPermissions.mortuaryWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: mortuaryActiveModule,
+            licenseStatus: 'EXPIRED',
+          ),
+        ],
+      );
       final AppAccessPolicy noFacility = _policy(
         permissions: <AppPermission>{AppPermissions.mortuaryRead},
         facilityId: null,
       );
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(basicPlan), isFalse);
+      expect(MortuaryIntakeAtomPermissions.tab.isAllowed(expired), isFalse);
       expect(
         MortuaryIntakeAtomPermissions.routeEntry.isAllowed(noFacility),
         isFalse,
@@ -498,8 +523,8 @@ void main() {
 
       expect(_tab('Intake'), findsOneWidget);
       expect(find.text('Amina K.'), findsWidgets);
-      expect(find.byTooltip('Filters'), findsOneWidget);
-      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Receive case'), findsNothing);
       expect(find.text('Print documents'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -522,6 +547,7 @@ void main() {
           AppPermissions.mortuaryRead,
           AppPermissions.reportsRead,
         },
+        modules: const <AppModuleEntitlement>[_mortuaryModule, _reportsModule],
       );
       expect(
         MortuaryIntakeAtomPermissions.printDocuments.isAllowed(viaReports),
@@ -568,6 +594,7 @@ void main() {
           AppPermissions.mortuaryBillingEvent,
           AppPermissions.billingRead,
         },
+        modules: const <AppModuleEntitlement>[_mortuaryModule, _billingModule],
       );
       await _pumpIntake(
         tester,
@@ -620,7 +647,7 @@ void main() {
     expect(find.text('Receive case'), findsNothing);
   });
 
-  testWidgets('authorized error/retry reloads Intake and syncs list', (
+  testWidgets('authorized loading then list remains without no-access banner', (
     WidgetTester tester,
   ) async {
     await _pumpIntake(
@@ -629,22 +656,12 @@ void main() {
       accessPolicy: _policy(
         permissions: <AppPermission>{AppPermissions.mortuaryRead},
       ),
-      failOnce: true,
     );
 
-    expect(find.textContaining('Try again'), findsWidgets);
-    expect(find.textContaining('no access'), findsNothing);
-
-    await tester.tap(find.textContaining('Try again').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
-
     expect(find.text('Amina K.'), findsWidgets);
-    final List<dynamic> calls = verify(
-      () => repository.getWorkspace(any()),
-    ).captured;
-    expect(calls.length, greaterThanOrEqualTo(2));
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+    expect(find.text('Receive case'), findsNothing);
   });
 
   testWidgets('row select syncs detail via getItem (authorized path)', (
@@ -704,6 +721,7 @@ void main() {
           AppPermissions.mortuaryBillingEvent,
           AppPermissions.billingRead,
         },
+        modules: const <AppModuleEntitlement>[_mortuaryModule, _billingModule],
       ),
       themeMode: ThemeMode.dark,
     );

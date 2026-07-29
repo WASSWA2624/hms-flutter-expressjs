@@ -167,6 +167,23 @@ when `lab:read` is missing. Readers with only `clinical:read` must not see
 config/create. Tests:
 `frontend/test/features/lab/presentation/lab_processing_permissions_test.dart`.
 
+### Pending verification tab (`?section=pending-verification|verification|results|pending`)
+
+Results queue for verify / release (`LabQueueScope.results`). Atom map:
+`LabPendingVerificationAtomPermissions` (`lab:read` ∩ / `lab:write` ∩ +
+`lab-workflows`). Strip create/configure use `labStripCreateRequirement` /
+`labStripConfigureRequirement` for `LabDeskSection.verification`. Read chrome /
+**Orders↔Patients** / row select / **Next action** (Verify) use ∩ `lab:read`.
+Nested result-entry writes reuse `canWriteLab` /
+`LabPendingVerificationAtomPermissions.verify` / `.write` (∩ `lab:write`);
+preview is ∪ `lab:read`|`lab:write`. Critical notify narrative ∩
+(`lab:write` ∩ `clinical:read`) is documented via `.criticalNotify` (no
+dedicated strip chrome on this tab). Request-from-clinical ∪ is documented for
+reuse, not as strip create. Route entry ∪ may open this tab without create/
+config/verify when `lab:read` is missing. Readers with only `clinical:read`
+must not see config/create. Tests:
+`frontend/test/features/lab/presentation/lab_pending_verification_permissions_test.dart`.
+
 ### Critical tab (`?section=critical`)
 
 Critical-values queue (`LabQueueScope.critical`; `hasCriticalResult`). Atom map:
@@ -184,6 +201,23 @@ for reuse when chrome mounts. Nested request-from-clinical ∪ is not strip
 chrome. Readers with only `clinical:read` keep Critical via route-entry ∪ but
 must not see create/config. Tests:
 `frontend/test/features/lab/presentation/lab_critical_permissions_test.dart`.
+
+### Verified tab (`?section=verified|completed`)
+
+Released / completed results queue (`LabQueueScope.completed`; prefer read).
+Atom map: `LabVerifiedAtomPermissions` (`lab:read` ∩ / `lab:write` ∩ +
+`lab-workflows`). Strip create/configure use `labStripCreateRequirement` /
+`labStripConfigureRequirement` for `LabDeskSection.completed`. Read chrome /
+**Orders↔Patients** / row select use ∩ `lab:read`. **Next action** for
+terminal **Completed** rows is label-only (not an activator). Row select still
+opens result entry — **Preview report** is ∪ `lab:read`|`lab:write`;
+**Edit verified result** / reopen, edit/delete order, workflow mutate, and
+create additional order need ∩ `lab:write`. Critical notify narrative ∩
+`lab:write` + `clinical:read` (no dedicated Verified chrome today).
+Request-from-clinical ∪ is documented for reuse, not as strip create. Route
+entry ∪ may open this tab without create/config when `lab:read` is missing.
+Readers with only `clinical:read` must not see config/create. Tests:
+`frontend/test/features/lab/presentation/lab_verified_permissions_test.dart`.
 
 ### Follow-ups tab (`FollowUpWorklistPanel`)
 
@@ -239,7 +273,9 @@ configurations / critical-notify UI is **not** opened from this tab. Route entry
 - [ ] All (`?section=all`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; clinical-only route entry keeps All without create.
 - [ ] Awaiting results (`?section=awaiting-results`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts Collect/edit/delete; clinical-only route entry keeps tab without create; post-collect sync keeps detail open.
 - [ ] Processing (`?section=processing`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts Receive/edit/delete; clinical-only route entry keeps tab without create; post-receive sync keeps detail open.
+- [ ] Pending verification (`?section=pending-verification`): lab:read alone omits create/config/Verify workflow; full lab:write ∩ mounts verify/edit/delete; clinical-only route entry keeps tab without create; post-verify sync reloads workflow; preview ∪ allows lab:read.
 - [ ] Critical (`?section=critical`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; critical notify ∩ needs clinical:read; clinical-only route entry keeps Critical without create.
+- [ ] Verified (`?section=verified`): lab:read alone omits create/config/detail writes but mounts Preview; full lab:write ∩ mounts Edit verified / edit/delete; clinical-only route entry keeps Verified without create; Completed next-action is text-only; post-reopen sync reloads workbench.
 - [ ] Every worklist tab: one **Create Lab Order** primary and one **Lab Configurations** secondary; no Refresh.
 - [ ] Ordered row **Next action** opens result entry; Collect runs without a confirm shell.
 - [ ] Deep link `/lab?orderId=…` opens result entry without hunting the row.
