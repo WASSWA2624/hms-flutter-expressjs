@@ -91,6 +91,24 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
 - **Next action** — opens the primary mutation directly (approve leave/swap, publish roster, override shift, process payroll) without the detail shell.
   - Condition: Matching write / approve / publish / payroll gate; unauthorized control absent.
 
+### Leave requests tab (`?section=leave-requests`)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Leave requests tab | navigate | `HrLeaveRequestsAtomPermissions.tab` ∩ `hr:read` |
+| Request leave (strip primary) | create | `HrLeaveRequestsAtomPermissions.requestLeave` ∩ `hr:write` |
+| HR activity | progressive disclosure | read ∩ |
+| Search / filters / columns / pagination | read chrome | read ∩ |
+| Empty / loading / error / retry | read chrome | read ∩ |
+| Success snackbar / form validation | feedback | write ∩ |
+| Row select → leave detail | read | read ∩ |
+| Next action **Approve leave** | approve | `HrLeaveRequestsAtomPermissions.approveLeave` ∩ `hr:write` |
+| Detail **Approve leave** | update | write ∩ |
+| Detail **Reject leave** | delete | `HrLeaveRequestsAtomPermissions.rejectLeave` ∩ `hr:write` |
+| Nested request / approve / reject dialogs | create / update | write ∩ |
+| Nested cross-module read/write | — | _(n/a)_ (`nestedRead` / `nestedWrite` empty sentinels) |
+| Route entry (deep link) | navigate | catalog ∩ `hr:read` (prompt ∪ `hr:read` \| `hr:write` noted in tests) |
+
 ### Payroll drafts tab (`?section=payroll`)
 
 | Atom | Kind | Gate |
@@ -114,11 +132,25 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
 - Record sections (assignments, leave, availability calendar, shifts, compensation) for browse / row detail; mutations start from Staff actions (or day sheet edit on the calendar when roster-write allowed).
 - Nested write affordances (Edit staff, Revoke role, End assignment, calendar Edit/Add, shift Swap, compensation Add/edit rate) omit when unauthorized.
 
-### Access tab
+### Access tab (`?section=access`)
 
-- Tab strip: omitted when `HrManageUsersRolesAtomPermissions.tab` fails (`hr:read` ∩ admin ∪).
-- Embedded `HrAccessWorkspacePanel`: users / roles / permissions toggle, search; create actions when create ∩ (`tenant:admin` + source `hr:write`) + tenant UUID.
-- Row select opens user / role / permission detail; edit/assign when update ∩; remove role/permission when delete ∩ (`hr:write`).
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Manage users and roles tab | navigate | `HrManageUsersRolesAtomPermissions.tab` (`hr:read` ∩ admin ∪ + `hr-rosters`) |
+| Strip primary | — | _(none)_ |
+| HR activity | progressive disclosure | workspace read ∩ |
+| Panel toggle Staff / Roles / Permissions | progressive disclosure | read |
+| Search / filters / columns / pagination / Refresh | read chrome | read |
+| Empty / loading / error / retry / tenant-required | read chrome | read |
+| Row select → user / role / permission detail | read | read |
+| Create staff / role / permission | create | `canCreateHrAccess` (source `hr:write` ∩ matrix `tenant:admin`) |
+| Detail Edit user / Edit role / Assign permissions / Add role | update | `canUpdateHrAccess` |
+| Detail Remove role / remove direct permission | delete | `canDeleteHrAccess` (∩ `hr:write`) |
+| Open staff profile | navigate | read |
+| Nested create / edit / assign / remove dialogs | create / update / delete | as above; early-return when gate fails |
+| Nested cross-module | — | _(n/a)_ |
+
+Unauthorized create/update/delete controls do not render (no disabled stubs / no-access banners).
 
 ### Empty / loading / error / validation
 
@@ -138,6 +170,12 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
 - Permission scan for Human resources (`staff`): `frontend/test/features/hr/presentation/hr_human_resources_permissions_test.dart` proves ∩ denial / presence, ∪ roster allowance, subscription strip, facility ABAC on route entry, nested write absence, mobile+dark chrome, and post-mutation sync.
+- Leave requests permission suite `frontend/test/features/hr/presentation/hr_leave_requests_permissions_test.dart` proves:
+  - ∩ denial: missing `hr:read` / write-only hides tab; read-only hides Request / Approve / Reject (no disabled stubs or “no access” banners).
+  - ∩ presence: `hr:read`+`hr:write`+module shows Request leave, Approve next-action, detail Approve/Reject.
+  - ∪ note: prompt route ∪ `hr:read`\|`hr:write` kept as catalog ∩ `hr:read`; shared roster ∪ helpers documented (Leave nested ∪ _(n/a)_).
+  - Subscription / ABAC: missing `hr-rosters` or facility strips entry; nested cross-module UI absent.
+  - Authorized empty / error-retry / validation / post-approve sync; mobile+light and desktop+dark chrome.
 - Access tab suite `frontend/test/features/hr/presentation/hr_manage_users_roles_permissions_test.dart` proves ∩ denial (no admin ∪), ∪ allowance (facility/tenant admin), create ∩ mapping (source `hr:write` ∩ matrix `tenant:admin`), subscription strip, empty state, viewports, light/dark.
 - Shifts permission suite `frontend/test/features/hr/presentation/hr_shifts_permissions_test.dart` proves:
   - ∩ denial: missing `roster:write` hides Schedule templates / Override; missing `hr:write` hides template Delete.

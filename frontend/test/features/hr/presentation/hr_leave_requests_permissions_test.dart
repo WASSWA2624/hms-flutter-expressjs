@@ -403,20 +403,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Approve leave'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Reject leave'),
-        ),
-        findsNothing,
-      );
+      // Filtered write actions collapse Quick actions (hideWhenEmpty).
+      expect(find.text('Quick actions'), findsNothing);
+      expect(find.text('Approve leave'), findsNothing);
+      expect(find.text('Reject leave'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

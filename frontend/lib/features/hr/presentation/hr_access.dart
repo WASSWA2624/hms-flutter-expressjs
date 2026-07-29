@@ -33,10 +33,10 @@ const AccessRequirement hrWriteRequirement = AccessRequirement(
 /// Alias — workspace write ∩ (leave approve / request / reject).
 const AccessRequirement hrWorkspaceWriteRequirement = hrWriteRequirement;
 
-/// Roster / shift mutations (source ∪ `hr:write` | `roster:write` + module).
+/// Staff-detail nested roster mutations (source ∪ `hr:write` | `roster:write`).
 ///
-/// screens/hr.md and staff-detail roster actions keep this union. Shifts tab
-/// atoms that need ∩ `roster:write` alone use a local stricter requirement.
+/// Human resources staff actions keep this union. Shifts tab matrix uses
+/// stricter ∩ helpers below ([hrShiftsRosterWriteRequirement], etc.).
 const AccessRequirement hrRosterWriteRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.hrWrite,
@@ -45,7 +45,7 @@ const AccessRequirement hrRosterWriteRequirement = AccessRequirement(
   activeModules: <String>[hrRostersModule],
 );
 
-/// Swap / roster approve (source ∪ `hr:write` | `roster:approve` + module).
+/// Staff-detail swap approve (source ∪ `hr:write` | `roster:approve`).
 const AccessRequirement hrRosterApproveRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.hrWrite,
@@ -54,12 +54,32 @@ const AccessRequirement hrRosterApproveRequirement = AccessRequirement(
   activeModules: <String>[hrRostersModule],
 );
 
-/// Roster publish (source ∪ `hr:write` | `roster:publish` + module).
+/// Staff-detail roster publish (source ∪ `hr:write` | `roster:publish`).
 const AccessRequirement hrRosterPublishRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.hrWrite,
     AppPermissions.rosterPublish,
   ],
+  activeModules: <String>[hrRostersModule],
+);
+
+/// Shifts tab create / update (matrix ∩ `roster:write` + module).
+///
+/// Prefer [HrShiftsAtomPermissions] over inventing a second vocabulary.
+const AccessRequirement hrShiftsRosterWriteRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.rosterWrite],
+  activeModules: <String>[hrRostersModule],
+);
+
+/// Shifts tab publish (matrix ∩ `roster:publish` + module).
+const AccessRequirement hrShiftsRosterPublishRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.rosterPublish],
+  activeModules: <String>[hrRostersModule],
+);
+
+/// Shifts tab swap approve / reject (matrix ∩ `roster:approve` + module).
+const AccessRequirement hrShiftsRosterApproveRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.rosterApprove],
   activeModules: <String>[hrRostersModule],
 );
 
@@ -339,6 +359,8 @@ abstract final class HrLeaveRequestsAtomPermissions {
 /// | Schedule templates (strip primary) | create entry | write ∩ `roster:write` |
 /// | HR activity | progressive disclosure | read ∩ |
 /// | Queue switcher / search / filters / columns | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ / publish ∩ / approve ∩ |
 /// | Row select → work-item detail | read | read ∩ |
 /// | Next action Publish roster | approve | publish ∩ `roster:publish` |
 /// | Next action Override shift | update | write ∩ `roster:write` |
@@ -350,6 +372,11 @@ abstract final class HrLeaveRequestsAtomPermissions {
 /// | Template Create / Edit | create / update | write ∩ |
 /// | Template Delete | delete | hr write ∩ `hr:write` |
 /// | Nested publish / approve | nested write ∪ | publish \| approve |
+/// | Route entry (deep link) | navigate | catalog ∩ `hr:read` + facility |
+///
+/// Matrix create/update/publish/approve are ∩ on the roster key alone.
+/// Staff-detail nested roster still uses source ∪ helpers
+/// ([hrRosterWriteRequirement] etc.) — note mapping in shifts tests.
 abstract final class HrShiftsAtomPermissions {
   static const AccessRequirement tab = hrReadRequirement;
   static const AccessRequirement listChrome = hrReadRequirement;
@@ -363,20 +390,24 @@ abstract final class HrShiftsAtomPermissions {
   static const AccessRequirement rowSelect = hrReadRequirement;
   static const AccessRequirement detail = hrReadRequirement;
   static const AccessRequirement nextActionChrome = hrReadRequirement;
-  static const AccessRequirement create = hrRosterWriteRequirement;
-  static const AccessRequirement update = hrRosterWriteRequirement;
+  static const AccessRequirement create = hrShiftsRosterWriteRequirement;
+  static const AccessRequirement update = hrShiftsRosterWriteRequirement;
   static const AccessRequirement delete = hrWriteRequirement;
-  static const AccessRequirement write = hrRosterWriteRequirement;
-  static const AccessRequirement scheduleTemplates = hrRosterWriteRequirement;
-  static const AccessRequirement previewRoster = hrRosterWriteRequirement;
-  static const AccessRequirement generateRoster = hrRosterWriteRequirement;
-  static const AccessRequirement overrideShift = hrRosterWriteRequirement;
-  static const AccessRequirement publishRoster = hrRosterPublishRequirement;
-  static const AccessRequirement approveSwap = hrRosterApproveRequirement;
-  static const AccessRequirement rejectSwap = hrRosterApproveRequirement;
+  static const AccessRequirement write = hrShiftsRosterWriteRequirement;
+  static const AccessRequirement scheduleTemplates =
+      hrShiftsRosterWriteRequirement;
+  static const AccessRequirement previewRoster = hrShiftsRosterWriteRequirement;
+  static const AccessRequirement generateRoster =
+      hrShiftsRosterWriteRequirement;
+  static const AccessRequirement overrideShift = hrShiftsRosterWriteRequirement;
+  static const AccessRequirement publishRoster =
+      hrShiftsRosterPublishRequirement;
+  static const AccessRequirement approveSwap =
+      hrShiftsRosterApproveRequirement;
+  static const AccessRequirement rejectSwap = hrShiftsRosterApproveRequirement;
   static const AccessRequirement nestedWrite = hrRosterNestedWriteRequirement;
-  static const AccessRequirement success = hrRosterWriteRequirement;
-  static const AccessRequirement validation = hrRosterWriteRequirement;
+  static const AccessRequirement success = hrShiftsRosterWriteRequirement;
+  static const AccessRequirement validation = hrShiftsRosterWriteRequirement;
   static const AccessRequirement entry = hrWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = hrWorkspaceEntryRequirement;
 }
@@ -436,23 +467,26 @@ abstract final class HrPayrollDraftsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Manage users and roles tab | navigate | read ∪ `hr:read` \| admin |
+/// | Manage users and roles tab | navigate | read ∩ `hr:read` + ∪ admin |
+/// | Tab-strip primary | — | _(none — creates live on panel)_ |
+/// | HR activity (workspace secondary) | progressive-disclosure | workspace read ∩ |
 /// | Panel toggle (Staff / Roles / Permissions) | progressive-disclosure | read |
-/// | Search / filters / columns / pagination | read chrome | read |
+/// | Search / filters / columns / pagination / Refresh | read chrome | read |
 /// | Empty / error / retry / tenant-required | read chrome | read |
-/// | Refresh | read chrome | read |
+/// | Success snackbar / form validation | feedback | update ∩ + source `hr:write` |
 /// | Row select → user / role / permission detail | read | read |
-/// | Create staff / role / permission | create | create ∩ + source `hr:write` |
-/// | Edit user / role / permission; assign; add role/permission | update | update ∩ + source `hr:write` |
-/// | Remove role / remove direct permission | delete | delete ∩ `hr:write` |
+/// | Create staff / role / permission | create | [canCreateHrAccess] |
+/// | Edit user / role / permission; assign; add role/permission | update | [canUpdateHrAccess] |
+/// | Remove role / remove direct permission | delete | [canDeleteHrAccess] |
 /// | Open staff profile | navigate | read (linked profile) |
 /// | Detail Close | progressive-disclosure | read |
-/// | Nested cross-module | n/a | _(n/a)_ |
-/// | HR activity (workspace secondary) | progressive-disclosure | workspace read |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | catalog ∩ `hr:read` + facility |
 ///
 /// Source inventory maps Access write chrome to [canWriteHrAccess] (`hr:write`).
 /// Matrix create/update ∩ `tenant:admin` is applied via [canCreateHrAccess] /
-/// [canUpdateHrAccess]. Delete matches source `hr:write`.
+/// [canUpdateHrAccess]. Delete matches source `hr:write`. Prefer helpers over
+/// bare [create]/[update]/[delete] requirements alone.
 abstract final class HrAccessAtomPermissions {
   static const AccessRequirement tab = hrAccessReadRequirement;
   static const AccessRequirement listChrome = hrAccessReadRequirement;
@@ -466,10 +500,24 @@ abstract final class HrAccessAtomPermissions {
   static const AccessRequirement validation = hrAccessUpdateRequirement;
   static const AccessRequirement rowSelect = hrAccessReadRequirement;
   static const AccessRequirement detail = hrAccessReadRequirement;
+  static const AccessRequirement panelToggle = hrAccessReadRequirement;
+  static const AccessRequirement refresh = hrAccessReadRequirement;
   static const AccessRequirement create = hrAccessCreateRequirement;
   static const AccessRequirement update = hrAccessUpdateRequirement;
   static const AccessRequirement delete = hrAccessDeleteRequirement;
   static const AccessRequirement write = hrWriteRequirement;
+  static const AccessRequirement createStaff = hrAccessCreateRequirement;
+  static const AccessRequirement createRole = hrAccessCreateRequirement;
+  static const AccessRequirement createPermission = hrAccessCreateRequirement;
+  static const AccessRequirement editUser = hrAccessUpdateRequirement;
+  static const AccessRequirement editRole = hrAccessUpdateRequirement;
+  static const AccessRequirement editPermission = hrAccessUpdateRequirement;
+  static const AccessRequirement assignPermissions = hrAccessUpdateRequirement;
+  static const AccessRequirement addRole = hrAccessUpdateRequirement;
+  static const AccessRequirement addDirectPermission = hrAccessUpdateRequirement;
+  static const AccessRequirement removeRole = hrAccessDeleteRequirement;
+  static const AccessRequirement removeDirectPermission = hrAccessDeleteRequirement;
+  static const AccessRequirement openStaffProfile = hrAccessReadRequirement;
   static const AccessRequirement nestedRead = AccessRequirement();
   static const AccessRequirement nestedWrite = AccessRequirement();
   static const AccessRequirement entry = hrAccessReadRequirement;

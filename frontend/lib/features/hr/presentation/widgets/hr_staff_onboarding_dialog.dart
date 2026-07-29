@@ -7,8 +7,10 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
@@ -42,7 +44,11 @@ Future<bool?> showHrStaffOnboardingDialog(
   WidgetRef ref, {
   HrStaffProfile? staff,
 }) async {
-  if (!canWriteHrAccess(ref)) {
+  final bool isEdit = staff != null;
+  final AccessRequirement writeGate = isEdit
+      ? HrHumanResourcesAtomPermissions.editStaff
+      : HrHumanResourcesAtomPermissions.addStaff;
+  if (!writeGate.isAllowed(ref.read(appAccessPolicyProvider))) {
     return null;
   }
 
@@ -71,7 +77,6 @@ Future<bool?> showHrStaffOnboardingDialog(
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final GlobalKey<HrStaffOnboardingFormState> fieldsKey =
       GlobalKey<HrStaffOnboardingFormState>();
-  final bool isEdit = staff != null;
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
