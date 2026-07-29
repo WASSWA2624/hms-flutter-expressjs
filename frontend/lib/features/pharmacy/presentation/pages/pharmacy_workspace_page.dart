@@ -404,7 +404,9 @@ class _PharmacyWorkspaceContentState
                     }
                   }
                 },
-                primaryAction: _catalogPrimaryAction(l10n),
+                primaryAction: canBrowsePharmacyCatalog(policy)
+                    ? _catalogPrimaryAction(l10n)
+                    : null,
               ),
             SizedBox(height: theme.spacing.sm),
             if (allowedSections.isEmpty)

@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
@@ -94,17 +95,14 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
     }
     return Result<PharmacyWorkbench>.success(
       PharmacyWorkbench(
-        summary: PharmacyWorkbenchSummary(
+        summary: const PharmacyWorkbenchSummary(
           orderedQueue: 1,
-          partiallyDispensedQueue: 0,
           pendingPaymentQueue: 1,
-          dispensedOrders: 0,
-          totalOrders: items.length,
+          totalOrders: 2,
         ),
         orders: AppPage<PharmacyOrder>(
           items: items,
-          request: AppPageRequest(page: query.page, pageSize: query.pageSize),
-          totalItems: items.length,
+          request: query.pageRequest,
         ),
       ),
     );
@@ -184,7 +182,7 @@ Future<void> _pumpAllOrdersWorkspace(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         pharmacyRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(

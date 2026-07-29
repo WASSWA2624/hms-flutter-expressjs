@@ -35,53 +35,59 @@ class _MockPatientRepository extends Mock implements PatientRepository {}
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
 
-const Patient _balancePatient = Patient(
-  id: 'patient-bal-1',
-  publicId: 'PAT-BAL-1',
+const Patient _admittedPatient = Patient(
+  id: 'patient-adm-1',
+  publicId: 'PAT-ADM-1',
   tenantId: 'tenant-1',
   facilityId: 'facility-1',
-  firstName: 'Bea',
-  lastName: 'Balance',
+  firstName: 'Ada',
+  lastName: 'Admitted',
   gender: 'FEMALE',
-  primaryPhone: '+256700000010',
+  primaryPhone: '+256700000001',
   primaryIdentifierType: 'MRN',
-  primaryIdentifierValue: 'MRN-BAL-1',
+  primaryIdentifierValue: 'MRN-ADM-1',
   currentVisit: PatientVisitContext(
-    kind: 'invoice',
-    publicId: 'INV-BAL-1',
-    status: 'UNPAID',
-    title: 'Outstanding balance',
+    kind: 'admission',
+    publicId: 'ADM-1',
+    status: 'ADMITTED_IN_BED',
+    title: 'Ward A / Bed 1',
   ),
 );
 
-const Patient _incompletePatient = Patient(
-  id: 'patient-inc-1',
-  publicId: 'PAT-INC-1',
+const Patient _incompleteAdmitted = Patient(
+  id: 'patient-adm-inc',
+  publicId: 'PAT-ADM-INC',
   tenantId: 'tenant-1',
   facilityId: 'facility-1',
   firstName: 'Ina',
   lastName: 'Incomplete',
   requiresCompletion: true,
+  currentVisit: PatientVisitContext(
+    kind: 'admission',
+    publicId: 'ADM-INC',
+    status: 'ADMITTED',
+    title: 'Ward B',
+  ),
 );
 
-const Patient _idlePatient = Patient(
-  id: 'patient-idle-1',
-  publicId: 'PAT-IDLE-1',
-  tenantId: 'tenant-1',
-  facilityId: 'facility-1',
-  firstName: 'Ida',
-  lastName: 'Idle',
-  gender: 'FEMALE',
-  primaryPhone: '+256700000002',
-  primaryIdentifierType: 'MRN',
-  primaryIdentifierValue: 'MRN-IDLE-1',
+const PatientDetail _admittedDetailWithWork = PatientDetail(
+  patient: _admittedPatient,
+  workspace: PatientWorkspaceSnapshot(
+    admissions: <PatientSummaryRecord>[
+      PatientSummaryRecord(
+        id: 'adm-1',
+        kind: 'admission',
+        status: 'ADMITTED_IN_BED',
+        title: 'Ward A / Bed 1',
+      ),
+    ],
+  ),
 );
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
     AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'ACTIVE'),
-    AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
   ],
   List<String> roles = const <String>['DOCTOR'],
   String? tenantId = 'tenant-1',
@@ -102,20 +108,14 @@ AppAccessPolicy _policy({
   );
 }
 
-AppAccessPolicy _tabReadPolicy() {
-  return _policy(
-    permissions: <AppPermission>{
-      AppPermissions.patientRead,
-      AppPermissions.billingRead,
-    },
-  );
+AppAccessPolicy _readPolicy() {
+  return _policy(permissions: <AppPermission>{AppPermissions.patientRead});
 }
 
-AppAccessPolicy _tabReadWritePolicy() {
+AppAccessPolicy _readWritePolicy() {
   return _policy(
     permissions: <AppPermission>{
       AppPermissions.patientRead,
-      AppPermissions.billingRead,
       AppPermissions.patientWrite,
     },
   );
@@ -127,42 +127,40 @@ AppAccessPolicy _fullCrudPolicy() {
       AppPermissions.patientRead,
       AppPermissions.patientWrite,
       AppPermissions.patientDelete,
-      AppPermissions.billingRead,
-      AppPermissions.billingWrite,
       AppPermissions.clinicalWrite,
       AppPermissions.clinicalRead,
       AppPermissions.reportsRead,
+      AppPermissions.billingWrite,
+      AppPermissions.billingRead,
     },
     modules: const <AppModuleEntitlement>[
       AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(
         code: 'inpatient-bed-management',
         licenseStatus: 'ACTIVE',
       ),
-      AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(
-        code: 'radiology-workflows',
-        licenseStatus: 'ACTIVE',
-      ),
-      AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'lab', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'radiology', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'theater', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       AppModuleEntitlement(
         code: 'reporting-analytics',
         licenseStatus: 'ACTIVE',
       ),
     ],
-    roles: const <String>['DOCTOR', 'RECEPTIONIST', 'BILLING'],
+    roles: const <String>['DOCTOR', 'RECEPTIONIST'],
   );
 }
 
 void _stubRegistry(
   _MockPatientRepository repository, {
-  Patient patient = _balancePatient,
+  Patient patient = _admittedPatient,
   PatientDetail? detail,
-  List<Patient> items = const <Patient>[_balancePatient],
+  List<Patient> items = const <Patient>[_admittedPatient],
   Result<AppPage<Patient>>? listOverride,
   Result<PatientRegistryOverview>? overviewOverride,
 }) {
@@ -171,7 +169,8 @@ void _stubRegistry(
         Result<PatientRegistryOverview>.success(
           PatientRegistryOverview(
             totalPatients: items.length,
-            unpaidInvoices: items.length,
+            activePatients: items.length,
+            activeAdmissions: items.length,
           ),
         );
   });
@@ -188,9 +187,17 @@ void _stubRegistry(
     final PatientListQuery query =
         invocation.positionalArguments.single as PatientListQuery;
     List<Patient> scoped = items;
-    if (query.section == PatientRegistrySection.balanceDue ||
-        query.hasOutstandingBalance == true) {
-      scoped = items;
+    if (query.section == PatientRegistrySection.admitted ||
+        query.hasActiveAdmission == true) {
+      scoped = items
+          .where(
+            (Patient p) =>
+                p.currentVisit?.kind == 'admission' || p.requiresCompletion,
+          )
+          .toList(growable: false);
+      if (scoped.isEmpty && items.isNotEmpty) {
+        scoped = items;
+      }
     }
     return Result<AppPage<Patient>>.success(
       AppPage<Patient>(
@@ -259,16 +266,16 @@ void _stubOpd(_MockOpdRepository opdRepository) {
   });
 }
 
-Future<GoRouter> _pumpBalanceDueTab(
+Future<GoRouter> _pumpAdmittedTab(
   WidgetTester tester, {
   required _MockPatientRepository patientRepository,
   required _MockOpdRepository opdRepository,
   AppAccessPolicy? policy,
   Size viewport = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/patients?section=balance-due',
-  Patient patient = _balancePatient,
-  List<Patient> items = const <Patient>[_balancePatient],
+  String initialLocation = '/patients?section=admitted',
+  Patient patient = _admittedPatient,
+  List<Patient> items = const <Patient>[_admittedPatient],
   PatientDetail? detail,
   Result<AppPage<Patient>>? listOverride,
   Result<PatientRegistryOverview>? overviewOverride,
@@ -343,196 +350,151 @@ void main() {
     registerFallbackValue(<String, Object?>{});
   });
 
-  group('PatientBalanceDueAtomPermissions reuse (AC1, AC4)', () {
+  group('PatientAdmittedAtomPermissions reuse (AC1, AC4)', () {
     test('atom map reuses shared *Requirement helpers', () {
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.tab,
-          patientBalanceDueReadRequirement,
+          PatientAdmittedAtomPermissions.tab,
+          patientRegistryReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.create,
+          PatientAdmittedAtomPermissions.create,
           patientRegistryWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.delete,
+          PatientAdmittedAtomPermissions.delete,
           patientRegistryDeleteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.nestedWrite,
-          patientBalanceDueBillingWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          PatientBalanceDueAtomPermissions.billingWorkbench,
-          patientBillingWorkbenchRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          PatientBalanceDueAtomPermissions.startOpd,
+          PatientAdmittedAtomPermissions.startOpd,
           opdEncounterPermissionRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.routeEntry,
+          PatientAdmittedAtomPermissions.nestedRead,
+          patientAdmittedNestedReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PatientAdmittedAtomPermissions.financialStatus,
+          patientAdmittedFinancialStatusRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PatientAdmittedAtomPermissions.routeEntry,
           patientRegistryEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientBalanceDueAtomPermissions.catalogEntry,
+          PatientAdmittedAtomPermissions.catalogEntry,
           RouteAccessCatalog.patientsEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          patientRegistrySectionTabRequirement(
-            PatientRegistrySection.balanceDue,
-          ),
-          PatientBalanceDueAtomPermissions.tab,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          patientRegistryRegisterAtom(PatientRegistrySection.balanceDue),
-          PatientBalanceDueAtomPermissions.register,
+          patientRegistrySectionTabRequirement(PatientRegistrySection.admitted),
+          PatientAdmittedAtomPermissions.tab,
         ),
         isTrue,
       );
     });
 
-    test(
-      'intersection denial: patient:read alone fails Balance due tab read',
-      () {
-        final AppAccessPolicy patientOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.patientRead},
-          modules: const <AppModuleEntitlement>[
-            AppModuleEntitlement(
-              code: patientRegistryModule,
-              licenseStatus: 'ACTIVE',
-            ),
-          ],
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.tab.isAllowed(patientOnly),
-          isFalse,
-        );
-        expect(canViewPatientBalanceDueTab(patientOnly), isFalse);
-        expect(
-          PatientBalanceDueAtomPermissions.register.isAllowed(patientOnly),
-          isFalse,
-        );
-      },
-    );
-
-    test(
-      'intersection denial: billing:read alone fails Balance due tab read',
-      () {
-        final AppAccessPolicy billingOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.tab.isAllowed(billingOnly),
-          isFalse,
-        );
-      },
-    );
-
-    test('full ∩ read set allows tab; write/delete need their keys', () {
-      final AppAccessPolicy tabRead = _tabReadPolicy();
-      expect(PatientBalanceDueAtomPermissions.tab.isAllowed(tabRead), isTrue);
+    test('intersection denial: patient:read alone fails write/delete/nested', () {
+      final AppAccessPolicy readOnly = _readPolicy();
+      expect(PatientAdmittedAtomPermissions.tab.isAllowed(readOnly), isTrue);
       expect(
-        PatientBalanceDueAtomPermissions.register.isAllowed(tabRead),
+        PatientAdmittedAtomPermissions.register.isAllowed(readOnly),
+        isFalse,
+      );
+      expect(PatientAdmittedAtomPermissions.edit.isAllowed(readOnly), isFalse);
+      expect(
+        PatientAdmittedAtomPermissions.delete.isAllowed(readOnly),
         isFalse,
       );
       expect(
-        PatientBalanceDueAtomPermissions.delete.isAllowed(tabRead),
+        PatientAdmittedAtomPermissions.nextActionComplete.isAllowed(readOnly),
         isFalse,
       );
+      expect(
+        PatientAdmittedAtomPermissions.nestedRead.isAllowed(readOnly),
+        isFalse,
+      );
+      expect(
+        PatientAdmittedAtomPermissions.visitColumn.isAllowed(readOnly),
+        isFalse,
+      );
+      expect(
+        PatientAdmittedAtomPermissions.financialStatus.isAllowed(readOnly),
+        isFalse,
+      );
+    });
 
-      final AppAccessPolicy write = _tabReadWritePolicy();
-      expect(PatientBalanceDueAtomPermissions.register.isAllowed(write), isTrue);
-      expect(PatientBalanceDueAtomPermissions.delete.isAllowed(write), isFalse);
+    test('full ∩ write set allows create/update; delete needs patient:delete', () {
+      final AppAccessPolicy write = _readWritePolicy();
+      expect(PatientAdmittedAtomPermissions.register.isAllowed(write), isTrue);
+      expect(PatientAdmittedAtomPermissions.edit.isAllowed(write), isTrue);
+      expect(PatientAdmittedAtomPermissions.delete.isAllowed(write), isFalse);
 
       final AppAccessPolicy crud = _policy(
         permissions: <AppPermission>{
           AppPermissions.patientRead,
-          AppPermissions.billingRead,
           AppPermissions.patientWrite,
           AppPermissions.patientDelete,
         },
       );
-      expect(PatientBalanceDueAtomPermissions.delete.isAllowed(crud), isTrue);
+      expect(PatientAdmittedAtomPermissions.delete.isAllowed(crud), isTrue);
     });
 
     test(
-      'union allowance: view-active OPD ∪ clinical:read | billing:read (source)',
+      'union allowance: nested read ∪ clinical:read | billing:read (matrix)',
       () {
         final AppAccessPolicy clinicalOnly = _policy(
           permissions: <AppPermission>{
             AppPermissions.patientRead,
-            AppPermissions.billingRead,
             AppPermissions.clinicalRead,
           },
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.viewActiveOpd.isAllowed(
-            clinicalOnly,
-          ),
-          isTrue,
-        );
-
-        // Tab read ∩ already includes billing:read, which alone satisfies ∪.
-        final AppAccessPolicy tabRead = _tabReadPolicy();
-        expect(
-          PatientBalanceDueAtomPermissions.viewActiveOpd.isAllowed(tabRead),
-          isTrue,
-        );
-
-        final AppAccessPolicy noClinicalOrBilling = _policy(
-          permissions: <AppPermission>{AppPermissions.patientRead},
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: patientRegistryModule,
               licenseStatus: 'ACTIVE',
             ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
           ],
         );
         expect(
-          PatientBalanceDueAtomPermissions.viewActiveOpd.isAllowed(
-            noClinicalOrBilling,
-          ),
-          isFalse,
+          PatientAdmittedAtomPermissions.nestedRead.isAllowed(clinicalOnly),
+          isTrue,
         );
-      },
-    );
+        expect(
+          PatientAdmittedAtomPermissions.visitColumn.isAllowed(clinicalOnly),
+          isTrue,
+        );
 
-    test(
-      'union allowance: enroll insurance ∪ billing:write (source; not matrix ∩)',
-      () {
-        final AppAccessPolicy billingWrite = _policy(
+        final AppAccessPolicy billingOnly = _policy(
           permissions: <AppPermission>{
             AppPermissions.patientRead,
             AppPermissions.billingRead,
-            AppPermissions.billingWrite,
           },
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
@@ -543,99 +505,32 @@ void main() {
               code: 'billing-payments',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(
-              code: 'insurance-claims',
-              licenseStatus: 'ACTIVE',
-            ),
           ],
         );
         expect(
-          PatientBalanceDueAtomPermissions.enrollInsurance.isAllowed(
-            billingWrite,
-          ),
+          PatientAdmittedAtomPermissions.nestedRead.isAllowed(billingOnly),
           isTrue,
         );
-      },
-    );
-
-    test(
-      'nested write ∩ billing:write: workbench denied without billing:write',
-      () {
-        final AppAccessPolicy readOnly = _tabReadPolicy();
         expect(
-          PatientBalanceDueAtomPermissions.nestedWrite.isAllowed(readOnly),
-          isFalse,
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.billingWorkbench.isAllowed(readOnly),
-          isFalse,
-        );
-
-        final AppAccessPolicy withWrite = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.patientRead,
-            AppPermissions.billingRead,
-            AppPermissions.billingWrite,
-          },
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.nestedWrite.isAllowed(withWrite),
+          PatientAdmittedAtomPermissions.financialStatus.isAllowed(billingOnly),
           isTrue,
         );
-      },
-    );
 
-    test(
-      'subscription strip: role pack alone without billing-payments denies tab',
-      () {
-        final AppAccessPolicy noBillingModule = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.patientRead,
-            AppPermissions.billingRead,
-          },
-          modules: const <AppModuleEntitlement>[
-            AppModuleEntitlement(
-              code: patientRegistryModule,
-              licenseStatus: 'ACTIVE',
-            ),
-          ],
-        );
+        final AppAccessPolicy neither = _readPolicy();
         expect(
-          PatientBalanceDueAtomPermissions.tab.isAllowed(noBillingModule),
-          isFalse,
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.entry.isAllowed(
-            _policy(
-              permissions: <AppPermission>{AppPermissions.patientRead},
-              modules: const <AppModuleEntitlement>[],
-            ),
-          ),
+          PatientAdmittedAtomPermissions.nestedRead.isAllowed(neither),
           isFalse,
         );
       },
     );
 
     test(
-      'nested cross-module: lab chip needs clinical write ∩ lab-workflows',
+      'union allowance: view-active OPD ∪ clinical|billing (source Quick Action)',
       () {
-        final AppAccessPolicy clinicalNoLab = _policy(
+        final AppAccessPolicy clinicalOnly = _policy(
           permissions: <AppPermission>{
             AppPermissions.patientRead,
-            AppPermissions.billingRead,
-            AppPermissions.clinicalWrite,
-          },
-        );
-        expect(
-          PatientBalanceDueAtomPermissions.labOrder.isAllowed(clinicalNoLab),
-          isFalse,
-        );
-
-        final AppAccessPolicy withLab = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.patientRead,
-            AppPermissions.billingRead,
-            AppPermissions.clinicalWrite,
+            AppPermissions.clinicalRead,
           },
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
@@ -643,51 +538,142 @@ void main() {
               licenseStatus: 'ACTIVE',
             ),
             AppModuleEntitlement(
-              code: 'billing-payments',
+              code: 'encounters-vitals',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
           ],
         );
         expect(
-          PatientBalanceDueAtomPermissions.labOrder.isAllowed(withLab),
+          PatientAdmittedAtomPermissions.viewActiveOpd.isAllowed(clinicalOnly),
           isTrue,
         );
       },
     );
 
-    test('Active Work continue maps kinds to shared requirements', () {
-      expect(
-        identical(
-          patientActiveWorkContinueRequirement(
-            PatientActiveWorkKind.appointment,
-          ),
-          PatientBalanceDueAtomPermissions.activeWorkContinueAppointment,
-        ),
-        isTrue,
+    test('subscription strip: role pack alone without module denies entry', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
       );
       expect(
+        PatientAdmittedAtomPermissions.entry.isAllowed(noModule),
+        isFalse,
+      );
+      expect(canEnterPatientRegistry(noModule), isFalse);
+    });
+
+    test(
+      'nested cross-module write: admit needs clinical write ∩ IPD module',
+      () {
+        final AppAccessPolicy clinicalNoIpd = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        expect(
+          PatientAdmittedAtomPermissions.requestAdmission
+              .isAllowed(clinicalNoIpd),
+          isFalse,
+        );
+        expect(
+          PatientAdmittedAtomPermissions.discharge.isAllowed(clinicalNoIpd),
+          isFalse,
+        );
+
+        final AppAccessPolicy withIpd = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.clinicalWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: patientRegistryModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(
+          PatientAdmittedAtomPermissions.requestAdmission.isAllowed(withIpd),
+          isTrue,
+        );
+      },
+    );
+
+    test('Active Work continue maps admission kind to shared requirement', () {
+      expect(
         identical(
-          patientActiveWorkContinueRequirement(PatientActiveWorkKind.labOrder),
-          PatientBalanceDueAtomPermissions.activeWorkContinueLab,
+          patientActiveWorkContinueRequirement(PatientActiveWorkKind.admission),
+          PatientAdmittedAtomPermissions.activeWorkContinueAdmission,
         ),
         isTrue,
       );
     });
 
+    test('filter strips clinical Active Work without nested read', () {
+      const List<PatientActiveWorkItem> items = <PatientActiveWorkItem>[
+        PatientActiveWorkItem(
+          id: 'appt-1',
+          kind: PatientActiveWorkKind.appointment,
+          status: 'OPEN',
+          title: 'Follow-up',
+        ),
+        PatientActiveWorkItem(
+          id: 'adm-1',
+          kind: PatientActiveWorkKind.admission,
+          status: 'ADMITTED_IN_BED',
+          title: 'Ward A',
+        ),
+      ];
+
+      final List<PatientActiveWorkItem> filtered =
+          filterPatientActiveWorkForAdmittedNestedRead(items, _readPolicy());
+      expect(filtered, hasLength(1));
+      expect(filtered.single.kind, PatientActiveWorkKind.appointment);
+
+      final List<PatientActiveWorkItem> kept =
+          filterPatientActiveWorkForAdmittedNestedRead(
+            items,
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.patientRead,
+                AppPermissions.clinicalRead,
+              },
+              modules: const <AppModuleEntitlement>[
+                AppModuleEntitlement(
+                  code: patientRegistryModule,
+                  licenseStatus: 'ACTIVE',
+                ),
+                AppModuleEntitlement(
+                  code: 'encounters-vitals',
+                  licenseStatus: 'ACTIVE',
+                ),
+              ],
+            ),
+          );
+      expect(kept, hasLength(2));
+    });
+
     test('catalog entry uses patients:read; AppRoutes/matrix use patient:read', () {
       expect(
-        PatientBalanceDueAtomPermissions.catalogEntry.allPermissions,
+        PatientAdmittedAtomPermissions.catalogEntry.allPermissions,
         contains(AppPermissions.patientsRead),
       );
       expect(
-        PatientBalanceDueAtomPermissions.entry.allPermissions,
+        PatientAdmittedAtomPermissions.entry.allPermissions,
         contains(AppPermissions.patientRead),
       );
     });
   });
 
-  group('Balance due tab UI authorization (AC2-AC5)', () {
+  group('Admitted tab UI authorization (AC2-AC5)', () {
     late _MockPatientRepository patientRepository;
     late _MockOpdRepository opdRepository;
 
@@ -696,67 +682,37 @@ void main() {
       opdRepository = _MockOpdRepository();
     });
 
-    testWidgets('deep link section=balance-due selects Balance due strip', (
+    testWidgets('deep link section=admitted selects Admitted strip', (
       WidgetTester tester,
     ) async {
-      final GoRouter router = await _pumpBalanceDueTab(
+      final GoRouter router = await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
       );
 
-      expect(router.state.uri.queryParameters['section'], 'balance-due');
-      expect(find.textContaining('Balance due'), findsWidgets);
+      expect(router.state.uri.queryParameters['section'], 'admitted');
+      expect(find.textContaining('Admitted'), findsWidgets);
       expect(find.byType(AppTabStrip), findsOneWidget);
     });
 
     testWidgets(
-      'intersection denial: patient:read alone omits Balance due tab',
+      'intersection denial: patient:read alone omits Register/Edit/Visit',
       (WidgetTester tester) async {
-        final GoRouter router = await _pumpBalanceDueTab(
+        await _pumpAdmittedTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
-          policy: _policy(
-            permissions: <AppPermission>{AppPermissions.patientRead},
-            modules: const <AppModuleEntitlement>[
-              AppModuleEntitlement(
-                code: patientRegistryModule,
-                licenseStatus: 'ACTIVE',
-              ),
-            ],
-          ),
-        );
-
-        expect(find.textContaining('Balance due'), findsNothing);
-        expect(
-          router.state.uri.queryParameters['section'],
-          isNot('balance-due'),
-        );
-      },
-    );
-
-    testWidgets(
-      'intersection denial: tab read alone omits Register/Edit/Complete',
-      (WidgetTester tester) async {
-        await _pumpBalanceDueTab(
-          tester,
-          patientRepository: patientRepository,
-          opdRepository: opdRepository,
-          policy: _tabReadPolicy(),
-          patient: _incompletePatient,
-          items: const <Patient>[_incompletePatient],
+          policy: _readPolicy(),
+          patient: _incompleteAdmitted,
+          items: const <Patient>[_incompleteAdmitted],
         );
 
         expect(find.byTooltip('Register patient'), findsNothing);
+        expect(find.text('Duplicate review'), findsNothing);
+        expect(find.text('Visit'), findsNothing);
+        expect(find.text('Ward B'), findsNothing);
         expect(find.text('Complete record'), findsOneWidget);
-        expect(
-          find.descendant(
-            of: find.byType(GestureDetector),
-            matching: find.text('Complete record'),
-          ),
-          findsNothing,
-        );
 
         await tester.tap(find.text('Ina Incomplete').first);
         await tester.pumpAndSettle();
@@ -767,31 +723,40 @@ void main() {
     );
 
     testWidgets(
-      'full ∩ write presents Register; delete absent without patient:delete',
+      'union allowance: clinical:read mounts Visit column on Admitted',
       (WidgetTester tester) async {
-        await _pumpBalanceDueTab(
+        await _pumpAdmittedTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
-          policy: _tabReadWritePolicy(),
-          patient: _idlePatient,
-          items: const <Patient>[_idlePatient],
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.clinicalRead,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: patientRegistryModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
         );
 
-        expect(find.byTooltip('Register patient'), findsOneWidget);
-
-        await tester.tap(find.text('Ida Idle').first);
-        await tester.pumpAndSettle();
-
-        expect(find.text('Edit'), findsOneWidget);
-        expect(find.text('Delete'), findsNothing);
+        expect(find.text('Visit'), findsOneWidget);
+        expect(find.textContaining('Ward A'), findsWidgets);
+        expect(find.byTooltip('Register patient'), findsNothing);
       },
     );
 
     testWidgets(
-      'nested cross-module: lab chips absent; billing workbench needs write',
+      'union allowance: billing:read mounts Visit; financial filter allowed',
       (WidgetTester tester) async {
-        await _pumpBalanceDueTab(
+        await _pumpAdmittedTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -799,9 +764,6 @@ void main() {
             permissions: <AppPermission>{
               AppPermissions.patientRead,
               AppPermissions.billingRead,
-              AppPermissions.patientWrite,
-              AppPermissions.clinicalWrite,
-              AppPermissions.reportsRead,
             },
             modules: const <AppModuleEntitlement>[
               AppModuleEntitlement(
@@ -812,8 +774,143 @@ void main() {
                 code: 'billing-payments',
                 licenseStatus: 'ACTIVE',
               ),
+            ],
+          ),
+        );
+
+        expect(find.text('Visit'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Outstanding balance'), findsOneWidget);
+        expect(find.text('Active admission'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nested denial: patient:read alone omits outstanding-balance filter',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _readPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Outstanding balance'), findsNothing);
+        expect(find.text('Active admission'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'full ∩ write presents Register; delete absent without patient:delete',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _readWritePolicy(),
+        );
+
+        expect(find.byTooltip('Register patient'), findsOneWidget);
+
+        await tester.tap(find.text('Ada Admitted').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Edit'), findsOneWidget);
+        expect(find.text('Delete'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested cross-module: admission Active Work absent without nested read',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _readWritePolicy(),
+          detail: _admittedDetailWithWork,
+        );
+
+        await tester.tap(find.text('Ada Admitted').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Active work'), findsNothing);
+        expect(find.text('Inpatient admission'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested cross-module: admission Active Work present with clinical:read',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: patientRegistryModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'inpatient-bed-management',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+          detail: _admittedDetailWithWork,
+        );
+
+        await tester.tap(find.text('Ada Admitted').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Active work'), findsOneWidget);
+        expect(find.text('Inpatient admission'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nested cross-module: lab/admit chips absent without modules',
+      (WidgetTester tester) async {
+        await _pumpAdmittedTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.clinicalWrite,
+              AppPermissions.clinicalRead,
+              AppPermissions.reportsRead,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: patientRegistryModule,
+                licenseStatus: 'ACTIVE',
+              ),
               AppModuleEntitlement(
                 code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
                 licenseStatus: 'ACTIVE',
               ),
               AppModuleEntitlement(
@@ -823,41 +920,35 @@ void main() {
             ],
             roles: const <String>['DOCTOR', 'RECEPTIONIST'],
           ),
-          patient: _idlePatient,
-          items: const <Patient>[_idlePatient],
         );
 
-        await tester.tap(find.text('Ida Idle').first);
+        await tester.tap(find.text('Ada Admitted').first);
         await tester.pumpAndSettle();
 
         expect(find.text('Request lab'), findsNothing);
-        expect(find.text('Request radiology'), findsNothing);
+        expect(find.text('Request admission'), findsNothing);
         expect(find.text('Patient report'), findsOneWidget);
-        expect(find.text('Open billing'), findsNothing);
       },
     );
 
     testWidgets(
       'authorized full set shows Register, Edit, Delete, nested chips',
       (WidgetTester tester) async {
-        await _pumpBalanceDueTab(
+        await _pumpAdmittedTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
-          patient: _idlePatient,
-          items: const <Patient>[_idlePatient],
         );
 
         expect(find.byTooltip('Register patient'), findsOneWidget);
+        expect(find.text('Visit'), findsOneWidget);
 
-        await tester.tap(find.text('Ida Idle').first);
+        await tester.tap(find.text('Ada Admitted').first);
         await tester.pumpAndSettle();
 
         expect(find.text('Edit'), findsOneWidget);
         expect(find.text('Delete'), findsOneWidget);
         expect(find.text('Schedule appointment'), findsOneWidget);
-        expect(find.text('Start OPD encounter'), findsOneWidget);
-        expect(find.text('Request admission'), findsOneWidget);
         expect(find.text('Request lab'), findsOneWidget);
         expect(find.text('Patient report'), findsOneWidget);
       },
@@ -866,7 +957,7 @@ void main() {
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -887,9 +978,6 @@ void main() {
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
       when(() => patientRepository.loadOverview()).thenAnswer(
         (_) async =>
             const Result<PatientRegistryOverview>.failure(AppFailure.network()),
@@ -908,7 +996,10 @@ void main() {
           overrides: [
             patientRepositoryProvider.overrideWithValue(patientRepository),
             opdRepositoryProvider.overrideWithValue(opdRepository),
-            sharedPreferencesProvider.overrideWithValue(preferences),
+            sharedPreferencesProvider.overrideWithValue(
+              await SharedPreferences.getInstance()
+                ..clear(),
+            ),
             initialSessionStateProvider.overrideWithValue(
               const SessionState.ready(),
             ),
@@ -919,7 +1010,7 @@ void main() {
             home: const Scaffold(
               body: PatientRegistryPage(
                 initialQuery: PatientListQuery(
-                  section: PatientRegistrySection.balanceDue,
+                  section: PatientRegistrySection.admitted,
                 ),
               ),
             ),
@@ -935,24 +1026,39 @@ void main() {
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('post-mutation sync: updatePatient opens edit form', (
+    testWidgets('post-mutation sync: updatePatient opens edit from detail', (
       WidgetTester tester,
     ) async {
       when(
         () => patientRepository.updatePatient(any(), any()),
       ).thenAnswer((_) async {
-        return const Result<Patient>.success(_idlePatient);
+        return const Result<Patient>.success(_admittedPatient);
       });
 
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        patient: _idlePatient,
-        items: const <Patient>[_idlePatient],
+        policy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.clinicalRead,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: patientRegistryModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
       );
 
-      await tester.tap(find.text('Ida Idle').first);
+      await tester.tap(find.text('Ada Admitted').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Edit'));
       await tester.pumpAndSettle();
@@ -960,10 +1066,10 @@ void main() {
       expect(find.text('EDIT PATIENT'), findsOneWidget);
     });
 
-    testWidgets('mobile viewport keeps Balance due chrome without overflow', (
+    testWidgets('mobile viewport keeps Admitted chrome without overflow', (
       WidgetTester tester,
     ) async {
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -974,10 +1080,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('desktop viewport keeps Balance due chrome without overflow', (
+    testWidgets('desktop viewport keeps Admitted chrome without overflow', (
       WidgetTester tester,
     ) async {
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -989,10 +1095,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('light and dark themes render Balance due strip', (
+    testWidgets('light and dark themes render Admitted strip', (
       WidgetTester tester,
     ) async {
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -1000,7 +1106,7 @@ void main() {
       );
       expect(find.byType(AppTabStrip), findsOneWidget);
 
-      await _pumpBalanceDueTab(
+      await _pumpAdmittedTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
