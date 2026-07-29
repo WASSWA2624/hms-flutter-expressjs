@@ -2,7 +2,8 @@
 
 Primary surface: `HousekeepingWorkspacePage` (`frontend/lib/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart`).
 
-Write gates (client): `canManage` (operations write / operations / housekeeping manager) for create task/schedule, assign, cancel, triage; `canUpdateTasks` (`canManage` or housekeeper roles) for start/complete and request maintenance; `canReport` (reports or operations read) for summary. Unauthorized controls do not render. Backend auth remains authoritative.
+Write gates (client): `HousekeepingCapabilities` / `housekeeping_access.dart` —
+`canManage` (∩ `operations:write` + `facilities-maintenance`) for create task/schedule, assign, cancel, triage, complete/cancel request; `canUpdateTasks` (`canManage` or housekeeper roles with read) for start/complete and request maintenance; `canReport` (∪ `reports:read` | `operations:read`) for summary. Unauthorized controls do not render. Backend auth remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
