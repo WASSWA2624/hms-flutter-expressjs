@@ -79,6 +79,52 @@ Tab-strip **Refresh** was removed.
   - Immediate result: Persists via controller / navigates; snackbar; refresh where needed. No empty hub shell for the primary goal.
   - Condition: Matching write gate; unauthorized next-action absent. Queue rows have no next-action control (use row select).
 
+### All worklist tab
+
+Combined OPD worklist (`?section=all` / default). Gates: `OpdAllAtomPermissions` — read ∪ `patient:read` | `clinical:read`; matrix create/update/delete ∩ `clinical:write`. Start OPD keeps source `opdEncounterPermissionRequirement`. Stage next-actions keep source gates (vitals / billing / reception / doctor / admission / front-desk check-in). Nested cross-module matrix rows _(n/a)_ — billing payment keeps `opdBillingActionRequirement`; admission keeps `opdAdmissionHandoffRequirement`.
+
+- **All worklist** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to All section.
+  - Condition: Read ∪; tab hidden when denied.
+
+- **Start OPD encounter** (toolbar)
+  - Location: Tab-strip primary.
+  - Opens modal: Yes — encounter dialog, then Flow Actions when a visit continues.
+  - Immediate result: Creates/continues encounter; snackbar; refresh.
+  - Condition: Source encounter gate; unauthorized control absent.
+
+- **Search**, **Clear**, **Filters**, **Settings** (columns)
+  - Location: `AppListTable` chrome.
+  - Opens modal: Advanced filters / Table Settings when used.
+  - Immediate result: Client search / filters / column visibility.
+  - Condition: Read ∪; All body mounted.
+
+- **Empty / loading / error / Try again**
+  - Location: Table / scaffold body.
+  - Opens modal: No.
+  - Immediate result: Empty copy / spinner / retry reload.
+  - Condition: Authorized read; no write affordances in empty for denied users.
+
+- **Row select** → Flow / Appointment / Queue Actions
+  - Location: Table row / mobile item.
+  - Opens modal: Yes — stage hub for the row kind (next-action primary omitted when applicable).
+  - Immediate result: Shows context; write actions when matching gates allow.
+  - Condition: Read ∪; nested writes use source stage / front-desk gates; unauthorized writes absent.
+
+- **Next action** (Start / Continue / Record vitals / Pay / Assign doctor / Doctor review / Disposition / Admission / Correct stage / …)
+  - Location: `next_action` column (and mobile trailing).
+  - Opens modal: Matching mutation dialog directly (no empty hub).
+  - Immediate result: Persists via controller / navigates; snackbar; refresh.
+  - Condition: Matching source write gate; unauthorized next-action absent; next-action column hidden when no stage write is allowed.
+
+- **Deep link** `flowId` + `panel=vitals|payment|doctor|disposition|…`
+  - Location: Route query on All (default section).
+  - Opens modal: Focused mutation dialog directly.
+  - Immediate result: Same as next-action; blocked silently when panel write denied.
+  - Condition: Panel-specific source gate via `opdFocusedPanelRequirement`.
+
 ### Arrivals tab
 
 Check-in / arrival processing (`?section=arrivals`). Gates: `OpdArrivalsAtomPermissions` — read ∪ `patient:read` | `clinical:read`; matrix create/update/delete ∩ `clinical:write`. Start OPD keeps source `opdEncounterPermissionRequirement`; appointment hub / check-in next-action keep source `opdFrontDeskActionRequirement`. Nested cross-module rows _(n/a)_.
@@ -317,10 +363,14 @@ Shared follow-up worklist (`FollowUpWorklistPanel`, OPD scope). No **Start OPD e
   - ∪ read (`patient:read` | `clinical:read`) shows Arrivals chrome; ∩ denial hides Start / next-action / hub writes.
   - Full writer presence; subscription strip without `scheduling-queue`; nested billing/admission absent without those modules.
   - Authorized empty / error-retry; mobile + desktop dark; post-mutation Start dialog; row-select hub omits Start duplicate.
+- All worklist permission tests in `frontend/test/features/opd/presentation/opd_all_permissions_test.dart` prove:
+  - ∪ read (`patient:read` | `clinical:read`) shows All chrome; ∩ denial hides Start / Record vitals / next-action column.
+  - Full writer presence; pay next-action needs billing:write + `billing-payments`; subscription strip without `scheduling-queue`; admission handoff needs inpatient module.
+  - Deep link `panel=vitals` blocked for readers / opens for writers; authorized empty / error-retry; mobile + desktop dark; post-mutation vitals dialog; `section=all` deep link.
 - Active permission tests in `frontend/test/features/opd/presentation/opd_active_permissions_test.dart` prove:
   - ∪ read (`patient:read` | `clinical:read`) shows Active chrome; ∩ denial hides Start / Record vitals / next-action column.
   - Full writer presence; pay next-action needs billing:write + `billing-payments`; subscription strip without `scheduling-queue`; admission handoff needs inpatient module.
-  - Deep link `panel=vitals` blocked for readers / opens for writers; authorized empty / error-retry; mobile + desktop dark; post-mutation vitals dialog.
+  - Deep link `panel=vitals` blocked for readers / opens for writers; authorized empty / error-retry; mobile light + desktop dark; post-mutation vitals dialog; row-select hub omits Record vitals duplicate.
 - Triage permission tests in `frontend/test/features/opd/presentation/opd_triage_permissions_test.dart` prove:
   - ∪ read (`patient:read` | `clinical:read`) shows Triage chrome; ∩ / source denial hides Start / Record vitals.
   - Full writer presence; subscription strip without `scheduling-queue`; nested billing/admission absent without those modules.

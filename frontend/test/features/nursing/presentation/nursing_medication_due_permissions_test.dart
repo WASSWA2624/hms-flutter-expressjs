@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -46,6 +47,8 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
+  String? tenantId = 'tenant-1',
+  String? facilityId = 'facility-1',
 }) {
   final bool needsClinical = permissions.any(
     (AppPermission p) =>
@@ -99,14 +102,37 @@ AppAccessPolicy _policy({
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
+        tenantId: tenantId,
+        facilityId: facilityId,
       ),
       permissions: permissions,
       moduleEntitlements: resolved,
       isAuthorizationHydrated: true,
     ),
   );
+}
+
+AppAccessPolicy _readerPolicy({AppPermission readKey = AppPermissions.clinicalRead}) {
+  return _policy(permissions: <AppPermission>{readKey});
+}
+
+AppAccessPolicy _fullMedicationPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.pharmacyRead,
+      AppPermissions.rosterRead,
+    },
+  );
+}
+
+Future<void> _pumpAfterAction(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(seconds: 1));
 }
 
 void _stubNursing(
@@ -526,200 +552,432 @@ void main() {
         same(nursingMedicationAdministerRequirement),
       );
     });
-  });
 
-  testWidgets(
-    'read-only ∪: Medication due tab + list visible; writes / med panel absent',
-    (WidgetTester tester) async {
-      final AppAccessPolicy reader = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalRead},
+    test(
+      'route entry ∪ alone (last_office / operations) does not unlock tab chrome',
+      () {
+        final AppAccessPolicy lastOfficeReader = _policy(
+          permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+        );
+        final AppAccessPolicy operationsReader = _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canEnterNursingWorkspace(lastOfficeReader), isTrue);
+        expect(canEnterNursingWorkspace(operationsReader), isTrue);
+        expect(canViewNursingMedicationDue(lastOfficeReader), isFalse);
+        expect(canViewNursingMedicationDue(operationsReader), isFalse);
+      },
+    );
+
+    test('pharmacy:read alone does not unlock Medication due tab (∪ read)', () {
+      final AppAccessPolicy pharmacyOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.pharmacyRead},
       );
-
-      await _pumpMedicationDueTab(
-        tester,
-        repository: repository,
-        accessPolicy: reader,
+      expect(canViewNursingMedicationDue(pharmacyOnly), isFalse);
+      expect(
+        NursingMedicationDueAtomPermissions.medicationsPanel.isAllowed(
+          pharmacyOnly,
+        ),
+        isTrue,
       );
-
-      expect(find.textContaining('Medication due'), findsWidgets);
-      expect(find.text('Med Due Tab Patient'), findsOneWidget);
-      expect(find.byTooltip('Administer medication'), findsNothing);
-      expect(find.byTooltip('Shift context'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-
-      await tester.tap(find.text('Med Due Tab Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(seconds: 1));
-
-      final AppLocalizations l10n = AppLocalizations.of(
-        tester.element(find.byType(AppDialog).first),
+      expect(
+        NursingMedicationDueAtomPermissions.nextActionMedication.isAllowed(
+          pharmacyOnly,
+        ),
+        isFalse,
       );
-      expect(find.text(l10n.nursingMedicationsTitle), findsNothing);
-      expect(find.text(l10n.nursingActionAdministerMedication), findsNothing);
-      expect(find.text(l10n.nursingActionAddNote), findsNothing);
-    },
-  );
+    });
 
-  testWidgets(
-    '∩ denial: clinical write without pharmacy:read hides Administer',
-    (WidgetTester tester) async {
+    test('ABAC session still evaluates Medication due when facility present', () {
+      final AppAccessPolicy withFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+        },
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.tab.isAllowed(withFacility),
+        isTrue,
+      );
+      expect(
+        canViewNursingTab(withFacility, NursingQueueScope.medicationDue),
+        isTrue,
+      );
+    });
+
+    test('matrix create/update/delete ∩ clinical:write mapping noted', () {
       final AppAccessPolicy clinicalWriter = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+        },
+      );
+      final AppAccessPolicy patientWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
           AppPermissions.patientWrite,
         },
       );
+      // Stage Administer keeps pharmacy ∩; matrix CRUD ∩ is clinicalWrite.
+      expect(
+        NursingMedicationDueAtomPermissions.create.isAllowed(clinicalWriter),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.update.isAllowed(clinicalWriter),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.delete.isAllowed(clinicalWriter),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.clinicalWrite.isAllowed(
+          clinicalWriter,
+        ),
+        isTrue,
+      );
+      // Complementary detail writes keep source ∪ (patient:write unlocks).
+      expect(
+        NursingMedicationDueAtomPermissions.complementaryWrite.isAllowed(
+          patientWriter,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.clinicalWrite.isAllowed(
+          patientWriter,
+        ),
+        isFalse,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.nextActionMedication.isAllowed(
+          clinicalWriter,
+        ),
+        isFalse,
+      );
+    });
+  });
 
+  group('Nursing Medication due tab UI gates', () {
+    testWidgets(
+      'read-only ∪: Medication due tab + list visible; writes / med panel absent',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        expect(find.textContaining('Medication due'), findsWidgets);
+        expect(find.text('Med Due Tab Patient'), findsOneWidget);
+        expect(find.byTooltip('Administer medication'), findsNothing);
+        expect(find.byTooltip('Shift context'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+
+        await tester.tap(find.text('Med Due Tab Patient'));
+        await _pumpAfterAction(tester);
+
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppDialog).first),
+        );
+        expect(find.text(l10n.nursingMedicationsTitle), findsNothing);
+        expect(find.text(l10n.nursingActionAdministerMedication), findsNothing);
+        expect(find.text(l10n.nursingActionAddNote), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '∪ allowance: patient:read alone shows Medication due tab chrome',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(readKey: AppPermissions.patientRead),
+        );
+
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
+        expect(
+          find.textContaining(l10n.nursingScopeMedicationDueLabel),
+          findsWidgets,
+        );
+        expect(find.text('Med Due Tab Patient'), findsOneWidget);
+        expect(find.byTooltip('Administer medication'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '∩ denial: clinical write without pharmacy:read hides Administer',
+      (WidgetTester tester) async {
+        final AppAccessPolicy clinicalWriter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.patientWrite,
+          },
+        );
+
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: clinicalWriter,
+        );
+
+        expect(find.text('Med Due Tab Patient'), findsOneWidget);
+        expect(find.byTooltip('Administer medication'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'full ∩: Administer next-action + med due count + detail meds present',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _fullMedicationPolicy(),
+        );
+
+        expect(find.byTooltip('Administer medication'), findsWidgets);
+        expect(find.text('3'), findsWidgets);
+        expect(find.byTooltip('Shift context'), findsOneWidget);
+
+        await tester.tap(find.text('Med Due Tab Patient'));
+        await _pumpAfterAction(tester);
+
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppDialog).first),
+        );
+        // Row next-action is sole primary; detail omits Administer duplicate.
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAdministerMedication),
+          ),
+          findsNothing,
+        );
+        expect(find.text(l10n.nursingMedicationsTitle), findsOneWidget);
+        expect(find.text(l10n.nursingActionAddNote), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('authorized empty worklist state remains observable', (
+      WidgetTester tester,
+    ) async {
       await _pumpMedicationDueTab(
         tester,
         repository: repository,
-        accessPolicy: clinicalWriter,
+        accessPolicy: _readerPolicy(),
+        items: const <NursingPatientSummary>[],
+      );
+
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+      expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
+      expect(find.byType(AppListTable<NursingWorkItem>), findsOneWidget);
+    });
+
+    testWidgets('error / retry state remains for authorized readers', (
+      WidgetTester tester,
+    ) async {
+      when(() => repository.listWardPatients(any())).thenAnswer(
+        (_) async => const Result<AppPage<NursingPatientSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+      when(() => repository.listPendingHandovers()).thenAnswer(
+        (_) async =>
+            const Result<List<NursingHandover>>.success(<NursingHandover>[]),
+      );
+      when(() => repository.listCurrentRosters()).thenAnswer(
+        (_) async => const Result<List<NursingRosterAssignment>>.success(
+          <NursingRosterAssignment>[],
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/nursing?scope=medication-due',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/nursing',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: NursingWorkspacePage(
+                  initialQuery: NursingWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nursingRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_readerPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await _pumpAfterAction(tester);
+
+      expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('mobile viewport: compact Administer trailing when authorized', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMedicationDueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _fullMedicationPolicy(),
+        physicalSize: const Size(390, 844),
+      );
+
+      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(AppListTableMobileItem), findsWidgets);
+      expect(find.byTooltip('Administer medication'), findsWidgets);
+    });
+
+    testWidgets('mobile light theme: read-only hides compact Administer', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMedicationDueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readerPolicy(),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Med Due Tab Patient'), findsOneWidget);
+      expect(find.byTooltip('Administer medication'), findsNothing);
+    });
+
+    testWidgets('desktop dark theme: authorized Medication due chrome mounts', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMedicationDueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _fullMedicationPolicy(),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(find.textContaining('Medication due'), findsWidgets);
+      expect(find.byTooltip('Administer medication'), findsWidgets);
+      expect(find.text('Med Due Tab Patient'), findsOneWidget);
+    });
+
+    testWidgets('light theme: read-only chrome without write affordances', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMedicationDueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readerPolicy(),
+        themeMode: ThemeMode.light,
       );
 
       expect(find.text('Med Due Tab Patient'), findsOneWidget);
       expect(find.byTooltip('Administer medication'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-    },
-  );
+    });
 
-  testWidgets(
-    'full ∩: Administer next-action + med due count + detail meds present',
-    (WidgetTester tester) async {
-      final AppAccessPolicy full = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.patientWrite,
-          AppPermissions.pharmacyRead,
-          AppPermissions.rosterRead,
-        },
-      );
+    testWidgets(
+      'panel=medication deep link opens Administer when ∩ allowed',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _fullMedicationPolicy(),
+          initialLocation:
+              '/nursing?scope=medication-due&id=ADM-MED-DUE&panel=medication',
+        );
 
-      await _pumpMedicationDueTab(
-        tester,
-        repository: repository,
-        accessPolicy: full,
-      );
-
-      expect(find.byTooltip('Administer medication'), findsWidgets);
-      expect(find.text('3'), findsWidgets);
-      expect(find.byTooltip('Shift context'), findsOneWidget);
-
-      await tester.tap(find.text('Med Due Tab Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(seconds: 1));
-
-      final AppLocalizations l10n = AppLocalizations.of(
-        tester.element(find.byType(AppDialog).first),
-      );
-      // Row next-action is sole primary; detail omits Administer duplicate.
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text(l10n.nursingActionAdministerMedication),
-        ),
-        findsNothing,
-      );
-      expect(find.text(l10n.nursingMedicationsTitle), findsOneWidget);
-      expect(find.text(l10n.nursingActionAddNote), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets('authorized empty worklist state remains observable', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy reader = _policy(
-      permissions: <AppPermission>{AppPermissions.clinicalRead},
-    );
-
-    await _pumpMedicationDueTab(
-      tester,
-      repository: repository,
-      accessPolicy: reader,
-      items: const <NursingPatientSummary>[],
-    );
-
-    final AppLocalizations l10n = AppLocalizations.of(
-      tester.element(find.byType(AppTabStrip)),
-    );
-    expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
-  });
-
-  testWidgets('mobile viewport: compact Administer trailing when authorized', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy full = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
-        AppPermissions.pharmacyRead,
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        verify(() => repository.loadPatientDetail(any())).called(greaterThan(0));
       },
     );
 
-    await _pumpMedicationDueTab(
-      tester,
-      repository: repository,
-      accessPolicy: full,
-      physicalSize: const Size(390, 844),
-    );
+    testWidgets(
+      'panel=medication deep link falls back when pharmacy:read missing',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+            },
+          ),
+          initialLocation:
+              '/nursing?scope=medication-due&id=ADM-MED-DUE&panel=medication',
+        );
 
-    expect(find.byType(DataTable), findsNothing);
-    expect(find.byType(AppListTableMobileItem), findsWidgets);
-    expect(find.byTooltip('Administer medication'), findsWidgets);
-  });
-
-  testWidgets('dark theme: authorized Medication due chrome still mounts', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy full = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
-        AppPermissions.pharmacyRead,
+        // Restricted deep link → patient detail (no Administer dialog).
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppDialog).first),
+        );
+        expect(find.text(l10n.nursingActionAdministerMedication), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
       },
     );
 
-    await _pumpMedicationDueTab(
-      tester,
-      repository: repository,
-      accessPolicy: full,
-      themeMode: ThemeMode.dark,
+    testWidgets(
+      'post-mutation sync: Administer dialog mounts for full ∩ policy',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _fullMedicationPolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Administer medication').first);
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        // Dialog mount proves authorized write path; listWardPatients is the
+        // sync seam after successful submit (validation / success chrome).
+        verify(() => repository.listWardPatients(any())).called(greaterThan(0));
+        verify(() => repository.loadPatientDetail(any())).called(greaterThan(0));
+      },
     );
-
-    expect(find.textContaining('Medication due'), findsWidgets);
-    expect(find.byTooltip('Administer medication'), findsWidgets);
-    expect(find.text('Med Due Tab Patient'), findsOneWidget);
   });
-
-  testWidgets(
-    'authorized flow: Administer dialog mounts for full ∩ policy',
-    (WidgetTester tester) async {
-      final AppAccessPolicy full = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.pharmacyRead,
-        },
-      );
-
-      await _pumpMedicationDueTab(
-        tester,
-        repository: repository,
-        accessPolicy: full,
-      );
-
-      await tester.tap(find.byTooltip('Administer medication').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      verify(() => repository.loadPatientDetail(any())).called(greaterThan(0));
-    },
-  );
 }

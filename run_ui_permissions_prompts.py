@@ -392,12 +392,34 @@ async def run_prompt(
         }
 
     async with sem:
+        # Refresh after waiting — another resume path may have recorded work.
+        pending_iterations = [
+            iteration
+            for iteration in range(1, ITERATIONS + 1)
+            if _iteration_key(prompt_rel, iteration) not in finished
+        ]
+        if not pending_iterations:
+            return {
+                "file": complete_key,
+                "status": "finished",
+                "committed": False,
+                "pushed": False,
+                "skipped": True,
+            }
+
         _log(
             f"  prompt {short}: running iteration(s) "
             f"{pending_iterations} of {ITERATIONS}"
         )
         iteration_results: list[dict] = []
         for iteration in pending_iterations:
+            key = _iteration_key(prompt_rel, iteration)
+            if key in finished:
+                iteration_results.append(
+                    {"file": key, "status": "finished", "skipped": True}
+                )
+                continue
+
             result = await _run_one_iteration(
                 prompt_path=prompt_path,
                 prompt_rel=prompt_rel,
@@ -413,8 +435,7 @@ async def run_prompt(
                     "failed_iteration": result["file"],
                 }
 
-            finished.add(result["file"])
-            _save_finished(finished)
+            _mark_finished(finished, result["file"])
 
         still_open = [
             _iteration_key(prompt_rel, iteration)

@@ -41,6 +41,7 @@ const NursingPatientSummary _handoverPatient = NursingPatientSummary(
   bedDisplayLabel: 'Bed 7',
   hasActiveBed: true,
   pendingHandoverCount: 1,
+  icuStatus: 'ACTIVE',
 );
 
 const NursingHandover _pendingHandover = NursingHandover(
@@ -77,7 +78,6 @@ AppAccessPolicy _policy({
         p == AppPermissions.unitRead,
   );
   final bool needsOps = permissions.contains(AppPermissions.operationsRead);
-  final bool needsBilling = permissions.contains(AppPermissions.billingRead);
 
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -106,23 +106,17 @@ AppAccessPolicy _policy({
                 code: 'facilities-maintenance',
                 licenseStatus: 'ACTIVE',
               ),
-            if (needsBilling)
-              const AppModuleEntitlement(
-                code: 'billing-payments',
-                licenseStatus: 'ACTIVE',
-              ),
           ],
       isAuthorizationHydrated: true,
     ),
   );
 }
 
-AppAccessPolicy _readPolicy() {
+AppAccessPolicy _readPolicy({
+  AppPermission readKey = AppPermissions.clinicalRead,
+}) {
   return _policy(
-    permissions: <AppPermission>{
-      AppPermissions.clinicalRead,
-      AppPermissions.patientRead,
-    },
+    permissions: <AppPermission>{readKey},
     roles: const <String>['RECEPTION'],
   );
 }
@@ -132,6 +126,25 @@ AppAccessPolicy _writePolicy() {
     permissions: <AppPermission>{
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+    },
+  );
+}
+
+AppAccessPolicy _clinicalWriteOnlyPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+    },
+  );
+}
+
+AppAccessPolicy _patientWriteWithoutClinicalWritePolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
       AppPermissions.patientRead,
       AppPermissions.patientWrite,
     },
@@ -293,55 +306,126 @@ void main() {
     repository = _MockNursingRepository();
   });
 
-  group('NursingHandoverPendingAtomPermissions helpers', () {
+  group('NursingHandoverPendingAtomPermissions inventory (AC1)', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        NursingHandoverPendingAtomPermissions.tab,
-        same(nursingWorkspaceReadRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.tab,
+          nursingWorkspaceReadRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.listChrome,
-        same(nursingWorkspaceReadRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.write,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.write,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.nextAction,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.nextActionHandover,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.nextActionHandover,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.createHandover,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.createHandover,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.acceptHandover,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.acceptHandover,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.clinicalWrite,
-        same(nursingClinicalWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.create,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.medicationsPanel,
-        same(nursingMedicationsPanelRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.update,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.administerMedication,
-        same(nursingMedicationAdministerRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.delete,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.shiftContext,
-        same(nursingShiftContextRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.complementaryWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.panelDeepLink,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.checklistWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.routeEntry,
-        same(RouteAccessCatalog.nursingEntry),
+        identical(
+          NursingHandoverPendingAtomPermissions.medicationsPanel,
+          nursingMedicationsPanelRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.administerMedication,
+          nursingMedicationAdministerRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.shiftContext,
+          nursingShiftContextRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.panelDeepLink,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.routeEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.catalogEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
       );
       expect(
         nursingBoardTabRequirement(NursingQueueScope.handoverPending),
@@ -356,12 +440,36 @@ void main() {
         same(NursingHandoverPendingAtomPermissions.nextActionHandover),
       );
       expect(
+        nursingNextActionRequirement(
+          NursingNextActionKind.handover,
+          scope: NursingQueueScope.handoverPending,
+        ),
+        same(NursingHandoverPendingAtomPermissions.nextActionHandover),
+      );
+      expect(
         nursingFocusedPanelRequirement(NursingDetailPanel.handover),
         same(NursingHandoverPendingAtomPermissions.panelDeepLink),
       );
       expect(
-        NursingHandoverPendingAtomPermissions.nestedWrite,
-        same(nursingWriteRequirement),
+        identical(
+          NursingHandoverPendingAtomPermissions.nestedWrite,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _readPolicy(),
+          NursingQueueScope.handoverPending,
+        ),
+        isFalse,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _clinicalWriteOnlyPolicy(),
+          NursingQueueScope.handoverPending,
+        ),
+        isTrue,
       );
     });
 
@@ -394,10 +502,54 @@ void main() {
       );
     });
 
+    test('∩ denial: patient:write without clinical:write denies stage write',
+        () {
+      final AppAccessPolicy patientWriter =
+          _patientWriteWithoutClinicalWritePolicy();
+      expect(
+        NursingHandoverPendingAtomPermissions.write.isAllowed(patientWriter),
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.nextActionHandover.isAllowed(
+          patientWriter,
+        ),
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.createHandover.isAllowed(
+          patientWriter,
+        ),
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.acceptHandover.isAllowed(
+          patientWriter,
+        ),
+        isFalse,
+      );
+      // Source ∪ complementary writes remain available without clinical:write.
+      expect(
+        NursingHandoverPendingAtomPermissions.complementaryWrite.isAllowed(
+          patientWriter,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.addNote.isAllowed(patientWriter),
+        isTrue,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.write.isAllowed(
+          _clinicalWriteOnlyPolicy(),
+        ),
+        isTrue,
+      );
+    });
+
     test('∪ allowance: clinical:read alone satisfies tab read chrome', () {
-      final AppAccessPolicy clinicalOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalRead},
-        roles: const <String>['RECEPTION'],
+      final AppAccessPolicy clinicalOnly = _readPolicy(
+        readKey: AppPermissions.clinicalRead,
       );
       expect(
         NursingHandoverPendingAtomPermissions.tab.isAllowed(clinicalOnly),
@@ -414,9 +566,8 @@ void main() {
     });
 
     test('∪ allowance: patient:read alone satisfies tab read chrome', () {
-      final AppAccessPolicy patientOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.patientRead},
-        roles: const <String>['RECEPTION'],
+      final AppAccessPolicy patientOnly = _readPolicy(
+        readKey: AppPermissions.patientRead,
       );
       expect(
         NursingHandoverPendingAtomPermissions.tab.isAllowed(patientOnly),
@@ -445,31 +596,6 @@ void main() {
         isFalse,
       );
       expect(canViewNursingHandoverPending(lastOfficeOnly), isFalse);
-    });
-
-    test('∪ write: patient:write satisfies source write without clinical:write',
-        () {
-      final AppAccessPolicy patientWriter = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.patientWrite,
-        },
-      );
-      expect(
-        NursingHandoverPendingAtomPermissions.write.isAllowed(patientWriter),
-        isTrue,
-      );
-      expect(
-        NursingHandoverPendingAtomPermissions.clinicalWrite.isAllowed(
-          patientWriter,
-        ),
-        isFalse,
-      );
-      // Matrix ∩ clinical:write mapping kept on clinicalWrite alias.
-      expect(
-        nursingClinicalWriteRequirement.allPermissions,
-        contains(AppPermissions.clinicalWrite),
-      );
     });
 
     test('nested medication ∩: pharmacy:read required for meds panel', () {
@@ -554,303 +680,341 @@ void main() {
     });
   });
 
-  testWidgets(
-    'read-only: Handover pending list visible; Create handover / writes absent (∩ denial)',
-    (WidgetTester tester) async {
-      final AppAccessPolicy reader = _readPolicy();
-      await _pumpHandoverPendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: reader,
-      );
-
-      expect(find.text('Handover Pending Patient'), findsOneWidget);
-      expect(find.textContaining('Handover pending'), findsWidgets);
-      expect(find.byTooltip('Create handover'), findsNothing);
-      expect(find.byTooltip('Shift context'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-
-      await tester.tap(find.text('Handover Pending Patient'));
-      await _pumpAfter(tester);
-
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Create handover'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Accept handover'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Record vitals'),
-        ),
-        findsNothing,
-      );
-      expect(find.text('Medications'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'full write ∪: Create handover next-action + detail mutations mount',
-    (WidgetTester tester) async {
-      await _pumpHandoverPendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: _writePolicy(),
-      );
-
-      expect(find.text('Handover Pending Patient'), findsOneWidget);
-      expect(find.byTooltip('Create handover'), findsWidgets);
-      expect(find.textContaining('no access'), findsNothing);
-
-      await tester.tap(find.text('Handover Pending Patient'));
-      await _pumpAfter(tester);
-
-      // Row next-action Create handover omitted from detail Quick Actions.
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Create handover'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Accept handover'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Record vitals'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Add note'),
-        ),
-        findsOneWidget,
-      );
-      // Medications panel absent without pharmacy:read.
-      expect(find.text('Medications'), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Administer medication'),
-        ),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets(
-    '∪ patient:write: Create handover mounts without clinical:write',
-    (WidgetTester tester) async {
-      final AppAccessPolicy patientWriter = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.patientWrite,
-        },
-      );
-      await _pumpHandoverPendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: patientWriter,
-      );
-
-      expect(find.byTooltip('Create handover'), findsWidgets);
-      expect(find.text('Handover Pending Patient'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'nested pharmacy: medications panel + administer mount with pharmacy:read ∩ write',
-    (WidgetTester tester) async {
-      final AppAccessPolicy withMeds = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.pharmacyRead,
-        },
-      );
-      await _pumpHandoverPendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: withMeds,
-      );
-
-      await tester.tap(find.text('Handover Pending Patient'));
-      await _pumpAfter(tester);
-
-      expect(find.text('Medications'), findsOneWidget);
-      expect(find.text('Paracetamol'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Administer medication'),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets('shift context mounts only with roster read ∩ hr-rosters', (
-    WidgetTester tester,
-  ) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _writePolicy(),
-    );
-    expect(find.byTooltip('Shift context'), findsNothing);
-
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.rosterRead,
-        },
-      ),
-    );
-    expect(find.byTooltip('Shift context'), findsOneWidget);
-  });
-
-  testWidgets(
-    'authorized Create handover next-action opens dialog and syncs after mutation',
-    (WidgetTester tester) async {
-      await _pumpHandoverPendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: _writePolicy(),
-      );
-
-      await tester.tap(find.byTooltip('Create handover').first);
-      await _pumpAfter(tester);
-
-      expect(find.byType(NursingHandoverDialog), findsOneWidget);
-
-      // Close without submitting — dialog chrome Close only dismisses.
-      final AppLocalizations l10n = AppLocalizations.of(
-        tester.element(find.byType(NursingHandoverDialog)),
-      );
-      await tester.tap(find.byTooltip(l10n.commonCloseActionLabel));
-      await _pumpAfter(tester);
-      expect(find.byType(NursingHandoverDialog), findsNothing);
-      expect(find.text('Handover Pending Patient'), findsOneWidget);
-    },
-  );
-
-  testWidgets('empty worklist state remains for authorized read users', (
-    WidgetTester tester,
-  ) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _readPolicy(),
-      items: const <NursingPatientSummary>[],
-    );
-
-    final AppLocalizations l10n = AppLocalizations.of(
-      tester.element(find.byType(AppTabStrip)),
-    );
-    expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
-    expect(find.byTooltip('Create handover'), findsNothing);
-  });
-
-  testWidgets('mobile viewport: compact Create handover trailing when write ∪',
+  group('Handover pending UI authorization (AC2-AC5)', () {
+    testWidgets(
+      'read-only: Handover pending list visible; Create handover / writes absent (∩ denial)',
       (WidgetTester tester) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _writePolicy(),
-      physicalSize: const Size(390, 844),
+        final AppAccessPolicy reader = _readPolicy();
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: reader,
+        );
+
+        expect(find.text('Handover Pending Patient'), findsOneWidget);
+        expect(find.textContaining('Handover pending'), findsWidgets);
+        expect(find.byTooltip('Create handover'), findsNothing);
+        expect(find.byTooltip('Shift context'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+
+        await tester.tap(find.text('Handover Pending Patient'));
+        await _pumpAfter(tester);
+
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Create handover'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Accept handover'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Record vitals'),
+          ),
+          findsNothing,
+        );
+        expect(find.text('Medications'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
     );
 
-    expect(find.byType(DataTable), findsNothing);
-    expect(find.byType(AppListTableMobileItem), findsWidgets);
-    expect(find.byTooltip('Create handover'), findsWidgets);
-  });
+    testWidgets(
+      '∩ denial: patient:write without clinical:write hides Create handover CTA',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _patientWriteWithoutClinicalWritePolicy(),
+        );
 
-  testWidgets('mobile read-only: next-action trailing absent', (
-    WidgetTester tester,
-  ) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _readPolicy(),
-      physicalSize: const Size(390, 844),
+        expect(find.text('Handover Pending Patient'), findsOneWidget);
+        expect(find.byTooltip('Create handover'), findsNothing);
+
+        await tester.tap(find.text('Handover Pending Patient'));
+        await _pumpAfter(tester);
+
+        // Source ∪ complementary writes still mount without clinical:write.
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Add note'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Record vitals'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Accept handover'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Create handover'),
+          ),
+          findsNothing,
+        );
+      },
     );
 
-    expect(find.byType(AppListTableMobileItem), findsWidgets);
-    expect(find.byTooltip('Create handover'), findsNothing);
-  });
+    testWidgets(
+      'full ∩ clinical:write: Create handover next-action + detail mutations mount',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writePolicy(),
+        );
 
-  testWidgets('dark theme: authorized Handover pending chrome mounts', (
-    WidgetTester tester,
-  ) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _writePolicy(),
-      themeMode: ThemeMode.dark,
+        expect(find.text('Handover Pending Patient'), findsOneWidget);
+        expect(find.byTooltip('Create handover'), findsWidgets);
+        expect(find.textContaining('no access'), findsNothing);
+
+        await tester.tap(find.text('Handover Pending Patient'));
+        await _pumpAfter(tester);
+
+        // Row next-action Create handover omitted from detail Quick Actions.
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Create handover'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Accept handover'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Record vitals'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Add note'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Open ICU'),
+          ),
+          findsOneWidget,
+        );
+        // Medications panel absent without pharmacy:read.
+        expect(find.text('Medications'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Administer medication'),
+          ),
+          findsNothing,
+        );
+      },
     );
 
-    expect(find.text('Handover Pending Patient'), findsOneWidget);
-    expect(find.byTooltip('Create handover'), findsWidgets);
-    expect(find.byType(AppTabStrip), findsOneWidget);
-  });
+    testWidgets(
+      'nested pharmacy: medications panel + administer mount with pharmacy:read ∩ write',
+      (WidgetTester tester) async {
+        final AppAccessPolicy withMeds = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.pharmacyRead,
+          },
+        );
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: withMeds,
+        );
 
-  testWidgets('light theme: read-only chrome without write affordances', (
-    WidgetTester tester,
-  ) async {
-    await _pumpHandoverPendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: _readPolicy(),
+        await tester.tap(find.text('Handover Pending Patient'));
+        await _pumpAfter(tester);
+
+        expect(find.text('Medications'), findsOneWidget);
+        expect(find.text('Paracetamol'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Administer medication'),
+          ),
+          findsOneWidget,
+        );
+      },
     );
 
-    expect(find.text('Handover Pending Patient'), findsOneWidget);
-    expect(find.byTooltip('Create handover'), findsNothing);
-    expect(find.textContaining('no access'), findsNothing);
-  });
+    testWidgets('shift context mounts only with roster read ∩ hr-rosters', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHandoverPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writePolicy(),
+      );
+      expect(find.byTooltip('Shift context'), findsNothing);
 
-  testWidgets(
-    'deep link panel=handover falls back to detail when write denied',
-    (WidgetTester tester) async {
+      await _pumpHandoverPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.rosterRead,
+          },
+        ),
+      );
+      expect(find.byTooltip('Shift context'), findsOneWidget);
+    });
+
+    testWidgets(
+      'authorized Create handover next-action opens dialog and syncs after mutation',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writePolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Create handover').first);
+        await _pumpAfter(tester);
+
+        expect(find.byType(NursingHandoverDialog), findsOneWidget);
+
+        // Close without submitting — dialog chrome Close only dismisses.
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(NursingHandoverDialog)),
+        );
+        await tester.tap(find.byTooltip(l10n.commonCloseActionLabel));
+        await _pumpAfter(tester);
+        expect(find.byType(NursingHandoverDialog), findsNothing);
+        expect(find.text('Handover Pending Patient'), findsOneWidget);
+      },
+    );
+
+    testWidgets('empty worklist state remains for authorized read users', (
+      WidgetTester tester,
+    ) async {
       await _pumpHandoverPendingTab(
         tester,
         repository: repository,
         accessPolicy: _readPolicy(),
-        initialLocation:
-            '/nursing?scope=handover-pending&id=ADM-HAND&panel=handover',
+        items: const <NursingPatientSummary>[],
       );
 
-      expect(find.byType(NursingHandoverDialog), findsNothing);
-      // Detail opens for restricted deep-link write (forbidden feedback path).
-      expect(find.text('Handover Pending Patient'), findsWidgets);
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Create handover'),
-        ),
-        findsNothing,
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
       );
-    },
-  );
+      expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
+      expect(find.byTooltip('Create handover'), findsNothing);
+    });
+
+    testWidgets(
+      'mobile viewport: compact Create handover trailing when clinical:write ∩',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writePolicy(),
+          physicalSize: const Size(390, 844),
+        );
+
+        expect(find.byType(DataTable), findsNothing);
+        expect(find.byType(AppListTableMobileItem), findsWidgets);
+        expect(find.byTooltip('Create handover'), findsWidgets);
+      },
+    );
+
+    testWidgets('mobile read-only: next-action trailing absent', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHandoverPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readPolicy(),
+        physicalSize: const Size(390, 844),
+      );
+
+      expect(find.byType(AppListTableMobileItem), findsWidgets);
+      expect(find.byTooltip('Create handover'), findsNothing);
+    });
+
+    testWidgets('dark theme: authorized Handover pending chrome mounts', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHandoverPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writePolicy(),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(find.text('Handover Pending Patient'), findsOneWidget);
+      expect(find.byTooltip('Create handover'), findsWidgets);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+    });
+
+    testWidgets('light theme: read-only chrome without write affordances', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHandoverPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readPolicy(),
+      );
+
+      expect(find.text('Handover Pending Patient'), findsOneWidget);
+      expect(find.byTooltip('Create handover'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets(
+      'deep link panel=handover falls back to detail when write denied',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readPolicy(),
+          initialLocation:
+              '/nursing?scope=handover-pending&id=ADM-HAND&panel=handover',
+        );
+
+        expect(find.byType(NursingHandoverDialog), findsNothing);
+        // Detail opens for restricted deep-link write (forbidden feedback path).
+        expect(find.text('Handover Pending Patient'), findsWidgets);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Create handover'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+  });
 }

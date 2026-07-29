@@ -109,17 +109,19 @@ bool canReportOperations(AppAccessPolicy policy) {
   return operationsWorkspaceReportRequirement.isAllowed(policy);
 }
 
-/// Per-section tab strip gate. Sections share workspace read until a tab
+/// Per-section tab strip gate. Sections share workspace read ∩ until a tab
 /// prompt documents a narrower requirement.
 AccessRequirement operationsSectionTabRequirement(
   OperationsDeskSection section,
 ) {
   return switch (section) {
+    OperationsDeskSection.allRequests =>
+      OperationsAllRequestsAtomPermissions.tab,
+    OperationsDeskSection.open => operationsWorkspaceReadRequirement,
+    OperationsDeskSection.inProgress =>
+      OperationsInProgressAtomPermissions.tab,
+    OperationsDeskSection.completed => OperationsCompletedAtomPermissions.tab,
     OperationsDeskSection.assets => OperationsAssetsAtomPermissions.tab,
-    OperationsDeskSection.allRequests ||
-    OperationsDeskSection.open ||
-    OperationsDeskSection.inProgress ||
-    OperationsDeskSection.completed => operationsWorkspaceReadRequirement,
   };
 }
 
@@ -149,6 +151,196 @@ OperationsDeskSection? operationsFallbackSection(AppAccessPolicy policy) {
     return OperationsDeskSection.allRequests;
   }
   return sections.first;
+}
+
+/// All requests tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | All requests tab | navigate | read ∩ `operations:read` |
+/// | Create request (tab primary) | create | write ∩ `operations:write` |
+/// | Report summary | read | report ∩ `operations:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Status filter (All only) | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ |
+/// | Row select → request detail | read | read ∩ |
+/// | Next-action column chrome | progressive disclosure | read ∩ |
+/// | Write next-actions (Assign / …) | create / update | write ∩ ([mutate]) |
+/// | Detail complementary writes | update | write ∩ |
+/// | Nested create / assign / status / log / notes | create / update | write ∩ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
+///
+/// Report uses matrix read ∩ (source inventory "Always" narrowed — note in
+/// tests). Facility ABAC is on route entry only; in-page atoms reuse module +
+/// permission. Next-action **column** stays under read ∩; write controls still
+/// require [mutate] / [canMutateOperations] before mount.
+abstract final class OperationsAllRequestsAtomPermissions {
+  static const AccessRequirement tab = operationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement search = operationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = operationsWorkspaceReadRequirement;
+  static const AccessRequirement settings = operationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = operationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = operationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = operationsWorkspaceReadRequirement;
+  static const AccessRequirement success = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement create = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement update = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement write = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement mutate = operationsMutationRequirement;
+  static const AccessRequirement createRequest =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement updateStatus =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement serviceLog =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement note = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement closeout = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement report = operationsWorkspaceReportRequirement;
+  static const AccessRequirement nestedWrite =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = operationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      operationsWorkspaceEntryRequirement;
+}
+
+/// In progress tab atom → permission mapping (inventory + matrix).
+///
+/// Target: `/operations?section=in-progress`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | In progress tab | navigate | read ∩ `operations:read` |
+/// | Create request (tab primary) | create | write ∩ `operations:write` |
+/// | Report summary | read | report ∩ `operations:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Status filter | — | absent (tab owns status) |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ |
+/// | Row select → request detail | read | read ∩ |
+/// | Next action Update status (no asset) | update | write ∩ |
+/// | Next action Add service log (with asset) | update | write ∩ |
+/// | Detail complementary writes | update | write ∩ |
+/// | Nested create / assign / status / log / notes | create / update | write ∩ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
+///
+/// Report uses matrix read ∩ (source "Always" narrowed — note in tests).
+/// Facility ABAC is on route entry only; in-page atoms reuse module +
+/// permission. Matrix nested cross-module rows are _(n/a)_.
+abstract final class OperationsInProgressAtomPermissions {
+  static const AccessRequirement tab = operationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement search = operationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = operationsWorkspaceReadRequirement;
+  static const AccessRequirement settings = operationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = operationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = operationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = operationsWorkspaceReadRequirement;
+  static const AccessRequirement success = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement create = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement update = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement write = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement mutate = operationsMutationRequirement;
+  static const AccessRequirement createRequest =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement updateStatus =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement serviceLog =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement note = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement closeout = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement report = operationsWorkspaceReportRequirement;
+  static const AccessRequirement nestedWrite =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = operationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      operationsWorkspaceEntryRequirement;
+}
+
+/// Completed tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Completed tab | navigate | read ∩ `operations:read` |
+/// | Create request (tab primary) | create | write ∩ `operations:write` |
+/// | Report summary | read | report ∩ `operations:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ |
+/// | Row select → request detail | read | read ∩ |
+/// | Next action Closeout | update | write ∩ |
+/// | Detail complementary writes | update | write ∩ |
+/// | Nested create / assign / status / log / notes | create / update | write ∩ |
+/// | Nested cross-module read/write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | entry ∪ read\|write |
+///
+/// Report uses matrix read ∩ (source "Always" narrowed — note in tests).
+/// Facility ABAC is on route entry only; in-page atoms reuse module +
+/// permission.
+abstract final class OperationsCompletedAtomPermissions {
+  static const AccessRequirement tab = operationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement search = operationsWorkspaceReadRequirement;
+  static const AccessRequirement filters = operationsWorkspaceReadRequirement;
+  static const AccessRequirement settings = operationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = operationsWorkspaceReadRequirement;
+  static const AccessRequirement loading = operationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = operationsWorkspaceReadRequirement;
+  static const AccessRequirement success = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement validation =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  static const AccessRequirement nextAction =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement create = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement update = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement write = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement mutate = operationsMutationRequirement;
+  static const AccessRequirement createRequest =
+      operationsWriteRequirement;
+  static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement updateStatus =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement serviceLog =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement note = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement closeout = operationsWorkspaceWriteRequirement;
+  static const AccessRequirement report = operationsWorkspaceReportRequirement;
+  static const AccessRequirement nestedWrite =
+      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      operationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = operationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      operationsWorkspaceEntryRequirement;
 }
 
 /// Assets tab atom → permission mapping (inventory + matrix).

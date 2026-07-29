@@ -343,8 +343,7 @@ async def run_prompt(
 
                 async with git_lock:
                     git_info = await asyncio.to_thread(_commit_and_push, key)
-                finished.add(key)
-                _save_finished(finished)
+                _mark_finished(finished, key)
                 return {
                     "file": key,
                     "status": "finished",

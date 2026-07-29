@@ -282,6 +282,7 @@ bool opdBoardShowsNextActionColumn(
           OpdAllAtomPermissions.nextActionDisposition.isAllowed(policy) ||
           OpdAllAtomPermissions.nextActionAdmissionHandoff.isAllowed(policy) ||
           OpdAllAtomPermissions.nextActionCorrectStage.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionDepartmentHandoff.isAllowed(policy) ||
           OpdAllAtomPermissions.frontDesk.isAllowed(policy),
     OpdWorkspaceSection.triage =>
       OpdTriageAtomPermissions.startEncounter.isAllowed(policy) ||

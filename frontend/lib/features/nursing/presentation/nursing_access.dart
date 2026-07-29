@@ -671,32 +671,36 @@ abstract final class NursingMedicationDueAtomPermissions {
 
 /// Handover pending tab atom → permission mapping (inventory + matrix).
 ///
-/// Worklist `?scope=handover-pending`. Shift handover complete needs
-/// clinical:write (matrix ∩); source inventory keeps
-/// [nursingWriteRequirement] ∪ `clinical:write` | `patient:write` |
-/// `last_office:write` + roles + module — keep source. `last_office:read`
+/// Worklist `?scope=handover-pending`. Shift handover complete needs ∩
+/// `clinical:write` (+ nurse/manager/admin roles + `inpatient-bed-management`)
+/// — [nursingClinicalWriteRequirement]. Source inventory
+/// (`screens/nursing.md`) documents broader ∪ write keys for shared nursing
+/// chrome; this tab's stage write atoms prefer the matrix ∩. Create/update/
+/// delete matrix ∩ `clinical:write` → [create] / [update] / [delete] /
+/// [write]. Complementary detail writes (note / vitals / …) keep source
+/// [nursingWriteRequirement] ∪ — mapping noted in tests. `last_office:read`
 /// alone must not unlock writes. Nested cross-module matrix rows are _(n/a)_
 /// except medication panels ([medicationsPanel] / [administerMedication]) and
 /// shift context ([shiftContext]).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Handover pending tab / count badge | navigate | read ∪ `clinical:read` \| `patient:read` |
-/// | Shift context | progressive disclosure | shift ∩ roster/ops + `hr-rosters` |
-/// | Search / Clear / Filters / Settings / columns | read chrome | read ∪ |
-/// | Empty / error / retry / loading | read chrome | read ∪ |
-/// | Success snackbar / validation (authorized) | visible feedback | write source ∪ |
-/// | Row select → detail | read | read ∪ |
-/// | Next action Create handover | create / update | write source ∪ |
-/// | Detail complementary writes (note / vitals / …) | create / update | write source ∪ |
-/// | Detail Accept / Create handover | create / update | write source ∪ |
-/// | Detail Administer medication | update | pharmacy:read ∩ (clinical\|pharmacy):write |
-/// | Detail medications panel | nested read | pharmacy:read ∩ |
-/// | Detail Open ICU | navigate | always when ICU active |
-/// | Detail Print summary | export | write source ∪ |
-/// | Checklist handover / write steps | create / update | write source ∪ |
-/// | Deep link `panel=handover` | create / update | write source ∪ |
-/// | Route entry (deep link) | navigate | catalog / route ∪ ([routeEntry]) |
+/// | Handover pending tab / count badge | navigate | read ∪ ([tab]) |
+/// | Shift context | progressive disclosure | ([shiftContext]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | ([success] / [validation]) |
+/// | Row select → detail | read | ([detail]) |
+/// | Next action Create handover | create / update | ([nextActionHandover]) |
+/// | Detail complementary writes (note / vitals / …) | create / update | ([complementaryWrite]) |
+/// | Detail Accept / Create handover | create / update | ([acceptHandover] / [createHandover]) |
+/// | Detail Administer medication | update | ([administerMedication]) |
+/// | Detail medications panel | nested read | ([medicationsPanel]) |
+/// | Detail Open ICU | navigate | ([openIcu]) |
+/// | Detail Print summary | export | ([printSummary]) |
+/// | Checklist handover / write steps | create / update | ([checklistWrite]) |
+/// | Deep link `panel=handover` | create / update | ([panelDeepLink]) |
+/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
 abstract final class NursingHandoverPendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -706,37 +710,43 @@ abstract final class NursingHandoverPendingAtomPermissions {
   static const AccessRequirement empty = nursingWorkspaceReadRequirement;
   static const AccessRequirement loading = nursingWorkspaceReadRequirement;
   static const AccessRequirement retry = nursingWorkspaceReadRequirement;
-  static const AccessRequirement success = nursingWriteRequirement;
-  static const AccessRequirement validation = nursingWriteRequirement;
+  static const AccessRequirement success = nursingClinicalWriteRequirement;
+  static const AccessRequirement validation = nursingClinicalWriteRequirement;
   static const AccessRequirement rowSelect = nursingWorkspaceReadRequirement;
   static const AccessRequirement detail = nursingWorkspaceReadRequirement;
-  static const AccessRequirement nextAction = nursingWriteRequirement;
-  static const AccessRequirement nextActionHandover = nursingWriteRequirement;
-  static const AccessRequirement create = nursingWriteRequirement;
-  static const AccessRequirement update = nursingWriteRequirement;
-  static const AccessRequirement delete = nursingWriteRequirement;
-  static const AccessRequirement write = nursingWriteRequirement;
-  /// Matrix ∩ `clinical:write` mapping note — prefer [write] (source ∪) at call sites.
+  static const AccessRequirement nextAction = nursingClinicalWriteRequirement;
+  static const AccessRequirement nextActionHandover =
+      nursingClinicalWriteRequirement;
+  static const AccessRequirement create = nursingClinicalWriteRequirement;
+  static const AccessRequirement update = nursingClinicalWriteRequirement;
+  static const AccessRequirement delete = nursingClinicalWriteRequirement;
+  static const AccessRequirement write = nursingClinicalWriteRequirement;
   static const AccessRequirement clinicalWrite = nursingClinicalWriteRequirement;
-  static const AccessRequirement createHandover = nursingWriteRequirement;
-  static const AccessRequirement acceptHandover = nursingWriteRequirement;
+  static const AccessRequirement createHandover = nursingClinicalWriteRequirement;
+  static const AccessRequirement acceptHandover = nursingClinicalWriteRequirement;
+  /// Source ∪ for shared detail complementary writes — matrix ∩ is [write].
   static const AccessRequirement complementaryWrite = nursingWriteRequirement;
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
+  static const AccessRequirement recordVitals = nursingWriteRequirement;
+  static const AccessRequirement addNote = nursingWriteRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
   static const AccessRequirement medicationsPanel =
       nursingMedicationsPanelRequirement;
   static const AccessRequirement administerMedication =
       nursingMedicationAdministerRequirement;
+  /// Nested cross-module matrix _(n/a)_; medication uses [medicationsPanel].
   static const AccessRequirement nestedRead =
       nursingNestedCrossModuleReadRequirement;
-  static const AccessRequirement nestedWrite = nursingWriteRequirement;
+  static const AccessRequirement nestedWrite = nursingClinicalWriteRequirement;
   static const AccessRequirement printSummary = nursingWriteRequirement;
-  static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement panelDeepLink = nursingClinicalWriteRequirement;
   static const AccessRequirement openIcu = AccessRequirement();
+  static const AccessRequirement navigation = AccessRequirement();
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       nursingWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.nursingEntry;
 }
 
 /// Transfer pending tab atom → permission mapping (inventory + matrix).
