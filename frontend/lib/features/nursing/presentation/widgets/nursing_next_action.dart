@@ -58,20 +58,62 @@ AccessRequirement nursingNextActionRequirement(
         NursingHandoverPendingAtomPermissions.nextActionHandover,
       NursingQueueScope.medicationDue =>
         NursingMedicationDueAtomPermissions.nextActionMedication,
-      _ => nursingNextActionRequirement(kind),
+      NursingQueueScope.urgent => switch (kind) {
+        NursingNextActionKind.medication =>
+          NursingUrgentAtomPermissions.nextActionMedication,
+        NursingNextActionKind.transfer =>
+          NursingUrgentAtomPermissions.nextActionTransfer,
+        NursingNextActionKind.discharge =>
+          NursingUrgentAtomPermissions.nextActionDischarge,
+        NursingNextActionKind.escalate =>
+          NursingUrgentAtomPermissions.nextActionEscalate,
+        NursingNextActionKind.vitals =>
+          NursingUrgentAtomPermissions.nextActionVitals,
+        NursingNextActionKind.handover =>
+          NursingUrgentAtomPermissions.nextActionHandover,
+      },
+      NursingQueueScope.all => switch (kind) {
+        NursingNextActionKind.medication =>
+          NursingAllAtomPermissions.nextActionMedication,
+        NursingNextActionKind.transfer =>
+          NursingAllAtomPermissions.nextActionTransfer,
+        NursingNextActionKind.discharge =>
+          NursingAllAtomPermissions.nextActionDischarge,
+        NursingNextActionKind.escalate =>
+          NursingAllAtomPermissions.nextActionEscalate,
+        NursingNextActionKind.vitals =>
+          NursingAllAtomPermissions.nextActionVitals,
+        NursingNextActionKind.handover =>
+          NursingAllAtomPermissions.nextActionHandover,
+      },
+      NursingQueueScope.assignedWard => switch (kind) {
+        NursingNextActionKind.medication =>
+          NursingAssignedWardAtomPermissions.nextActionMedication,
+        NursingNextActionKind.transfer =>
+          NursingAssignedWardAtomPermissions.nextActionTransfer,
+        NursingNextActionKind.discharge =>
+          NursingAssignedWardAtomPermissions.nextActionDischarge,
+        NursingNextActionKind.escalate =>
+          NursingAssignedWardAtomPermissions.nextActionEscalate,
+        NursingNextActionKind.vitals =>
+          NursingAssignedWardAtomPermissions.nextActionVitals,
+        NursingNextActionKind.handover =>
+          NursingAssignedWardAtomPermissions.nextActionHandover,
+      },
     };
   }
   return switch (kind) {
     NursingNextActionKind.medication =>
-      NursingMedicationDueAtomPermissions.nextActionMedication,
+      NursingAllAtomPermissions.nextActionMedication,
     NursingNextActionKind.handover =>
-      NursingHandoverPendingAtomPermissions.nextActionHandover,
+      NursingAllAtomPermissions.nextActionHandover,
     NursingNextActionKind.transfer =>
-      NursingTransferPendingAtomPermissions.nextActionTransfer,
+      NursingAllAtomPermissions.nextActionTransfer,
     NursingNextActionKind.discharge =>
-      NursingDischargePendingAtomPermissions.nextActionDischarge,
-    NursingNextActionKind.vitals ||
-    NursingNextActionKind.escalate => nursingWriteRequirement,
+      NursingAllAtomPermissions.nextActionDischarge,
+    NursingNextActionKind.escalate =>
+      NursingAllAtomPermissions.nextActionEscalate,
+    NursingNextActionKind.vitals => NursingAllAtomPermissions.nextActionVitals,
   };
 }
 

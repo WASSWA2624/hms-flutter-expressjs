@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -315,6 +317,16 @@ Future<bool?> runOpdBoardNextAction({
       kind ?? opdBoardNextActionKindForFlow(flow, detail: detail);
   if (resolved == OpdBoardNextActionKind.none) {
     return null;
+  }
+
+  final AccessRequirement? requirement = opdBoardNextActionRequirement(
+    resolved,
+  );
+  if (requirement != null) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!requirement.isAllowed(policy)) {
+      return null;
+    }
   }
 
   switch (resolved) {

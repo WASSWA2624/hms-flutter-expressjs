@@ -171,6 +171,13 @@ void _stubRepository(
       <NursingRosterAssignment>[],
     ),
   );
+  when(() => repository.searchUsers(any())).thenAnswer(
+    (_) async => const Result<List<NursingUserOption>>.success(
+      <NursingUserOption>[
+        NursingUserOption(id: 'nurse-2', displayLabel: 'Nurse Two'),
+      ],
+    ),
+  );
   when(() => repository.loadPatientDetail(any())).thenAnswer((
     Invocation invocation,
   ) async {

@@ -8,10 +8,14 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/opd/presentation/opd_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -107,6 +111,23 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<OpdWorkspaceSection> visibleSections = opdAllowedSections(
+      accessPolicy,
+    );
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final OpdWorkspaceSection fallback =
+          opdFallbackSection(accessPolicy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        _handleTabChanged(fallback);
+      });
+    }
     final List<_OpdTableItem> allItems = _tableItems(context, state);
     final ({Widget primary, List<Widget> secondary}) toolbar =
         _opdToolbarForSection(context, ref, _section, state);
@@ -120,8 +141,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final OpdWorkspaceSection section
-                    in OpdWorkspaceSection.values)
+                for (final OpdWorkspaceSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _opdSectionIcon(section),
@@ -140,8 +160,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final OpdWorkspaceSection section
-                    in OpdWorkspaceSection.values) {
+                for (final OpdWorkspaceSection section in visibleSections) {
                   if (section.name == tabId) {
                     _handleTabChanged(section);
                     break;
@@ -198,7 +217,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       OpdWorkspaceSection.queue ||
       OpdWorkspaceSection.triage ||
       OpdWorkspaceSection.active => AppAccessActionGate(
-        requirement: opdEncounterPermissionRequirement,
+        requirement: opdStartEncounterRequirementForSection(section),
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -306,6 +325,13 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       panel,
     );
     if (panelKind != null && panelKind != OpdBoardNextActionKind.none) {
+      final AccessRequirement? panelRequirement = opdFocusedPanelRequirement(
+        panel,
+      );
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (panelRequirement != null && !panelRequirement.isAllowed(policy)) {
+        return;
+      }
       final bool? changed = await runOpdBoardNextAction(
         context: context,
         ref: ref,
@@ -317,6 +343,11 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
       }
+      return;
+    }
+
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!OpdActiveAtomPermissions.detail.isAllowed(policy)) {
       return;
     }
 
@@ -378,6 +409,8 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
       return const FollowUpWorklistPanel(
         scope: FollowUpWorklistScope(encounterType: 'OPD'),
         storageKeyPrefix: 'opd_follow_ups',
+        readRequirement: opdFollowUpsRequirement,
+        writeRequirement: opdFollowUpsWriteRequirement,
       );
     }
     final List<_OpdTableItem> allItems = _getAllItems(context);
@@ -2245,6 +2278,20 @@ class _OpdMainTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool showNextAction = opdBoardShowsNextActionColumn(policy, section);
+    final List<_OpdTableColumnId> defaultColumns = _opdDefaultColumnsForSection(
+      section,
+    ).where(
+      (_OpdTableColumnId column) =>
+          showNextAction || column != _OpdTableColumnId.nextAction,
+    ).toList(growable: false);
+    final List<_OpdTableColumnId> columnChoices = _opdColumnChoicesForSection(
+      section,
+    ).where(
+      (_OpdTableColumnId column) =>
+          showNextAction || column != _OpdTableColumnId.nextAction,
+    ).toList(growable: false);
 
     return SizedBox(
       width: double.infinity,
@@ -2265,15 +2312,11 @@ class _OpdMainTable extends ConsumerWidget {
           minHeight: 260,
         ),
         columns: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in _opdDefaultColumnsForSection(
-            section,
-          ))
+          for (final _OpdTableColumnId column in defaultColumns)
             _opdDataColumn(context, column, state: state),
         ],
         columnChoices: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in _opdColumnChoicesForSection(
-            section,
-          ))
+          for (final _OpdTableColumnId column in columnChoices)
             _opdDataColumn(context, column, state: state),
         ],
         onRowSelected: (_OpdTableItem item) =>
@@ -2340,7 +2383,9 @@ class _OpdMainTable extends ConsumerWidget {
                   label: _queueStatusLabel(context, item),
                 ),
               ],
-              trailing: _OpdNextActionCell(item: item, state: state),
+              trailing: showNextAction
+                  ? _OpdNextActionCell(item: item, state: state)
+                  : null,
             ),
         itemKeyBuilder: (_OpdTableItem item) =>
             ValueKey<String>('opd-${item.stableKey}'),

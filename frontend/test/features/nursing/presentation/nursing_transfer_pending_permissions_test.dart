@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -314,7 +316,21 @@ void main() {
       );
       expect(
         identical(
+          NursingTransferPendingAtomPermissions.nextAction,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           NursingTransferPendingAtomPermissions.nextActionTransfer,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.acknowledgeTransfer,
           nursingClinicalWriteRequirement,
         ),
         isTrue,
@@ -349,6 +365,13 @@ void main() {
       );
       expect(
         identical(
+          NursingTransferPendingAtomPermissions.checklistWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           NursingTransferPendingAtomPermissions.medicationsPanel,
           nursingMedicationsPanelRequirement,
         ),
@@ -369,7 +392,28 @@ void main() {
         isTrue,
       );
       expect(
+        identical(
+          NursingTransferPendingAtomPermissions.routeEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.catalogEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
+      );
+      expect(
         nursingNextActionRequirement(NursingNextActionKind.transfer),
+        NursingTransferPendingAtomPermissions.nextActionTransfer,
+      );
+      expect(
+        nursingNextActionRequirement(
+          NursingNextActionKind.transfer,
+          scope: NursingQueueScope.transferPending,
+        ),
         NursingTransferPendingAtomPermissions.nextActionTransfer,
       );
       expect(
@@ -379,6 +423,20 @@ void main() {
       expect(
         nursingWriteRequirementForScope(NursingQueueScope.transferPending),
         NursingTransferPendingAtomPermissions.write,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _readPolicy(),
+          NursingQueueScope.transferPending,
+        ),
+        isFalse,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _clinicalWriteOnlyPolicy(),
+          NursingQueueScope.transferPending,
+        ),
+        isTrue,
       );
     });
 
@@ -447,19 +505,77 @@ void main() {
     });
 
     test('last_office:read alone does not unlock transfer writes', () {
-      final AppAccessPolicy lastOffice = _lastOfficeReadOnlyPolicy();
+      final AppAccessPolicy lastOfficeWithClinical = _lastOfficeReadOnlyPolicy();
       expect(
-        NursingTransferPendingAtomPermissions.write.isAllowed(lastOffice),
+        NursingTransferPendingAtomPermissions.routeEntry.isAllowed(
+          lastOfficeWithClinical,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingTransferPendingAtomPermissions.tab.isAllowed(
+          lastOfficeWithClinical,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingTransferPendingAtomPermissions.write.isAllowed(
+          lastOfficeWithClinical,
+        ),
         isFalse,
       );
       expect(
         NursingTransferPendingAtomPermissions.nextActionTransfer.isAllowed(
-          lastOffice,
+          lastOfficeWithClinical,
         ),
         isFalse,
       );
-      expect(canWriteNursing(lastOffice), isFalse);
+      expect(
+        NursingTransferPendingAtomPermissions.complementaryWrite.isAllowed(
+          lastOfficeWithClinical,
+        ),
+        isFalse,
+      );
+      expect(canWriteNursing(lastOfficeWithClinical), isFalse);
+
+      final AppAccessPolicy lastOfficeOnly = _policy(
+        roles: const <String>['RECEPTION'],
+        permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+      );
+      expect(
+        NursingTransferPendingAtomPermissions.routeEntry.isAllowed(
+          lastOfficeOnly,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingTransferPendingAtomPermissions.tab.isAllowed(lastOfficeOnly),
+        isFalse,
+      );
+      expect(canViewNursingTransferPending(lastOfficeOnly), isFalse);
     });
+
+    test(
+      'source ∪ complementaryWrite allows patient:write without clinical:write',
+      () {
+        final AppAccessPolicy patientWriter =
+            _patientWriteWithoutClinicalWritePolicy();
+        expect(
+          NursingTransferPendingAtomPermissions.write.isAllowed(patientWriter),
+          isFalse,
+        );
+        expect(
+          NursingTransferPendingAtomPermissions.complementaryWrite.isAllowed(
+            patientWriter,
+          ),
+          isTrue,
+        );
+        expect(
+          NursingTransferPendingAtomPermissions.addNote.isAllowed(patientWriter),
+          isTrue,
+        );
+      },
+    );
 
     test('subscription / module strip without inpatient-bed-management', () {
       final AppAccessPolicy noModule = _policy(
@@ -588,8 +704,159 @@ void main() {
           findsNothing,
         );
         expect(find.text(l10n.nursingNextActionColumnLabel), findsNothing);
+
+        await tester.tap(find.text('Transfer Patient'));
+        await _pumpAfterAction(tester);
+
+        // Source ∪ complementary writes still mount without clinical:write.
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAddNote),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAcknowledgeTransfer),
+          ),
+          findsNothing,
+        );
       },
     );
+
+    testWidgets(
+      'authorized writer detail: complementary writes; transfer omitted as next-action',
+      (WidgetTester tester) async {
+        await _pumpTransferPending(
+          tester,
+          repository: repository,
+          policy: _readWritePolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
+
+        await tester.tap(find.text('Transfer Patient'));
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        // Row next-action Acknowledge transfer omitted from detail Quick Actions.
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAcknowledgeTransfer),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAddNote),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionRecordVitals),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.nursingMedicationsTitle), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('light theme: read-only chrome without write affordances', (
+      WidgetTester tester,
+    ) async {
+      await _pumpTransferPending(
+        tester,
+        repository: repository,
+        policy: _readPolicy(),
+        themeMode: ThemeMode.light,
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+
+      expect(find.text('Transfer Patient'), findsOneWidget);
+      expect(
+        find.byTooltip(l10n.nursingActionAcknowledgeTransfer),
+        findsNothing,
+      );
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('error / retry state remains for authorized readers', (
+      WidgetTester tester,
+    ) async {
+      when(() => repository.listWardPatients(any())).thenAnswer(
+        (_) async => const Result<AppPage<NursingPatientSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+      when(() => repository.listPendingHandovers()).thenAnswer(
+        (_) async =>
+            const Result<List<NursingHandover>>.success(<NursingHandover>[]),
+      );
+      when(() => repository.listCurrentRosters()).thenAnswer(
+        (_) async => const Result<List<NursingRosterAssignment>>.success(
+          <NursingRosterAssignment>[],
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/nursing?scope=transfer-pending',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/nursing',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: NursingWorkspacePage(
+                  initialQuery: NursingWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nursingRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_readPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    });
 
     testWidgets('∪ allowance: patient:read alone shows transfer-pending tab', (
       WidgetTester tester,

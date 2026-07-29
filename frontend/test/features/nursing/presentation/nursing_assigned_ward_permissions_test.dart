@@ -54,7 +54,6 @@ const NursingPatientSummary _medDuePatient = NursingPatientSummary(
   bedDisplayLabel: 'Bed 2',
   hasActiveBed: true,
   medicationDueCount: 2,
-  taskTypeCode: 'MEDICATION_DUE',
 );
 
 AppAccessPolicy _policy({
@@ -220,7 +219,7 @@ void _stubNursingRepository(
             ? const <MedicationReminder>[
                 MedicationReminder(
                   id: 'med-1',
-                  displayTitle: 'Paracetamol',
+                  medicationLabel: 'Paracetamol',
                   status: 'DUE',
                 ),
               ]
@@ -243,7 +242,7 @@ void _stubNursingRepository(
           NursingVitalSign(
             id: 'vital-1',
             vitalType: 'BP',
-            displayValue: '120/80',
+            value: '120/80',
           ),
         ],
       ),
@@ -662,7 +661,7 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.textContaining('Vital'), findsWidgets);
+      expect(find.text('Record vitals'), findsWidgets);
     });
   });
 }

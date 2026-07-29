@@ -1010,6 +1010,12 @@ final class NursingWorkspaceController
     return result.map((AppPage<NursingPatientSummary> source) {
       final List<NursingPatientSummary> filtered = source.items
           .map((NursingPatientSummary item) {
+            // When shift/ops context cannot load handovers, keep API-provided
+            // pendingHandoverCount so handover-pending scope still works for
+            // clinical/patient readers without roster:read.
+            if (handovers.isEmpty) {
+              return item;
+            }
             final int handoverCount = handovers
                 .where(
                   (NursingHandover handover) =>

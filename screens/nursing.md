@@ -117,4 +117,5 @@ Tab-strip primary write, **Add note**, and **Refresh** were removed.
 - [x] Deep link `/nursing?id=…&panel=vitals` opens vitals dialog without an empty detail first. *(widget)*
 - [x] No Refresh, Add note, or primary write control on the tab strip; worklist still updates after a successful mutation. *(widget; dead `nursingPrimaryAction*` helpers removed)*
 - [x] Mobile list shows next-action trailing; tapping it completes the same write as desktop. *(widget)*
+- [x] All-tab permission scan: ∩ denial / ∪ allowance / subscription strip / meds panel / shift context / viewports / themes. *(widget: `nursing_all_permissions_test.dart`)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared nursing helpers)*

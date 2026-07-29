@@ -37,7 +37,10 @@ class NursingPatientDetailDialog extends ConsumerWidget {
 
   final NursingNextActionKind? omitNextActionKind;
 
-  static const AccessRequirement writeRequirement = nursingWriteRequirement;
+  /// Shared complementary write gate (source ∪). Prefer tab
+  /// `*AtomPermissions.write` / stage atoms at call sites when scoped.
+  static const AccessRequirement writeRequirement =
+      NursingAllAtomPermissions.write;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -295,7 +298,7 @@ class _NursingActionBar extends ConsumerWidget {
         ),
         if (omit != NursingNextActionKind.escalate)
           AppPermissionActionItem(
-            requirement: writeRequirement,
+            requirement: NursingUrgentAtomPermissions.escalate,
             label: l10n.nursingActionEscalate,
             icon: Icons.report_problem_outlined,
             onPressed: () => _openEscalationDialog(context),
@@ -303,7 +306,8 @@ class _NursingActionBar extends ConsumerWidget {
         if (detail.activeTransfer != null &&
             omit != NursingNextActionKind.transfer)
           AppPermissionActionItem(
-            requirement: NursingTransferPendingAtomPermissions.nextActionTransfer,
+            requirement:
+                NursingTransferPendingAtomPermissions.acknowledgeTransfer,
             label: l10n.nursingActionAcknowledgeTransfer,
             icon: Icons.transfer_within_a_station_outlined,
             onPressed: () => _openTransferDialog(context, detail),
@@ -324,7 +328,7 @@ class _NursingActionBar extends ConsumerWidget {
             onPressed: () => _openIcuWorkspace(context, summary),
           ),
         AppPermissionActionItem(
-          requirement: nursingWriteRequirement,
+          requirement: NursingAllAtomPermissions.printSummary,
           label: l10n.nursingActionPrintSummary,
           icon: Icons.print_outlined,
           onPressed: () => _openPrintSummaryDialog(context, detail),
