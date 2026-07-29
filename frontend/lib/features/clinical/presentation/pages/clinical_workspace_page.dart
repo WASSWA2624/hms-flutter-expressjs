@@ -10,11 +10,10 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
@@ -111,14 +110,6 @@ class _ClinicalWorkspaceContent extends ConsumerStatefulWidget {
 
 class _ClinicalWorkspaceContentState
     extends ConsumerState<_ClinicalWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.systemAdmin,
-    ],
-    activeModules: <String>['encounters-vitals'],
-  );
-
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
   _tableColumnController;
@@ -238,6 +229,21 @@ class _ClinicalWorkspaceContentState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ClinicalWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<ClinicalWorkspaceSection> visibleSections =
+        _clinicalVisibleSections(accessPolicy);
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final ClinicalWorkspaceSection fallback = visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        _handleTabChanged(fallback);
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -248,8 +254,7 @@ class _ClinicalWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final ClinicalWorkspaceSection section
-                    in ClinicalWorkspaceSection.values)
+                for (final ClinicalWorkspaceSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _clinicalSectionIcon(section),
@@ -267,7 +272,7 @@ class _ClinicalWorkspaceContentState
               selectedId: _section.name,
               onTabTapped: (String tabId) {
                 for (final ClinicalWorkspaceSection section
-                    in ClinicalWorkspaceSection.values) {
+                    in visibleSections) {
                   if (section.name == tabId) {
                     _handleTabChanged(section);
                     break;
@@ -280,6 +285,8 @@ class _ClinicalWorkspaceContentState
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(),
                 storageKeyPrefix: 'clinical_follow_ups',
+                readRequirement: clinicalFollowUpsRequirement,
+                writeRequirement: clinicalFollowUpsWriteRequirement,
               )
             else
               _ClinicalWorklistPanel(
@@ -327,6 +334,12 @@ ClinicalQueueScope _clinicalSectionScope(ClinicalWorkspaceSection section) {
       ClinicalQueueScope.inConsultation,
     ClinicalWorkspaceSection.completed => ClinicalQueueScope.completed,
   };
+}
+
+List<ClinicalWorkspaceSection> _clinicalVisibleSections(
+  AppAccessPolicy policy,
+) {
+  return clinicalAllowedSections(policy);
 }
 
 IconData _clinicalSectionIcon(ClinicalWorkspaceSection section) {
@@ -865,38 +878,32 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteClinical(policy);
     final String encounterId = item.apiEncounterId.trim();
     final String nextActionCode = WorkflowActionRegistry.instance.canonicalize(
       item.nextStep ?? item.stage ?? item.status ?? '',
     );
-    if (nextActionCode == 'RECORD_VITALS' &&
+    if (canWrite &&
+        nextActionCode == 'RECORD_VITALS' &&
         clinicalOpdFlowApiId(item) != null &&
         !item.isTerminal) {
-      return AppAccessActionGate(
-        requirement: _ClinicalWorkspaceContentState._writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return _ClinicalCompactFallbackAction(
-            label: l10n.opdRecordVitalsAction,
-            icon: Icons.monitor_heart_outlined,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () async {
-                    final ClinicalWorkspaceController controller = ref.read(
-                      clinicalWorkspaceControllerProvider.notifier,
-                    );
-                    final AppFailure? selectFailure = await controller
-                        .selectEntry(item);
-                    if (!context.mounted) {
-                      return;
-                    }
-                    if (selectFailure != null) {
-                      _showFailureIfNeeded(context, selectFailure);
-                      return;
-                    }
-                    await _openVitalsDialog(context, controller);
-                  }
-                : null,
+      return _ClinicalCompactFallbackAction(
+        label: l10n.opdRecordVitalsAction,
+        icon: Icons.monitor_heart_outlined,
+        onPressed: () async {
+          final ClinicalWorkspaceController controller = ref.read(
+            clinicalWorkspaceControllerProvider.notifier,
           );
+          final AppFailure? selectFailure = await controller.selectEntry(item);
+          if (!context.mounted) {
+            return;
+          }
+          if (selectFailure != null) {
+            _showFailureIfNeeded(context, selectFailure);
+            return;
+          }
+          await _openVitalsDialog(context, controller);
         },
       );
     }
@@ -909,13 +916,13 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
         nextStep: item.nextStep,
         sourceModule: _clinicalWorkflowSourceModule(item.sourceQueue),
       );
-      final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
       final WorkflowAction? action = WorkflowActionRegistry.instance.resolve(
         context,
         actionContext,
         policy: policy,
       );
-      if (action != null) {
+      // Hide permission-denied workflow affordances (no disabled lock UI).
+      if (action != null && action.isAvailable) {
         return WorkflowActionButton(
           encounterId: encounterId,
           patientId: item.apiPatientId,
@@ -937,6 +944,7 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
       hasAdmission: item.admissionId?.trim().isNotEmpty ?? false,
     );
     final bool canCompleteDisposition =
+        canWrite &&
         !item.isTerminal &&
         isClinicalDispositionActionAvailable(
           sourceQueue: item.sourceQueue,
@@ -947,24 +955,16 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
           hasOpdFlow: item.opdFlowApiId?.trim().isNotEmpty ?? false,
         );
     if (canCompleteDisposition) {
-      return AppAccessActionGate(
-        requirement: _ClinicalWorkspaceContentState._writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return _ClinicalCompactFallbackAction(
-            label: dispositionLabel,
-            icon: Icons.task_alt_outlined,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => _openCompleteDispositionDialog(
-                    context,
-                    ref,
-                    ref.read(clinicalWorkspaceControllerProvider.notifier),
-                    entry: item,
-                    actionLabel: dispositionLabel,
-                  )
-                : null,
-          );
-        },
+      return _ClinicalCompactFallbackAction(
+        label: dispositionLabel,
+        icon: Icons.task_alt_outlined,
+        onPressed: () => _openCompleteDispositionDialog(
+          context,
+          ref,
+          ref.read(clinicalWorkspaceControllerProvider.notifier),
+          entry: item,
+          actionLabel: dispositionLabel,
+        ),
       );
     }
 
@@ -2062,6 +2062,13 @@ class _ClinicalActionBar extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteClinical(policy);
+    final bool canLab = canWriteClinicalLabOrder(policy);
+    final bool canRadiology = canWriteClinicalRadiologyOrder(policy);
+    final bool canPharmacy = canWriteClinicalPharmacyOrder(policy);
+    final bool canAdmission = canRequestClinicalAdmission(policy);
+    final bool canPrint = canReadClinical(policy);
     final String dispositionActionLabel = clinicalDispositionActionLabel(
       l10n,
       sourceQueue: bundle.entry.sourceQueue,
@@ -2070,133 +2077,131 @@ class _ClinicalActionBar extends ConsumerWidget {
       location: bundle.entry.currentLocation,
       hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
     );
-    final bool canCompleteDisposition = isClinicalDispositionActionAvailable(
-      sourceQueue: bundle.entry.sourceQueue,
-      status: bundle.entry.status,
-      stage: bundle.entry.stage,
-      location: bundle.entry.currentLocation,
-      hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
-      hasOpdFlow: bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false,
-    );
-    return AppAccessActionGate(
-      requirement: _ClinicalWorkspaceContentState._writeRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppQuickActions(
-          title: l10n.clinicalActionsTitle,
-          presentation: AppQuickActionsPresentation.detailPanel,
-          actions: <AppActionItem>[
-            AppActionItem(
-              label: l10n.clinicalAddNoteAction,
-              leadingIcon: Icons.note_add_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openNoteDialog(context, controller),
-            ),
-            AppActionItem(
-              label:
-                  (bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false)
-                  ? l10n.opdEditVitalsAction
-                  : l10n.opdRecordVitalsAction,
-              leadingIcon: Icons.monitor_heart_outlined,
-              enabled:
-                  isAllowed &&
-                  !bundle.entry.isTerminal &&
-                  clinicalOpdFlowApiId(bundle.entry) != null,
-              onPressed: () => _openVitalsDialog(
-                context,
-                controller,
-                hasExistingVitals:
-                    bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false,
-              ),
-            ),
-            AppActionItem(
-              label: l10n.clinicalAddDiagnosisAction,
-              leadingIcon: Icons.rule_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openDiagnosisDialog(context, controller),
-            ),
-            AppActionItem(
-              label: l10n.clinicalRequestLabAction,
-              leadingIcon: Icons.science_outlined,
-              enabled: isAllowed,
-              onPressed: () =>
-                  _openLabDialog(context, controller, referenceData),
-            ),
-            AppActionItem(
-              label: l10n.clinicalRequestRadiologyAction,
-              leadingIcon: Icons.biotech_outlined,
-              enabled: isAllowed,
-              onPressed: () =>
-                  _openRadiologyDialog(context, controller, referenceData),
-            ),
-            AppActionItem(
-              label: l10n.clinicalPrescribeAction,
-              leadingIcon: Icons.medication_outlined,
-              enabled: isAllowed,
-              onPressed: () =>
-                  _openPrescriptionDialog(context, controller, referenceData),
-            ),
-            AppActionItem(
-              label: l10n.clinicalRequestProcedureAction,
-              leadingIcon: Icons.healing_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openProcedureDialog(context, controller),
-            ),
-            AppActionItem(
-              label: l10n.opdReferAction,
-              leadingIcon: Icons.alt_route_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openReferralDialog(context, controller),
-            ),
-            AppActionItem(
-              label: l10n.clinicalRequestAdmissionAction,
-              leadingIcon: Icons.bed_outlined,
-              enabled: isAllowed,
-              onPressed: () =>
-                  _openAdmissionDialog(context, controller, referenceData),
-            ),
-            AppActionItem(
-              label: l10n.opdFollowUpAction,
-              leadingIcon: Icons.event_repeat_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openFollowUpDialog(context, controller),
-            ),
-            AppActionItem(
-              label: dispositionActionLabel,
-              leadingIcon: Icons.task_alt_outlined,
-              enabled:
-                  isAllowed &&
-                  !bundle.entry.isTerminal &&
-                  canCompleteDisposition,
-              onPressed: () => _openCompleteDispositionDialog(
-                context,
-                ref,
-                controller,
-                entry: bundle.entry,
-                actionLabel: dispositionActionLabel,
-              ),
-            ),
-            AppActionItem(
-              label: l10n.clinicalPrintSummaryAction,
-              leadingIcon: Icons.print_outlined,
-              onPressed: () async {
-                await printFormTemplateDocument(
-                  ref: ref,
-                  context: context,
-                  title: l10n.clinicalConsultationSummaryTitle,
-                  patientContext: buildPrintFormPatientContext(
-                    l10n,
-                    patientName: bundle.entry.displayTitle,
-                    patientId: bundle.entry.apiPatientId,
-                    encounterId: bundle.entry.encounterPublicId,
-                  ),
-                  bodyHtml: _consultationSummaryHtml(context, bundle),
-                  includeSignatures: true,
-                );
-              },
-            ),
-          ],
+    final bool canCompleteDisposition =
+        canWrite &&
+        !bundle.entry.isTerminal &&
+        isClinicalDispositionActionAvailable(
+          sourceQueue: bundle.entry.sourceQueue,
+          status: bundle.entry.status,
+          stage: bundle.entry.stage,
+          location: bundle.entry.currentLocation,
+          hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
+          hasOpdFlow: bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false,
         );
-      },
+    final List<AppActionItem> actions = <AppActionItem>[
+      if (canWrite)
+        AppActionItem(
+          label: l10n.clinicalAddNoteAction,
+          leadingIcon: Icons.note_add_outlined,
+          onPressed: () => _openNoteDialog(context, controller),
+        ),
+      if (canWrite &&
+          !bundle.entry.isTerminal &&
+          clinicalOpdFlowApiId(bundle.entry) != null)
+        AppActionItem(
+          label: (bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false)
+              ? l10n.opdEditVitalsAction
+              : l10n.opdRecordVitalsAction,
+          leadingIcon: Icons.monitor_heart_outlined,
+          onPressed: () => _openVitalsDialog(
+            context,
+            controller,
+            hasExistingVitals:
+                bundle.triageHandoff?.vitalSigns.isNotEmpty ?? false,
+          ),
+        ),
+      if (canWrite)
+        AppActionItem(
+          label: l10n.clinicalAddDiagnosisAction,
+          leadingIcon: Icons.rule_outlined,
+          onPressed: () => _openDiagnosisDialog(context, controller),
+        ),
+      if (canLab)
+        AppActionItem(
+          label: l10n.clinicalRequestLabAction,
+          leadingIcon: Icons.science_outlined,
+          onPressed: () =>
+              _openLabDialog(context, controller, referenceData),
+        ),
+      if (canRadiology)
+        AppActionItem(
+          label: l10n.clinicalRequestRadiologyAction,
+          leadingIcon: Icons.biotech_outlined,
+          onPressed: () =>
+              _openRadiologyDialog(context, controller, referenceData),
+        ),
+      if (canPharmacy)
+        AppActionItem(
+          label: l10n.clinicalPrescribeAction,
+          leadingIcon: Icons.medication_outlined,
+          onPressed: () =>
+              _openPrescriptionDialog(context, controller, referenceData),
+        ),
+      if (canWrite)
+        AppActionItem(
+          label: l10n.clinicalRequestProcedureAction,
+          leadingIcon: Icons.healing_outlined,
+          onPressed: () => _openProcedureDialog(context, controller),
+        ),
+      if (canWrite)
+        AppActionItem(
+          label: l10n.opdReferAction,
+          leadingIcon: Icons.alt_route_outlined,
+          onPressed: () => _openReferralDialog(context, controller),
+        ),
+      if (canAdmission)
+        AppActionItem(
+          label: l10n.clinicalRequestAdmissionAction,
+          leadingIcon: Icons.bed_outlined,
+          onPressed: () =>
+              _openAdmissionDialog(context, controller, referenceData),
+        ),
+      if (canWrite)
+        AppActionItem(
+          label: l10n.opdFollowUpAction,
+          leadingIcon: Icons.event_repeat_outlined,
+          onPressed: () => _openFollowUpDialog(context, controller),
+        ),
+      if (canCompleteDisposition)
+        AppActionItem(
+          label: dispositionActionLabel,
+          leadingIcon: Icons.task_alt_outlined,
+          onPressed: () => _openCompleteDispositionDialog(
+            context,
+            ref,
+            controller,
+            entry: bundle.entry,
+            actionLabel: dispositionActionLabel,
+          ),
+        ),
+      if (canPrint)
+        AppActionItem(
+          label: l10n.clinicalPrintSummaryAction,
+          leadingIcon: Icons.print_outlined,
+          onPressed: () async {
+            await printFormTemplateDocument(
+              ref: ref,
+              context: context,
+              title: l10n.clinicalConsultationSummaryTitle,
+              patientContext: buildPrintFormPatientContext(
+                l10n,
+                patientName: bundle.entry.displayTitle,
+                patientId: bundle.entry.apiPatientId,
+                encounterId: bundle.entry.encounterPublicId,
+              ),
+              bodyHtml: _consultationSummaryHtml(context, bundle),
+              includeSignatures: true,
+            );
+          },
+        ),
+    ];
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return AppQuickActions(
+      title: l10n.clinicalActionsTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      actions: actions,
     );
   }
 }
@@ -2470,44 +2475,47 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
           ),
           SizedBox(width: theme.spacing.sm),
           AppAccessActionGate(
-            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            requirement: clinicalPharmacyOrderWriteRequirement,
             builder: (BuildContext context, bool isAllowed) {
+              if (!isAllowed) {
+                return const SizedBox.shrink();
+              }
               return Wrap(
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppButton(
-                    iconOnly: true,
-                    leadingIcon: Icons.block_outlined,
-                    label: l10n.clinicalCancelPharmacyOrderAction,
+                  if (canCancel)
+                    AppButton(
+                      iconOnly: true,
+                      leadingIcon: Icons.block_outlined,
+                      label: l10n.clinicalCancelPharmacyOrderAction,
 
-                    semanticLabel: l10n.clinicalCancelPharmacyOrderAction,
-                    tooltip: l10n.clinicalCancelPharmacyOrderAction,
-                    enabled: isAllowed && canCancel,
-                    onPressed: () => _confirmLabOrderMutation(
-                      context: context,
-                      title: l10n.clinicalCancelPharmacyOrderDialogTitle,
-                      body: l10n.clinicalCancelPharmacyOrderDialogBody,
-                      confirmLabel: l10n.clinicalCancelPharmacyOrderAction,
-                      action: () => controller.cancelPharmacyOrder(record.id),
+                      semanticLabel: l10n.clinicalCancelPharmacyOrderAction,
+                      tooltip: l10n.clinicalCancelPharmacyOrderAction,
+                      onPressed: () => _confirmLabOrderMutation(
+                        context: context,
+                        title: l10n.clinicalCancelPharmacyOrderDialogTitle,
+                        body: l10n.clinicalCancelPharmacyOrderDialogBody,
+                        confirmLabel: l10n.clinicalCancelPharmacyOrderAction,
+                        action: () => controller.cancelPharmacyOrder(record.id),
+                      ),
                     ),
-                  ),
-                  AppButton(
-                    iconOnly: true,
-                    leadingIcon: Icons.delete_outline,
-                    label: l10n.clinicalDeletePharmacyOrderAction,
+                  if (canDelete)
+                    AppButton(
+                      iconOnly: true,
+                      leadingIcon: Icons.delete_outline,
+                      label: l10n.clinicalDeletePharmacyOrderAction,
 
-                    semanticLabel: l10n.clinicalDeletePharmacyOrderAction,
-                    tooltip: l10n.clinicalDeletePharmacyOrderAction,
-                    enabled: isAllowed && canDelete,
-                    onPressed: () => _confirmLabOrderMutation(
-                      context: context,
-                      title: l10n.clinicalDeletePharmacyOrderDialogTitle,
-                      body: l10n.clinicalDeletePharmacyOrderDialogBody,
-                      confirmLabel: l10n.clinicalDeletePharmacyOrderAction,
-                      action: () => controller.deletePharmacyOrder(record.id),
+                      semanticLabel: l10n.clinicalDeletePharmacyOrderAction,
+                      tooltip: l10n.clinicalDeletePharmacyOrderAction,
+                      onPressed: () => _confirmLabOrderMutation(
+                        context: context,
+                        title: l10n.clinicalDeletePharmacyOrderDialogTitle,
+                        body: l10n.clinicalDeletePharmacyOrderDialogBody,
+                        confirmLabel: l10n.clinicalDeletePharmacyOrderAction,
+                        action: () => controller.deletePharmacyOrder(record.id),
+                      ),
                     ),
-                  ),
                 ],
               );
             },

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
@@ -20,15 +21,22 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 ///
 /// Pass [scope] with an encounter type (`OPD`, `IPD`, `ICU`, `THEATRE`) or an
 /// empty scope for hospital-wide lists. Unauthorized callers see nothing.
+///
+/// Defaults use Reception front-desk gates. Clinical hosts should pass
+/// clinical follow-up read/write requirements instead.
 class FollowUpWorklistPanel extends ConsumerStatefulWidget {
   const FollowUpWorklistPanel({
     required this.scope,
     this.storageKeyPrefix = 'follow_up_worklist',
+    this.readRequirement = receptionFollowUpsRequirement,
+    this.writeRequirement = receptionFrontDeskWriteRequirement,
     super.key,
   });
 
   final FollowUpWorklistScope scope;
   final String storageKeyPrefix;
+  final AccessRequirement readRequirement;
+  final AccessRequirement writeRequirement;
 
   @override
   ConsumerState<FollowUpWorklistPanel> createState() =>
@@ -47,7 +55,7 @@ class _FollowUpWorklistPanelState extends ConsumerState<FollowUpWorklistPanel> {
   @override
   Widget build(BuildContext context) {
     return AppAccessActionGate(
-      requirement: receptionFollowUpsRequirement,
+      requirement: widget.readRequirement,
       builder: (BuildContext context, bool isAllowed) {
         if (!isAllowed) {
           return const SizedBox.shrink();
@@ -56,6 +64,7 @@ class _FollowUpWorklistPanelState extends ConsumerState<FollowUpWorklistPanel> {
           scope: widget.scope,
           storageKeyPrefix: widget.storageKeyPrefix,
           searchController: _searchController,
+          writeRequirement: widget.writeRequirement,
         );
       },
     );
@@ -67,11 +76,13 @@ class _FollowUpWorklistBody extends ConsumerWidget {
     required this.scope,
     required this.storageKeyPrefix,
     required this.searchController,
+    required this.writeRequirement,
   });
 
   final FollowUpWorklistScope scope;
   final String storageKeyPrefix;
   final TextEditingController searchController;
+  final AccessRequirement writeRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -131,7 +142,9 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                   itemKeyBuilder: (ReceptionFollowUpEntry entry) =>
                       ValueKey<String>(entry.id),
                   onRowSelected: (ReceptionFollowUpEntry entry) {
-                    unawaited(_openDetail(context, ref, entry));
+                    unawaited(
+                      _openDetail(context, ref, entry, writeRequirement),
+                    );
                   },
                   mobileItemBuilder:
                       (BuildContext context, ReceptionFollowUpEntry entry) {
@@ -256,10 +269,12 @@ class _FollowUpWorklistBody extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ReceptionFollowUpEntry entry,
+    AccessRequirement writeRequirement,
   ) async {
     final bool? changed = await showReceptionFollowUpDetailDialog(
       context: context,
       entry: entry,
+      writeRequirement: writeRequirement,
     );
     if (changed == true) {
       await refreshScopedFollowUps(ref, scope);

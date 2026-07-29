@@ -180,31 +180,31 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
 
 ## Follow-ups tab (`FollowUpWorklistPanel`)
 
-- Condition: Tab **Follow-ups**; entire panel hidden unless `receptionFollowUpsRequirement` is allowed.
+- Condition: Tab **Follow-ups**; hidden from the strip unless `clinicalFollowUpsRequirement` (`clinical:read` ∩ `encounters-vitals`) is allowed. Panel uses the same read gate. Shared panel defaults remain `receptionFollowUpsRequirement` for non-clinical hosts.
 
 - **Try again**
   - Location: Follow-ups load/error state.
   - Opens modal: No.
   - Immediate result: `refreshScopedFollowUps`.
-  - Condition: Load failure.
+  - Condition: Load failure; read gate.
 
 - **Search** / search clear
   - Location: Follow-ups list search.
   - Opens modal: No.
   - Immediate result: Client-side filter of follow-up entries.
-  - Condition: When entries exist.
+  - Condition: When entries exist; read gate.
 
 - **Settings** → Table Settings (**Apply columns** / **Reset columns** / **Close**)
   - Location: Follow-ups table chrome (`clinical_follow_ups_*` storage keys).
   - Opens modal: Yes — column visibility dialog.
   - Immediate result: Same pattern as clinical worklist Settings.
-  - Condition: When entries exist.
+  - Condition: When entries exist; read gate.
 
 - **Row select**
   - Location: Follow-ups table / mobile row.
   - Opens modal: Yes — **Follow-up details** (`ReceptionFollowUpDetailDialog`).
   - Immediate result: Opens detail; refreshes list if changed.
-  - Condition: Always for listed entries.
+  - Condition: Always for listed entries; read gate.
 
 ### Follow-up details dialog (`ReceptionFollowUpDetailDialog`, title **Follow-ups**)
 
@@ -212,13 +212,13 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
   - Location: Dialog footer.
   - Opens modal: Yes — **Reschedule follow-up** (`ClinicalFollowUpActionDialog` titled with `receptionScheduleAnotherFollowUpAction`).
   - Immediate result: Opens reschedule form; on save updates follow-up and closes detail with `true`.
-  - Condition: Front-desk write (`receptionFrontDeskWriteRequirement`); disabled while busy.
+  - Condition: Clinical write (`clinicalFollowUpsWriteRequirement` / `clinicalEncounterWriteRequirement`); absent when not allowed (not disabled). Busy disables only while mutating.
 
 - **Mark completed**
   - Location: Dialog footer.
   - Opens modal: No.
   - Immediate result: Completes follow-up via repository; closes with `true`.
-  - Condition: Front-desk write; disabled while busy.
+  - Condition: Clinical write; absent when not allowed. Busy disables only while mutating.
 
 - **Close**
   - Location: Dialog footer (read-only path).
@@ -228,7 +228,7 @@ Opened via `showAssignDoctorDialog` / `AssignDoctorDialog` (`opd_flow_actions_di
 
 #### Reschedule follow-up dialog (from **Reschedule follow-up**)
 
-Same control set as encounter **Follow up** dialog (see below): **Choose date**, **Select time**, **Cancel**, **Save follow-up**.
+Same control set as encounter **Follow up** dialog (see below): **Choose date**, **Select time**, **Cancel**, **Save follow-up**. Write-gated by parent entry point.
 
 ---
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/reception/data/reception_follow_up_repository.dart';
@@ -18,19 +19,28 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 Future<bool?> showReceptionFollowUpDetailDialog({
   required BuildContext context,
   required ReceptionFollowUpEntry entry,
+  AccessRequirement writeRequirement = receptionFrontDeskWriteRequirement,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => ReceptionFollowUpDetailDialog(entry: entry),
+    builder: (_) => ReceptionFollowUpDetailDialog(
+      entry: entry,
+      writeRequirement: writeRequirement,
+    ),
   );
 }
 
 /// Call details for a scheduled follow-up with complete / reschedule actions.
 class ReceptionFollowUpDetailDialog extends ConsumerStatefulWidget {
-  const ReceptionFollowUpDetailDialog({required this.entry, super.key});
+  const ReceptionFollowUpDetailDialog({
+    required this.entry,
+    this.writeRequirement = receptionFrontDeskWriteRequirement,
+    super.key,
+  });
 
   final ReceptionFollowUpEntry entry;
+  final AccessRequirement writeRequirement;
 
   @override
   ConsumerState<ReceptionFollowUpDetailDialog> createState() =>
@@ -47,7 +57,7 @@ class _ReceptionFollowUpDetailDialogState
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
     final ReceptionFollowUpEntry entry = widget.entry;
-    final bool canWrite = receptionFrontDeskWriteRequirement.isAllowed(
+    final bool canWrite = widget.writeRequirement.isAllowed(
       ref.watch(appAccessPolicyProvider),
     );
     final String patientName =

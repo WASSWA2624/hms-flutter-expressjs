@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -240,10 +245,9 @@ void main() {
         matching: find.text('Sarah Clinical'),
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
-    expect(find.byType(Dialog), findsWidgets);
+    expect(find.byType(AppDialog), findsWidgets);
     expect(find.textContaining('Sarah Clinical'), findsWidgets);
   });
 
@@ -252,6 +256,7 @@ void main() {
   ) async {
     await _pumpClinicalWorkspace(tester, physicalSize: const Size(390, 844));
 
+    await _pumpUntilFound(tester, find.text('Sarah Clinical'));
     expect(find.byType(DataTable), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
     expect(find.text('John Other'), findsOneWidget);
@@ -450,6 +455,28 @@ Future<_Harness> _pumpClinicalWorkspace(
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
 
+  final AppAccessPolicy accessPolicy = AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['DOCTOR'],
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
     routes: <RouteBase>[
@@ -478,8 +505,9 @@ Future<_Harness> _pumpClinicalWorkspace(
         ),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.unauthenticated(),
+          const SessionState.ready(),
         ),
+        appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -489,6 +517,7 @@ Future<_Harness> _pumpClinicalWorkspace(
     ),
   );
   await _pumpUntilFound(tester, _tab('All'));
+  await tester.pumpAndSettle();
 
   return _Harness(clinicalRepository: clinicalRepository, router: router);
 }

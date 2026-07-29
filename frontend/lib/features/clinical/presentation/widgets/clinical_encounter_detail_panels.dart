@@ -4,25 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
-const AccessRequirement clinicalEncounterWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.systemAdmin,
-  ],
-  activeModules: <String>['encounters-vitals'],
-);
+export 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart'
+    show clinicalEncounterWriteRequirement;
 
 typedef ClinicalOrderAction =
     Future<void> Function(BuildContext context, ClinicalRelatedRecord order);
@@ -169,6 +164,9 @@ class _ClinicalLabOrdersTablePanelState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool canMutate = canWriteClinicalLabOrder(
+      ref.watch(appAccessPolicyProvider),
+    );
     final List<ClinicalRelatedRecord> orders = sortClinicalRecordsNewestFirst(
       widget.orders,
     );
@@ -176,9 +174,14 @@ class _ClinicalLabOrdersTablePanelState
       return const SizedBox.shrink();
     }
 
-    final List<ClinicalRelatedRecord> selectedOrders = orders
-        .where((ClinicalRelatedRecord order) => _selectedIds.contains(order.id))
-        .toList(growable: false);
+    final List<ClinicalRelatedRecord> selectedOrders = canMutate
+        ? orders
+              .where(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              )
+              .toList(growable: false)
+        : const <ClinicalRelatedRecord>[];
     final List<ClinicalRelatedRecord> cancellableSelected = selectedOrders
         .where(
           (ClinicalRelatedRecord order) => _canCancelLabOrder(order.status),
@@ -195,74 +198,84 @@ class _ClinicalLabOrdersTablePanelState
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalLabOrdersTitle,
       description: l10n.clinicalLabOrdersBody,
-      actions: _clinicalBatchHeaderActions(
-        context: context,
-        selectedCount: selectedOrders.length,
-        cancellableSelected: cancellableSelected,
-        deletableSelected: deletableSelected,
-        cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-        deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
-        onCancelSelected: widget.onCancelSelected,
-        onDeleteSelected: widget.onDeleteSelected,
-        onCleared: () => setState(_selectedIds.clear),
-      ),
+      actions: canMutate
+          ? _clinicalBatchHeaderActions(
+              context: context,
+              selectedCount: selectedOrders.length,
+              cancellableSelected: cancellableSelected,
+              deletableSelected: deletableSelected,
+              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
+              deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+              onCancelSelected: widget.onCancelSelected,
+              onDeleteSelected: widget.onDeleteSelected,
+              onCleared: () => setState(_selectedIds.clear),
+              requirement: clinicalLabOrderWriteRequirement,
+            )
+          : const <Widget>[],
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 480;
           final bool allSelected =
+              canMutate &&
               orders.isNotEmpty &&
               orders.every(
                 (ClinicalRelatedRecord order) =>
                     _selectedIds.contains(order.id),
               );
-          final bool someSelected = orders.any(
-            (ClinicalRelatedRecord order) => _selectedIds.contains(order.id),
-          );
+          final bool someSelected =
+              canMutate &&
+              orders.any(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Checkbox(
-                  tristate: true,
-                  value: allSelected
-                      ? true
-                      : someSelected
-                      ? null
-                      : false,
-                  onChanged: (bool? checked) {
-                    setState(() {
-                      if (checked ?? false) {
-                        _selectedIds
-                          ..clear()
-                          ..addAll(
-                            orders.map(
-                              (ClinicalRelatedRecord order) => order.id,
-                            ),
-                          );
-                      } else {
-                        _selectedIds.clear();
-                      }
-                    });
-                  },
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              if (canMutate)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Checkbox(
+                    tristate: true,
+                    value: allSelected
+                        ? true
+                        : someSelected
+                        ? null
+                        : false,
+                    onChanged: (bool? checked) {
+                      setState(() {
+                        if (checked ?? false) {
+                          _selectedIds
+                            ..clear()
+                            ..addAll(
+                              orders.map(
+                                (ClinicalRelatedRecord order) => order.id,
+                              ),
+                            );
+                        } else {
+                          _selectedIds.clear();
+                        }
+                      });
+                    },
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
-              ),
               for (final ClinicalRelatedRecord order in orders)
                 _ClinicalLabOrderGroup(
                   order: order,
                   compact: compact,
-                  selected: _selectedIds.contains(order.id),
-                  onSelectedChanged: (bool selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedIds.add(order.id);
-                      } else {
-                        _selectedIds.remove(order.id);
-                      }
-                    });
-                  },
+                  selected: canMutate && _selectedIds.contains(order.id),
+                  onSelectedChanged: canMutate
+                      ? (bool selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedIds.add(order.id);
+                            } else {
+                              _selectedIds.remove(order.id);
+                            }
+                          });
+                        }
+                      : null,
                   expanded: _expandedOrderIds.contains(order.id),
                   onToggleExpanded: () {
                     setState(() {
@@ -273,9 +286,9 @@ class _ClinicalLabOrdersTablePanelState
                       }
                     });
                   },
-                  onEdit: widget.onEdit,
-                  onCancel: widget.onCancel,
-                  onDelete: widget.onDelete,
+                  onEdit: canMutate ? widget.onEdit : null,
+                  onCancel: canMutate ? widget.onCancel : null,
+                  onDelete: canMutate ? widget.onDelete : null,
                 ),
             ],
           );
@@ -323,6 +336,9 @@ class _ClinicalRadiologyOrdersTablePanelState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool canMutate = canWriteClinicalRadiologyOrder(
+      ref.watch(appAccessPolicyProvider),
+    );
     final List<ClinicalRelatedRecord> orders = sortClinicalRecordsNewestFirst(
       widget.orders,
     );
@@ -330,9 +346,14 @@ class _ClinicalRadiologyOrdersTablePanelState
       return const SizedBox.shrink();
     }
 
-    final List<ClinicalRelatedRecord> selectedOrders = orders
-        .where((ClinicalRelatedRecord order) => _selectedIds.contains(order.id))
-        .toList(growable: false);
+    final List<ClinicalRelatedRecord> selectedOrders = canMutate
+        ? orders
+              .where(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              )
+              .toList(growable: false)
+        : const <ClinicalRelatedRecord>[];
     final List<ClinicalRelatedRecord> cancellableSelected = selectedOrders
         .where(
           (ClinicalRelatedRecord order) =>
@@ -349,17 +370,20 @@ class _ClinicalRadiologyOrdersTablePanelState
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalRadiologyOrdersTitle,
-      actions: _clinicalBatchHeaderActions(
-        context: context,
-        selectedCount: selectedOrders.length,
-        cancellableSelected: cancellableSelected,
-        deletableSelected: deletableSelected,
-        cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-        deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
-        onCancelSelected: widget.onCancelSelected,
-        onDeleteSelected: widget.onDeleteSelected,
-        onCleared: () => setState(_selectedIds.clear),
-      ),
+      actions: canMutate
+          ? _clinicalBatchHeaderActions(
+              context: context,
+              selectedCount: selectedOrders.length,
+              cancellableSelected: cancellableSelected,
+              deletableSelected: deletableSelected,
+              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
+              deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+              onCancelSelected: widget.onCancelSelected,
+              onDeleteSelected: widget.onDeleteSelected,
+              onCleared: () => setState(_selectedIds.clear),
+              requirement: clinicalRadiologyOrderWriteRequirement,
+            )
+          : const <Widget>[],
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 480;
@@ -369,32 +393,38 @@ class _ClinicalRadiologyOrdersTablePanelState
                 for (final ClinicalRelatedRecord order in orders)
                   _ClinicalRadiologyOrderMobileCard(
                     order: order,
-                    selected: _selectedIds.contains(order.id),
-                    onSelectedChanged: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedIds.add(order.id);
-                        } else {
-                          _selectedIds.remove(order.id);
-                        }
-                      });
-                    },
-                    onCancel: widget.onCancel,
-                    onDelete: widget.onDelete,
+                    selected: canMutate && _selectedIds.contains(order.id),
+                    onSelectedChanged: canMutate
+                        ? (bool selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedIds.add(order.id);
+                              } else {
+                                _selectedIds.remove(order.id);
+                              }
+                            });
+                          }
+                        : null,
+                    onCancel: canMutate ? widget.onCancel : null,
+                    onDelete: canMutate ? widget.onDelete : null,
                   ),
               ],
             );
           }
 
           final bool allSelected =
+              canMutate &&
               orders.isNotEmpty &&
               orders.every(
                 (ClinicalRelatedRecord order) =>
                     _selectedIds.contains(order.id),
               );
-          final bool someSelected = orders.any(
-            (ClinicalRelatedRecord order) => _selectedIds.contains(order.id),
-          );
+          final bool someSelected =
+              canMutate &&
+              orders.any(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              );
 
           return _ClinicalDetailDataTableContainer(
             minWidth: constraints.maxWidth,
@@ -406,33 +436,34 @@ class _ClinicalRadiologyOrdersTablePanelState
               columnSpacing: theme.spacing.md,
               horizontalMargin: theme.spacing.sm,
               columns: <DataColumn>[
-                DataColumn(
-                  label: Checkbox(
-                    tristate: true,
-                    value: allSelected
-                        ? true
-                        : someSelected
-                        ? null
-                        : false,
-                    onChanged: (bool? checked) {
-                      setState(() {
-                        if (checked ?? false) {
-                          _selectedIds
-                            ..clear()
-                            ..addAll(
-                              orders.map(
-                                (ClinicalRelatedRecord order) => order.id,
-                              ),
-                            );
-                        } else {
-                          _selectedIds.clear();
-                        }
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                if (canMutate)
+                  DataColumn(
+                    label: Checkbox(
+                      tristate: true,
+                      value: allSelected
+                          ? true
+                          : someSelected
+                          ? null
+                          : false,
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked ?? false) {
+                            _selectedIds
+                              ..clear()
+                              ..addAll(
+                                orders.map(
+                                  (ClinicalRelatedRecord order) => order.id,
+                                ),
+                              );
+                          } else {
+                            _selectedIds.clear();
+                          }
+                        });
+                      },
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                ),
                 DataColumn(label: Text(l10n.clinicalOrderStudyColumnLabel)),
                 DataColumn(label: Text(l10n.radiologyModalityLabel)),
                 DataColumn(
@@ -440,7 +471,8 @@ class _ClinicalRadiologyOrdersTablePanelState
                 ),
                 DataColumn(label: Text(l10n.opdStatusColumnLabel)),
                 DataColumn(label: Text(l10n.opdTimeColumnLabel)),
-                DataColumn(label: Text(l10n.opdActionsColumnLabel)),
+                if (canMutate)
+                  DataColumn(label: Text(l10n.opdActionsColumnLabel)),
               ],
               rows: <DataRow>[
                 for (final ClinicalRelatedRecord order in orders)
@@ -448,18 +480,20 @@ class _ClinicalRadiologyOrdersTablePanelState
                     context: context,
                     l10n: l10n,
                     order: order,
-                    selected: _selectedIds.contains(order.id),
-                    onSelectedChanged: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedIds.add(order.id);
-                        } else {
-                          _selectedIds.remove(order.id);
-                        }
-                      });
-                    },
-                    onCancel: widget.onCancel,
-                    onDelete: widget.onDelete,
+                    selected: canMutate && _selectedIds.contains(order.id),
+                    onSelectedChanged: canMutate
+                        ? (bool selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedIds.add(order.id);
+                              } else {
+                                _selectedIds.remove(order.id);
+                              }
+                            });
+                          }
+                        : null,
+                    onCancel: canMutate ? widget.onCancel : null,
+                    onDelete: canMutate ? widget.onDelete : null,
                   ),
               ],
             ),
@@ -508,6 +542,9 @@ class _ClinicalPharmacyOrdersTablePanelState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool canMutate = canWriteClinicalPharmacyOrder(
+      ref.watch(appAccessPolicyProvider),
+    );
     final List<ClinicalRelatedRecord> orders = sortClinicalRecordsNewestFirst(
       widget.orders,
     );
@@ -515,9 +552,14 @@ class _ClinicalPharmacyOrdersTablePanelState
       return const SizedBox.shrink();
     }
 
-    final List<ClinicalRelatedRecord> selectedOrders = orders
-        .where((ClinicalRelatedRecord order) => _selectedIds.contains(order.id))
-        .toList(growable: false);
+    final List<ClinicalRelatedRecord> selectedOrders = canMutate
+        ? orders
+              .where(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              )
+              .toList(growable: false)
+        : const <ClinicalRelatedRecord>[];
     final List<ClinicalRelatedRecord> cancellableSelected = selectedOrders
         .where(
           (ClinicalRelatedRecord order) =>
@@ -534,28 +576,35 @@ class _ClinicalPharmacyOrdersTablePanelState
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalPharmacyOrdersTitle,
-      actions: _clinicalBatchHeaderActions(
-        context: context,
-        selectedCount: selectedOrders.length,
-        cancellableSelected: cancellableSelected,
-        deletableSelected: deletableSelected,
-        cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-        deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
-        onCancelSelected: widget.onCancelSelected,
-        onDeleteSelected: widget.onDeleteSelected,
-        onCleared: () => setState(_selectedIds.clear),
-      ),
+      actions: canMutate
+          ? _clinicalBatchHeaderActions(
+              context: context,
+              selectedCount: selectedOrders.length,
+              cancellableSelected: cancellableSelected,
+              deletableSelected: deletableSelected,
+              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
+              deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+              onCancelSelected: widget.onCancelSelected,
+              onDeleteSelected: widget.onDeleteSelected,
+              onCleared: () => setState(_selectedIds.clear),
+              requirement: clinicalPharmacyOrderWriteRequirement,
+            )
+          : const <Widget>[],
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool allSelected =
+              canMutate &&
               orders.isNotEmpty &&
               orders.every(
                 (ClinicalRelatedRecord order) =>
                     _selectedIds.contains(order.id),
               );
-          final bool someSelected = orders.any(
-            (ClinicalRelatedRecord order) => _selectedIds.contains(order.id),
-          );
+          final bool someSelected =
+              canMutate &&
+              orders.any(
+                (ClinicalRelatedRecord order) =>
+                    _selectedIds.contains(order.id),
+              );
 
           return _ClinicalDetailDataTableContainer(
             minWidth: constraints.maxWidth,
@@ -567,56 +616,46 @@ class _ClinicalPharmacyOrdersTablePanelState
               columnSpacing: theme.spacing.md,
               horizontalMargin: theme.spacing.sm,
               columns: <DataColumn>[
-                DataColumn(
-                  label: Checkbox(
-                    tristate: true,
-                    value: allSelected
-                        ? true
-                        : someSelected
-                        ? null
-                        : false,
-                    onChanged: (bool? checked) {
-                      setState(() {
-                        if (checked ?? false) {
-                          _selectedIds
-                            ..clear()
-                            ..addAll(
-                              orders.map(
-                                (ClinicalRelatedRecord order) => order.id,
-                              ),
-                            );
-                        } else {
-                          _selectedIds.clear();
-                        }
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                if (canMutate)
+                  DataColumn(
+                    label: Checkbox(
+                      tristate: true,
+                      value: allSelected
+                          ? true
+                          : someSelected
+                          ? null
+                          : false,
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked ?? false) {
+                            _selectedIds
+                              ..clear()
+                              ..addAll(
+                                orders.map(
+                                  (ClinicalRelatedRecord order) => order.id,
+                                ),
+                              );
+                          } else {
+                            _selectedIds.clear();
+                          }
+                        });
+                      },
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                ),
                 DataColumn(label: Text(l10n.pharmacyMedicationColumnLabel)),
                 DataColumn(label: Text(l10n.opdStatusColumnLabel)),
                 DataColumn(label: Text(l10n.opdTimeColumnLabel)),
-                DataColumn(label: Text(l10n.opdActionsColumnLabel)),
+                if (canMutate)
+                  DataColumn(label: Text(l10n.opdActionsColumnLabel)),
               ],
               rows: <DataRow>[
                 for (final ClinicalRelatedRecord order in orders)
                   DataRow(
-                    selected: _selectedIds.contains(order.id),
-                    onSelectChanged: (bool? value) {
-                      setState(() {
-                        if (value ?? false) {
-                          _selectedIds.add(order.id);
-                        } else {
-                          _selectedIds.remove(order.id);
-                        }
-                      });
-                    },
-                    cells: <DataCell>[
-                      DataCell(
-                        Checkbox(
-                          value: _selectedIds.contains(order.id),
-                          onChanged: (bool? value) {
+                    selected: canMutate && _selectedIds.contains(order.id),
+                    onSelectChanged: canMutate
+                        ? (bool? value) {
                             setState(() {
                               if (value ?? false) {
                                 _selectedIds.add(order.id);
@@ -624,12 +663,27 @@ class _ClinicalPharmacyOrdersTablePanelState
                                 _selectedIds.remove(order.id);
                               }
                             });
-                          },
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
+                          }
+                        : null,
+                    cells: <DataCell>[
+                      if (canMutate)
+                        DataCell(
+                          Checkbox(
+                            value: _selectedIds.contains(order.id),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value ?? false) {
+                                  _selectedIds.add(order.id);
+                                } else {
+                                  _selectedIds.remove(order.id);
+                                }
+                              });
+                            },
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
-                      ),
                       DataCell(
                         Text(
                           order.title ?? order.id,
@@ -641,15 +695,16 @@ class _ClinicalPharmacyOrdersTablePanelState
                         _ClinicalStatusBadge(status: order.status ?? ''),
                       ),
                       DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
-                      DataCell(
-                        _pharmacyOrderActions(
-                          context: context,
-                          l10n: l10n,
-                          order: order,
-                          onCancel: widget.onCancel,
-                          onDelete: widget.onDelete,
+                      if (canMutate)
+                        DataCell(
+                          _pharmacyOrderActions(
+                            context: context,
+                            l10n: l10n,
+                            order: order,
+                            onCancel: widget.onCancel,
+                            onDelete: widget.onDelete,
+                          ),
                         ),
-                      ),
                     ],
                   ),
               ],
@@ -695,44 +750,52 @@ class _ClinicalDiagnosesTablePanelState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool canMutate = canWriteClinical(ref.watch(appAccessPolicyProvider));
     final List<ClinicalRelatedRecord> diagnoses =
         sortClinicalRecordsNewestFirst(widget.diagnoses);
     if (diagnoses.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final List<ClinicalRelatedRecord> selectedDiagnoses = diagnoses
-        .where(
-          (ClinicalRelatedRecord diagnosis) =>
-              _selectedIds.contains(diagnosis.id),
-        )
-        .toList(growable: false);
+    final List<ClinicalRelatedRecord> selectedDiagnoses = canMutate
+        ? diagnoses
+              .where(
+                (ClinicalRelatedRecord diagnosis) =>
+                    _selectedIds.contains(diagnosis.id),
+              )
+              .toList(growable: false)
+        : const <ClinicalRelatedRecord>[];
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalPatientDiagnosesTitle,
-      actions: _clinicalBatchHeaderActions(
-        context: context,
-        selectedCount: selectedDiagnoses.length,
-        cancellableSelected: const <ClinicalRelatedRecord>[],
-        deletableSelected: selectedDiagnoses,
-        cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-        deleteLabel: l10n.clinicalDeleteSelectedDiagnosesAction,
-        onCancelSelected: null,
-        onDeleteSelected: widget.onDeleteSelected,
-        onCleared: () => setState(_selectedIds.clear),
-      ),
+      actions: canMutate
+          ? _clinicalBatchHeaderActions(
+              context: context,
+              selectedCount: selectedDiagnoses.length,
+              cancellableSelected: const <ClinicalRelatedRecord>[],
+              deletableSelected: selectedDiagnoses,
+              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
+              deleteLabel: l10n.clinicalDeleteSelectedDiagnosesAction,
+              onCancelSelected: null,
+              onDeleteSelected: widget.onDeleteSelected,
+              onCleared: () => setState(_selectedIds.clear),
+            )
+          : const <Widget>[],
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool allSelected =
+              canMutate &&
               diagnoses.isNotEmpty &&
               diagnoses.every(
                 (ClinicalRelatedRecord diagnosis) =>
                     _selectedIds.contains(diagnosis.id),
               );
-          final bool someSelected = diagnoses.any(
-            (ClinicalRelatedRecord diagnosis) =>
-                _selectedIds.contains(diagnosis.id),
-          );
+          final bool someSelected =
+              canMutate &&
+              diagnoses.any(
+                (ClinicalRelatedRecord diagnosis) =>
+                    _selectedIds.contains(diagnosis.id),
+              );
 
           return _ClinicalDetailDataTableContainer(
             minWidth: constraints.maxWidth,
@@ -744,57 +807,47 @@ class _ClinicalDiagnosesTablePanelState
               columnSpacing: theme.spacing.md,
               horizontalMargin: theme.spacing.sm,
               columns: <DataColumn>[
-                DataColumn(
-                  label: Checkbox(
-                    tristate: true,
-                    value: allSelected
-                        ? true
-                        : someSelected
-                        ? null
-                        : false,
-                    onChanged: (bool? checked) {
-                      setState(() {
-                        if (checked ?? false) {
-                          _selectedIds
-                            ..clear()
-                            ..addAll(
-                              diagnoses.map(
-                                (ClinicalRelatedRecord diagnosis) =>
-                                    diagnosis.id,
-                              ),
-                            );
-                        } else {
-                          _selectedIds.clear();
-                        }
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                if (canMutate)
+                  DataColumn(
+                    label: Checkbox(
+                      tristate: true,
+                      value: allSelected
+                          ? true
+                          : someSelected
+                          ? null
+                          : false,
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked ?? false) {
+                            _selectedIds
+                              ..clear()
+                              ..addAll(
+                                diagnoses.map(
+                                  (ClinicalRelatedRecord diagnosis) =>
+                                      diagnosis.id,
+                                ),
+                              );
+                          } else {
+                            _selectedIds.clear();
+                          }
+                        });
+                      },
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                ),
                 DataColumn(label: Text(l10n.clinicalPatientDiagnosesTitle)),
                 DataColumn(label: Text(l10n.opdStatusColumnLabel)),
                 DataColumn(label: Text(l10n.opdTimeColumnLabel)),
-                DataColumn(label: Text(l10n.opdActionsColumnLabel)),
+                if (canMutate)
+                  DataColumn(label: Text(l10n.opdActionsColumnLabel)),
               ],
               rows: <DataRow>[
                 for (final ClinicalRelatedRecord diagnosis in diagnoses)
                   DataRow(
-                    selected: _selectedIds.contains(diagnosis.id),
-                    onSelectChanged: (bool? value) {
-                      setState(() {
-                        if (value ?? false) {
-                          _selectedIds.add(diagnosis.id);
-                        } else {
-                          _selectedIds.remove(diagnosis.id);
-                        }
-                      });
-                    },
-                    cells: <DataCell>[
-                      DataCell(
-                        Checkbox(
-                          value: _selectedIds.contains(diagnosis.id),
-                          onChanged: (bool? value) {
+                    selected: canMutate && _selectedIds.contains(diagnosis.id),
+                    onSelectChanged: canMutate
+                        ? (bool? value) {
                             setState(() {
                               if (value ?? false) {
                                 _selectedIds.add(diagnosis.id);
@@ -802,12 +855,27 @@ class _ClinicalDiagnosesTablePanelState
                                 _selectedIds.remove(diagnosis.id);
                               }
                             });
-                          },
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
+                          }
+                        : null,
+                    cells: <DataCell>[
+                      if (canMutate)
+                        DataCell(
+                          Checkbox(
+                            value: _selectedIds.contains(diagnosis.id),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value ?? false) {
+                                  _selectedIds.add(diagnosis.id);
+                                } else {
+                                  _selectedIds.remove(diagnosis.id);
+                                }
+                              });
+                            },
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
-                      ),
                       DataCell(
                         Text(
                           _joinDisplay(<String?>[
@@ -826,24 +894,28 @@ class _ClinicalDiagnosesTablePanelState
                       DataCell(
                         Text(_dateTimeLabel(context, diagnosis.occurredAt)),
                       ),
-                      DataCell(
-                        AppAccessActionGate(
-                          requirement: clinicalEncounterWriteRequirement,
-                          builder: (BuildContext context, bool isAllowed) {
-                            return AppButton.tertiary(
-                              dense: true,
-                              leadingIcon: Icons.delete_outline,
-                              label: l10n.clinicalDeleteDiagnosisAction,
-                              semanticLabel: l10n.clinicalDeleteDiagnosisAction,
-                              tooltip: l10n.clinicalDeleteDiagnosisAction,
-                              color: theme.colorScheme.error,
-                              enabled: isAllowed,
-                              onPressed: () =>
-                                  widget.onDelete(context, diagnosis),
-                            );
-                          },
+                      if (canMutate)
+                        DataCell(
+                          AppAccessActionGate(
+                            requirement: clinicalEncounterWriteRequirement,
+                            builder: (BuildContext context, bool isAllowed) {
+                              if (!isAllowed) {
+                                return const SizedBox.shrink();
+                              }
+                              return AppButton.tertiary(
+                                dense: true,
+                                leadingIcon: Icons.delete_outline,
+                                label: l10n.clinicalDeleteDiagnosisAction,
+                                semanticLabel:
+                                    l10n.clinicalDeleteDiagnosisAction,
+                                tooltip: l10n.clinicalDeleteDiagnosisAction,
+                                color: theme.colorScheme.error,
+                                onPressed: () =>
+                                    widget.onDelete(context, diagnosis),
+                              );
+                            },
+                          ),
                         ),
-                      ),
                     ],
                   ),
               ],
@@ -860,29 +932,33 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
     required this.order,
     required this.compact,
     required this.selected,
-    required this.onSelectedChanged,
     required this.expanded,
     required this.onToggleExpanded,
-    required this.onEdit,
-    required this.onCancel,
-    required this.onDelete,
+    this.onSelectedChanged,
+    this.onEdit,
+    this.onCancel,
+    this.onDelete,
   });
 
   final ClinicalRelatedRecord order;
   final bool compact;
   final bool selected;
-  final ValueChanged<bool> onSelectedChanged;
+  final ValueChanged<bool>? onSelectedChanged;
   final bool expanded;
   final VoidCallback onToggleExpanded;
-  final ClinicalOrderAction onEdit;
-  final ClinicalOrderAction onCancel;
-  final ClinicalOrderAction onDelete;
+  final ClinicalOrderAction? onEdit;
+  final ClinicalOrderAction? onCancel;
+  final ClinicalOrderAction? onDelete;
+
+  bool get _canMutate =>
+      onEdit != null || onCancel != null || onDelete != null;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final bool hasChildTests = order.labOrderItems.isNotEmpty;
+    final bool showSelection = onSelectedChanged != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -892,16 +968,17 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Padding(
-                padding: EdgeInsets.only(top: theme.spacing.sm),
-                child: Checkbox(
-                  value: selected,
-                  onChanged: (bool? value) =>
-                      onSelectedChanged(value ?? false),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              if (showSelection)
+                Padding(
+                  padding: EdgeInsets.only(top: theme.spacing.sm),
+                  child: Checkbox(
+                    value: selected,
+                    onChanged: (bool? value) =>
+                        onSelectedChanged!(value ?? false),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
-              ),
               Expanded(
                 child: _ClinicalLabOrderMobileCard(
                   order: order,
@@ -920,13 +997,14 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
             child: DataTable(
               showCheckboxColumn: false,
               columns: <DataColumn>[
-                const DataColumn(label: SizedBox.shrink()),
+                if (showSelection) const DataColumn(label: SizedBox.shrink()),
                 DataColumn(label: Text(l10n.clinicalOrderTestColumnLabel)),
                 DataColumn(label: Text(l10n.clinicalOrderValueColumnLabel)),
                 DataColumn(label: Text(l10n.opdStatusColumnLabel)),
                 DataColumn(label: Text(l10n.clinicalResultFlagColumnLabel)),
                 DataColumn(label: Text(l10n.opdTimeColumnLabel)),
-                DataColumn(label: Text(l10n.opdActionsColumnLabel)),
+                if (_canMutate)
+                  DataColumn(label: Text(l10n.opdActionsColumnLabel)),
               ],
               rows: <DataRow>[
                 _clinicalLabOrderDataRow(
@@ -1003,30 +1081,35 @@ DataRow _clinicalLabOrderDataRow({
   required AppLocalizations l10n,
   required ClinicalRelatedRecord order,
   required bool selected,
-  required ValueChanged<bool> onSelectedChanged,
+  ValueChanged<bool>? onSelectedChanged,
   required bool expandable,
   required bool expanded,
   required VoidCallback onToggleExpanded,
-  required ClinicalOrderAction onEdit,
-  required ClinicalOrderAction onCancel,
-  required ClinicalOrderAction onDelete,
+  ClinicalOrderAction? onEdit,
+  ClinicalOrderAction? onCancel,
+  ClinicalOrderAction? onDelete,
 }) {
   final ThemeData theme = Theme.of(context);
   final String status = order.status ?? '';
   final String title = order.title ?? order.id;
+  final bool showSelection = onSelectedChanged != null;
+  final bool showActions = onEdit != null || onCancel != null || onDelete != null;
 
   return DataRow(
-    selected: selected,
-    onSelectChanged: (bool? value) => onSelectedChanged(value ?? false),
+    selected: showSelection && selected,
+    onSelectChanged: showSelection
+        ? (bool? value) => onSelectedChanged(value ?? false)
+        : null,
     cells: <DataCell>[
-      DataCell(
-        Checkbox(
-          value: selected,
-          onChanged: (bool? value) => onSelectedChanged(value ?? false),
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      if (showSelection)
+        DataCell(
+          Checkbox(
+            value: selected,
+            onChanged: (bool? value) => onSelectedChanged(value ?? false),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         ),
-      ),
       DataCell(
         Row(
           children: <Widget>[
@@ -1057,16 +1140,17 @@ DataRow _clinicalLabOrderDataRow({
               ),
       ),
       DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
-      DataCell(
-        _labOrderActions(
-          context: context,
-          l10n: l10n,
-          order: order,
-          onEdit: onEdit,
-          onCancel: onCancel,
-          onDelete: onDelete,
+      if (showActions)
+        DataCell(
+          _labOrderActions(
+            context: context,
+            l10n: l10n,
+            order: order,
+            onEdit: onEdit,
+            onCancel: onCancel,
+            onDelete: onDelete,
+          ),
         ),
-      ),
     ],
   );
 }
@@ -1105,9 +1189,9 @@ DataRow _clinicalRadiologyDataRow({
   required AppLocalizations l10n,
   required ClinicalRelatedRecord order,
   required bool selected,
-  required ValueChanged<bool> onSelectedChanged,
-  required ClinicalOrderAction onCancel,
-  required ClinicalOrderAction onDelete,
+  ValueChanged<bool>? onSelectedChanged,
+  ClinicalOrderAction? onCancel,
+  ClinicalOrderAction? onDelete,
 }) {
   final ClinicalRadiologyOrderItem item = order.radiologyOrderItems.isNotEmpty
       ? order.radiologyOrderItems.first
@@ -1115,19 +1199,24 @@ DataRow _clinicalRadiologyDataRow({
   final String study = item.displayTitle.isNotEmpty
       ? item.displayTitle
       : (order.title ?? order.id);
+  final bool showSelection = onSelectedChanged != null;
+  final bool showActions = onCancel != null || onDelete != null;
 
   return DataRow(
-    selected: selected,
-    onSelectChanged: (bool? value) => onSelectedChanged(value ?? false),
+    selected: showSelection && selected,
+    onSelectChanged: showSelection
+        ? (bool? value) => onSelectedChanged(value ?? false)
+        : null,
     cells: <DataCell>[
-      DataCell(
-        Checkbox(
-          value: selected,
-          onChanged: (bool? value) => onSelectedChanged(value ?? false),
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      if (showSelection)
+        DataCell(
+          Checkbox(
+            value: selected,
+            onChanged: (bool? value) => onSelectedChanged(value ?? false),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         ),
-      ),
       DataCell(
         Text(study, maxLines: 2, overflow: TextOverflow.ellipsis),
       ),
@@ -1135,18 +1224,19 @@ DataRow _clinicalRadiologyDataRow({
       DataCell(Text(AppDisplay.apiLabel(item.bodyRegion ?? ''))),
       DataCell(_ClinicalStatusBadge(status: order.status ?? '')),
       DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
-      DataCell(
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: _radiologyOrderActions(
-            context: context,
-            l10n: l10n,
-            order: order,
-            onCancel: onCancel,
-            onDelete: onDelete,
+      if (showActions)
+        DataCell(
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: _radiologyOrderActions(
+              context: context,
+              l10n: l10n,
+              order: order,
+              onCancel: onCancel,
+              onDelete: onDelete,
+            ),
           ),
         ),
-      ),
     ],
   );
 }
@@ -1157,22 +1247,24 @@ class _ClinicalLabOrderMobileCard extends StatelessWidget {
     required this.expandable,
     required this.expanded,
     required this.onToggleExpanded,
-    required this.onEdit,
-    required this.onCancel,
-    required this.onDelete,
+    this.onEdit,
+    this.onCancel,
+    this.onDelete,
   });
 
   final ClinicalRelatedRecord order;
   final bool expandable;
   final bool expanded;
   final VoidCallback onToggleExpanded;
-  final ClinicalOrderAction onEdit;
-  final ClinicalOrderAction onCancel;
-  final ClinicalOrderAction onDelete;
+  final ClinicalOrderAction? onEdit;
+  final ClinicalOrderAction? onCancel;
+  final ClinicalOrderAction? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool showActions =
+        onEdit != null || onCancel != null || onDelete != null;
     return _ClinicalOrderMobileCard(
       title: order.title ?? order.id,
       value: _labOrderAggregateValue(context, order),
@@ -1182,14 +1274,16 @@ class _ClinicalLabOrderMobileCard extends StatelessWidget {
       expandable: expandable,
       expanded: expanded,
       onToggleExpanded: onToggleExpanded,
-      actions: _labOrderActions(
-        context: context,
-        l10n: l10n,
-        order: order,
-        onEdit: onEdit,
-        onCancel: onCancel,
-        onDelete: onDelete,
-      ),
+      actions: showActions
+          ? _labOrderActions(
+              context: context,
+              l10n: l10n,
+              order: order,
+              onEdit: onEdit,
+              onCancel: onCancel,
+              onDelete: onDelete,
+            )
+          : null,
     );
   }
 }
@@ -1219,16 +1313,16 @@ class _ClinicalRadiologyOrderMobileCard extends StatelessWidget {
   const _ClinicalRadiologyOrderMobileCard({
     required this.order,
     required this.selected,
-    required this.onSelectedChanged,
-    required this.onCancel,
-    required this.onDelete,
+    this.onSelectedChanged,
+    this.onCancel,
+    this.onDelete,
   });
 
   final ClinicalRelatedRecord order;
   final bool selected;
-  final ValueChanged<bool> onSelectedChanged;
-  final ClinicalOrderAction onCancel;
-  final ClinicalOrderAction onDelete;
+  final ValueChanged<bool>? onSelectedChanged;
+  final ClinicalOrderAction? onCancel;
+  final ClinicalOrderAction? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1237,19 +1331,23 @@ class _ClinicalRadiologyOrderMobileCard extends StatelessWidget {
     final ClinicalRadiologyOrderItem item = order.radiologyOrderItems.isNotEmpty
         ? order.radiologyOrderItems.first
         : ClinicalRadiologyOrderItem(id: order.id);
+    final bool showSelection = onSelectedChanged != null;
+    final bool showActions = onCancel != null || onDelete != null;
+    final ValueChanged<bool>? selectionChanged = onSelectedChanged;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: EdgeInsets.only(top: theme.spacing.sm),
-          child: Checkbox(
-            value: selected,
-            onChanged: (bool? value) => onSelectedChanged(value ?? false),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        if (showSelection && selectionChanged != null)
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.sm),
+            child: Checkbox(
+              value: selected,
+              onChanged: (bool? value) => selectionChanged(value ?? false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
-        ),
         Expanded(
           child: _ClinicalOrderMobileCard(
             title: item.displayTitle.isNotEmpty
@@ -1258,13 +1356,15 @@ class _ClinicalRadiologyOrderMobileCard extends StatelessWidget {
             subtitle: _joinDisplay(<String?>[item.modality, item.bodyRegion]),
             status: order.status,
             occurredAt: order.occurredAt,
-            actions: _radiologyOrderActions(
-              context: context,
-              l10n: l10n,
-              order: order,
-              onCancel: onCancel,
-              onDelete: onDelete,
-            ),
+            actions: showActions
+                ? _radiologyOrderActions(
+                    context: context,
+                    l10n: l10n,
+                    order: order,
+                    onCancel: onCancel,
+                    onDelete: onDelete,
+                  )
+                : null,
           ),
         ),
       ],
@@ -1426,21 +1526,27 @@ Widget _labOrderActions({
   required BuildContext context,
   required AppLocalizations l10n,
   required ClinicalRelatedRecord order,
-  required ClinicalOrderAction onEdit,
-  required ClinicalOrderAction onCancel,
-  required ClinicalOrderAction onDelete,
+  ClinicalOrderAction? onEdit,
+  ClinicalOrderAction? onCancel,
+  ClinicalOrderAction? onDelete,
 }) {
   final ThemeData theme = Theme.of(context);
   final String status = order.status ?? '';
-  final bool canEdit = _canEditLabOrder(status);
-  final bool canCancel = _canCancelLabOrder(status);
-  final bool canDelete = _canDeleteLabOrder(status);
-  final bool showCancel = canCancel;
-  final bool showDelete = !canCancel && canDelete;
+  final bool canEdit = onEdit != null && _canEditLabOrder(status);
+  final bool canCancel = onCancel != null && _canCancelLabOrder(status);
+  final bool canDelete =
+      onDelete != null && !canCancel && _canDeleteLabOrder(status);
+
+  if (!canEdit && !canCancel && !canDelete) {
+    return const SizedBox.shrink();
+  }
 
   return AppAccessActionGate(
-    requirement: clinicalEncounterWriteRequirement,
+    requirement: clinicalLabOrderWriteRequirement,
     builder: (BuildContext context, bool isAllowed) {
+      if (!isAllowed) {
+        return const SizedBox.shrink();
+      }
       return Wrap(
         spacing: 4,
         runSpacing: 4,
@@ -1452,10 +1558,9 @@ Widget _labOrderActions({
               label: l10n.clinicalEditLabOrderAction,
               semanticLabel: l10n.clinicalEditLabOrderAction,
               tooltip: l10n.clinicalEditLabOrderAction,
-              enabled: isAllowed,
               onPressed: () => onEdit(context, order),
             ),
-          if (showCancel)
+          if (canCancel)
             AppButton.tertiary(
               dense: true,
               leadingIcon: Icons.block_outlined,
@@ -1463,10 +1568,9 @@ Widget _labOrderActions({
               semanticLabel: l10n.clinicalCancelLabOrderAction,
               tooltip: l10n.clinicalCancelLabOrderAction,
               color: theme.colorScheme.tertiary,
-              enabled: isAllowed,
               onPressed: () => onCancel(context, order),
             ),
-          if (showDelete)
+          if (canDelete)
             AppButton.tertiary(
               dense: true,
               leadingIcon: Icons.delete_outline,
@@ -1474,7 +1578,6 @@ Widget _labOrderActions({
               semanticLabel: l10n.clinicalDeleteLabOrderAction,
               tooltip: l10n.clinicalDeleteLabOrderAction,
               color: theme.colorScheme.error,
-              enabled: isAllowed,
               onPressed: () => onDelete(context, order),
             ),
         ],
@@ -1487,26 +1590,28 @@ Widget _radiologyOrderActions({
   required BuildContext context,
   required AppLocalizations l10n,
   required ClinicalRelatedRecord order,
-  required ClinicalOrderAction onCancel,
-  required ClinicalOrderAction onDelete,
+  ClinicalOrderAction? onCancel,
+  ClinicalOrderAction? onDelete,
 }) {
   final ThemeData theme = Theme.of(context);
   final String status = order.status ?? '';
-  final bool canCancel = _canCancelRadiologyOrder(status);
-  final bool canDelete = _canDeleteRadiologyOrder(status);
-  // Prefer cancel for active orders; only offer delete when cancel is not
-  // available (e.g. already cancelled) so actions stay one clear control.
-  final bool showCancel = canCancel;
-  final bool showDelete = !canCancel && canDelete;
+  final bool canCancel = onCancel != null && _canCancelRadiologyOrder(status);
+  final bool canDelete =
+      onDelete != null && !canCancel && _canDeleteRadiologyOrder(status);
+  final ClinicalOrderAction? cancelAction = onCancel;
+  final ClinicalOrderAction? deleteAction = onDelete;
 
-  if (!showCancel && !showDelete) {
+  if (!canCancel && !canDelete) {
     return const SizedBox.shrink();
   }
 
   return AppAccessActionGate(
-    requirement: clinicalEncounterWriteRequirement,
+    requirement: clinicalRadiologyOrderWriteRequirement,
     builder: (BuildContext context, bool isAllowed) {
-      if (showCancel) {
+      if (!isAllowed) {
+        return const SizedBox.shrink();
+      }
+      if (canCancel && cancelAction != null) {
         return AppButton.tertiary(
           dense: true,
           leadingIcon: Icons.block_outlined,
@@ -1514,9 +1619,11 @@ Widget _radiologyOrderActions({
           semanticLabel: l10n.clinicalCancelRadiologyOrderAction,
           tooltip: l10n.clinicalCancelRadiologyOrderAction,
           color: theme.colorScheme.tertiary,
-          enabled: isAllowed,
-          onPressed: () => onCancel(context, order),
+          onPressed: () => cancelAction(context, order),
         );
+      }
+      if (deleteAction == null) {
+        return const SizedBox.shrink();
       }
       return AppButton.tertiary(
         dense: true,
@@ -1525,8 +1632,7 @@ Widget _radiologyOrderActions({
         semanticLabel: l10n.clinicalDeleteRadiologyOrderAction,
         tooltip: l10n.clinicalDeleteRadiologyOrderAction,
         color: theme.colorScheme.error,
-        enabled: isAllowed,
-        onPressed: () => onDelete(context, order),
+        onPressed: () => deleteAction(context, order),
       );
     },
   );
@@ -1542,6 +1648,7 @@ List<Widget> _clinicalBatchHeaderActions({
   required ClinicalOrderBatchAction? onCancelSelected,
   required ClinicalOrderBatchAction? onDeleteSelected,
   required VoidCallback onCleared,
+  AccessRequirement requirement = clinicalEncounterWriteRequirement,
 }) {
   if (selectedCount <= 0) {
     return const <Widget>[];
@@ -1556,8 +1663,11 @@ List<Widget> _clinicalBatchHeaderActions({
       style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     ),
     AppAccessActionGate(
-      requirement: clinicalEncounterWriteRequirement,
+      requirement: requirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return Wrap(
           spacing: theme.spacing.xs,
           runSpacing: theme.spacing.xs,
@@ -1568,11 +1678,13 @@ List<Widget> _clinicalBatchHeaderActions({
                 label: cancelLabel,
                 leadingIcon: Icons.block_outlined,
                 color: theme.colorScheme.tertiary,
-                enabled: isAllowed && onCancelSelected != null,
-                onPressed: () async {
-                  await onCancelSelected!(context, cancellableSelected);
-                  onCleared();
-                },
+                enabled: onCancelSelected != null,
+                onPressed: onCancelSelected == null
+                    ? null
+                    : () async {
+                        await onCancelSelected(context, cancellableSelected);
+                        onCleared();
+                      },
               ),
             if (deletableSelected.isNotEmpty)
               AppButton.tertiary(
@@ -1580,11 +1692,13 @@ List<Widget> _clinicalBatchHeaderActions({
                 label: deleteLabel,
                 leadingIcon: Icons.delete_outline,
                 color: theme.colorScheme.error,
-                enabled: isAllowed && onDeleteSelected != null,
-                onPressed: () async {
-                  await onDeleteSelected!(context, deletableSelected);
-                  onCleared();
-                },
+                enabled: onDeleteSelected != null,
+                onPressed: onDeleteSelected == null
+                    ? null
+                    : () async {
+                        await onDeleteSelected(context, deletableSelected);
+                        onCleared();
+                      },
               ),
           ],
         );
@@ -1694,24 +1808,28 @@ Widget _pharmacyOrderActions({
   required BuildContext context,
   required AppLocalizations l10n,
   required ClinicalRelatedRecord order,
-  required ClinicalOrderAction onCancel,
-  required ClinicalOrderAction onDelete,
+  ClinicalOrderAction? onCancel,
+  ClinicalOrderAction? onDelete,
 }) {
   final ThemeData theme = Theme.of(context);
   final String status = order.status ?? '';
-  final bool canCancel = _canCancelPharmacyOrder(status);
-  final bool canDelete = _canDeletePharmacyOrder(status);
-  final bool showCancel = canCancel;
-  final bool showDelete = !canCancel && canDelete;
+  final bool canCancel = onCancel != null && _canCancelPharmacyOrder(status);
+  final bool canDelete =
+      onDelete != null && !canCancel && _canDeletePharmacyOrder(status);
+  final ClinicalOrderAction? cancelAction = onCancel;
+  final ClinicalOrderAction? deleteAction = onDelete;
 
-  if (!showCancel && !showDelete) {
+  if (!canCancel && !canDelete) {
     return const SizedBox.shrink();
   }
 
   return AppAccessActionGate(
-    requirement: clinicalEncounterWriteRequirement,
+    requirement: clinicalPharmacyOrderWriteRequirement,
     builder: (BuildContext context, bool isAllowed) {
-      if (showCancel) {
+      if (!isAllowed) {
+        return const SizedBox.shrink();
+      }
+      if (canCancel && cancelAction != null) {
         return AppButton.tertiary(
           dense: true,
           leadingIcon: Icons.block_outlined,
@@ -1719,9 +1837,11 @@ Widget _pharmacyOrderActions({
           semanticLabel: l10n.clinicalCancelPharmacyOrderAction,
           tooltip: l10n.clinicalCancelPharmacyOrderAction,
           color: theme.colorScheme.tertiary,
-          enabled: isAllowed,
-          onPressed: () => onCancel(context, order),
+          onPressed: () => cancelAction(context, order),
         );
+      }
+      if (deleteAction == null) {
+        return const SizedBox.shrink();
       }
       return AppButton.tertiary(
         dense: true,
@@ -1730,8 +1850,7 @@ Widget _pharmacyOrderActions({
         semanticLabel: l10n.clinicalDeletePharmacyOrderAction,
         tooltip: l10n.clinicalDeletePharmacyOrderAction,
         color: theme.colorScheme.error,
-        enabled: isAllowed,
-        onPressed: () => onDelete(context, order),
+        onPressed: () => deleteAction(context, order),
       );
     },
   );

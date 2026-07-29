@@ -13,7 +13,7 @@ final receptionFollowUpRepositoryProvider = Provider<ReceptionFollowUpRepository
 );
 
 /// Lists and completes encounter follow-ups for Reception call worklists.
-final class ReceptionFollowUpRepository {
+class ReceptionFollowUpRepository {
   const ReceptionFollowUpRepository({required ApiClient apiClient})
     : _apiClient = apiClient;
 
