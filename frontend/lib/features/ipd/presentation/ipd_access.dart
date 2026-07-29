@@ -399,11 +399,13 @@ abstract final class IpdAdmissionQueueAtomPermissions {
 /// Active Patients tab atom → permission mapping (inventory + matrix).
 ///
 /// Current inpatients (`/ipd?section=active`). Nested cross-module matrix rows
-/// are _(n/a)_ except billing panels ([billingRead]). Operational writes keep
-/// source ∪ `clinical:write` | `operations:write` rather than matrix ∩
-/// `clinical:write` alone. Clinical writes / orders use [clinicalWrite]. Route
-/// entry ∪ is [routeEntry]. Start admission uses [operationalWrite]. Manage
-/// beds is bed-board chrome ([manageBeds]) — not mounted on Active.
+/// are _(n/a)_ except billing panels ([billingPanel] / [billingRead] —
+/// ∩ `billing:read` + `billing-payments`). Start admission / transfer / reject
+/// keep source operational write ∪ `clinical:write` | `operations:write`
+/// rather than matrix ∩ `clinical:write` alone. Clinical writes / nursing /
+/// orders / discharge planning use [clinicalWrite] (∩ `clinical:write` +
+/// source roles + module). Manage beds is bed-board chrome ([manageBeds]) —
+/// not mounted on Active. Route entry ∪ is [routeEntry].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -411,15 +413,16 @@ abstract final class IpdAdmissionQueueAtomPermissions {
 /// | Start admission (toolbar) | create | operational write ∪ ([startAdmission]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
-/// | Success snackbar / validation (authorized) | visible feedback | write / form |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → admission detail | read | ([detail]) |
 /// | Next action approve / assign bed / transfer | create / update | operational ∪ |
-/// | Next action nursing note / discharge | create / update | clinical write |
+/// | Next action nursing note / plan discharge | create / update | clinical write |
 /// | Next action theatre handover | navigate | ([navigation]) |
 /// | Next action continue care (label) | progressive disclosure | read ∪ |
 /// | Detail complementary writes | create / update / delete | operational / clinical |
-/// | Detail insurance / billing panel | nested read | ([billingRead]) |
+/// | Detail insurance / billing / ward-round billing | nested read | ([billingPanel]) |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
+/// | Manage beds | navigate | ([manageBeds]) — not mounted on this tab |
 /// | Route entry (deep link) | navigate | clinical \| operations \| billing:read |
 abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement tab = ipdWorkspaceReadRequirement;
@@ -434,6 +437,8 @@ abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement validation = ipdClinicalWriteRequirement;
   static const AccessRequirement rowSelect = ipdWorkspaceReadRequirement;
   static const AccessRequirement detail = ipdWorkspaceReadRequirement;
+  /// Matrix ∩ `clinical:write` for clinical creates; Start admission uses
+  /// [startAdmission] (source operational ∪).
   static const AccessRequirement create = ipdClinicalWriteRequirement;
   static const AccessRequirement update = ipdClinicalWriteRequirement;
   static const AccessRequirement delete = ipdWorkspaceDeleteRequirement;
@@ -472,6 +477,8 @@ abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement recordNursingNote =
       ipdClinicalWriteRequirement;
   static const AccessRequirement planDischarge = ipdClinicalWriteRequirement;
+  static const AccessRequirement planOrManageDischarge =
+      ipdClinicalWriteRequirement;
   static const AccessRequirement wardRound = ipdClinicalWriteRequirement;
   static const AccessRequirement medication = ipdClinicalWriteRequirement;
   static const AccessRequirement orderLab = ipdClinicalWriteRequirement;
@@ -486,10 +493,11 @@ abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement openPhysiotherapy = ipdNavigationRequirement;
   static const AccessRequirement navigation = ipdNavigationRequirement;
   static const AccessRequirement billingRead = ipdBillingReadRequirement;
+  static const AccessRequirement billingPanel = ipdBillingPanelReadRequirement;
   static const AccessRequirement manageBeds = ipdBedManageRequirement;
   /// Nested cross-module write — matrix _(n/a)_; reuses clinical write ∩.
   static const AccessRequirement nestedWrite = ipdClinicalWriteRequirement;
-  /// Nested cross-module read — billing panel uses [billingRead]; other nested
+  /// Nested cross-module read — billing panel uses [billingPanel]; other nested
   /// read reuses board read ∪.
   static const AccessRequirement nestedRead = ipdWorkspaceReadRequirement;
   static const AccessRequirement panelDeepLink = ipdOperationalWriteRequirement;
@@ -587,13 +595,14 @@ abstract final class IpdBedBoardAtomPermissions {
 /// | Success snackbar / validation (authorized) | visible feedback | write / form |
 /// | Row select → admission detail | read | ([detail]) |
 /// | Next action approve / assign bed / transfer | create / update | operational ∪ |
-/// | Next action nursing note / plan-manage discharge | create / update | clinical write |
+/// | Next action nursing note / plan-manage discharge | create / update | clinical write ([planOrManageDischarge]) |
 /// | Next action theatre handover | navigate | ([navigation]) |
 /// | Next action continue care (label) | progressive disclosure | read ∪ |
-/// | Detail complementary writes | create / update / delete | operational / clinical |
-/// | Detail release bed (discharge planned) | update | operational ∪ |
+/// | Detail complementary writes / clinical orders | create / update / delete | operational / clinical |
+/// | Detail release bed (discharge planned) | update | operational ∪ ([releaseBed]) |
 /// | Detail insurance / billing panel | nested read | ([billingPanel]) |
-/// | Nested mutation dialogs / `panel=discharge` deep link | create / update | clinical write |
+/// | Nested mutation dialogs / `panel=discharge` deep link | create / update | clinical write ([panelDeepLink]) |
+/// | Manage beds | navigate | ([manageBeds]) — not mounted on this tab |
 /// | Route entry (deep link) | navigate | clinical \| operations \| billing:read |
 abstract final class IpdDischargeAtomPermissions {
   static const AccessRequirement tab = ipdWorkspaceReadRequirement;
@@ -645,10 +654,13 @@ abstract final class IpdDischargeAtomPermissions {
       ipdOperationalWriteRequirement;
   static const AccessRequirement recordNursingNote =
       ipdClinicalWriteRequirement;
+  static const AccessRequirement planOrManageDischarge =
+      ipdClinicalWriteRequirement;
   static const AccessRequirement planDischarge = ipdClinicalWriteRequirement;
   static const AccessRequirement manageDischarge = ipdClinicalWriteRequirement;
   static const AccessRequirement wardRound = ipdClinicalWriteRequirement;
   static const AccessRequirement medication = ipdClinicalWriteRequirement;
+  static const AccessRequirement clinicalOrders = ipdClinicalWriteRequirement;
   static const AccessRequirement orderLab = ipdClinicalWriteRequirement;
   static const AccessRequirement orderRadiology = ipdClinicalWriteRequirement;
   static const AccessRequirement orderPrescription =
@@ -680,7 +692,7 @@ bool ipdRouteEntryMatchesAppRoutes() {
   final Set<AppPermission> routeKeys = AppRoutes.ipd.requiredAnyPermissions
       .toSet();
   final Set<AppPermission> atomKeys =
-      IpdTransfersAtomPermissions.routeEntry.anyPermissions.toSet();
+      IpdDischargeAtomPermissions.routeEntry.anyPermissions.toSet();
   return routeKeys.containsAll(atomKeys) && atomKeys.containsAll(routeKeys);
 }
 
