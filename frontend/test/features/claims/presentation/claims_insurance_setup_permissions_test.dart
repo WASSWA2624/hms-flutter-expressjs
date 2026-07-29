@@ -14,17 +14,22 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/app_quick_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClaimsRepository extends Mock implements ClaimsRepository {}
+
+class _MockInsuranceCatalogRepository extends Mock
+    implements InsuranceCatalogRepository {}
 
 const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   authorizationPendingCount: 0,
@@ -92,6 +97,8 @@ Future<void> _pumpInsuranceSetupTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/claims?section=insurance-setup',
+  AuthSession? session,
+  InsuranceCatalogRepository? catalogRepository,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -101,6 +108,13 @@ Future<void> _pumpInsuranceSetupTab(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+
+  final AuthSession resolvedSession =
+      session ??
+      _sessionForPolicy(
+        permissions: accessPolicy.permissions,
+        modules: accessPolicy.moduleEntitlements,
+      );
 
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
@@ -124,9 +138,13 @@ Future<void> _pumpInsuranceSetupTab(
         claimsRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.ready(),
+          SessionState.authenticated(session: resolvedSession),
         ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
+        if (catalogRepository != null)
+          insuranceCatalogRepositoryProvider.overrideWithValue(
+            catalogRepository,
+          ),
       ],
       child: MaterialApp.router(
         theme: AppTheme.light,
@@ -148,6 +166,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const ClaimsQueueQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -178,6 +197,7 @@ void main() {
         findsOneWidget,
       );
       // Create strip collapses when all permissionActions are filtered.
+      expect(find.byType(AppQuickActions), findsNothing);
       expect(find.textContaining('Add company'), findsNothing);
       expect(find.textContaining('Add scheme'), findsNothing);
       expect(find.textContaining('Add offer'), findsNothing);
@@ -209,6 +229,7 @@ void main() {
         accessPolicy: writer,
       );
 
+      expect(find.byType(AppQuickActions), findsOneWidget);
       expect(find.textContaining('Add company'), findsOneWidget);
       expect(find.textContaining('Add scheme'), findsOneWidget);
       expect(find.textContaining('Add offer'), findsOneWidget);
@@ -256,7 +277,38 @@ void main() {
         find.textContaining('Manage insurance companies'),
         findsOneWidget,
       );
+      expect(find.byType(AppQuickActions), findsNothing);
       expect(find.textContaining('Add company'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'read ∪ + write ∩: facility:admin with billing:write shows creates',
+    (WidgetTester tester) async {
+      final AppAccessPolicy facilityWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.facilityAdmin,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(facilityWriter),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.create.isAllowed(facilityWriter),
+        isTrue,
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: facilityWriter,
+      );
+
+      expect(find.textContaining('Add company'), findsOneWidget);
+      expect(find.textContaining('Insurer API'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -382,6 +434,46 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip: billing-payments missing denies create ∩',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noBillingModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.facilityAdmin,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'insurance-claims',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      // Tab ∪ still allows facility:admin (core right); create needs billing
+      // module for grants(billing:write).
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(noBillingModule),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.create.isAllowed(noBillingModule),
+        isFalse,
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: noBillingModule,
+      );
+
+      expect(find.textContaining('Insurance Setup'), findsWidgets);
+      expect(find.textContaining('Add company'), findsNothing);
+      expect(find.byType(AppQuickActions), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'nested cross-module rows n/a: create absent without billing:write',
     (WidgetTester tester) async {
       await _pumpInsuranceSetupTab(
@@ -485,7 +577,7 @@ void main() {
   });
 
   testWidgets(
-    'authorized Add company: validation + nested dialog reuse write ∩ (sync wiring)',
+    'authorized Add company: validation + nested dialog reuse write ∩',
     (WidgetTester tester) async {
       await _pumpInsuranceSetupTab(
         tester,
@@ -515,8 +607,6 @@ void main() {
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.textContaining('Insurance configuration saved'), findsNothing);
 
-      // Nested catalog dialogs call claimsWorkspaceController.refresh() on
-      // success (see openClaimsInsuranceCompanyDialog) → reference sync.
       expect(
         identical(
           ClaimsInsuranceSetupAtomPermissions.create,
@@ -542,6 +632,61 @@ void main() {
   );
 
   testWidgets(
+    'authorized Add company success: snackbar + reference refresh (sync)',
+    (WidgetTester tester) async {
+      final _MockInsuranceCatalogRepository catalog =
+          _MockInsuranceCatalogRepository();
+      when(() => catalog.createCompany(any())).thenAnswer(
+        (_) async => const Result<InsuranceCompanyOption>.success(
+          InsuranceCompanyOption(
+            id: 'co-1',
+            title: 'Acme Health',
+            code: 'ACME',
+          ),
+        ),
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        catalogRepository: catalog,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.textContaining('Add company'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Company name'),
+        'Acme Health',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Company code'),
+        'ACME',
+      );
+      await tester.tap(find.text('Save company'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Insurance configuration saved'),
+        findsOneWidget,
+      );
+      verify(() => catalog.createCompany(any())).called(1);
+      // Initial workspace load + post-mutation refresh.
+      verify(
+        () => repository.loadReferenceData(),
+      ).called(greaterThanOrEqualTo(2));
+      expect(find.byType(AppDialog), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'loading / empty authorized states remain observable on Insurance Setup',
     (WidgetTester tester) async {
       await _pumpInsuranceSetupTab(
@@ -558,6 +703,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Add company'), findsNothing);
+      expect(find.byType(AppQuickActions), findsNothing);
       expect(find.byType(AppTabStrip), findsOneWidget);
     },
   );
@@ -607,7 +753,14 @@ void main() {
           claimsRepositoryProvider.overrideWithValue(repository),
           sharedPreferencesProvider.overrideWithValue(preferences),
           initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
+            SessionState.authenticated(
+              session: _sessionForPolicy(
+                permissions: <AppPermission>{
+                  AppPermissions.billingRead,
+                  AppPermissions.billingWrite,
+                },
+              ),
+            ),
           ),
           appAccessPolicyProvider.overrideWithValue(
             _policy(
