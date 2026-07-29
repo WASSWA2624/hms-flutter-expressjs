@@ -640,7 +640,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Reject from detail submits and syncs (mutation path)',
+    'authorized Reject from detail opens reason dialog and submits (mutation path)',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -657,7 +657,8 @@ void main() {
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Reject').first);
+      // Detail Reject is AppButton.secondary (not FilledButton).
+      await tester.tap(find.widgetWithText(AppButton, 'Reject').first);
       await tester.pumpAndSettle();
 
       expect(find.text('Reason'), findsWidgets);
@@ -666,10 +667,12 @@ void main() {
         of: find.byType(AppDialog).last,
         matching: find.byType(TextField),
       );
+      expect(reasonField, findsWidgets);
       await tester.enterText(reasonField.first, 'Policy hold');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Reject').last);
+      // Form submit shares the Reject label; prefer the dialog action row.
+      await tester.tap(find.widgetWithText(AppButton, 'Reject').last);
       await tester.pumpAndSettle();
 
       verify(() => repository.rejectApproval(any(), any())).called(1);

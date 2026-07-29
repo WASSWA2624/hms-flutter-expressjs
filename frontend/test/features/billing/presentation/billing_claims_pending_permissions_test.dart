@@ -241,7 +241,27 @@ void main() {
       );
       expect(BillingClaimsPendingAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
+        BillingClaimsPendingAtomPermissions.document.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.nestedRead.isAllowed(reader),
+        isTrue,
+      );
+      expect(
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.submit.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.create.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.update.isAllowed(reader),
         isFalse,
       );
       expect(
@@ -278,6 +298,9 @@ void main() {
 
       expect(find.text('Submit claim'), findsNothing);
       expect(find.text('Record insurer response'), findsNothing);
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.text('Print invoice'), findsNothing);
+      expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
 
@@ -323,6 +346,12 @@ void main() {
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(writer),
         isTrue,
       );
+      expect(BillingClaimsPendingAtomPermissions.submit.isAllowed(writer), isTrue);
+      expect(
+        BillingClaimsPendingAtomPermissions.reconcile.isAllowed(writer),
+        isTrue,
+      );
+      expect(BillingClaimsPendingAtomPermissions.preAuth.isAllowed(writer), isTrue);
       expect(BillingClaimsPendingAtomPermissions.close.isAllowed(writer), isTrue);
       expect(BillingClaimsPendingAtomPermissions.delete.isAllowed(writer), isTrue);
 
@@ -341,6 +370,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Submit claim'), findsWidgets);
+      expect(find.text('View ledger'), findsOneWidget);
+      expect(find.text('Print invoice'), findsNothing);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -691,6 +722,103 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => repository.submitClaim(any(), any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'authorized Record insurer response opens nested dialog and syncs (mutation)',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_submittedClaim],
+      );
+
+      await tester.tap(find.byTooltip('Record insurer response').first);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Record insurer response'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+
+      final Finder reconcile = find.widgetWithText(
+        FilledButton,
+        'Record insurer response',
+      );
+      if (reconcile.evaluate().isNotEmpty) {
+        await tester.tap(reconcile.last);
+      } else {
+        await tester.tap(find.text('Record insurer response').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.reconcileClaim(any(), any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied (helper ∩)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.nestedWrite.isAllowed(
+          writerNoClaims,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.write.isAllowed(writerNoClaims),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.tab.isAllowed(writerNoClaims),
+        isFalse,
+      );
+
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'list chrome (search) remains for authorized Claims pending readers',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(find.byType(AppSearchBar), findsOneWidget);
+      expect(find.text('Cara Claim'), findsOneWidget);
+      expect(find.byTooltip('Submit claim'), findsNothing);
     },
   );
 

@@ -210,12 +210,17 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(BillingOverdueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingOverdueAtomPermissions.document.isAllowed(reader), isTrue);
       expect(
         BillingOverdueAtomPermissions.receivePayment.isAllowed(reader),
         isFalse,
       );
+      expect(BillingOverdueAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.close.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.waive.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.dunningSend.isAllowed(reader), isFalse);
 
       await _pumpOverdueTab(
         tester,
@@ -236,6 +241,18 @@ void main() {
         findsNothing,
       );
       expect(find.text('Claims pending'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('Omar Overdue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Adjust'), findsNothing);
+      expect(find.text('Void'), findsNothing);
+      expect(find.text('Send'), findsNothing);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -283,6 +300,9 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -588,6 +608,40 @@ void main() {
       );
 
       expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied on Overdue',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        BillingOverdueAtomPermissions.nestedWrite.isAllowed(writerNoClaims),
+        isFalse,
+      );
+      expect(
+        BillingOverdueAtomPermissions.write.isAllowed(writerNoClaims),
+        isTrue,
+      );
+      expect(
+        BillingOverdueAtomPermissions.dunningSend.isAllowed(writerNoClaims),
+        isTrue,
+      );
+
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

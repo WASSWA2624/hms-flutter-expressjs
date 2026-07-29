@@ -873,6 +873,27 @@ void main() {
       );
       expect(
         identical(
+          BillingOverdueAtomPermissions.write,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.update,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingOverdueAtomPermissions.close,
           billingWorkspaceWriteRequirement,
         ),
@@ -881,6 +902,27 @@ void main() {
       expect(
         identical(
           BillingOverdueAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.listChrome,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.detail,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.document,
           billingWorkspaceReadRequirement,
         ),
         isTrue,
@@ -903,6 +945,13 @@ void main() {
         identical(
           BillingOverdueAtomPermissions.nestedWrite,
           billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.nestedRead,
+          billingClaimsNestedReadRequirement,
         ),
         isTrue,
       );
@@ -931,16 +980,56 @@ void main() {
         },
       );
       expect(BillingOverdueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingOverdueAtomPermissions.document.isAllowed(reader), isTrue);
       expect(BillingOverdueAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.close.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.waive.isAllowed(reader), isFalse);
+      expect(
+        BillingOverdueAtomPermissions.receivePayment.isAllowed(reader),
+        isFalse,
+      );
+      expect(BillingOverdueAtomPermissions.dunningSend.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.approve.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.nestedWrite.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(BillingOverdueAtomPermissions.create.isAllowed(writer), isTrue);
       expect(BillingOverdueAtomPermissions.close.isAllowed(writer), isTrue);
       expect(BillingOverdueAtomPermissions.waive.isAllowed(writer), isTrue);
       expect(
         BillingOverdueAtomPermissions.voidInvoice.isAllowed(writer),
         isTrue,
       );
+      expect(
+        BillingOverdueAtomPermissions.dunningSend.isAllowed(writer),
+        isTrue,
+      );
+      expect(
+        BillingOverdueAtomPermissions.receivePayment.isAllowed(writer),
+        isTrue,
+      );
+      // Default fixtures include insurance-claims — nested claim write ∩ allows.
+      expect(BillingOverdueAtomPermissions.nestedWrite.isAllowed(writer), isTrue);
+      // Writer without insurance-claims: nested claim write stays denied.
+      final AppAccessPolicy writerNoClaims = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        BillingOverdueAtomPermissions.nestedWrite.isAllowed(writerNoClaims),
+        isFalse,
+      );
+      expect(BillingOverdueAtomPermissions.write.isAllowed(writerNoClaims), isTrue);
     });
 
     test('Needs issue atom map reuses feature *Requirement helpers', () {
