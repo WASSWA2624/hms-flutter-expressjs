@@ -507,7 +507,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Support detail Log incident opens nested dialog',
+    'authorized Support detail Log incident opens nested dialog and syncs',
     (WidgetTester tester) async {
       when(() => repository.createResource(any(), any())).thenAnswer(
         (_) async => const Result<BiomedicalMutationResult>.success(
@@ -526,6 +526,18 @@ void main() {
         ),
       );
 
+      expect(
+        BiomedicalSupportAtomPermissions.logIncident.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.biomedRead,
+              AppPermissions.biomedWrite,
+            },
+          ),
+        ),
+        isTrue,
+      );
+
       await tester.tap(find.text('Acme Biomedical Support'));
       await tester.pumpAndSettle();
 
@@ -534,6 +546,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('LOG INCIDENT'), findsOneWidget);
+
+      final Finder formFields = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.byType(TextFormField),
+      );
+      for (int i = 0; i < formFields.evaluate().length; i++) {
+        await tester.enterText(formFields.at(i), 'Vendor safety event');
+      }
+      await tester.pump();
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.createResource(
+          BiomedicalResources.incidentReports,
+          any(),
+        ),
+      ).called(1);
+      expect(find.text('Biomedical changes saved.'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

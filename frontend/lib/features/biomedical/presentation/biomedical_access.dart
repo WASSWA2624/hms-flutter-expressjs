@@ -325,7 +325,7 @@ abstract final class BiomedicalComplianceAtomPermissions {
 /// | --- | --- | --- |
 /// | Support tab | navigate | [tab] read ∩ `biomed:read` |
 /// | Search / filters / columns / pagination | read chrome | [listChrome] |
-/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
+/// | Empty / error / retry / loading / validation | read chrome | [listChrome] / page |
 /// | Row select → detail | read | [detail] |
 /// | Report fault (tab primary) | create | [reportFault] write ∪ source |
 /// | Next action Review record | navigate / read | [detail] |
@@ -333,6 +333,7 @@ abstract final class BiomedicalComplianceAtomPermissions {
 /// | Detail Log incident | create | [logIncident] write ∪ source |
 /// | Detail complementary writes | create / update / delete | [nestedWrite] |
 /// | Nested fault-report dialog | create | [reportFault] write ∪ source |
+/// | Nested Log incident dialog | create | [logIncident] write ∪ source |
 /// | Print report | export | [export]/[print] (evidence:export ∩ …) |
 /// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
 /// | Route entry (deep link) | navigate | [routeEntry]/[entry] read ∪ write |

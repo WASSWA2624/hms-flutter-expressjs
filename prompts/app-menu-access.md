@@ -15,25 +15,22 @@ Enforce **permission-based** visibility on every app menu item so users only see
 
 ## Menu ↔ route matrix (permission entry gates)
 
-Use exact `AppPermissions` on each `AppRouteData` (add permission gates where a route is role-only today). Modules remain plan ∩.
+Use exact `AppPermissions` on each `AppRouteData` (add gates where a route is role-only today). Modules remain plan ∩. Domain scoping runs after permission/module checks.
 
-| Menu / route | Path | Semantics | Permission keys / modules |
-| --- | --- | --- | --- |
-| Home / Settings | `/`, `/settings` | authenticated | core |
-| Reception | `/reception` | ∪ | `patient:read` \| `last_office:read`; `patient-registry`, `scheduling-queue` |
-| Patients | `/patients` | ∩ | `patient:read`; `patient-registry` |
-| OPD | `/opd` | ∪ | `patient:read` \| `clinical:read` \| `billing:read` \| `operations:read` \| `emergency:read`; `scheduling-queue` |
-| Emergency / IPD / Rooms & beds / ICU / Nursing | workspace paths | ∪ | matching `*:read` on `AppRoutes.*`; domain-scoped for custom roles |
-| Clinical / Physiotherapy / Theater / Discharge | workspace paths | ∪ | matching `*:read` on `AppRoutes.*`; domain-scoped for custom roles |
-| Lab / Radiology / Pharmacy | workspace paths | ∪ | `lab:read` / `radiology:read` / `pharmacy:read` + modules |
-| Billing / Claims | `/billing`, `/claims` | ∪ | `billing:read` \| `billing:write` (+ `financial:approve` for claims); billing/claims modules |
-| Subscriptions | `/subscriptions` | ∪ | `subscriptions:read` \| `system:admin` (replace role-only `superAdmin`) |
-| Operations / Housekeeping / Biomedical / Mortuary | workspace paths | ∪ | matching `*:read` + modules |
-| HR | `/hr` | ∪ | `hr:read` \| `unit:read` \| `roster:read`; `hr-rosters` |
-| Communications / Integrations / Reports | workspace paths | ∪ | `communications:read` / `integration:read` / `reports:read` (+ peers) + modules |
-| Setup / Access admin | setup & access paths | ∪ | `tenant:admin` \| `facility:admin` \| `system:admin` (not role packs) |
-
-Domain scoping runs **after** permission/module checks so custom roles open only workspaces their granted domains cover.
+| Menu / route | Semantics | Permission keys / modules |
+| --- | --- | --- |
+| Home / Settings | authenticated | core |
+| Reception | ∪ | `patient:read` \| `last_office:read`; patient-registry, scheduling-queue |
+| Patients | ∩ | `patient:read`; patient-registry |
+| OPD | ∪ | `patient:read` \| `clinical:read` \| `billing:read` \| `operations:read` \| `emergency:read`; scheduling-queue |
+| Emergency / IPD / Rooms & beds / ICU / Nursing / Clinical / Physio / Theater / Discharge | ∪ | matching `*:read` on `AppRoutes.*`; domain-scoped for custom roles |
+| Lab / Radiology / Pharmacy | ∪ | `lab:read` / `radiology:read` / `pharmacy:read` + modules |
+| Billing / Claims | ∪ | `billing:read` \| `billing:write` (+ `financial:approve` for claims) + modules |
+| Subscriptions | ∪ | `subscriptions:read` \| `system:admin` (replace role-only `superAdmin`) |
+| Operations / Housekeeping / Biomedical / Mortuary | ∪ | matching `*:read` + modules |
+| HR | ∪ | `hr:read` \| `unit:read` \| `roster:read`; hr-rosters |
+| Communications / Integrations / Reports | ∪ | `communications:read` / `integration:read` / `reports:read` (+ peers) + modules |
+| Setup / Access admin | ∪ | `tenant:admin` \| `facility:admin` \| `system:admin` (not role packs) |
 
 ## Requirements
 
@@ -66,20 +63,11 @@ Domain scoping runs **after** permission/module checks so custom roles open only
 
 ## Relevant Files
 
-- `frontend/lib/app/router/app_router.dart`
-- `frontend/lib/app/router/app_routes.dart`
-- `frontend/lib/app/router/shell_route_access.dart`
-- `frontend/lib/app/router/route_guards.dart`
-- `frontend/lib/app/router/shell_badge_counts.dart`
+- `frontend/lib/app/router/app_router.dart`, `app_routes.dart`, `shell_route_access.dart`, `route_guards.dart`, `shell_badge_counts.dart`
 - `frontend/lib/shared/layout/responsive_shell_scaffold.dart`
-- `frontend/lib/features/settings/presentation/pages/settings_page.dart`
-- `frontend/lib/features/home/`
-- `frontend/lib/core/permissions/access_policy.dart`
-- `frontend/lib/core/permissions/access_requirement.dart`
+- `frontend/lib/features/settings/presentation/pages/settings_page.dart`, `frontend/lib/features/home/`
+- `frontend/lib/core/permissions/access_policy.dart`, `access_requirement.dart`
 - `frontend/test/app/router/shell_route_access_test.dart`
-- `prompts/ui-permissions/_shared-rules.md`
-- `prompts/.cursor/prompt.mdc`
-- `.cursor/access/permissions.mdc`
-- `frontend/.cursor/permissions.mdc`
-- `frontend/.cursor/navigation.mdc`
+- `prompts/ui-permissions/_shared-rules.md`, `prompts/.cursor/prompt.mdc`
+- `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`, `frontend/.cursor/navigation.mdc`
 - `backend/src/config/permissions.js`

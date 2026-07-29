@@ -958,6 +958,7 @@ class _DetailActions extends ConsumerWidget {
         kind: _BiomedicalActionKind.incident,
         label: l10n.biomedicalLogIncidentAction,
         icon: Icons.warning_amber_outlined,
+        requirement: BiomedicalSupportAtomPermissions.logIncident,
       ),
       if (asset.resource == BiomedicalResources.recallNotices)
         ?writeAction(
@@ -970,8 +971,8 @@ class _DetailActions extends ConsumerWidget {
         label: l10n.biomedicalDisposeTransferAction,
         icon: Icons.move_down_outlined,
       ),
-      // Identical to BiomedicalAnalyticsAtomPermissions.print / export
-      // (and every tab *AtomPermissions.print) — shared detail print gate.
+      // Shared print gate — identical to BiomedicalSupportAtomPermissions.print
+      // / BiomedicalAnalyticsAtomPermissions.print / every tab *AtomPermissions.print.
       if (biomedicalPrintRequirement.isAllowed(policy))
         AppReportActionButton.print(
           label: l10n.biomedicalPrintReportAction,

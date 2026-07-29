@@ -167,7 +167,7 @@ Support permission tests in `frontend/test/features/biomedical/presentation/biom
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Report fault / nested writes without `biomed:write`.
 - [x] Route entry ∪ write-only omits Support chrome; subscription strip without biomed module omits Support.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; Support writes still mount.
-- [x] Authorized Report fault sync; Log incident nested dialog; Report fault validation keeps dialog open.
+- [x] Authorized Report fault sync; Log incident nested dialog + mutation sync; Report fault validation keeps dialog open.
 - [x] Empty (read omits primary / write keeps Report fault) / loading→success / error-retry, mobile+desktop, light+dark.
 
 Work orders permission tests in `frontend/test/features/biomedical/presentation/biomedical_work_orders_permissions_test.dart`:
