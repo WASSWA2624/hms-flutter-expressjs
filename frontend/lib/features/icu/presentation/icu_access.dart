@@ -454,7 +454,7 @@ abstract final class IcuFollowUpsAtomPermissions {
 /// | Nested mutation dialogs | create / update | write ∪ |
 /// | Panel deep link `?panel=` | create / update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
-/// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
+/// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry] / [catalogEntry]) |
 abstract final class IcuAllAtomPermissions {
   static const AccessRequirement tab = icuWorkspaceReadRequirement;
   static const AccessRequirement listChrome = icuWorkspaceReadRequirement;
