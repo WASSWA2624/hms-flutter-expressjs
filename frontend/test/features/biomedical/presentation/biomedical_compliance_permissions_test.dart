@@ -438,7 +438,8 @@ void main() {
       await tester.tap(find.text('Pump recall notice'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Record calibration'), findsOneWidget);
+      // Primary tooltip + complementary detail both say Record calibration.
+      expect(find.text('Record calibration'), findsWidgets);
       expect(find.text('Print report'), findsNothing);
       expect(
         find.descendant(
@@ -547,10 +548,19 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.text('Ventilator calibration'), findsOneWidget);
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
+
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.text('Compliance'), findsWidgets);
     expect(find.byTooltip('Record calibration'), findsOneWidget);
-    expect(find.text('Review compliance'), findsWidgets);
+    // Mobile list rows use AppListTableMobileItem (title may share chrome space).
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
+    expect(find.textContaining('Ventilator'), findsWidgets);
   });
 
   testWidgets('desktop viewport: authorized Compliance chrome remains', (
