@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -290,8 +291,29 @@ void main() {
       );
       expect(
         identical(
+          BiomedicalAnalyticsAtomPermissions.nestedWrite,
+          biomedicalWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BiomedicalAnalyticsAtomPermissions.export,
           biomedicalExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.print,
+          biomedicalExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.entry,
+          biomedicalWorkspaceEntryRequirement,
         ),
         isTrue,
       );
@@ -483,6 +505,26 @@ void main() {
     expect(find.byType(AppWorkspaceStatePanel), findsOneWidget);
     expect(find.text('Analytics'), findsWidgets);
   });
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Analytics',
+    (WidgetTester tester) async {
+      await _pumpAnalytics(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.reportsRead,
+          },
+        ),
+        failure: const Result<BiomedicalWorkbench>.failure(AppFailure.network()),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
 
   testWidgets('authorized loading then success on Analytics', (
     WidgetTester tester,

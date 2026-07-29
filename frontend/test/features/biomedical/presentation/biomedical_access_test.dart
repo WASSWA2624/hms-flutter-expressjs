@@ -906,6 +906,144 @@ void main() {
       );
     });
 
+    test('Analytics panel tab requires biomed:read ∩ + reports:read ∪', () {
+      final AppAccessPolicy readerOnly = _policyFor(
+        permissions: <AppPermission>{AppPermissions.biomedRead},
+      );
+      final AppAccessPolicy withReports = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.biomedRead,
+          AppPermissions.reportsRead,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: biomedicalEngineeringSuiteModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'reporting-analytics',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        canViewBiomedicalPanel(readerOnly, BiomedicalPanels.analytics),
+        isFalse,
+      );
+      expect(
+        canViewBiomedicalPanel(withReports, BiomedicalPanels.analytics),
+        isTrue,
+      );
+      expect(
+        identical(
+          biomedicalPanelTabRequirement(BiomedicalPanels.analytics),
+          biomedicalAnalyticsTabRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Analytics atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.tab,
+          biomedicalAnalyticsTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.listChrome,
+          biomedicalAnalyticsTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.detail,
+          biomedicalAnalyticsTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.nestedRead,
+          biomedicalAnalyticsNestedReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.create,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.update,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.delete,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.write,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.nestedWrite,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.export,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.print,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.entry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.routeEntry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalAnalyticsAtomPermissions.read,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('subscription strip denies read when module missing', () {
       final AppAccessPolicy noModule = _policyFor(
         permissions: <AppPermission>{
@@ -955,6 +1093,14 @@ void main() {
       );
       expect(
         BiomedicalWorkOrdersAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
     });

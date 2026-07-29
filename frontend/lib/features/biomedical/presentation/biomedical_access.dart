@@ -273,11 +273,11 @@ abstract final class BiomedicalPreventiveAtomPermissions {
 /// | Row select → detail | read | read ∩ |
 /// | Record calibration (tab primary) | create | write ∪ source |
 /// | Next action Review record | navigate / read | read ∩ |
-/// | Next action Review compliance (calibration / safety) | update | write ∪ source |
-/// | Next action Return to service (downtime / DOWN) | update | write ∪ source |
-/// | Next action Review recall | update | write ∪ source |
-/// | Detail Record calibration / safety / Report downtime | create | write ∪ source |
-/// | Detail Close downtime / Acknowledge recall | update | write ∪ source |
+/// | Next action Review compliance (calibration / safety) | update | [recordCalibration] write ∪ source |
+/// | Next action Return to service (downtime / DOWN) | update | [closeDowntime] / write ∪ source |
+/// | Next action Review recall | update | [acknowledgeRecall] write ∪ source |
+/// | Detail Record calibration / safety / Report downtime | create | [create] write ∪ source |
+/// | Detail Close downtime / Acknowledge recall | update | [closeDowntime]/[acknowledgeRecall] |
 /// | Detail complementary writes (transfer, WO, …) | create / update / delete | write ∪ source |
 /// | Print report | export | print (evidence:export ∩ …) |
 /// | Nested mutation dialogs | create / update / delete | write ∪ source |
@@ -399,11 +399,16 @@ abstract final class BiomedicalWorkOrdersAtomPermissions {
 /// | Row select → detail | read | [detail] |
 /// | Next action Review | navigate | [detail] |
 /// | Next action write | create / update | [write] (source ∪) |
-/// | Detail complementary writes | create / update | [write] |
-/// | Nested mutation dialogs | create / update | [write] |
-/// | Print report | export | [export] (source evidence:export) |
+/// | Detail complementary writes | create / update / delete | [write] |
+/// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
+/// | Nested charts / utilization (cross-module) | read | [nestedRead] reports:read ∪ |
+/// | Print report | export | [export]/[print] (source evidence:export) |
 /// | Tab-strip primary | _(n/a on Analytics)_ | — |
-/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write |
+/// | Route entry (deep link) | navigate | [routeEntry]/[entry] read ∪ write |
+///
+/// Matrix nested cross-module write rows are _(n/a)_. Write keeps source ∪
+/// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+/// Exports keep source ∩ `evidence:export` (matrix notes reports:read | evidence:export).
 abstract final class BiomedicalAnalyticsAtomPermissions {
   static const AccessRequirement tab = biomedicalAnalyticsTabRequirement;
   static const AccessRequirement listChrome = biomedicalAnalyticsTabRequirement;
@@ -414,7 +419,10 @@ abstract final class BiomedicalAnalyticsAtomPermissions {
   static const AccessRequirement update = biomedicalWriteRequirement;
   static const AccessRequirement delete = biomedicalWriteRequirement;
   static const AccessRequirement write = biomedicalWriteRequirement;
+  static const AccessRequirement nestedWrite = biomedicalWriteRequirement;
   static const AccessRequirement export = biomedicalExportRequirement;
+  static const AccessRequirement print = biomedicalExportRequirement;
+  static const AccessRequirement entry = biomedicalWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = biomedicalWorkspaceEntryRequirement;
   static const AccessRequirement read = biomedicalReadRequirement;
 }

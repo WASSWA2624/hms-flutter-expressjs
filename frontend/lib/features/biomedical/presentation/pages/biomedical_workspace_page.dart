@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
@@ -380,6 +381,8 @@ class _BiomedicalWorkspaceContentState
           BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
         BiomedicalPanels.compliance =>
           BiomedicalComplianceAtomPermissions.recordCalibration,
+        // Analytics has no tab-strip primary; keep write gate if one is added.
+        BiomedicalPanels.analytics => BiomedicalAnalyticsAtomPermissions.write,
         _ => biomedicalWriteRequirement,
       },
       builder: (BuildContext context, bool isAllowed) {
@@ -1166,7 +1169,7 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
 
     if (hasWriteAction) {
       return AppAccessActionGate(
-        requirement: biomedicalWriteRequirement,
+        requirement: _nextActionWriteRequirement(actionKind),
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.tertiary(
             label: label,
@@ -1200,6 +1203,34 @@ enum _BiomedicalActionKind {
   recall,
   disposal,
   fault,
+}
+
+/// Maps row next-action kinds to feature `*AtomPermissions` write gates.
+AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
+  return switch (kind) {
+    _BiomedicalActionKind.calibration ||
+    _BiomedicalActionKind.safety =>
+      BiomedicalComplianceAtomPermissions.recordCalibration,
+    _BiomedicalActionKind.closeDowntime =>
+      BiomedicalComplianceAtomPermissions.closeDowntime,
+    _BiomedicalActionKind.recall =>
+      BiomedicalComplianceAtomPermissions.acknowledgeRecall,
+    _BiomedicalActionKind.downtime => BiomedicalComplianceAtomPermissions.create,
+    _BiomedicalActionKind.maintenance =>
+      BiomedicalPreventiveAtomPermissions.performMaintenance,
+    _BiomedicalActionKind.workOrder ||
+    _BiomedicalActionKind.startWorkOrder =>
+      BiomedicalWorkOrdersAtomPermissions.startWorkOrder,
+    _BiomedicalActionKind.returnToService =>
+      BiomedicalWorkOrdersAtomPermissions.returnToService,
+    _BiomedicalActionKind.fault ||
+    _BiomedicalActionKind.incident =>
+      BiomedicalSupportAtomPermissions.reportFault,
+    _BiomedicalActionKind.asset => BiomedicalRegistryAtomPermissions.editAsset,
+    _BiomedicalActionKind.transfer ||
+    _BiomedicalActionKind.disposal =>
+      BiomedicalRegistryAtomPermissions.write,
+  };
 }
 
 BiomedicalWorkspaceState? _biomedicalStateFromAsync(

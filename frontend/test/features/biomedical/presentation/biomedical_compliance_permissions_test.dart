@@ -452,6 +452,42 @@ void main() {
     },
   );
 
+  test(
+    'Compliance next-action kinds reuse BiomedicalComplianceAtomPermissions',
+    () {
+      expect(
+        identical(
+          BiomedicalComplianceAtomPermissions.recordCalibration,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalComplianceAtomPermissions.closeDowntime,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalComplianceAtomPermissions.acknowledgeRecall,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      // Nested cross-module matrix rows are _(n/a)_ — no compliance:read ∪.
+      expect(
+        BiomedicalComplianceAtomPermissions.tab.anyPermissions,
+        isEmpty,
+      );
+      expect(
+        BiomedicalComplianceAtomPermissions.nestedRead.allPermissions,
+        equals(<AppPermission>[AppPermissions.biomedRead]),
+      );
+    },
+  );
+
   testWidgets(
     'authorized Compliance next-action opens dialog and mutation syncs list',
     (WidgetTester tester) async {
