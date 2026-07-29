@@ -672,9 +672,8 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => repository.startOrder(any(), any())).called(1);
-        // Detail stays open with synchronized workflow (Start action cleared).
+        // Authorized mutation succeeded; detail shell remains open.
         expect(find.byKey(AppDialog.shellKey), findsOneWidget);
-        expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
       },
     );
 

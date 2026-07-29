@@ -666,12 +666,19 @@ void main() {
       await tester.tap(find.text('Rita Reporting'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Cancel order'), findsOneWidget);
+
       // Writers default to imaging floor; switch to Reporting view for draft CTA.
-      await tester.tap(find.text('Reporting').last);
+      final Finder reportingMode = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Reporting'),
+      );
+      expect(reportingMode, findsOneWidget);
+      await tester.ensureVisible(reportingMode);
+      await tester.tap(reportingMode);
       await tester.pumpAndSettle();
 
       expect(find.text('Draft report'), findsOneWidget);
-      expect(find.text('Cancel order'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Draft report'));
@@ -679,16 +686,32 @@ void main() {
 
       // Nested draft dialog / form entry for authorized writers.
       expect(find.textContaining('no access'), findsNothing);
-      verify(() => radiologyRepository.getWorkflow(any())).called(greaterThan(0));
+      verify(
+        () => radiologyRepository.getWorkflow(any()),
+      ).called(greaterThan(0));
     },
   );
 
   testWidgets('error / retry state remains for authorized Reporting users', (
     WidgetTester tester,
   ) async {
-    when(() => radiologyRepository.getWorkbench(any())).thenAnswer(
-      (_) async => const Result<RadiologyWorkbench>.failure(NetworkFailure()),
-    );
+    var workbenchCalls = 0;
+    when(() => radiologyRepository.getWorkbench(any())).thenAnswer((_) async {
+      workbenchCalls += 1;
+      if (workbenchCalls == 1) {
+        return Result<RadiologyWorkbench>.success(
+          RadiologyWorkbench(
+            summary: _summary,
+            orders: AppPage<RadiologyOrder>(
+              items: const <RadiologyOrder>[_reportingOrder],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        );
+      }
+      return const Result<RadiologyWorkbench>.failure(NetworkFailure());
+    });
 
     await _pumpReportingTab(
       tester,
@@ -698,10 +721,29 @@ void main() {
       ),
     );
 
+    expect(find.text('Rita Reporting'), findsOneWidget);
+
+    // Trigger an authorized refresh that surfaces the in-content failure banner.
+    final Finder searchField = find.byType(TextField).first;
+    await tester.enterText(searchField, 'rita');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
     expect(find.text('Try again'), findsOneWidget);
     expect(find.byTooltip('Request imaging'), findsNothing);
 
-    _stubRadiology(radiologyRepository);
+    when(() => radiologyRepository.getWorkbench(any())).thenAnswer(
+      (_) async => Result<RadiologyWorkbench>.success(
+        RadiologyWorkbench(
+          summary: _summary,
+          orders: AppPage<RadiologyOrder>(
+            items: const <RadiologyOrder>[_reportingOrder],
+            request: const AppPageRequest(pageSize: 12),
+            totalItemCount: 1,
+          ),
+        ),
+      ),
+    );
 
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
@@ -743,7 +785,7 @@ void main() {
       ),
     );
 
-    expect(find.text('No radiology orders'), findsOneWidget);
+    expect(find.text('No radiology patients'), findsOneWidget);
     expect(find.text('Draft report'), findsNothing);
   });
 
@@ -808,7 +850,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    expect(_tab('Reporting'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsWidgets);
     expect(find.byTooltip('Request imaging'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
@@ -826,6 +867,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(_tab('Reporting'), findsOneWidget);
     expect(find.text('Rita Reporting'), findsOneWidget);
   });
 

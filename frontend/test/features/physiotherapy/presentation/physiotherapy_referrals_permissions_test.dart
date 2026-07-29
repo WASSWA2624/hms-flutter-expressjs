@@ -955,11 +955,19 @@ void main() {
         await _pumpAfterAction(tester);
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(2));
+        final Finder planDialog = find.byType(AppDialog).last;
         await tester.enterText(
-          find.byType(TextFormField).first,
+          find
+              .descendant(
+                of: planDialog,
+                matching: find.byType(TextFormField),
+              )
+              .first,
           'Updated mobility protocol',
         );
-        await tester.tap(find.text('Save'));
+        await tester.tap(
+          find.descendant(of: planDialog, matching: find.text('Save')),
+        );
         await _pumpAfterAction(tester);
 
         verify(

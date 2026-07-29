@@ -532,9 +532,16 @@ void main() {
         await _openReleasedDetail(tester);
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
-        expect(find.text(l10n.radiologyAddendumAction), findsOneWidget);
         expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
         expect(find.text(l10n.radiologyPaymentLabel), findsWidgets);
+
+        // Addendum mounts on Reporting view (default detail is Imaging floor).
+        await tester.ensureVisible(
+          find.text(l10n.radiologyViewModeReportingLabel),
+        );
+        await tester.tap(find.text(l10n.radiologyViewModeReportingLabel));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.radiologyAddendumAction), findsOneWidget);
       },
     );
 
@@ -692,21 +699,39 @@ void main() {
         await _openReleasedDetail(tester);
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
+        await tester.ensureVisible(find.text(l10n.radiologyCancelOrderAction));
         await tester.tap(find.text(l10n.radiologyCancelOrderAction));
         await tester.pumpAndSettle();
 
-        final Finder reasonField = find.byType(TextFormField);
-        if (reasonField.evaluate().isNotEmpty) {
-          await tester.enterText(reasonField.first, 'Test cancel');
-          await tester.pumpAndSettle();
-        }
-        final Finder confirm = find.text(l10n.radiologyCancelOrderAction);
-        if (confirm.evaluate().length > 1) {
-          await tester.tap(confirm.last);
-          await tester.pumpAndSettle();
-        }
+        expect(find.text(l10n.radiologyCancelDialogTitle), findsOneWidget);
+        final Finder reasonField = find.byType(TextField);
+        expect(reasonField, findsWidgets);
+        await tester.enterText(reasonField.first, 'Test cancel');
+        await tester.pumpAndSettle();
+
+        clearInteractions(repository);
+        _stubWorkspace(
+          repository,
+          workflowOverride: RadiologyWorkflow(
+            order: const RadiologyOrder(
+              id: 'RO-REL-1',
+              displayId: 'RAD-REL-1',
+              status: 'CANCELLED',
+              patientDisplayName: 'Finn Finalized',
+              patientId: 'PAT-REL-1',
+              modality: 'MRI',
+              testDisplayName: 'MRI Brain',
+              paymentStatus: 'PAID',
+            ),
+            nextActions: const RadiologyNextActions(),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.radiologyCancelOrderAction).last);
+        await tester.pumpAndSettle();
 
         verify(() => repository.cancelOrder(any(), any())).called(1);
+        verify(() => repository.getWorkbench(any())).called(greaterThan(0));
       },
     );
 

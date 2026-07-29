@@ -784,9 +784,11 @@ class _RadiologyOrderDetail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final RadiologyWorkflow? workflow = state.selectedWorkflow;
+    final RadiologyWorkspaceState liveState =
+        _watchRadiologyState(ref) ?? state;
+    final RadiologyWorkflow? workflow = liveState.selectedWorkflow;
 
-    if (state.isRefreshingDetail && workflow == null) {
+    if (liveState.isRefreshingDetail && workflow == null) {
       return AppWorkspaceStatePanel.loading(
         title: l10n.radiologyDetailLoadingTitle,
         body: l10n.radiologyDetailLoadingBody,
@@ -804,7 +806,7 @@ class _RadiologyOrderDetail extends ConsumerWidget {
     }
 
     return _RadiologyDetailBody(
-      state: state,
+      state: liveState,
       workflow: workflow,
       canWork: canWork,
       canRequest: canRequest,
@@ -859,6 +861,17 @@ Future<void> _openRadiologyDetailDialog(
 RadiologyWorkspaceState? _readRadiologyState(WidgetRef ref) {
   return ref
       .read(radiologyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (RadiologyWorkspaceState state) => state,
+        failure: (_) => null,
+      );
+}
+
+RadiologyWorkspaceState? _watchRadiologyState(WidgetRef ref) {
+  return ref
+      .watch(radiologyWorkspaceControllerProvider)
       .asData
       ?.value
       .when(
