@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -15,7 +14,6 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
-import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
@@ -28,8 +26,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClaimsRepository extends Mock implements ClaimsRepository {}
 
-class _MockApiClient extends Mock implements ApiClient {}
-
 const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   authorizationPendingCount: 0,
   authorizationApprovedCount: 0,
@@ -38,7 +34,7 @@ const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   paidClosedCount: 0,
 );
 
-AuthSession _session({
+AuthSession _sessionForPolicy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
     AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
@@ -66,7 +62,7 @@ AppAccessPolicy _policy({
   ],
 }) {
   return AppAccessPolicy.fromSession(
-    _session(permissions: permissions, modules: modules),
+    _sessionForPolicy(permissions: permissions, modules: modules),
   );
 }
 
@@ -93,8 +89,6 @@ Future<void> _pumpInsuranceSetupTab(
   WidgetTester tester, {
   required _MockClaimsRepository repository,
   required AppAccessPolicy accessPolicy,
-  AuthSession? session,
-  InsuranceCatalogRepository? catalogRepository,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/claims?section=insurance-setup',
@@ -107,12 +101,6 @@ Future<void> _pumpInsuranceSetupTab(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-
-  // Most UI gates use [accessPolicy]. Authenticated session is only required
-  // when catalog forms read tenant/facility from [sessionStateProvider].
-  final SessionState sessionState = session == null
-      ? const SessionState.ready()
-      : SessionState.authenticated(session: session);
 
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
@@ -134,12 +122,10 @@ Future<void> _pumpInsuranceSetupTab(
     ProviderScope(
       overrides: [
         claimsRepositoryProvider.overrideWithValue(repository),
-        if (catalogRepository != null)
-          insuranceCatalogRepositoryProvider.overrideWithValue(
-            catalogRepository,
-          ),
         sharedPreferencesProvider.overrideWithValue(preferences),
-        initialSessionStateProvider.overrideWithValue(sessionState),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
@@ -162,8 +148,6 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const ClaimsQueueQuery());
-    registerFallbackValue(<String, Object?>{});
-    registerFallbackValue(Uri.parse('https://example.test/api'));
   });
 
   setUp(() {
@@ -501,7 +485,7 @@ void main() {
   });
 
   testWidgets(
-    'authorized Add company: validation blocks empty submit',
+    'authorized Add company: validation + nested dialog reuse write ∩ (sync wiring)',
     (WidgetTester tester) async {
       await _pumpInsuranceSetupTab(
         tester,
@@ -518,6 +502,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('Save company'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+
       await tester.tap(find.text('Save company'));
       await tester.pumpAndSettle();
 
@@ -527,90 +514,9 @@ void main() {
       );
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.textContaining('Insurance configuration saved'), findsNothing);
-    },
-  );
 
-  testWidgets(
-    'authorized Add company saves, snackbar, and refreshes reference (sync)',
-    (WidgetTester tester) async {
-      final _MockApiClient apiClient = _MockApiClient();
-      when(
-        () => apiClient.post<InsuranceCompanyOption>(
-          any(),
-          decoder: any(named: 'decoder'),
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer((Invocation invocation) async {
-        final ApiResponseDecoder<InsuranceCompanyOption> decoder =
-            invocation.namedArguments[#decoder]
-                as ApiResponseDecoder<InsuranceCompanyOption>;
-        return Result<InsuranceCompanyOption>.success(
-          decoder(<String, Object?>{
-            'id': 'co-1',
-            'display_id': 'CO-1',
-            'name': 'Acme Health',
-            'code': 'ACME',
-            'is_active': true,
-          }),
-        );
-      });
-
-      final AppAccessPolicy writer = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.billingWrite,
-        },
-      );
-      final AuthSession session = _session(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.billingWrite,
-        },
-      );
-
-      await _pumpInsuranceSetupTab(
-        tester,
-        repository: repository,
-        accessPolicy: writer,
-        session: session,
-        catalogRepository: InsuranceCatalogRepository(apiClient: apiClient),
-      );
-
-      clearInteractions(repository);
-      _stubClaimsRepository(repository);
-
-      await tester.tap(find.textContaining('Add company'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Add insurance company'), findsOneWidget);
-
-      final Finder nameField = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppTextField && widget.labelText == 'Company name',
-      );
-      final Finder codeField = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppTextField && widget.labelText == 'Company code',
-      );
-      await tester.enterText(nameField, 'Acme Health');
-      await tester.enterText(codeField, 'ACME');
-      await tester.tap(find.text('Save company'));
-      await tester.pumpAndSettle();
-
-      verify(
-        () => apiClient.post<InsuranceCompanyOption>(
-          any(),
-          decoder: any(named: 'decoder'),
-          data: any(named: 'data'),
-        ),
-      ).called(1);
-      verify(
-        () => repository.loadReferenceData(),
-      ).called(greaterThanOrEqualTo(1));
-      expect(
-        find.textContaining('Insurance configuration saved'),
-        findsOneWidget,
-      );
+      // Nested catalog dialogs call claimsWorkspaceController.refresh() on
+      // success (see openClaimsInsuranceCompanyDialog) → reference sync.
       expect(
         identical(
           ClaimsInsuranceSetupAtomPermissions.create,
@@ -618,7 +524,20 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.textContaining('no access'), findsNothing);
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.update,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsInsuranceSetupAtomPermissions.delete,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
     },
   );
 

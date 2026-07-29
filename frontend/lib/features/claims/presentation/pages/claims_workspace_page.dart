@@ -1300,6 +1300,8 @@ Future<void> _openClaimsDetailDialog(
   }
   final AppLocalizations l10n = context.l10n;
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  // Settled Print → [ClaimsSettledAtomPermissions.export] (nested ∪);
+  // Authorizations / Active Claims → read ∩ via [claimsDetailPrintRequirement].
   final bool canPrint = claimsDetailPrintRequirement(section).isAllowed(
     accessPolicy,
   );
@@ -1311,9 +1313,14 @@ Future<void> _openClaimsDetailDialog(
       icon: const Icon(Icons.fact_check_outlined),
       scrollable: true,
       maxWidth: 960,
-      content: _ClaimsDetailContent(state: state, detail: detail),
+      content: _ClaimsDetailContent(
+        state: state,
+        detail: detail,
+        section: section,
+      ),
       actions: <Widget>[
-        // Settled: nested export ∪; other sections: read ∩ (inventory).
+        // Settled: nested export ∪ ([ClaimsSettledAtomPermissions.export]);
+        // other sections: read ∩ (inventory).
         if (canPrint)
           AppReportActionButton.print(
             label: l10n.claimsPrintStatementAction,
@@ -1361,10 +1368,15 @@ ClaimsWorkspaceState? _readClaimsState(WidgetRef ref) {
 }
 
 class _ClaimsDetailContent extends ConsumerWidget {
-  const _ClaimsDetailContent({required this.state, required this.detail});
+  const _ClaimsDetailContent({
+    required this.state,
+    required this.detail,
+    required this.section,
+  });
 
   final ClaimsWorkspaceState state;
   final ClaimsQueueDetail detail;
+  final ClaimsDeskSection section;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1374,7 +1386,13 @@ class _ClaimsDetailContent extends ConsumerWidget {
       claimsWorkspaceControllerProvider.notifier,
     );
     final List<AppPermissionActionItem> detailActions =
-        _detailPermissionActions(context, controller, state, detail);
+        _detailPermissionActions(
+          context,
+          controller,
+          state,
+          detail,
+          section: section,
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2268,12 +2286,15 @@ List<AppPermissionActionItem> _detailPermissionActions(
   BuildContext context,
   ClaimsWorkspaceController controller,
   ClaimsWorkspaceState state,
-  ClaimsQueueDetail detail,
-) {
+  ClaimsQueueDetail detail, {
+  required ClaimsDeskSection section,
+}) {
   // Status-primary mutations match row next-action — omit from detail.
-  // Sync is detail-only (no next-action equivalent).
+  // Sync is Active Claims detail-only (inventory); Settled is review-only.
   final AppLocalizations l10n = context.l10n;
-  if (detail.isAuthorization) {
+  if (section == ClaimsDeskSection.settled ||
+      section == ClaimsDeskSection.insuranceSetup ||
+      detail.isAuthorization) {
     return const <AppPermissionActionItem>[];
   }
 

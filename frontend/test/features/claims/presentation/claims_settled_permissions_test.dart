@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -540,6 +541,158 @@ void main() {
     expect(find.textContaining('Settled'), findsWidgets);
     expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsNothing);
+  });
+
+  testWidgets('authorized load error exposes retry on Settled', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.listQueue(any())).thenAnswer(
+      (_) async => const Result<AppPage<ClaimsQueueItem>>.failure(
+        AppFailure.unexpected(),
+      ),
+    );
+    when(() => repository.loadReferenceData()).thenAnswer(
+      (_) async =>
+          const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
+    );
+    when(() => repository.loadWorkspaceSummary()).thenAnswer(
+      (_) async => const Result<ClaimsWorkspaceSummary>.success(_summary),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=settled',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Try again'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('authorized loading then success on Settled', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    when(() => repository.listQueue(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final ClaimsQueueQuery query =
+          invocation.positionalArguments.single as ClaimsQueueQuery;
+      final List<ClaimsQueueItem> items = _itemsForQuery(query);
+      return Result<AppPage<ClaimsQueueItem>>.success(
+        AppPage<ClaimsQueueItem>(
+          items: items,
+          request: query.pageRequest,
+          totalItemCount: items.length,
+        ),
+      );
+    });
+    when(() => repository.loadReferenceData()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsReferenceData>.success(ClaimsReferenceData());
+    });
+    when(() => repository.loadWorkspaceSummary()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return const Result<ClaimsWorkspaceSummary>.success(_summary);
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=settled',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Loading claims'), findsWidgets);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CLM-PAID'), findsOneWidget);
+    expect(find.textContaining('Filters'), findsWidgets);
   });
 
   testWidgets('mobile viewport keeps authorized settled row without next-action', (

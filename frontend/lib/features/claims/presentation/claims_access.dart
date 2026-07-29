@@ -263,7 +263,7 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
 /// | Summary chips | _(absent on Settled)_ | — |
 /// | Search / Clear / column Settings | read chrome | read ∩ |
 /// | Advanced Filters (Paid / Cancelled) | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Next action / Sync / Prepare / Request auth | _(absent)_ | — |
 /// | Print statement | export | nested ∪ `reports:read` \| `evidence:export` |
@@ -274,6 +274,7 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
 /// Inventory documents Print as always when detail is open; Settled matrix
 /// maps nested cross-module read/export to [export] (∪). Write/approve atoms
 /// reuse feature helpers for matrix completeness — Settled UI does not mount them.
+/// Detail Sync is section-gated off Settled even if status were non-terminal.
 abstract final class ClaimsSettledAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
