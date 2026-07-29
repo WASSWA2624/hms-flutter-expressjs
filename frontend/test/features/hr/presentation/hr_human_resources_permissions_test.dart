@@ -473,6 +473,8 @@ void main() {
 
       expect(find.text('Staff actions'), findsNothing);
       expect(find.byTooltip('Edit staff'), findsNothing);
+      expect(find.text('Revoke role'), findsNothing);
+      expect(find.text('End assignment'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -523,6 +525,42 @@ void main() {
   );
 
   testWidgets(
+    '∩ denial: hr:write without financial:approve hides Run payroll in detail',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoFinance = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.rosterWrite,
+        },
+      );
+
+      await _pumpStaffTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoFinance,
+        staff: const <HrStaffProfile>[_staffComplete],
+        detail: _staffCompleteDetail,
+      );
+
+      expect(_toolbarPrimary('Add staff'), findsOneWidget);
+
+      await tester.tap(find.text('Review profile'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Staff actions'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Assign department'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Run payroll'), findsNothing);
+    },
+  );
+
+  testWidgets(
     '∪ roster:write shows Record availability without Add staff',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
@@ -559,6 +597,97 @@ void main() {
     },
   );
 
+  testWidgets(
+    'write-only ∩ denial: catalog entry fails; staff chrome omitted',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.hrWrite},
+      );
+      expect(
+        HrHumanResourcesAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(HrHumanResourcesAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+
+      await _pumpStaffTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(find.text('Ada Needs Dept'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: missing hr-rosters denies Human resources chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+
+      await _pumpStaffTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_toolbarPrimary('Add staff'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('authorized empty staff list keeps search chrome', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.hrRead},
+    );
+
+    await _pumpStaffTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      staff: const <HrStaffProfile>[],
+    );
+
+    expect(_tab('Human resources'), findsOneWidget);
+    expect(find.byTooltip('Filters'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('authorized desktop + light theme still shows staff chrome', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+      },
+    );
+
+    await _pumpStaffTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      physicalSize: const Size(1440, 900),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(_tab('Human resources'), findsOneWidget);
+    expect(_toolbarPrimary('Add staff'), findsOneWidget);
+    expect(find.textContaining('Ada'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
   testWidgets('authorized mobile + dark theme still shows staff chrome', (
     WidgetTester tester,
   ) async {
@@ -580,6 +709,27 @@ void main() {
     expect(_tab('Human resources'), findsOneWidget);
     expect(find.byTooltip('Add staff'), findsOneWidget);
     expect(find.textContaining('Ada'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('authorized HR activity progressive disclosure remains available', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.hrRead},
+    );
+
+    await _pumpStaffTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+    );
+
+    expect(find.byTooltip('HR activity'), findsOneWidget);
+    await tester.tap(find.byTooltip('HR activity'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
     expect(find.textContaining('no access'), findsNothing);
   });
 

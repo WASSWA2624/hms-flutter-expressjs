@@ -604,12 +604,26 @@ final class HrWorkspaceController
     );
   }
 
-  Future<AppFailure?> revokeUserRole(HrUserRole userRole) {
-    return _mutateSelected(
-      (_) => _repository.revokeUserRole(
+  Future<AppFailure?> revokeUserRole(HrUserRole userRole) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+
+    // Access tab revoke has no selected staff; staff-detail revoke refreshes
+    // the open profile after success.
+    final HrStaffDetail? selected = current.selectedStaff;
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final AppFailure? failure = await _finishGenericMutation(
+      await _repository.revokeUserRole(
         userRole.backendIdentifier ?? userRole.effectiveId,
       ),
+      refreshReferencesAfter: true,
     );
+    if (failure == null && selected != null) {
+      unawaited(_refreshSelectedDetail(selected.profile));
+    }
+    return failure;
   }
 
   Future<Result<AppPage<HrAccessUser>>> loadAccessUsers(HrAccessQuery query) {

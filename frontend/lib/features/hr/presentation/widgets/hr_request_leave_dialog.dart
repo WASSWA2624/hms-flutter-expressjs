@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -17,6 +19,12 @@ Future<void> showHrRequestLeaveDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  // Shared by Human resources Staff actions and Leave requests strip primary
+  // (both matrix ∩ `hr:write`).
+  if (!hrWriteRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,

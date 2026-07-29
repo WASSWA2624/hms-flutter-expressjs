@@ -2,7 +2,7 @@
 
 Primary surface: `HrWorkspacePage` (`frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`).
 
-Write gates: `hrWriteRequirement` (staff / leave / access mutations; schedule-template **delete**), `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (roster & shifts create/update / approve / publish — ∩ `roster:write` / `roster:approve` / `roster:publish`), `hrPayrollRequirement` (payroll process; `hr:write` ∩ `financial:approve`). Preview payroll uses `hrPayrollPreviewRequirement` (`hr:read`). Access panel writes use Access helpers (`canCreateHrAccess` / `canUpdateHrAccess` / `canDeleteHrAccess`). Unauthorized controls do not render.
+Write gates: `hrWriteRequirement` (staff / leave / access mutations; schedule-template **delete**), staff-detail nested roster ∪ helpers `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (`hr:write` | roster key), Shifts tab matrix ∩ helpers `hrShiftsRosterWriteRequirement` / `hrShiftsRosterPublishRequirement` / `hrShiftsRosterApproveRequirement` (`roster:write` / `roster:publish` / `roster:approve`), nested Shifts ∪ `hrRosterNestedWriteRequirement` (`roster:publish` | `roster:approve`), `hrPayrollRequirement` (payroll process; `hr:write` ∩ `financial:approve`). Preview payroll uses `hrPayrollPreviewRequirement` (`hr:read`). Access panel writes use Access helpers (`canCreateHrAccess` / `canUpdateHrAccess` / `canDeleteHrAccess`). Unauthorized controls do not render.
 
 Atom maps: `HrLeaveRequestsAtomPermissions`, `HrShiftsAtomPermissions`, `HrPayrollDraftsAtomPermissions`, `HrManageUsersRolesAtomPermissions` in `hr_access.dart`. Tab strip filters via `hrAllowedSections`.
 
@@ -51,7 +51,26 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Tab-strip primary (`hrShiftTemplateAction`).
   - Opens modal: Yes — manage schedule templates dialog.
   - Immediate result: Create / edit shift templates (`HrShiftsAtomPermissions.create` / `update`, ∩ `roster:write`); delete uses `HrShiftsAtomPermissions.delete` (∩ `hr:write`) and is omitted when unauthorized.
-  - Condition: `HrShiftsAtomPermissions.scheduleTemplates` for strip entry; omitted when unauthorized.
+  - Condition: `HrShiftsAtomPermissions.scheduleTemplates` (∩ `roster:write`) for strip entry; omitted when unauthorized. `hr:write` alone does not unlock create/update on this tab.
+
+### Shifts tab (`?section=shifts`)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Shifts tab | navigate | `HrShiftsAtomPermissions.tab` ∩ `hr:read` |
+| Schedule templates (strip) | create entry | ∩ `roster:write` |
+| HR activity | progressive disclosure | read ∩ |
+| Queue switcher / search / filters / columns / pagination | read chrome | read ∩ |
+| Empty / loading / error / retry | read chrome | read ∩ |
+| Row select → work-item detail | read | read ∩ |
+| Next action **Publish roster** | approve | ∩ `roster:publish` |
+| Next action **Override shift** | update | ∩ `roster:write` |
+| Next action **Approve / Reject swap** | approve | ∩ `roster:approve` |
+| Detail Preview / Generate roster | update / create | ∩ `roster:write` |
+| Detail Publish / Override / Approve / Reject | as next-action | same ∩ keys |
+| Template Create / Edit | create / update | ∩ `roster:write` |
+| Template Delete | delete | ∩ `hr:write` |
+| Nested publish \| approve row | nested write ∪ | `roster:publish` \| `roster:approve` |
 
 Payroll drafts and Manage users and roles have no tab-strip primary. Access creates (**Create staff** / role / permission) live on the embedded Access panel.
 
@@ -83,6 +102,30 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Location: Next-action column.
   - Immediate result: **Assign department** / **Assign position** dialog when missing; otherwise **Review profile** (staff detail).
   - Condition: Write-gated for assign labels; review always available.
+
+### Human resources tab (`?section=staff`)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Human resources tab | navigate | `HrHumanResourcesAtomPermissions.tab` ∩ `hr:read` |
+| Add staff (strip primary) | create | `addStaff` ∩ `hr:write` |
+| HR activity | progressive disclosure | `activity` ∩ `hr:read` |
+| Search / filters / columns / pagination | read chrome | `listChrome` ∩ |
+| Empty / loading / error / retry | read chrome | read ∩ |
+| Success snackbar / form validation | feedback | write ∩ |
+| Row select → staff detail | read | `rowSelect` / `detail` ∩ |
+| Next action Assign department/position | update | `nextActionAssign` ∩ `hr:write` |
+| Next action Review profile | navigate | `reviewProfile` ∩ `hr:read` |
+| Detail Edit staff | update | `editStaff` ∩ |
+| Staff actions Assign dept/position / leave / compensation / role / module access / offboard | create/update/delete | matching write ∩ |
+| Staff actions Record availability / Assign shift / Swap shift | update | `nestedRosterWrite` ∪ (`hr:write` \| `roster:write`) |
+| Staff actions Run payroll | approve | source `hrPayrollRequirement` (`hr:write` ∩ `financial:approve`) |
+| Nested Revoke role / End assignment / Edit compensation rate | delete/update | write ∩ |
+| Nested calendar Edit/Add slot | update | roster write ∪ |
+| Nested shift Swap from shift detail | update | roster write ∪ |
+| Nested cross-module write ∪ | — | _(n/a on this tab — roster publish/approve live on Shifts)_ |
+| Matrix nested write ∪ | — | documented via `nestedRosterWrite`; payroll keeps source ∩ |
+| Route entry | navigate | catalog ∩ `hr:read` (AppRoutes ∪ noted) |
 
 ### Work queues (Leave / Shifts / Payroll)
 
@@ -169,18 +212,18 @@ Unauthorized create/update/delete controls do not render (no disabled stubs / no
   - Staff **Assign department** next-action opens the assign dialog without Staff actions.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
-- Permission scan for Human resources (`staff`): `frontend/test/features/hr/presentation/hr_human_resources_permissions_test.dart` proves ∩ denial / presence, ∪ roster allowance, subscription strip, facility ABAC on route entry, nested write absence, mobile+dark chrome, and post-mutation sync.
+- Permission scan for Human resources (`staff`): `frontend/test/features/hr/presentation/hr_human_resources_permissions_test.dart` proves ∩ denial / presence, ∪ roster allowance, payroll ∩ without `financial:approve`, subscription strip, write-only entry denial, facility ABAC on route entry, nested write absence, empty chrome, mobile+desktop and light+dark, authorized Add staff validation, and post-mutation sync.
 - Leave requests permission suite `frontend/test/features/hr/presentation/hr_leave_requests_permissions_test.dart` proves:
   - ∩ denial: missing `hr:read` / write-only hides tab; read-only hides Request / Approve / Reject (no disabled stubs or “no access” banners).
   - ∩ presence: `hr:read`+`hr:write`+module shows Request leave, Approve next-action, detail Approve/Reject.
   - ∪ note: prompt route ∪ `hr:read`\|`hr:write` kept as catalog ∩ `hr:read`; shared roster ∪ helpers documented (Leave nested ∪ _(n/a)_).
   - Subscription / ABAC: missing `hr-rosters` or facility strips entry; nested cross-module UI absent.
   - Authorized empty / error-retry / validation / post-approve sync; mobile+light and desktop+dark chrome.
-- Access tab suite `frontend/test/features/hr/presentation/hr_manage_users_roles_permissions_test.dart` proves ∩ denial (no admin ∪), ∪ allowance (facility/tenant admin), create ∩ mapping (source `hr:write` ∩ matrix `tenant:admin`), subscription strip, empty state, viewports, light/dark.
+- Access tab suite `frontend/test/features/hr/presentation/hr_manage_users_roles_permissions_test.dart` proves ∩ denial (no admin ∪), ∪ allowance (facility/tenant/system admin), create ∩ mapping (source `hr:write` ∩ matrix `tenant:admin`), detail Edit/Remove gates, subscription strip, facility ABAC on route entry, nested n/a, empty/error/retry, post-mutation sync, viewports, light/dark.
 - Shifts permission suite `frontend/test/features/hr/presentation/hr_shifts_permissions_test.dart` proves:
-  - ∩ denial: missing `roster:write` hides Schedule templates / Override; missing `hr:write` hides template Delete.
+  - ∩ denial: `hr:write` alone (no `roster:write`) hides Schedule templates / Override; missing `hr:write` hides template Delete.
   - ∩ presence: `roster:write` shows create/edit templates; full set shows Delete.
-  - ∪ allowance: `roster:publish` alone shows Publish; `roster:approve` alone shows Approve swap.
-  - Module entitlement strips Shifts atoms without `hr-rosters`.
-  - Mobile/desktop and light/dark chrome remain for authorized readers.
+  - ∪ allowance: `roster:publish` alone shows Publish; `roster:approve` alone shows Approve swap; nested ∪ row.
+  - Module entitlement strips Shifts without `hr-rosters`; facility ABAC fails route entry.
+  - Post-mutation publish sync; mobile/desktop and light/dark chrome for authorized readers.
 - Payroll drafts permission tests in `frontend/test/features/hr/presentation/hr_payroll_drafts_permissions_test.dart` prove preview/process ∩/∪ mapping, unauthorized absence, authorized presence, sync, viewports, and themes.

@@ -4,9 +4,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_preview_breakdown.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
@@ -24,6 +26,12 @@ Future<void> showHrAssignRoleDialog(
   WidgetRef ref,
   HrStaffDetail detail,
 ) async {
+  if (!HrHumanResourcesAtomPermissions.assignRole.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
@@ -579,6 +587,12 @@ Future<void> showHrEndAssignmentDialog(
   WidgetRef ref,
   HrStaffAssignment assignment,
 ) async {
+  if (!HrHumanResourcesAtomPermissions.endAssignment.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,

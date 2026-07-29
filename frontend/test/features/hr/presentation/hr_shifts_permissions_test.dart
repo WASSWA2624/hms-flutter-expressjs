@@ -291,7 +291,7 @@ void main() {
   });
 
   group('HrShiftsAtomPermissions helpers', () {
-    test('reuses roster requirement helpers (no second vocabulary)', () {
+    test('reuses Shifts ∩ roster helpers (no second vocabulary)', () {
       expect(
         identical(HrShiftsAtomPermissions.tab, hrReadRequirement),
         isTrue,
@@ -299,16 +299,16 @@ void main() {
       expect(
         identical(
           HrShiftsAtomPermissions.scheduleTemplates,
-          hrRosterWriteRequirement,
+          hrShiftsRosterWriteRequirement,
         ),
         isTrue,
       );
       expect(
-        identical(HrShiftsAtomPermissions.create, hrRosterWriteRequirement),
+        identical(HrShiftsAtomPermissions.create, hrShiftsRosterWriteRequirement),
         isTrue,
       );
       expect(
-        identical(HrShiftsAtomPermissions.update, hrRosterWriteRequirement),
+        identical(HrShiftsAtomPermissions.update, hrShiftsRosterWriteRequirement),
         isTrue,
       );
       expect(
@@ -318,14 +318,14 @@ void main() {
       expect(
         identical(
           HrShiftsAtomPermissions.publishRoster,
-          hrRosterPublishRequirement,
+          hrShiftsRosterPublishRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           HrShiftsAtomPermissions.approveSwap,
-          hrRosterApproveRequirement,
+          hrShiftsRosterApproveRequirement,
         ),
         isTrue,
       );
@@ -350,9 +350,14 @@ void main() {
         ),
         isTrue,
       );
+      // Staff-detail source ∪ remains distinct from Shifts matrix ∩.
+      expect(
+        identical(hrRosterWriteRequirement, hrShiftsRosterWriteRequirement),
+        isFalse,
+      );
     });
 
-    test('∩ denial: missing roster:write blocks create/update atoms', () {
+    test('∩ denial: hr:write alone does not unlock create/update/publish', () {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.hrRead},
       );
@@ -366,9 +371,12 @@ void main() {
       expect(HrShiftsAtomPermissions.scheduleTemplates.isAllowed(reader), isFalse);
       expect(HrShiftsAtomPermissions.create.isAllowed(hrWriter), isFalse);
       expect(HrShiftsAtomPermissions.update.isAllowed(hrWriter), isFalse);
+      expect(HrShiftsAtomPermissions.overrideShift.isAllowed(hrWriter), isFalse);
       expect(HrShiftsAtomPermissions.delete.isAllowed(hrWriter), isTrue);
       expect(HrShiftsAtomPermissions.publishRoster.isAllowed(hrWriter), isFalse);
       expect(HrShiftsAtomPermissions.approveSwap.isAllowed(hrWriter), isFalse);
+      // Source staff-detail ∪ still allows roster write via hr:write.
+      expect(hrRosterWriteRequirement.isAllowed(hrWriter), isTrue);
     });
 
     test('∩ presence: roster:write unlocks create/update without hr:write', () {
@@ -384,6 +392,10 @@ void main() {
       );
       expect(HrShiftsAtomPermissions.create.isAllowed(rosterWriter), isTrue);
       expect(HrShiftsAtomPermissions.delete.isAllowed(rosterWriter), isFalse);
+      expect(
+        HrShiftsAtomPermissions.publishRoster.isAllowed(rosterWriter),
+        isFalse,
+      );
     });
 
     test('∪ nested: publish or approve alone unlocks nested write row', () {
@@ -423,6 +435,20 @@ void main() {
         isFalse,
       );
       expect(HrShiftsAtomPermissions.nestedWrite.isAllowed(noModule), isFalse);
+      expect(canEnterHrWorkspace(noModule), isFalse);
+    });
+
+    test('ABAC facility strip: route entry requires facility context', () {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.rosterWrite,
+        },
+        facilityId: null,
+      );
+      expect(HrShiftsAtomPermissions.tab.isAllowed(noFacility), isTrue);
+      expect(HrShiftsAtomPermissions.routeEntry.isAllowed(noFacility), isFalse);
+      expect(canEnterHrWorkspace(noFacility), isFalse);
     });
   });
 
@@ -444,6 +470,30 @@ void main() {
       expect(find.text('Publish roster'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Filters'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '∩ denial: hr:write alone hides Schedule templates and Publish',
+    (WidgetTester tester) async {
+      final AppAccessPolicy hrWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+        },
+      );
+
+      await _pumpShiftsTab(
+        tester,
+        repository: repository,
+        accessPolicy: hrWriter,
+      );
+
+      expect(_tab('Shifts'), findsOneWidget);
+      expect(_toolbarPrimary('Schedule templates'), findsNothing);
+      expect(find.text('Publish roster'), findsNothing);
+      expect(find.text('Override shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -567,6 +617,37 @@ void main() {
   );
 
   testWidgets(
+    'nested cross-module write absent without publish/approve',
+    (WidgetTester tester) async {
+      final AppAccessPolicy rosterOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.rosterWrite,
+        },
+      );
+
+      await _pumpShiftsTab(
+        tester,
+        repository: repository,
+        accessPolicy: rosterOnly,
+        workItems: const <HrWorkItem>[_rosterDraft],
+      );
+
+      expect(find.text('Publish roster'), findsNothing);
+      expect(find.text('Approve swap'), findsNothing);
+
+      // Roster draft row title uses periodLabel ("Week 12").
+      await tester.tap(find.text('Week 12').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Publish roster'), findsNothing);
+      expect(find.text('Preview roster generation'), findsWidgets);
+      expect(find.text('Generate roster'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'template dialog: create/edit present with roster:write; delete needs hr:write',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterOnly = _policy(
@@ -625,10 +706,74 @@ void main() {
         accessPolicy: publisher,
       );
 
+      clearInteractions(repository);
+      when(() => repository.listWorkItems(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final HrWorkItemsQuery query =
+            invocation.positionalArguments.single as HrWorkItemsQuery;
+        return Result<AppPage<HrWorkItem>>.success(
+          AppPage<HrWorkItem>(
+            items: const <HrWorkItem>[_rosterDraft],
+            request: query.pageRequest,
+            totalItemCount: 1,
+          ),
+        );
+      });
+      when(
+        () => repository.publishRoster(
+          any(),
+          notifyStaff: any(named: 'notifyStaff'),
+          allowPartialPublish: any(named: 'allowPartialPublish'),
+          publishNote: any(named: 'publishNote'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<Object?>.success(<String, Object?>{}),
+      );
+
       await tester.tap(find.text('Publish roster').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.textContaining('no access'), findsNothing);
+
+      final Finder publishSubmit = find.text('Publish roster');
+      expect(publishSubmit, findsWidgets);
+      await tester.tap(publishSubmit.last);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.publishRoster(
+          any(),
+          notifyStaff: any(named: 'notifyStaff'),
+          allowPartialPublish: any(named: 'allowPartialPublish'),
+          publishNote: any(named: 'publishNote'),
+        ),
+      ).called(1);
+      verify(() => repository.listWorkItems(any())).called(greaterThan(0));
+    },
+  );
+
+  testWidgets(
+    'subscription strip: missing hr-rosters hides Shifts chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.rosterWrite,
+          AppPermissions.rosterPublish,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+
+      await _pumpShiftsTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(_tab('Shifts'), findsNothing);
+      expect(_toolbarPrimary('Schedule templates'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

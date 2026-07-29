@@ -93,7 +93,9 @@ const AccessRequirement hrRosterNestedWriteRequirement = AccessRequirement(
 );
 
 /// Payroll process / approve (source inventory): ∩ `hr:write` + ∪
-/// `financial:approve`. Matrix nested ∪ alone is weaker — keep source.
+/// `financial:approve` (+ `hr-rosters`). `financial:approve` is plan-gated via
+/// [hrBillingPaymentsModule] inside [AppAccessPolicy.grants]. Matrix nested ∪
+/// alone is weaker — keep source ∩ for UI process / next-action.
 const AccessRequirement hrPayrollRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.hrWrite],
   anyPermissions: <AppPermission>[AppPermissions.financialApprove],
@@ -103,7 +105,8 @@ const AccessRequirement hrPayrollRequirement = AccessRequirement(
 /// Payroll preview (backend preview is `hr:read`).
 const AccessRequirement hrPayrollPreviewRequirement = hrReadRequirement;
 
-/// Matrix nested cross-module write row (∪) — documentation / union fixtures.
+/// Matrix nested cross-module write row (∪ `financial:approve` | `hr:write`) —
+/// documentation / union fixtures. UI process keeps [hrPayrollRequirement].
 const AccessRequirement hrPayrollNestedWriteMatrixRequirement =
     AccessRequirement(
       anyPermissions: <AppPermission>[
@@ -261,6 +264,27 @@ HrDeskSection? hrFallbackDeskSection(AppAccessPolicy policy) {
 }
 
 /// Human resources (staff) tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Human resources tab | navigate | read ∩ `hr:read` |
+/// | Add staff (strip primary) | create | write ∩ `hr:write` |
+/// | HR activity | progressive disclosure | read ∩ |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / form validation | feedback | write ∩ |
+/// | Row select → staff detail | read | read ∩ |
+/// | Next action Assign department/position | update | write ∩ |
+/// | Next action Review profile | navigate | read ∩ |
+/// | Detail Edit staff | update | write ∩ |
+/// | Staff actions (assign/leave/comp/role/offboard) | create/update/delete | write ∩ |
+/// | Staff actions Record availability / Assign / Swap shift | update | roster write ∪ |
+/// | Staff actions Run payroll | approve | source payroll ∩ |
+/// | Nested Revoke role / End assignment / Edit rate | delete/update | write ∩ |
+/// | Nested calendar Edit/Add slot | update | roster write ∪ |
+/// | Nested shift Swap | update | roster write ∪ |
+/// | Nested cross-module write ∪ | — | roster publish \| approve via shifts |
+/// | Route entry | navigate | catalog ∩ `hr:read` (AppRoutes ∪ noted) |
 ///
 /// Nested roster / payroll actions reuse source ∪ / ∩ helpers — note mapping
 /// in the Human resources tab permission scan.

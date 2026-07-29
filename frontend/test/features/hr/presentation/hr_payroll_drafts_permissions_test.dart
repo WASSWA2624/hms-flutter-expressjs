@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -23,6 +24,8 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// ignore_for_file: avoid_redundant_argument_values
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
@@ -375,7 +378,7 @@ void main() {
         },
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
-            code: 'billing-payments',
+            code: hrBillingPaymentsModule,
             licenseStatus: 'ACTIVE',
           ),
         ],
@@ -384,6 +387,78 @@ void main() {
       expect(
         HrPayrollDraftsAtomPermissions.process.isAllowed(noModule),
         isFalse,
+      );
+      expect(canViewHrSection(noModule, HrDeskSection.payroll), isFalse);
+      expect(
+        hrAllowedSections(noModule).contains(HrDeskSection.payroll),
+        isFalse,
+      );
+    });
+
+    test(
+      'subscription strips process when billing-payments missing '
+      '(financial:approve plan gate)',
+      () {
+        final AppAccessPolicy noBilling = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.hrRead,
+            AppPermissions.hrWrite,
+            AppPermissions.financialApprove,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
+          ],
+        );
+        expect(HrPayrollDraftsAtomPermissions.tab.isAllowed(noBilling), isTrue);
+        expect(
+          HrPayrollDraftsAtomPermissions.preview.isAllowed(noBilling),
+          isTrue,
+        );
+        expect(
+          HrPayrollDraftsAtomPermissions.process.isAllowed(noBilling),
+          isFalse,
+        );
+      },
+    );
+
+    test('ABAC facility strip: missing facility fails route entry', () {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.financialApprove,
+        },
+        facilityId: null,
+      );
+      expect(HrPayrollDraftsAtomPermissions.tab.isAllowed(noFacility), isTrue);
+      expect(
+        HrPayrollDraftsAtomPermissions.routeEntry.isAllowed(noFacility),
+        isFalse,
+      );
+      expect(canEnterHrWorkspace(noFacility), isFalse);
+    });
+
+    test('authorized chrome states map to read ∩ / process ∩', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.hrRead},
+      );
+      final AppAccessPolicy processor = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(HrPayrollDraftsAtomPermissions.loading.isAllowed(reader), isTrue);
+      expect(HrPayrollDraftsAtomPermissions.empty.isAllowed(reader), isTrue);
+      expect(HrPayrollDraftsAtomPermissions.retry.isAllowed(reader), isTrue);
+      expect(
+        HrPayrollDraftsAtomPermissions.success.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        HrPayrollDraftsAtomPermissions.validation.isAllowed(processor),
+        isTrue,
       );
     });
   });

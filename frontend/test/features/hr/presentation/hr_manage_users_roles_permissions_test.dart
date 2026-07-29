@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -36,6 +37,32 @@ const HrAccessUser _accessUser = HrAccessUser(
   profileName: 'HR Admin',
 );
 
+const HrUserRole _assignedRole = HrUserRole(
+  id: 'ur-1',
+  displayId: 'UR-1',
+  backendIdentifier: 'ur-backend-1',
+  roleId: 'role-nurse',
+  roleName: 'Nurse',
+);
+
+const HrAccessUserDetail _accessUserDetail = HrAccessUserDetail(
+  id: 'USR-1',
+  displayId: 'USR-1',
+  email: 'hr.admin@example.com',
+  profileName: 'HR Admin',
+  status: 'ACTIVE',
+  userRoles: <HrUserRole>[_assignedRole],
+);
+
+const HrAccessRole _accessRole = HrAccessRole(
+  id: 'role-1',
+  displayId: 'ROLE-1',
+  name: 'CUSTOM_ACCESS_ROLE',
+  displayName: 'Custom Access Role',
+  permissionCount: 2,
+  userCount: 1,
+);
+
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
@@ -66,6 +93,8 @@ AppAccessPolicy _policy({
 void _stubWorkspace(
   _MockHrRepository repository, {
   List<HrAccessUser> accessUsers = const <HrAccessUser>[_accessUser],
+  List<HrAccessRole> accessRoles = const <HrAccessRole>[_accessRole],
+  bool failAccessUsers = false,
 }) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async =>
@@ -103,20 +132,29 @@ void _stubWorkspace(
       ),
     ),
   );
-  when(() => repository.listAccessUsers(any())).thenAnswer(
-    (_) async => Result<AppPage<HrAccessUser>>.success(
-      AppPage<HrAccessUser>(
-        items: accessUsers,
-        request: const AppPageRequest(pageSize: 12),
-        totalItemCount: accessUsers.length,
+  if (failAccessUsers) {
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => const Result<AppPage<HrAccessUser>>.failure(
+        AppFailure.network(),
       ),
-    ),
-  );
+    );
+  } else {
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => Result<AppPage<HrAccessUser>>.success(
+        AppPage<HrAccessUser>(
+          items: accessUsers,
+          request: const AppPageRequest(pageSize: 12),
+          totalItemCount: accessUsers.length,
+        ),
+      ),
+    );
+  }
   when(() => repository.listAccessRoles(any())).thenAnswer(
-    (_) async => const Result<AppPage<HrAccessRole>>.success(
+    (_) async => Result<AppPage<HrAccessRole>>.success(
       AppPage<HrAccessRole>(
-        items: <HrAccessRole>[],
-        request: AppPageRequest(),
+        items: accessRoles,
+        request: const AppPageRequest(),
+        totalItemCount: accessRoles.length,
       ),
     ),
   );
@@ -133,6 +171,21 @@ void _stubWorkspace(
       <HrAccessPermission>[],
     ),
   );
+  when(() => repository.loadAccessUserDetail(any())).thenAnswer(
+    (_) async => const Result<HrAccessUserDetail>.success(_accessUserDetail),
+  );
+  when(
+    () => repository.listUserRoles(
+      userId: any(named: 'userId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async =>
+        const Result<List<HrUserRole>>.success(<HrUserRole>[_assignedRole]),
+  );
+  when(() => repository.revokeUserRole(any())).thenAnswer(
+    (_) async => const Result<void>.success(null),
+  );
 }
 
 Future<void> _pumpAccessTab(
@@ -142,10 +195,15 @@ Future<void> _pumpAccessTab(
   Size viewport = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<HrAccessUser> accessUsers = const <HrAccessUser>[_accessUser],
+  bool failAccessUsers = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, accessUsers: accessUsers);
+  _stubWorkspace(
+    repository,
+    accessUsers: accessUsers,
+    failAccessUsers: failAccessUsers,
+  );
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -225,7 +283,21 @@ void main() {
       );
       expect(
         identical(
+          HrManageUsersRolesAtomPermissions.createStaff,
+          hrAccessCreateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           HrManageUsersRolesAtomPermissions.update,
+          hrAccessUpdateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          HrManageUsersRolesAtomPermissions.editUser,
           hrAccessUpdateRequirement,
         ),
         isTrue,
@@ -239,7 +311,7 @@ void main() {
       );
       expect(
         identical(
-          HrManageUsersRolesAtomPermissions.delete,
+          HrManageUsersRolesAtomPermissions.removeRole,
           hrAccessDeleteRequirement,
         ),
         isTrue,
@@ -257,6 +329,9 @@ void main() {
         HrManageUsersRolesAtomPermissions.nestedWrite.anyPermissions,
         isEmpty,
       );
+      expect(HrManageUsersRolesAtomPermissions.nestedRead.isAllowed(_policy(
+        permissions: <AppPermission>{AppPermissions.hrRead},
+      )), isTrue);
     });
 
     test('∪ read: facility:admin + hr:read satisfies Access tab', () {
@@ -272,6 +347,36 @@ void main() {
       expect(HrManageUsersRolesAtomPermissions.tab.isAllowed(facility), isTrue);
       expect(canViewHrSection(facility, HrDeskSection.access), isTrue);
       expect(hrAllowedSections(facility).contains(HrDeskSection.access), isTrue);
+    });
+
+    test('∪ read: system:admin + hr:read satisfies Access tab', () {
+      // Session role SYSTEM_ADMIN canonicalizes to SUPER_ADMIN (elevated).
+      final AppAccessPolicy system = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.systemAdmin,
+        },
+        roles: const <String>['SYSTEM_ADMIN'],
+      );
+      expect(canReadHrAccess(system), isTrue);
+      expect(HrManageUsersRolesAtomPermissions.tab.isAllowed(system), isTrue);
+      // Elevated actors satisfy create/delete helpers (isElevated bypass).
+      expect(system.isElevated, isTrue);
+      expect(canCreateHrAccess(system), isTrue);
+      expect(canDeleteHrAccess(system), isTrue);
+
+      // Permission-only system:admin (no elevated role) still reads via ∪.
+      final AppAccessPolicy systemPermOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.systemAdmin,
+        },
+        roles: const <String>['HR'],
+      );
+      expect(canReadHrAccess(systemPermOnly), isTrue);
+      expect(systemPermOnly.isElevated, isFalse);
+      expect(canCreateHrAccess(systemPermOnly), isFalse);
+      expect(canDeleteHrAccess(systemPermOnly), isFalse);
     });
 
     test('∩ denial: hr:read without admin hides Access tab', () {
@@ -344,6 +449,21 @@ void main() {
       expect(canCreateHrAccess(noModule), isFalse);
       expect(canWriteHrAccessPolicy(noModule), isFalse);
     });
+
+    test('route entry catalog ∩ requires facility ABAC', () {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.tenantAdmin,
+        },
+        facilityId: null,
+      );
+      expect(HrManageUsersRolesAtomPermissions.tab.isAllowed(noFacility), isTrue);
+      expect(
+        HrManageUsersRolesAtomPermissions.routeEntry.isAllowed(noFacility),
+        isFalse,
+      );
+    });
   });
 
   testWidgets(
@@ -366,6 +486,7 @@ void main() {
       expect(_tab('Manage users and roles'), findsOneWidget);
       expect(find.text('HR Admin'), findsOneWidget);
       expect(find.text('Create staff'), findsOneWidget);
+      expect(find.text('Refresh'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byType(AppTabToolbarPrimary), findsNothing);
     },
@@ -423,6 +544,160 @@ void main() {
     },
   );
 
+  testWidgets(
+    'facility ∪ + hr:write: detail shows Remove role; Edit user absent',
+    (WidgetTester tester) async {
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.facilityAdmin,
+        },
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: policy,
+      );
+
+      await tester.tap(find.text('HR Admin'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit user'), findsNothing);
+      expect(find.text('Add role'), findsNothing);
+      expect(find.text('Remove role'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'tenant create ∩: detail Edit user present; Remove role present',
+    (WidgetTester tester) async {
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.tenantAdmin,
+        },
+      );
+
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: policy,
+      );
+
+      await tester.tap(find.text('HR Admin'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit user'), findsOneWidget);
+      expect(find.text('Add role'), findsOneWidget);
+      expect(find.text('Remove role'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'admin ∪ without hr:write: read detail; mutate atoms absent',
+    (WidgetTester tester) async {
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.facilityAdmin,
+        },
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: policy,
+      );
+
+      expect(find.text('Create staff'), findsNothing);
+
+      await tester.tap(find.text('HR Admin'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit user'), findsNothing);
+      expect(find.text('Add role'), findsNothing);
+      expect(find.text('Remove role'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Create role present on Roles panel when create ∩ allowed',
+    (WidgetTester tester) async {
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.tenantAdmin,
+        },
+      );
+
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: policy,
+      );
+
+      await tester.tap(find.text('Roles'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create role'), findsOneWidget);
+      expect(find.text('Custom Access Role'), findsOneWidget);
+      expect(find.text('Create staff'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Create role mutates and syncs Roles list',
+    (WidgetTester tester) async {
+      when(() => repository.createRole(any())).thenAnswer(
+        (_) async => const Result<Object?>.success(<String, Object?>{
+          'id': 'role-new',
+        }),
+      );
+
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.tenantAdmin,
+        },
+      );
+
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: policy,
+      );
+
+      await tester.tap(find.text('Roles'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create role'), findsOneWidget);
+      await tester.tap(find.text('Create role'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Role name'),
+        'WARD_LEAD',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createRole(any())).called(1);
+      verify(() => repository.listAccessRoles(any())).called(greaterThan(1));
+      expect(find.text('HR changes saved.'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('authorized empty / loading states remain observable', (
     WidgetTester tester,
   ) async {
@@ -443,6 +718,42 @@ void main() {
 
     expect(find.text('No staff accounts match your search.'), findsOneWidget);
     expect(find.text('Create staff'), findsOneWidget);
+  });
+
+  testWidgets('authorized error/retry surface remains observable', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy policy = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+        AppPermissions.tenantAdmin,
+      },
+    );
+
+    await _pumpAccessTab(
+      tester,
+      repository: repository,
+      accessPolicy: policy,
+      failAccessUsers: true,
+    );
+
+    expect(find.textContaining('Try again'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
+
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => const Result<AppPage<HrAccessUser>>.success(
+        AppPage<HrAccessUser>(
+          items: <HrAccessUser>[_accessUser],
+          request: AppPageRequest(pageSize: 12),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Try again').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('HR Admin'), findsOneWidget);
   });
 
   testWidgets('mobile + desktop viewports keep Access panel usable', (

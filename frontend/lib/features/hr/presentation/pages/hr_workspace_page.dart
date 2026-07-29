@@ -1503,6 +1503,12 @@ Future<void> _showShiftAssignmentDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!HrHumanResourcesAtomPermissions.assignShift.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
@@ -1539,6 +1545,12 @@ Future<void> _showShiftAssignmentDialog(
 }
 
 Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
+  if (!HrHumanResourcesAtomPermissions.swapShift.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
@@ -2342,20 +2354,18 @@ List<AppListTableColumn<HrStaffProfile>> _staffDefaultColumns(
       cellBuilder: (BuildContext context, HrStaffProfile item) {
         final String label = _staffNextAction(context, item);
         final bool needsWrite = label != l10n.hrNextActionReviewProfile;
-        final Widget button = AppButton.tertiary(
-          label: label,
-          onPressed: () => onStaffNextAction(item),
-        );
         if (!needsWrite) {
-          return button;
+          return AppButton.tertiary(
+            label: label,
+            onPressed: () => onStaffNextAction(item),
+          );
         }
         return AppAccessActionGate(
           requirement: HrHumanResourcesAtomPermissions.nextActionAssign,
-          builder: (BuildContext context, bool isAllowed) {
+          builder: (BuildContext context, bool _) {
             return AppButton.tertiary(
               label: label,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onStaffNextAction(item) : null,
+              onPressed: () => onStaffNextAction(item),
             );
           },
         );
