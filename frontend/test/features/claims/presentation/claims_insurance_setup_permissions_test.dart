@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -28,8 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClaimsRepository extends Mock implements ClaimsRepository {}
 
-class _MockInsuranceCatalogRepository extends Mock
-    implements InsuranceCatalogRepository {}
+class _MockApiClient extends Mock implements ApiClient {}
 
 const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   authorizationPendingCount: 0,
@@ -98,7 +98,7 @@ Future<void> _pumpInsuranceSetupTab(
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/claims?section=insurance-setup',
   AuthSession? session,
-  InsuranceCatalogRepository? catalogRepository,
+  ApiClient? apiClient,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -113,7 +113,9 @@ Future<void> _pumpInsuranceSetupTab(
       session ??
       _sessionForPolicy(
         permissions: accessPolicy.permissions,
-        modules: accessPolicy.moduleEntitlements,
+        modules: accessPolicy.moduleEntitlements.values.toList(
+          growable: false,
+        ),
       );
 
   final GoRouter router = GoRouter(
@@ -141,9 +143,9 @@ Future<void> _pumpInsuranceSetupTab(
           SessionState.authenticated(session: resolvedSession),
         ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
-        if (catalogRepository != null)
+        if (apiClient != null)
           insuranceCatalogRepositoryProvider.overrideWithValue(
-            catalogRepository,
+            InsuranceCatalogRepository(apiClient: apiClient),
           ),
       ],
       child: MaterialApp.router(
@@ -167,6 +169,10 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const ClaimsQueueQuery());
     registerFallbackValue(<String, Object?>{});
+    registerFallbackValue(Uri());
+    registerFallbackValue(
+      (Object? data) => data,
+    );
   });
 
   setUp(() {
@@ -634,22 +640,31 @@ void main() {
   testWidgets(
     'authorized Add company success: snackbar + reference refresh (sync)',
     (WidgetTester tester) async {
-      final _MockInsuranceCatalogRepository catalog =
-          _MockInsuranceCatalogRepository();
-      when(() => catalog.createCompany(any())).thenAnswer(
-        (_) async => const Result<InsuranceCompanyOption>.success(
-          InsuranceCompanyOption(
-            id: 'co-1',
-            title: 'Acme Health',
-            code: 'ACME',
-          ),
+      final _MockApiClient apiClient = _MockApiClient();
+      when(
+        () => apiClient.post<InsuranceCompanyOption>(
+          any(),
+          decoder: any(named: 'decoder'),
+          data: any(named: 'data'),
         ),
-      );
+      ).thenAnswer((Invocation invocation) async {
+        final ApiResponseDecoder<InsuranceCompanyOption> decoder =
+            invocation.namedArguments[#decoder]
+                as ApiResponseDecoder<InsuranceCompanyOption>;
+        return Result<InsuranceCompanyOption>.success(
+          decoder(<String, Object?>{
+            'id': 'co-1',
+            'display_id': 'CO-1',
+            'name': 'Acme Health',
+            'code': 'ACME',
+          }),
+        );
+      });
 
       await _pumpInsuranceSetupTab(
         tester,
         repository: repository,
-        catalogRepository: catalog,
+        apiClient: apiClient,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.billingRead,
@@ -661,14 +676,8 @@ void main() {
       await tester.tap(find.textContaining('Add company'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Company name'),
-        'Acme Health',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Company code'),
-        'ACME',
-      );
+      await tester.enterText(find.byType(TextField).at(0), 'Acme Health');
+      await tester.enterText(find.byType(TextField).at(1), 'ACME');
       await tester.tap(find.text('Save company'));
       await tester.pumpAndSettle();
 
@@ -676,7 +685,13 @@ void main() {
         find.textContaining('Insurance configuration saved'),
         findsOneWidget,
       );
-      verify(() => catalog.createCompany(any())).called(1);
+      verify(
+        () => apiClient.post<InsuranceCompanyOption>(
+          any(),
+          decoder: any(named: 'decoder'),
+          data: any(named: 'data'),
+        ),
+      ).called(1);
       // Initial workspace load + post-mutation refresh.
       verify(
         () => repository.loadReferenceData(),

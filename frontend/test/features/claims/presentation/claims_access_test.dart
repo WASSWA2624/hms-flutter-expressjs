@@ -421,7 +421,35 @@ void main() {
       );
       expect(
         identical(
+          ClaimsSettledAtomPermissions.listChrome,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.detail,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsSettledAtomPermissions.export,
+          claimsNestedExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.document,
+          claimsNestedExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.nestedRead,
           claimsNestedExportRequirement,
         ),
         isTrue,
@@ -435,8 +463,50 @@ void main() {
       );
       expect(
         identical(
+          ClaimsSettledAtomPermissions.create,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.update,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.delete,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.approve,
+          claimsFinancialApproveRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsSettledAtomPermissions.routeEntry,
           claimsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          claimsDetailPrintRequirement(ClaimsDeskSection.settled),
+          ClaimsSettledAtomPermissions.export,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          claimsSettledExportRequirement,
+          claimsNestedExportRequirement,
         ),
         isTrue,
       );

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
@@ -367,7 +368,11 @@ class _ClaimsWorkspaceContentState
             else
               Expanded(
                 child: AppAccessGate(
-                  requirement: claimsDeskSectionRequirement(effectiveSection),
+                  // Settled list chrome → [ClaimsSettledAtomPermissions.listChrome]
+                  // (read ∩); other queue tabs share the same desk-section helper.
+                  requirement: effectiveSection == ClaimsDeskSection.settled
+                      ? ClaimsSettledAtomPermissions.listChrome
+                      : claimsDeskSectionRequirement(effectiveSection),
                   child: _ClaimsQueuePanel(
                     state: state,
                     section: effectiveSection,
@@ -1302,9 +1307,10 @@ Future<void> _openClaimsDetailDialog(
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   // Settled Print → [ClaimsSettledAtomPermissions.export] (nested ∪);
   // Authorizations / Active Claims → document/read ∩ (atom maps + helper).
-  final bool canPrint = claimsDetailPrintRequirement(section).isAllowed(
-    accessPolicy,
-  );
+  final AccessRequirement printRequirement = section == ClaimsDeskSection.settled
+      ? ClaimsSettledAtomPermissions.export
+      : claimsDetailPrintRequirement(section);
+  final bool canPrint = printRequirement.isAllowed(accessPolicy);
 
   await showAppDialog<void>(
     context: context,
@@ -1320,7 +1326,7 @@ Future<void> _openClaimsDetailDialog(
       ),
       actions: <Widget>[
         // Settled: nested export ∪ ([ClaimsSettledAtomPermissions.export]);
-        // other sections: read ∩ (inventory).
+        // other sections: read ∩ (inventory). Unauthorized Print does not mount.
         if (canPrint)
           AppReportActionButton.print(
             label: l10n.claimsPrintStatementAction,

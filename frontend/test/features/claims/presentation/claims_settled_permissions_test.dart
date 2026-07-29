@@ -787,4 +787,129 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Print statement'), findsNothing);
   });
+
+  testWidgets(
+    'ABAC: missing facility context still allows Settled read chrome '
+    '(row scope remains backend-authoritative)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noFacility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+          ),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(ClaimsSettledAtomPermissions.tab.isAllowed(noFacility), isTrue);
+
+      await _pumpSettledTab(
+        tester,
+        repository: repository,
+        accessPolicy: noFacility,
+      );
+
+      expect(find.textContaining('Settled'), findsWidgets);
+      expect(find.text('CLM-PAID'), findsOneWidget);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: EXPIRED insurance-claims omits Settled chrome',
+    (WidgetTester tester) async {
+      await _pumpSettledTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.reportsRead,
+            AppPermissions.evidenceExport,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'EXPIRED',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('CLM-PAID'), findsNothing);
+      expect(find.textContaining('Filters'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'write ∩ full set still mounts no Settled mutate chrome (review-only)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy fullWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+          AppPermissions.reportsRead,
+          AppPermissions.evidenceExport,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+          AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+          AppModuleEntitlement(
+            code: 'reporting-analytics',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(ClaimsSettledAtomPermissions.create.isAllowed(fullWriter), isTrue);
+      expect(ClaimsSettledAtomPermissions.update.isAllowed(fullWriter), isTrue);
+      expect(ClaimsSettledAtomPermissions.delete.isAllowed(fullWriter), isTrue);
+      expect(ClaimsSettledAtomPermissions.approve.isAllowed(fullWriter), isTrue);
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(fullWriter), isTrue);
+
+      await _pumpSettledTab(
+        tester,
+        repository: repository,
+        accessPolicy: fullWriter,
+      );
+
+      // Matrix create/update/delete/approve have no Settled entry points.
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('CLM-PAID'));
+      await tester.pumpAndSettle();
+      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Sync insurer status'), findsNothing);
+      // Settled has no nested write forms → no client validation chrome here.
+      expect(find.textContaining('required'), findsNothing);
+    },
+  );
 }
