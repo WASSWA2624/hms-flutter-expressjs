@@ -165,6 +165,8 @@ class _AccessAdminWorkspaceContentState
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool workspaceCanWrite = state.data.permissions.canWrite;
+    final bool isDirectoryPanel =
+        state.query.panel == AccessAdminPanel.directory;
     final bool isRolesPanel = state.query.panel == AccessAdminPanel.roles;
     final bool isEntitlementsPanel =
         state.query.panel == AccessAdminPanel.entitlements;
@@ -175,15 +177,19 @@ class _AccessAdminWorkspaceContentState
     final bool isDemoPanel = state.query.panel == AccessAdminPanel.demo;
     // Source inventory: workspace canWrite. Matrix write ∩: tenant:admin.
     // Registrations additionally requires the elevated tab gate.
+    // Permissions catalog mounts no write chrome (reserved via
+    // [canMutateAccessAdminPermissions] if mutations are added later).
     final bool canWrite = isRegistrationsPanel
         ? canMutateAccessAdminRegistrations(
             policy,
             workspaceCanWrite: workspaceCanWrite,
           )
-        : canWriteAccessAdmin(
-            policy,
-            workspaceCanWrite: workspaceCanWrite,
-          );
+        : isPermissionsPanel
+            ? false
+            : canWriteAccessAdmin(
+                policy,
+                workspaceCanWrite: workspaceCanWrite,
+              );
     final bool canResetDemoPassword = canResetDemoPasswordAccessAdmin(
       policy,
       workspaceCanWrite: workspaceCanWrite,
@@ -194,12 +200,14 @@ class _AccessAdminWorkspaceContentState
         ? state.lastFailure! as AppFailure
         : null;
     final ThemeData theme = Theme.of(context);
+    final bool canReadDirectory = canReadAccessAdminDirectory(policy);
     final bool canReadRoles = canReadAccessAdminRoles(policy);
     final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
     final bool canReadPermissions = canReadAccessAdminPermissions(policy);
     final bool canReadRegistrations = canReadAccessAdminRegistrations(policy);
     final bool canReadDemo = canReadAccessAdminDemo(policy);
     final bool hideFilteredPanelWorklist =
+        (isDirectoryPanel && !canReadDirectory) ||
         (isRolesPanel && !canReadRoles) ||
         (isEntitlementsPanel && !canReadEntitlements) ||
         (isPermissionsPanel && !canReadPermissions) ||
@@ -601,6 +609,10 @@ class _WorklistPanel extends StatelessWidget {
   final ValueChanged<AppFailure> onShowFailure;
 
   Future<void> _toggleUserStatus(AccessAdminItem item) async {
+    // Defense-in-depth: next_action is unmounted when !canWrite (write ∩).
+    if (!canWrite) {
+      return;
+    }
     final String nextStatus = item.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     final AppFailure? failure = await controller.setUserStatus(
       item,

@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -215,7 +216,7 @@ void main() {
       );
       // Source canWrite may be true; matrix still requires tenant:admin.
       expect(
-        canWriteAccessAdmin(facilityOnly, workspaceCanWrite: true),
+        canMutateAccessAdminDirectory(facilityOnly, workspaceCanWrite: true),
         isFalse,
       );
       expect(accessAdminWriteRequirement.isAllowed(facilityOnly), isFalse);
@@ -237,8 +238,14 @@ void main() {
       final AppAccessPolicy tenant = _policy(
         permissions: <AppPermission>{AppPermissions.tenantAdmin},
       );
-      expect(canWriteAccessAdmin(tenant, workspaceCanWrite: true), isTrue);
-      expect(canWriteAccessAdmin(tenant, workspaceCanWrite: false), isFalse);
+      expect(
+        canMutateAccessAdminDirectory(tenant, workspaceCanWrite: true),
+        isTrue,
+      );
+      expect(
+        canMutateAccessAdminDirectory(tenant, workspaceCanWrite: false),
+        isFalse,
+      );
       expect(
         AccessAdminDirectoryAtomPermissions.create.isAllowed(tenant),
         isTrue,
@@ -309,8 +316,11 @@ void main() {
     test('nested cross-module rows are n/a for Directory matrix', () {
       // Inventory Open HR is staffProfileId-only; matrix nested rows are n/a.
       expect(
-        AccessAdminDirectoryAtomPermissions.create.allPermissions,
-        isNotEmpty,
+        identical(
+          AccessAdminDirectoryAtomPermissions.write,
+          accessAdminWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
         identical(
@@ -375,6 +385,13 @@ void main() {
         identical(
           AccessAdminDirectoryAtomPermissions.delete,
           accessAdminDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.write,
+          accessAdminWriteRequirement,
         ),
         isTrue,
       );
@@ -504,6 +521,65 @@ void main() {
         expect(find.text('Ada Lovelace'), findsWidgets);
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested write dialogs refuse open without mutate ∩',
+      (WidgetTester tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final SharedPreferences preferences =
+            await SharedPreferences.getInstance();
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        AccessAdminItem? createResult = _directoryUser;
+        final AccessAdminWorkspaceData data = _directoryData(canWrite: true);
+        final AccessAdminWorkspaceState state = AccessAdminWorkspaceState(
+          data: data,
+          query: data.query,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              accessAdminRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(facilityOnly),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.light,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Consumer(
+                  builder: (BuildContext context, WidgetRef ref, _) {
+                    return TextButton(
+                      onPressed: () async {
+                        createResult = await openAccessAdminCreateUserDialog(
+                          context,
+                          ref,
+                          state,
+                        );
+                      },
+                      child: const Text('probe-directory-mutate'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('probe-directory-mutate'));
+        await tester.pumpAndSettle();
+
+        expect(createResult, isNull);
+        expect(find.byType(AppDialog), findsNothing);
       },
     );
 

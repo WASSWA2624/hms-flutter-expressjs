@@ -183,6 +183,14 @@ Future<AccessAdminItem?> openAccessAdminCreateUserDialog(
   if (!context.mounted) {
     return null;
   }
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  // Directory/Demo create ∩: tenant:admin (+ elevated) and workspace canWrite.
+  if (!canMutateAccessAdminDirectory(
+    accessPolicy,
+    workspaceCanWrite: state.data.permissions.canWrite,
+  )) {
+    return null;
+  }
 
   AccessAdminItem? createdUser;
   AccessAdminItem? existingUserToOpen;

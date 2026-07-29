@@ -414,7 +414,21 @@ void main() {
         expect(find.text('Patient Read'), findsWidgets);
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminCreateRoleAction), findsNothing);
+        // Reserved mutate helper still ∩-allows; panel UI stays write-free.
         expect(canMutateAccessAdminPermissions(tenant), isTrue);
+        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        final AppListTable<AccessAdminItem> table = tester
+            .widgetList<AppListTable<AccessAdminItem>>(
+              find.byType(AppListTable<AccessAdminItem>),
+            )
+            .first;
+        expect(
+          table.columns.any(
+            (AppListTableColumn<AccessAdminItem> column) =>
+                column.id == 'next_action',
+          ),
+          isFalse,
+        );
       },
     );
 

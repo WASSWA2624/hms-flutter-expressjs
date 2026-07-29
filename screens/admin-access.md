@@ -86,6 +86,23 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
   - Immediate result: Toggles `ACTIVE` / `INACTIVE` via `setUserStatus`.
   - Condition: `canWrite`.
 
+### Directory tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Directory tab | navigate | read ∪ `tenant:admin` \| `facility:admin` \| `system:admin` |
+| Search / filters / columns / pagination | read chrome | read ∪ |
+| Empty / error / retry | read chrome | read ∪ |
+| Row select → user detail | read | read ∪ |
+| Create user (tab primary) | create | write ∩ `tenant:admin` + workspace `canWrite` |
+| Activate / Deactivate (next-action / mobile trailing) | update | write ∩ + `canWrite` |
+| Delete | delete | write ∩ (matrix; no delete UI on Directory today) |
+| Open HR profile | navigate | linked `staffProfileId` (nested cross-module n/a) |
+| Detail Close | progressive-disclosure | read ∪ |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminDirectoryAtomPermissions`, `canReadAccessAdminDirectory`, `canMutateAccessAdminDirectory`. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin`. Assignable rights stay within actor ceiling / subscription (backend authoritative).
+
 ### Demo tab atoms (matrix)
 
 | Atom | Kind | Gate |
@@ -187,7 +204,7 @@ Permissions and entitlements details are read-only summaries (no write next-acti
 | Create / update / delete / next-action / tab primary | write | _(absent)_ ; reserved write ∩ `tenant:admin` + workspace `canWrite` |
 | Nested cross-module | — | _(n/a)_ |
 
-Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions`, `canMutateAccessAdminPermissions`.
+Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions`, `canMutateAccessAdminPermissions`. Catalog is read-only on this tab; workspace forces write chrome off for the Permissions panel. Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) remains on the reserved mutate helper via `canWriteAccessAdmin`. Prompt “edits elevated only” maps to that reserved path (no create/update/delete UI mounted today).
 
 ---
 
@@ -196,7 +213,7 @@ Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions
 - **Duplicates gone**: Overview and Refresh absent from the tab strip on desktop/mobile and light/dark; detail has no Activate/Deactivate, Edit role, or Activate registration; Edit role does not auto-reopen detail.
 - **Merged entry points**: Create user uses the shared mutation dialog (tenant/facility scope + similarity); Create role / Edit role use shared role dialogs.
 - **Authorized minimal paths**: With `canWrite`, Create user/role appear as tab primary; status / edit / activate appear as row next-actions (desktop column + mobile trailing) only; Delete role and Reject registration remain on detail; Edit role returns to the worklist.
-- **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated.
+- **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated; Permissions catalog never mounts create / next-action / delete even for tenant writers.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
 
-Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_demo_permissions_test.dart`.
+Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_demo_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_directory_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_permissions_permissions_test.dart`.

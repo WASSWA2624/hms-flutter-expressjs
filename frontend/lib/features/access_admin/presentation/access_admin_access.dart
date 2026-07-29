@@ -122,6 +122,16 @@ bool canReadAccessAdminDirectory(AppAccessPolicy policy) {
   return canReadAccessAdmin(policy);
 }
 
+/// Directory mutations: create user / activate / deactivate — write ∩ +
+/// workspace `canWrite`. Prefer over bare [accessAdminWriteRequirement] so
+/// callers intersect the source inventory `canWrite` flag.
+bool canMutateAccessAdminDirectory(
+  AppAccessPolicy policy, {
+  bool workspaceCanWrite = true,
+}) {
+  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+}
+
 bool canReadAccessAdminRoles(AppAccessPolicy policy) {
   return accessAdminRolesReadRequirement.isAllowed(policy) ||
       policy.isElevated;
@@ -252,14 +262,20 @@ AccessAdminPanel? accessAdminFallbackPanel(AppAccessPolicy policy) {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Directory tab | navigate | read ∪ |
+/// | Directory tab | navigate / progressive-disclosure | read ∪ |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → user detail | read | read ∪ |
-/// | Create user | create | write ∩ + canWrite |
-/// | Activate / Deactivate | update | write ∩ + canWrite |
+/// | Create user (tab primary) | create | write ∩ + canWrite |
+/// | Activate / Deactivate (next-action) | update | write ∩ + canWrite |
+/// | Delete | delete | write ∩ (matrix; no delete UI on Directory today) |
 /// | Open HR profile | navigate | linked profile (nested n/a) |
 /// | Detail Close | progressive-disclosure | read ∪ |
+/// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
+/// `tenant:admin` is applied via [canWriteAccessAdmin] /
+/// [canMutateAccessAdminDirectory].
 abstract final class AccessAdminDirectoryAtomPermissions {
   static const AccessRequirement tab = accessAdminDirectoryReadRequirement;
   static const AccessRequirement listChrome =
@@ -268,6 +284,7 @@ abstract final class AccessAdminDirectoryAtomPermissions {
   static const AccessRequirement create = accessAdminCreateRequirement;
   static const AccessRequirement update = accessAdminUpdateRequirement;
   static const AccessRequirement delete = accessAdminDeleteRequirement;
+  static const AccessRequirement write = accessAdminWriteRequirement;
 }
 
 /// Roles tab atom → permission mapping (inventory + matrix).
@@ -368,10 +385,11 @@ abstract final class AccessAdminEntitlementsAtomPermissions {
 /// | Nested cross-module | n/a | _(n/a)_ |
 ///
 /// Source inventory (`screens/admin-access.md`): Permissions detail is a
-/// read-only catalog summary (no write next-actions). Matrix ∩ `tenant:admin`
-/// is reserved via [canMutateAccessAdminPermissions] / create|update|delete
-/// aliases if mutations are mounted later. Prompt "edits elevated only" maps
-/// to that reserved write ∩ + elevated path in [canWriteAccessAdmin].
+/// read-only catalog summary (no write next-actions). Workspace forces panel
+/// write chrome off. Matrix ∩ `tenant:admin` is reserved via
+/// [canMutateAccessAdminPermissions] / create|update|delete aliases if
+/// mutations are mounted later. Prompt "edits elevated only" maps to that
+/// reserved write ∩ + elevated path in [canWriteAccessAdmin].
 abstract final class AccessAdminPermissionsAtomPermissions {
   static const AccessRequirement tab = accessAdminPermissionsReadRequirement;
   static const AccessRequirement listChrome =
