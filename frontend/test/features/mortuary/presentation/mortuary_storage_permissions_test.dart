@@ -40,26 +40,25 @@ const MortuaryBillableEvent _billableEvent = MortuaryBillableEvent(
   status: 'OPEN',
 );
 
-const MortuaryWorkspaceItem _releaseItem = MortuaryWorkspaceItem(
-  id: 'release-1',
-  displayId: 'MOR-REL-1',
-  resource: mortuaryResourceReleaseAuthorisations,
-  status: 'READY_FOR_RELEASE',
+const MortuaryWorkspaceItem _storageItem = MortuaryWorkspaceItem(
+  id: 'storage-1',
+  displayId: 'MOR-STO-1',
+  resource: mortuaryResourceStorageAssignments,
+  status: 'IN_STORAGE',
   identificationStatus: 'VERIFIED',
-  billingStatus: 'SETTLED',
-  deceasedProfileLabel: 'Release Patient',
-  recipientName: 'Next of Kin',
-  recipientRelationship: 'Spouse',
-  storageUnitLabel: 'Cold Bay A-1',
+  billingStatus: 'UNSETTLED',
+  deceasedProfileLabel: 'Storage Patient',
+  storageUnitLabel: 'Cold Unit A',
+  storageSlotLabel: 'Slot 12',
+  storageSlotStatus: 'OCCUPIED',
   billableEvents: <MortuaryBillableEvent>[_billableEvent],
-  releaseAuthorisations: <MortuaryReleaseAuthorisation>[
-    MortuaryReleaseAuthorisation(
-      id: 'auth-1',
-      status: 'PENDING_APPROVAL',
-      recipientName: 'Next of Kin',
-      recipientRelationship: 'Spouse',
-    ),
-  ],
+  storageAssignment: MortuaryStorageAssignment(
+    id: 'assign-1',
+    status: 'ACTIVE',
+    storageUnitLabel: 'Cold Unit A',
+    storageSlotLabel: 'Slot 12',
+    storageSlotStatus: 'OCCUPIED',
+  ),
 );
 
 AppAccessPolicy _policy({
@@ -98,11 +97,11 @@ AppAccessPolicy _readWritePolicy() {
   );
 }
 
-AppAccessPolicy _readReleasePolicy() {
+AppAccessPolicy _manageStoragePolicy() {
   return _policy(
     permissions: <AppPermission>{
       AppPermissions.mortuaryRead,
-      AppPermissions.mortuaryRelease,
+      AppPermissions.mortuaryManageStorage,
     },
   );
 }
@@ -149,7 +148,7 @@ AppAccessPolicy _billingPanelPolicy() {
 MortuaryWorkspacePayload _payload(MortuaryWorkspaceQuery query) {
   return MortuaryWorkspacePayload(
     items: AppPage<MortuaryWorkspaceItem>(
-      items: const <MortuaryWorkspaceItem>[_releaseItem],
+      items: const <MortuaryWorkspaceItem>[_storageItem],
       request: query.pageRequest,
       totalItemCount: 1,
     ),
@@ -171,7 +170,7 @@ MortuaryWorkspacePayload _payload(MortuaryWorkspaceQuery query) {
       ),
       MortuaryPanelSummary(
         id: mortuaryPanelStorage,
-        count: 0,
+        count: 1,
         defaultResource: mortuaryResourceStorageAssignments,
       ),
       MortuaryPanelSummary(
@@ -181,7 +180,7 @@ MortuaryWorkspacePayload _payload(MortuaryWorkspaceQuery query) {
       ),
       MortuaryPanelSummary(
         id: mortuaryPanelRelease,
-        count: 1,
+        count: 0,
         defaultResource: mortuaryResourceReleaseAuthorisations,
       ),
       MortuaryPanelSummary(
@@ -210,17 +209,17 @@ void _stubWorkspace(_MockMortuaryRepository repository) {
       baseQuery: any(named: 'baseQuery'),
     ),
   ).thenAnswer(
-    (_) async => const Result<MortuaryWorkspaceItem>.success(_releaseItem),
+    (_) async => const Result<MortuaryWorkspaceItem>.success(_storageItem),
   );
 }
 
-Future<GoRouter> _pumpReleaseTab(
+Future<GoRouter> _pumpStorageTab(
   WidgetTester tester, {
   required _MockMortuaryRepository repository,
   AppAccessPolicy? policy,
   Size viewport = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/mortuary?panel=release',
+  String initialLocation = '/mortuary?panel=storage',
   Result<MortuaryWorkspacePayload>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -290,7 +289,7 @@ AppListTable<MortuaryWorkspaceItem> _table(WidgetTester tester) {
 Future<void> _openDetail(WidgetTester tester) async {
   final AppListTable<MortuaryWorkspaceItem> table = _table(tester);
   expect(table.onRowSelected, isNotNull);
-  table.onRowSelected!(_releaseItem);
+  table.onRowSelected!(_storageItem);
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
   await tester.pumpAndSettle();
@@ -308,164 +307,166 @@ void main() {
     repository = _MockMortuaryRepository();
   });
 
-  group('MortuaryReleaseAtomPermissions inventory (AC1)', () {
+  group('MortuaryStorageAtomPermissions inventory (AC1)', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.tab,
+          MortuaryStorageAtomPermissions.tab,
           mortuaryWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.create,
+          MortuaryStorageAtomPermissions.create,
+          mortuaryManageStorageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryStorageAtomPermissions.update,
+          mortuaryManageStorageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryStorageAtomPermissions.assignStorage,
+          mortuaryManageStorageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryStorageAtomPermissions.manageStorage,
+          mortuaryManageStorageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryStorageAtomPermissions.delete,
           mortuaryWorkspaceWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.delete,
-          mortuaryWorkspaceWriteRequirement,
+          MortuaryStorageAtomPermissions.success,
+          mortuaryManageStorageRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.update,
-          mortuaryReleaseRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          MortuaryReleaseAtomPermissions.release,
-          mortuaryReleaseRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          MortuaryReleaseAtomPermissions.approve,
-          mortuaryApproveRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          MortuaryReleaseAtomPermissions.success,
-          mortuaryReleaseRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          MortuaryReleaseAtomPermissions.printDocuments,
+          MortuaryStorageAtomPermissions.printDocuments,
           mortuaryExportRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.billingPanel,
+          MortuaryStorageAtomPermissions.billingPanel,
           mortuaryBillingPanelRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.routeEntry,
+          MortuaryStorageAtomPermissions.routeEntry,
           RouteAccessCatalog.mortuaryEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          MortuaryReleaseAtomPermissions.routeEntry,
+          MortuaryStorageAtomPermissions.routeEntry,
           AppRoutes.mortuary.accessRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          mortuaryPanelTabRequirement(mortuaryPanelRelease),
-          MortuaryReleaseAtomPermissions.tab,
+          mortuaryPanelTabRequirement(mortuaryPanelStorage),
+          MortuaryStorageAtomPermissions.tab,
         ),
         isTrue,
       );
       expect(
         identical(
-          mortuaryPanelPrintRequirement(mortuaryPanelRelease),
-          MortuaryReleaseAtomPermissions.printDocuments,
+          mortuaryPanelPrintRequirement(mortuaryPanelStorage),
+          MortuaryStorageAtomPermissions.printDocuments,
         ),
         isTrue,
       );
       expect(
         identical(
-          mortuaryPanelBillingRequirement(mortuaryPanelRelease),
-          MortuaryReleaseAtomPermissions.billingPanel,
+          mortuaryPanelBillingRequirement(mortuaryPanelStorage),
+          MortuaryStorageAtomPermissions.billingPanel,
         ),
         isTrue,
       );
     });
 
-    test('∩ denial: missing mortuary:read fails tab; ∪ route entry allows', () {
-      final AppAccessPolicy releaseOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.mortuaryRelease},
+    test('∩ denial: missing mortuary:read fails tab; write-only still enters', () {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.mortuaryWrite},
       );
-      expect(
-        MortuaryReleaseAtomPermissions.routeEntry.isAllowed(releaseOnly),
-        isTrue,
-      );
-      expect(MortuaryReleaseAtomPermissions.tab.isAllowed(releaseOnly), isFalse);
-      expect(
-        MortuaryReleaseAtomPermissions.update.isAllowed(releaseOnly),
-        isTrue,
-      );
-      expect(
-        MortuaryReleaseAtomPermissions.release.isAllowed(releaseOnly),
-        isTrue,
-      );
-      expect(canViewMortuaryPanel(releaseOnly, mortuaryPanelRelease), isFalse);
-      expect(canEnterMortuaryWorkspace(releaseOnly), isTrue);
-      expect(canReleaseMortuary(releaseOnly), isTrue);
+      expect(MortuaryStorageAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(canViewMortuaryPanel(writeOnly, mortuaryPanelStorage), isFalse);
+      expect(MortuaryStorageAtomPermissions.delete.isAllowed(writeOnly), isTrue);
+      expect(MortuaryStorageAtomPermissions.create.isAllowed(writeOnly), isFalse);
+      expect(canEnterMortuaryWorkspace(writeOnly), isTrue);
     });
 
-    test('full ∩ read grants list chrome; write/release/export denied', () {
-      final AppAccessPolicy reader = _readPolicy();
-      expect(MortuaryReleaseAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(MortuaryReleaseAtomPermissions.search.isAllowed(reader), isTrue);
-      expect(MortuaryReleaseAtomPermissions.filters.isAllowed(reader), isTrue);
+    test('full ∩ read grants list chrome; manage_storage/export denied', () {
+      final AppAccessPolicy read = _readPolicy();
+      expect(MortuaryStorageAtomPermissions.tab.isAllowed(read), isTrue);
+      expect(MortuaryStorageAtomPermissions.listChrome.isAllowed(read), isTrue);
+      expect(MortuaryStorageAtomPermissions.search.isAllowed(read), isTrue);
+      expect(MortuaryStorageAtomPermissions.rowSelect.isAllowed(read), isTrue);
+      expect(MortuaryStorageAtomPermissions.create.isAllowed(read), isFalse);
+      expect(MortuaryStorageAtomPermissions.update.isAllowed(read), isFalse);
+      expect(MortuaryStorageAtomPermissions.assignStorage.isAllowed(read), isFalse);
+      expect(MortuaryStorageAtomPermissions.delete.isAllowed(read), isFalse);
+      expect(MortuaryStorageAtomPermissions.success.isAllowed(read), isFalse);
       expect(
-        MortuaryReleaseAtomPermissions.rowSelect.isAllowed(reader),
-        isTrue,
-      );
-      expect(MortuaryReleaseAtomPermissions.detail.isAllowed(reader), isTrue);
-      expect(MortuaryReleaseAtomPermissions.create.isAllowed(reader), isFalse);
-      expect(MortuaryReleaseAtomPermissions.update.isAllowed(reader), isFalse);
-      expect(MortuaryReleaseAtomPermissions.release.isAllowed(reader), isFalse);
-      expect(MortuaryReleaseAtomPermissions.approve.isAllowed(reader), isFalse);
-      expect(MortuaryReleaseAtomPermissions.success.isAllowed(reader), isFalse);
-      expect(
-        MortuaryReleaseAtomPermissions.printDocuments.isAllowed(reader),
+        MortuaryStorageAtomPermissions.printDocuments.isAllowed(read),
         isFalse,
       );
       expect(
-        MortuaryReleaseAtomPermissions.billingPanel.isAllowed(reader),
+        MortuaryStorageAtomPermissions.billingPanel.isAllowed(read),
         isFalse,
       );
     });
 
-    test('matrix update ∩ mortuary:release; create/delete ∩ write', () {
-      final AppAccessPolicy releaser = _readReleasePolicy();
+    test('∩ create/update need manage_storage; delete needs write', () {
+      final AppAccessPolicy manager = _manageStoragePolicy();
       final AppAccessPolicy writer = _readWritePolicy();
-      expect(MortuaryReleaseAtomPermissions.update.isAllowed(releaser), isTrue);
-      expect(MortuaryReleaseAtomPermissions.create.isAllowed(releaser), isFalse);
-      expect(MortuaryReleaseAtomPermissions.delete.isAllowed(releaser), isFalse);
-      expect(MortuaryReleaseAtomPermissions.create.isAllowed(writer), isTrue);
-      expect(MortuaryReleaseAtomPermissions.delete.isAllowed(writer), isTrue);
-      expect(MortuaryReleaseAtomPermissions.update.isAllowed(writer), isFalse);
+      expect(MortuaryStorageAtomPermissions.create.isAllowed(manager), isTrue);
+      expect(MortuaryStorageAtomPermissions.update.isAllowed(manager), isTrue);
+      expect(MortuaryStorageAtomPermissions.assignStorage.isAllowed(manager), isTrue);
+      expect(MortuaryStorageAtomPermissions.delete.isAllowed(manager), isFalse);
+      expect(MortuaryStorageAtomPermissions.create.isAllowed(writer), isFalse);
+      expect(MortuaryStorageAtomPermissions.delete.isAllowed(writer), isTrue);
+    });
+
+    test('∪ export allows mortuary:export or reports:read', () {
+      expect(
+        MortuaryStorageAtomPermissions.printDocuments.isAllowed(_exportPolicy()),
+        isTrue,
+      );
+      expect(
+        MortuaryStorageAtomPermissions.printDocuments.isAllowed(
+          _reportsExportUnionPolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        MortuaryStorageAtomPermissions.printDocuments.isAllowed(_readPolicy()),
+        isFalse,
+      );
     });
 
     test('∩ billing panel needs mortuary:billing_event and billing:read', () {
@@ -476,59 +477,31 @@ void main() {
         },
       );
       expect(
-        MortuaryReleaseAtomPermissions.billingPanel.isAllowed(
+        MortuaryStorageAtomPermissions.billingPanel.isAllowed(
           mortuaryBillingOnly,
         ),
         isFalse,
       );
       expect(
-        MortuaryReleaseAtomPermissions.billingPanel.isAllowed(
+        MortuaryStorageAtomPermissions.billingPanel.isAllowed(
           _billingPanelPolicy(),
         ),
         isTrue,
       );
     });
 
-    test('∪ export allows mortuary:export or reports:read', () {
-      expect(
-        MortuaryReleaseAtomPermissions.printDocuments.isAllowed(_exportPolicy()),
-        isTrue,
-      );
-      expect(
-        MortuaryReleaseAtomPermissions.printDocuments.isAllowed(
-          _reportsExportUnionPolicy(),
-        ),
-        isTrue,
-      );
-      expect(
-        MortuaryReleaseAtomPermissions.printDocuments.isAllowed(_readPolicy()),
-        isFalse,
-      );
-    });
-
-    test('nested cross-module matrix rows are n/a (no nested write map)', () {
-      // Release matrix nested cross-module read/write are n/a — no second
-      // vocabulary; within-module approve/release remain fine-grained ∩.
-      expect(MortuaryReleaseAtomPermissions.approve, isNotNull);
-      expect(MortuaryReleaseAtomPermissions.release, isNotNull);
-      expect(
-        MortuaryReleaseAtomPermissions.nestedRead,
-        mortuaryWorkspaceReadRequirement,
-      );
-    });
-
-    test('subscription/ABAC strip module, BASIC plan, or facility', () {
+    test('subscription/ABAC strip module or facility from tab gate', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.mortuaryRead,
-          AppPermissions.mortuaryRelease,
+          AppPermissions.mortuaryManageStorage,
         },
         modules: const <AppModuleEntitlement>[],
       );
       final AppAccessPolicy basicPlan = _policy(
         permissions: <AppPermission>{
           AppPermissions.mortuaryRead,
-          AppPermissions.mortuaryRelease,
+          AppPermissions.mortuaryManageStorage,
         },
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
@@ -542,103 +515,87 @@ void main() {
         permissions: <AppPermission>{AppPermissions.mortuaryRead},
         facilityId: null,
       );
-      expect(MortuaryReleaseAtomPermissions.tab.isAllowed(noModule), isFalse);
-      expect(MortuaryReleaseAtomPermissions.tab.isAllowed(basicPlan), isFalse);
-      expect(
-        MortuaryReleaseAtomPermissions.routeEntry.isAllowed(noFacility),
-        isFalse,
-      );
-      expect(MortuaryReleaseAtomPermissions.tab.isAllowed(noFacility), isFalse);
+      expect(MortuaryStorageAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(MortuaryStorageAtomPermissions.tab.isAllowed(basicPlan), isFalse);
+      expect(canEnterMortuaryWorkspace(noModule), isFalse);
+      expect(MortuaryStorageAtomPermissions.tab.isAllowed(noFacility), isFalse);
     });
   });
 
-  group('Release tab UI gates', () {
-    testWidgets('authorized read mounts Release tab, list chrome, row select', (
+  group('Storage tab UI gates', () {
+    testWidgets('authorized read mounts Storage tab, list chrome, row select', (
       WidgetTester tester,
     ) async {
-      final GoRouter router = await _pumpReleaseTab(
+      final GoRouter router = await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _readPolicy(),
       );
 
-      expect(router.state.uri.queryParameters['panel'], 'release');
-      expect(_tab('Release'), findsOneWidget);
+      expect(router.state.uri.queryParameters['panel'], 'storage');
+      expect(_tab('Storage'), findsOneWidget);
       expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
-      expect(_table(tester).columnVisibilityStorageKey, 'mortuary_release');
+      expect(find.text('Storage Patient'), findsWidgets);
+      expect(_table(tester).columnVisibilityStorageKey, 'mortuary_storage');
       expect(
         _table(tester).columns.map(
           (AppListTableColumn<MortuaryWorkspaceItem> column) => column.id,
         ),
-        <String>['deceased', 'recipient', 'status', 'date', 'next_action'],
+        <String>['deceased', 'storage', 'status', 'date', 'next_action'],
       );
-      expect(find.text('Release Patient'), findsWidgets);
-      expect(find.text('Next of Kin'), findsWidgets);
 
       await _openDetail(tester);
       expect(find.text('CASE DETAIL'), findsOneWidget);
       expect(find.text('Actions unavailable'), findsNothing);
+      expect(find.text('Assign storage'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets(
-      '∩ denial: read without release omits mutation chrome; update denied',
+      '∩ denial: read without manage_storage omits Assign storage',
       (WidgetTester tester) async {
-        expect(
-          MortuaryReleaseAtomPermissions.update.isAllowed(_readPolicy()),
-          isFalse,
-        );
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _readPolicy(),
         );
-
-        expect(_tab('Release'), findsOneWidget);
-        expect(find.text('Receive case'), findsNothing);
-        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
-
         await _openDetail(tester);
+
+        expect(find.text('Assign storage'), findsNothing);
         expect(find.text('Print documents'), findsNothing);
         expect(find.text('Billing'), findsNothing);
-        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
       },
     );
 
     testWidgets(
-      'full ∩ release grants update helper; mutation chrome still unmounted',
+      'full ∩ manage_storage: Assign storage still absent (not mounted)',
       (WidgetTester tester) async {
         expect(
-          MortuaryReleaseAtomPermissions.update.isAllowed(_readReleasePolicy()),
+          MortuaryStorageAtomPermissions.assignStorage.isAllowed(
+            _manageStoragePolicy(),
+          ),
           isTrue,
         );
-        expect(
-          MortuaryReleaseAtomPermissions.approve.isAllowed(_readReleasePolicy()),
-          isFalse,
-        );
 
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
-          policy: _readReleasePolicy(),
+          policy: _manageStoragePolicy(),
         );
         await _openDetail(tester);
 
-        // Inventory removed no-op mutation chrome — absent even when granted.
-        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
+        expect(find.text('Assign storage'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
 
     testWidgets(
-      'intersection denial: read without billing ∩ omits billing panel',
+      '∩ denial: read without billing ∩ omits billing panel',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _readPolicy(),
@@ -651,24 +608,25 @@ void main() {
       },
     );
 
-    testWidgets('full billing intersection mounts billing events panel', (
-      WidgetTester tester,
-    ) async {
-      await _pumpReleaseTab(
-        tester,
-        repository: repository,
-        policy: _billingPanelPolicy(),
-      );
-      await _openDetail(tester);
+    testWidgets(
+      'full billing intersection mounts billing events panel',
+      (WidgetTester tester) async {
+        await _pumpStorageTab(
+          tester,
+          repository: repository,
+          policy: _billingPanelPolicy(),
+        );
+        await _openDetail(tester);
 
-      expect(find.text('Billing'), findsOneWidget);
-      expect(find.textContaining('Cold storage day 1'), findsOneWidget);
-    });
+        expect(find.text('Billing'), findsOneWidget);
+        expect(find.textContaining('Cold storage day 1'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-      'intersection denial: missing export omits print documents',
+      '∩ denial: missing export omits print documents',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _readPolicy(),
@@ -680,9 +638,9 @@ void main() {
     );
 
     testWidgets(
-      'union allowance: mortuary:export mounts print documents',
+      '∪ allowance: mortuary:export mounts print documents',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _exportPolicy(),
@@ -694,9 +652,9 @@ void main() {
     );
 
     testWidgets(
-      'union allowance: reports:read mounts print documents',
+      '∪ allowance: reports:read mounts print documents',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _reportsExportUnionPolicy(),
@@ -708,40 +666,51 @@ void main() {
     );
 
     testWidgets(
-      'nested cross-module UI absent (matrix n/a); within-module write absent',
+      'nested cross-module write n/a: mutation chrome absent with/without rights',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
+          tester,
+          repository: repository,
+          policy: _readPolicy(),
+        );
+        await _openDetail(tester);
+        expect(find.text('Assign storage'), findsNothing);
+        expect(find.text('Record custody'), findsNothing);
+        expect(find.text('Request post-mortem'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _policy(
             permissions: <AppPermission>{
               AppPermissions.mortuaryRead,
+              AppPermissions.mortuaryManageStorage,
               AppPermissions.mortuaryWrite,
-              AppPermissions.mortuaryRelease,
               AppPermissions.mortuaryApprove,
+              AppPermissions.mortuaryRelease,
             },
           ),
         );
         await _openDetail(tester);
-
+        expect(find.text('Assign storage'), findsNothing);
+        expect(find.text('Approve release'), findsNothing);
         expect(find.text('Receive case'), findsNothing);
-        expect(find.text('Record custody'), findsNothing);
-        expect(find.text('Request post-mortem'), findsNothing);
-        expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
-        expect(find.widgetWithText(FilledButton, 'Assign storage'), findsNothing);
       },
     );
 
     testWidgets(
       'subscription denial: permissions without mortuary module show forbidden',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
           policy: _policy(
             permissions: <AppPermission>{
               AppPermissions.mortuaryRead,
-              AppPermissions.mortuaryRelease,
+              AppPermissions.mortuaryManageStorage,
             },
             modules: const <AppModuleEntitlement>[],
           ),
@@ -756,7 +725,7 @@ void main() {
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpReleaseTab(
+      await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _readPolicy(),
@@ -772,26 +741,27 @@ void main() {
             queues: const <MortuaryQueueSummary>[],
             panels: const <MortuaryPanelSummary>[
               MortuaryPanelSummary(
-                id: mortuaryPanelRelease,
+                id: mortuaryPanelStorage,
                 count: 0,
-                defaultResource: mortuaryResourceReleaseAuthorisations,
+                defaultResource: mortuaryResourceStorageAssignments,
               ),
             ],
-            filters: const MortuaryWorkspaceQuery(panel: mortuaryPanelRelease),
+            filters: const MortuaryWorkspaceQuery(panel: mortuaryPanelStorage),
             lastUpdatedAt: DateTime.parse('2026-05-20T10:00:00.000Z'),
           ),
         ),
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(_tab('Release'), findsOneWidget);
+      expect(_tab('Storage'), findsOneWidget);
       expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
+      expect(find.text('Assign storage'), findsNothing);
     });
 
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpReleaseTab(
+      await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _readPolicy(),
@@ -804,10 +774,10 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
-    testWidgets('mobile viewport keeps Release strip and worklist', (
+    testWidgets('mobile viewport keeps Storage strip and worklist', (
       WidgetTester tester,
     ) async {
-      await _pumpReleaseTab(
+      await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _readPolicy(),
@@ -815,16 +785,16 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(_tab('Release'), findsOneWidget);
+      expect(_tab('Storage'), findsOneWidget);
       expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
-      expect(find.text('Release Patient'), findsWidgets);
-      expect(find.widgetWithText(FilledButton, 'Approve release'), findsNothing);
+      expect(find.text('Storage Patient'), findsWidgets);
+      expect(find.text('Assign storage'), findsNothing);
     });
 
-    testWidgets('desktop dark theme mounts Release authorized chrome', (
+    testWidgets('desktop dark theme mounts Storage authorized chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpReleaseTab(
+      await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _exportPolicy(),
@@ -832,23 +802,24 @@ void main() {
         viewport: const Size(1440, 900),
       );
 
-      expect(_tab('Release'), findsOneWidget);
+      expect(_tab('Storage'), findsOneWidget);
       await _openDetail(tester);
       expect(find.text('Print documents'), findsOneWidget);
       expect(
-        Theme.of(tester.element(find.text('Release').first)).brightness,
+        Theme.of(tester.element(find.text('Storage').first)).brightness,
         Brightness.dark,
       );
+      expect(find.text('Assign storage'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets(
       'post-mutation sync: detail reload uses repository after row select',
       (WidgetTester tester) async {
-        await _pumpReleaseTab(
+        await _pumpStorageTab(
           tester,
           repository: repository,
-          policy: _readReleasePolicy(),
+          policy: _manageStoragePolicy(),
         );
         await _openDetail(tester);
 
@@ -860,14 +831,13 @@ void main() {
           ),
         ).called(1);
         expect(find.text('CASE DETAIL'), findsOneWidget);
-        expect(find.text('Release'), findsWidgets);
       },
     );
 
-    testWidgets('deep link panel=release selects Release for authorized reader', (
+    testWidgets('deep link panel=storage selects Storage for authorized reader', (
       WidgetTester tester,
     ) async {
-      await _pumpReleaseTab(
+      await _pumpStorageTab(
         tester,
         repository: repository,
         policy: _readPolicy(),
@@ -876,8 +846,8 @@ void main() {
       final AppTabStrip strip = tester.widget<AppTabStrip>(
         find.byType(AppTabStrip),
       );
-      expect(strip.selectedId, mortuaryPanelRelease);
-      expect(_table(tester).columnVisibilityStorageKey, 'mortuary_release');
+      expect(strip.selectedId, mortuaryPanelStorage);
+      expect(_table(tester).columnVisibilityStorageKey, 'mortuary_storage');
     });
   });
 }

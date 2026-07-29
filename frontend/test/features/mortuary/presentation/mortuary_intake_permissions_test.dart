@@ -534,7 +534,7 @@ void main() {
       expect(find.text('Print documents'), findsNothing);
       expect(find.text('Cold storage day'), findsNothing);
       expect(find.text('No billing events recorded'), findsNothing);
-      expect(find.text('Identity'), findsOneWidget);
+      expect(find.text('Identity and source'), findsOneWidget);
       expect(find.text('Receive case'), findsNothing);
     },
   );
