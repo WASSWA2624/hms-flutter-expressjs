@@ -127,11 +127,56 @@ Patient-board strip toolbar actions (**Refresh**, **Start ICU stay**) were remov
   - Immediate result: Prints ICU stay summary.
   - Condition: Always when detail is open.
 
+### Follow-ups tab (`?section=follow-ups`)
+
+Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWorklistPanel` (ICU scope) with
+`IcuFollowUpsAtomPermissions` read/write overrides (not reception defaults). Nested stay/alert/transfer/bed UI is
+**not** opened from this tab. Write keeps source ∪ `clinical:write` | `emergency:write` + `icu-critical-care`
+(matrix ∩ `clinical:write` alone — keep source). Helpers: `IcuFollowUpsAtomPermissions`, `canViewIcuFollowUps`,
+`canWriteIcuFollowUps`. Tests: `frontend/test/features/icu/presentation/icu_follow_ups_permissions_test.dart`.
+
+- **Follow-ups** (strip tab + scoped count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Mounts ICU-scoped `FollowUpWorklistPanel`.
+  - Condition: Read ∪ `clinical:read` | `emergency:read` + `icu-critical-care`; tab omitted otherwise.
+
+- **Search / Clear / Settings (columns)**
+  - Location: Follow-ups `AppListTable` chrome.
+  - Opens modal: Table Settings.
+  - Immediate result: Client search / column visibility for scheduled ICU follow-ups.
+  - Condition: Same read ∪ as the tab. No advanced Filters on this tab.
+
+- **Empty / loading / error / Try again**
+  - Location: Panel body / `AppStateView` / progress indicator.
+  - Opens modal: No.
+  - Immediate result: Authorized chrome states; retry reloads the list.
+  - Condition: Same read ∪.
+
+- **Row select** → Follow-up details
+  - Location: Table row / mobile item.
+  - Opens modal: Shared reception follow-up detail dialog (`writeRequirement` = ICU write ∪).
+  - Immediate result: Shows patient + schedule; **Close** only when write denied.
+  - Condition: Same read ∪. No row next-action column on this tab.
+
+- **Reschedule follow-up** / **Mark completed**
+  - Location: Detail dialog actions.
+  - Opens modal: Reschedule opens Save follow-up dialog; complete mutates then closes.
+  - Immediate result: Updates follow-up; list refresh; empty state when none remain.
+  - Condition: Write ∪; unauthorized actions absent (no disabled stubs / routine “no access”).
+
+- **Save follow-up** (nested reschedule dialog)
+  - Location: Reschedule dialog actions.
+  - Opens modal: N/A (already open).
+  - Immediate result: Persists new schedule; closes on success; validation banner on failure.
+  - Condition: Same write ∪.
+
 ### Deep links
 
 - **`?id=`** — opens stay detail (next-action omitted).
 - **`?id=&panel=vitals|alerts|observations|orders|transfer|discharge`** — opens the focused mutation dialog directly (no empty detail shell).
 - **`?section=` / `?search=`** — selects tab / pre-fills search.
+- **`?section=follow-ups`** — Follow-ups worklist when read ∪ allows; otherwise falls back off the tab.
 
 ### Manual checks (Req 7)
 
@@ -143,3 +188,6 @@ Patient-board strip toolbar actions (**Refresh**, **Start ICU stay**) were remov
 - [ ] Bed board: read-only staff see ward chips / occupancy / Open IPD; **Manage beds** absent without rooms-beds admin.
 - [ ] Bed board: facility admin + inpatient module sees **Manage beds**; clinical writer alone does not.
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths.
+- [ ] Follow-ups: without `clinical:read` | `emergency:read` (or without `icu-critical-care`), tab and panel absent.
+- [ ] Follow-ups: read-only staff see list / detail Close; **Reschedule** / **Mark completed** absent.
+- [ ] Follow-ups: clinical or emergency writer sees mutation actions; list syncs after complete / reschedule.

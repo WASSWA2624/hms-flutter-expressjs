@@ -283,6 +283,27 @@ void main() {
     );
 
     test(
+      'ABAC: missing facility still allows Follow-ups chrome '
+      '(row/own scope remains backend-authoritative)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(IcuFollowUpsAtomPermissions.tab.isAllowed(noFacility), isTrue);
+        expect(IcuFollowUpsAtomPermissions.write.isAllowed(noFacility), isTrue);
+        expect(
+          IcuFollowUpsAtomPermissions.routeEntry.isAllowed(noFacility),
+          isTrue,
+        );
+      },
+    );
+
+    test(
       'mapping note: shared panel default remains reception ∪ / front-desk write',
       () {
         final AppAccessPolicy patientReader = _policy(

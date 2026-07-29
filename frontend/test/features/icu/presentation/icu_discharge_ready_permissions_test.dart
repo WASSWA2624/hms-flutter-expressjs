@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart'
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -958,32 +959,30 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       );
+      expect(
+        IcuDischargeReadyAtomPermissions.validation.isAllowed(writer),
+        isTrue,
+      );
 
-      // Planned next-action is Open clearance; Mark readiness stays in detail
-      // Quick Actions so the nested write dialog is reachable for validation.
       await _pumpDischargeReadyTab(
         tester,
         repository: repository,
         accessPolicy: writer,
-        items: const <IcuPatientSummary>[_plannedClearance],
       );
 
-      await tester.tap(find.text('Pat Planned'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      final Element element = tester.element(find.byType(IcuWorkspacePage));
+      final ProviderContainer container = ProviderScope.containerOf(element);
+      final AppFailure? selectFailure = await container
+          .read(icuWorkspaceControllerProvider.notifier)
+          .selectPatient(_pendingReadiness);
+      expect(selectFailure, isNull);
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Discharge readiness'),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await openIcuReadinessDialog(element);
       await tester.pumpAndSettle();
 
-      expect(find.text('Mark discharge readiness'), findsOneWidget);
+      // AppDialog uppercases plain Text titles.
+      expect(find.text('MARK DISCHARGE READINESS'), findsOneWidget);
       await tester.tap(find.text('Mark ready'));
       await tester.pumpAndSettle();
 
