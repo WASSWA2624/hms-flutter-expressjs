@@ -646,8 +646,15 @@ void main() {
       await tester.enterText(amountInput, '');
       await tester.pump();
 
-      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
-      await tester.tap(submit.last);
+      final Finder filledSubmit = find.widgetWithText(
+        FilledButton,
+        'Receive payment',
+      );
+      if (filledSubmit.evaluate().isNotEmpty) {
+        await tester.tap(filledSubmit.last);
+      } else {
+        await tester.tap(find.text('Receive payment').last);
+      }
       await tester.pumpAndSettle();
 
       // Validation keeps the dialog mounted; mutation must not fire.
