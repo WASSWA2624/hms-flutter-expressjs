@@ -297,6 +297,8 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
 /// Overdue tab atom → permission mapping (inventory + matrix).
 ///
 /// Collections follow-up: receive payment, dunning send, adjust / waive, void.
+/// [waive] is the collections synonym for [adjust] (same `billing:write` ∩).
+/// Deep link `action=pay` opens payment only when write-authorized.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -306,15 +308,17 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
 /// | Row select → detail | read | read ∩ |
 /// | Close shift / Close day | update | write ∩ `billing:write` |
 /// | Next action Receive payment | create / update | write ∩ |
-/// | Detail Receive payment / adjust / void / send (dunning) | CRUD | write ∩ |
+/// | Detail Receive payment / adjust (waive) / void / send (dunning) | CRUD | write ∩ |
 /// | Nested payment / adjustment / send dialogs | create / update | write ∩ |
+/// | Deep link `action=pay` | create / update | write ∩ |
 /// | View ledger / financial panels | read | read ∩ |
 /// | Print / Download | export / read | document read ∩ |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
 /// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
-/// [billingClaimsPendingTabRequirement] when insurance is entitled.
+/// [billingClaimsPendingTabRequirement] when insurance is entitled. Route entry
+/// ∪ (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
 abstract final class BillingOverdueAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -323,8 +327,12 @@ abstract final class BillingOverdueAtomPermissions {
   static const AccessRequirement update = billingWorkspaceWriteRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
   static const AccessRequirement adjust = billingWorkspaceWriteRequirement;
+  /// Collections synonym for [adjust] — same write ∩ gate.
+  static const AccessRequirement waive = billingWorkspaceWriteRequirement;
+  static const AccessRequirement voidInvoice = billingWorkspaceWriteRequirement;
   static const AccessRequirement dunningSend = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;

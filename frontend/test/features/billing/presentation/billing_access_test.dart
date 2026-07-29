@@ -465,7 +465,35 @@ void main() {
       );
       expect(
         identical(
+          BillingOverdueAtomPermissions.waive,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.waive,
+          BillingOverdueAtomPermissions.adjust,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.voidInvoice,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingOverdueAtomPermissions.dunningSend,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.close,
           billingWorkspaceWriteRequirement,
         ),
         isTrue,
@@ -524,7 +552,15 @@ void main() {
       );
       expect(BillingOverdueAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(BillingOverdueAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.waive.isAllowed(reader), isFalse);
       expect(BillingOverdueAtomPermissions.write.isAllowed(writer), isTrue);
+      expect(BillingOverdueAtomPermissions.close.isAllowed(writer), isTrue);
+      expect(BillingOverdueAtomPermissions.waive.isAllowed(writer), isTrue);
+      expect(
+        BillingOverdueAtomPermissions.voidInvoice.isAllowed(writer),
+        isTrue,
+      );
     });
 
     test('Needs issue atom map reuses feature *Requirement helpers', () {

@@ -80,18 +80,21 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubRepository(_MockBillingRepository repository) {
+void _stubRepository(
+  _MockBillingRepository repository, {
+  List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer(
     (_) async => const Result<BillingWorkspaceOverview>.success(
       BillingWorkspaceOverview(summary: _summary),
     ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
-    return const Result<AppPage<BillingWorkItem>>.success(
+    return Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
-        items: <BillingWorkItem>[_overdueInvoice],
-        request: AppPageRequest(pageSize: 20),
-        totalItemCount: 1,
+        items: items,
+        request: const AppPageRequest(pageSize: 20),
+        totalItemCount: items.length,
       ),
     );
   });
@@ -110,10 +113,12 @@ Future<void> _pumpOverdueTab(
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
+  List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
+  String initialLocation = '/billing?queue=overdue',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(repository, items: items);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -121,7 +126,7 @@ Future<void> _pumpOverdueTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=overdue',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -189,6 +194,8 @@ void main() {
         BillingOverdueAtomPermissions.receivePayment.isAllowed(reader),
         isFalse,
       );
+      expect(BillingOverdueAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.waive.isAllowed(reader), isFalse);
 
       await _pumpOverdueTab(
         tester,
@@ -227,10 +234,16 @@ void main() {
         isTrue,
       );
       expect(BillingOverdueAtomPermissions.adjust.isAllowed(writer), isTrue);
+      expect(BillingOverdueAtomPermissions.waive.isAllowed(writer), isTrue);
+      expect(
+        BillingOverdueAtomPermissions.voidInvoice.isAllowed(writer),
+        isTrue,
+      );
       expect(
         BillingOverdueAtomPermissions.dunningSend.isAllowed(writer),
         isTrue,
       );
+      expect(BillingOverdueAtomPermissions.close.isAllowed(writer), isTrue);
 
       await _pumpOverdueTab(
         tester,
@@ -404,8 +417,28 @@ void main() {
     expect(find.byTooltip('Receive payment'), findsWidgets);
   });
 
+  testWidgets('light theme: authorized Overdue chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOverdueTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Omar Overdue'), findsOneWidget);
+    expect(find.text('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
+  });
+
   testWidgets(
-    'authorized Receive payment next-action opens nested dialog (sync path)',
+    'authorized Receive payment next-action submits and syncs (mutation path)',
     (WidgetTester tester) async {
       await _pumpOverdueTab(
         tester,
@@ -423,6 +456,16 @@ void main() {
 
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.text('Receive payment'), findsWidgets);
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      if (submit.evaluate().isNotEmpty) {
+        await tester.tap(submit.last);
+      } else {
+        await tester.tap(find.text('Receive payment').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.receivePayment(any(), any())).called(1);
     },
   );
 
@@ -453,6 +496,66 @@ void main() {
         ),
         isFalse,
       );
+    },
+  );
+
+  testWidgets(
+    'empty authorized Overdue queue still shows chrome and empty state',
+    (WidgetTester tester) async {
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        items: const <BillingWorkItem>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No billing items'), findsOneWidget);
+      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link opens payment only when write-authorized',
+    (WidgetTester tester) async {
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        initialLocation:
+            '/billing?queue=overdue&invoice=INV-OVERDUE&action=pay',
+      );
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'action=pay deep link omitted for read-only (no payment dialog)',
+    (WidgetTester tester) async {
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+        initialLocation:
+            '/billing?queue=overdue&invoice=INV-OVERDUE&action=pay',
+      );
+
+      expect(find.text('Omar Overdue'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Receive payment'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 }
