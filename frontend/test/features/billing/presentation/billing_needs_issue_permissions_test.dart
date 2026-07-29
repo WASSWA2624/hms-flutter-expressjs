@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -29,6 +30,7 @@ const BillingWorkItem _draftInvoice = BillingWorkItem(
   id: 'inv-draft',
   displayId: 'INV-DRAFT',
   kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
   patientDisplayName: 'Ada Draft',
   patientDisplayId: 'PT-DRAFT',
   billingStatus: 'DRAFT',
@@ -40,11 +42,28 @@ const BillingWorkItem _issuedFromDraft = BillingWorkItem(
   id: 'inv-draft',
   displayId: 'INV-DRAFT',
   kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
   patientDisplayName: 'Ada Draft',
   patientDisplayId: 'PT-DRAFT',
   billingStatus: 'ISSUED',
   amount: 200,
   financials: BillingFinancials(balanceDue: 200),
+);
+
+const BillingSummary _summary = BillingSummary(
+  needsIssue: 1,
+  pendingPayment: 0,
+  claimsPending: 1,
+  approvalRequired: 0,
+  overdue: 0,
+);
+
+const BillingSummary _emptySummary = BillingSummary(
+  needsIssue: 0,
+  pendingPayment: 0,
+  claimsPending: 0,
+  approvalRequired: 0,
+  overdue: 0,
 );
 
 AppAccessPolicy _policy({
@@ -71,19 +90,15 @@ AppAccessPolicy _policy({
 void _stubRepository(
   _MockBillingRepository repository, {
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(
-        summary: BillingSummary(
-          needsIssue: items.length,
-          pendingPayment: 0,
-          claimsPending: 1,
-          approvalRequired: 0,
-          overdue: 0,
+    (_) async =>
+        workspaceOverride ??
+        Result<BillingWorkspaceOverview>.success(
+          BillingWorkspaceOverview(summary: summary),
         ),
-      ),
-    ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
     return Result<AppPage<BillingWorkItem>>.success(
@@ -110,10 +125,17 @@ Future<void> _pumpNeedsIssueTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository, items: items);
+  _stubRepository(
+    repository,
+    items: items,
+    summary: summary,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -179,7 +201,11 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.document.isAllowed(reader), isTrue);
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(BillingNeedsIssueAtomPermissions.close.isAllowed(reader), isFalse);
 
       await _pumpNeedsIssueTab(
@@ -202,6 +228,14 @@ void main() {
       );
       expect(find.text('Claims pending'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('Ada Draft'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Issue'), findsNothing);
+      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -215,6 +249,9 @@ void main() {
         },
       );
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.create.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.update.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.delete.isAllowed(writer), isTrue);
       expect(BillingNeedsIssueAtomPermissions.close.isAllowed(writer), isTrue);
 
       await _pumpNeedsIssueTab(
@@ -232,6 +269,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsWidgets);
+      expect(find.text('Print invoice'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -283,6 +321,36 @@ void main() {
       expect(find.text('Ada Draft'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module: Claims pending absent without insurance-claims',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(
+        BillingNeedsIssueAtomPermissions.claimsPendingTab.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isFalse,
+      );
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Issue'), findsWidgets);
     },
   );
 
@@ -389,7 +457,7 @@ void main() {
   });
 
   testWidgets(
-    'authorized Issue next-action opens nested notes dialog (sync path)',
+    'authorized Issue next-action submits and syncs (mutation path)',
     (WidgetTester tester) async {
       await _pumpNeedsIssueTab(
         tester,
@@ -409,7 +477,6 @@ void main() {
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.text('Issue'), findsWidgets);
 
-      // Submit empty notes (optional) — selection set by next-action path.
       final Finder submit = find.widgetWithText(FilledButton, 'Issue');
       if (submit.evaluate().isNotEmpty) {
         await tester.tap(submit.last);
@@ -464,12 +531,65 @@ void main() {
           permissions: <AppPermission>{AppPermissions.billingRead},
         ),
         items: const <BillingWorkItem>[],
+        summary: _emptySummary,
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No billing items'), findsOneWidget);
       expect(find.byTooltip('Issue'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Needs issue',
+    (WidgetTester tester) async {
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nestedWrite without insurance-claims stays denied on Needs issue',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoClaims = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(
+        BillingNeedsIssueAtomPermissions.nestedWrite.isAllowed(writerNoClaims),
+        isFalse,
+      );
+      expect(
+        BillingNeedsIssueAtomPermissions.write.isAllowed(writerNoClaims),
+        isTrue,
+      );
+
+      await _pumpNeedsIssueTab(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoClaims,
+      );
+
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Issue'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

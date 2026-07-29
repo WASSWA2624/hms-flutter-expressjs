@@ -357,7 +357,9 @@ abstract final class BillingOverdueAtomPermissions {
 /// write. Matrix nested cross-module rows are _(n/a)_; Claims pending strip
 /// still uses [billingClaimsPendingTabRequirement] when insurance is entitled.
 /// Route entry ∪ (`billing:read` \| `billing:write`) is
-/// [billingWorkspaceEntryRequirement].
+/// [billingWorkspaceEntryRequirement]. Secondary invoice mutations reachable
+/// from detail (refund / adjust / void / send) share [write] when the item
+/// exposes them — DRAFT rows typically only surface Issue.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -371,8 +373,9 @@ abstract final class BillingOverdueAtomPermissions {
 /// | Nested issue notes dialog | create / update | write ∩ |
 /// | View ledger / financial panels | read | read ∩ |
 /// | Print / Download | export / read | document read ∩ |
-/// | Approve / claims nested | approve / write | approval ∩ / claims write |
-/// | Claims pending strip tab | navigate | claims pending tab ∩ |
+/// | Approve nested (other kinds) | approve | write ∩ financial:approve |
+/// | Claims pending strip / nested | navigate / write | claims pending tab / claims write |
+/// | Route entry (deep link) | navigate | read ∪ write |
 abstract final class BillingNeedsIssueAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -400,7 +403,7 @@ abstract final class BillingNeedsIssueAtomPermissions {
 /// | Search / filters / columns | read chrome | tab read ∩ |
 /// | Empty / error / retry | read chrome | tab read ∩ |
 /// | Row select → detail | read | tab read ∩ |
-/// | Close shift / Close day | update / delete | write ∩ `billing:write` |
+/// | Close shift / Close day | update / delete | write ∩ `billing:write` ([close]) |
 /// | Next action Submit / Reconcile / Pre-auth | create / update | claims write |
 /// | Detail claim / pre-auth actions | create / update | claims write |
 /// | Nested claim submit / reconcile / pre-auth dialogs | create / update | claims write |
@@ -422,6 +425,8 @@ abstract final class BillingClaimsPendingAtomPermissions {
   static const AccessRequirement update = billingClaimsWriteRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  /// Close shift / Close day — matrix update/delete ∩ `billing:write`.
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
   static const AccessRequirement claimWrite = billingClaimsWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;

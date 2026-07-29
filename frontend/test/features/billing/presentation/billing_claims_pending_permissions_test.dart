@@ -48,6 +48,17 @@ const BillingWorkItem _submittedClaim = BillingWorkItem(
   financials: BillingFinancials(balanceDue: 400),
 );
 
+const BillingWorkItem _preAuthItem = BillingWorkItem(
+  id: 'preauth-1',
+  displayId: 'PA-001',
+  kind: BillingWorkItemKind.preAuthorization,
+  patientDisplayName: 'Pat Preauth',
+  patientDisplayId: 'PT-PA',
+  status: 'PENDING',
+  amount: 250,
+  financials: BillingFinancials(balanceDue: 250),
+);
+
 const BillingWorkItem _paymentItem = BillingWorkItem(
   id: 'inv-pay',
   displayId: 'INV-PAY',
@@ -234,6 +245,10 @@ void main() {
         isFalse,
       );
       expect(
+        BillingClaimsPendingAtomPermissions.close.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingClaimsPendingAtomPermissions.delete.isAllowed(reader),
         isFalse,
       );
@@ -308,6 +323,7 @@ void main() {
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(writer),
         isTrue,
       );
+      expect(BillingClaimsPendingAtomPermissions.close.isAllowed(writer), isTrue);
       expect(BillingClaimsPendingAtomPermissions.delete.isAllowed(writer), isTrue);
 
       await _pumpClaimsPendingTab(
@@ -478,6 +494,46 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Record insurer response'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'pre-auth: Approve authorization mounts with claim write ∩; absent for read-only',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        claimItems: const <BillingWorkItem>[_preAuthItem],
+      );
+
+      expect(find.text('Pat Preauth'), findsOneWidget);
+      expect(find.byTooltip('Approve authorization'), findsNothing);
+      expect(find.byTooltip('Deny authorization'), findsNothing);
+
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_preAuthItem],
+      );
+
+      expect(find.text('Pat Preauth'), findsOneWidget);
+      expect(find.byTooltip('Approve authorization'), findsWidgets);
+
+      await tester.tap(find.text('Pat Preauth'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Approve authorization'), findsWidgets);
+      expect(find.text('Deny authorization'), findsWidgets);
     },
   );
 

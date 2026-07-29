@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -59,6 +60,14 @@ const BillingSummary _summary = BillingSummary(
   overdue: 1,
 );
 
+const BillingSummary _emptySummary = BillingSummary(
+  needsIssue: 0,
+  pendingPayment: 0,
+  claimsPending: 0,
+  approvalRequired: 0,
+  overdue: 0,
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -83,11 +92,15 @@ AppAccessPolicy _policy({
 void _stubRepository(
   _MockBillingRepository repository, {
   List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => const Result<BillingWorkspaceOverview>.success(
-      BillingWorkspaceOverview(summary: _summary),
-    ),
+    (_) async =>
+        workspaceOverride ??
+        Result<BillingWorkspaceOverview>.success(
+          BillingWorkspaceOverview(summary: summary),
+        ),
   );
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
     return Result<AppPage<BillingWorkItem>>.success(
@@ -114,11 +127,18 @@ Future<void> _pumpOverdueTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
+  BillingSummary summary = _summary,
+  Result<BillingWorkspaceOverview>? workspaceOverride,
   String initialLocation = '/billing?queue=overdue',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository, items: items);
+  _stubRepository(
+    repository,
+    items: items,
+    summary: summary,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -311,6 +331,36 @@ void main() {
       expect(find.text('Omar Overdue'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module: Claims pending absent without insurance-claims',
+    (WidgetTester tester) async {
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(
+        BillingOverdueAtomPermissions.claimsPendingTab.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isFalse,
+      );
+      expect(find.text('Claims pending'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
     },
   );
 
@@ -509,12 +559,35 @@ void main() {
           permissions: <AppPermission>{AppPermissions.billingRead},
         ),
         items: const <BillingWorkItem>[],
+        summary: _emptySummary,
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.text('No billing items'), findsOneWidget);
       expect(find.byTooltip('Receive payment'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Overdue',
+    (WidgetTester tester) async {
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        workspaceOverride: const Result<BillingWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

@@ -742,7 +742,49 @@ void main() {
       );
       expect(
         identical(
+          BillingNeedsIssueAtomPermissions.write,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.update,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.delete,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingNeedsIssueAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.listChrome,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.detail,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.document,
           billingWorkspaceReadRequirement,
         ),
         isTrue,
@@ -765,6 +807,13 @@ void main() {
         identical(
           BillingNeedsIssueAtomPermissions.nestedWrite,
           billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.nestedRead,
+          billingClaimsNestedReadRequirement,
         ),
         isTrue,
       );
@@ -793,16 +842,46 @@ void main() {
         },
       );
       expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.document.isAllowed(reader), isTrue);
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.delete.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.write.isAllowed(reader), isFalse);
       expect(BillingNeedsIssueAtomPermissions.close.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.approve.isAllowed(reader), isFalse);
+      expect(
+        BillingNeedsIssueAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
+      );
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.create.isAllowed(writer), isTrue);
       expect(BillingNeedsIssueAtomPermissions.close.isAllowed(writer), isTrue);
+      // Default fixtures include insurance-claims — nested claim write ∩ allows.
+      expect(
+        BillingNeedsIssueAtomPermissions.nestedWrite.isAllowed(writer),
+        isTrue,
+      );
     });
 
     test('Claims pending atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
           BillingClaimsPendingAtomPermissions.tab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.listChrome,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.detail,
           billingClaimsPendingTabRequirement,
         ),
         isTrue,
@@ -823,6 +902,13 @@ void main() {
       );
       expect(
         identical(
+          BillingClaimsPendingAtomPermissions.update,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingClaimsPendingAtomPermissions.delete,
           billingWorkspaceWriteRequirement,
         ),
@@ -830,8 +916,43 @@ void main() {
       );
       expect(
         identical(
+          BillingClaimsPendingAtomPermissions.close,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.write,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.approve,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.nestedWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingClaimsPendingAtomPermissions.nestedRead,
           billingClaimsNestedReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.document,
+          billingWorkspaceReadRequirement,
         ),
         isTrue,
       );
