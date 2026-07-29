@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
@@ -2512,6 +2511,16 @@ Future<void> _openWebhookDialog(
   IntegrationWorkspaceState state, {
   WebhookSubscriptionRecord? webhook,
 }) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  final AccessRequirement requirement = webhook == null
+      ? IntegrationsWebhooksAtomPermissions.create
+      : IntegrationsWebhooksAtomPermissions.edit;
+  if (!requirement.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2721,6 +2730,12 @@ Future<void> _toggleWebhook(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsWebhooksAtomPermissions.enable.isAllowed(policy)) {
+    return;
+  }
   final WebhookSubscriptionRecord? webhook = item.webhook;
   if (webhook == null) {
     return;
@@ -2785,6 +2800,12 @@ Future<void> _confirmReplayWebhook(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsWebhooksAtomPermissions.replay.isAllowed(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool confirmed = await _confirm(
     context,

@@ -99,6 +99,16 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
     // detail shell). Bare admission links open detail with the stage
     // next-action omitted so it is not duplicated in Quick Actions.
     if (query.hasFocusedMutation) {
+      final AccessRequirement? mutationRequirement =
+          ipdFocusedMutationRequirement(
+            panel: query.focusPanel,
+            action: query.focusAction,
+          );
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (mutationRequirement != null &&
+          !mutationRequirement.isAllowed(policy)) {
+        return;
+      }
       final IpdWorkspaceState? state = _readIpdState(ref);
       if (state == null) {
         return;
@@ -747,8 +757,8 @@ class _IpdDetailPanel extends ConsumerWidget {
     }
 
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canOperate = ipdOperationalWriteRequirement.isAllowed(policy);
-    final bool canClinical = ipdClinicalWriteRequirement.isAllowed(policy);
+    final bool canOperate = canWriteIpdOperational(policy);
+    final bool canClinical = canWriteIpdClinical(policy);
     final bool actionsEnabled = !state.isSaving;
 
     final ThemeData theme = Theme.of(context);
@@ -1573,12 +1583,15 @@ class _WardRoundActionDialogState
             enabled: !_submitting,
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          ClinicalRequestBillingPanel(
-            lineItems: lineItems,
-            enabled: !_submitting,
-            onChanged: (ClinicalRequestBillingSubmit value) {
-              _billing = value;
-            },
+          AppAccessGate(
+            requirement: IpdAdmissionQueueAtomPermissions.billingPanel,
+            child: ClinicalRequestBillingPanel(
+              lineItems: lineItems,
+              enabled: !_submitting,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                _billing = value;
+              },
+            ),
           ),
         ],
       ),

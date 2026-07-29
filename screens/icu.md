@@ -295,6 +295,8 @@ Reachable only when the Follow-ups strip tab is selected. Hosted via `FollowUpWo
 - **`?id=&panel=vitals|alerts|observations|orders|transfer|discharge`** — opens the focused mutation dialog directly (no empty detail shell).
 - **`?section=` / `?search=`** — selects tab / pre-fills search.
 - **`?section=follow-ups`** — Follow-ups worklist when read ∪ allows; otherwise falls back off the tab.
+- **`?section=ended`** — Ended stays board when read ∪ allows; otherwise falls back off the tab.
+- **`?section=ended&id=&panel=`** — focused mutation when write ∪; otherwise read-only detail.
 
 ### Manual checks (Req 7)
 
