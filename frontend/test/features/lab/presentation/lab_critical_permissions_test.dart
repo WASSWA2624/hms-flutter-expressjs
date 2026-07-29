@@ -584,6 +584,31 @@ void main() {
       expect(find.byTooltip('Orders view'), findsOneWidget);
     });
 
+    testWidgets('authorized loading path uses critical read chrome', (
+      WidgetTester tester,
+    ) async {
+      expect(
+        LabCriticalAtomPermissions.loading.isAllowed(_labReadPolicy()),
+        isTrue,
+      );
+      expect(
+        LabCriticalAtomPermissions.empty.isAllowed(_labReadPolicy()),
+        isTrue,
+      );
+      expect(
+        LabCriticalAtomPermissions.retry.isAllowed(_labReadPolicy()),
+        isTrue,
+      );
+      expect(
+        LabCriticalAtomPermissions.success.isAllowed(_labReadPolicy()),
+        isFalse,
+      );
+      expect(
+        LabCriticalAtomPermissions.validation.isAllowed(_labWritePolicy()),
+        isTrue,
+      );
+    });
+
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {

@@ -2,7 +2,7 @@
 
 Primary surface: `IntegrationsWorkspacePage` (`frontend/lib/features/integrations/presentation/pages/integrations_workspace_page.dart`).
 
-Write gate: `_integrationsManageRequirement` (`integrationWrite` / tenant / facility / system admin + `integrations-core` module). Unauthorized create / next-action write / detail write controls do not render.
+Write gate: `_integrationsManageRequirement` (`integrationWrite` / tenant / facility / system admin + `integrations-core` module). Unauthorized create / next-action write / detail write controls do not render. API key **Revoke** uses `integrationsWorkspaceDeleteRequirement` (`integration:delete` ∩ module).
 
 Dialog chrome: each `AppDialog` has a labeled **Close** that only dismisses; noted once here.
 
@@ -88,7 +88,7 @@ Shows reference, status, scope, last event, kind-specific panels (config, relate
 Secondary writes when manage-authorized and not the row next-action:
 
 - Integration: Configure; Test / Sync / Enable·Disable when not the next-action.
-- API key: Manage permissions when not next-action; Enable·Disable; Revoke.
+- API key: Manage permissions when not next-action; Enable·Disable (manage); Revoke (`integration:delete`).
 - Webhook: Edit; Replay; Enable·Disable when not next-action.
 - Log: Replay when not next-action.
 - Interop: no write actions.
