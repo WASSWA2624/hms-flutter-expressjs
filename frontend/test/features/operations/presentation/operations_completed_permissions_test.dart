@@ -609,8 +609,17 @@ void main() {
       expect(find.text('Save note'), findsOneWidget);
       expect(find.text('REQUEST DETAIL'), findsNothing);
 
-      await tester.enterText(find.byType(TextFormField).first, 'Closed out');
-      await tester.tap(find.text('Save note'));
+      final Finder noteField = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(noteField.first, 'Closed out');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Save note'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       verify(

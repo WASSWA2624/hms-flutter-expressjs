@@ -1216,6 +1216,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 ## Constraints
 
 - Scope: this tab’s UI tree and nested dialogs opened from it; do not redesign unrelated screens.
+- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Reuse design-system components and existing gates; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop; light and dark.
 - No exploit/PoC code; no secrets in tests—use policy fixtures.

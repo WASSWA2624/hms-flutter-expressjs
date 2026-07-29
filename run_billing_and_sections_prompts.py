@@ -41,7 +41,7 @@ GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
 MODEL = "auto"
-GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json",)
+GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json", "screens")
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
@@ -212,6 +212,9 @@ def _commit_and_push(iteration_key: str) -> dict:
             _run_git(["add", "-A"])
             for exclude in GIT_EXCLUDES:
                 _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
+            # screens/ is read-only inventory — discard accidental agent edits.
+            _run_git(["checkout", "--", "screens"], check=False)
+            _run_git(["clean", "-fd", "--", "screens"], check=False)
 
             if not _git_has_staged_changes():
                 leftover = _run_git(

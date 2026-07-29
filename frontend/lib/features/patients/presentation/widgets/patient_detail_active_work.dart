@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_active_work_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -150,11 +152,19 @@ class _PatientActiveWorkRow extends StatelessWidget {
                 ],
               ),
             ),
-            AppButton.secondary(
-              label: actionLabel,
-              leadingIcon: Icons.play_arrow_outlined,
-              tooltip: actionLabel,
-              onPressed: onContinue,
+            AppAccessActionGate(
+              requirement: patientActiveWorkContinueRequirement(item.kind),
+              builder: (_, bool isAllowed) {
+                if (!isAllowed) {
+                  return const SizedBox.shrink();
+                }
+                return AppButton.secondary(
+                  label: actionLabel,
+                  leadingIcon: Icons.play_arrow_outlined,
+                  tooltip: actionLabel,
+                  onPressed: onContinue,
+                );
+              },
             ),
           ],
         ),

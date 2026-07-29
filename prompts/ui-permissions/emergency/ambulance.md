@@ -4,7 +4,7 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory: `screens/emergency.md` (source of truth for reachable controls).
+- Screen inventory (read-only; do not modify): `screens/emergency.md` (reachable controls).
 - Target tab: **Ambulance** (`ambulance`). Dispatch/trips; operations:read may union for asset context.
 - Feature code: `frontend/lib/features/emergency/`
 - Module entitlement: `scheduling-queue (emergency)`
@@ -42,6 +42,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Constraints
 
+- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Scope: this tab's UI tree and nested dialogs opened from it only; do not redesign unrelated screens.
 - Reuse `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate` / `AppAccessActionGate`, design-system components, routes, and feature `*Requirement` helpers; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or inaccessible actions; light and dark.

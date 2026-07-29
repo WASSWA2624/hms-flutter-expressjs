@@ -401,7 +401,7 @@ void main() {
 
       expect(find.text('Boiler pressure alarm'), findsOneWidget);
       expect(_tabLabel('In progress'), findsOneWidget);
-      expect(find.text('Filters'), findsOneWidget);
+      expect(find.byType(AppListTable<OperationsWorkItem>), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.textContaining('Create request'), findsNothing);
       expect(find.text('Update repair status'), findsNothing);
@@ -466,6 +466,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Update status is the row next-action — omitted from complementary.
+      // No assetId ⇒ Add service log also absent; Assign remains.
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -476,7 +477,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Add service log'),
+          matching: find.text('Assign'),
         ),
         findsOneWidget,
       );
@@ -716,11 +717,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Create request'), findsWidgets);
-      expect(find.text('Issue'), findsOneWidget);
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
 
       await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
+      // Required issue empty — dialog stays; no mutation.
       verifyNever(() => repository.createRequest(any()));
       expect(find.textContaining('no access'), findsNothing);
     },

@@ -4,7 +4,7 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory: `screens/opd.md` (source of truth for reachable controls).
+- Screen inventory (read-only; do not modify): `screens/opd.md` (reachable controls).
 - Target tab: **Queue** (`queue`). Waiting queue call-next / requeue.
 - Feature code: `frontend/lib/features/opd/`
 - Module entitlement: `scheduling-queue`
@@ -42,6 +42,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Constraints
 
+- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Scope: this tab's UI tree and nested dialogs opened from it only; do not redesign unrelated screens.
 - Reuse `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate` / `AppAccessActionGate`, design-system components, routes, and feature `*Requirement` helpers; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or inaccessible actions; light and dark.

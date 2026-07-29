@@ -68,13 +68,6 @@ class PatientDetailDialog extends ConsumerWidget {
   final String patientId;
   final bool allowBillingNavigation;
 
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientWrite],
-  );
-  static const AccessRequirement _deleteRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientDelete],
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
@@ -167,24 +160,31 @@ class PatientDetailDialog extends ConsumerWidget {
       scrollable: true,
       actions: <Widget>[
         AppAccessActionGate(
-          requirement: _writeRequirement,
-          builder: (_, bool isAllowed) => AppButton.secondary(
-            label: l10n.patientsEditAction,
-            leadingIcon: Icons.edit_outlined,
-            onPressed: isAllowed
-                ? () => unawaited(showPatientEditDialog(context, ref, patient))
-                : null,
-          ),
+          requirement: PatientActiveAtomPermissions.edit,
+          builder: (_, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.secondary(
+              label: l10n.patientsEditAction,
+              leadingIcon: Icons.edit_outlined,
+              onPressed: () =>
+                  unawaited(showPatientEditDialog(context, ref, patient)),
+            );
+          },
         ),
         AppAccessActionGate(
-          requirement: _deleteRequirement,
-          builder: (_, bool isAllowed) => AppButton.tertiary(
-            label: l10n.patientsDeleteAction,
-            leadingIcon: Icons.delete_outline,
-            onPressed: isAllowed
-                ? () => _confirmDeletePatient(context, ref, patient)
-                : null,
-          ),
+          requirement: PatientActiveAtomPermissions.delete,
+          builder: (_, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.tertiary(
+              label: l10n.patientsDeleteAction,
+              leadingIcon: Icons.delete_outline,
+              onPressed: () => _confirmDeletePatient(context, ref, patient),
+            );
+          },
         ),
       ],
       content: AnimatedSwitcher(
@@ -247,9 +247,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () =>
                       _openRelatedForm<PatientAllergy>(context, ref, detail),
                   onEdit: (PatientAllergy item) =>
@@ -269,9 +269,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () => _openRelatedForm<PatientIdentifier>(
                     context,
                     ref,
@@ -294,9 +294,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () =>
                       _openRelatedForm<PatientContact>(context, ref, detail),
                   onEdit: (PatientContact item) =>
@@ -316,9 +316,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () =>
                       _openRelatedForm<PatientGuardian>(context, ref, detail),
                   onEdit: (PatientGuardian item) =>
@@ -344,9 +344,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () => _openRelatedForm<PatientMedicalHistory>(
                     context,
                     ref,
@@ -369,9 +369,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () =>
                       _openRelatedForm<PatientDocument>(context, ref, detail),
                   onEdit: (PatientDocument item) =>
@@ -391,9 +391,9 @@ class PatientDetailDialog extends ConsumerWidget {
                   addLabel: l10n.patientsAddRelatedAction,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
+                  addRequirement: PatientActiveAtomPermissions.write,
+                  editRequirement: PatientActiveAtomPermissions.write,
+                  deleteRequirement: PatientActiveAtomPermissions.delete,
                   onAdd: () =>
                       _openRelatedForm<PatientConsent>(context, ref, detail),
                   onEdit: (PatientConsent item) =>

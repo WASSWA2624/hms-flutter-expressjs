@@ -4,7 +4,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Context
 
-- Screen inventory: `screens/home.md` (reachable controls).
+- Screen inventory: `screens/_screens.md` (read-only reference for reachable controls; do not modify).
 - Target tab: **Home (all atoms)** (`home`).
 - Feature code: `frontend/lib/features/home/`
 - Module entitlement: `home`
@@ -30,6 +30,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
+- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
@@ -47,7 +48,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Relevant Files
 
-- `screens/home.md`
+- `screens/_screens.md`
 - `frontend/lib/features/home/`
 - `frontend/lib/features/billing/`
 - `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`

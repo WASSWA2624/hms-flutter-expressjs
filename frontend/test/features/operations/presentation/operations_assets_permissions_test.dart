@@ -481,7 +481,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.textContaining('Create request').first);
+      await tester.tap(find.byTooltip('Create request'));
       await tester.pumpAndSettle();
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
@@ -499,19 +499,13 @@ void main() {
       expect(find.text('This field is required.'), findsWidgets);
       verifyNever(() => repository.createRequest(any()));
 
-      final Finder issueField = find.descendant(
+      // TextFields in create form: facility, location, issue, notes.
+      final Finder dialogFields = find.descendant(
         of: find.byType(AppDialog),
-        matching: find.widgetWithText(TextField, 'Issue'),
+        matching: find.byType(TextField),
       );
-      await tester.enterText(
-        issueField.evaluate().isEmpty
-            ? find.descendant(
-                of: find.byType(AppDialog),
-                matching: find.byType(TextField),
-              ).last
-            : issueField,
-        'Oil pressure fault',
-      );
+      expect(dialogFields, findsAtLeastNWidgets(3));
+      await tester.enterText(dialogFields.at(2), 'Oil pressure fault');
       await tester.tap(
         find.descendant(
           of: find.byType(AppDialog),
@@ -702,7 +696,8 @@ void main() {
     expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.textContaining('Backup Generator'), findsOneWidget);
     expect(_tabLabel('Assets'), findsOneWidget);
-    expect(find.textContaining('Create request'), findsOneWidget);
+    // Compact toolbar hides the Create label; tooltip remains.
+    expect(find.byTooltip('Create request'), findsOneWidget);
 
     await tester.tap(find.textContaining('Backup Generator').first);
     await tester.pumpAndSettle();
@@ -725,7 +720,7 @@ void main() {
     );
 
     expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
-    expect(find.textContaining('Create request'), findsOneWidget);
+    expect(find.byTooltip('Create request'), findsOneWidget);
     expect(find.text('Report'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });

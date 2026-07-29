@@ -996,13 +996,14 @@ void main() {
         await tester.tap(find.text('Change status'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Change queue status'), findsOneWidget);
+        expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
+        expect(find.byType(AppRadioGroup<String>), findsOneWidget);
         // Submit footer reuses the action label; tap the dialog primary.
         await tester.tap(find.text('Change status').last);
         await tester.pumpAndSettle();
 
         expect(find.text('This field is required.'), findsOneWidget);
-        expect(find.text('Change queue status'), findsOneWidget);
+        expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

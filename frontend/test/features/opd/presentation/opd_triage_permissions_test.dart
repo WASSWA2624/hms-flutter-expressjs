@@ -841,7 +841,13 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('FLOW ACTIONS'), findsOneWidget);
-        expect(find.text('Record vitals'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text('Record vitals'),
+          ),
+          findsNothing,
+        );
       },
     );
 

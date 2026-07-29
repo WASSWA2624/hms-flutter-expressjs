@@ -12,8 +12,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -49,10 +47,6 @@ class PatientRegistryPage extends ConsumerWidget {
 
   final PatientListQuery? initialQuery;
 
-  static const AccessRequirement _readRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientRead],
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
@@ -61,7 +55,7 @@ class PatientRegistryPage extends ConsumerWidget {
     );
 
     return AppAccessGate(
-      requirement: _readRequirement,
+      requirement: patientRegistryReadRequirement,
       deniedBuilder: (_, _) => AppStateScaffold(
         variant: AppStateViewVariant.forbidden,
         title: l10n.routeForbiddenTitle,
@@ -92,10 +86,6 @@ class _PatientRegistryContent extends ConsumerStatefulWidget {
 
   final PatientRegistryState state;
   final PatientListQuery? initialQuery;
-
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientWrite],
-  );
 
   @override
   ConsumerState<_PatientRegistryContent> createState() =>
@@ -230,7 +220,7 @@ class _PatientRegistryContentState
 
     return <Widget>[
       AppAccessActionGate(
-        requirement: _PatientRegistryContent._writeRequirement,
+        requirement: PatientActiveAtomPermissions.duplicateReview,
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -252,7 +242,7 @@ class _PatientRegistryContentState
 
   Widget _registerPatientPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
-      requirement: _PatientRegistryContent._writeRequirement,
+      requirement: PatientActiveAtomPermissions.register,
       builder: (BuildContext context, bool isAllowed) {
         if (!isAllowed) {
           return const SizedBox.shrink();
@@ -1476,9 +1466,7 @@ class _NextActionCell extends StatelessWidget {
     }
 
     return AppAccessActionGate(
-      requirement: const AccessRequirement(
-        allPermissions: <AppPermission>[AppPermissions.patientWrite],
-      ),
+      requirement: PatientActiveAtomPermissions.nextActionComplete,
       builder: (_, bool isAllowed) {
         if (!isAllowed) {
           return Text(
@@ -4023,10 +4011,6 @@ class _DuplicateReviewCard extends StatelessWidget {
   final VoidCallback onPreview;
   final VoidCallback onDismiss;
 
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientWrite],
-  );
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -4074,30 +4058,32 @@ class _DuplicateReviewCard extends StatelessWidget {
             runSpacing: theme.spacing.xs,
             children: <Widget>[
               AppAccessActionGate(
-                requirement: _writeRequirement,
-                builder: (_, bool isAllowed) => AppButton.secondary(
-                  label: l10n.patientsReviewMergeAction,
-                  leadingIcon: Icons.merge_type_outlined,
-                  enabled:
-                      isAllowed &&
-                      !isBusy &&
-                      primary != null &&
-                      secondary != null,
-                  onPressed: onPreview,
-                ),
+                requirement: PatientActiveAtomPermissions.duplicateReview,
+                builder: (_, bool isAllowed) {
+                  if (!isAllowed) {
+                    return const SizedBox.shrink();
+                  }
+                  return AppButton.secondary(
+                    label: l10n.patientsReviewMergeAction,
+                    leadingIcon: Icons.merge_type_outlined,
+                    enabled: !isBusy && primary != null && secondary != null,
+                    onPressed: onPreview,
+                  );
+                },
               ),
               AppAccessActionGate(
-                requirement: _writeRequirement,
-                builder: (_, bool isAllowed) => AppButton.tertiary(
-                  label: l10n.patientsDismissDuplicateAction,
-                  leadingIcon: Icons.block_outlined,
-                  enabled:
-                      isAllowed &&
-                      !isBusy &&
-                      primary != null &&
-                      secondary != null,
-                  onPressed: onDismiss,
-                ),
+                requirement: PatientActiveAtomPermissions.duplicateReview,
+                builder: (_, bool isAllowed) {
+                  if (!isAllowed) {
+                    return const SizedBox.shrink();
+                  }
+                  return AppButton.tertiary(
+                    label: l10n.patientsDismissDuplicateAction,
+                    leadingIcon: Icons.block_outlined,
+                    enabled: !isBusy && primary != null && secondary != null,
+                    onPressed: onDismiss,
+                  );
+                },
               ),
             ],
           ),

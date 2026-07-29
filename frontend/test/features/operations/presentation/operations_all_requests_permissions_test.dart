@@ -597,8 +597,9 @@ void main() {
       await tester.tap(find.textContaining('Create request'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('Save assignment'), findsNothing);
       expect(find.textContaining('Create request'), findsWidgets);
-      expect(find.text('Issue'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

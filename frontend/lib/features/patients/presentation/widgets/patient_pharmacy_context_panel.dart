@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -23,10 +25,18 @@ class PatientPharmacyContextPanel extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.patientsPharmacyOrdersSectionTitle,
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.patientsOpenPharmacyWorkbenchAction,
-          leadingIcon: Icons.local_pharmacy_outlined,
-          onPressed: () => context.go(AppRoutes.pharmacy.path),
+        AppAccessActionGate(
+          requirement: PatientActiveAtomPermissions.pharmacyWorkbench,
+          builder: (_, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppButton.secondary(
+              label: l10n.patientsOpenPharmacyWorkbenchAction,
+              leadingIcon: Icons.local_pharmacy_outlined,
+              onPressed: () => context.go(AppRoutes.pharmacy.path),
+            );
+          },
         ),
       ],
       child: Column(

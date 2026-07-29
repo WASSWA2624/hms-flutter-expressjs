@@ -2,7 +2,7 @@
 
 Primary surface: `PatientRegistryPage` (`frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`).
 
-Write gates: `patientWrite` (register / edit / complete record / schedule), `patientDelete` (delete), `opdEncounterPermissionRequirement` (start / continue OPD), clinical write + module flags (admit / orders / therapy / theater), `reportsRead` (report). Unauthorized controls do not render.
+Write gates: `PatientActiveAtomPermissions` / `patientWrite` (register / edit / complete record / schedule), `patientDelete` (delete), `opdEncounterPermissionRequirement` (start / continue OPD), clinical write + module flags (admit / orders / therapy / theater), `reportsRead` (report). Unauthorized controls do not render.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -26,25 +26,44 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 ## Patients registry screen
 
+### Active tab
+
+Active outpatients / open visits (`?section=active`). Write gates:
+`PatientActiveAtomPermissions` → read ∩ `patient:read`, create/update ∩
+`patient:write`, delete ∩ `patient:delete`. Nested Quick Actions / Active Work
+Continue keep source clinical+module gates (OPD encounter roles +
+`scheduling-queue`; admit/discharge + `inpatient-bed-management`;
+lab/radiology/theater/physio + matching modules; insurance source ∪ +
+`insurance-claims`; report ∩ `reports:read`). Unauthorized controls do not
+render. Nested matrix rows _(n/a)_ except those documented source gates.
+Route entry uses AppRoutes ∩ `patient:read` + `patient-registry` (catalog
+atom historically uses `patients:read`).
+
+- **Active** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches `_section` to active, updates URL, clears search, reloads list.
+  - Condition: `PatientActiveAtomPermissions.tab` (`patient:read`).
+
 ### Tab strip
 
 - **All patients / Active / Admitted / Balance due**
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, clears search, reloads list.
-  - Condition: Always when registry loads.
+  - Condition: Always when registry loads (`patient:read`).
 
 - **Register patient** (primary)
   - Location: Tab-strip primary.
   - Opens modal: Yes — register-new-patient dialog (duplicate warning), then patient detail.
   - Immediate result: Creates patient; snackbar; opens detail editor path.
-  - Condition: `patientWrite`; unauthorized control absent.
+  - Condition: `PatientActiveAtomPermissions.register` (`patient:write`); unauthorized control absent.
 
 - **Duplicate review** (secondary, when overview has candidates)
   - Location: Tab-strip secondary.
   - Opens modal: Yes — duplicate review / merge / dismiss.
   - Immediate result: Merge or dismiss candidates; overview refresh.
-  - Condition: `patientWrite` and non-empty duplicates; otherwise absent.
+  - Condition: `PatientActiveAtomPermissions.duplicateReview` and non-empty duplicates; otherwise absent.
 
 Tab-strip **Refresh** is absent.
 
@@ -82,7 +101,7 @@ Tab-strip **Refresh** is absent.
   - Location: `next_action` column.
   - Opens modal: Edit form when registration incomplete; otherwise label-only (**Open record**).
   - Immediate result: Incomplete → `showPatientEditDialog` (skips detail shell). Complete → guidance only; use row select.
-  - Condition: Complete-record button gated by `patientWrite`; unauthorized users see label only.
+  - Condition: Complete-record button gated by `PatientActiveAtomPermissions.nextActionComplete`; unauthorized users see label only.
 
 ### Patient detail dialog
 
@@ -92,7 +111,7 @@ Tab-strip **Refresh** is absent.
   - Location: Dialog actions.
   - Opens modal: Edit form; delete confirm.
   - Immediate result: Updates or deletes patient; list sync.
-  - Condition: `patientWrite` / `patientDelete`; unauthorized controls absent.
+  - Condition: `PatientActiveAtomPermissions.edit` / `.delete`; unauthorized controls absent.
 
 #### Active Work panel
 
@@ -100,7 +119,7 @@ Tab-strip **Refresh** is absent.
   - Location: Active Work rows.
   - Opens modal / navigates: Appointment actions hub; OPD stage mutation (or Flow Actions only when no stage action); admission handoff / discharge; department module for lab / imaging / theater / therapy.
   - Immediate result: Persists or navigates; detail refresh / snackbar where applicable.
-  - Condition: Items from appointments, encounters, queues, admissions (including visit-only), and pending timeline orders.
+  - Condition: Items from appointments, encounters, queues, admissions (including visit-only), and pending timeline orders. Continue control gated by `patientActiveWorkContinueRequirement(kind)`; unauthorized Continue absent (row status still visible).
 
 #### Quick Actions (new work only)
 
@@ -108,7 +127,7 @@ Tab-strip **Refresh** is absent.
   - Location: Quick Actions strip.
   - Opens modal: Matching quick dialog / encounter / report preview.
   - Immediate result: Creates work or opens print preview; snackbar + detail refresh on save.
-  - Condition: Permission and module gates; chips that duplicate Active Work continues are omitted.
+  - Condition: `PatientActiveAtomPermissions.*` chips; section collapses when all children filtered; chips that duplicate Active Work continues are omitted.
 
 #### Record sections / role panels
 
@@ -127,5 +146,7 @@ Tab-strip **Refresh** is absent.
   - Idle detail shows **Start OPD encounter** only — no **Triage** / **Billing** parallel starts.
   - Active OPD **Continue OPD flow** opens Record vitals (stage next-action) without a Flow Actions hub.
   - Active admission shows a single **Discharge planning** Active Work continue (Quick Action discharge omitted).
+
+- `patient_active_permissions_test.dart` proves Active-tab atom mapping, intersection denial (`patient:read` without write), source ∪ allowance (view-active OPD / enroll insurance), nested cross-module absence, subscription module strip, authorized presence, UI states, mobile + desktop, light + dark.
 
 - `patient_active_work_helpers_test.dart` proves visit-only admissions appear in Active Work and admitted continue label is discharge planning.
