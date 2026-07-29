@@ -34,6 +34,11 @@ const List<AppModuleEntitlement> _activeModules = <AppModuleEntitlement>[
     licenseStatus: 'ACTIVE',
   ),
   AppModuleEntitlement(code: 'emergency-trauma', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(
+    code: 'biomedical-engineering-suite',
+    licenseStatus: 'ACTIVE',
+  ),
 ];
 
 AppAccessPolicy _policy({
@@ -269,6 +274,50 @@ void main() {
 
       expect(shortcuts.length, greaterThanOrEqualTo(4));
     });
+
+    test(
+      'role-default grants still yield ≥4 shortcuts when catalog permits',
+      () {
+        for (final String roleCode in <String>[
+          'HR',
+          'UNIT_MANAGER',
+          'MORTUARY_STAFF',
+          'MORTUARY_MANAGER',
+          'INTEGRATION_ADMIN',
+          'AMBULANCE_OPERATOR',
+          'LAB_TECH',
+          'PHARMACIST',
+        ]) {
+          final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'token'),
+              user: AuthUserProfile(
+                tenantId: 'tenant-1',
+                facilityId: 'facility-1',
+                roles: <String>[roleCode],
+              ),
+              // Unhydrated + empty explicit set → client role pack defaults.
+              permissions: const <AppPermission>{},
+              moduleEntitlements: _activeModules,
+              isAuthorizationHydrated: false,
+            ),
+          );
+          final HomeDashboardProfile profile = homeProfileForRoles(policy.roles);
+          if (profile.shortcutIds.isEmpty) {
+            continue;
+          }
+          final List<HomeShortcutDefinition> shortcuts = homeVisibleShortcuts(
+            profile.shortcutIds,
+            policy,
+          );
+          expect(
+            shortcuts.length,
+            greaterThanOrEqualTo(4),
+            reason: '$roleCode authorized=${shortcuts.map((s) => s.id).toList()}',
+          );
+        }
+      },
+    );
 
     test('lab shortcuts keep floor when quick actions share lab route', () {
       final AppAccessPolicy policy = _policy(

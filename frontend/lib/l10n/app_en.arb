@@ -7159,10 +7159,6 @@
   "@homePlatformManagementTitle": {
     "description": "Section title for super-admin platform management shortcuts on the home dashboard."
   },
-  "homePlatformManagementDescription": "Manage tenants, facilities, roles, and users.",
-  "@homePlatformManagementDescription": {
-    "description": "Legacy description for platform management; home summary UI no longer shows this body copy."
-  },
   "homeFacilityManagementTitle": "Facility management",
   "@homeFacilityManagementTitle": {
     "description": "Section title for tenant-admin facility management actions on the home dashboard."

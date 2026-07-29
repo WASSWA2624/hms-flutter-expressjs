@@ -10630,12 +10630,6 @@ abstract class AppLocalizations {
   /// **'Platform management'**
   String get homePlatformManagementTitle;
 
-  /// Legacy description for platform management; home summary UI no longer shows this body copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage tenants, facilities, roles, and users.'**
-  String get homePlatformManagementDescription;
-
   /// Section title for tenant-admin facility management actions on the home dashboard.
   ///
   /// In en, this message translates to:

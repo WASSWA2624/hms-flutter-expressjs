@@ -155,7 +155,11 @@ void main() {
       final profile = homeProfileForRole(AppRole.hr);
 
       expect(profile.quickActionIds, isEmpty);
-      expect(profile.shortcutIds, containsAll(<String>['hr', 'reports']));
+      expect(
+        profile.shortcutIds,
+        containsAll(<String>['hr', 'communications', 'reports', 'settings']),
+      );
+      expect(profile.shortcutIds, isNot(contains('tenant_facility_setup')));
       expect(profile.emptyActionIds, isEmpty);
       expect(profile.maxStatusCards, 4);
       expect(

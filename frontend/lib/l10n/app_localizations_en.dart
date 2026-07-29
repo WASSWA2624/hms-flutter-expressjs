@@ -5605,10 +5605,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePlatformManagementTitle => 'Platform management';
 
   @override
-  String get homePlatformManagementDescription =>
-      'Manage tenants, facilities, roles, and users.';
-
-  @override
   String get homeFacilityManagementTitle => 'Facility management';
 
   @override

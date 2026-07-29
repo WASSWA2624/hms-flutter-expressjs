@@ -456,7 +456,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'enter_lab_result',
       'flag_critical_lab',
     ],
-    shortcutIds: <String>['lab', 'patients', 'reports', 'settings', 'communications'],
+    shortcutIds: <String>['lab', 'patients', 'communications', 'settings', 'reports'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -572,7 +572,15 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'receive_pharmacy_stock',
       'adjust_pharmacy_stock',
     ],
-    shortcutIds: <String>['pharmacy', 'patients', 'billing', 'reports', 'settings'],
+    // Focused shell allows pharmacy/patients/comms/settings (not billing/reports).
+    shortcutIds: <String>[
+      'pharmacy',
+      'patients',
+      'communications',
+      'settings',
+      'billing',
+      'reports',
+    ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -900,7 +908,15 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>[],
-    shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports', 'settings'],
+    // Prefer destinations HR can open with role defaults (hr/comms/reports/
+    // profile). tenant_facility_setup needs tenant:admin and is not a floor tile.
+    shortcutIds: <String>[
+      'hr',
+      'communications',
+      'reports',
+      'settings',
+      'profile',
+    ],
     suppressHomeQuickActions: true,
     toolbarActionIds: <HomeToolbarActionId>[
       HomeToolbarActionId.openHrWorkspace,
@@ -1074,12 +1090,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
+    // operations needs operations:read (not on ambulance defaults).
     shortcutIds: <String>[
       'emergency',
-      'operations',
       'reports',
       'settings',
       'communications',
+      'profile',
     ],
     emptyActionIds: const <String>[],
   ),
@@ -1108,7 +1125,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'approve_roster',
       'run_report',
     ],
-    shortcutIds: <String>['hr', 'nursing', 'ipd', 'reports'],
+    // Unit managers lack clinical:read by default — keep HR/report/settings hubs.
+    shortcutIds: <String>['hr', 'reports', 'settings', 'profile'],
     emptyActionIds: const <String>[],
   ),
   AppRole.wardManager: HomeDashboardProfile(
@@ -1364,7 +1382,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'schedule_viewing',
       'add_mortuary_billable_event',
     ],
-    shortcutIds: <String>['mortuary', 'reports', 'settings', 'communications'],
+    // patients (not communications) matches mortuary staff default grants.
+    shortcutIds: <String>['mortuary', 'patients', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.mortuaryManager: HomeDashboardProfile(
@@ -1413,7 +1432,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'open_mortuary_case',
       'run_report',
     ],
-    shortcutIds: <String>['mortuary', 'reports', 'settings', 'communications'],
+    shortcutIds: <String>['mortuary', 'patients', 'reports', 'settings'],
     emptyActionIds: const <String>[],
   ),
   AppRole.patient: HomeDashboardProfile(
@@ -1492,7 +1511,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: const <String>[],
-    shortcutIds: <String>['integrations', 'reports', 'settings', 'subscriptions'],
+    // subscriptions needs subscriptions:read (not on role defaults); profile fills the floor.
+    shortcutIds: <String>[
+      'integrations',
+      'reports',
+      'settings',
+      'profile',
+      'subscriptions',
+    ],
     emptyActionIds: const <String>[],
   ),
   AppRole.other: HomeDashboardProfile(
