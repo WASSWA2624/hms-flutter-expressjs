@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -16,10 +17,12 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
+import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
@@ -27,18 +30,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockEmergencyRepository extends Mock implements EmergencyRepository {}
 
-const EmergencyCaseSummary _criticalCase = EmergencyCaseSummary(
-  id: 'EME-CRIT-1',
-  displayId: 'EME-CRIT-1',
-  patientDisplayId: 'PAT-CRIT-1',
-  patientDisplayName: 'Critical Tab Patient',
-  severity: 'CRITICAL',
+const EmergencyCaseSummary _handoffCase = EmergencyCaseSummary(
+  id: 'EME-HAND-1',
+  displayId: 'EME-HAND-1',
+  patientId: 'PAT-HAND-1',
+  patientDisplayId: 'PAT-HAND-1',
+  patientDisplayName: 'Handoff Tab Patient',
+  severity: 'HIGH',
   status: 'OPEN',
-  createdAt: null,
+  latestTriage: EmergencyTriageAssessment(
+    id: 'TRA-HAND-1',
+    triageLevel: 'LEVEL_2',
+  ),
+  latestResponse: EmergencyResponseRecord(id: 'ERS-HAND-1'),
 );
 
-const EmergencyCaseDetail _criticalDetail = EmergencyCaseDetail(
-  summary: _criticalCase,
+const EmergencyCaseDetail _handoffDetail = EmergencyCaseDetail(
+  summary: _handoffCase,
+  triageAssessments: <EmergencyTriageAssessment>[
+    EmergencyTriageAssessment(id: 'TRA-HAND-1', triageLevel: 'LEVEL_2'),
+  ],
+  responses: <EmergencyResponseRecord>[
+    EmergencyResponseRecord(id: 'ERS-HAND-1'),
+  ],
 );
 
 AppAccessPolicy _policy({
@@ -102,93 +116,64 @@ AppAccessPolicy _policy({
 
 void _stubRepository(
   _MockEmergencyRepository repository, {
-  List<EmergencyCaseSummary> items = const <EmergencyCaseSummary>[_criticalCase],
+  List<EmergencyCaseSummary> items = const <EmergencyCaseSummary>[_handoffCase],
+  EmergencyCaseDetail detail = _handoffDetail,
   Result<AppPage<EmergencyCaseSummary>>? listOverride,
-  Result<EmergencyReferenceData>? referenceOverride,
-  EmergencyCaseDetail? detail,
-  Result<EmergencyCaseDetail>? createOverride,
 }) {
-  when(() => repository.listEmergencyBoard(any())).thenAnswer((
-    invocation,
-  ) async {
+  when(() => repository.listEmergencyBoard(any())).thenAnswer((invocation) {
     if (listOverride != null) {
-      return listOverride;
+      return Future<Result<AppPage<EmergencyCaseSummary>>>.value(listOverride);
     }
     final EmergencyBoardQuery query =
         invocation.positionalArguments.single as EmergencyBoardQuery;
-    return Result<AppPage<EmergencyCaseSummary>>.success(
-      AppPage<EmergencyCaseSummary>(
-        items: items,
-        request: query.pageRequest,
-        totalItemCount: items.length,
+    return Future<Result<AppPage<EmergencyCaseSummary>>>.value(
+      Result<AppPage<EmergencyCaseSummary>>.success(
+        AppPage<EmergencyCaseSummary>(
+          items: items,
+          request: query.pageRequest,
+          totalItemCount: items.length,
+        ),
       ),
     );
   });
   when(repository.loadReferenceData).thenAnswer(
     (_) async =>
-        referenceOverride ??
         const Result<EmergencyReferenceData>.success(EmergencyReferenceData()),
   );
-  when(() => repository.loadEmergencyDetail(any())).thenAnswer((invocation) {
-    final EmergencyCaseSummary summary =
-        invocation.positionalArguments.single as EmergencyCaseSummary;
-    return Future<Result<EmergencyCaseDetail>>.value(
-      Result<EmergencyCaseDetail>.success(
-        detail ??
-            EmergencyCaseDetail(
-              summary: summary.id == _criticalCase.id
-                  ? _criticalCase
-                  : summary,
-            ),
-      ),
-    );
-  });
-  when(() => repository.createQuickArrival(any())).thenAnswer((_) async {
-    return createOverride ??
-        const Result<EmergencyCaseDetail>.success(_criticalDetail);
-  });
+  when(() => repository.loadEmergencyDetail(any())).thenAnswer(
+    (_) async => Result<EmergencyCaseDetail>.success(detail),
+  );
+  when(() => repository.createQuickArrival(any())).thenAnswer(
+    (_) async => Result<EmergencyCaseDetail>.success(detail),
+  );
   when(
-    () => repository.recordTriage(
+    () => repository.recordHandoff(
       detail: any(named: 'detail'),
-      triageLevel: any(named: 'triageLevel'),
+      destination: any(named: 'destination'),
       notes: any(named: 'notes'),
+      closeCase: any(named: 'closeCase'),
     ),
-  ).thenAnswer((_) async {
-    const EmergencyTriageAssessment triage = EmergencyTriageAssessment(
-      id: 'TRA-CRIT-1',
-      triageLevel: 'LEVEL_1',
-    );
-    return Result<EmergencyCaseDetail>.success(
-      _criticalDetail.copyWith(
-        summary: _criticalCase.copyWith(latestTriage: triage),
-        triageAssessments: const <EmergencyTriageAssessment>[triage],
-      ),
-    );
-  });
+  ).thenAnswer((_) async => Result<EmergencyCaseDetail>.success(detail));
 }
 
-Future<void> _pumpCriticalTab(
+Future<void> _pumpHandoffTab(
   WidgetTester tester, {
   required _MockEmergencyRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<EmergencyCaseSummary> items = const <EmergencyCaseSummary>[
-    _criticalCase,
-  ],
-  String initialLocation = '/emergency?scope=critical',
+  List<EmergencyCaseSummary> items = const <EmergencyCaseSummary>[_handoffCase],
+  EmergencyCaseDetail detail = _handoffDetail,
   Result<AppPage<EmergencyCaseSummary>>? listOverride,
-  Result<EmergencyReferenceData>? referenceOverride,
-  EmergencyCaseDetail? detail,
+  String initialLocation = '/emergency?scope=handoff',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubRepository(
     repository,
     items: items,
-    listOverride: listOverride,
-    referenceOverride: referenceOverride,
     detail: detail,
+    listOverride: listOverride,
   );
 
   tester.view.physicalSize = physicalSize;
@@ -232,10 +217,9 @@ Future<void> _pumpCriticalTab(
       ),
     ),
   );
-  // Avoid pumpAndSettle — emergency adaptive polling keeps the frame busy.
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
-  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -251,116 +235,121 @@ void main() {
         severity: 'CRITICAL',
       ),
     );
-    registerFallbackValue(const EmergencyCaseDetail(summary: _criticalCase));
+    registerFallbackValue(const EmergencyCaseDetail(summary: _handoffCase));
   });
 
   setUp(() {
     repository = _MockEmergencyRepository();
   });
 
-  group('EmergencyCriticalAtomPermissions helpers', () {
+  group('EmergencyHandoffAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        EmergencyCriticalAtomPermissions.tab,
+        EmergencyHandoffAtomPermissions.tab,
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.criticalChip,
+        EmergencyHandoffAtomPermissions.listChrome,
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.empty,
+        EmergencyHandoffAtomPermissions.empty,
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.loading,
+        EmergencyHandoffAtomPermissions.printSummary,
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.printSummary,
-        same(emergencyWorkspaceReadRequirement),
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.write,
+        EmergencyHandoffAtomPermissions.write,
         same(emergencyWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.quickArrival,
+        EmergencyHandoffAtomPermissions.quickArrival,
         same(emergencyWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.create,
+        EmergencyHandoffAtomPermissions.create,
         same(emergencyWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.update,
+        EmergencyHandoffAtomPermissions.update,
         same(emergencyWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.delete,
+        EmergencyHandoffAtomPermissions.delete,
         same(emergencyDeleteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.handoff,
+        EmergencyHandoffAtomPermissions.handoff,
         same(emergencyHandoffWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.nextActionHandoff,
+        EmergencyHandoffAtomPermissions.nextActionHandoff,
         same(emergencyHandoffWriteRequirement),
       );
       expect(
-        EmergencyCriticalAtomPermissions.routeEntry,
+        EmergencyHandoffAtomPermissions.panelDeepLink,
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.routeEntry,
         same(RouteAccessCatalog.emergencyEntry),
       );
       expect(
-        EmergencyAllAtomPermissions.quickArrival,
-        same(emergencyWriteRequirement),
+        EmergencyHandoffAtomPermissions.routeEntryUnion,
+        same(emergencyWorkspaceRouteUnionRequirement),
       );
       expect(
-        emergencyBoardTabRequirement(EmergencyBoardTab.critical),
-        same(EmergencyCriticalAtomPermissions.tab),
+        emergencyBoardTabRequirement(EmergencyBoardTab.handoff),
+        same(EmergencyHandoffAtomPermissions.tab),
+      );
+      // Nested cross-module matrix rows are _(n/a)_ — helpers alias local gates.
+      expect(
+        EmergencyHandoffAtomPermissions.nestedWrite,
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.nestedRead,
+        same(emergencyWorkspaceReadRequirement),
       );
     });
 
-    test('∩ denial: missing emergency:read strips Critical tab', () {
+    test('∩ denial: missing emergency:read strips Handoff tab', () {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyWrite},
       );
-      expect(EmergencyCriticalAtomPermissions.tab.isAllowed(writeOnly), isFalse);
-      expect(canViewEmergencyCritical(writeOnly), isFalse);
+      expect(EmergencyHandoffAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(canViewEmergencyHandoff(writeOnly), isFalse);
       expect(
-        EmergencyCriticalAtomPermissions.write.isAllowed(writeOnly),
+        EmergencyHandoffAtomPermissions.write.isAllowed(writeOnly),
         isTrue,
       );
       expect(
-        EmergencyCriticalAtomPermissions.success.isAllowed(writeOnly),
+        EmergencyHandoffAtomPermissions.success.isAllowed(writeOnly),
         isTrue,
       );
-      // Catalog entry is ∪ read|write|operations:read — write alone enters.
+      // Catalog entry ∪ includes emergency:write.
       expect(
-        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.routeEntryUnion.isAllowed(writeOnly),
+        EmergencyHandoffAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
 
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
       );
-      expect(canViewEmergencyCritical(reader), isTrue);
+      expect(canViewEmergencyHandoff(reader), isTrue);
+      expect(EmergencyHandoffAtomPermissions.write.isAllowed(reader), isFalse);
       expect(
-        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(reader),
-        isTrue,
-      );
-      expect(EmergencyCriticalAtomPermissions.write.isAllowed(reader), isFalse);
-      expect(
-        EmergencyCriticalAtomPermissions.validation.isAllowed(reader),
+        EmergencyHandoffAtomPermissions.validation.isAllowed(reader),
         isFalse,
       );
       expect(
-        EmergencyCriticalAtomPermissions.delete.isAllowed(reader),
+        EmergencyHandoffAtomPermissions.delete.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.quickArrival.isAllowed(reader),
         isFalse,
       );
     });
@@ -372,7 +361,7 @@ void main() {
           AppPermissions.emergencyWrite,
         },
       );
-      expect(EmergencyCriticalAtomPermissions.delete.isAllowed(writer), isFalse);
+      expect(EmergencyHandoffAtomPermissions.delete.isAllowed(writer), isFalse);
       expect(canDeleteEmergency(writer), isFalse);
 
       final AppAccessPolicy deleter = _policy(
@@ -382,56 +371,72 @@ void main() {
         },
       );
       expect(
-        EmergencyCriticalAtomPermissions.delete.isAllowed(deleter),
+        EmergencyHandoffAtomPermissions.delete.isAllowed(deleter),
         isTrue,
       );
     });
 
-    test('∪ allowance: patient:write satisfies handoff without emergency:write', () {
-      final AppAccessPolicy patientWriter = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.emergencyRead,
-          AppPermissions.patientWrite,
-        },
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.handoff.isAllowed(patientWriter),
-        isTrue,
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.nextActionHandoff.isAllowed(
-          patientWriter,
-        ),
-        isTrue,
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.quickArrival.isAllowed(patientWriter),
-        isFalse,
-      );
-      expect(
-        EmergencyCriticalAtomPermissions.triage.isAllowed(patientWriter),
-        isFalse,
-      );
-      expect(canShowEmergencyNextAction(patientWriter), isTrue);
-    });
+    test(
+      '∪ allowance: clinical:write satisfies handoff without emergency:write',
+      () {
+        final AppAccessPolicy clinicalWriter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.handoff.isAllowed(clinicalWriter),
+          isTrue,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.nextActionHandoff.isAllowed(
+            clinicalWriter,
+          ),
+          isTrue,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.panelDeepLink.isAllowed(
+            clinicalWriter,
+          ),
+          isTrue,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.quickArrival.isAllowed(
+            clinicalWriter,
+          ),
+          isFalse,
+        );
+        expect(
+          EmergencyHandoffAtomPermissions.triage.isAllowed(clinicalWriter),
+          isFalse,
+        );
+        expect(canShowEmergencyNextAction(clinicalWriter), isTrue);
+        // Source inventory ∪ — keep mapping note in tests.
+        expect(
+          emergencyHandoffWriteRequirement.anyPermissions,
+          contains(AppPermissions.clinicalWrite),
+        );
+      },
+    );
 
-    test('∪ allowance: operations:read satisfies catalog route-entry', () {
+    test('∪ allowance: operations:read satisfies prompt route-entry union', () {
       final AppAccessPolicy opsReader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
       );
       expect(
-        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(opsReader),
+        EmergencyHandoffAtomPermissions.routeEntryUnion.isAllowed(opsReader),
         isTrue,
       );
       expect(
-        EmergencyCriticalAtomPermissions.routeEntryUnion.isAllowed(opsReader),
+        EmergencyHandoffAtomPermissions.routeEntry.isAllowed(opsReader),
         isTrue,
       );
       // Tab chrome stays ∩ emergency:read.
-      expect(canViewEmergencyCritical(opsReader), isFalse);
+      expect(canViewEmergencyHandoff(opsReader), isFalse);
     });
 
-    test('subscription strip: scheduling-queue required for Critical tab', () {
+    test('subscription strip: scheduling-queue required for Handoff tab', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.emergencyRead,
@@ -439,15 +444,19 @@ void main() {
         },
         modules: const <AppModuleEntitlement>[],
       );
-      expect(EmergencyCriticalAtomPermissions.tab.isAllowed(noModule), isFalse);
-      expect(canViewEmergencyCritical(noModule), isFalse);
+      expect(EmergencyHandoffAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(canViewEmergencyHandoff(noModule), isFalse);
       expect(
-        EmergencyCriticalAtomPermissions.quickArrival.isAllowed(noModule),
+        EmergencyHandoffAtomPermissions.quickArrival.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.handoff.isAllowed(noModule),
         isFalse,
       );
     });
 
-    test('ABAC: tenant context required for Critical atoms', () {
+    test('ABAC: tenant context required for Handoff atoms', () {
       final AppAccessPolicy noTenant = _policy(
         permissions: <AppPermission>{
           AppPermissions.emergencyRead,
@@ -455,14 +464,18 @@ void main() {
         },
         tenantId: null,
       );
-      expect(EmergencyCriticalAtomPermissions.tab.isAllowed(noTenant), isFalse);
+      expect(EmergencyHandoffAtomPermissions.tab.isAllowed(noTenant), isFalse);
       expect(
-        EmergencyCriticalAtomPermissions.write.isAllowed(noTenant),
+        EmergencyHandoffAtomPermissions.write.isAllowed(noTenant),
+        isFalse,
+      );
+      expect(
+        EmergencyHandoffAtomPermissions.handoff.isAllowed(noTenant),
         isFalse,
       );
     });
 
-    test('next-action requirement maps handoff to source ∪', () {
+    test('next-action / panel requirements map handoff to source ∪', () {
       expect(
         emergencyNextActionRequirement(
           EmergencyNextActionKind.triage,
@@ -478,34 +491,34 @@ void main() {
         same(emergencyHandoffWriteRequirement),
       );
       expect(
-        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.triage),
-        same(emergencyWriteRequirement),
-      );
-      expect(
         emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.handoff),
         same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.triage),
+        same(emergencyWriteRequirement),
       );
     });
   });
 
   testWidgets(
-    'read-only: Critical list visible; Quick arrival / next-action / writes absent (∩ denial)',
+    'read-only: Handoff list visible; Quick arrival / next-action / writes absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
       );
-      expect(EmergencyCriticalAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(EmergencyCriticalAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(EmergencyHandoffAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(EmergencyHandoffAtomPermissions.write.isAllowed(reader), isFalse);
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
-      expect(find.text('Critical Tab Patient'), findsOneWidget);
+      expect(find.text('Handoff Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Critical'), findsWidgets);
+      expect(find.text(EmergencyText.handoffReady), findsWidgets);
       expect(find.text('Quick arrival'), findsNothing);
       expect(
         find.descendant(
@@ -514,15 +527,40 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.text('Triage'), findsNothing);
+      expect(find.text(EmergencyText.recordHandoff), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.text('Critical Tab Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Handoff Tab Patient'));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Response'), findsNothing);
-      expect(find.text('Record handoff'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Priority'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Triage'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Response'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Handoff'),
+        ),
+        findsNothing,
+      );
       expect(find.text(EmergencyText.scheduleTheater), findsNothing);
       expect(find.text(EmergencyText.printSummary), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -530,7 +568,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Quick arrival + Triage next-action + detail mutations mount',
+    'full write ∩: Quick arrival + Record handoff next-action + detail mutations mount',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -539,25 +577,51 @@ void main() {
         },
       );
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
       expect(find.text('Quick arrival'), findsOneWidget);
-      expect(find.text('Critical Tab Patient'), findsOneWidget);
+      expect(find.text('Handoff Tab Patient'), findsOneWidget);
       expect(find.text('Next action'), findsWidgets);
-      expect(find.text('Triage'), findsOneWidget);
+      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
 
-      await tester.tap(find.text('Critical Tab Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Handoff Tab Patient'));
+      await tester.pumpAndSettle();
 
-      // Next-action Triage omitted from detail Quick Actions.
+      // Next-action Record handoff omitted from detail Quick Actions ("Handoff").
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Priority'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Triage'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Response'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text(EmergencyText.scheduleTheater), findsOneWidget);
-      expect(find.text('Response'), findsWidgets);
       expect(find.text(EmergencyText.printSummary), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Handoff'),
+        ),
+        findsNothing,
+      );
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -565,21 +629,6 @@ void main() {
   testWidgets(
     '∪ handoff: Record handoff next-action mounts without emergency:write',
     (WidgetTester tester) async {
-      final EmergencyCaseSummary ready = EmergencyCaseSummary(
-        id: 'EME-HAND-1',
-        displayId: 'EME-HAND-1',
-        patientDisplayName: 'Handoff Ready Critical',
-        severity: 'CRITICAL',
-        status: 'OPEN',
-        latestTriage: const EmergencyTriageAssessment(
-          id: 't1',
-          triageLevel: 'LEVEL_1',
-        ),
-        latestResponse: const EmergencyResponseRecord(
-          id: 'r1',
-          notes: 'Stabilized',
-        ),
-      );
       final AppAccessPolicy handoffOnly = _policy(
         permissions: <AppPermission>{
           AppPermissions.emergencyRead,
@@ -587,22 +636,50 @@ void main() {
         },
       );
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: handoffOnly,
-        items: <EmergencyCaseSummary>[ready],
       );
 
       expect(find.text('Quick arrival'), findsNothing);
-      expect(find.text('Handoff Ready Critical'), findsOneWidget);
-      expect(find.text('Record handoff'), findsOneWidget);
-      expect(find.text('Triage'), findsNothing);
+      expect(find.text('Handoff Tab Patient'), findsOneWidget);
+      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
+      // Triage appears as a read column header only — not as a write next-action.
+      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
+
+      await tester.tap(find.text('Handoff Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Priority'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Triage'),
+        ),
+        findsNothing,
+      );
+      expect(find.text(EmergencyText.scheduleTheater), findsNothing);
+      // Row next-action already covers handoff; detail omits duplicate.
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Handoff'),
+        ),
+        findsNothing,
+      );
+      expect(find.text(EmergencyText.printSummary), findsOneWidget);
     },
   );
 
   testWidgets(
-    'subscription strip collapses Critical chrome without scheduling-queue',
+    'subscription strip collapses Handoff chrome without scheduling-queue',
     (WidgetTester tester) async {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
@@ -612,27 +689,27 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: noModule,
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Critical Tab Patient'), findsNothing);
+      expect(find.text('Handoff Tab Patient'), findsNothing);
       expect(find.text('Quick arrival'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'authorized empty state remains observable for Critical readers',
+    'authorized empty state remains observable',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
       );
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: reader,
@@ -645,8 +722,36 @@ void main() {
     },
   );
 
+  test('authorized retry path surfaces failure from controller refresh', () async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.emergencyRead},
+    );
+    when(() => repository.listEmergencyBoard(any())).thenAnswer(
+      (_) async => const Result<AppPage<EmergencyCaseSummary>>.failure(
+        AppFailure.network(),
+      ),
+    );
+    when(repository.loadReferenceData).thenAnswer(
+      (_) async =>
+          const Result<EmergencyReferenceData>.success(EmergencyReferenceData()),
+    );
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        emergencyRepositoryProvider.overrideWithValue(repository),
+        appAccessPolicyProvider.overrideWithValue(reader),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final AppFailure? failure = await container
+        .read(emergencyWorkspaceControllerProvider.notifier)
+        .refresh();
+    expect(failure, isNotNull);
+  });
+
   testWidgets(
-    'authorized write path: Critical next-action Triage remains mounted',
+    'post-mutation sync: handoff dialog mounts from next-action',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -655,19 +760,32 @@ void main() {
         },
       );
 
-      await _pumpCriticalTab(
+      await _pumpHandoffTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.text('Triage'), findsOneWidget);
-      expect(find.text('Quick arrival'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
+      expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
+      await tester.tap(find.text(EmergencyText.recordHandoff));
+      await tester.pumpAndSettle();
+
+      // Authorized write path mounts the nested handoff dialog.
+      expect(find.byType(AppDialog), findsWidgets);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      verifyNever(
+        () => repository.recordHandoff(
+          detail: any(named: 'detail'),
+          destination: any(named: 'destination'),
+          notes: any(named: 'notes'),
+          closeCase: any(named: 'closeCase'),
+        ),
+      );
     },
   );
 
-  testWidgets('mobile + desktop viewports keep Critical chrome reachable', (
+  testWidgets('mobile + desktop viewports keep Handoff chrome reachable', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -677,28 +795,36 @@ void main() {
       },
     );
 
-    await _pumpCriticalTab(
+    await _pumpHandoffTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       physicalSize: const Size(390, 844),
     );
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Critical'), findsWidgets);
+    expect(find.text(EmergencyText.handoffReady), findsWidgets);
+    expect(find.byIcon(Icons.add_circle_outline), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
 
-    await _pumpCriticalTab(
+    await _pumpHandoffTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       physicalSize: const Size(1440, 900),
     );
-    expect(find.text('Next action'), findsWidgets);
-    expect(find.text('Triage'), findsOneWidget);
     expect(find.text('Quick arrival'), findsOneWidget);
-    expect(find.text('Critical Tab Patient'), findsOneWidget);
+    expect(find.text('Handoff Tab Patient'), findsOneWidget);
+    expect(find.text('Next action'), findsWidgets);
+    expect(find.text(EmergencyText.recordHandoff), findsOneWidget);
   });
 
-  testWidgets('light + dark themes render Critical authorized chrome', (
+  testWidgets('light + dark themes render Handoff authorized chrome', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -708,7 +834,7 @@ void main() {
       },
     );
 
-    await _pumpCriticalTab(
+    await _pumpHandoffTab(
       tester,
       repository: repository,
       accessPolicy: writer,
@@ -716,13 +842,13 @@ void main() {
     );
     expect(find.text('Quick arrival'), findsOneWidget);
 
-    await _pumpCriticalTab(
+    await _pumpHandoffTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       themeMode: ThemeMode.dark,
     );
     expect(find.text('Quick arrival'), findsOneWidget);
-    expect(find.text('Critical Tab Patient'), findsOneWidget);
+    expect(find.text('Handoff Tab Patient'), findsOneWidget);
   });
 }
