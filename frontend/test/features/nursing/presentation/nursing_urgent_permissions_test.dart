@@ -569,6 +569,16 @@ void main() {
         );
         final AppAccessPolicy operationsRead = _policy(
           permissions: <AppPermission>{AppPermissions.operationsRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
         );
         expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
         expect(canEnterNursingWorkspace(operationsRead), isTrue);
