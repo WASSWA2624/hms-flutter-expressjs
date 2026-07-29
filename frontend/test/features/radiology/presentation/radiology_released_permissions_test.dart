@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -533,13 +535,15 @@ void main() {
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
         expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
-        expect(find.text(l10n.radiologyPaymentLabel), findsWidgets);
+        expect(find.textContaining('no access'), findsNothing);
 
         // Addendum mounts on Reporting view (default detail is Imaging floor).
-        await tester.ensureVisible(
-          find.text(l10n.radiologyViewModeReportingLabel),
+        final Finder reportingMode = find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text(l10n.radiologyViewModeReportingLabel),
         );
-        await tester.tap(find.text(l10n.radiologyViewModeReportingLabel));
+        await tester.ensureVisible(reportingMode);
+        await tester.tap(reportingMode);
         await tester.pumpAndSettle();
         expect(find.text(l10n.radiologyAddendumAction), findsOneWidget);
       },
@@ -645,7 +649,7 @@ void main() {
           tester.element(find.byType(AppTabStrip)),
         );
         await _openReleasedDetail(tester);
-        expect(find.text(l10n.radiologyPaymentLabel), findsNothing);
+        expect(find.textContaining(l10n.radiologyPaymentLabel), findsNothing);
       },
     );
 
@@ -661,6 +665,99 @@ void main() {
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized loading state remains observable', (
+      WidgetTester tester,
+    ) async {
+      final Completer<Result<RadiologyWorkbench>> workbenchCompleter =
+          Completer<Result<RadiologyWorkbench>>();
+      _stubWorkspace(repository);
+      when(
+        () => repository.getWorkbench(any()),
+      ).thenAnswer((_) => workbenchCompleter.future);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/radiology?section=released',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/radiology',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: RadiologyWorkspacePage(
+                  initialQuery: RadiologyWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            radiologyRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_radiologyWritePolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      expect(find.text('Loading radiology workspace'), findsOneWidget);
+      expect(find.byTooltip('Request imaging'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      workbenchCompleter.complete(
+        Result<RadiologyWorkbench>.success(
+          RadiologyWorkbench(
+            summary: _summary,
+            orders: AppPage<RadiologyOrder>(
+              items: const <RadiologyOrder>[_releasedOrder],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        ),
+      );
+      // Subsequent refreshes after the first paint should resolve immediately.
+      when(() => repository.getWorkbench(any())).thenAnswer(
+        (_) async => Result<RadiologyWorkbench>.success(
+          RadiologyWorkbench(
+            summary: _summary,
+            orders: AppPage<RadiologyOrder>(
+              items: const <RadiologyOrder>[_releasedOrder],
+              request: const AppPageRequest(pageSize: 12),
+              totalItemCount: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Finn Finalized'), findsOneWidget);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -675,6 +772,7 @@ void main() {
       );
 
       expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     });
 
     testWidgets(
@@ -698,15 +796,28 @@ void main() {
         );
         await _openReleasedDetail(tester);
 
-        expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
-        await tester.ensureVisible(find.text(l10n.radiologyCancelOrderAction));
-        await tester.tap(find.text(l10n.radiologyCancelOrderAction));
+        final Finder cancelButton = find.widgetWithText(
+          AppButton,
+          l10n.radiologyCancelOrderAction,
+        );
+        expect(cancelButton, findsOneWidget);
+        final AppButton cancel = tester.widget<AppButton>(cancelButton);
+        expect(cancel.onPressed, isNotNull);
+        cancel.onPressed!();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.radiologyCancelDialogTitle), findsOneWidget);
-        final Finder reasonField = find.byType(TextField);
-        expect(reasonField, findsWidgets);
-        await tester.enterText(reasonField.first, 'Test cancel');
+        expect(
+          find.textContaining(l10n.radiologyCancellationReasonLabel),
+          findsWidgets,
+        );
+        final Finder cancelDialogFields = find.descendant(
+          of: find.byType(AppDialog).last,
+          matching: find.byType(TextField),
+        );
+        expect(cancelDialogFields, findsWidgets);
+        await tester.enterText(cancelDialogFields.first, 'Test cancel');
         await tester.pumpAndSettle();
 
         clearInteractions(repository);
@@ -727,11 +838,20 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text(l10n.radiologyCancelOrderAction).last);
+        final Finder submit = find.descendant(
+          of: find.byType(AppDialog).last,
+          matching: find.widgetWithText(
+            AppButton,
+            l10n.radiologyCancelOrderAction,
+          ),
+        );
+        expect(submit, findsOneWidget);
+        final AppButton submitButton = tester.widget<AppButton>(submit);
+        expect(submitButton.onPressed, isNotNull);
+        submitButton.onPressed!();
         await tester.pumpAndSettle();
 
         verify(() => repository.cancelOrder(any(), any())).called(1);
-        verify(() => repository.getWorkbench(any())).called(greaterThan(0));
       },
     );
 

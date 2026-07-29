@@ -784,11 +784,21 @@ class _RadiologyOrderDetail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final RadiologyWorkspaceState liveState =
-        _watchRadiologyState(ref) ?? state;
-    final RadiologyWorkflow? workflow = liveState.selectedWorkflow;
+    // Watch live controller state so detail view-mode / mutation flags update,
+    // but keep the opened workflow snapshot when a background refresh briefly
+    // clears selection (and preserve order fields used by billing chrome).
+    final RadiologyWorkspaceState? live = _watchState(ref);
+    final RadiologyWorkspaceState effective = live == null
+        ? state
+        : state.copyWith(
+            detailViewMode: live.detailViewMode,
+            selectedWorkflow: live.selectedWorkflow ?? state.selectedWorkflow,
+            isMutating: live.isMutating,
+            isRefreshingDetail: live.isRefreshingDetail,
+          );
+    final RadiologyWorkflow? workflow = effective.selectedWorkflow;
 
-    if (liveState.isRefreshingDetail && workflow == null) {
+    if (effective.isRefreshingDetail && workflow == null) {
       return AppWorkspaceStatePanel.loading(
         title: l10n.radiologyDetailLoadingTitle,
         body: l10n.radiologyDetailLoadingBody,
@@ -806,7 +816,7 @@ class _RadiologyOrderDetail extends ConsumerWidget {
     }
 
     return _RadiologyDetailBody(
-      state: liveState,
+      state: effective,
       workflow: workflow,
       canWork: canWork,
       canRequest: canRequest,
@@ -861,17 +871,6 @@ Future<void> _openRadiologyDetailDialog(
 RadiologyWorkspaceState? _readRadiologyState(WidgetRef ref) {
   return ref
       .read(radiologyWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(
-        success: (RadiologyWorkspaceState state) => state,
-        failure: (_) => null,
-      );
-}
-
-RadiologyWorkspaceState? _watchRadiologyState(WidgetRef ref) {
-  return ref
-      .watch(radiologyWorkspaceControllerProvider)
       .asData
       ?.value
       .when(

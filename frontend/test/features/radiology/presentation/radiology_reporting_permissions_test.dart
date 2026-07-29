@@ -681,6 +681,7 @@ void main() {
       expect(find.text('Draft report'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
+      await tester.ensureVisible(find.text('Draft report'));
       await tester.tap(find.text('Draft report'));
       await tester.pumpAndSettle();
 
@@ -850,7 +851,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.text('Loading radiology workspace'), findsOneWidget);
     expect(find.byTooltip('Request imaging'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
 
