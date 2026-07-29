@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
@@ -122,6 +123,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final bool showConfiguration =
         _configTenantRequirement.isAllowed(accessPolicy) ||
         _configFacilityRequirement.isAllowed(accessPolicy);
+    final bool showAccount = profileReadRequirement.isAllowed(accessPolicy);
     // When the setup workspace is visible it owns tenant/facility and access
     // entry points; Administration only keeps destinations the workspace does
     // not cover (subscriptions).
@@ -223,17 +225,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ],
         ),
       ),
-      _AccordionEntry(
-        id: 'account',
-        icon: Icons.shield_outlined,
-        title: l10n.settingsAccountSectionTitle,
-        body: l10n.settingsAccountSectionBody,
-        wrapInSection: false,
-        builder: (_) => SettingsAccountSection(
-          initialPanel: widget.initialQuery.panel,
-          onPanelChanged: _onAccountPanelChanged,
+      if (showAccount)
+        _AccordionEntry(
+          id: 'account',
+          icon: Icons.shield_outlined,
+          title: l10n.settingsAccountSectionTitle,
+          body: l10n.settingsAccountSectionBody,
+          wrapInSection: false,
+          builder: (_) => SettingsAccountSection(
+            initialPanel: widget.initialQuery.panel,
+            onPanelChanged: _onAccountPanelChanged,
+          ),
         ),
-      ),
       if (adminActions.isNotEmpty)
         _AccordionEntry(
           id: 'administration',
@@ -262,13 +265,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
     ];
 
+    final String? expandedSectionId =
+        sections.any((_AccordionEntry s) => s.id == _expandedSectionId)
+        ? _expandedSectionId
+        : (sections.isNotEmpty ? sections.first.id : null);
+
     return ResponsivePage(
       maxWidth: PageMaxWidth.dashboard,
       child: SizedBox(
         width: double.infinity,
         child: _SettingsAccordion(
           sections: sections,
-          expandedSectionId: _expandedSectionId,
+          expandedSectionId: expandedSectionId,
           onSectionTapped: _onSectionTapped,
           reduceMotion: accessibility.reduceMotion,
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
@@ -9,6 +10,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.d
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
+import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_mapper.dart';
@@ -50,24 +52,29 @@ class HomePage extends ConsumerWidget {
       );
     });
 
-    return AsyncStateScaffold<HomeDashboard>(
-      value: dashboard,
-      keepPreviousDataDuringRefresh: true,
-      loadingTitle: l10n.homeLoadingTitle,
-      loadingBody: l10n.homeLoadingBody,
-      maxWidth: PageMaxWidth.dataHeavy,
-      centerVertically: false,
-      onRetry: () {
-        homeClearDashboardOptimisticPatch(ref, request);
-        ref.invalidate(homeControllerProvider(request));
-      },
-      dataBuilder: (BuildContext context, HomeDashboard snapshot) {
-        final HomeDashboard display = homeDashboardWithOptimisticPatch(
-          snapshot,
-          optimisticState,
-        );
-        return _HomeDashboardContent(dashboard: display, request: request);
-      },
+    // Tab read = profile:read (matrix). Per-atom Dashboard.md gates apply inside
+    // [_HomeDashboardContent] via [filterHomeDashboardForAccess].
+    return AppAccessGate(
+      requirement: homeTabReadRequirement,
+      child: AsyncStateScaffold<HomeDashboard>(
+        value: dashboard,
+        keepPreviousDataDuringRefresh: true,
+        loadingTitle: l10n.homeLoadingTitle,
+        loadingBody: l10n.homeLoadingBody,
+        maxWidth: PageMaxWidth.dataHeavy,
+        centerVertically: false,
+        onRetry: () {
+          homeClearDashboardOptimisticPatch(ref, request);
+          ref.invalidate(homeControllerProvider(request));
+        },
+        dataBuilder: (BuildContext context, HomeDashboard snapshot) {
+          final HomeDashboard display = homeDashboardWithOptimisticPatch(
+            snapshot,
+            optimisticState,
+          );
+          return _HomeDashboardContent(dashboard: display, request: request);
+        },
+      ),
     );
   }
 }

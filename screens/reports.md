@@ -2,7 +2,18 @@
 
 Primary surface: `ReportsWorkspacePage` (`frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`).
 
-Write gate (client): `canWriteReports` (`reportsWrite` or tenant/facility/system admin) for run / schedule / retry / cancel. Export gate: `canExportEvidence` (`evidenceExport` or admin). Unauthorized write/export controls do not render. Backend auth remains authoritative.
+Access helpers: `frontend/lib/features/reports/presentation/reports_access.dart`.
+
+| Atom class | Requirement helper | Keys |
+| --- | --- | --- |
+| Workspace / catalog panels / schedules / timeline | `reportsCatalogReadRequirement` / `canReadReportsCatalog` | ∪ `reports:read` (+ admin overlay) |
+| Compliance panels (audit / PHI / processing) | `reportsComplianceReadRequirement` / `canReadReportsCompliance` | ∪ `compliance:read`, `compliance:review` (+ admin) |
+| Route entry | `reportsWorkspaceReadRequirement` / route any-of | ∪ `reports:read`, `compliance:read` |
+| Run / Schedule / Retry / Cancel | `reportsWriteRequirement` / `canWriteReports` | ∩ `reports:write` (+ admin overlay per inventory) |
+| Download / Print / Export evidence | `reportsExportRequirement` / `canExportEvidence` | ∪ `evidence:export` (+ admin; not `reports:write`) |
+| Hard delete (no UI on this tab yet) | `reportsDeleteRequirement` / `canDeleteReports` | ∩ `reports:delete` (+ admin overlay) |
+
+Write gate (client): `canWriteReports` for run / schedule / retry / cancel. Export gate: `canExportEvidence`. Unauthorized write/export controls do not render. Backend auth remains authoritative. Module: `reporting-analytics`.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 

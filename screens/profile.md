@@ -5,11 +5,34 @@ Primary surface: `SettingsAccountSection` on Settings Account tab
 
 Route: `/profile` redirects to Settings with `tab=account&panel=profile`
 (`AppRoutes.profile` → `SettingsPageQuery`). Access: authenticated
-(`AppRouteAccess.authenticated`). Backend remains authoritative for profile
+(`AppRouteAccess.authenticated`); Account strip entry requires `profile:read`
+(`profileReadRequirement`). Backend remains authoritative for profile
 update and change-password mutations.
+
+Permission helpers: `frontend/lib/features/profile/presentation/profile_access.dart`
+(`profileReadRequirement`, `profileUpdateRequirement`).
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses;
 noted once here.
+
+---
+
+## Permission atom map
+
+| Atom | Intent | Requirement |
+| --- | --- | --- |
+| Settings Account accordion entry | read | `profile:read` ∩ (`profileReadRequirement`) |
+| Identity summary + Account / Professional / Roles / Permissions sections | read | `profile:read` ∩ |
+| Copyable user id / staff number | read | `profile:read` ∩ |
+| Load / **Try again** | read chrome | `profile:read` ∩ |
+| **Edit profile** + `EditUserProfileDialog` | update | `profile:update` ∩ (`profileUpdateRequirement`) |
+| **Change password** + `ChangePasswordDialog` | update | `profile:update` ∩ (`profileUpdateRequirement`) |
+| Nested cross-module UI | — | _(n/a)_ |
+| Union entry | — | _(n/a — matrix is intersection-only)_ |
+
+Profile rights are core/platform (not plan-module mapped); subscription module
+stripping does not apply to these keys. Own-scope is inherent to the
+current-user profile API.
 
 ---
 
@@ -21,7 +44,8 @@ noted once here.
 | Change-password panel body + **Change password** button | Open change-password dialog | **Removed** intermediate panel — toolbar **Change password** opens the dialog |
 | User-menu / deep link `panel=change-password` → panel → button | Same change-password goal with an extra step | **Merged** — deep link opens the dialog and clears panel to `profile` |
 | Summary badges (role / user type / role count / permission count) | Restate professional + roles + permissions sections | **Removed** — summary is identity only (name, email \| title) |
-| **Edit profile** when `profile:update` missing or no record | Unauthorized / impossible write | **Removed** — control absent unless record exists and `profileUpdate` is granted |
+| **Edit profile** / **Change password** when `profile:update` missing or no record | Unauthorized / impossible write | **Removed** — controls absent unless `profileUpdateRequirement` allows (edit also needs a loaded record) |
+| Account accordion when `profile:read` missing | Unauthorized read surface | **Removed** — strip entry collapsed |
 
 ---
 
@@ -33,7 +57,7 @@ noted once here.
   - Location: `AppFailureStateView` on profile load failure.
   - Opens modal: No.
   - Immediate result: Reloads current profile via `userProfileController.refresh`.
-  - Condition: Load failure.
+  - Condition: Load failure under `profile:read`.
 
 ### View profile
 
@@ -41,7 +65,7 @@ noted once here.
   - Location: Profile body under identity summary.
   - Opens modal: No.
   - Immediate result: Shows required identity, org context, roles, and permissions (empty copy when lists are empty). Copyable user id / staff number when present.
-  - Condition: Authenticated profile load success.
+  - Condition: Authenticated profile load success and `profile:read` granted.
 
 ### Edit profile
 
@@ -57,12 +81,12 @@ noted once here.
   - Location: Account actions row (secondary).
   - Opens modal: Yes — `ChangePasswordDialog` (current / new / confirm).
   - Immediate result: On success, SnackBar then navigate to `/login`. Cancel dismisses only.
-  - Condition: Always shown for authenticated account surface.
+  - Condition: `profile:update` granted; absent otherwise. Restricted `panel=change-password` deep link without update clears to `profile` and shows forbidden SnackBar.
 
 ### Deep links / shell entry
 
-- `/profile` → Settings account profile panel.
-- `?tab=account&panel=change-password` (user menu **Change password**) → opens change-password dialog on the profile surface; URL panel clears to `profile`.
+- `/profile` → Settings account profile panel (requires Account strip `profile:read`).
+- `?tab=account&panel=change-password` (user menu **Change password**) → opens change-password dialog when `profile:update` allowed; otherwise forbidden feedback and panel clears to `profile`.
 
 ### States
 
@@ -71,7 +95,7 @@ noted once here.
 - Error / retry: failure state with **Try again**.
 - Validation: change-password and edit dialogs keep field validators.
 - Success: edit SnackBar; password change SnackBar + login redirect.
-- Unauthorized: **Edit profile** absent without `profile:update`.
+- Unauthorized: Account strip / profile body absent without `profile:read`; **Edit profile** and **Change password** absent without `profile:update` (no disabled stubs).
 - Responsive: actions wrap; detail rows stack under 520px width. Theme tokens only.
 
 ---
@@ -80,9 +104,15 @@ noted once here.
 
 - Widget tests in
   `frontend/test/features/settings/presentation/widgets/settings_account_section_test.dart`
+  and unit tests in
+  `frontend/test/features/profile/presentation/profile_access_test.dart`
   prove:
-  - No Profile / Change password tab pair; single **Change password** entry; no intermediate panel body.
+  - No Profile / Change password tab pair; single **Change password** entry when update granted; no intermediate panel body.
   - **Change password** opens the dialog directly; deep link clears panel to `profile`.
-  - **Edit profile** present with `profile:update`, absent without it; opens edit dialog when authorized.
+  - **Edit profile** and **Change password** present with `profile:update`, absent without it (∩ denial).
+  - Profile body present with `profile:read`, absent without it.
+  - Helpers reuse `profileReadRequirement` / `profileUpdateRequirement`.
+  - Matrix has no ∪ rows — union allowance N/A; nested cross-module N/A.
+  - Authorized edit refreshes detail; loading / empty / error / validation / success remain.
+  - Narrow + desktop viewports; light + dark themes.
   - Summary omits role/permission count badges.
-  - Narrow viewport still shows **Change password**.

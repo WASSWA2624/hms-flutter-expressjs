@@ -1,0 +1,155 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
+import 'package:hosspi_hms/features/home/presentation/home_access.dart';
+
+AppAccessPolicy _policy(Iterable<AppPermission> permissions) {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'token'),
+      user: const AuthUserProfile(
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        roles: <String>['CUSTOM'],
+      ),
+      permissions: permissions,
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'reporting-analytics',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
+void main() {
+  group('homeTabReadRequirement', () {
+    test('denies without profile:read (matrix ∩)', () {
+      final AppAccessPolicy policy = _policy(<AppPermission>[
+        AppPermissions.clinicalRead,
+      ]);
+      expect(homeTabReadRequirement.isAllowed(policy), isFalse);
+    });
+
+    test('allows with profile:read', () {
+      final AppAccessPolicy policy = _policy(<AppPermission>[
+        AppPermissions.profileRead,
+      ]);
+      expect(homeTabReadRequirement.isAllowed(policy), isTrue);
+    });
+  });
+
+  group('homeAtomRequirement / Dashboard.md mapping', () {
+    test('intersection denial: financial:approve missing hides approvals atom', () {
+      final AppAccessPolicy policy = _policy(<AppPermission>[
+        AppPermissions.billingRead,
+        AppPermissions.profileRead,
+      ]);
+      expect(
+        homeAtomRequirement(const <AppPermission>[
+          AppPermissions.financialApprove,
+        ]).isAllowed(policy),
+        isFalse,
+      );
+      expect(
+        homeStatusCardRequirement(id: 'pending_approvals').isAllowed(policy),
+        isFalse,
+      );
+      expect(
+        homeStatusCardRequirement(id: 'collections_today').isAllowed(policy),
+        isTrue,
+      );
+    });
+
+    test('full intersection set allows security_alerts', () {
+      final AppAccessPolicy both = _policy(<AppPermission>[
+        AppPermissions.complianceRead,
+        AppPermissions.breakGlassReview,
+      ]);
+      final AppAccessPolicy complianceOnly = _policy(<AppPermission>[
+        AppPermissions.complianceRead,
+      ]);
+
+      expect(
+        homeAtomRequirement(
+          HomeDashboardAtomPermissions.alerts['security_alerts']!,
+        ).isAllowed(complianceOnly),
+        isFalse,
+      );
+      expect(
+        homeAtomRequirement(
+          HomeDashboardAtomPermissions.alerts['security_alerts']!,
+        ).isAllowed(both),
+        isTrue,
+      );
+    });
+
+    test('homeChartsRequirement maps to reports:read', () {
+      expect(
+        homeChartsRequirement.isAllowed(
+          _policy(<AppPermission>[AppPermissions.clinicalRead]),
+        ),
+        isFalse,
+      );
+      expect(
+        homeChartsRequirement.isAllowed(
+          _policy(<AppPermission>[AppPermissions.reportsRead]),
+        ),
+        isTrue,
+      );
+    });
+
+    test('homeShortcutRequirement uses catalog (clinical vs pharmacy)', () {
+      final AppAccessPolicy clinical = _policy(<AppPermission>[
+        AppPermissions.clinicalRead,
+      ]);
+      expect(homeShortcutRequirement(id: 'clinical').isAllowed(clinical), isTrue);
+      expect(
+        homeShortcutRequirement(id: 'pharmacy').isAllowed(clinical),
+        isFalse,
+      );
+    });
+
+    test(
+      'subscription strips billing KPI when billing-payments module inactive',
+      () {
+        final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['BILLING'],
+            ),
+            permissions: <AppPermission>[
+              AppPermissions.billingRead,
+              AppPermissions.profileRead,
+            ],
+            // Role pack string present; plan module inactive.
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        );
+
+        expect(
+          homeStatusCardRequirement(id: 'collections_today').isAllowed(policy),
+          isFalse,
+        );
+        expect(homeTabReadRequirement.isAllowed(policy), isTrue);
+      },
+    );
+  });
+}

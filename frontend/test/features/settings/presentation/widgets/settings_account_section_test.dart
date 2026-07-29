@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -14,6 +17,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/profile/data/repositories/user_profile_repository_impl.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
 import 'package:hosspi_hms/features/profile/domain/repositories/user_profile_repository.dart';
+import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -45,11 +49,45 @@ void main() {
   );
 
   testWidgets(
-    'Change password opens the dialog directly without an intermediate panel',
+    'profile body is absent without profile:read (intersection denial)',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[AppPermissions.profileUpdate],
+      );
+
+      expect(find.text('Alex Demo'), findsNothing);
+      expect(find.text('Assigned roles'), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+      expect(find.text('Edit profile'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'read-only profile:read shows view atoms and hides update mutations',
     (WidgetTester tester) async {
       await _pumpAccountSection(
         tester,
         permissions: <AppPermission>[AppPermissions.profileRead],
+      );
+
+      expect(find.text('Alex Demo'), findsWidgets);
+      expect(find.text('Assigned roles'), findsOneWidget);
+      expect(find.text('Edit profile'), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Change password opens the dialog directly without an intermediate panel',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
       );
 
       await tester.tap(find.text('Change password'));
@@ -70,7 +108,28 @@ void main() {
   );
 
   testWidgets(
-    'panel=change-password deep link opens the dialog and clears the panel',
+    'panel=change-password deep link opens the dialog when update granted',
+    (WidgetTester tester) async {
+      String? clearedPanel;
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+        initialPanel: SettingsAccountSection.changePasswordPanel,
+        onPanelChanged: (String panel) => clearedPanel = panel,
+      );
+      await tester.pumpAndSettle();
+
+      expect(clearedPanel, SettingsAccountSection.profilePanel);
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.textContaining('Current password'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'panel=change-password deep link without update shows forbidden feedback',
     (WidgetTester tester) async {
       String? clearedPanel;
       await _pumpAccountSection(
@@ -82,8 +141,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(clearedPanel, SettingsAccountSection.profilePanel);
-      expect(find.byType(AppDialog), findsOneWidget);
-      expect(find.textContaining('Current password'), findsOneWidget);
+      expect(find.byType(AppDialog), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
     },
   );
 
@@ -96,7 +156,7 @@ void main() {
     );
 
     expect(find.text('Edit profile'), findsNothing);
-    expect(find.text('Change password'), findsOneWidget);
+    expect(find.text('Change password'), findsNothing);
   });
 
   testWidgets('Edit profile opens the edit dialog when authorized', (
@@ -118,17 +178,117 @@ void main() {
     expect(find.text('Save'), findsOneWidget);
   });
 
-  testWidgets('narrow viewport keeps Change password discoverable', (
+  testWidgets('authorized edit saves, shows success, and refreshes detail', (
+    WidgetTester tester,
+  ) async {
+    final _FakeUserProfileRepository repository = _FakeUserProfileRepository(
+      _session(<AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.profileUpdate,
+      ]),
+    );
+    await _pumpAccountSection(
+      tester,
+      permissions: <AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.profileUpdate,
+      ],
+      repository: repository,
+    );
+
+    await tester.tap(find.text('Edit profile'));
+    await tester.pumpAndSettle();
+
+    final Finder firstNameField = find.descendant(
+      of: find.byType(AppDialog),
+      matching: find.byType(TextFormField),
+    ).first;
+    await tester.enterText(firstNameField, 'Jordan');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCount, 1);
+    expect(repository.loadCount, greaterThan(1));
+    expect(find.textContaining('Profile updated'), findsOneWidget);
+    expect(find.byType(AppDialog), findsNothing);
+    expect(find.text('Jordan Demo'), findsWidgets);
+  });
+
+  testWidgets('loading and retry states remain for authorized readers', (
+    WidgetTester tester,
+  ) async {
+    final Completer<void> gate = Completer<void>();
+    final _FakeUserProfileRepository repository = _FakeUserProfileRepository(
+      _session(<AppPermission>[AppPermissions.profileRead]),
+      loadGate: gate,
+      failFirstLoad: true,
+    );
+
+    await _pumpAccountSection(
+      tester,
+      permissions: <AppPermission>[AppPermissions.profileRead],
+      repository: repository,
+      settle: false,
+    );
+    await tester.pump();
+
+    expect(find.textContaining('Loading'), findsWidgets);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Try again'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alex Demo'), findsWidgets);
+  });
+
+  testWidgets('narrow viewport keeps authorized Change password discoverable', (
     WidgetTester tester,
   ) async {
     await _pumpAccountSection(
       tester,
-      permissions: <AppPermission>[AppPermissions.profileRead],
+      permissions: <AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.profileUpdate,
+      ],
       size: const Size(390, 844),
     );
 
     expect(find.byTooltip('Change password'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
+  });
+
+  testWidgets('desktop dark theme still shows authorized profile atoms', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAccountSection(
+      tester,
+      permissions: <AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.profileUpdate,
+      ],
+      size: const Size(1280, 1200),
+      themeMode: ThemeMode.dark,
+    );
+
+    expect(find.text('Change password'), findsOneWidget);
+    expect(find.text('Edit profile'), findsOneWidget);
+    expect(find.text('Alex Demo'), findsWidgets);
+  });
+
+  test('feature helpers match AccessRequirement matrix keys', () {
+    expect(
+      profileReadRequirement.allPermissions,
+      <AppPermission>[AppPermissions.profileRead],
+    );
+    expect(profileReadRequirement.anyPermissions, isEmpty);
+    expect(
+      profileUpdateRequirement.allPermissions,
+      <AppPermission>[AppPermissions.profileUpdate],
+    );
+    expect(profileUpdateRequirement.anyPermissions, isEmpty);
+    // Matrix has no union / nested cross-module rows for this tab.
   });
 }
 
@@ -138,6 +298,9 @@ Future<void> _pumpAccountSection(
   String? initialPanel,
   ValueChanged<String>? onPanelChanged,
   Size size = const Size(1280, 1200),
+  ThemeMode themeMode = ThemeMode.light,
+  UserProfileRepository? repository,
+  bool settle = true,
 }) async {
   final AuthSession session = _session(permissions);
   final AppAccessPolicy policy = AppAccessPolicy.fromSession(
@@ -160,12 +323,13 @@ Future<void> _pumpAccountSection(
           _TestSecureSessionStorage(),
         ),
         userProfileRepositoryProvider.overrideWithValue(
-          _FakeUserProfileRepository(session),
+          repository ?? _FakeUserProfileRepository(session),
         ),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
+        themeMode: themeMode,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
@@ -180,7 +344,9 @@ Future<void> _pumpAccountSection(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  }
 }
 
 AuthSession _session(List<AppPermission> permissions) {
@@ -205,22 +371,37 @@ AuthSession _session(List<AppPermission> permissions) {
 }
 
 final class _FakeUserProfileRepository implements UserProfileRepository {
-  const _FakeUserProfileRepository(this.session);
+  _FakeUserProfileRepository(
+    this.session, {
+    this.loadGate,
+    this.failFirstLoad = false,
+  });
 
-  final AuthSession session;
+  AuthSession session;
+  final Completer<void>? loadGate;
+  final bool failFirstLoad;
+  int loadCount = 0;
+  int updateCount = 0;
 
   @override
   Future<Result<UserProfileView>> loadCurrentProfile(
     AuthSession session,
   ) async {
+    loadCount += 1;
+    if (loadGate != null && !loadGate!.isCompleted) {
+      await loadGate!.future;
+    }
+    if (failFirstLoad && loadCount == 1) {
+      return const Result<UserProfileView>.failure(AppFailure.network());
+    }
     return Result<UserProfileView>.success(
       UserProfileView(
         session: this.session,
-        record: const UserProfileRecord(
+        record: UserProfileRecord(
           id: 'profile-1',
           userId: 'user-1',
-          firstName: 'Alex',
-          lastName: 'Demo',
+          firstName: this.session.user?.firstName ?? 'Alex',
+          lastName: this.session.user?.lastName ?? 'Demo',
           gender: 'UNKNOWN',
         ),
       ),
@@ -232,6 +413,33 @@ final class _FakeUserProfileRepository implements UserProfileRepository {
     String profileId,
     UserProfileDraft draft,
   ) async {
+    updateCount += 1;
+    final AuthUserProfile? user = session.user;
+    if (user != null) {
+      session = session.copyWith(
+        user: AuthUserProfile(
+          id: user.id,
+          displayId: user.displayId,
+          email: user.email,
+          phone: user.phone,
+          status: user.status,
+          positionTitle: user.positionTitle,
+          firstName: draft.firstName,
+          middleName: draft.middleName,
+          lastName: draft.lastName,
+          gender: draft.gender,
+          tenantId: user.tenantId,
+          tenantName: user.tenantName,
+          facilityId: user.facilityId,
+          facilityName: user.facilityName,
+          facilityType: user.facilityType,
+          staffNumber: user.staffNumber,
+          staffPosition: user.staffPosition,
+          practitionerType: user.practitionerType,
+          roles: user.roles,
+        ),
+      );
+    }
     return Result<UserProfileRecord>.success(
       UserProfileRecord(
         id: profileId,

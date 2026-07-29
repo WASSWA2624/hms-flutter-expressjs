@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -14,6 +15,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
 import 'package:hosspi_hms/features/profile/presentation/controllers/user_profile_controller.dart';
+import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 import 'package:hosspi_hms/features/profile/presentation/state/user_profile_state.dart';
 import 'package:hosspi_hms/features/profile/presentation/widgets/edit_user_profile_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -81,6 +83,17 @@ class _SettingsAccountSectionState
     }
     // Clear the deep-link panel so rebuilds stay on the profile surface.
     widget.onPanelChanged?.call(SettingsAccountSection.profilePanel);
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    if (!profileUpdateRequirement.isAllowed(accessPolicy)) {
+      // Restricted deep link: surface forbidden feedback once, then stay read-only.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.routeForbiddenTitle)),
+        );
+      }
+      _changePasswordDeepLinkPending = false;
+      return;
+    }
     await _changePassword(context);
     _changePasswordDeepLinkPending = false;
   }
@@ -152,49 +165,62 @@ class _SettingsAccountSectionState
       orElse: () => false,
     );
 
-    final UserProfileRecord? editableRecord =
-        accessPolicy.grants(AppPermissions.profileUpdate) ? record : null;
+    final bool canUpdate = profileUpdateRequirement.isAllowed(accessPolicy);
+    final UserProfileRecord? editableRecord = canUpdate ? record : null;
 
-    return AppScreenSection(
-      title: l10n.settingsAccountSectionTitle,
-      body: l10n.settingsAccountSectionBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Align(
-            alignment: Alignment.centerRight,
-            child: Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                AppTabToolbarAction(
-                  label: l10n.settingsChangePasswordActionTitle,
-                  icon: Icons.lock_reset_outlined,
-                  onPressed: () => unawaited(_changePassword(context)),
+    return AppAccessGate(
+      requirement: profileReadRequirement,
+      child: AppScreenSection(
+        title: l10n.settingsAccountSectionTitle,
+        body: l10n.settingsAccountSectionBody,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (canUpdate)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    AppAccessActionGate(
+                      requirement: profileUpdateRequirement,
+                      builder: (BuildContext context, bool _) {
+                        return AppTabToolbarAction(
+                          label: l10n.settingsChangePasswordActionTitle,
+                          icon: Icons.lock_reset_outlined,
+                          onPressed: () => unawaited(_changePassword(context)),
+                        );
+                      },
+                    ),
+                    if (editableRecord != null)
+                      AppAccessActionGate(
+                        requirement: profileUpdateRequirement,
+                        builder: (BuildContext context, bool _) {
+                          return AppTabToolbarPrimary(
+                            label: l10n.profileEditActionTitle,
+                            icon: Icons.edit_outlined,
+                            enabled: !isSaving,
+                            onPressed: isSaving
+                                ? null
+                                : () => unawaited(
+                                    _editProfile(context, ref, editableRecord),
+                                  ),
+                          );
+                        },
+                      ),
+                  ],
                 ),
-                if (editableRecord != null)
-                  AppTabToolbarPrimary(
-                    label: l10n.profileEditActionTitle,
-                    icon: Icons.edit_outlined,
-                    enabled: !isSaving,
-                    onPressed: isSaving
-                        ? null
-                        : () => unawaited(
-                            _editProfile(context, ref, editableRecord),
-                          ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          const _ProfilePanel(),
-        ],
+              ),
+            if (canUpdate) SizedBox(height: theme.spacing.sm),
+            const _ProfilePanel(),
+          ],
+        ),
       ),
     );
   }
 }
-
 // ---------------------------------------------------------------------------
 // Profile panel
 // ---------------------------------------------------------------------------

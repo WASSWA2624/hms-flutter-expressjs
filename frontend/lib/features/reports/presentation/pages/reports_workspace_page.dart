@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -109,6 +110,19 @@ class _ReportsWorkspaceContentState
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    final bool canReadCatalog = canReadReportsCatalog(policy);
+    final List<ReportsWorkspacePanel> allowedPanels = reportsAllowedPanels(
+      policy,
+    );
+
+    _ensureAuthorizedPanel(controller, state, allowedPanels);
+
+    final bool showSchedules =
+        canReadCatalog && !state.query.panel.isCompliance;
+    final bool showTimeline =
+        canReadCatalog &&
+        !state.query.panel.isCompliance &&
+        state.overview.timeline.isNotEmpty;
 
     return AppWorkspace(
       title: l10n.reportsTitle,
@@ -123,14 +137,17 @@ class _ReportsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _ReportsPrimaryPanel(
-            state: state,
-            searchController: _searchController,
-            reportTableColumns: _reportTableColumns,
-            complianceTableColumns: _complianceTableColumns,
-            policy: policy,
-          ),
-          if (!state.query.panel.isCompliance) ...<Widget>[
+          if (allowedPanels.isNotEmpty &&
+              allowedPanels.contains(state.query.panel))
+            _ReportsPrimaryPanel(
+              state: state,
+              searchController: _searchController,
+              reportTableColumns: _reportTableColumns,
+              complianceTableColumns: _complianceTableColumns,
+              policy: policy,
+              allowedPanels: allowedPanels,
+            ),
+          if (showSchedules) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.lg),
             _ReportSchedulesPanel(
               state: state,
@@ -140,8 +157,28 @@ class _ReportsWorkspaceContentState
           ],
         ],
       ),
-      activity: _ReportsTimelinePanel(state: state),
+      activity: showTimeline ? _ReportsTimelinePanel(state: state) : null,
     );
+  }
+
+  void _ensureAuthorizedPanel(
+    ReportsWorkspaceController controller,
+    ReportsWorkspaceState state,
+    List<ReportsWorkspacePanel> allowedPanels,
+  ) {
+    if (allowedPanels.isEmpty) {
+      return;
+    }
+    if (allowedPanels.contains(state.query.panel)) {
+      return;
+    }
+    final ReportsWorkspacePanel fallback = allowedPanels.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      controller.applyPanel(fallback);
+    });
   }
 }
 
@@ -152,6 +189,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
     required this.reportTableColumns,
     required this.complianceTableColumns,
     required this.policy,
+    required this.allowedPanels,
   });
 
   final ReportsWorkspaceState state;
@@ -161,6 +199,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<ComplianceLogItem>
   complianceTableColumns;
   final AppAccessPolicy policy;
+  final List<ReportsWorkspacePanel> allowedPanels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -171,6 +210,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
         searchController: searchController,
         columnVisibilityController: complianceTableColumns,
         policy: policy,
+        allowedPanels: allowedPanels,
       );
     }
 
@@ -179,6 +219,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
       searchController: searchController,
       columnVisibilityController: reportTableColumns,
       policy: policy,
+      allowedPanels: allowedPanels,
     );
   }
 }
@@ -189,6 +230,7 @@ class _ReportItemsPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.policy,
+    required this.allowedPanels,
   });
 
   final ReportsWorkspaceState state;
@@ -196,6 +238,7 @@ class _ReportItemsPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
+  final List<ReportsWorkspacePanel> allowedPanels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -221,7 +264,13 @@ class _ReportItemsPanel extends ConsumerWidget {
             'reports_items_cw_${state.query.panel.serverValue}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: _reportSearch(context, state, searchController, controller),
+        search: _reportSearch(
+          context,
+          state,
+          searchController,
+          controller,
+          allowedPanels,
+        ),
         itemKeyBuilder: (ReportsWorkspaceItem item) =>
             ValueKey<String>(item.id),
         onRowSelected: (ReportsWorkspaceItem item) {
@@ -282,6 +331,7 @@ class _ReportItemsPanel extends ConsumerWidget {
     ReportsWorkspaceState state,
     TextEditingController searchController,
     ReportsWorkspaceController controller,
+    List<ReportsWorkspacePanel> allowedPanels,
   ) {
     final AppLocalizations l10n = context.l10n;
     return AppListTableSearch<ReportsWorkspaceItem>(
@@ -309,7 +359,7 @@ class _ReportItemsPanel extends ConsumerWidget {
           key: _panelFilterKey,
           label: l10n.reportsPanelFilterLabel,
           allLabel: l10n.reportsPanelOverview,
-          choices: _panelChoices(l10n),
+          choices: _panelChoices(l10n, allowedPanels),
         ),
         AppSearchBarFilterGroup(
           key: _statusFilterKey,
@@ -337,7 +387,9 @@ class _ReportItemsPanel extends ConsumerWidget {
           value.option(_panelFilterKey),
         );
         if (panel != state.query.panel) {
-          controller.applyPanel(panel);
+          if (allowedPanels.contains(panel)) {
+            controller.applyPanel(panel);
+          }
           return;
         }
         controller.applyReportFilters(
@@ -356,6 +408,7 @@ class _ComplianceLogPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.policy,
+    required this.allowedPanels,
   });
 
   final ReportsWorkspaceState state;
@@ -363,6 +416,7 @@ class _ComplianceLogPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<ComplianceLogItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
+  final List<ReportsWorkspacePanel> allowedPanels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -413,7 +467,7 @@ class _ComplianceLogPanel extends ConsumerWidget {
               key: _panelFilterKey,
               label: l10n.reportsPanelFilterLabel,
               allLabel: l10n.reportsPanelAudit,
-              choices: _panelChoices(l10n),
+              choices: _panelChoices(l10n, allowedPanels),
             ),
             AppSearchBarFilterGroup(
               key: _statusFilterKey,
@@ -428,7 +482,9 @@ class _ComplianceLogPanel extends ConsumerWidget {
             final ReportsWorkspacePanel panel =
                 ReportsWorkspacePanel.fromServer(value.option(_panelFilterKey));
             if (panel != state.query.panel) {
-              controller.applyPanel(panel);
+              if (allowedPanels.contains(panel)) {
+                controller.applyPanel(panel);
+              }
               return;
             }
             controller.applyStatus(value.option(_statusFilterKey));
@@ -1307,6 +1363,10 @@ Future<void> _openRunDialog(
   WidgetRef ref,
   ReportsWorkspaceState? state,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canWriteReports(policy)) {
+    return;
+  }
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1322,6 +1382,10 @@ Future<void> _openRetryDialog(
   WidgetRef ref,
   ReportsWorkspaceState? state,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canWriteReports(policy)) {
+    return;
+  }
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1338,6 +1402,10 @@ Future<void> _openScheduleDialog(
   ReportsWorkspaceItem item,
   ReportsWorkspaceState? state,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canWriteReports(policy)) {
+    return;
+  }
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1353,6 +1421,10 @@ Future<void> _confirmCancelRun(
   WidgetRef ref, {
   bool isDialog = false,
 }) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canWriteReports(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -1392,6 +1464,10 @@ Future<void> _confirmExportEvidence(
   WidgetRef ref,
   ComplianceLogItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canExportEvidence(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -1418,6 +1494,10 @@ Future<void> _confirmExportEvidence(
 }
 
 Future<void> _downloadSelectedRun(BuildContext context, WidgetRef ref) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canExportEvidence(policy)) {
+    return;
+  }
   final AppFailure? failure = await ref
       .read(reportsWorkspaceControllerProvider.notifier)
       .downloadSelectedRun();
@@ -1614,9 +1694,12 @@ String _panelLabel(AppLocalizations l10n, ReportsWorkspacePanel panel) {
   };
 }
 
-List<AppSearchBarFilterChoice> _panelChoices(AppLocalizations l10n) {
+List<AppSearchBarFilterChoice> _panelChoices(
+  AppLocalizations l10n,
+  List<ReportsWorkspacePanel> allowedPanels,
+) {
   return <AppSearchBarFilterChoice>[
-    for (final ReportsWorkspacePanel panel in ReportsWorkspacePanel.values)
+    for (final ReportsWorkspacePanel panel in allowedPanels)
       AppSearchBarFilterChoice(
         value: panel.serverValue,
         label: _panelLabel(l10n, panel),

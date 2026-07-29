@@ -5,7 +5,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_per
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
-/// Filters home dashboard atoms by [AppAccessPolicy.grantsAll] before render.
+/// Filters home dashboard atoms by [AccessRequirement] (all-of) before render.
 ///
 /// Prefer filtering the permission-allowed **superset** of the ranked role
 /// profile rather than swapping whole role layouts when grants diverge.

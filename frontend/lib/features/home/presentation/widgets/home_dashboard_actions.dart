@@ -103,7 +103,8 @@ final class HomeShortcutDefinition {
 
   bool isAllowed(AppAccessPolicy policy) {
     final List<AppPermission> required = effectiveRequiredPermissions;
-    if (required.isEmpty || !policy.grantsAll(required)) {
+    if (required.isEmpty ||
+        !HomeDashboardAtomPermissions.isGranted(policy, required)) {
       return false;
     }
     return canAccessShellRoute(route, policy);

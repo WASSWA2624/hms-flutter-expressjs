@@ -1,10 +1,13 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
 /// Permission gates for home dashboard atoms, aligned with `Dashboard.md`.
 ///
 /// Semantics are **all-of**: a widget renders only when
-/// `policy.grantsAll(requiredPermissions)` is true.
+/// `AccessRequirement(allPermissions: …).isAllowed(policy)` is true.
+/// Prefer [homeAtomRequirement] from `home_access.dart` at call sites that
+/// already import feature access helpers.
 ///
 /// Empty lists after resolution mean **deny** for KPIs, queues, alerts, and
 /// activity — never silently public.
@@ -464,6 +467,8 @@ abstract final class HomeDashboardAtomPermissions {
     if (requiredPermissions.isEmpty) {
       return false;
     }
-    return policy.grantsAll(requiredPermissions);
+    return AccessRequirement(
+      allPermissions: requiredPermissions,
+    ).isAllowed(policy);
   }
 }

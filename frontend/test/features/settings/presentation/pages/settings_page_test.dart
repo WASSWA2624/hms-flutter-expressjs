@@ -147,6 +147,46 @@ void main() {
 
     expect(find.text('App theme'), findsOneWidget);
   });
+
+  testWidgets(
+    'Account and security strip is absent without profile:read',
+    (WidgetTester tester) async {
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        permissions: const <AppPermission>{},
+        isAuthorizationHydrated: true,
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['doctor'],
+        ),
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        session,
+      ).copyWithPermissions(const <AppPermission>[]);
+
+      await pumpLocalizedWidget(
+        tester,
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(policy),
+            initialSessionStateProvider.overrideWithValue(
+              SessionState.authenticated(session: session),
+            ),
+          ],
+          child: const SettingsPage(
+            initialQuery: SettingsPageQuery(tab: 'account'),
+          ),
+        ),
+        size: const Size(900, 1000),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Account and security'), findsNothing);
+      expect(find.text('Preferences'), findsWidgets);
+      expect(find.text('App theme'), findsOneWidget);
+    },
+  );
 }
 
 final class _FakeSettingsWorkspaceRepository
