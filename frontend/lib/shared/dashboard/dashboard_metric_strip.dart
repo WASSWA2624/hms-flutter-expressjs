@@ -93,14 +93,14 @@ class _DashboardMetricCard extends StatelessWidget {
       applyHeightToLastDescent: false,
     );
 
-    // Aspirational size — FittedBox scales up/down to the value region.
+    // Cap at title size; FittedBox only scales down for long values.
     final TextStyle valueStyle =
-        (theme.textTheme.displaySmall ?? theme.textTheme.headlineMedium)!
+        (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)!
             .copyWith(
               color: card.accent,
               fontWeight: FontWeight.w600,
-              height: 1.0,
-              letterSpacing: -0.4,
+              height: 1.1,
+              letterSpacing: -0.2,
               leadingDistribution: TextLeadingDistribution.even,
             );
     final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
@@ -151,18 +151,21 @@ class _DashboardMetricCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: theme.spacing.xs),
-            // Value consumes all remaining space; type scales to the box.
+            // Value keeps remaining width; shrinks only when text overflows.
             Expanded(
-              child: FittedBox(
-                fit: BoxFit.contain,
+              child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  card.value,
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.visible,
-                  textHeightBehavior: tightTextHeight,
-                  style: valueStyle,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    card.value,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    textHeightBehavior: tightTextHeight,
+                    style: valueStyle,
+                  ),
                 ),
               ),
             ),
