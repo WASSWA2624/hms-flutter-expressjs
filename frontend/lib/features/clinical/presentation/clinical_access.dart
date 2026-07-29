@@ -334,14 +334,16 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 
 /// Atom → requirement map for In consultation (`/clinical?section=in-consultation`).
 ///
-/// Active outpatient consultation worklist; same encounter detail / action bar
-/// as All (richest nested writes). Inventory: `screens/clinical.md`.
+/// Active outpatient consultation worklist (`screens/clinical.md`); richest
+/// nested action bar (same encounter detail chrome as All). Matrix nested
+/// write rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
+/// radiology / pharmacy / admission.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | In consultation tab | navigate | read ∩ `clinical:read` |
+/// | In consultation tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -358,9 +360,9 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write |
 ///
-/// Write keeps source ∪ `clinical:write` | `system:admin`. Nested order /
-/// admission rows document prompt narrative ∪ (lab/radiology/pharmacy/
-/// operations), not matrix nested _(n/a)_.
+/// Write keeps source ∪ `clinical:write` | `system:admin` rather than matrix ∩
+/// `clinical:write` alone. Nested order / admission rows document prompt ∪
+/// (matrix nested write _(n/a)_).
 abstract final class ClinicalInConsultationAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -368,6 +370,8 @@ abstract final class ClinicalInConsultationAtomPermissions {
   static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
   static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
@@ -410,6 +414,10 @@ abstract final class ClinicalInConsultationAtomPermissions {
       clinicalDischargeFinancialReadRequirement;
   static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+bool canViewClinicalInConsultation(AppAccessPolicy policy) {
+  return ClinicalInConsultationAtomPermissions.tab.isAllowed(policy);
 }
 
 /// Results ready tab atom → permission mapping (inventory + matrix).

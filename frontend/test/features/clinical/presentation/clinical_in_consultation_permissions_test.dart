@@ -295,12 +295,28 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalInConsultationAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalInConsultationAtomPermissions.write,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
         ClinicalInConsultationAtomPermissions.requestLab,
         same(clinicalLabOrderWriteRequirement),
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.requestRadiology,
+        same(clinicalRadiologyOrderWriteRequirement),
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.prescribe,
+        same(clinicalPharmacyOrderWriteRequirement),
       );
       expect(
         ClinicalInConsultationAtomPermissions.requestAdmission,
@@ -324,6 +340,7 @@ void main() {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalWrite},
       );
+      expect(canViewClinicalInConsultation(writeOnly), isFalse);
       expect(
         ClinicalInConsultationAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
@@ -335,6 +352,15 @@ void main() {
       expect(
         ClinicalInConsultationAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
+      );
+
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(canViewClinicalInConsultation(reader), isTrue);
+      expect(
+        ClinicalInConsultationAtomPermissions.write.isAllowed(reader),
+        isFalse,
       );
     });
 
@@ -639,6 +665,93 @@ void main() {
       expect(find.text('Request radiology'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Request admission'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: operations:write shows Request admission',
+    (WidgetTester tester) async {
+      final AppAccessPolicy opsOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.operationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.requestAdmission.isAllowed(
+          opsOnly,
+        ),
+        isTrue,
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.addNote.isAllowed(opsOnly),
+        isFalse,
+      );
+
+      await _pumpInConsultationTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: opsOnly,
+      );
+
+      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request admission'), findsWidgets);
+      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Prescribe'), findsNothing);
+      expect(find.text('Print summary'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module ∪: radiology:write shows Request radiology',
+    (WidgetTester tester) async {
+      final AppAccessPolicy radiologyOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.radiologyWrite,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'radiology-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      expect(
+        ClinicalInConsultationAtomPermissions.requestRadiology.isAllowed(
+          radiologyOnly,
+        ),
+        isTrue,
+      );
+
+      await _pumpInConsultationTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: radiologyOnly,
+      );
+
+      await tester.tap(find.text('Consult Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Request radiology'), findsWidgets);
+      expect(find.text('Request lab'), findsNothing);
+      expect(find.text('Add clinical note'), findsNothing);
     },
   );
 
