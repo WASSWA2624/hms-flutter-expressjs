@@ -328,7 +328,21 @@ void main() {
       );
       expect(
         identical(
+          CommunicationsMessagesAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           CommunicationsMessagesAtomPermissions.threadMenu,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.manageMembers,
           communicationsWorkspaceWriteRequirement,
         ),
         isTrue,
