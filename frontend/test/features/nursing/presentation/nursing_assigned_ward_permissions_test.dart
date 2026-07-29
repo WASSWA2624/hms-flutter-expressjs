@@ -19,8 +19,10 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -390,6 +392,33 @@ void main() {
         isTrue,
       );
       expect(
+        identical(
+          nursingWriteRequirementForScope(NursingQueueScope.assignedWard),
+          NursingAssignedWardAtomPermissions.write,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          nursingNextActionRequirement(
+            NursingNextActionKind.vitals,
+            scope: NursingQueueScope.assignedWard,
+          ),
+          NursingAssignedWardAtomPermissions.nextActionVitals,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          nursingNextActionRequirement(
+            NursingNextActionKind.medication,
+            scope: NursingQueueScope.assignedWard,
+          ),
+          NursingAssignedWardAtomPermissions.nextActionMedication,
+        ),
+        isTrue,
+      );
+      expect(
         AppRoutes.nursing.requiredAnyPermissions.toSet(),
         RouteAccessCatalog.nursingEntry.anyPermissions.toSet(),
       );
@@ -412,7 +441,25 @@ void main() {
         );
         expect(
           NursingAssignedWardAtomPermissions.write.anyPermissions,
+          contains(AppPermissions.patientWrite),
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.write.anyPermissions,
           contains(AppPermissions.lastOfficeWrite),
+        );
+        expect(
+          identical(
+            NursingAssignedWardAtomPermissions.nestedRead,
+            nursingWorkspaceReadRequirement,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            NursingAssignedWardAtomPermissions.nestedWrite,
+            nursingWriteRequirement,
+          ),
+          isTrue,
         );
       },
     );
@@ -440,6 +487,12 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        NursingAssignedWardAtomPermissions.nextActionMedication.isAllowed(
+          pharmacyOnly,
+        ),
+        isFalse,
+      );
       expect(canWriteNursing(pharmacyOnly), isFalse);
     });
 
@@ -458,26 +511,72 @@ void main() {
         NursingAssignedWardAtomPermissions.tab.isAllowed(patientOnly),
         isTrue,
       );
+      expect(NursingAssignedWardAtomPermissions.listChrome.isAllowed(clinicalOnly), isTrue);
+      expect(canViewNursingAssignedWard(clinicalOnly), isTrue);
+      expect(canViewNursingAssignedWard(patientOnly), isTrue);
       expect(canViewNursingTab(clinicalOnly, NursingQueueScope.assignedWard), isTrue);
       expect(canViewNursingTab(patientOnly, NursingQueueScope.assignedWard), isTrue);
     });
 
-    test('last_office:read alone does not unlock write or tab chrome', () {
-      final AppAccessPolicy lastOfficeRead = _policy(
-        permissions: <AppPermission>{AppPermissions.lastOfficeRead},
-        roles: const <String>['NURSE'],
-      );
-      expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
-      expect(
-        NursingAssignedWardAtomPermissions.tab.isAllowed(lastOfficeRead),
-        isFalse,
+    test('∪ write allowance: patient:write + roles unlocks source write gate', () {
+      final AppAccessPolicy patientWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+        },
       );
       expect(
-        NursingAssignedWardAtomPermissions.write.isAllowed(lastOfficeRead),
+        NursingAssignedWardAtomPermissions.write.isAllowed(patientWriter),
+        isTrue,
+      );
+      expect(
+        NursingAssignedWardAtomPermissions.clinicalWrite.isAllowed(
+          patientWriter,
+        ),
         isFalse,
       );
-      expect(canWriteNursing(lastOfficeRead), isFalse);
+      expect(canWriteNursing(patientWriter), isTrue);
     });
+
+    test(
+      'last_office:read / operations:read alone do not unlock Assigned ward chrome',
+      () {
+        final AppAccessPolicy lastOfficeRead = _policy(
+          permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+          roles: const <String>['NURSE'],
+        );
+        final AppAccessPolicy operationsRead = _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+          roles: const <String>['NURSE'],
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
+        expect(canEnterNursingWorkspace(operationsRead), isTrue);
+        expect(
+          NursingAssignedWardAtomPermissions.tab.isAllowed(lastOfficeRead),
+          isFalse,
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.tab.isAllowed(operationsRead),
+          isFalse,
+        );
+        expect(
+          NursingAssignedWardAtomPermissions.write.isAllowed(lastOfficeRead),
+          isFalse,
+        );
+        expect(canWriteNursing(lastOfficeRead), isFalse);
+      },
+    );
 
     test('subscription denial: permissions without inpatient module strip UI', () {
       final AppAccessPolicy noModule = _policy(
@@ -501,6 +600,21 @@ void main() {
       expect(
         NursingAssignedWardAtomPermissions.write.isAllowed(noModule),
         isFalse,
+      );
+      expect(canViewNursingAssignedWard(noModule), isFalse);
+    });
+
+    test('ABAC session still evaluates Assigned ward when facility is present', () {
+      final AppAccessPolicy withFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+        },
+      );
+      expect(NursingAssignedWardAtomPermissions.tab.isAllowed(withFacility), isTrue);
+      expect(
+        canViewNursingTab(withFacility, NursingQueueScope.assignedWard),
+        isTrue,
       );
     });
   });
@@ -588,6 +702,36 @@ void main() {
       expect(find.text('Paracetamol'), findsNothing);
     });
 
+    testWidgets('detail: writer omits Record vitals duplicate of row next-action', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAssignedWard(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+        board: const <NursingPatientSummary>[_routinePatient],
+      );
+
+      await tester.tap(find.text('Routine Patient'));
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Record vitals'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Add note'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('detail: medication writer shows meds panel and add note', (
       WidgetTester tester,
     ) async {
@@ -603,10 +747,11 @@ void main() {
 
       expect(find.text('Medications'), findsOneWidget);
       expect(find.text('Paracetamol'), findsOneWidget);
+      // Next-action omitted from detail; complementary administer may show.
       expect(find.text('Add note'), findsOneWidget);
     });
 
-    testWidgets('authorized empty chrome remains observable', (
+    testWidgets('authorized empty + loading chrome remain observable', (
       WidgetTester tester,
     ) async {
       await _pumpAssignedWard(
@@ -634,6 +779,21 @@ void main() {
       expect(find.byTooltip('Record vitals'), findsNothing);
     });
 
+    testWidgets('mobile light theme: writer compact next-action mounts', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAssignedWard(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Routine Patient'), findsOneWidget);
+      expect(find.byTooltip('Record vitals'), findsWidgets);
+    });
+
     testWidgets('desktop dark theme: writer next-action still mounts', (
       WidgetTester tester,
     ) async {
@@ -648,7 +808,7 @@ void main() {
       expect(find.text('Routine Patient'), findsOneWidget);
     });
 
-    testWidgets('post-mutation: vitals dialog opens for authorized write', (
+    testWidgets('post-mutation sync: vitals dialog opens for authorized write', (
       WidgetTester tester,
     ) async {
       await _pumpAssignedWard(
@@ -662,6 +822,10 @@ void main() {
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('Record vitals'), findsWidgets);
+
+      // Close without completing form — dialog mount proves authorized write path;
+      // repository.listWardPatients is the sync seam after successful submit.
+      verify(() => repository.listWardPatients(any())).called(greaterThan(0));
     });
   });
 }

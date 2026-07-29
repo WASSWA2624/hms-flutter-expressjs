@@ -118,4 +118,6 @@ Tab-strip primary write, **Add note**, and **Refresh** were removed.
 - [x] No Refresh, Add note, or primary write control on the tab strip; worklist still updates after a successful mutation. *(widget; dead `nursingPrimaryAction*` helpers removed)*
 - [x] Mobile list shows next-action trailing; tapping it completes the same write as desktop. *(widget)*
 - [x] All-tab permission scan: ∩ denial / ∪ allowance / subscription strip / meds panel / shift context / viewports / themes. *(widget: `nursing_all_permissions_test.dart`)*
+- [x] Urgent-tab permission scan: ∩ denial / ∪ allowance / subscription strip / Escalate next-action / meds panel / shift context / viewports / themes. *(widget: `nursing_urgent_permissions_test.dart`)*
+- [x] Discharge-pending permission scan: ∩ `clinical:write` for discharge CTA; ∪ read; nested billing/pharmacy; subscription strip; complementary source ∪; viewports / themes. *(widget: `nursing_discharge_pending_permissions_test.dart`)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared nursing helpers)*

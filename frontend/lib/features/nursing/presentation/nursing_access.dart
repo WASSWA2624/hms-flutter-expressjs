@@ -204,6 +204,10 @@ bool canViewNursingTab(AppAccessPolicy policy, NursingQueueScope scope) {
   return nursingBoardTabRequirement(scope).isAllowed(policy);
 }
 
+bool canViewNursingAssignedWard(AppAccessPolicy policy) {
+  return NursingAssignedWardAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canViewNursingUrgent(AppAccessPolicy policy) {
   return NursingUrgentAtomPermissions.tab.isAllowed(policy);
 }
@@ -218,6 +222,10 @@ bool canViewNursingHandoverPending(AppAccessPolicy policy) {
 
 bool canViewNursingTransferPending(AppAccessPolicy policy) {
   return NursingTransferPendingAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewNursingDischargePending(AppAccessPolicy policy) {
+  return NursingDischargePendingAtomPermissions.tab.isAllowed(policy);
 }
 
 List<NursingQueueScope> nursingAllowedScopes(AppAccessPolicy policy) {
@@ -279,7 +287,7 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
     NursingDetailPanel.handover =>
       NursingHandoverPendingAtomPermissions.panelDeepLink,
     NursingDetailPanel.discharge =>
-      NursingDischargePendingAtomPermissions.write,
+      NursingDischargePendingAtomPermissions.panelDeepLink,
     NursingDetailPanel.checklist => null,
     NursingDetailPanel.vitals => nursingWriteRequirement,
   };
@@ -806,9 +814,40 @@ abstract final class NursingTransferPendingAtomPermissions {
 /// Discharge pending tab atom → permission mapping (inventory + matrix).
 ///
 /// Worklist `?scope=discharge-pending`. Nursing discharge checks; billing
-/// clearance needs `billing:read`. Write keeps source [nursingWriteRequirement]
-/// rather than matrix ∩ `clinical:write` alone — `last_office:read` alone must
-/// not unlock writes.
+/// clearance nested panel needs `billing:read` ([billingPanel] /
+/// [nestedBillingRead] — ∩ `billing-payments`). Discharge execute needs ∩
+/// `clinical:write` (+ nurse/manager/admin roles + `inpatient-bed-management`)
+/// — [nursingClinicalWriteRequirement]. Source inventory (`screens/nursing.md`)
+/// documents broader ∪ write keys for shared nursing chrome; this tab's stage
+/// write atoms prefer the matrix ∩. Create/update/delete matrix ∩
+/// `clinical:write` → [create] / [update] / [delete] / [write]. Complementary
+/// detail writes (note / vitals / …) keep source [nursingWriteRequirement] ∪ —
+/// mapping noted in tests. `last_office:read` alone must not unlock writes.
+/// Nested cross-module read ∪: `billing:read` | `last_office:read`
+/// ([nestedRead]); nested write _(n/a)_ except stage discharge ([nestedWrite] /
+/// [write]). Medication panels use [medicationsPanel] /
+/// [administerMedication]. Shift context uses [shiftContext].
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Discharge pending tab / count badge | navigate | read ∪ ([tab]) |
+/// | Shift context | progressive disclosure | ([shiftContext]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Discharge status column / filter | read | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | ([success] / [validation]) |
+/// | Row select → detail | read | ([detail]) |
+/// | Next action Discharge clearance | update | ([nextActionDischarge]) |
+/// | Detail complementary writes (note / vitals / …) | create / update | ([complementaryWrite]) |
+/// | Detail Discharge clearance (when not next-action) | update | ([write]) |
+/// | Detail Administer medication | update | ([administerMedication]) |
+/// | Detail medications panel | nested read | ([medicationsPanel]) |
+/// | Detail billing clearance panel | nested read | ([billingPanel]) |
+/// | Detail Open ICU | navigate | ([openIcu]) |
+/// | Detail Print summary | export | ([printSummary]) |
+/// | Admission checklist write / clearance step | create / update | ([checklistWrite]) |
+/// | Discharge dialog / `panel=discharge` | update | ([panelDeepLink] / [write]) |
+/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
 abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -818,16 +857,23 @@ abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement empty = nursingWorkspaceReadRequirement;
   static const AccessRequirement loading = nursingWorkspaceReadRequirement;
   static const AccessRequirement retry = nursingWorkspaceReadRequirement;
-  static const AccessRequirement success = nursingWriteRequirement;
-  static const AccessRequirement validation = nursingWriteRequirement;
+  static const AccessRequirement success = nursingClinicalWriteRequirement;
+  static const AccessRequirement validation = nursingClinicalWriteRequirement;
   static const AccessRequirement rowSelect = nursingWorkspaceReadRequirement;
   static const AccessRequirement detail = nursingWorkspaceReadRequirement;
-  static const AccessRequirement nextActionDischarge = nursingWriteRequirement;
-  static const AccessRequirement create = nursingWriteRequirement;
-  static const AccessRequirement update = nursingWriteRequirement;
-  static const AccessRequirement delete = nursingWriteRequirement;
-  static const AccessRequirement write = nursingWriteRequirement;
+  static const AccessRequirement nextAction = nursingClinicalWriteRequirement;
+  static const AccessRequirement nextActionDischarge =
+      nursingClinicalWriteRequirement;
+  static const AccessRequirement create = nursingClinicalWriteRequirement;
+  static const AccessRequirement update = nursingClinicalWriteRequirement;
+  static const AccessRequirement delete = nursingClinicalWriteRequirement;
+  static const AccessRequirement write = nursingClinicalWriteRequirement;
   static const AccessRequirement clinicalWrite = nursingClinicalWriteRequirement;
+  /// Source ∪ for shared detail complementary writes — matrix ∩ is [write].
+  static const AccessRequirement complementaryWrite = nursingWriteRequirement;
+  static const AccessRequirement checklistWrite = nursingWriteRequirement;
+  static const AccessRequirement recordVitals = nursingWriteRequirement;
+  static const AccessRequirement addNote = nursingWriteRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
   static const AccessRequirement medicationsPanel =
       nursingMedicationsPanelRequirement;
@@ -841,12 +887,14 @@ abstract final class NursingDischargePendingAtomPermissions {
       nursingLastOfficeNestedReadRequirement;
   static const AccessRequirement nestedRead =
       nursingNestedCrossModuleReadRequirement;
-  static const AccessRequirement nestedWrite = nursingWriteRequirement;
+  static const AccessRequirement nestedWrite = nursingClinicalWriteRequirement;
   static const AccessRequirement printSummary = nursingWriteRequirement;
-  static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement panelDeepLink = nursingClinicalWriteRequirement;
   static const AccessRequirement openIcu = AccessRequirement();
+  static const AccessRequirement navigation = AccessRequirement();
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       nursingWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.nursingEntry;
 }

@@ -23,6 +23,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_board_next_action.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
@@ -240,18 +241,6 @@ void _stubWorkspace(
     );
     return Result<OpdFlowDetail>.success(OpdFlowDetail(summary: summary));
   });
-  when(() => repository.resolveFlowById(any())).thenAnswer((invocation) async {
-    final String id = invocation.positionalArguments.single as String;
-    final OpdFlowSummary? match = flows.cast<OpdFlowSummary?>().firstWhere(
-      (OpdFlowSummary? flow) =>
-          flow!.id == id || flow.publicId == id,
-      orElse: () => null,
-    );
-    if (match == null) {
-      return const Result<OpdFlowSummary?>.success(null);
-    }
-    return Result<OpdFlowSummary?>.success(match);
-  });
 }
 
 Future<GoRouter> _pumpActiveTab(
@@ -412,7 +401,11 @@ void main() {
           isNotEmpty,
         );
         expect(
-          OpdActiveAtomPermissions.write.anyRoles,
+          OpdActiveAtomPermissions.write.allPermissions,
+          <AppPermission>[AppPermissions.clinicalWrite],
+        );
+        expect(
+          OpdActiveAtomPermissions.frontDesk.anyRoles,
           opdFrontDeskActionRequirement.anyRoles,
         );
       },
@@ -549,11 +542,15 @@ void main() {
       );
       expect(
         OpdActiveAtomPermissions.nestedWrite,
-        same(opdFrontDeskActionRequirement),
+        same(opdClinicalWriteRequirement),
       );
       expect(
         OpdActiveAtomPermissions.nestedBillingWrite,
         same(opdBillingActionRequirement),
+      );
+      expect(
+        OpdActiveAtomPermissions.nestedAdmissionWrite,
+        same(opdAdmissionHandoffRequirement),
       );
     });
   });
@@ -644,7 +641,7 @@ void main() {
       );
 
       expect(find.text('Pay Active'), findsOneWidget);
-      expect(find.textContaining('Pay'), findsNothing);
+      expect(find.text('Pay consultation'), findsNothing);
     });
 
     testWidgets('pay next-action present with billing:write + module', (
@@ -658,7 +655,7 @@ void main() {
       );
 
       expect(find.text('Pay Active'), findsOneWidget);
-      expect(find.textContaining('Pay'), findsWidgets);
+      expect(find.text('Pay consultation'), findsWidgets);
     });
 
     testWidgets('deep link panel=vitals blocked without vitals write', (
@@ -672,7 +669,7 @@ void main() {
       );
 
       expect(find.text('FLOW ACTIONS'), findsNothing);
-      expect(find.textContaining('Vitals'), findsNothing);
+      expect(find.text('Record vitals'), findsNothing);
     });
 
     testWidgets(

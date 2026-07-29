@@ -20,11 +20,14 @@ import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_reposito
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_next_action.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,6 +45,7 @@ const NursingPatientSummary _dischargePending = NursingPatientSummary(
   bedDisplayLabel: 'Bed 4',
   hasActiveBed: true,
   dischargeStatus: 'PLANNED',
+  icuStatus: 'ACTIVE',
 );
 
 const NursingPatientDetail _dischargeDetail = NursingPatientDetail(
@@ -62,82 +66,136 @@ const NursingPatientDetail _dischargeDetail = NursingPatientDetail(
   ],
 );
 
+const List<AppModuleEntitlement> _nursingModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(
+    code: nursingInpatientBedModule,
+    licenseStatus: 'ACTIVE',
+  ),
+  AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
+];
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
-  List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
+  List<AppModuleEntitlement> modules = _nursingModules,
+  String? facilityId = 'facility-1',
+  String? tenantId = 'tenant-1',
 }) {
-  final bool needsClinical = permissions.any(
-    (AppPermission permission) =>
-        permission == AppPermissions.clinicalRead ||
-        permission == AppPermissions.clinicalWrite,
-  );
-  final bool needsPatient = permissions.any(
-    (AppPermission permission) =>
-        permission == AppPermissions.patientRead ||
-        permission == AppPermissions.patientWrite,
-  );
-  final bool needsPharmacy = permissions.contains(AppPermissions.pharmacyRead);
-  final bool needsBilling = permissions.contains(AppPermissions.billingRead);
-  final bool needsRoster = permissions.any(
-    (AppPermission permission) =>
-        permission == AppPermissions.rosterRead ||
-        permission == AppPermissions.hrRead ||
-        permission == AppPermissions.unitRead,
-  );
-  final bool needsNursing = permissions.contains(AppPermissions.nursingRead);
-  final List<AppModuleEntitlement> resolvedModules =
-      modules ??
-      <AppModuleEntitlement>[
-        const AppModuleEntitlement(
-          code: 'inpatient-bed-management',
-          licenseStatus: 'ACTIVE',
-        ),
-        if (needsClinical)
-          const AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsPatient)
-          const AppModuleEntitlement(
-            code: 'patient-registry',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsPharmacy)
-          const AppModuleEntitlement(
-            code: 'pharmacy-dispensing',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsBilling)
-          const AppModuleEntitlement(
-            code: 'billing-payments',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsRoster)
-          const AppModuleEntitlement(
-            code: 'hr-rosters',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsNursing)
-          const AppModuleEntitlement(
-            code: 'inpatient-bed-management',
-            licenseStatus: 'ACTIVE',
-          ),
-      ];
-
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         id: 'nurse-1',
         roles: roles,
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
+        tenantId: tenantId,
+        facilityId: facilityId,
       ),
       permissions: permissions,
-      moduleEntitlements: resolvedModules,
+      moduleEntitlements: modules,
       isAuthorizationHydrated: true,
     ),
+  );
+}
+
+AppAccessPolicy _readPolicy({
+  AppPermission readKey = AppPermissions.clinicalRead,
+}) {
+  return _policy(permissions: <AppPermission>{readKey});
+}
+
+AppAccessPolicy _readWritePolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+    },
+  );
+}
+
+AppAccessPolicy _clinicalWriteOnlyPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+    },
+  );
+}
+
+AppAccessPolicy _patientWriteWithoutClinicalWritePolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+    },
+  );
+}
+
+AppAccessPolicy _lastOfficeReadOnlyPolicy() {
+  return _policy(
+    roles: const <String>['RECEPTION'],
+    permissions: <AppPermission>{
+      AppPermissions.lastOfficeRead,
+      AppPermissions.clinicalRead,
+    },
+  );
+}
+
+AppAccessPolicy _shiftContextPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.rosterRead,
+    },
+    modules: const <AppModuleEntitlement>[
+      ..._nursingModules,
+      AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+AppAccessPolicy _medicationsPanelPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.pharmacyRead,
+    },
+    modules: const <AppModuleEntitlement>[
+      ..._nursingModules,
+      AppModuleEntitlement(code: 'pharmacy-dispensing', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+AppAccessPolicy _billingPanelPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.billingRead,
+    },
+    modules: const <AppModuleEntitlement>[
+      ..._nursingModules,
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+    ],
+  );
+}
+
+AppAccessPolicy _fullNestedPolicy() {
+  return _policy(
+    permissions: <AppPermission>{
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.pharmacyRead,
+      AppPermissions.billingRead,
+    },
+    modules: const <AppModuleEntitlement>[
+      ..._nursingModules,
+      AppModuleEntitlement(code: 'pharmacy-dispensing', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+    ],
   );
 }
 
@@ -198,6 +256,12 @@ void _stubRepository(
   );
 }
 
+Future<void> _pumpAfterAction(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(seconds: 1));
+}
+
 Future<void> _pumpDischargePendingTab(
   WidgetTester tester, {
   required _MockNursingRepository repository,
@@ -205,6 +269,7 @@ Future<void> _pumpDischargePendingTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   Result<AppPage<NursingPatientSummary>>? listOverride,
+  String initialLocation = '/nursing?scope=discharge-pending',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -216,7 +281,7 @@ Future<void> _pumpDischargePendingTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/nursing?scope=discharge-pending',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/nursing',
@@ -251,9 +316,7 @@ Future<void> _pumpDischargePendingTab(
       ),
     ),
   );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 300));
-  await tester.pump(const Duration(seconds: 1));
+  await _pumpAfterAction(tester);
 }
 
 void main() {
@@ -269,122 +332,330 @@ void main() {
     repository = _MockNursingRepository();
   });
 
-  group('NursingDischargePendingAtomPermissions helpers', () {
-    test('reuses shared nursing *Requirement helpers (no second vocabulary)', () {
+  group('NursingDischargePendingAtomPermissions inventory (AC1)', () {
+    test('reuses feature *Requirement vocabulary (no second map)', () {
       expect(
-        NursingDischargePendingAtomPermissions.tab,
-        same(nursingWorkspaceReadRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.tab,
+          nursingWorkspaceReadRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.write,
-        same(nursingWriteRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.write,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.nextActionDischarge,
-        same(nursingWriteRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.nextAction,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.clinicalWrite,
-        same(nursingClinicalWriteRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.nextActionDischarge,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.medicationsPanel,
-        same(nursingMedicationsPanelRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.create,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.administerMedication,
-        same(nursingMedicationAdministerRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.update,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.administerMedication,
-        same(nursingMedicationWriteRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.delete,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.billingPanel,
-        same(nursingBillingClearanceReadRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.panelDeepLink,
+          nursingClinicalWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.shiftContext,
-        same(nursingShiftContextRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.complementaryWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.routeEntry,
-        same(RouteAccessCatalog.nursingEntry),
+        identical(
+          NursingDischargePendingAtomPermissions.checklistWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.nestedRead,
-        same(nursingNestedCrossModuleReadRequirement),
+        identical(
+          NursingDischargePendingAtomPermissions.medicationsPanel,
+          nursingMedicationsPanelRequirement,
+        ),
+        isTrue,
       );
       expect(
-        nursingBoardTabRequirement(NursingQueueScope.dischargePending),
-        same(NursingDischargePendingAtomPermissions.tab),
+        identical(
+          NursingDischargePendingAtomPermissions.administerMedication,
+          nursingMedicationAdministerRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingDischargePendingAtomPermissions.billingPanel,
+          nursingBillingClearanceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingDischargePendingAtomPermissions.nestedRead,
+          nursingNestedCrossModuleReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingDischargePendingAtomPermissions.shiftContext,
+          nursingShiftContextRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingDischargePendingAtomPermissions.routeEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingDischargePendingAtomPermissions.catalogEntry,
+          RouteAccessCatalog.nursingEntry,
+        ),
+        isTrue,
       );
       expect(
         NursingPatientDetailDialog.writeRequirement,
         same(nursingWriteRequirement),
       );
-    });
-
-    test('∪ allowance: clinical:read alone shows Discharge pending tab', () {
-      final AppAccessPolicy clinical = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      expect(
+        nursingNextActionRequirement(NursingNextActionKind.discharge),
+        NursingDischargePendingAtomPermissions.nextActionDischarge,
       );
       expect(
-        NursingDischargePendingAtomPermissions.tab.isAllowed(clinical),
+        nursingNextActionRequirement(
+          NursingNextActionKind.discharge,
+          scope: NursingQueueScope.dischargePending,
+        ),
+        NursingDischargePendingAtomPermissions.nextActionDischarge,
+      );
+      expect(
+        nursingBoardTabRequirement(NursingQueueScope.dischargePending),
+        NursingDischargePendingAtomPermissions.tab,
+      );
+      expect(
+        nursingWriteRequirementForScope(NursingQueueScope.dischargePending),
+        NursingDischargePendingAtomPermissions.write,
+      );
+      expect(
+        nursingFocusedPanelRequirement(NursingDetailPanel.discharge),
+        NursingDischargePendingAtomPermissions.panelDeepLink,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _readPolicy(),
+          NursingQueueScope.dischargePending,
+        ),
+        isFalse,
+      );
+      expect(
+        nursingBoardShowsNextActionColumn(
+          _clinicalWriteOnlyPolicy(),
+          NursingQueueScope.dischargePending,
+        ),
         isTrue,
       );
-      expect(canViewNursingTab(clinical, NursingQueueScope.dischargePending), isTrue);
+    });
+
+    test('∩ denial: clinical:write required for discharge write', () {
+      final AppAccessPolicy patientWriteOnly =
+          _patientWriteWithoutClinicalWritePolicy();
       expect(
-        NursingDischargePendingAtomPermissions.write.isAllowed(clinical),
+        NursingDischargePendingAtomPermissions.tab.isAllowed(_readPolicy()),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.write.isAllowed(
+          patientWriteOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.nextActionDischarge.isAllowed(
+          patientWriteOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.write.isAllowed(
+          _clinicalWriteOnlyPolicy(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('∪ allowance: clinical:read OR patient:read for tab read', () {
+      expect(
+        NursingDischargePendingAtomPermissions.tab.isAllowed(
+          _readPolicy(readKey: AppPermissions.clinicalRead),
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.tab.isAllowed(
+          _readPolicy(readKey: AppPermissions.patientRead),
+        ),
+        isTrue,
+      );
+      expect(canViewNursingDischargePending(_readPolicy()), isTrue);
+      expect(
+        NursingDischargePendingAtomPermissions.listChrome.isAllowed(
+          _readPolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.create.isAllowed(_readPolicy()),
+        isFalse,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.success.isAllowed(_readPolicy()),
         isFalse,
       );
     });
 
-    test('∪ allowance: patient:read alone shows Discharge pending tab', () {
-      final AppAccessPolicy patient = _policy(
-        permissions: <AppPermission>{AppPermissions.patientRead},
-      );
+    test('last_office:read alone does not unlock discharge writes', () {
+      final AppAccessPolicy lastOfficeWithClinical =
+          _lastOfficeReadOnlyPolicy();
       expect(
-        NursingDischargePendingAtomPermissions.tab.isAllowed(patient),
-        isTrue,
-      );
-      expect(canReadNursing(patient), isTrue);
-    });
-
-    test('last_office:read alone must not unlock write controls', () {
-      final AppAccessPolicy lastOffice = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.lastOfficeRead,
-          AppPermissions.clinicalRead,
-        },
-      );
-      expect(
-        NursingDischargePendingAtomPermissions.tab.isAllowed(lastOffice),
+        NursingDischargePendingAtomPermissions.routeEntry.isAllowed(
+          lastOfficeWithClinical,
+        ),
         isTrue,
       );
       expect(
-        NursingDischargePendingAtomPermissions.write.isAllowed(lastOffice),
+        NursingDischargePendingAtomPermissions.tab.isAllowed(
+          lastOfficeWithClinical,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.write.isAllowed(
+          lastOfficeWithClinical,
+        ),
         isFalse,
       );
       expect(
-        NursingDischargePendingAtomPermissions.nestedRead.isAllowed(lastOffice),
+        NursingDischargePendingAtomPermissions.nestedRead.isAllowed(
+          lastOfficeWithClinical,
+        ),
         isTrue,
       );
       expect(
         NursingDischargePendingAtomPermissions.billingPanel.isAllowed(
-          lastOffice,
+          lastOfficeWithClinical,
         ),
         isFalse,
       );
+      expect(canWriteNursing(lastOfficeWithClinical), isFalse);
+
+      final AppAccessPolicy lastOfficeOnly = _policy(
+        roles: const <String>['RECEPTION'],
+        permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.routeEntry.isAllowed(
+          lastOfficeOnly,
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.tab.isAllowed(lastOfficeOnly),
+        isFalse,
+      );
+      expect(canViewNursingDischargePending(lastOfficeOnly), isFalse);
     });
 
-    test('∩ denial: clinical:write without pharmacy:read strips med administer', () {
-      final AppAccessPolicy writer = _policy(
+    test(
+      'source ∪ complementaryWrite allows patient:write without clinical:write',
+      () {
+        final AppAccessPolicy patientWriter =
+            _patientWriteWithoutClinicalWritePolicy();
+        expect(
+          NursingDischargePendingAtomPermissions.write.isAllowed(
+            patientWriter,
+          ),
+          isFalse,
+        );
+        expect(
+          NursingDischargePendingAtomPermissions.complementaryWrite.isAllowed(
+            patientWriter,
+          ),
+          isTrue,
+        );
+        expect(
+          NursingDischargePendingAtomPermissions.addNote.isAllowed(
+            patientWriter,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('subscription / module strip without inpatient-bed-management', () {
+      final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
         },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
+      expect(
+        NursingDischargePendingAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
+    });
+
+    test('∩ denial: pharmacy:read required for meds panel / administer', () {
+      final AppAccessPolicy writer = _clinicalWriteOnlyPolicy();
       expect(
         NursingDischargePendingAtomPermissions.write.isAllowed(writer),
         isTrue,
@@ -408,6 +679,13 @@ void main() {
           AppPermissions.clinicalWrite,
           AppPermissions.pharmacyRead,
         },
+        modules: const <AppModuleEntitlement>[
+          ..._nursingModules,
+          AppModuleEntitlement(
+            code: 'pharmacy-dispensing',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       expect(
         NursingDischargePendingAtomPermissions.administerMedication.isAllowed(
@@ -423,201 +701,379 @@ void main() {
       );
     });
 
-    test('subscription strips write when inpatient module missing', () {
-      final AppAccessPolicy noModule = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
-      );
-      expect(
-        NursingDischargePendingAtomPermissions.tab.isAllowed(noModule),
-        isFalse,
-      );
-      expect(
-        NursingDischargePendingAtomPermissions.write.isAllowed(noModule),
-        isFalse,
-      );
-    });
-
     test('nested billing clearance needs billing:read ∩ billing-payments', () {
-      final AppAccessPolicy nurseOnly = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-      );
       expect(
         NursingDischargePendingAtomPermissions.billingPanel.isAllowed(
-          nurseOnly,
+          _clinicalWriteOnlyPolicy(),
         ),
         isFalse,
       );
-
-      final AppAccessPolicy withBilling = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.billingRead,
-        },
-      );
       expect(
         NursingDischargePendingAtomPermissions.billingPanel.isAllowed(
-          withBilling,
+          _billingPanelPolicy(),
         ),
         isTrue,
       );
-      expect(canViewNursingBillingClearance(withBilling), isTrue);
+      expect(canViewNursingBillingClearance(_billingPanelPolicy()), isTrue);
+    });
+
+    test('nested ∪: billing:read OR last_office:read for nestedRead', () {
+      expect(
+        NursingDischargePendingAtomPermissions.nestedRead.isAllowed(
+          _billingPanelPolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.nestedRead.isAllowed(
+          _lastOfficeReadOnlyPolicy(),
+        ),
+        isTrue,
+      );
+      expect(
+        NursingDischargePendingAtomPermissions.nestedRead.isAllowed(
+          _readPolicy(),
+        ),
+        isFalse,
+      );
     });
   });
 
-  testWidgets(
-    'read-only ∪: Discharge pending list chrome mounts; write next-action absent',
-    (WidgetTester tester) async {
-      final AppAccessPolicy reader = _policy(
-        permissions: <AppPermission>{AppPermissions.clinicalRead},
-      );
-      await _pumpDischargePendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: reader,
-      );
+  group('Discharge pending UI authorization (AC2-AC5)', () {
+    testWidgets(
+      'read-only ∪: Discharge pending list chrome mounts; write next-action absent',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readPolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
 
-      expect(find.text('Discharge Pending Patient'), findsOneWidget);
-      expect(find.textContaining('Discharge pending'), findsWidgets);
-      expect(find.byTooltip('Discharge clearance'), findsNothing);
-      expect(find.byTooltip('Shift context'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byType(DataTable),
-          matching: find.text('Next action'),
-        ),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets(
-    'full write ∪: Discharge clearance next-action mounts (desktop + light)',
-    (WidgetTester tester) async {
-      final AppAccessPolicy writer = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.patientRead,
-          AppPermissions.patientWrite,
-        },
-      );
-      expect(
-        NursingDischargePendingAtomPermissions.nextActionDischarge.isAllowed(
-          writer,
-        ),
-        isTrue,
-      );
-
-      await _pumpDischargePendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: writer,
-      );
-
-      expect(find.text('Discharge Pending Patient'), findsOneWidget);
-      expect(find.byTooltip('Discharge clearance'), findsWidgets);
-      expect(
-        find.descendant(
-          of: find.byType(DataTable),
-          matching: find.text('Next action'),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets(
-    'mobile viewport: compact next-action trailing mounts for writers',
-    (WidgetTester tester) async {
-      final AppAccessPolicy writer = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-      );
-      await _pumpDischargePendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: writer,
-        physicalSize: const Size(390, 844),
-      );
-
-      expect(find.byType(AppListTableMobileItem), findsWidgets);
-      expect(find.byTooltip('Discharge clearance'), findsWidgets);
-    },
-  );
-
-  testWidgets('dark theme: authorized empty state remains observable', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy writer = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
+        expect(find.text('Discharge Pending Patient'), findsOneWidget);
+        expect(
+          find.textContaining(l10n.nursingScopeDischargePendingLabel),
+          findsWidgets,
+        );
+        expect(
+          find.byTooltip(l10n.nursingActionDischargeClearance),
+          findsNothing,
+        );
+        expect(find.byTooltip(l10n.nursingShiftContextTitle), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+        expect(find.text(l10n.nursingNextActionColumnLabel), findsNothing);
       },
     );
-    await _pumpDischargePendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: writer,
-      themeMode: ThemeMode.dark,
-      listOverride: Result<AppPage<NursingPatientSummary>>.success(
-        AppPage<NursingPatientSummary>(
-          items: const <NursingPatientSummary>[],
-          request: const AppPageRequest(pageSize: 12),
-          totalItemCount: 0,
-        ),
-      ),
+
+    testWidgets(
+      'full write ∩: Discharge clearance next-action mounts (desktop + light)',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readWritePolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
+
+        expect(find.text('Discharge Pending Patient'), findsOneWidget);
+        expect(
+          find.byTooltip(l10n.nursingActionDischargeClearance),
+          findsWidgets,
+        );
+        expect(find.text(l10n.nursingNextActionColumnLabel), findsWidgets);
+      },
     );
 
-    final AppLocalizations l10n = AppLocalizations.of(
-      tester.element(find.byType(AppTabStrip)),
-    );
-    expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
-    expect(find.text(l10n.nursingNoWorklistBody), findsOneWidget);
-  });
+    testWidgets(
+      '∩ denial: patient:write without clinical:write hides discharge CTA',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _patientWriteWithoutClinicalWritePolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
 
-  testWidgets(
-    'authorized write: open detail shows billing when billing:read; meds when pharmacy:read',
-    (WidgetTester tester) async {
-      final AppAccessPolicy full = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-          AppPermissions.pharmacyRead,
-          AppPermissions.billingRead,
-        },
-      );
+        expect(find.text('Discharge Pending Patient'), findsOneWidget);
+        expect(
+          find.byTooltip(l10n.nursingActionDischargeClearance),
+          findsNothing,
+        );
+        expect(find.text(l10n.nursingNextActionColumnLabel), findsNothing);
+
+        await tester.tap(find.text('Discharge Pending Patient'));
+        await _pumpAfterAction(tester);
+
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAddNote),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionDischargeClearance),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'mobile viewport: compact next-action trailing mounts for writers',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _clinicalWriteOnlyPolicy(),
+          physicalSize: const Size(390, 844),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
+
+        expect(find.byType(AppListTableMobileItem), findsWidgets);
+        expect(
+          find.byTooltip(l10n.nursingActionDischargeClearance),
+          findsWidgets,
+        );
+      },
+    );
+
+    testWidgets('dark theme: authorized empty state remains observable', (
+      WidgetTester tester,
+    ) async {
       await _pumpDischargePendingTab(
         tester,
         repository: repository,
-        accessPolicy: full,
+        accessPolicy: _clinicalWriteOnlyPolicy(),
+        themeMode: ThemeMode.dark,
+        listOverride: Result<AppPage<NursingPatientSummary>>.success(
+          AppPage<NursingPatientSummary>(
+            items: const <NursingPatientSummary>[],
+            request: const AppPageRequest(pageSize: 12),
+            totalItemCount: 0,
+          ),
+        ),
       );
-
-      await tester.tap(find.text('Discharge Pending Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(seconds: 1));
 
       final AppLocalizations l10n = AppLocalizations.of(
         tester.element(find.byType(AppTabStrip)),
       );
-      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text(l10n.nursingNoWorklistTitle), findsOneWidget);
+      expect(find.text(l10n.nursingNoWorklistBody), findsOneWidget);
+    });
+
+    testWidgets('light theme: read-only chrome without write affordances', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDischargePendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readPolicy(),
+        themeMode: ThemeMode.light,
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+
+      expect(find.text('Discharge Pending Patient'), findsOneWidget);
+      expect(
+        find.byTooltip(l10n.nursingActionDischargeClearance),
+        findsNothing,
+      );
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('error / retry state remains for authorized readers', (
+      WidgetTester tester,
+    ) async {
+      when(() => repository.listWardPatients(any())).thenAnswer(
+        (_) async => const Result<AppPage<NursingPatientSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+      when(() => repository.listPendingHandovers()).thenAnswer(
+        (_) async =>
+            const Result<List<NursingHandover>>.success(<NursingHandover>[]),
+      );
+      when(() => repository.listCurrentRosters()).thenAnswer(
+        (_) async => const Result<List<NursingRosterAssignment>>.success(
+          <NursingRosterAssignment>[],
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/nursing?scope=discharge-pending',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/nursing',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: NursingWorkspacePage(
+                  initialQuery: NursingWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nursingRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_readPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await _pumpAfterAction(tester);
+
+      expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('∪ allowance: patient:read alone shows discharge-pending tab', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDischargePendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _readPolicy(readKey: AppPermissions.patientRead),
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+
+      expect(
+        find.textContaining(l10n.nursingScopeDischargePendingLabel),
+        findsWidgets,
+      );
+      expect(find.text('Discharge Pending Patient'), findsOneWidget);
+      expect(
+        find.byTooltip(l10n.nursingActionDischargeClearance),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shift context mounts only with roster/ops + hr-rosters', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDischargePendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _shiftContextPolicy(),
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+      expect(find.byTooltip(l10n.nursingShiftContextTitle), findsOneWidget);
+    });
+
+    testWidgets(
+      'authorized writer detail: complementary writes; discharge omitted as next-action',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _fullNestedPolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
+
+        await tester.tap(find.text('Discharge Pending Patient'));
+        await _pumpAfterAction(tester);
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionDischargeClearance),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionAddNote),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.nursingMedicationsTitle), findsOneWidget);
+        expect(find.text(l10n.dischargeBillingSectionTitle), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppQuickActions),
+            matching: find.text(l10n.nursingActionOpenIcu),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('detail: billing panel absent without billing:read', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDischargePendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _clinicalWriteOnlyPolicy(),
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+
+      await tester.tap(find.text('Discharge Pending Patient'));
+      await _pumpAfterAction(tester);
+
+      expect(find.text(l10n.dischargeBillingSectionTitle), findsNothing);
+      expect(find.text(l10n.nursingMedicationsTitle), findsNothing);
+    });
+
+    testWidgets('detail: medications panel requires pharmacy:read', (
+      WidgetTester tester,
+    ) async {
+      await _pumpDischargePendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _medicationsPanelPolicy(),
+      );
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppTabStrip)),
+      );
+
+      await tester.tap(find.text('Discharge Pending Patient'));
+      await _pumpAfterAction(tester);
+
       expect(find.text(l10n.nursingMedicationsTitle), findsOneWidget);
-      expect(find.text(l10n.dischargeBillingSectionTitle), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -625,89 +1081,41 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
+    });
 
-  testWidgets(
-    'authorized discharge clearance mutation syncs worklist after success',
-    (WidgetTester tester) async {
-      final AppAccessPolicy writer = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-      );
-      await _pumpDischargePendingTab(
-        tester,
-        repository: repository,
-        accessPolicy: writer,
-      );
+    testWidgets(
+      'authorized discharge clearance next-action opens dialog and syncs',
+      (WidgetTester tester) async {
+        await _pumpDischargePendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readWritePolicy(),
+        );
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppTabStrip)),
+        );
 
-      expect(find.text('Discharge Pending Patient'), findsOneWidget);
-      expect(find.byTooltip('Discharge clearance'), findsWidgets);
+        await tester
+            .tap(find.byTooltip(l10n.nursingActionDischargeClearance).first);
+        await _pumpAfterAction(tester);
 
-      // Controller mutation + local list/detail sync (authorized path).
-      final ProviderContainer container = ProviderScope.containerOf(
-        tester.element(find.byType(AppTabStrip)),
-      );
-      // Inject a session user id via a nested override for the mutate path.
-      final AuthSession session = AuthSession(
-        tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(
-          id: 'nurse-1',
-          roles: <String>['NURSE'],
-          tenantId: 'tenant-1',
-          facilityId: 'facility-1',
-        ),
-        permissions: writer.permissions,
-        moduleEntitlements: writer.moduleEntitlements.values.toList(),
-        isAuthorizationHydrated: true,
-      );
-      // Re-select through the live controller after ensuring detail is loaded.
-      final NursingWorkspaceController controller = container.read(
-        nursingWorkspaceControllerProvider.notifier,
-      );
-      // Session without user id returns validation — prove write chrome exists
-      // and selectPatient syncs detail for authorized writers.
-      final AppFailure? selectFailure = await controller.selectPatient(
-        _dischargePending,
-      );
-      expect(selectFailure, isNull);
-      verify(() => repository.loadPatientDetail(any())).called(greaterThan(0));
-      verify(() => repository.listWardPatients(any())).called(greaterThan(0));
-      // Keep session reference for fixture completeness (no secrets).
-      expect(session.user?.id, 'nurse-1');
-    },
-  );
+        expect(find.byType(NursingDischargeClearanceDialog), findsOneWidget);
 
-  testWidgets('shift context absent without roster ∩; present with roster:read', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy withoutRoster = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(AppTabStrip)),
+        );
+        final NursingWorkspaceController controller = container.read(
+          nursingWorkspaceControllerProvider.notifier,
+        );
+        final AppFailure? selectFailure = await controller.selectPatient(
+          _dischargePending,
+        );
+        expect(selectFailure, isNull);
+        verify(
+          () => repository.loadPatientDetail(any()),
+        ).called(greaterThan(0));
+        verify(() => repository.listWardPatients(any())).called(greaterThan(0));
       },
     );
-    await _pumpDischargePendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: withoutRoster,
-    );
-    expect(find.byTooltip('Shift context'), findsNothing);
-
-    final AppAccessPolicy withRoster = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.rosterRead,
-      },
-    );
-    await _pumpDischargePendingTab(
-      tester,
-      repository: repository,
-      accessPolicy: withRoster,
-    );
-    expect(find.byTooltip('Shift context'), findsOneWidget);
   });
 }

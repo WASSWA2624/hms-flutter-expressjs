@@ -23,7 +23,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_board_next_action.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,31 +31,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockOpdRepository extends Mock implements OpdRepository {}
 
 const OpdAppointment _arrival = OpdAppointment(
-  id: 'appointment-all-1',
-  publicId: 'APT-ALL-1',
-  patientDisplayName: 'All Arrival Patient',
-  patientIdentifier: 'PAT-ALL-ARR',
+  id: 'appointment-arrivals-1',
+  publicId: 'APT-ARR-1',
+  patientDisplayName: 'Arrivals Patient',
+  patientIdentifier: 'PAT-ARR',
   status: 'SCHEDULED',
-);
-
-const OpdFlowSummary _activeFlow = OpdFlowSummary(
-  id: 'encounter-all-active',
-  publicId: 'ENC-ALL-ACTIVE',
-  patientDisplayName: 'All Active Patient',
-  patientIdentifier: 'PAT-ALL-ACT',
-  encounterType: 'OPD',
-  status: 'OPEN',
-  stage: 'WAITING_VITALS',
-);
-
-const OpdFlowSummary _paymentFlow = OpdFlowSummary(
-  id: 'encounter-all-pay',
-  publicId: 'ENC-ALL-PAY',
-  patientDisplayName: 'All Pay Patient',
-  patientIdentifier: 'PAT-ALL-PAY',
-  encounterType: 'OPD',
-  status: 'OPEN',
-  stage: 'WAITING_CONSULTATION_PAYMENT',
 );
 
 AppAccessPolicy _policy({
@@ -64,16 +43,6 @@ AppAccessPolicy _policy({
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
 }) {
-  final bool needsPatient = permissions.any(
-    (AppPermission permission) =>
-        permission == AppPermissions.patientRead ||
-        permission == AppPermissions.patientWrite,
-  );
-  final bool needsClinical = permissions.any(
-    (AppPermission permission) =>
-        permission == AppPermissions.clinicalRead ||
-        permission == AppPermissions.clinicalWrite,
-  );
   final bool needsBilling = permissions.any(
     (AppPermission permission) =>
         permission == AppPermissions.billingRead ||
@@ -86,16 +55,6 @@ AppAccessPolicy _policy({
           code: 'scheduling-queue',
           licenseStatus: 'ACTIVE',
         ),
-        if (needsPatient)
-          const AppModuleEntitlement(
-            code: 'patient-registry',
-            licenseStatus: 'ACTIVE',
-          ),
-        if (needsClinical)
-          const AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
         if (needsBilling)
           const AppModuleEntitlement(
             code: 'billing-payments',
@@ -154,8 +113,6 @@ AppAccessPolicy _writerPolicy() {
 void _stubWorkspace(
   _MockOpdRepository repository, {
   List<OpdAppointment> appointments = const <OpdAppointment>[_arrival],
-  List<OpdFlowSummary> flows = const <OpdFlowSummary>[_activeFlow],
-  Result<AppPage<OpdFlowSummary>>? flowsOverride,
   bool failLists = false,
 }) {
   when(() => repository.listAppointments(any())).thenAnswer((invocation) async {
@@ -185,18 +142,15 @@ void _stubWorkspace(
     );
   });
   when(() => repository.listOpdFlows(any())).thenAnswer((invocation) async {
-    if (flowsOverride != null) {
-      return flowsOverride;
-    }
     if (failLists) {
       return const Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
     }
     return Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
-        items: flows,
+        items: const <OpdFlowSummary>[],
         request:
             (invocation.positionalArguments.single as OpdFlowQuery).pageRequest,
-        totalItemCount: flows.length,
+        totalItemCount: 0,
       ),
     );
   });
@@ -215,7 +169,7 @@ void _stubWorkspace(
   });
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async => const Result<OpdFlowAggregateCounts>.success(
-      OpdFlowAggregateCounts(activeOpd: 1),
+      OpdFlowAggregateCounts(activeOpd: 0),
     ),
   );
   when(
@@ -244,33 +198,21 @@ void _stubWorkspace(
   ).thenAnswer(
     (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
   );
-  when(() => repository.getOpdFlow(any())).thenAnswer((invocation) async {
-    final String id = invocation.positionalArguments.single as String;
-    final OpdFlowSummary summary = flows.firstWhere(
-      (OpdFlowSummary flow) => flow.id == id || flow.publicId == id,
-      orElse: () => _activeFlow,
-    );
-    return Result<OpdFlowDetail>.success(OpdFlowDetail(summary: summary));
-  });
 }
 
-Future<GoRouter> _pumpAllTab(
+Future<GoRouter> _pumpArrivalsTab(
   WidgetTester tester, {
   required _MockOpdRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/opd?section=all',
+  String initialLocation = '/opd?section=arrivals',
   List<OpdAppointment> appointments = const <OpdAppointment>[_arrival],
-  List<OpdFlowSummary> flows = const <OpdFlowSummary>[_activeFlow],
-  Result<AppPage<OpdFlowSummary>>? flowsOverride,
   bool failLists = false,
 }) async {
   _stubWorkspace(
     repository,
     appointments: appointments,
-    flows: flows,
-    flowsOverride: flowsOverride,
     failLists: failLists,
   );
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -338,70 +280,78 @@ void main() {
     repository = _MockOpdRepository();
   });
 
-  group('OpdAllAtomPermissions helpers', () {
+  group('OpdArrivalsAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        identical(OpdAllAtomPermissions.tab, opdWorkspaceReadRequirement),
-        isTrue,
-      );
-      expect(
-        identical(OpdAllAtomPermissions.search, opdWorkspaceReadRequirement),
-        isTrue,
-      );
-      expect(
-        identical(OpdAllAtomPermissions.empty, opdWorkspaceReadRequirement),
+        identical(OpdArrivalsAtomPermissions.tab, opdWorkspaceReadRequirement),
         isTrue,
       );
       expect(
         identical(
-          OpdAllAtomPermissions.startEncounter,
+          OpdArrivalsAtomPermissions.search,
+          opdWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          OpdArrivalsAtomPermissions.empty,
+          opdWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          OpdArrivalsAtomPermissions.startEncounter,
           opdEncounterPermissionRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          OpdAllAtomPermissions.nextActionVitals,
-          opdVitalsActionRequirement,
+          OpdArrivalsAtomPermissions.nextActionCheckIn,
+          opdFrontDeskActionRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          OpdAllAtomPermissions.payConsultation,
-          opdBillingActionRequirement,
+          OpdArrivalsAtomPermissions.frontDesk,
+          opdFrontDeskActionRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          OpdAllAtomPermissions.admissionHandoff,
-          opdAdmissionHandoffRequirement,
+          OpdArrivalsAtomPermissions.reschedule,
+          opdFrontDeskActionRequirement,
         ),
-        isTrue,
-      );
-      expect(
-        identical(OpdAllAtomPermissions.routeEntry, RouteAccessCatalog.opdEntry),
         isTrue,
       );
       expect(
         identical(
-          opdSectionTabRequirement(OpdWorkspaceSection.all),
-          OpdAllAtomPermissions.tab,
+          OpdArrivalsAtomPermissions.routeEntry,
+          RouteAccessCatalog.opdEntry,
         ),
         isTrue,
       );
       expect(
-        opdFocusedPanelRequirement('vitals'),
-        same(opdVitalsActionRequirement),
+        identical(
+          opdSectionTabRequirement(OpdWorkspaceSection.arrivals),
+          OpdArrivalsAtomPermissions.tab,
+        ),
+        isTrue,
       );
       expect(
-        opdFocusedPanelRequirement('payment'),
-        same(opdBillingActionRequirement),
+        opdNextActionRequirement(OpdBoardNextActionKind.checkInAppointment),
+        same(opdFrontDeskActionRequirement),
       );
       expect(
-        opdBoardNextActionRequirement(OpdBoardNextActionKind.recordVitals),
-        same(opdVitalsActionRequirement),
+        identical(
+          opdStartEncounterRequirementForSection(OpdWorkspaceSection.arrivals),
+          OpdArrivalsAtomPermissions.startEncounter,
+        ),
+        isTrue,
       );
     });
 
@@ -409,21 +359,22 @@ void main() {
       'mapping note: matrix ∩ clinical:write via clinicalWrite; source keep encounter/front-desk',
       () {
         expect(
-          OpdAllAtomPermissions.clinicalWrite.allPermissions,
+          OpdArrivalsAtomPermissions.clinicalWrite.allPermissions,
           <AppPermission>[AppPermissions.clinicalWrite],
         );
+        expect(OpdArrivalsAtomPermissions.startEncounter.anyRoles, isNotEmpty);
         expect(
-          OpdAllAtomPermissions.startEncounter.anyRoles,
-          isNotEmpty,
+          OpdArrivalsAtomPermissions.write.anyRoles,
+          opdFrontDeskActionRequirement.anyRoles,
         );
         expect(
-          OpdAllAtomPermissions.write.anyRoles,
-          opdFrontDeskActionRequirement.anyRoles,
+          OpdArrivalsAtomPermissions.create.allPermissions,
+          <AppPermission>[AppPermissions.clinicalWrite],
         );
       },
     );
 
-    test('∪ allowance: patient:read or clinical:read grants All-tab chrome', () {
+    test('∪ allowance: patient:read or clinical:read grants Arrivals chrome', () {
       final AppAccessPolicy patientOnly = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
         roles: const <String>['CUSTOM_READER'],
@@ -432,27 +383,30 @@ void main() {
         permissions: <AppPermission>{AppPermissions.clinicalRead},
         roles: const <String>['CUSTOM_READER'],
       );
-      expect(OpdAllAtomPermissions.tab.isAllowed(patientOnly), isTrue);
-      expect(OpdAllAtomPermissions.tab.isAllowed(clinicalOnly), isTrue);
-      expect(canViewOpdAll(patientOnly), isTrue);
+      expect(OpdArrivalsAtomPermissions.tab.isAllowed(patientOnly), isTrue);
+      expect(OpdArrivalsAtomPermissions.tab.isAllowed(clinicalOnly), isTrue);
+      expect(canViewOpdArrivals(patientOnly), isTrue);
       expect(canReadOpd(clinicalOnly), isTrue);
     });
 
-    test('∪ allowance: route-entry union accepts billing:read; All tab still ∪', () {
+    test('∪ allowance: route-entry union accepts billing:read; Arrivals still ∪', () {
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
         roles: const <String>['BILLING'],
       );
       expect(
-        OpdAllAtomPermissions.routeEntryUnion.isAllowed(billingOnly),
+        OpdArrivalsAtomPermissions.routeEntryUnion.isAllowed(billingOnly),
         isTrue,
       );
       // Shell catalog keeps unique opd:read — billing alone does not enter.
-      expect(OpdAllAtomPermissions.routeEntry.isAllowed(billingOnly), isFalse);
-      expect(OpdAllAtomPermissions.tab.isAllowed(billingOnly), isFalse);
+      expect(
+        OpdArrivalsAtomPermissions.routeEntry.isAllowed(billingOnly),
+        isFalse,
+      );
+      expect(OpdArrivalsAtomPermissions.tab.isAllowed(billingOnly), isFalse);
     });
 
-    test('∩ denial: clinical:write alone does not grant billing next-action', () {
+    test('∩ denial: clinical:write alone does not grant nested billing write', () {
       final AppAccessPolicy clinicalWriter = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
@@ -460,37 +414,33 @@ void main() {
         },
         roles: const <String>['DOCTOR'],
       );
-      expect(OpdAllAtomPermissions.tab.isAllowed(clinicalWriter), isTrue);
+      expect(OpdArrivalsAtomPermissions.tab.isAllowed(clinicalWriter), isTrue);
       expect(
-        OpdAllAtomPermissions.clinicalWrite.isAllowed(clinicalWriter),
+        OpdArrivalsAtomPermissions.clinicalWrite.isAllowed(clinicalWriter),
         isTrue,
       );
       expect(
-        OpdAllAtomPermissions.payConsultation.isAllowed(clinicalWriter),
-        isFalse,
-      );
-      expect(
-        OpdAllAtomPermissions.nextActionPay.isAllowed(clinicalWriter),
+        OpdArrivalsAtomPermissions.nestedBillingWrite.isAllowed(clinicalWriter),
         isFalse,
       );
     });
 
-    test('full intersection set: billing:write + module allows pay atom', () {
-      final AppAccessPolicy billingWriter = _policy(
+    test('full intersection set: clinical:write + module allows matrix create', () {
+      final AppAccessPolicy clinicalWriter = _policy(
         permissions: <AppPermission>{
           AppPermissions.patientRead,
-          AppPermissions.billingWrite,
+          AppPermissions.clinicalWrite,
         },
-        roles: const <String>['BILLING'],
+        roles: const <String>['CUSTOM_WRITER'],
       );
       expect(
-        OpdAllAtomPermissions.payConsultation.isAllowed(billingWriter),
+        OpdArrivalsAtomPermissions.create.isAllowed(clinicalWriter),
         isTrue,
       );
-      expect(canWriteOpdBilling(billingWriter), isTrue);
+      expect(canWriteOpdClinical(clinicalWriter), isTrue);
     });
 
-    test('subscription strip: scheduling-queue required for All tab', () {
+    test('subscription strip: scheduling-queue required for Arrivals tab', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.patientRead,
@@ -504,10 +454,10 @@ void main() {
           ),
         ],
       );
-      expect(OpdAllAtomPermissions.tab.isAllowed(noModule), isFalse);
-      expect(canViewOpdAll(noModule), isFalse);
+      expect(OpdArrivalsAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(canViewOpdArrivals(noModule), isFalse);
       expect(
-        OpdAllAtomPermissions.startEncounter.isAllowed(noModule),
+        OpdArrivalsAtomPermissions.startEncounter.isAllowed(noModule),
         isFalse,
       );
     });
@@ -527,53 +477,50 @@ void main() {
         ],
       );
       expect(
-        OpdAllAtomPermissions.admissionHandoff.isAllowed(noInpatient),
-        isFalse,
-      );
-      expect(
-        OpdAllAtomPermissions.nestedAdmissionWrite.isAllowed(noInpatient),
+        OpdArrivalsAtomPermissions.nestedAdmissionWrite.isAllowed(noInpatient),
         isFalse,
       );
     });
 
     test('nested cross-module matrix rows n/a except billing + admission', () {
       expect(
-        OpdAllAtomPermissions.nestedRead,
+        OpdArrivalsAtomPermissions.nestedRead,
         same(opdWorkspaceReadRequirement),
       );
       expect(
-        OpdAllAtomPermissions.nestedWrite,
+        OpdArrivalsAtomPermissions.nestedWrite,
         same(opdFrontDeskActionRequirement),
       );
       expect(
-        OpdAllAtomPermissions.nestedBillingWrite,
+        OpdArrivalsAtomPermissions.nestedBillingWrite,
         same(opdBillingActionRequirement),
       );
     });
   });
 
-  group('Opd All tab UI gates', () {
-    testWidgets('read-only: All list visible; mutation atoms absent (∩ denial)', (
+  group('Opd Arrivals tab UI gates', () {
+    testWidgets(
+      'read-only: Arrivals list visible; mutation atoms absent (∩ denial)',
+      (WidgetTester tester) async {
+        await _pumpArrivalsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        expect(find.text('Arrivals'), findsWidgets);
+        expect(find.text('Arrivals Patient'), findsOneWidget);
+        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        expect(find.text('Start OPD encounter'), findsNothing);
+        expect(find.text('Next action'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('writer: Start encounter next-action + toolbar present', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
-        tester,
-        repository: repository,
-        accessPolicy: _readerPolicy(),
-      );
-
-      expect(find.textContaining('All worklist'), findsOneWidget);
-      expect(find.text('All Active Patient'), findsOneWidget);
-      expect(find.byType(AppTabToolbarPrimary), findsNothing);
-      expect(find.text('Start OPD encounter'), findsNothing);
-      expect(find.text('Record vitals'), findsNothing);
-      expect(find.text('Next action'), findsNothing);
-    });
-
-    testWidgets('writer: Start encounter + Record vitals present', (
-      WidgetTester tester,
-    ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
@@ -581,14 +528,14 @@ void main() {
 
       expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsWidgets);
-      expect(find.text('Record vitals'), findsWidgets);
       expect(find.text('Next action'), findsWidgets);
+      expect(find.text('Arrivals Patient'), findsOneWidget);
     });
 
-    testWidgets('∪ allowance: clinical:read alone shows All worklist chrome', (
+    testWidgets('∪ allowance: clinical:read alone shows Arrivals chrome', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -597,17 +544,33 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('All worklist'), findsOneWidget);
-      expect(find.text('All Active Patient'), findsOneWidget);
+      expect(find.text('Arrivals'), findsWidgets);
+      expect(find.text('Arrivals Patient'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.byTooltip('Settings'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsNothing);
     });
 
-    testWidgets('billing-only: All tab collapsed (no patient/clinical read)', (
+    testWidgets('∪ allowance: patient:read alone shows Arrivals list', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          roles: const <String>['CUSTOM_READER'],
+        ),
+      );
+
+      expect(find.text('Arrivals Patient'), findsOneWidget);
+      expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    });
+
+    testWidgets('billing-only: Arrivals tab collapsed (no patient/clinical read)', (
+      WidgetTester tester,
+    ) async {
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -618,82 +581,17 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.text('Start OPD encounter'), findsNothing);
-      expect(find.text('All Active Patient'), findsNothing);
+      expect(find.text('Arrivals Patient'), findsNothing);
     });
-
-    testWidgets('pay next-action absent without billing:write', (
-      WidgetTester tester,
-    ) async {
-      await _pumpAllTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.patientRead,
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-          },
-          roles: const <String>['DOCTOR', 'NURSE'],
-        ),
-        flows: const <OpdFlowSummary>[_paymentFlow],
-      );
-
-      expect(find.text('All Pay Patient'), findsOneWidget);
-      expect(find.text('Pay consultation'), findsNothing);
-    });
-
-    testWidgets('pay next-action present with billing:write + module', (
-      WidgetTester tester,
-    ) async {
-      await _pumpAllTab(
-        tester,
-        repository: repository,
-        accessPolicy: _writerPolicy(),
-        flows: const <OpdFlowSummary>[_paymentFlow],
-      );
-
-      expect(find.text('All Pay Patient'), findsOneWidget);
-      expect(find.text('Pay consultation'), findsWidgets);
-    });
-
-    testWidgets('deep link panel=vitals blocked without vitals write', (
-      WidgetTester tester,
-    ) async {
-      await _pumpAllTab(
-        tester,
-        repository: repository,
-        accessPolicy: _readerPolicy(),
-        initialLocation: '/opd?flowId=encounter-all-active&panel=vitals',
-      );
-
-      expect(find.text('FLOW ACTIONS'), findsNothing);
-      expect(find.text('Record vitals'), findsNothing);
-    });
-
-    testWidgets(
-      'deep link panel=vitals opens vitals for authorized writer (integration)',
-      (WidgetTester tester) async {
-        await _pumpAllTab(
-          tester,
-          repository: repository,
-          accessPolicy: _writerPolicy(),
-          initialLocation: '/opd?flowId=encounter-all-active&panel=vitals',
-        );
-
-        expect(find.text('FLOW ACTIONS'), findsNothing);
-        expect(find.textContaining('Vitals'), findsWidgets);
-      },
-    );
 
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
         appointments: const <OpdAppointment>[],
-        flows: const <OpdFlowSummary>[],
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
@@ -703,7 +601,7 @@ void main() {
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
@@ -713,64 +611,79 @@ void main() {
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('mobile viewport: read-only hides next-action trailing', (
+    testWidgets('mobile viewport: read-only hides Start encounter', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
         physicalSize: const Size(390, 844),
       );
 
-      expect(find.text('All Active Patient'), findsOneWidget);
-      expect(find.text('Record vitals'), findsNothing);
+      expect(find.text('Arrivals Patient'), findsOneWidget);
+      expect(find.text('Start OPD encounter'), findsNothing);
       expect(find.byType(AppTabToolbarPrimary), findsNothing);
     });
 
-    testWidgets('desktop dark theme: writer next-action still mounts', (
+    testWidgets('desktop dark theme: writer Start encounter still mounts', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
         themeMode: ThemeMode.dark,
       );
 
-      expect(find.text('Record vitals'), findsWidgets);
-      expect(find.text('All Active Patient'), findsOneWidget);
+      expect(find.text('Start OPD encounter'), findsWidgets);
+      expect(find.text('Arrivals Patient'), findsOneWidget);
       expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     });
 
-    testWidgets('post-mutation sync: vitals dialog opens for writer', (
+    testWidgets('post-mutation sync path: Start encounter opens dialog', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _writerPolicy(),
       );
 
-      await tester.tap(find.text('Record vitals').first);
+      await tester.tap(find.text('Start OPD encounter').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('FLOW ACTIONS'), findsNothing);
-      expect(find.textContaining('Vitals'), findsWidgets);
+      expect(find.byType(AppDialog), findsWidgets);
     });
 
-    testWidgets('integration: section=all deep link selects All worklist', (
+    testWidgets('integration: section=arrivals deep link selects Arrivals', (
       WidgetTester tester,
     ) async {
-      final GoRouter router = await _pumpAllTab(
+      final GoRouter router = await _pumpArrivalsTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
-        initialLocation: '/opd?section=all',
+        initialLocation: '/opd?section=arrivals',
       );
 
-      expect(router.state.uri.queryParameters['section'], 'all');
-      expect(find.textContaining('All worklist'), findsOneWidget);
+      expect(router.state.uri.queryParameters['section'], 'arrivals');
+      expect(find.text('Arrivals'), findsWidgets);
+    });
+
+    testWidgets('row select hub omits Start duplicate for writer', (
+      WidgetTester tester,
+    ) async {
+      await _pumpArrivalsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+      );
+
+      await tester.tap(find.text('Arrivals Patient'));
+      await tester.pumpAndSettle();
+
+      // Appointment hub opens; primary Start is omitted (worklist next-action).
+      expect(find.text('Appointment actions'), findsOneWidget);
     });
   });
 }

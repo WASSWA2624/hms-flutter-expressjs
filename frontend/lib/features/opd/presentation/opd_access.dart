@@ -34,9 +34,19 @@ const AccessRequirement opdReadRequirement = opdWorkspaceReadRequirement;
 const AccessRequirement opdWorkspaceEntryRequirement =
     RouteAccessCatalog.opdEntry;
 
-/// Prompt / AppRoutes route-entry ∪ alias (same as catalog entry).
-const AccessRequirement opdWorkspaceRouteUnionRequirement =
-    RouteAccessCatalog.opdEntry;
+/// Prompt / AppRoutes route-entry ∪ (`patient:read` | `clinical:read` |
+/// `billing:read` | `operations:read` | `emergency:read`). Shell gate remains
+/// [opdWorkspaceEntryRequirement] (`opd:read`) for unique destination isolation.
+const AccessRequirement opdWorkspaceRouteUnionRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.patientRead,
+    AppPermissions.clinicalRead,
+    AppPermissions.billingRead,
+    AppPermissions.operationsRead,
+    AppPermissions.emergencyRead,
+  ],
+  activeModules: <String>[opdSchedulingQueueModule],
+);
 
 /// Matrix create / update / delete ∩ `clinical:write` + module.
 ///
@@ -88,6 +98,10 @@ bool canWriteOpdBilling(AppAccessPolicy policy) {
   return opdPaymentWriteRequirement.isAllowed(policy);
 }
 
+bool canWriteOpdAdmissionHandoff(AppAccessPolicy policy) {
+  return opdAdmissionHandoffRequirement.isAllowed(policy);
+}
+
 bool canStartOpdEncounter(AppAccessPolicy policy) {
   return opdStartEncounterRequirement.isAllowed(policy);
 }
@@ -127,6 +141,18 @@ bool canViewOpdArrivals(AppAccessPolicy policy) {
 
 bool canViewOpdActive(AppAccessPolicy policy) {
   return OpdActiveAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewOpdFollowUps(AppAccessPolicy policy) {
+  return OpdFollowUpsAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canReadOpdFollowUps(AppAccessPolicy policy) {
+  return opdFollowUpsRequirement.isAllowed(policy);
+}
+
+bool canWriteOpdFollowUps(AppAccessPolicy policy) {
+  return opdFollowUpsWriteRequirement.isAllowed(policy);
 }
 
 /// Tabs the user may open; empty when no board read passes.
@@ -175,18 +201,53 @@ AccessRequirement opdStartEncounterRequirementForSection(
     OpdWorkspaceSection.queue => OpdQueueAtomPermissions.startEncounter,
     OpdWorkspaceSection.triage => OpdTriageAtomPermissions.startEncounter,
     OpdWorkspaceSection.active => OpdActiveAtomPermissions.startEncounter,
-    OpdWorkspaceSection.followUps => opdStartEncounterRequirement,
+    // Start OPD is absent on Follow-ups chrome; keep source gate for callers.
+    OpdWorkspaceSection.followUps => OpdFollowUpsAtomPermissions.startEncounter,
   };
 }
 
 /// Requirement for a deep-linked `panel=` mutation on OPD flows.
+///
+/// Mirrors board next-action panel mapping without importing the board UI
+/// library (avoids cycles with the workspace page).
 AccessRequirement? opdFocusedPanelRequirement(String panel) {
-  final OpdBoardNextActionKind? kind = opdBoardNextActionKindFromPanel(panel);
-  if (kind == null || kind == OpdBoardNextActionKind.none) {
+  final String key = panel.trim().toUpperCase();
+  if (key.isEmpty) {
     return null;
   }
-  return opdBoardNextActionRequirement(kind) ??
-      OpdActiveAtomPermissions.panelDeepLink;
+  return switch (key) {
+    'PAYMENT' ||
+    'BILLING' ||
+    'PAYMENT_DUE' ||
+    'WAITING_CONSULTATION_PAYMENT' => opdBillingActionRequirement,
+    'VITALS' || 'VITALS_NEEDED' || 'WAITING_VITALS' => opdVitalsActionRequirement,
+    'DOCTOR' ||
+    'DOCTOR_NEEDED' ||
+    'ASSIGNMENT' ||
+    'WAITING_DOCTOR_ASSIGNMENT' => opdReceptionActionRequirement,
+    'REVIEW' ||
+    'WITH_DOCTOR' ||
+    'WAITING_DOCTOR_REVIEW' => opdDoctorActionRequirement,
+    'LAB' ||
+    'LAB_PENDING' ||
+    'LAB_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'IMAGING' ||
+    'RADIOLOGY' ||
+    'IMAGING_PENDING' ||
+    'RADIOLOGY_REQUESTED' ||
+    'PHARMACY' ||
+    'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' => opdReceptionActionRequirement,
+    'DISPOSITION' ||
+    'DECISION' ||
+    'DECISION_NEEDED' ||
+    'WAITING_DISPOSITION' => opdDoctorActionRequirement,
+    'ADMISSION' ||
+    'ADMISSION_PENDING' ||
+    'ADMITTED' => opdAdmissionHandoffRequirement,
+    _ => null,
+  };
 }
 
 /// Whether any workflow next-action column may mount for [section].
@@ -466,23 +527,73 @@ abstract final class OpdTriageAtomPermissions {
   static const AccessRequirement catalogEntry = RouteAccessCatalog.opdEntry;
 }
 
-/// Follow-ups tab — read ∪; complete needs clinical write ∩.
+/// Follow-ups tab atom → permission mapping (inventory + matrix).
+///
+/// Shared follow-up worklist (`/opd?section=follow-ups`). Hosted via
+/// [FollowUpWorklistPanel] with OPD read/write overrides. Nested cross-module
+/// matrix rows are _(n/a)_ — billing / admission / Start OPD are **not**
+/// reachable from this tab. Create / update / delete use matrix ∩
+/// `clinical:write` via [opdClinicalWriteRequirement]. Route entry keeps
+/// catalog ∩ `opd:read` ([routeEntry]); prompt ∪ is [routeEntryUnion]. Tab
+/// chrome stays ∪ `patient:read` | `clinical:read`. No Start OPD primary /
+/// row next-action on this tab.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Follow-ups tab / count badge | navigate | read ∪ ([tab]) |
+/// | Search / Clear / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Row select → Follow-up details | read | ([detail]) |
+/// | Detail Close (read-only footer) | progressive disclosure | ([close]) |
+/// | Reschedule follow-up | update | write ∩ ([reschedule]) |
+/// | Mark completed | update | write ∩ ([markCompleted] / [complete]) |
+/// | Save follow-up (nested reschedule dialog) | update | write ∩ ([saveFollowUp]) |
+/// | Hard delete / void | delete | write ∩ ([delete]) — not mounted |
+/// | Start OPD encounter | create | absent on this tab ([startEncounter] unused) |
+/// | Nested billing / admission panels | nested write | _(n/a)_ — not reachable |
+/// | Route entry (deep link) | navigate | catalog ∩ `opd:read` ([routeEntry]) |
 abstract final class OpdFollowUpsAtomPermissions {
   static const AccessRequirement tab = opdFollowUpsRequirement;
   static const AccessRequirement listChrome = opdFollowUpsRequirement;
   static const AccessRequirement search = opdFollowUpsRequirement;
+  static const AccessRequirement settings = opdFollowUpsRequirement;
   static const AccessRequirement empty = opdFollowUpsRequirement;
   static const AccessRequirement loading = opdFollowUpsRequirement;
   static const AccessRequirement retry = opdFollowUpsRequirement;
-  static const AccessRequirement write = opdFollowUpsWriteRequirement;
-  static const AccessRequirement complete = opdFollowUpsWriteRequirement;
+
+  /// Authorized success path after complete / reschedule (write-gated entry).
+  static const AccessRequirement success = opdFollowUpsWriteRequirement;
+
+  /// Authorized form validation feedback (nested reschedule dialog).
+  static const AccessRequirement validation = opdFollowUpsWriteRequirement;
+  static const AccessRequirement rowSelect = opdFollowUpsRequirement;
+  static const AccessRequirement detail = opdFollowUpsRequirement;
+  static const AccessRequirement close = opdFollowUpsRequirement;
   static const AccessRequirement create = opdFollowUpsWriteRequirement;
   static const AccessRequirement update = opdFollowUpsWriteRequirement;
   static const AccessRequirement delete = opdFollowUpsWriteRequirement;
+  static const AccessRequirement reschedule = opdFollowUpsWriteRequirement;
+  static const AccessRequirement markCompleted = opdFollowUpsWriteRequirement;
+  static const AccessRequirement complete = opdFollowUpsWriteRequirement;
+  static const AccessRequirement saveFollowUp = opdFollowUpsWriteRequirement;
+  static const AccessRequirement write = opdFollowUpsWriteRequirement;
+  static const AccessRequirement clinicalWrite = opdClinicalWriteRequirement;
+
+  /// Source encounter gate — toolbar does not mount Start OPD on Follow-ups.
+  static const AccessRequirement startEncounter = opdStartEncounterRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_; reuses clinical write ∩ / read ∪.
   static const AccessRequirement nestedWrite = opdFollowUpsWriteRequirement;
   static const AccessRequirement nestedRead = opdFollowUpsRequirement;
+  static const AccessRequirement nestedBillingWrite =
+      opdBillingActionRequirement;
+  static const AccessRequirement nestedAdmissionWrite =
+      opdAdmissionHandoffRequirement;
+  static const AccessRequirement entry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       opdWorkspaceRouteUnionRequirement;
   static const AccessRequirement catalogEntry = RouteAccessCatalog.opdEntry;
+  static const AccessRequirement read = opdFollowUpsRequirement;
 }

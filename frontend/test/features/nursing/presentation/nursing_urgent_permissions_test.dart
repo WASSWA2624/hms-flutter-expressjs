@@ -389,6 +389,27 @@ void main() {
       );
       expect(
         identical(
+          NursingUrgentAtomPermissions.listChrome,
+          nursingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.nestedRead,
+          nursingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.nestedWrite,
+          nursingWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           nursingBoardTabRequirement(NursingQueueScope.urgent),
           NursingUrgentAtomPermissions.tab,
         ),
@@ -412,6 +433,16 @@ void main() {
         isTrue,
       );
       expect(
+        identical(
+          nursingNextActionRequirement(
+            NursingNextActionKind.medication,
+            scope: NursingQueueScope.urgent,
+          ),
+          NursingUrgentAtomPermissions.nextActionMedication,
+        ),
+        isTrue,
+      );
+      expect(
         AppRoutes.nursing.requiredAnyPermissions.toSet(),
         RouteAccessCatalog.nursingEntry.anyPermissions.toSet(),
       );
@@ -431,7 +462,26 @@ void main() {
         );
         expect(
           NursingUrgentAtomPermissions.write.anyPermissions,
+          contains(AppPermissions.patientWrite),
+        );
+        expect(
+          NursingUrgentAtomPermissions.write.anyPermissions,
           contains(AppPermissions.lastOfficeWrite),
+        );
+        // Nested cross-module matrix rows _(n/a)_ — medication uses pharmacy ∩.
+        expect(
+          identical(
+            NursingUrgentAtomPermissions.nestedRead,
+            NursingUrgentAtomPermissions.listChrome,
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            NursingUrgentAtomPermissions.nestedWrite,
+            NursingUrgentAtomPermissions.write,
+          ),
+          isTrue,
         );
       },
     );
@@ -455,6 +505,12 @@ void main() {
         isFalse,
       );
       expect(
+        NursingUrgentAtomPermissions.nextActionMedication.isAllowed(
+          pharmacyOnly,
+        ),
+        isFalse,
+      );
+      expect(
         NursingUrgentAtomPermissions.nextActionEscalate.isAllowed(pharmacyOnly),
         isFalse,
       );
@@ -470,33 +526,73 @@ void main() {
       );
       expect(NursingUrgentAtomPermissions.tab.isAllowed(clinicalOnly), isTrue);
       expect(NursingUrgentAtomPermissions.tab.isAllowed(patientOnly), isTrue);
+      expect(
+        NursingUrgentAtomPermissions.listChrome.isAllowed(clinicalOnly),
+        isTrue,
+      );
       expect(canViewNursingUrgent(clinicalOnly), isTrue);
       expect(canViewNursingUrgent(patientOnly), isTrue);
       expect(canViewNursingTab(clinicalOnly, NursingQueueScope.urgent), isTrue);
       expect(canViewNursingTab(patientOnly, NursingQueueScope.urgent), isTrue);
     });
 
-    test('last_office:read alone does not unlock write or Urgent chrome', () {
-      final AppAccessPolicy lastOfficeRead = _policy(
-        permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+    test('∪ write allowance: patient:write + roles unlocks source write gate', () {
+      final AppAccessPolicy patientWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+        },
       );
-      expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
       expect(
-        NursingUrgentAtomPermissions.tab.isAllowed(lastOfficeRead),
-        isFalse,
-      );
-      expect(
-        NursingUrgentAtomPermissions.write.isAllowed(lastOfficeRead),
-        isFalse,
+        NursingUrgentAtomPermissions.write.isAllowed(patientWriter),
+        isTrue,
       );
       expect(
         NursingUrgentAtomPermissions.nextActionEscalate.isAllowed(
-          lastOfficeRead,
+          patientWriter,
         ),
+        isTrue,
+      );
+      expect(
+        NursingUrgentAtomPermissions.clinicalWrite.isAllowed(patientWriter),
         isFalse,
       );
-      expect(canWriteNursing(lastOfficeRead), isFalse);
+      expect(canWriteNursing(patientWriter), isTrue);
     });
+
+    test(
+      'last_office:read / operations:read alone do not unlock Urgent chrome',
+      () {
+        final AppAccessPolicy lastOfficeRead = _policy(
+          permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+        );
+        final AppAccessPolicy operationsRead = _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        );
+        expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
+        expect(canEnterNursingWorkspace(operationsRead), isTrue);
+        expect(
+          NursingUrgentAtomPermissions.tab.isAllowed(lastOfficeRead),
+          isFalse,
+        );
+        expect(
+          NursingUrgentAtomPermissions.tab.isAllowed(operationsRead),
+          isFalse,
+        );
+        expect(
+          NursingUrgentAtomPermissions.write.isAllowed(lastOfficeRead),
+          isFalse,
+        );
+        expect(
+          NursingUrgentAtomPermissions.nextActionEscalate.isAllowed(
+            lastOfficeRead,
+          ),
+          isFalse,
+        );
+        expect(canWriteNursing(lastOfficeRead), isFalse);
+      },
+    );
 
     test('subscription denial: permissions without inpatient module strip UI', () {
       final AppAccessPolicy noModule = _policy(
@@ -521,18 +617,18 @@ void main() {
       expect(canViewNursingUrgent(noModule), isFalse);
     });
 
-    test('session without facility still evaluates RBAC+module Urgent gates', () {
-      final AppAccessPolicy noFacility = _policy(
+    test('ABAC session still evaluates Urgent when facility is present', () {
+      final AppAccessPolicy withFacility = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
+          AppPermissions.patientRead,
         },
-        facilityId: null,
       );
-      // Facility ABAC is enforced by route/session guards; atom helpers here
-      // still require clinical|patient read + inpatient module.
-      expect(NursingUrgentAtomPermissions.tab.isAllowed(noFacility), isTrue);
-      expect(NursingUrgentAtomPermissions.write.isAllowed(noFacility), isTrue);
+      expect(NursingUrgentAtomPermissions.tab.isAllowed(withFacility), isTrue);
+      expect(
+        canViewNursingTab(withFacility, NursingQueueScope.urgent),
+        isTrue,
+      );
     });
   });
 
@@ -667,7 +763,7 @@ void main() {
       expect(find.text('Add note'), findsOneWidget);
     });
 
-    testWidgets('authorized empty chrome remains observable', (
+    testWidgets('authorized empty + loading chrome remain observable', (
       WidgetTester tester,
     ) async {
       await _pumpUrgentTab(
@@ -695,6 +791,21 @@ void main() {
       expect(find.byTooltip('Escalate'), findsNothing);
     });
 
+    testWidgets('mobile light theme: writer compact Escalate mounts', (
+      WidgetTester tester,
+    ) async {
+      await _pumpUrgentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _writerPolicy(),
+        physicalSize: const Size(390, 844),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Urgent Patient'), findsOneWidget);
+      expect(find.byTooltip('Escalate'), findsWidgets);
+    });
+
     testWidgets('desktop dark theme: writer Escalate still mounts', (
       WidgetTester tester,
     ) async {
@@ -709,21 +820,23 @@ void main() {
       expect(find.text('Urgent Patient'), findsOneWidget);
     });
 
-    testWidgets('post-mutation: Escalate dialog opens for authorized write', (
-      WidgetTester tester,
-    ) async {
-      await _pumpUrgentTab(
-        tester,
-        repository: repository,
-        accessPolicy: _writerPolicy(),
-      );
+    testWidgets(
+      'post-mutation sync: Escalate dialog opens for authorized write',
+      (WidgetTester tester) async {
+        await _pumpUrgentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
 
-      await tester.tap(find.byTooltip('Escalate').first);
-      await _pumpAfterAction(tester);
+        await tester.tap(find.byTooltip('Escalate').first);
+        await _pumpAfterAction(tester);
 
-      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      // Escalation reuses handover dialog chrome (validation / success path).
-      expect(find.byType(AppDialog), findsWidgets);
-    });
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        // Dialog mount proves authorized write path; listWardPatients is the
+        // sync seam after successful submit (validation / success chrome).
+        verify(() => repository.listWardPatients(any())).called(greaterThan(0));
+      },
+    );
   });
 }

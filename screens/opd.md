@@ -81,9 +81,41 @@ Tab-strip **Refresh** was removed.
 
 ### Follow-ups tab
 
+Shared follow-up worklist (`FollowUpWorklistPanel`, OPD scope). No **Start OPD encounter** primary. Gates: `OpdFollowUpsAtomPermissions` — read ∪ `patient:read` | `clinical:read`; complete / reschedule ∩ `clinical:write`.
+
+- **Follow-ups** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to Follow-ups section.
+  - Condition: Read ∪; tab hidden when denied.
+
+- **Search**, **Clear**, **Settings** (columns)
+  - Location: `FollowUpWorklistPanel` / `AppListTable` chrome.
+  - Opens modal: Table Settings when used.
+  - Immediate result: Client search / column visibility.
+  - Condition: Read ∪; Follow-ups body mounted.
+
+- **Empty / loading / error / Try again**
+  - Location: Panel body.
+  - Opens modal: No.
+  - Immediate result: Empty copy / spinner / retry reload.
+  - Condition: Authorized read; no write affordances in empty.
+
+- **Row select** → Follow-up details
+  - Location: Table row / mobile item.
+  - Opens modal: Yes — `ReceptionFollowUpDetailDialog`.
+  - Immediate result: Shows patient / schedule; write actions when ∩ allowed.
+  - Condition: Read ∪.
+
+- **Mark completed** / **Reschedule follow-up** / **Save follow-up**
+  - Location: Detail dialog (and nested reschedule dialog).
+  - Opens modal: Reschedule opens save dialog.
+  - Immediate result: Completes or updates follow-up; snackbar; list refresh.
+  - Condition: Write ∩ `clinical:write`; unauthorized controls absent.
+
 - Follow-up worklist panel (`FollowUpWorklistPanel`, OPD scope)
   - Location: Follow-ups section body.
-  - Condition: Follow-ups tab selected.
+  - Condition: Follow-ups tab selected and read ∪ allowed.
 
 ### Deep links
 

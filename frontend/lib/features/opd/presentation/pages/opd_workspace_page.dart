@@ -347,7 +347,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
 
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    if (!OpdActiveAtomPermissions.detail.isAllowed(policy)) {
+    if (!OpdAllAtomPermissions.detail.isAllowed(policy)) {
       return;
     }
 
@@ -409,8 +409,8 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
       return const FollowUpWorklistPanel(
         scope: FollowUpWorklistScope(encounterType: 'OPD'),
         storageKeyPrefix: 'opd_follow_ups',
-        readRequirement: opdFollowUpsRequirement,
-        writeRequirement: opdFollowUpsWriteRequirement,
+        readRequirement: OpdFollowUpsAtomPermissions.tab,
+        writeRequirement: OpdFollowUpsAtomPermissions.write,
       );
     }
     final List<_OpdTableItem> allItems = _getAllItems(context);
