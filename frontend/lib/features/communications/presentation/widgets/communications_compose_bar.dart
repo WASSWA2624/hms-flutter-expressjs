@@ -17,7 +17,6 @@ class CommunicationsComposeBar extends ConsumerStatefulWidget {
     this.onCancelReply,
     this.autofocus = false,
     this.onAutofocusHandled,
-    this.readOnlyBanner,
     this.maxAttachments = 5,
     this.onSent,
     super.key,
@@ -29,7 +28,6 @@ class CommunicationsComposeBar extends ConsumerStatefulWidget {
   final VoidCallback? onCancelReply;
   final bool autofocus;
   final VoidCallback? onAutofocusHandled;
-  final String? readOnlyBanner;
   final int maxAttachments;
   final VoidCallback? onSent;
 
@@ -84,40 +82,9 @@ class _CommunicationsComposeBarState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    // Unauthorized compose must not mount (no routine "no access" / lock banner).
     if (!widget.canWrite) {
-      final String? banner = widget.readOnlyBanner;
-      if (banner == null || banner.trim().isEmpty) {
-        return const SizedBox.shrink();
-      }
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          border: Border(
-            top: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Row(
-            children: <Widget>[
-              Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  banner,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return DecoratedBox(

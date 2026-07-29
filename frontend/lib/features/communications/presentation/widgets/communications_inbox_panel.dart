@@ -47,7 +47,6 @@ class CommunicationsInboxPanel extends ConsumerWidget {
       child: CommunicationsConversationList(
         state: state,
         searchController: searchController,
-        canWrite: canWrite,
       ),
     );
 

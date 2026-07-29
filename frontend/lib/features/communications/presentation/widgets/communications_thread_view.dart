@@ -146,15 +146,15 @@ class _CommunicationsThreadViewState
                     },
                   ),
           ),
-          CommunicationsComposeBar(
-            canWrite: widget.canWrite,
-            isSaving: widget.isSaving,
-            replyToMessage: _replyToMessage,
-            autofocus: widget.composeAutofocus,
-            onAutofocusHandled: widget.onComposeAutofocusHandled,
-            readOnlyBanner: context.l10n.communicationsComposeReadOnlyBody,
-            onCancelReply: () => setState(() => _replyToMessage = null),
-          ),
+          if (widget.canWrite)
+            CommunicationsComposeBar(
+              canWrite: true,
+              isSaving: widget.isSaving,
+              replyToMessage: _replyToMessage,
+              autofocus: widget.composeAutofocus,
+              onAutofocusHandled: widget.onComposeAutofocusHandled,
+              onCancelReply: () => setState(() => _replyToMessage = null),
+            ),
         ],
       ),
     );

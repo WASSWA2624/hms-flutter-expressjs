@@ -88,6 +88,7 @@ AppAccessPolicy _communicationsWritePolicy() {
       permissions: <AppPermission>{
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
+        AppPermissions.communicationsDelete,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
@@ -95,6 +96,7 @@ AppAccessPolicy _communicationsWritePolicy() {
           licenseStatus: 'ACTIVE',
         ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -111,6 +113,7 @@ AppAccessPolicy _communicationsReadOnlyPolicy() {
           licenseStatus: 'ACTIVE',
         ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }

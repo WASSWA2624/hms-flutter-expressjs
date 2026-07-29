@@ -2,7 +2,12 @@
 
 Primary surface: `CommunicationsWorkspacePage` (`frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart`).
 
-Write gate: `AppPermissions.communicationsWrite` (new message/group, compose, thread menu, mark read/unread, archive). Read: `communicationsRead` via route access. Unauthorized write controls do not render.
+Access helpers: `frontend/lib/features/communications/presentation/communications_access.dart`.
+- Read (∩): `communicationsWorkspaceReadRequirement` (`communications:read` + `notifications-communications`).
+- Write (∩): `communicationsWorkspaceWriteRequirement` (`communications:write` + module) — New message/group, compose, thread menu, mark read/unread, conversation archive, manage members.
+- Delete (∩): `communicationsWorkspaceDeleteRequirement` (`communications:delete` + module) — notification Archive (backend bulk archive); hard delete thread/template when exposed.
+- Route entry (∪): `communicationsWorkspaceEntryRequirement` (`communications:read` | `communications:write`).
+- Tab strip filters via `communicationsAllowedPanels` / per-tab `*AtomPermissions.tab`. Unauthorized write/delete controls do not render (no disabled stubs / routine “no access” banners).
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -27,7 +32,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `panel`, updates URL `?panel=…`, applies panel via controller.
-  - Condition: Always when workspace loads; counts from page totals.
+  - Condition: Visible when `communicationsAllowedPanels` includes the panel (∩ `communications:read` + module).
 
 - **New message** (primary)
   - Location: Tab-strip primary on Messages when write-authorized.
@@ -67,7 +72,7 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
   - Location: `next_action` column.
   - Opens modal: No for mark read/unread; opens detail when read-only (**View**).
   - Immediate result: Marks read/unread directly; snackbar on success.
-  - Condition: Write shows Mark read/unread; read-only shows View.
+  - Write shows Mark read/unread (`communicationsWrite`); read-only shows View.
 - **Next action** (Deliveries)
   - Location: `next_action` column.
   - Immediate result: Opens linked record when path exists; otherwise opens delivery detail (View / View error).
@@ -78,7 +83,7 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 #### Notification detail (from row select / deep link)
 
 - Shows title, message, status badges, metadata, linked record (when path present), delivery history.
-- **Archive** (footer) — confirm dialog; then archive mutation + snackbar. Condition: `communicationsWrite`.
+- **Archive** (footer) — confirm dialog; then archive mutation + snackbar. Condition: `communicationsDelete` (backend bulk archive; matrix delete).
 - Mark read/unread absent from detail (row next-action only).
 
 #### Delivery detail (from row select / next-action View)
@@ -100,10 +105,14 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 
 ## Verification (Req 7)
 
-- Widget tests in `frontend/test/features/communications/presentation/communications_workspace_page_test.dart` prove:
-  - **Refresh** absent from the tab strip on inbox and other panels (desktop/mobile).
-  - **New message** / **New group** only on Messages with write; absent when unauthorized.
-  - Notification detail shows **Archive** only (no Mark read/unread).
-  - Row **Mark read** completes without a confirm dialog and shows success snackbar.
-  - Delivery detail has no duplicate Open linked footer when no path.
-  - Read-only detail hides Archive / Mark read / Mark unread.
+- Widget/unit tests in `frontend/test/features/communications/presentation/`:
+  - `communications_access_test.dart` — requirement ∩/∪, module strip, plan delete cap, Messages/Notifications atom map reuse.
+  - `communications_messages_permissions_test.dart` — unauthorized absence / authorized presence for Messages chrome, compose, thread menu; route-entry ∪; subscription strip; mobile/desktop; light/dark; post-send sync.
+  - `communications_notifications_permissions_test.dart` — Notifications ∩ denial / presence, Archive delete gate, Mark read write gate, route-entry ∪, subscription/plan strip, sync, viewports, light/dark.
+  - `communications_workspace_page_test.dart` — **Refresh** absent; **New message** / **New group** only on Messages with write; notification/delivery detail inventory (non-Messages tabs).
+- **Refresh** absent from the tab strip on inbox and other panels (desktop/mobile).
+- **New message** / **New group** only on Messages with write; absent when unauthorized.
+- Notification detail shows **Archive** only when `communications:delete` (no Mark read/unread).
+- Row **Mark read** completes without a confirm dialog and shows success snackbar.
+- Delivery detail has no duplicate Open linked footer when no path.
+- Read-only detail hides Archive / Mark read / Mark unread.

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_detail_dialogs.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_inbox_panel.dart';
@@ -226,14 +227,13 @@ class _CommunicationsWorkspaceContentState
         if (notification == null) {
           return;
         }
+        final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
         await showCommunicationsNotificationDetailDialog(
           context,
           ref,
           state,
           notification,
-          canWrite: ref
-              .read(appAccessPolicyProvider)
-              .grants(AppPermissions.communicationsWrite),
+          canDelete: canDeleteCommunications(policy),
         );
       case CommunicationsPanel.templates:
         final CommunicationTemplate? template = state.selectedTemplate;
@@ -312,7 +312,29 @@ class _CommunicationsWorkspaceContentState
       communicationsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = policy.grants(AppPermissions.communicationsWrite);
+    final bool canWrite = canWriteCommunications(policy);
+    final bool canDelete = canDeleteCommunications(policy);
+    final List<CommunicationsPanel> visiblePanels =
+        communicationsAllowedPanels(policy);
+    if (visiblePanels.isEmpty) {
+      // No authorized panels — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    final bool canShowCurrentPanel = visiblePanels.contains(state.query.panel);
+    if (!canShowCurrentPanel) {
+      final CommunicationsPanel? fallback = communicationsFallbackPanel(policy);
+      if (fallback != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted ||
+              communicationsAllowedPanels(
+                ref.read(appAccessPolicyProvider),
+              ).contains(widget.state.query.panel)) {
+            return;
+          }
+          controller.applyPanel(fallback);
+        });
+      }
+    }
     final Object? lastFailure = state.lastFailure;
     _scheduleDeepLinkDialog(state);
 
@@ -323,8 +345,7 @@ class _CommunicationsWorkspaceContentState
         children: <Widget>[
           AppTabStrip(
             tabs: <AppTabItem>[
-              for (final CommunicationsPanel panel
-                  in CommunicationsPanel.values)
+              for (final CommunicationsPanel panel in visiblePanels)
                 AppTabItem(
                   id: panel.serverValue,
                   icon: _panelIcon(panel),
@@ -332,11 +353,16 @@ class _CommunicationsWorkspaceContentState
                   count: _panelCount(state, panel),
                 ),
             ],
-            selectedId: state.query.panel.serverValue,
+            selectedId: canShowCurrentPanel
+                ? state.query.panel.serverValue
+                : visiblePanels.first.serverValue,
             onTabTapped: (String tabId) {
               final CommunicationsPanel panel = CommunicationsPanel.fromServer(
                 tabId,
               );
+              if (!visiblePanels.contains(panel)) {
+                return;
+              }
               controller.applyPanel(panel);
             },
             primaryAction: _buildPrimaryAction(l10n, state, canWrite),
@@ -350,14 +376,16 @@ class _CommunicationsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _CommunicationsListPanel(
-            state: state,
-            searchController: _searchController,
-            canWrite: canWrite,
-            notificationColumns: _notificationColumns,
-            deliveryColumns: _deliveryColumns,
-            templateColumns: _templateColumns,
-          ),
+          if (canShowCurrentPanel)
+            _CommunicationsListPanel(
+              state: state,
+              searchController: _searchController,
+              canWrite: canWrite,
+              canDelete: canDelete,
+              notificationColumns: _notificationColumns,
+              deliveryColumns: _deliveryColumns,
+              templateColumns: _templateColumns,
+            ),
         ],
       ),
     );
@@ -369,6 +397,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.canWrite,
+    required this.canDelete,
     required this.notificationColumns,
     required this.deliveryColumns,
     required this.templateColumns,
@@ -377,6 +406,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
   final bool canWrite;
+  final bool canDelete;
   final AppListTableColumnVisibilityController<NotificationItem>
   notificationColumns;
   final AppListTableColumnVisibilityController<NotificationDelivery>
@@ -404,6 +434,8 @@ class _CommunicationsListPanel extends ConsumerWidget {
         state: state,
         searchController: searchController,
         columnVisibilityController: notificationColumns,
+        canWrite: canWrite,
+        canDelete: canDelete,
       ),
       CommunicationsPanel.deliveries => _DeliveriesTable(
         state: state,
@@ -424,12 +456,16 @@ class _NotificationsTable extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.canWrite,
+    required this.canDelete,
   });
 
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<NotificationItem>
   columnVisibilityController;
+  final bool canWrite;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -472,7 +508,7 @@ class _NotificationsTable extends ConsumerWidget {
             ref,
             state,
             item,
-            canWrite: _canWrite(ref),
+            canDelete: canDelete,
           ),
         );
       },
@@ -541,14 +577,15 @@ class _NotificationsTable extends ConsumerWidget {
           alwaysVisible: true,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareText(
-                _notificationNextActionLabel(context, left, _canWrite(ref)),
-                _notificationNextActionLabel(context, right, _canWrite(ref)),
+                _notificationNextActionLabel(context, left, canWrite),
+                _notificationNextActionLabel(context, right, canWrite),
               ),
           cellBuilder: (BuildContext context, NotificationItem item) {
             return _NotificationNextActionCell(
               item: item,
               state: state,
-              canWrite: _canWrite(ref),
+              canWrite: canWrite,
+              canDelete: canDelete,
             );
           },
         ),
@@ -1029,22 +1066,18 @@ AppListTableSearch<T> _tableSearch<T>(
   );
 }
 
-bool _canWrite(WidgetRef ref) {
-  return ref
-      .read(appAccessPolicyProvider)
-      .grants(AppPermissions.communicationsWrite);
-}
-
 class _NotificationNextActionCell extends ConsumerWidget {
   const _NotificationNextActionCell({
     required this.item,
     required this.state,
     required this.canWrite,
+    required this.canDelete,
   });
 
   final NotificationItem item;
   final CommunicationsWorkspaceState state;
   final bool canWrite;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1063,7 +1096,7 @@ class _NotificationNextActionCell extends ConsumerWidget {
             ref,
             state,
             item,
-            canWrite: false,
+            canDelete: canDelete,
           ),
         );
       },
@@ -1117,6 +1150,10 @@ class _DeliveryNextActionCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!CommunicationsDeliveriesAtomPermissions.nextAction.isAllowed(policy)) {
+      return const SizedBox.shrink();
+    }
     final String? path = communicationsInternalPath(item.targetPath);
     return AppButton.tertiary(
       label: _deliveryNextActionLabel(context, item),

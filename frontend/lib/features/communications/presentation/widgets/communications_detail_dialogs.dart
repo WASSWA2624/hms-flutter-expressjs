@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -16,7 +19,7 @@ Future<void> showCommunicationsNotificationDetailDialog(
   WidgetRef ref,
   CommunicationsWorkspaceState fallbackState,
   NotificationItem item, {
-  required bool canWrite,
+  required bool canDelete,
 }) async {
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
@@ -42,7 +45,7 @@ Future<void> showCommunicationsNotificationDetailDialog(
         context,
         ref,
         state,
-        canWrite,
+        canDelete: canDelete,
       ),
     ),
   );
@@ -54,6 +57,10 @@ Future<void> showCommunicationsDeliveryDetailDialog(
   CommunicationsWorkspaceState fallbackState,
   NotificationDelivery item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!CommunicationsDeliveriesAtomPermissions.detail.isAllowed(policy)) {
+    return;
+  }
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
   );
@@ -396,12 +403,13 @@ class CommunicationsDeliveryHistory extends StatelessWidget {
 List<Widget> _notificationDialogActions(
   BuildContext context,
   WidgetRef ref,
-  CommunicationsWorkspaceState state,
-  bool canWrite,
-) {
+  CommunicationsWorkspaceState state, {
+  required bool canDelete,
+}) {
   // Mark read/unread lives only on the row next-action (sole primary for that
-  // goal). Detail keeps Archive as the secondary destructive path.
-  if (!canWrite) {
+  // goal). Detail keeps Archive as the secondary destructive path, gated by
+  // communications:delete (backend bulk/archive + matrix delete).
+  if (!canDelete) {
     return const <Widget>[];
   }
   final CommunicationsWorkspaceController controller = ref.read(

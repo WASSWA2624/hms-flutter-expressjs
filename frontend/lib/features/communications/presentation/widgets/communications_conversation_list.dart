@@ -13,13 +13,11 @@ class CommunicationsConversationList extends ConsumerWidget {
   const CommunicationsConversationList({
     required this.state,
     required this.searchController,
-    required this.canWrite,
     super.key,
   });
 
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
-  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
