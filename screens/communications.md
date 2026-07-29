@@ -38,13 +38,13 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Tab-strip primary on Messages when write-authorized.
   - Opens modal: Yes — direct-message recipient + optional subject.
   - Immediate result: Creates conversation; snackbar; selects thread.
-  - Condition: `communicationsWrite`; omitted when unauthorized or on other tabs.
+  - Condition: `CommunicationsMessagesAtomPermissions.newMessage` (write ∩); dialog also no-ops when unauthorized; omitted on other tabs.
 
 - **New group** (secondary)
   - Location: Tab-strip secondary on Messages when write-authorized.
   - Opens modal: Yes — group name, members, sensitive flag.
   - Immediate result: Creates group conversation.
-  - Condition: `communicationsWrite`; omitted when unauthorized or on other tabs.
+  - Condition: `CommunicationsMessagesAtomPermissions.newGroup` (write ∩); dialog also no-ops when unauthorized; omitted on other tabs.
 
 Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-strip **Refresh** was removed.
 

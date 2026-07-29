@@ -278,11 +278,12 @@ class _CommunicationsWorkspaceContentState
   Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     CommunicationsWorkspaceState state,
-    bool canWrite,
+    AppAccessPolicy policy,
   ) {
     // Tab-strip Refresh was removed as redundant — workspace refreshes after
     // mutations / realtime / scaffold Try again.
-    if (state.query.panel != CommunicationsPanel.inbox || !canWrite) {
+    if (state.query.panel != CommunicationsPanel.inbox ||
+        !CommunicationsMessagesAtomPermissions.newMessage.isAllowed(policy)) {
       return null;
     }
     return AppTabToolbarPrimary(
@@ -295,9 +296,10 @@ class _CommunicationsWorkspaceContentState
   List<Widget> _buildSecondaryActions(
     AppLocalizations l10n,
     CommunicationsWorkspaceState state,
-    bool canWrite,
+    AppAccessPolicy policy,
   ) {
-    if (state.query.panel != CommunicationsPanel.inbox || !canWrite) {
+    if (state.query.panel != CommunicationsPanel.inbox ||
+        !CommunicationsMessagesAtomPermissions.newGroup.isAllowed(policy)) {
       return const <Widget>[];
     }
 
@@ -318,7 +320,9 @@ class _CommunicationsWorkspaceContentState
       communicationsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = canWriteCommunications(policy);
+    // Messages New message/group / compose / thread menu — write ∩ via atom map.
+    final bool canWrite =
+        CommunicationsMessagesAtomPermissions.write.isAllowed(policy);
     final List<CommunicationsPanel> visiblePanels =
         communicationsAllowedPanels(policy);
     if (visiblePanels.isEmpty) {
@@ -370,8 +374,8 @@ class _CommunicationsWorkspaceContentState
               }
               controller.applyPanel(panel);
             },
-            primaryAction: _buildPrimaryAction(l10n, state, canWrite),
-            secondaryActions: _buildSecondaryActions(l10n, state, canWrite),
+            primaryAction: _buildPrimaryAction(l10n, state, policy),
+            secondaryActions: _buildSecondaryActions(l10n, state, policy),
           ),
           SizedBox(height: Theme.of(context).spacing.sm),
           if (lastFailure is AppFailure) ...<Widget>[

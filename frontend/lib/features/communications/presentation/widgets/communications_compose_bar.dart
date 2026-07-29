@@ -241,6 +241,8 @@ class _CommunicationsComposeBarState
   }
 
   Future<void> _handleTextChanged(String value) async {
+    // Rebuild so Send enablement tracks content without waiting on mentions.
+    setState(() {});
     final MentionQuery? query = parseActiveMentionQuery(
       value,
       _controller.selection.baseOffset,

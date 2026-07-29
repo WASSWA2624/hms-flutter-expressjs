@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -73,7 +74,7 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
     AppModuleEntitlement(
-      code: 'notifications-communications',
+      code: communicationsActiveModule,
       licenseStatus: 'ACTIVE',
     ),
   ],
@@ -93,17 +94,25 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubWorkspace(_MockCommunicationsRepository repository) {
+void _stubWorkspace(
+  _MockCommunicationsRepository repository, {
+  List<CommunicationsConversation> conversations =
+      const <CommunicationsConversation>[_conversation],
+  Result<CommunicationsWorkspaceState>? workspaceOverride,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer((
     Invocation invocation,
   ) async {
+    if (workspaceOverride != null) {
+      return workspaceOverride;
+    }
     final CommunicationsWorkspaceQuery query =
         invocation.positionalArguments.single as CommunicationsWorkspaceQuery;
     return Result<CommunicationsWorkspaceState>.success(
       CommunicationsWorkspaceState(
         query: query,
-        summary: const CommunicationsSummary(
-          unreadThreads: 1,
+        summary: CommunicationsSummary(
+          unreadThreads: conversations.where((c) => c.unread).length,
           notifications: 1,
           failedDeliveries: 1,
           templates: 1,
@@ -115,9 +124,9 @@ void _stubWorkspace(_MockCommunicationsRepository repository) {
           failedDeliveries: 1,
         ),
         conversations: AppPage<CommunicationsConversation>(
-          items: const <CommunicationsConversation>[_conversation],
+          items: conversations,
           request: query.pageRequest,
-          totalItemCount: 1,
+          totalItemCount: conversations.length,
         ),
         notifications: AppPage<NotificationItem>(
           items: const <NotificationItem>[_notification],
@@ -168,6 +177,27 @@ void _stubWorkspace(_MockCommunicationsRepository repository) {
       ),
     ),
   );
+  when(
+    () => repository.sendMessage(any(), any()),
+  ).thenAnswer(
+    (_) async => const Result<CommunicationsConversation>.success(
+      CommunicationsConversation(
+        id: 'conversation-1',
+        title: 'Critical lab follow-up',
+        unread: false,
+        messages: <CommunicationMessage>[
+          CommunicationMessage(
+            id: 'message-1',
+            content: 'Please review potassium',
+          ),
+          CommunicationMessage(
+            id: 'message-2',
+            content: 'Follow-up sent',
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 Future<void> _pumpMessagesTab(
@@ -177,10 +207,17 @@ Future<void> _pumpMessagesTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/communications?panel=inbox',
+  List<CommunicationsConversation> conversations =
+      const <CommunicationsConversation>[_conversation],
+  Result<CommunicationsWorkspaceState>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(
+    repository,
+    conversations: conversations,
+    workspaceOverride: workspaceOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -242,14 +279,113 @@ void main() {
     repository = _MockCommunicationsRepository();
   });
 
+  group('CommunicationsMessagesAtomPermissions helpers', () {
+    test('reuses AccessRequirement vocabulary (no second map)', () {
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.tab,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.newMessage,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.compose,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.threadMenu,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.delete,
+          communicationsWorkspaceDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.routeEntry,
+          communicationsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      // Nested cross-module matrix rows are _(n/a)_ — nested gates stay in-module.
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.nestedRead,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsMessagesAtomPermissions.nestedWrite,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('∩ denial: write without delete denies hard-delete requirement', () {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.delete.isAllowed(writer),
+        isFalse,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.write.isAllowed(writer),
+        isTrue,
+      );
+    });
+
+    test('route entry ∪: write alone enters; tab read ∩ fails', () {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsWrite},
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+    });
+  });
+
   testWidgets(
     '∩ denial: missing communications:write hides New message/group and compose',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.communicationsRead},
       );
-      expect(CommunicationsMessagesAtomPermissions.newMessage.isAllowed(reader), isFalse);
-      expect(CommunicationsMessagesAtomPermissions.compose.isAllowed(reader), isFalse);
+      expect(
+        CommunicationsMessagesAtomPermissions.newMessage.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.compose.isAllowed(reader),
+        isFalse,
+      );
 
       await _pumpMessagesTab(
         tester,
@@ -269,6 +405,7 @@ void main() {
       expect(find.byType(CommunicationsThreadView), findsOneWidget);
       expect(find.byType(CommunicationsComposeBar), findsNothing);
       expect(find.byTooltip('Conversation actions'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
     },
   );
 
@@ -281,7 +418,10 @@ void main() {
           AppPermissions.communicationsWrite,
         },
       );
-      expect(CommunicationsMessagesAtomPermissions.newMessage.isAllowed(writer), isTrue);
+      expect(
+        CommunicationsMessagesAtomPermissions.newMessage.isAllowed(writer),
+        isTrue,
+      );
 
       await _pumpMessagesTab(
         tester,
@@ -293,6 +433,42 @@ void main() {
       expect(find.byTooltip('New message'), findsOneWidget);
       expect(find.byTooltip('New group'), findsOneWidget);
       expect(find.text('Critical lab follow-up'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'delete ∩: hard-delete thread chrome stays absent (not in inventory UI)',
+    (WidgetTester tester) async {
+      // Source inventory: conversation archive stays on write ∩; hard delete
+      // thread is matrix delete ∩ when exposed — currently not mounted.
+      final AppAccessPolicy deleter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.communicationsDelete,
+        },
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.delete.isAllowed(deleter),
+        isTrue,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: deleter,
+      );
+
+      await tester.tap(find.text('Critical lab follow-up'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Conversation actions'), findsOneWidget);
+      await tester.tap(find.byTooltip('Conversation actions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Archive'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -311,6 +487,7 @@ void main() {
         CommunicationsMessagesAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
       );
+      expect(canEnterCommunicationsWorkspace(writeOnly), isTrue);
 
       await _pumpMessagesTab(
         tester,
@@ -327,18 +504,47 @@ void main() {
   );
 
   testWidgets(
-    'subscription strip: missing notifications-communications omits Messages',
+    'route entry ∪: communications:read alone shows Messages list chrome',
     (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.communicationsRead},
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.routeEntry.isAllowed(reader),
+        isTrue,
+      );
+
       await _pumpMessagesTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.communicationsRead,
-            AppPermissions.communicationsWrite,
-          },
-          modules: const <AppModuleEntitlement>[],
-        ),
+        accessPolicy: reader,
+      );
+
+      expect(_tab('Messages'), findsOneWidget);
+      expect(find.text('Critical lab follow-up'), findsOneWidget);
+      expect(find.byTooltip('New message'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: missing notifications-communications omits Messages',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
@@ -348,17 +554,64 @@ void main() {
   );
 
   testWidgets(
-    'nested cross-module matrix _(n/a)_: no foreign-module nested write chrome',
+    'plan BASIC strips delete ∩; write Messages chrome remains',
     (WidgetTester tester) async {
+      final AppAccessPolicy basic = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.communicationsDelete,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: communicationsActiveModule,
+            licenseStatus: 'ACTIVE',
+            planTierCode: 'BASIC',
+          ),
+        ],
+      );
+      expect(CommunicationsMessagesAtomPermissions.tab.isAllowed(basic), isTrue);
+      expect(
+        CommunicationsMessagesAtomPermissions.write.isAllowed(basic),
+        isTrue,
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.delete.isAllowed(basic),
+        isFalse,
+      );
+
       await _pumpMessagesTab(
         tester,
         repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.communicationsRead,
-            AppPermissions.communicationsWrite,
-          },
-        ),
+        accessPolicy: basic,
+      );
+
+      expect(_tab('Messages'), findsOneWidget);
+      expect(find.byTooltip('New message'), findsOneWidget);
+      expect(find.byTooltip('New group'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module matrix _(n/a)_: no foreign-module nested write chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy full = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        },
+      );
+      expect(
+        CommunicationsMessagesAtomPermissions.nestedWrite.isAllowed(full),
+        isTrue,
+      );
+
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: full,
       );
 
       // Messages has no nested billing/clinical write entry points.
@@ -395,6 +648,45 @@ void main() {
   });
 
   testWidgets(
+    'authorized empty Messages keeps chrome; no write affordances for reader',
+    (WidgetTester tester) async {
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        conversations: const <CommunicationsConversation>[],
+      );
+
+      expect(_tab('Messages'), findsOneWidget);
+      expect(find.text('No conversations'), findsOneWidget);
+      expect(find.byTooltip('New message'), findsNothing);
+      expect(find.byTooltip('New group'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Messages',
+    (WidgetTester tester) async {
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.communicationsRead},
+        ),
+        workspaceOverride: const Result<CommunicationsWorkspaceState>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized compose sync path: selecting thread mounts Send/Attach chrome',
     (WidgetTester tester) async {
       await _pumpMessagesTab(
@@ -417,6 +709,36 @@ void main() {
       expect(find.byTooltip('Send message'), findsOneWidget);
       expect(find.byTooltip('Attach file'), findsOneWidget);
       expect(find.byTooltip('Conversation actions'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'post-mutation sync: sendMessage refreshes thread without leftover write lock',
+    (WidgetTester tester) async {
+      await _pumpMessagesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.communicationsRead,
+            AppPermissions.communicationsWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Critical lab follow-up'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, 'Follow-up sent');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Send message'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.sendMessage(_conversation.id, any()),
+      ).called(1);
+      expect(find.byType(CommunicationsComposeBar), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -508,29 +830,5 @@ void main() {
     expect(_tab('Messages'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
-  });
-
-  testWidgets('authorized thread keeps compose after selecting conversation', (
-    WidgetTester tester,
-  ) async {
-    await _pumpMessagesTab(
-      tester,
-      repository: repository,
-      accessPolicy: _policy(
-        permissions: <AppPermission>{
-          AppPermissions.communicationsRead,
-          AppPermissions.communicationsWrite,
-        },
-      ),
-    );
-
-    await tester.tap(find.text('Critical lab follow-up'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(CommunicationsThreadView), findsOneWidget);
-    expect(find.byType(CommunicationsComposeBar), findsOneWidget);
-    expect(find.byTooltip('Conversation actions'), findsOneWidget);
-    expect(find.byTooltip('Send message'), findsOneWidget);
-    expect(find.byTooltip('Attach file'), findsOneWidget);
   });
 }
