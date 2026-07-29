@@ -168,10 +168,10 @@ class _NursingWorkspaceContentState
     // next-action omitted so it is not duplicated inside Quick Actions.
     // Unauthorized write panels fall back to detail (restricted deep link).
     if (panel != null && panel != NursingDetailPanel.checklist) {
-      final AccessRequirement panelRequirement =
+      final AccessRequirement? panelRequirement =
           nursingFocusedPanelRequirement(panel);
       final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-      if (panelRequirement.isAllowed(policy)) {
+      if (panelRequirement != null && panelRequirement.isAllowed(policy)) {
         await openNursingFocusedAction(context, ref, summary, panel);
         return;
       }

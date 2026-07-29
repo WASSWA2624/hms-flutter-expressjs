@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository_impl.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
@@ -1212,14 +1213,7 @@ final class NursingWorkspaceController
   }
 
   bool get _canReadOperationsContext {
-    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    return policy.hasActiveModule('hr-rosters') &&
-        policy.grantsAny(const <AppPermission>[
-          AppPermissions.hrRead,
-          AppPermissions.operationsRead,
-          AppPermissions.rosterRead,
-          AppPermissions.unitRead,
-        ]);
+    return canReadNursingShiftContext(ref.read(appAccessPolicyProvider));
   }
 
   NursingPatientDetail? get _selectedDetail => _currentState?.selectedDetail;

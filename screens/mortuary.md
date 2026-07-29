@@ -175,6 +175,32 @@ Automated: `frontend/test/features/mortuary/presentation/mortuary_release_permis
 
 ---
 
+## Reports tab — permission mapping (`?panel=reporting`)
+
+Atom map: `MortuaryReportsAtomPermissions` in `frontend/lib/features/mortuary/presentation/mortuary_access.dart`. Unauthorized atoms do not mount (no disabled stubs / routine “no access” banners). Tab / list / detail view uses ∪ `mortuary:read` | `mortuary:audit` | `mortuary:export` (+ module + facility). Matrix ∩ `mortuary:read` stays on the `read` helper. Nested cross-module write ∪ is `mortuary:export` only (`nestedWrite`); Print documents keep source ∪ `mortuary:export` | `reports:read`. Nested cross-module read is n/a. Fine-grained gates kept for helpers / future chrome; inventory removed no-op mutation buttons. Audit panel ∩ `mortuary:audit` is not mounted.
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Reports strip tab / count | navigate | ∪ `mortuary:read` \| `audit` \| `export` (+ module + facility) |
+| Search / Clear / Filters / Settings / pagination | read chrome | ∪ `read` \| `audit` \| `export` |
+| Empty / loading / error / retry | read chrome | ∪ `read` \| `audit` \| `export` |
+| Success snackbar / validation (authorized) | visible feedback | ∩ `mortuary:write` |
+| Row select → detail | read / navigate | ∪ `read` \| `audit` \| `export` |
+| Next action (guidance text only) | read | ∪ `read` \| `audit` \| `export` |
+| Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | ∪ `read` \| `audit` \| `export` |
+| Detail Billing events | read | ∩ `mortuary:billing_event` + `billing:read` |
+| Detail Print documents | export | ∪ `mortuary:export` \| `reports:read` |
+| Nested export write entry | export | ∪ `mortuary:export` — not mounted beyond print |
+| Create / update / delete mutations | create / update / delete | ∩ `mortuary:write` — not mounted |
+| Assign storage / approve / release / post-mortem | update / approve | fine-grained ∩ — not mounted |
+| Audit panel | read | ∩ `mortuary:audit` — not mounted |
+| Nested cross-module read | — | n/a (matrix) |
+| Route entry (deep link `/mortuary`) | navigate | ∪ `read`\|`write`\|`approve`\|`release`\|`audit` |
+
+Automated: `frontend/test/features/mortuary/presentation/mortuary_reports_permissions_test.dart`.
+
+---
+
 ## Manual checks (Req 7)
 
 - [ ] Tab strip has no Refresh, no disabled Receive case / Assign storage primaries, and no queue / In storage chips.
@@ -182,7 +208,8 @@ Automated: `frontend/test/features/mortuary/presentation/mortuary_release_permis
 - [ ] Row tap opens Case detail; next-action label is not a button and does not open detail.
 - [ ] Detail has no Actions unavailable strip or disabled mutation buttons.
 - [ ] Without export permission, Print documents is absent; with export, Print documents is present.
+- [ ] Audit-only user sees Reports strip (not Overview); export-only needs a route-entry companion to open workspace.
 - [ ] Deep link `/mortuary?queue=IDENTIFICATION_PENDING` applies queue without toolbar chips.
 - [ ] Loading / empty / error-retry still render; mobile and desktop keep row select reachable; theme tokens only.
 
-Automated: `frontend/test/features/mortuary/presentation/mortuary_workspace_page_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_workspace_ux_simplify_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_custody_permissions_test.dart`.
+Automated: `frontend/test/features/mortuary/presentation/mortuary_workspace_page_test.dart`, `frontend/test/features/mortuary/presentation/mortuary_workspace_ux_simplify_test.dart`, panel permission tests under `frontend/test/features/mortuary/presentation/mortuary_*_permissions_test.dart`.

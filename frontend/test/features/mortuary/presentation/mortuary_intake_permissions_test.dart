@@ -308,6 +308,41 @@ void main() {
       );
       expect(
         identical(
+          MortuaryIntakeAtomPermissions.write,
+          mortuaryWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryIntakeAtomPermissions.manageStorage,
+          mortuaryManageStorageRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryIntakeAtomPermissions.approve,
+          mortuaryApproveRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryIntakeAtomPermissions.release,
+          mortuaryReleaseRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryIntakeAtomPermissions.audit,
+          mortuaryAuditRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           MortuaryIntakeAtomPermissions.printDocuments,
           mortuaryExportRequirement,
         ),
@@ -324,6 +359,13 @@ void main() {
         identical(
           MortuaryIntakeAtomPermissions.routeEntry,
           RouteAccessCatalog.mortuaryEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryIntakeAtomPermissions.routeEntry,
+          AppRoutes.mortuary.accessRequirement,
         ),
         isTrue,
       );
@@ -358,7 +400,9 @@ void main() {
         MortuaryIntakeAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
+      expect(canEnterMortuaryWorkspace(writeOnly), isTrue);
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(canViewMortuaryPanel(writeOnly, mortuaryPanelIntake), isFalse);
       expect(MortuaryIntakeAtomPermissions.create.isAllowed(writeOnly), isTrue);
       expect(
         MortuaryIntakeAtomPermissions.receiveCase.isAllowed(writeOnly),
@@ -379,11 +423,14 @@ void main() {
       expect(MortuaryIntakeAtomPermissions.filters.isAllowed(reader), isTrue);
       expect(MortuaryIntakeAtomPermissions.rowSelect.isAllowed(reader), isTrue);
       expect(MortuaryIntakeAtomPermissions.detail.isAllowed(reader), isTrue);
+      expect(MortuaryIntakeAtomPermissions.nextAction.isAllowed(reader), isTrue);
       expect(MortuaryIntakeAtomPermissions.create.isAllowed(reader), isFalse);
       expect(
         MortuaryIntakeAtomPermissions.receiveCase.isAllowed(reader),
         isFalse,
       );
+      expect(MortuaryIntakeAtomPermissions.update.isAllowed(reader), isFalse);
+      expect(MortuaryIntakeAtomPermissions.delete.isAllowed(reader), isFalse);
       expect(MortuaryIntakeAtomPermissions.success.isAllowed(reader), isFalse);
       expect(
         MortuaryIntakeAtomPermissions.printDocuments.isAllowed(reader),
@@ -393,6 +440,13 @@ void main() {
         MortuaryIntakeAtomPermissions.billingPanel.isAllowed(reader),
         isFalse,
       );
+      expect(
+        MortuaryIntakeAtomPermissions.manageStorage.isAllowed(reader),
+        isFalse,
+      );
+      expect(MortuaryIntakeAtomPermissions.approve.isAllowed(reader), isFalse);
+      expect(MortuaryIntakeAtomPermissions.release.isAllowed(reader), isFalse);
+      expect(MortuaryIntakeAtomPermissions.audit.isAllowed(reader), isFalse);
     });
 
     test('∩ billing panel needs mortuary:billing_event and billing:read', () {
@@ -444,6 +498,8 @@ void main() {
         MortuaryIntakeAtomPermissions.printDocuments.isAllowed(viaReports),
         isTrue,
       );
+      expect(canExportMortuary(viaExport), isTrue);
+      expect(canExportMortuary(viaReports), isTrue);
     });
 
     test('subscription/ABAC strip module or facility from tab gate', () {
@@ -484,6 +540,7 @@ void main() {
         facilityId: null,
       );
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(canEnterMortuaryWorkspace(noModule), isFalse);
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(basicPlan), isFalse);
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(expired), isFalse);
       expect(
@@ -492,8 +549,16 @@ void main() {
       );
       expect(MortuaryIntakeAtomPermissions.tab.isAllowed(noFacility), isFalse);
     });
+
+    test('nested cross-module matrix rows are n/a (no nestedWrite atom)', () {
+      expect(
+        MortuaryIntakeAtomPermissions.nestedRead,
+        mortuaryWorkspaceReadRequirement,
+      );
+    });
   });
 
+  group('Intake tab UI gates', () {
   testWidgets(
     '∩ denial: missing mortuary module omits Intake (subscription strip)',
     (WidgetTester tester) async {
@@ -516,9 +581,11 @@ void main() {
         accessPolicy: noModule,
       );
 
+      expect(find.byType(AppTabStrip), findsNothing);
       expect(_tab('Intake'), findsNothing);
       expect(find.text('Amina K.'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
+      expect(find.text('Access denied'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -530,13 +597,21 @@ void main() {
         permissions: <AppPermission>{AppPermissions.mortuaryRead},
       );
 
-      await _pumpIntake(tester, repository: repository, accessPolicy: reader);
+      final GoRouter router = await _pumpIntake(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
 
+      expect(router.state.uri.queryParameters['panel'], 'intake');
       expect(_tab('Intake'), findsOneWidget);
       expect(find.text('Amina K.'), findsWidgets);
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
+      expect(_table(tester).columnVisibilityStorageKey, 'mortuary_intake');
       expect(find.text('Receive case'), findsNothing);
+      expect(find.text('Assign storage'), findsNothing);
+      expect(find.text('Approve release'), findsNothing);
       expect(find.text('Print documents'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -546,7 +621,10 @@ void main() {
       expect(find.text('Cold storage day'), findsNothing);
       expect(find.text('No billing events recorded'), findsNothing);
       expect(find.text('Identity and source'), findsOneWidget);
+      expect(find.text('Actions unavailable'), findsNothing);
       expect(find.text('Receive case'), findsNothing);
+      expect(find.text('Record custody'), findsNothing);
+      expect(find.text('Request post-mortem'), findsNothing);
     },
   );
 
@@ -579,6 +657,25 @@ void main() {
   );
 
   testWidgets(
+    '∪ allowance: mortuary:export mounts Print documents on Intake detail',
+    (WidgetTester tester) async {
+      await _pumpIntake(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.mortuaryRead,
+            AppPermissions.mortuaryExport,
+          },
+        ),
+      );
+      await _openDetail(tester);
+
+      expect(find.text('Print documents'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     '∩ billing: Billing section mounts only with billing_event ∩ billing:read',
     (WidgetTester tester) async {
       final AppAccessPolicy withoutBillingRead = _policy(
@@ -595,6 +692,7 @@ void main() {
       await _openDetail(tester);
       expect(find.text('Cold storage day'), findsNothing);
       expect(find.text('No billing events recorded'), findsNothing);
+      expect(find.text('Billing'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -613,7 +711,36 @@ void main() {
         accessPolicy: withBilling,
       );
       await _openDetail(tester);
+      expect(find.text('Billing'), findsOneWidget);
       expect(find.textContaining('Cold storage day'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'nested cross-module write chrome absent (matrix n/a; not mounted)',
+    (WidgetTester tester) async {
+      await _pumpIntake(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.mortuaryRead,
+            AppPermissions.mortuaryWrite,
+            AppPermissions.mortuaryPostMortemRequest,
+            AppPermissions.mortuaryApprove,
+            AppPermissions.mortuaryRelease,
+            AppPermissions.mortuaryManageStorage,
+          },
+        ),
+      );
+      await _openDetail(tester);
+
+      expect(find.text('Receive case'), findsNothing);
+      expect(find.text('Assign storage'), findsNothing);
+      expect(find.text('Record custody'), findsNothing);
+      expect(find.text('Request post-mortem'), findsNothing);
+      expect(find.text('Approve release'), findsNothing);
+      expect(find.text('Approve post-mortem'), findsNothing);
     },
   );
 
@@ -654,6 +781,26 @@ void main() {
 
     expect(_tab('Intake'), findsOneWidget);
     expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
+    expect(find.text('Receive case'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('authorized error/retry remains observable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntake(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.mortuaryRead},
+      ),
+      workspaceOverride: const Result<MortuaryWorkspacePayload>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    expect(find.textContaining('Try again'), findsWidgets);
+    expect(find.textContaining('no access'), findsNothing);
     expect(find.text('Receive case'), findsNothing);
   });
 
@@ -718,6 +865,30 @@ void main() {
     expect(find.text('Receive case'), findsNothing);
   });
 
+  testWidgets('Intake desktop light theme keeps authorized atoms', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntake(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.mortuaryRead,
+          AppPermissions.mortuaryExport,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(_tab('Intake'), findsOneWidget);
+    await _openDetail(tester);
+    expect(find.text('Print documents'), findsOneWidget);
+    expect(
+      Theme.of(tester.element(find.text('Intake').first)).brightness,
+      Brightness.light,
+    );
+  });
+
   testWidgets('Intake desktop dark theme keeps authorized atoms', (
     WidgetTester tester,
   ) async {
@@ -743,6 +914,10 @@ void main() {
     expect(find.textContaining('Cold storage day'), findsOneWidget);
     expect(find.text('Receive case'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
+    expect(
+      Theme.of(tester.element(find.text('Intake').first)).brightness,
+      Brightness.dark,
+    );
   });
 
   testWidgets('deep link panel=intake selects Intake for authorized reader', (
@@ -761,5 +936,6 @@ void main() {
     );
     expect(strip.selectedId, mortuaryPanelIntake);
     expect(_table(tester).columnVisibilityStorageKey, 'mortuary_intake');
+  });
   });
 }

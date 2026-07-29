@@ -9,7 +9,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -111,7 +110,7 @@ class _NursingPatientDetailContent extends ConsumerWidget {
                 label: l10n.nursingUrgentSummaryLabel,
                 tone: AppWorkspaceStatusTone.error,
               ),
-            if (summary.hasMedicationDue)
+            if (canReadMeds && summary.hasMedicationDue)
               AppWorkspaceStatus(
                 label: l10n.nursingMedicationDueSummaryLabel,
                 tone: AppWorkspaceStatusTone.warning,
@@ -251,7 +250,7 @@ class _NursingActionBar extends ConsumerWidget {
       permissionActions: <AppPermissionActionItem>[
         if (omit != NursingNextActionKind.handover)
           AppPermissionActionItem(
-            requirement: writeRequirement,
+            requirement: NursingHandoverPendingAtomPermissions.createHandover,
             label: l10n.nursingActionCreateHandover,
             icon: Icons.swap_horiz_outlined,
             onPressed: () => _openHandoverDialog(context),
@@ -319,13 +318,13 @@ class _NursingActionBar extends ConsumerWidget {
           ),
         if (icuActive)
           AppPermissionActionItem(
-            requirement: NursingDischargePendingAtomPermissions.openIcu,
+            requirement: NursingHandoverPendingAtomPermissions.openIcu,
             label: l10n.nursingActionOpenIcu,
             icon: Icons.monitor_heart_outlined,
             onPressed: () => _openIcuWorkspace(context, summary),
           ),
         AppPermissionActionItem(
-          requirement: NursingDischargePendingAtomPermissions.printSummary,
+          requirement: nursingWriteRequirement,
           label: l10n.nursingActionPrintSummary,
           icon: Icons.print_outlined,
           onPressed: () => _openPrintSummaryDialog(context, detail),
@@ -333,7 +332,7 @@ class _NursingActionBar extends ConsumerWidget {
         for (final NursingHandover handover in detail.handovers)
           if (handover.isPending)
             AppPermissionActionItem(
-              requirement: writeRequirement,
+              requirement: NursingHandoverPendingAtomPermissions.acceptHandover,
               label: l10n.nursingActionAcceptHandover,
               icon: Icons.done_all_outlined,
               onPressed: () =>

@@ -17,6 +17,8 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnsForScope(
 }) {
   final bool showNextAction =
       policy == null || nursingBoardShowsNextActionColumn(policy, scope);
+  final bool showMedicationDue =
+      policy == null || canReadNursingMedications(policy);
   final List<AppListTableColumn<NursingWorkItem>> columns = switch (scope) {
     NursingQueueScope.urgent => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
@@ -26,7 +28,7 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnsForScope(
     ],
     NursingQueueScope.medicationDue => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
-      nursingMedicationDueCountColumn(l10n),
+      if (showMedicationDue) nursingMedicationDueCountColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
     ],
@@ -71,6 +73,8 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnChoicesForScope(
     scope,
     policy: policy,
   ).map((AppListTableColumn<NursingWorkItem> c) => c.id ?? c.label).toSet();
+  final bool showMedicationDue =
+      policy == null || canReadNursingMedications(policy);
 
   final List<AppListTableColumn<NursingWorkItem>> pool =
       <AppListTableColumn<NursingWorkItem>>[
@@ -83,7 +87,7 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnChoicesForScope(
         nursingDueTimeColumn(l10n),
         nursingResponsibleNurseColumn(l10n),
         nursingObservationsColumn(l10n),
-        nursingMedicationDueCountColumn(l10n),
+        if (showMedicationDue) nursingMedicationDueCountColumn(l10n),
         nursingTransferStatusColumn(l10n),
         nursingDischargeStatusColumn(l10n),
       ];
