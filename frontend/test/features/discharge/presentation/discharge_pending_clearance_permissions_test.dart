@@ -316,6 +316,14 @@ void main() {
         DischargePendingClearanceAtomPermissions.nextActionPlan,
         same(DischargeAllPatientsAtomPermissions.nextActionPlan),
       );
+      expect(
+        dischargeDetailPrintRequirement(DischargeDeskSection.pendingClearance),
+        same(DischargePendingClearanceAtomPermissions.printSummary),
+      );
+      expect(
+        dischargeDetailPrintRequirement(DischargeDeskSection.all),
+        same(DischargeAllPatientsAtomPermissions.printSummary),
+      );
     });
 
     test('∩ denial: clinical:write missing hides write atoms', () {
@@ -732,6 +740,53 @@ void main() {
       expect(find.text('Bed release'), findsNothing);
       expect(find.text('Start discharge plan'), findsNothing);
       expect(find.text('Request final billing'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '∪ pharmacy-only: detail print mounts via pending read ∪ when summary exists',
+    (WidgetTester tester) async {
+      final AppAccessPolicy pharmacy = _policy(
+        permissions: <AppPermission>{AppPermissions.pharmacyRead},
+        roles: const <String>['PHARMACIST'],
+      );
+      final DischargeAdmissionDetail detailWithSummary = DischargeAdmissionDetail(
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        patientId: 'patient-1',
+        encounterId: 'encounter-1',
+        ipd: const IpdAdmissionDetail(
+          summary: _pending,
+          latestDischargeSummary: IpdDischargeSummary(
+            id: 'ds-pending',
+            status: 'SUMMARY_PENDING',
+            summary: 'Draft clearance notes for pharmacy review.',
+          ),
+        ),
+        pharmacyOrders: const <DischargeRelatedRecord>[
+          DischargeRelatedRecord(
+            id: 'rx-1',
+            kind: 'pharmacy_order',
+            title: 'Amoxicillin',
+            status: 'ORDERED',
+          ),
+        ],
+      );
+
+      await _pumpPendingClearanceTab(
+        tester,
+        repository: repository,
+        accessPolicy: pharmacy,
+        detailOverride: detailWithSummary,
+      );
+
+      await tester.tap(find.text('Bob Pending'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Print discharge summary'), findsOneWidget);
+      expect(find.text('Start discharge plan'), findsNothing);
+      expect(find.text('Request final billing'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 

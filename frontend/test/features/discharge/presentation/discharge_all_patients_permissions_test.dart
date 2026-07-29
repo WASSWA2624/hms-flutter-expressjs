@@ -722,6 +722,29 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('Alice'), findsWidgets);
     expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
+    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
+    expect(find.byTooltip('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+  });
+
+  testWidgets('light theme keeps authorized All chrome without no-access banners', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+    );
+
+    await _pumpAllTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Alice Planned'), findsOneWidget);
+    expect(find.byTooltip('Start discharge plan'), findsNothing);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
   });
 
   testWidgets('dark theme keeps authorized All chrome without no-access banners', (

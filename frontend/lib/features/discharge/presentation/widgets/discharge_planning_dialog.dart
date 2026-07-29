@@ -343,7 +343,7 @@ class _DischargePlanningDialogState
           ),
           if (!_isPlanned)
             AppAccessActionGate(
-              requirement: dischargeClinicalWriteRequirement,
+              requirement: DischargeAllPatientsAtomPermissions.create,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.primary(
                   label: l10n.dischargeSavePlanAction,
@@ -354,7 +354,7 @@ class _DischargePlanningDialogState
             )
           else
             AppAccessActionGate(
-              requirement: dischargeClinicalWriteRequirement,
+              requirement: DischargeAllPatientsAtomPermissions.update,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.primary(
                   label: clinicalDispositionActionLabel(

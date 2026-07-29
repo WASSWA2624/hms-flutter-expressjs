@@ -159,6 +159,23 @@ AccessRequirement dischargeSectionTabRequirement(DischargeDeskSection section) {
   };
 }
 
+/// Detail **Print discharge summary** gate for the active desk section.
+///
+/// Pending clearance uses the broader multi-department read ∪ so pharmacy /
+/// billing / operations desks that can open this tab can also print when a
+/// summary exists. Other queue tabs keep workspace read ∪.
+AccessRequirement dischargeDetailPrintRequirement(DischargeDeskSection section) {
+  return switch (section) {
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.printSummary,
+    DischargeDeskSection.completed =>
+      DischargeCompletedAtomPermissions.printSummary,
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.printSummary,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.printSummary,
+  };
+}
+
 bool canEnterDischargeWorkspace(AppAccessPolicy policy) {
   return dischargeWorkspaceEntryRequirement.isAllowed(policy);
 }

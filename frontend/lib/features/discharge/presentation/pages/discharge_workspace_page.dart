@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -86,7 +87,16 @@ class _DischargeWorkspacePageState
     if (detail == null) {
       return;
     }
-    await _openDischargeDetailDialog(context, ref, state!, detail.summary);
+    final DischargeDeskSection section =
+        _DischargeWorkspaceContentState._sectionFromQuery(query.section) ??
+        DischargeDeskSection.all;
+    await _openDischargeDetailDialog(
+      context,
+      ref,
+      state!,
+      detail.summary,
+      section: section,
+    );
   }
 
   @override
@@ -314,7 +324,7 @@ class _DischargeWorkspaceContentState
 
     final List<IpdAdmissionSummary> rows = _buildRows(state);
     final List<AppListTableColumn<IpdAdmissionSummary>> allColumns =
-        _dischargeTableColumns(context);
+        _dischargeTableColumns(context, section: _section);
     final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
         _dischargeDefaultColumns(context, section: _section);
 
@@ -379,7 +389,13 @@ class _DischargeWorkspaceContentState
               physics: const NeverScrollableScrollPhysics(),
               onRowSelected: (IpdAdmissionSummary item) {
                 unawaited(
-                  _openDischargeDetailDialog(context, ref, state, item),
+                  _openDischargeDetailDialog(
+                    context,
+                    ref,
+                    state,
+                    item,
+                    section: _section,
+                  ),
                 );
               },
               search: AppListTableSearch<IpdAdmissionSummary>(
@@ -442,6 +458,11 @@ class _DischargeWorkspaceContentState
                     return AppListTableMobileItem(
                       title: item.displayTitle,
                       caption: item.displayId ?? l10n.profileUnknownValue,
+                      trailing: _dischargeNextActionWidget(
+                        context,
+                        item,
+                        section: _section,
+                      ),
                       meta: <AppListTableMobileMeta>[
                         AppListTableMobileMeta(
                           label: _locationLabel(context, item),
@@ -492,8 +513,9 @@ Future<void> _openDischargeDetailDialog(
   BuildContext context,
   WidgetRef ref,
   DischargeWorkspaceState fallbackState,
-  IpdAdmissionSummary admission,
-) async {
+  IpdAdmissionSummary admission, {
+  required DischargeDeskSection section,
+}) async {
   final DischargeWorkspaceController controller = ref.read(
     dischargeWorkspaceControllerProvider.notifier,
   );
@@ -520,10 +542,14 @@ Future<void> _openDischargeDetailDialog(
       icon: const Icon(Icons.assignment_turned_in_outlined),
       scrollable: true,
       maxWidth: 980,
-      content: _DischargeDetailContent(state: state, detail: detail),
+      content: _DischargeDetailContent(
+        state: state,
+        detail: detail,
+        section: section,
+      ),
       actions: <Widget>[
         AppAccessActionGate(
-          requirement: DischargeAllPatientsAtomPermissions.printSummary,
+          requirement: dischargeDetailPrintRequirement(section),
           builder: (BuildContext context, bool isAllowed) {
             return AppReportActionButton.print(
               label: l10n.dischargePrintSummaryAction,
@@ -551,10 +577,45 @@ DischargeWorkspaceState? _readDischargeState(WidgetRef ref) {
 }
 
 class _DischargeDetailContent extends ConsumerWidget {
-  const _DischargeDetailContent({required this.state, required this.detail});
+  const _DischargeDetailContent({
+    required this.state,
+    required this.detail,
+    required this.section,
+  });
 
   final DischargeWorkspaceState state;
   final DischargeAdmissionDetail detail;
+  final DischargeDeskSection section;
+
+  AccessRequirement get _write => switch (section) {
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.write,
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.write,
+    DischargeDeskSection.completed => DischargeCompletedAtomPermissions.write,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.write,
+  };
+
+  AccessRequirement get _medicinesPanel => switch (section) {
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.medicinesPanel,
+    DischargeDeskSection.planned =>
+      DischargePlannedAtomPermissions.medicinesPanel,
+    DischargeDeskSection.completed =>
+      DischargeCompletedAtomPermissions.medicinesPanel,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.medicinesPanel,
+  };
+
+  AccessRequirement get _billingPanel => switch (section) {
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.billingPanel,
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.billingPanel,
+    DischargeDeskSection.completed =>
+      DischargeCompletedAtomPermissions.billingPanel,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.billingPanel,
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -623,7 +684,7 @@ class _DischargeDetailContent extends ConsumerWidget {
           actions: <Widget>[
             if (!detail.isCompleted)
               AppAccessActionGate(
-                requirement: DischargeAllPatientsAtomPermissions.continueDischarge,
+                requirement: _write,
                 builder: (BuildContext context, bool isAllowed) {
                   return AppButton.primary(
                     label: continueDischargeLabel,
@@ -641,7 +702,7 @@ class _DischargeDetailContent extends ConsumerWidget {
                 },
               ),
             AppAccessActionGate(
-              requirement: DischargeAllPatientsAtomPermissions.requestBilling,
+              requirement: _write,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.secondary(
                   label: l10n.dischargeRequestBillingAction,
@@ -652,7 +713,7 @@ class _DischargeDetailContent extends ConsumerWidget {
               },
             ),
             AppAccessActionGate(
-              requirement: DischargeAllPatientsAtomPermissions.requestPharmacy,
+              requirement: _write,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.secondary(
                   label: l10n.dischargeRequestPharmacyAction,
@@ -677,7 +738,7 @@ class _DischargeDetailContent extends ConsumerWidget {
         _SummarySection(detail: detail),
         SizedBox(height: theme.spacing.lg),
         AppAccessGate(
-          requirement: DischargeAllPatientsAtomPermissions.medicinesPanel,
+          requirement: _medicinesPanel,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -694,7 +755,7 @@ class _DischargeDetailContent extends ConsumerWidget {
           ),
         ),
         AppAccessGate(
-          requirement: DischargeAllPatientsAtomPermissions.billingPanel,
+          requirement: _billingPanel,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -1317,8 +1378,9 @@ Future<void> _openPharmacyDialog(
 const String _dischargeStatusFilterKey = 'status';
 
 List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required DischargeDeskSection section,
+}) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<IpdAdmissionSummary>>[
     AppListTableColumn<IpdAdmissionSummary>(
@@ -1415,7 +1477,7 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
             _nextActionLabel(context, right),
           ),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return _dischargeNextActionWidget(context, item);
+        return _dischargeNextActionWidget(context, item, section: section);
       },
     ),
   ];
@@ -1428,7 +1490,7 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeDefaultColumns(
   final Map<String, AppListTableColumn<IpdAdmissionSummary>> columnsById =
       <String, AppListTableColumn<IpdAdmissionSummary>>{
         for (final AppListTableColumn<IpdAdmissionSummary> column
-            in _dischargeTableColumns(context))
+            in _dischargeTableColumns(context, section: section))
           if (column.id != null) column.id!: column,
       };
   final List<String> columnIds = switch (section) {
@@ -1507,15 +1569,56 @@ Widget _dischargeBlockingItemCell(
 
 Widget _dischargeNextActionWidget(
   BuildContext context,
-  IpdAdmissionSummary item,
-) {
-  return _DischargeNextActionButton(item: item);
+  IpdAdmissionSummary item, {
+  required DischargeDeskSection section,
+}) {
+  return _DischargeNextActionButton(item: item, section: section);
+}
+
+/// Row next-action gate keyed by active desk section atom map.
+AccessRequirement _dischargeNextActionRequirement({
+  required DischargeDeskSection section,
+  required IpdAdmissionSummary item,
+}) {
+  if (isCompletedDischarge(item)) {
+    return switch (section) {
+      DischargeDeskSection.all =>
+        DischargeAllPatientsAtomPermissions.nextActionPrint,
+      DischargeDeskSection.completed =>
+        DischargeCompletedAtomPermissions.nextActionPrint,
+      DischargeDeskSection.planned =>
+        DischargePlannedAtomPermissions.printSummary,
+      DischargeDeskSection.pendingClearance =>
+        DischargePendingClearanceAtomPermissions.printSummary,
+      DischargeDeskSection.followUps =>
+        DischargeAllPatientsAtomPermissions.nextActionPrint,
+    };
+  }
+  final bool planned = isPlannedDischarge(item);
+  return switch (section) {
+    DischargeDeskSection.all => planned
+        ? DischargeAllPatientsAtomPermissions.nextActionClearance
+        : DischargeAllPatientsAtomPermissions.nextActionPlan,
+    DischargeDeskSection.planned =>
+      DischargePlannedAtomPermissions.nextActionClearance,
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.nextActionPlan,
+    DischargeDeskSection.completed =>
+      DischargeCompletedAtomPermissions.continueDischarge,
+    DischargeDeskSection.followUps => planned
+        ? DischargeAllPatientsAtomPermissions.nextActionClearance
+        : DischargeAllPatientsAtomPermissions.nextActionPlan,
+  };
 }
 
 class _DischargeNextActionButton extends ConsumerWidget {
-  const _DischargeNextActionButton({required this.item});
+  const _DischargeNextActionButton({
+    required this.item,
+    required this.section,
+  });
 
   final IpdAdmissionSummary item;
+  final DischargeDeskSection section;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1523,7 +1626,10 @@ class _DischargeNextActionButton extends ConsumerWidget {
 
     if (isCompletedDischarge(item)) {
       return AppAccessActionGate(
-        requirement: DischargeCompletedAtomPermissions.nextActionPrint,
+        requirement: _dischargeNextActionRequirement(
+          section: section,
+          item: item,
+        ),
         builder: (BuildContext context, bool isAllowed) {
           return _DischargeCompactAction(
             label: l10n.dischargePrintSummaryAction,
@@ -1537,9 +1643,10 @@ class _DischargeNextActionButton extends ConsumerWidget {
 
     final bool planned = isPlannedDischarge(item);
     return AppAccessActionGate(
-      requirement: planned
-          ? DischargePlannedAtomPermissions.nextActionClearance
-          : DischargePendingClearanceAtomPermissions.nextActionPlan,
+      requirement: _dischargeNextActionRequirement(
+        section: section,
+        item: item,
+      ),
       builder: (BuildContext context, bool isAllowed) {
         final String label = planned
             ? l10n.dischargeManageClearanceAction
@@ -1680,7 +1787,13 @@ Future<void> _printOrOpenDetailFromQueue(
     return;
   }
   if (context.mounted) {
-    await _openDischargeDetailDialog(context, ref, state, admission);
+    await _openDischargeDetailDialog(
+      context,
+      ref,
+      state,
+      admission,
+      section: DischargeDeskSection.completed,
+    );
   }
 }
 
