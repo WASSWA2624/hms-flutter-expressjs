@@ -23,6 +23,14 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+export 'package:hosspi_hms/features/hr/presentation/hr_access.dart'
+    show
+        canWriteHrAccess,
+        canCreateHrAccess,
+        canUpdateHrAccess,
+        canDeleteHrAccess,
+        canReadHrAccess;
+
 final RegExp _hrAccessTenantUuidPattern = RegExp(
   r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
   caseSensitive: false,
@@ -417,11 +425,19 @@ class _HrAccessWorkspacePanelState
     );
   }
 
-  bool get _canWrite => canWriteHrAccess(ref);
+  AppAccessPolicy get _policy => ref.watch(appAccessPolicyProvider);
+
+  bool get _canCreate => canCreateHrAccess(_policy);
+
+  bool get _canUpdate => canUpdateHrAccess(_policy);
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    // Defense-in-depth: do not mount Access panel when read ∩∪ fails.
+    if (!canReadHrAccess(_policy)) {
+      return const SizedBox.shrink();
+    }
     final Widget body = _buildBody(context, l10n);
 
     if (widget.embedded) {
@@ -444,7 +460,7 @@ class _HrAccessWorkspacePanelState
         leadingIcon: Icons.refresh,
         onPressed: _loading ? null : () => unawaited(_reload(resetPage: true)),
       ),
-      if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.users)
+      if (_canCreate && !_tenantContextRequired && _panel == HrAccessPanel.users)
         AppButton.primary(
           label: l10n.hrCreateUserAction,
           leadingIcon: Icons.person_add_outlined,
@@ -455,7 +471,7 @@ class _HrAccessWorkspacePanelState
             }
           },
         ),
-      if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.roles)
+      if (_canCreate && !_tenantContextRequired && _panel == HrAccessPanel.roles)
         AppButton.primary(
           label: l10n.hrAccessCreateRoleAction,
           leadingIcon: Icons.add_moderator_outlined,
@@ -466,7 +482,7 @@ class _HrAccessWorkspacePanelState
             }
           },
         ),
-      if (_canWrite &&
+      if (_canCreate &&
           !_tenantContextRequired &&
           _panel == HrAccessPanel.permissions)
         AppButton.primary(
@@ -714,7 +730,7 @@ class _HrAccessWorkspacePanelState
           context,
           ref,
           role,
-          canWrite: _canWrite,
+          canWrite: _canUpdate,
           onChanged: () => unawaited(_reload(resetPage: true)),
         );
       },
@@ -824,7 +840,8 @@ class _HrAccessWorkspacePanelState
       itemKeyBuilder: (HrAccessPermission item) =>
           ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessPermission permission) async {
-        if (_canWrite) {
+        // Update ∩: edit dialog; otherwise read-only detail.
+        if (_canUpdate) {
           await showHrEditPermissionDialog(context, ref, permission);
           if (context.mounted) {
             unawaited(_reload(resetPage: true));
@@ -1078,10 +1095,6 @@ bool isHrAccessTenantUuid(String? value) {
   return _hrAccessTenantUuidPattern.hasMatch(value.trim());
 }
 
-bool canWriteHrAccess(WidgetRef ref) {
-  return ref.read(appAccessPolicyProvider).grants(AppPermissions.hrWrite);
-}
-
 AppWorkspaceStatusTone hrAccessUserStatusTone(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
     'ACTIVE' => AppWorkspaceStatusTone.success,
@@ -1208,7 +1221,9 @@ class _HrAccessUserDetailDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool canWrite = canWriteHrAccess(ref);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canUpdate = canUpdateHrAccess(policy);
+    final bool canDelete = canDeleteHrAccess(policy);
     final String title = _detail?.profileName ?? widget.user.displayLabel;
 
     if (_loading) {
@@ -1250,9 +1265,9 @@ class _HrAccessUserDetailDialogState
       maxWidth: 840,
       content: _HrAccessUserDetailContent(
         detail: resolved,
-        canWrite: canWrite,
+        canWrite: canUpdate || canDelete,
         isBusy: _saving,
-        onAddRole: canWrite
+        onAddRole: canUpdate
             ? () async {
                 Navigator.of(context).pop();
                 await showHrEditAccessUserDialog(
@@ -1264,8 +1279,8 @@ class _HrAccessUserDetailDialogState
                 widget.onChanged?.call();
               }
             : null,
-        onRemoveRole: canWrite ? _removeRole : null,
-        onAddDirectPermission: canWrite
+        onRemoveRole: canDelete ? _removeRole : null,
+        onAddDirectPermission: canUpdate
             ? () async {
                 Navigator.of(context).pop();
                 await showHrEditAccessUserDialog(
@@ -1277,7 +1292,7 @@ class _HrAccessUserDetailDialogState
                 widget.onChanged?.call();
               }
             : null,
-        onRemoveDirectPermission: canWrite
+        onRemoveDirectPermission: canDelete
             ? (AppUserAccessDirectPermission permission) async {
                 Navigator.of(context).pop();
                 await showHrEditAccessUserDialog(
@@ -1303,7 +1318,7 @@ class _HrAccessUserDetailDialogState
                   .selectStaffByDisplayId(resolved.staffProfileId!);
             },
           ),
-        if (canWrite)
+        if (canUpdate)
           AppButton.secondary(
             label: l10n.hrAccessEditUserAction,
             onPressed: () async {
@@ -1439,6 +1454,10 @@ Future<void> showHrEditAccessUserDialog(
   HrAccessUser user, {
   HrAccessUserDetail? initialDetail,
 }) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canUpdateHrAccess(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -1653,6 +1672,9 @@ Future<void> showHrEditAccessUserDialog(
 }
 
 Future<void> showHrCreateRoleDialog(BuildContext context, WidgetRef ref) async {
+  if (!canCreateHrAccess(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -1729,6 +1751,9 @@ Future<void> showHrEditRoleDialog(
   WidgetRef ref,
   HrAccessRole role,
 ) async {
+  if (!canUpdateHrAccess(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -1800,6 +1825,9 @@ Future<void> showHrAssignRolePermissionsDialog(
   WidgetRef ref,
   HrAccessRole role,
 ) async {
+  if (!canUpdateHrAccess(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -1900,6 +1928,9 @@ Future<void> showHrCreatePermissionDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!canCreateHrAccess(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -2022,6 +2053,9 @@ Future<void> showHrEditPermissionDialog(
   WidgetRef ref,
   HrAccessPermission permission,
 ) async {
+  if (!canUpdateHrAccess(ref.read(appAccessPolicyProvider))) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,

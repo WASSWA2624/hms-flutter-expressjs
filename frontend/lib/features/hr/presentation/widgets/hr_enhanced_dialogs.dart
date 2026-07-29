@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -203,11 +204,19 @@ Future<void> showHrManageScheduleTemplatesDialog(
             ],
           ),
           actions: <Widget>[
-            AppButton.primary(
-              label: l10n.hrCreateShiftTemplateAction,
-              leadingIcon: Icons.add,
-              onPressed: () async {
-                await showHrShiftTemplateDialog(context, dialogRef);
+            AppAccessActionGate(
+              requirement: HrShiftsAtomPermissions.create,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.primary(
+                  label: l10n.hrCreateShiftTemplateAction,
+                  leadingIcon: Icons.add,
+                  enabled: isAllowed,
+                  onPressed: !isAllowed
+                      ? null
+                      : () async {
+                          await showHrShiftTemplateDialog(context, dialogRef);
+                        },
+                );
               },
             ),
           ],
@@ -411,22 +420,34 @@ class _HrScheduleTemplateListTile extends StatelessWidget {
                 value: template.displayId ?? template.value,
               ),
             ),
-          AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.edit_outlined,
-            label: l10n.hrSchedulePatternEditAction,
-            semanticLabel: l10n.hrSchedulePatternEditAction,
-            tooltip: l10n.hrSchedulePatternEditAction,
-            onPressed: onEdit,
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.update,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.edit_outlined,
+                label: l10n.hrSchedulePatternEditAction,
+                semanticLabel: l10n.hrSchedulePatternEditAction,
+                tooltip: l10n.hrSchedulePatternEditAction,
+                enabled: isAllowed,
+                onPressed: isAllowed ? onEdit : null,
+              );
+            },
           ),
-          AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.delete_outline,
-            label: l10n.hrSchedulePatternDeleteAction,
-            semanticLabel: l10n.hrSchedulePatternDeleteAction,
-            tooltip: l10n.hrSchedulePatternDeleteAction,
-            color: theme.colorScheme.error,
-            onPressed: onDelete,
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.delete,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.delete_outline,
+                label: l10n.hrSchedulePatternDeleteAction,
+                semanticLabel: l10n.hrSchedulePatternDeleteAction,
+                tooltip: l10n.hrSchedulePatternDeleteAction,
+                color: theme.colorScheme.error,
+                enabled: isAllowed,
+                onPressed: isAllowed ? onDelete : null,
+              );
+            },
           ),
         ],
       ),
@@ -704,27 +725,46 @@ Future<void> showHrScheduleTemplateDetailDialog(
           ],
         ),
         actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.hrSchedulePatternEditAction,
-            leadingIcon: Icons.edit_outlined,
-            onPressed: () async {
-              Navigator.of(dialogContext).pop();
-              await showHrShiftTemplateDialog(context, ref, template);
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.update,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.hrSchedulePatternEditAction,
+                leadingIcon: Icons.edit_outlined,
+                enabled: isAllowed,
+                onPressed: !isAllowed
+                    ? null
+                    : () async {
+                        Navigator.of(dialogContext).pop();
+                        await showHrShiftTemplateDialog(
+                          context,
+                          ref,
+                          template,
+                        );
+                      },
+              );
             },
           ),
-          AppButton(
-            label: l10n.hrSchedulePatternDeleteAction,
-            leadingIcon: Icons.delete_outline,
-            semanticLabel: l10n.hrSchedulePatternDeleteAction,
-            tooltip: l10n.hrSchedulePatternDeleteAction,
-            onPressed: () async {
-              final AppFailure? failure = await controller.deleteShiftTemplate(
-                template.value,
+          AppAccessActionGate(
+            requirement: HrShiftsAtomPermissions.delete,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton(
+                label: l10n.hrSchedulePatternDeleteAction,
+                leadingIcon: Icons.delete_outline,
+                semanticLabel: l10n.hrSchedulePatternDeleteAction,
+                tooltip: l10n.hrSchedulePatternDeleteAction,
+                enabled: isAllowed,
+                onPressed: !isAllowed
+                    ? null
+                    : () async {
+                        final AppFailure? failure = await controller
+                            .deleteShiftTemplate(template.value);
+                        if (context.mounted) {
+                          Navigator.of(dialogContext).pop();
+                          showHrMutationSnackBar(context, failure);
+                        }
+                      },
               );
-              if (context.mounted) {
-                Navigator.of(dialogContext).pop();
-                showHrMutationSnackBar(context, failure);
-              }
             },
           ),
         ],

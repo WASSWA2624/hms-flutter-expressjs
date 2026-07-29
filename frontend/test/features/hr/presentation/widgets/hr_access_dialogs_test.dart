@@ -35,8 +35,21 @@ SessionState _authenticatedSession({String? tenantId}) {
   return SessionState.authenticated(
     session: AuthSession(
       tokens: SessionTokens(accessToken: 'token'),
-      user: AuthUserProfile(tenantId: tenantId, email: 'hr.admin@example.com'),
-      permissions: const <AppPermission>[AppPermissions.hrWrite],
+      user: AuthUserProfile(
+        tenantId: tenantId,
+        facilityId: 'facility-1',
+        email: 'hr.admin@example.com',
+        roles: const <String>['TENANT_ADMIN'],
+      ),
+      permissions: const <AppPermission>[
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+        AppPermissions.tenantAdmin,
+      ],
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+      ],
+      isAuthorizationHydrated: true,
     ),
   );
 }

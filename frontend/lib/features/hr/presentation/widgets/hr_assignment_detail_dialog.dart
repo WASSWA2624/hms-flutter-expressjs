@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
@@ -43,6 +44,8 @@ class _HrAssignmentDetailDialog extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final HrStaffProfile profile = detail.profile;
+    final bool canWrite = HrHumanResourcesAtomPermissions.endAssignment
+        .isAllowed(ref.watch(appAccessPolicyProvider));
 
     return AppDialog(
       title: Text(l10n.hrAssignmentDetailDialogTitle),
@@ -120,7 +123,7 @@ class _HrAssignmentDetailDialog extends ConsumerWidget {
         ],
       ),
       actions: <Widget>[
-        if (assignment.isActive && !isMutating) ...<Widget>[
+        if (canWrite && assignment.isActive && !isMutating) ...<Widget>[
           AppButton.secondary(
             label: l10n.hrEditAssignmentAction,
             leadingIcon: Icons.edit_outlined,

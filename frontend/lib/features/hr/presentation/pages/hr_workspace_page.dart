@@ -8,10 +8,13 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
@@ -19,7 +22,20 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_d
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_availability_calendar.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_dialog.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart'
+    hide
+        hrReadRequirement,
+        hrWriteRequirement,
+        hrRosterWriteRequirement,
+        hrRosterApproveRequirement,
+        hrRosterPublishRequirement,
+        hrPayrollRequirement,
+        HrHumanResourcesAtomPermissions,
+        HrLeaveRequestsAtomPermissions,
+        HrShiftsAtomPermissions,
+        HrPayrollDraftsAtomPermissions,
+        showHrMutationSnackBar,
+        readHrWorkspaceState;
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
@@ -53,19 +69,27 @@ class HrWorkspacePage extends ConsumerWidget {
       hrWorkspaceControllerProvider,
     );
 
-    return AsyncStateScaffold<HrWorkspaceState>(
-      value: workspace,
-      appBarTitle: l10n.hrTitle,
-      loadingTitle: l10n.hrLoadingTitle,
-      loadingBody: l10n.hrLoadingBody,
-      maxWidth: PageMaxWidth.dataHeavy,
-      centerVertically: false,
-      onRetry: () {
-        ref.read(hrWorkspaceControllerProvider.notifier).refresh();
-      },
-      dataBuilder: (BuildContext context, HrWorkspaceState state) {
-        return _HrWorkspaceContent(state: state, initialQuery: initialQuery);
-      },
+    return AppAccessGate(
+      requirement: HrHumanResourcesAtomPermissions.routeEntry,
+      deniedBuilder: (_, _) => AppStateScaffold(
+        variant: AppStateViewVariant.forbidden,
+        title: l10n.routeForbiddenTitle,
+        body: l10n.routeForbiddenBody,
+      ),
+      child: AsyncStateScaffold<HrWorkspaceState>(
+        value: workspace,
+        appBarTitle: l10n.hrTitle,
+        loadingTitle: l10n.hrLoadingTitle,
+        loadingBody: l10n.hrLoadingBody,
+        maxWidth: PageMaxWidth.dataHeavy,
+        centerVertically: false,
+        onRetry: () {
+          ref.read(hrWorkspaceControllerProvider.notifier).refresh();
+        },
+        dataBuilder: (BuildContext context, HrWorkspaceState state) {
+          return _HrWorkspaceContent(state: state, initialQuery: initialQuery);
+        },
+      ),
     );
   }
 }
@@ -259,6 +283,28 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final HrWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<HrDeskSection> visibleSections = hrAllowedSections(accessPolicy);
+    if (visibleSections.isEmpty) {
+      // No authorized sections — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    final bool canShowCurrentSection = visibleSections.contains(_section);
+    if (!canShowCurrentSection) {
+      final HrDeskSection fallback =
+          hrFallbackSection(accessPolicy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        setState(() => _section = fallback);
+        _updateUrlForSection(fallback);
+        _loadDataForSection(fallback);
+      });
+    }
+    final HrDeskSection activeSection = canShowCurrentSection
+        ? _section
+        : visibleSections.first;
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );
@@ -275,7 +321,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final HrDeskSection section in HrDeskSection.values)
+                for (final HrDeskSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -284,9 +330,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                     countTone: _sectionCountTone(section),
                   ),
               ],
-              selectedId: _section.name,
+              selectedId: activeSection.name,
               onTabTapped: (String tabId) {
-                for (final HrDeskSection section in HrDeskSection.values) {
+                for (final HrDeskSection section in visibleSections) {
                   if (section.name == tabId) {
                     setState(() => _section = section);
                     _updateUrlForSection(section);
@@ -295,7 +341,11 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: _buildPrimaryActionButton(l10n, state),
+              primaryAction: _buildPrimaryActionButton(
+                l10n,
+                state,
+                activeSection,
+              ),
               secondaryActions: _buildSecondaryActionWidgets(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -306,7 +356,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _buildTabBody(state, controller),
+            _buildTabBody(state, controller, activeSection),
           ],
         ),
       ),
@@ -316,12 +366,13 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   Widget? _buildPrimaryActionButton(
     AppLocalizations l10n,
     HrWorkspaceState state,
+    HrDeskSection section,
   ) {
     // Access creates live on the embedded Access panel; payroll runs from staff
     // detail so the strip never guesses a staff member.
-    return switch (_section) {
+    return switch (section) {
       HrDeskSection.staffDirectory => AppAccessActionGate(
-        requirement: hrWriteRequirement,
+        requirement: HrHumanResourcesAtomPermissions.addStaff,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarPrimary(
             label: l10n.hrAddStaffAction,
@@ -334,7 +385,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
       ),
       HrDeskSection.leaveRequests => AppAccessActionGate(
-        requirement: hrWriteRequirement,
+        requirement: HrLeaveRequestsAtomPermissions.requestLeave,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarPrimary(
             label: l10n.hrRequestLeaveAction,
@@ -347,7 +398,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
       ),
       HrDeskSection.shiftRoster => AppAccessActionGate(
-        requirement: hrRosterWriteRequirement,
+        requirement: HrShiftsAtomPermissions.scheduleTemplates,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarPrimary(
             label: l10n.hrShiftTemplateAction,
@@ -384,8 +435,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   Widget _buildTabBody(
     HrWorkspaceState state,
     HrWorkspaceController controller,
+    HrDeskSection section,
   ) {
-    return switch (_section) {
+    return switch (section) {
       HrDeskSection.staffDirectory => _HrStaffDirectory(
         state: state,
         searchController: _searchController,
@@ -692,6 +744,12 @@ class _HrStaffDetailBody extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final HrStaffProfile profile = detail.profile;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = HrHumanResourcesAtomPermissions.write.isAllowed(
+      policy,
+    );
+    final bool canRosterWrite =
+        HrHumanResourcesAtomPermissions.nestedRosterWrite.isAllowed(policy);
     final bool hasLinkedUser =
         (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
             .trim()
@@ -708,7 +766,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           showAvatar: false,
           persistExpandPreference: false,
           initiallyExpanded: false,
-          actions: profile.isSeparated || state.isMutating
+          actions: profile.isSeparated || state.isMutating || !canWrite
               ? const <Widget>[]
               : <Widget>[
                   AppButton(
@@ -846,8 +904,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
                     role.facilityName,
                     role.facilityDisplayId,
                   ]),
-                  trailing: l10n.hrRevokeRoleAction,
-                  onTrailingTap: state.isMutating
+                  trailing: canWrite && !state.isMutating
+                      ? l10n.hrRevokeRoleAction
+                      : null,
+                  onTrailingTap: !canWrite || state.isMutating
                       ? null
                       : () async {
                           final HrWorkspaceController controller = ref.read(
@@ -914,7 +974,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   hrAssignmentStatusBadge(assignment, l10n),
                 ],
                 trailing:
-                    assignment.isActive &&
+                    canWrite &&
+                        assignment.isActive &&
                         !state.isMutating &&
                         !profile.isSeparated
                     ? l10n.hrEndAssignmentAction
@@ -928,7 +989,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   isMutating: state.isMutating,
                 ),
                 onTrailingTap:
-                    assignment.isActive &&
+                    canWrite &&
+                        assignment.isActive &&
                         !state.isMutating &&
                         !profile.isSeparated
                     ? () => showHrEndAssignmentDialog(context, ref, assignment)
@@ -970,8 +1032,12 @@ class _HrStaffDetailBody extends ConsumerWidget {
                 context,
                 dayOfWeek: day,
                 availability: availability,
-                onEdit: () => showHrRecordAvailabilityDialog(context, ref),
-                onAddSlot: () => showHrRecordAvailabilityDialog(context, ref),
+                onEdit: canRosterWrite
+                    ? () => showHrRecordAvailabilityDialog(context, ref)
+                    : null,
+                onAddSlot: canRosterWrite
+                    ? () => showHrRecordAvailabilityDialog(context, ref)
+                    : null,
               );
             },
           ),
@@ -995,8 +1061,13 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   context,
                   assignment,
                   state.referenceData,
-                  actionsEnabled: !profile.isSeparated && !state.isMutating,
-                  onSwap: () => _showShiftSwapDialog(context, ref),
+                  actionsEnabled:
+                      canRosterWrite &&
+                      !profile.isSeparated &&
+                      !state.isMutating,
+                  onSwap: canRosterWrite
+                      ? () => _showShiftSwapDialog(context, ref)
+                      : null,
                 ),
               ),
           ],
@@ -1022,13 +1093,15 @@ class _HrStaffDetailBody extends ConsumerWidget {
                 onTap: () => showHrCompensationDetailDialog(
                   context,
                   compensation,
-                  () => showHrCompensationDialog(
-                    context,
-                    ref,
-                    profile,
-                    detail.compensations,
-                    focusPayType: compensation.payType,
-                  ),
+                  onEdit: canWrite
+                      ? () => showHrCompensationDialog(
+                          context,
+                          ref,
+                          profile,
+                          detail.compensations,
+                          focusPayType: compensation.payType,
+                        )
+                      : null,
                 ),
               ),
           ],
@@ -1619,7 +1692,7 @@ class _WorkItemActions extends ConsumerWidget {
     return switch (item.queue) {
       HrQueue.leaveRequests => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: hrWriteRequirement,
+          requirement: HrLeaveRequestsAtomPermissions.approveLeave,
           label: l10n.hrApproveLeaveAction,
           icon: Icons.check_circle_outline,
           enabled: enabled,
@@ -1633,7 +1706,7 @@ class _WorkItemActions extends ConsumerWidget {
           ),
         ),
         AppPermissionActionItem(
-          requirement: hrWriteRequirement,
+          requirement: HrLeaveRequestsAtomPermissions.rejectLeave,
           label: l10n.hrRejectLeaveAction,
           icon: Icons.cancel_outlined,
           enabled: enabled,
@@ -1649,7 +1722,7 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.swapRequests => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: hrRosterApproveRequirement,
+          requirement: HrShiftsAtomPermissions.approveSwap,
           label: l10n.hrApproveSwapAction,
           icon: Icons.check_circle_outline,
           enabled: enabled,
@@ -1663,7 +1736,7 @@ class _WorkItemActions extends ConsumerWidget {
           ),
         ),
         AppPermissionActionItem(
-          requirement: hrRosterApproveRequirement,
+          requirement: HrShiftsAtomPermissions.rejectSwap,
           label: l10n.hrRejectSwapAction,
           icon: Icons.cancel_outlined,
           enabled: enabled,
@@ -1679,14 +1752,14 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.rosterDrafts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: hrRosterWriteRequirement,
+          requirement: HrShiftsAtomPermissions.previewRoster,
           label: l10n.hrPreviewRosterAction,
           icon: Icons.visibility_outlined,
           enabled: enabled,
           onPressed: () => showHrPreviewRosterDialog(context, ref, item),
         ),
         AppPermissionActionItem(
-          requirement: hrRosterWriteRequirement,
+          requirement: HrShiftsAtomPermissions.generateRoster,
           label: l10n.hrGenerateRosterAction,
           icon: Icons.auto_awesome_outlined,
           enabled: enabled,
@@ -1694,7 +1767,7 @@ class _WorkItemActions extends ConsumerWidget {
               _submitSimple(context, controller.generateRoster(item)),
         ),
         AppPermissionActionItem(
-          requirement: hrRosterPublishRequirement,
+          requirement: HrShiftsAtomPermissions.publishRoster,
           label: l10n.hrPublishRosterAction,
           icon: Icons.publish_outlined,
           enabled: enabled,
@@ -1704,7 +1777,7 @@ class _WorkItemActions extends ConsumerWidget {
       HrQueue.unassignedShifts ||
       HrQueue.overdueShifts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: hrRosterWriteRequirement,
+          requirement: HrShiftsAtomPermissions.overrideShift,
           label: l10n.hrOverrideShiftAction,
           icon: Icons.manage_accounts_outlined,
           enabled: enabled,
@@ -1713,14 +1786,14 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.payrollDrafts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: hrPayrollRequirement,
+          requirement: HrPayrollDraftsAtomPermissions.preview,
           label: l10n.hrPreviewPayrollAction,
           icon: Icons.receipt_long_outlined,
           enabled: enabled,
           onPressed: () => showHrPreviewPayrollDialog(context, ref, item),
         ),
         AppPermissionActionItem(
-          requirement: hrPayrollRequirement,
+          requirement: HrPayrollDraftsAtomPermissions.process,
           label: l10n.hrProcessPayrollAction,
           icon: Icons.price_check_outlined,
           enabled: enabled,
@@ -2277,7 +2350,7 @@ List<AppListTableColumn<HrStaffProfile>> _staffDefaultColumns(
           return button;
         }
         return AppAccessActionGate(
-          requirement: hrWriteRequirement,
+          requirement: HrHumanResourcesAtomPermissions.nextActionAssign,
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.tertiary(
               label: label,
@@ -2699,12 +2772,12 @@ AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
     alwaysVisible: true,
     cellBuilder: (BuildContext context, HrWorkItem item) {
       final AccessRequirement requirement = switch (item.queue) {
-        HrQueue.leaveRequests => hrWriteRequirement,
-        HrQueue.swapRequests => hrRosterApproveRequirement,
-        HrQueue.rosterDrafts => hrRosterPublishRequirement,
+        HrQueue.leaveRequests => HrLeaveRequestsAtomPermissions.approveLeave,
+        HrQueue.swapRequests => HrShiftsAtomPermissions.approveSwap,
+        HrQueue.rosterDrafts => HrShiftsAtomPermissions.publishRoster,
         HrQueue.unassignedShifts ||
-        HrQueue.overdueShifts => hrRosterWriteRequirement,
-        HrQueue.payrollDrafts => hrPayrollRequirement,
+        HrQueue.overdueShifts => HrShiftsAtomPermissions.overrideShift,
+        HrQueue.payrollDrafts => HrPayrollDraftsAtomPermissions.nextAction,
       };
       return AppAccessActionGate(
         requirement: requirement,

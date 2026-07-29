@@ -383,7 +383,7 @@ double _estimateTabWidth({
         text: '${tab.count}',
         style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: _tabCountFontSize,
           height: 1,
         ),
       ),
@@ -582,6 +582,10 @@ bool _showToolbarLabel(BuildContext context, {required bool hasIcon}) {
   return AppBreakpoints.of(context).showsToolbarActionLabels;
 }
 
+/// Tab count superscript size. Kept above tiny caption scale so queue
+/// totals stay readable without competing with the tab label.
+const double _tabCountFontSize = 12;
+
 Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
   final AppStatusColors status = theme.statusColors;
   return switch (tone) {
@@ -589,6 +593,15 @@ Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
     AppTabCountTone.warning => status.warning,
     AppTabCountTone.danger => status.danger,
   };
+}
+
+TextStyle? _tabCountStyle(ThemeData theme, AppTabCountTone tone) {
+  return theme.textTheme.labelSmall?.copyWith(
+    color: _countToneColor(theme, tone),
+    fontWeight: FontWeight.w600,
+    fontSize: _tabCountFontSize,
+    height: 1,
+  );
 }
 
 /// Chrome-style tab silhouette for the selected tab: rounded top corners and
@@ -792,15 +805,10 @@ class _AppTabChipState extends State<_AppTabChip> {
                   ),
                   if (widget.count != null)
                     Transform.translate(
-                      offset: const Offset(1, -4),
+                      offset: const Offset(1, -5),
                       child: Text(
                         '${widget.count}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: _countToneColor(theme, widget.countTone),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                          height: 1,
-                        ),
+                        style: _tabCountStyle(theme, widget.countTone),
                       ),
                     ),
                 ],
@@ -874,15 +882,10 @@ class _AppTabChipState extends State<_AppTabChip> {
                   ),
                   if (widget.count != null)
                     Transform.translate(
-                      offset: const Offset(1, -4),
+                      offset: const Offset(1, -5),
                       child: Text(
                         '${widget.count}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: _countToneColor(theme, widget.countTone),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                          height: 1,
-                        ),
+                        style: _tabCountStyle(theme, widget.countTone),
                       ),
                     ),
                 ],

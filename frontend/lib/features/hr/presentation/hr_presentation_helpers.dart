@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
@@ -11,40 +8,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
-const AccessRequirement hrWriteRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement hrRosterWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterWrite,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement hrRosterApproveRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterApprove,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement hrRosterPublishRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterPublish,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement hrPayrollRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  anyPermissions: <AppPermission>[AppPermissions.financialApprove],
-  activeModules: <String>['hr-rosters'],
-);
+export 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 
 /// Reads the current HR workspace state when the controller has loaded successfully.
 HrWorkspaceState? readHrWorkspaceState(WidgetRef ref) {

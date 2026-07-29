@@ -61,9 +61,9 @@ Future<void> showHrCompensationDialog(
 
 Future<void> showHrCompensationDetailDialog(
   BuildContext context,
-  HrStaffCompensation compensation,
-  VoidCallback onEdit,
-) async {
+  HrStaffCompensation compensation, {
+  VoidCallback? onEdit,
+}) async {
   final AppLocalizations l10n = context.l10n;
   await showAppDialog<void>(
     context: context,
@@ -102,14 +102,15 @@ Future<void> showHrCompensationDetailDialog(
         ],
       ),
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.hrCompensationAddNewRateAction,
-          leadingIcon: Icons.add,
-          onPressed: () {
-            Navigator.of(context).pop();
-            onEdit();
-          },
-        ),
+        if (onEdit != null)
+          AppButton.secondary(
+            label: l10n.hrCompensationAddNewRateAction,
+            leadingIcon: Icons.add,
+            onPressed: () {
+              Navigator.of(context).pop();
+              onEdit();
+            },
+          ),
         AppButton(
           label: l10n.commonCloseActionLabel,
           onPressed: () => Navigator.of(context).pop(),
@@ -354,13 +355,16 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                                   : AppWorkspaceStatusTone.neutral,
                             ),
                           ),
-                          onTap: () =>
-                              showHrCompensationDetailDialog(context, item, () {
-                                if (!mounted) {
-                                  return;
-                                }
-                                _focusPayStructure(payType: item.payType);
-                              }),
+                          onTap: () => showHrCompensationDetailDialog(
+                            context,
+                            item,
+                            onEdit: () {
+                              if (!mounted) {
+                                return;
+                              }
+                              _focusPayStructure(payType: item.payType);
+                            },
+                          ),
                         ),
                     ],
                   );

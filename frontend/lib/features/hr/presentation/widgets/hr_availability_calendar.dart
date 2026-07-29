@@ -234,8 +234,8 @@ Future<void> showHrAvailabilityDaySheet(
   BuildContext context, {
   required int dayOfWeek,
   required HrStaffAvailability? availability,
-  required VoidCallback onEdit,
-  required VoidCallback onAddSlot,
+  VoidCallback? onEdit,
+  VoidCallback? onAddSlot,
 }) async {
   final AppLocalizations l10n = context.l10n;
   final ThemeData theme = Theme.of(context);
@@ -305,20 +305,22 @@ Future<void> showHrAvailabilityDaySheet(
                   ),
                 ),
               SizedBox(height: theme.spacing.sm),
-              AppButton.secondary(
-                label: slots.isEmpty
-                    ? l10n.hrAvailabilityAddSlotAction
-                    : l10n.hrAvailabilityEditDayAction,
-                leadingIcon: Icons.edit_outlined,
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  if (slots.isEmpty) {
-                    onAddSlot();
-                  } else {
-                    onEdit();
-                  }
-                },
-              ),
+              if ((slots.isEmpty && onAddSlot != null) ||
+                  (slots.isNotEmpty && onEdit != null))
+                AppButton.secondary(
+                  label: slots.isEmpty
+                      ? l10n.hrAvailabilityAddSlotAction
+                      : l10n.hrAvailabilityEditDayAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    if (slots.isEmpty) {
+                      onAddSlot!();
+                    } else {
+                      onEdit!();
+                    }
+                  },
+                ),
             ],
           ),
         ),

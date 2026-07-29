@@ -82,6 +82,7 @@ AppAccessPolicy _hrWritePolicy() {
       user: const AuthUserProfile(
         roles: <String>['HR'],
         tenantId: _tenantUuid,
+        facilityId: 'facility-1',
       ),
       permissions: <AppPermission>{
         AppPermissions.hrRead,
@@ -90,11 +91,13 @@ AppAccessPolicy _hrWritePolicy() {
         AppPermissions.rosterApprove,
         AppPermissions.rosterPublish,
         AppPermissions.financialApprove,
+        AppPermissions.tenantAdmin,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -106,12 +109,14 @@ AppAccessPolicy _hrReadOnlyPolicy() {
       user: const AuthUserProfile(
         roles: <String>['HR'],
         tenantId: _tenantUuid,
+        facilityId: 'facility-1',
       ),
       permissions: <AppPermission>{AppPermissions.hrRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -252,6 +257,13 @@ Future<void> _pumpHrWorkspace(
 }
 
 Future<void> _selectTab(WidgetTester tester, String label) async {
+  final Finder bySemantics = find.bySemanticsLabel(RegExp(label));
+  if (bySemantics.evaluate().isNotEmpty) {
+    await tester.tap(bySemantics.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
   final Finder visible = find.textContaining(label);
   if (visible.evaluate().isNotEmpty) {
     await tester.tap(visible.first);
@@ -263,7 +275,9 @@ Future<void> _selectTab(WidgetTester tester, String label) async {
   expect(more, findsOneWidget);
   await tester.tap(more);
   await tester.pumpAndSettle();
-  await tester.tap(find.textContaining(label).last);
+  final Finder overflow = find.textContaining(label);
+  expect(overflow, findsWidgets);
+  await tester.tap(overflow.last);
   await tester.pumpAndSettle();
 }
 

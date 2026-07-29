@@ -2,7 +2,9 @@
 
 Primary surface: `HrWorkspacePage` (`frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`).
 
-Write gates: `hrWriteRequirement` (staff / leave / access mutations), `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (roster & shifts), `hrPayrollRequirement` (payroll; also needs `financialApprove`). Access panel writes use `canWriteHrAccess` (`hrWrite`). Unauthorized controls do not render.
+Write gates: `hrWriteRequirement` (staff / leave / access mutations), `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (roster & shifts), `hrPayrollRequirement` (payroll process; `hr:write` ∩ `financial:approve`). Preview payroll uses `hrPayrollPreviewRequirement` (`hr:read`). Access panel writes use Access helpers (`canCreateHrAccess` / `canUpdateHrAccess` / `canDeleteHrAccess`). Unauthorized controls do not render.
+
+Atom maps: `HrLeaveRequestsAtomPermissions`, `HrShiftsAtomPermissions`, `HrPayrollDraftsAtomPermissions`, `HrManageUsersRolesAtomPermissions` in `hr_access.dart`. Tab strip filters via `hrAllowedSections`.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -31,7 +33,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, loads matching queue when needed.
-  - Condition: Always when workspace loads; count badges from overview / staff total.
+  - Condition: Section visible when `hrAllowedSections` includes it (payroll / leave / shifts / staff need `hr:read`; Access uses Access read ∪).
 
 - **Add staff** (primary, Human resources)
   - Location: Tab-strip primary (`hrAddStaffAction`).
@@ -43,13 +45,13 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Tab-strip primary (`hrRequestLeaveAction`).
   - Opens modal: Yes — request leave dialog.
   - Immediate result: Creates leave request; snackbar; queue refresh.
-  - Condition: `hrWriteRequirement`; omitted when unauthorized.
+  - Condition: `HrLeaveRequestsAtomPermissions.requestLeave`; omitted when unauthorized.
 
 - **Schedule templates** (primary, Shifts)
   - Location: Tab-strip primary (`hrShiftTemplateAction`).
   - Opens modal: Yes — manage schedule templates dialog.
   - Immediate result: Create / edit / delete shift templates.
-  - Condition: `hrRosterWriteRequirement`; omitted when unauthorized.
+  - Condition: `hrRosterWriteRequirement` / `HrShiftsAtomPermissions.scheduleTemplates`; omitted when unauthorized.
 
 Payroll drafts and Manage users and roles have no tab-strip primary. Access creates (**Create staff** / role / permission) live on the embedded Access panel.
 
@@ -57,7 +59,7 @@ Payroll drafts and Manage users and roles have no tab-strip primary. Access crea
   - Location: Tab-strip secondary (`hrActivityTitle`).
   - Opens modal: Yes — timeline activity dialog.
   - Immediate result: Progressive disclosure of recent HR timeline items.
-  - Condition: Always when workspace loaded.
+  - Condition: Always when workspace loaded with at least one visible section.
 
 Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
 
@@ -89,15 +91,32 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
 - **Next action** — opens the primary mutation directly (approve leave/swap, publish roster, override shift, process payroll) without the detail shell.
   - Condition: Matching write / approve / publish / payroll gate; unauthorized control absent.
 
+### Payroll drafts tab (`?section=payroll`)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Payroll drafts tab | navigate | `HrPayrollDraftsAtomPermissions.tab` ∩ `hr:read` |
+| Strip primary | — | _(none)_ |
+| HR activity | progressive disclosure | read ∩ |
+| Search / filters / columns / pagination | read chrome | read ∩ |
+| Empty / loading / error / retry | read chrome | read ∩ |
+| Row select → detail | read | read ∩ |
+| Next action **Process payroll** | approve | source `hrPayrollRequirement` (`hr:write` ∩ `financial:approve`) |
+| Detail **Preview payroll** | read | `hr:read` (backend preview) |
+| Detail **Process payroll** | approve | source `hrPayrollRequirement` |
+| Nested preview / process dialogs | read / approve | as above |
+| Matrix nested write ∪ | — | documented as `nestedWriteMatrix`; UI process keeps source ∩ |
+
 ### Staff detail (from row / deep link / review next-action)
 
-- Profile header with **Edit staff** (when not separated).
+- Profile header with **Edit staff** (when not separated; `hrWriteRequirement`).
 - **Staff actions** QuickActions: assign department/position, availability, shift, swap, leave, compensation, run payroll, assign role, view module access, offboard (permission-gated).
-- Record sections (assignments, leave, availability calendar, shifts, compensation) for browse / row detail; mutations start from Staff actions (or day sheet edit on the calendar).
+- Record sections (assignments, leave, availability calendar, shifts, compensation) for browse / row detail; mutations start from Staff actions (or day sheet edit on the calendar when roster-write allowed).
+- Nested write affordances (Edit staff, Revoke role, End assignment, calendar Edit/Add, shift Swap, compensation Add/edit rate) omit when unauthorized.
 
 ### Access tab
 
-- Embedded `HrAccessWorkspacePanel`: users / roles / permissions toggle, search, create actions when `hrWrite` + tenant UUID available.
+- Embedded `HrAccessWorkspacePanel`: users / roles / permissions toggle, search, create actions when Access create ∩ + tenant UUID available.
 - Row select opens user / role / permission detail dialogs.
 
 ### Empty / loading / error / validation
@@ -117,3 +136,4 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Staff **Assign department** next-action opens the assign dialog without Staff actions.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
+- Payroll drafts permission tests in `frontend/test/features/hr/presentation/hr_payroll_drafts_permissions_test.dart` prove preview/process ∩/∪ mapping, unauthorized absence, authorized presence, sync, viewports, and themes.
