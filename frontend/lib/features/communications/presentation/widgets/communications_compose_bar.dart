@@ -319,6 +319,12 @@ class _CommunicationsComposeBarState
   }
 
   Future<void> _send() async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!widget.canWrite ||
+        !CommunicationsMessagesAtomPermissions.compose.isAllowed(policy)) {
+      return;
+    }
     final String content = _controller.text.trim();
     final CommunicationMessageDraft draft = CommunicationMessageDraft(
       content: content,

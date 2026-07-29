@@ -125,3 +125,4 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 - Row **Mark read** / **Mark unread** complete without a confirm dialog and show success snackbar.
 - Delivery detail has no duplicate Open linked footer when no path.
 - Template detail is preview-only; no Create / Edit / Delete when unauthorized or when not inventoried.
+- Read-only detail hides Archive / Mark read / Mark unread.

@@ -124,6 +124,11 @@ class _NewDirectMessageFieldsState
   }
 
   Future<AppFailure?> submit() async {
+    // Re-check before mutation — stale grants must not fire write paths.
+    final AppAccessPolicy policy = widget.ref.read(appAccessPolicyProvider);
+    if (!CommunicationsMessagesAtomPermissions.newMessage.isAllowed(policy)) {
+      return null;
+    }
     final String? userId = _selectedUserId;
     if (userId == null) {
       return AppFailure.validation(validationFields: <String>{'recipient'});
