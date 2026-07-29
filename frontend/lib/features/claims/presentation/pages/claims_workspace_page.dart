@@ -608,9 +608,11 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
             AppQuickActions(
               title: l10n.claimsSectionInsuranceSetup,
               presentation: AppQuickActionsPresentation.detailPanel,
+              // hideWhenEmpty (default): collapses when all create ∩ actions
+              // are filtered for read-only / subscription-stripped users.
               permissionActions: <AppPermissionActionItem>[
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement: ClaimsInsuranceSetupAtomPermissions.addCompany,
                   label: l10n.claimsAddCompanyAction,
                   icon: Icons.business_outlined,
                   variant: AppButtonVariant.primary,
@@ -625,7 +627,7 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
                   },
                 ),
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement: ClaimsInsuranceSetupAtomPermissions.addScheme,
                   label: l10n.claimsAddSchemeAction,
                   icon: Icons.account_balance_outlined,
                   onPressed: () {
@@ -639,7 +641,7 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
                   },
                 ),
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement: ClaimsInsuranceSetupAtomPermissions.addOffer,
                   label: l10n.claimsAddOfferAction,
                   icon: Icons.local_offer_outlined,
                   onPressed: () {
@@ -653,7 +655,8 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
                   },
                 ),
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement:
+                      ClaimsInsuranceSetupAtomPermissions.enrollPatient,
                   label: l10n.claimsAddEnrollmentAction,
                   icon: Icons.badge_outlined,
                   onPressed: () {
@@ -667,7 +670,7 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
                   },
                 ),
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement: ClaimsInsuranceSetupAtomPermissions.addPrice,
                   label: l10n.claimsAddPriceBookAction,
                   icon: Icons.menu_book_outlined,
                   onPressed: () {
@@ -681,7 +684,7 @@ class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
                   },
                 ),
                 AppPermissionActionItem(
-                  requirement: ClaimsInsuranceSetupAtomPermissions.create,
+                  requirement: ClaimsInsuranceSetupAtomPermissions.insurerApi,
                   label: l10n.claimsAddInsurerIntegrationAction,
                   icon: Icons.vpn_key_outlined,
                   onPressed: () {

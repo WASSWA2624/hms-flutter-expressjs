@@ -321,23 +321,27 @@ abstract final class ClaimsSettledAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Insurance Setup tab | navigate | read ∪ |
+/// | Insurance Setup tab | navigate | read ∪ `billing:read` \| `facility:admin` \| `tenant:admin` |
 /// | Description panel | read chrome | read ∪ |
-/// | Empty create strip (collapsed) | progressive disclosure | write ∩ |
-/// | Add company / scheme / offer | create | write ∩ |
+/// | Empty create strip (`AppQuickActions.hideWhenEmpty`) | progressive disclosure | write ∩ |
+/// | Add company | create | write ∩ `billing:write` |
+/// | Add scheme | create | write ∩ |
+/// | Add offer | create | write ∩ |
 /// | Enroll patient | create | write ∩ |
 /// | Add price book entry | create | write ∩ |
 /// | Insurer API integration | create | write ∩ |
 /// | Nested catalog create dialogs | create | write ∩ (+ opener gate) |
+/// | Update / delete catalog (matrix verbs; no inventory UI) | update / delete | write ∩ |
 /// | Tab-strip primary / Refresh | _(absent on this tab)_ | — |
-/// | Queue search / filters / rows | _(absent on this tab)_ | — |
+/// | Queue search / filters / rows / next-action / detail | _(absent on this tab)_ | — |
 /// | Nested cross-module | _(n/a)_ | — |
 /// | Route entry (deep link) | navigate | entry ∪ |
 ///
 /// Matrix read ∩ (`billing:read`) is [read]. Tab visibility uses [tab] (∪) so
 /// facility/tenant admins without `billing:read` still see setup chrome.
 /// Catalog edits reuse [claimsWorkspaceWriteRequirement] (source inventory);
-/// dialog openers also check [create] before mounting.
+/// dialog openers also check [create] before mounting. Named create aliases
+/// map each inventory atom without a second vocabulary.
 abstract final class ClaimsInsuranceSetupAtomPermissions {
   static const AccessRequirement tab =
       claimsInsuranceSetupReadAnyRequirement;
@@ -347,6 +351,12 @@ abstract final class ClaimsInsuranceSetupAtomPermissions {
       claimsInsuranceSetupReadAnyRequirement;
   static const AccessRequirement read = claimsWorkspaceReadRequirement;
   static const AccessRequirement create = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement addCompany = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement addScheme = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement addOffer = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement enrollPatient = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement addPrice = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement insurerApi = claimsWorkspaceWriteRequirement;
   static const AccessRequirement update = claimsWorkspaceWriteRequirement;
   static const AccessRequirement delete = claimsWorkspaceWriteRequirement;
   static const AccessRequirement write = claimsWorkspaceWriteRequirement;
