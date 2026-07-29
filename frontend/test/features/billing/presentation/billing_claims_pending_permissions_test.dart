@@ -153,6 +153,13 @@ void _stubRepository(
       BillingMutationResult(claim: _submittedClaim),
     ),
   );
+  when(
+    () => repository.updatePreAuthorization(any(), any()),
+  ).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(preAuthorization: _preAuthItem),
+    ),
+  );
 }
 
 Future<void> _pumpClaimsPendingTab(
@@ -870,6 +877,109 @@ void main() {
       expect(find.text('Cara Claim'), findsOneWidget);
       expect(find.byTooltip('Submit claim'), findsWidgets);
       expect(find.text('Close shift'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Deny authorization from detail opens notes dialog (validation chrome)',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_preAuthItem],
+      );
+
+      await tester.tap(find.text('Pat Preauth'));
+      await tester.pumpAndSettle();
+
+      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
+      await tester.ensureVisible(find.text('Deny authorization'));
+      await tester.tap(find.text('Deny authorization').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byType(AppDialog).evaluate().length,
+        greaterThan(dialogsBefore),
+      );
+      expect(find.byType(AppTextField), findsWidgets);
+      verifyNever(() => repository.updatePreAuthorization(any(), any()));
+    },
+  );
+
+  testWidgets(
+    'authorized Approve authorization next-action opens nested dialog and syncs',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_preAuthItem],
+      );
+
+      await tester.tap(find.byTooltip('Approve authorization').first);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Approve authorization'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+
+      final Finder approve = find.widgetWithText(
+        FilledButton,
+        'Approve authorization',
+      );
+      if (approve.evaluate().isNotEmpty) {
+        await tester.tap(approve.last);
+      } else {
+        await tester.tap(find.text('Approve authorization').last);
+      }
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updatePreAuthorization(any(), any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'authorized Record insurer response from detail keeps validation chrome',
+    (WidgetTester tester) async {
+      await _pumpClaimsPendingTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        claimItems: const <BillingWorkItem>[_submittedClaim],
+      );
+
+      await tester.tap(find.text('Sam Submitted'));
+      await tester.pumpAndSettle();
+
+      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
+      await tester.ensureVisible(find.text('Record insurer response'));
+      await tester.tap(find.text('Record insurer response').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byType(AppDialog).evaluate().length,
+        greaterThan(dialogsBefore),
+      );
+      expect(find.byType(AppTextField), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+      verifyNever(() => repository.reconcileClaim(any(), any()));
     },
   );
 }

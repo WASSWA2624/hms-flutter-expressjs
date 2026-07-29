@@ -419,6 +419,16 @@ abstract final class BillingNeedsIssueAtomPermissions {
 
 /// Claims pending tab atom → permission mapping (inventory + matrix).
 ///
+/// Matrix create/update ∩ lists `billing:write` alone; source inventory keeps
+/// [billingClaimsWriteRequirement] (`billing:write` ∩ `insurance-claims`) for
+/// submit / reconcile / pre-auth — note the mapping in tests. Nested
+/// cross-module matrix rows are _(n/a)_; Claims pending still requires
+/// `insurance-claims` via [billingClaimsPendingTabRequirement] /
+/// [billingClaimsWriteRequirement]. Close shift/day keep matrix write ∩
+/// ([close] / [delete]). Approval nested (other kinds) keep
+/// [billingApprovalDecisionRequirement]. Route entry ∪
+/// (`billing:read` \| `billing:write`) is [billingWorkspaceEntryRequirement].
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Claims pending tab | navigate | read ∩ `billing:read` ∩ `insurance-claims` |
@@ -435,13 +445,6 @@ abstract final class BillingNeedsIssueAtomPermissions {
 /// | Print / Download | export / read | document read ∩ (invoices only) |
 /// | Approve nested (other kinds) | approve | write ∩ financial:approve |
 /// | Route entry (deep link) | navigate | read ∪ write |
-///
-/// Matrix nested cross-module rows are _(n/a)_; Claims pending still requires
-/// `insurance-claims` via [billingClaimsPendingTabRequirement] /
-/// [billingClaimsWriteRequirement]. Matrix create/update ∩ is `billing:write`
-/// — module is the nested entitlement (source keeps claims write helper).
-/// Route entry ∪ (`billing:read` \| `billing:write`) is
-/// [billingWorkspaceEntryRequirement].
 abstract final class BillingClaimsPendingAtomPermissions {
   static const AccessRequirement tab = billingClaimsPendingTabRequirement;
   static const AccessRequirement listChrome = billingClaimsPendingTabRequirement;

@@ -245,6 +245,7 @@ void main() {
 
       expect(find.text('Ben Payment'), findsOneWidget);
       expect(find.text('Awaiting payment'), findsWidgets);
+      expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
       expect(find.byTooltip('Receive payment'), findsNothing);
@@ -265,6 +266,7 @@ void main() {
       expect(find.text('Adjust'), findsNothing);
       expect(find.text('Void'), findsNothing);
       expect(find.text('Send'), findsNothing);
+      expect(find.text('Refund'), findsNothing);
       expect(find.text('Print invoice'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
@@ -312,6 +314,7 @@ void main() {
       );
 
       expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.text('Close shift'), findsOneWidget);
       expect(find.text('Close day'), findsOneWidget);
       expect(find.byTooltip('Receive payment'), findsWidgets);
@@ -324,7 +327,52 @@ void main() {
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
       expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
+      expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'financial:approve without billing:write: Approve absent (source ∩ denial)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy approveOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.approve.isAllowed(approveOnly),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(
+          approveOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.close.isAllowed(approveOnly),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.tab.isAllowed(approveOnly),
+        isTrue,
+      );
+
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: approveOnly,
+      );
+
+      expect(find.text('Ben Payment'), findsOneWidget);
+      expect(find.byType(AppSearchBar), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.byTooltip('Approve'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -562,6 +610,46 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => repository.receivePayment(any(), any())).called(1);
+      expect(find.text('Billing action saved.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized Receive payment opens form validation chrome (empty amount)',
+    (WidgetTester tester) async {
+      await _pumpAwaitingPaymentTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Receive payment').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Amount received'), findsOneWidget);
+
+      final Finder amountField = find.widgetWithText(
+        TextFormField,
+        'Amount received',
+      );
+      expect(amountField, findsOneWidget);
+      await tester.enterText(amountField, '');
+      await tester.pump();
+
+      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      await tester.tap(submit.last);
+      await tester.pumpAndSettle();
+
+      // Validation keeps the dialog mounted; mutation must not fire.
+      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Amount received'), findsOneWidget);
+      verifyNever(() => repository.receivePayment(any(), any()));
     },
   );
 

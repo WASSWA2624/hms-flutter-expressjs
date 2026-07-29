@@ -524,12 +524,14 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Close shift'));
+      await tester.ensureVisible(find.byTooltip('Close shift'));
+      await tester.tap(find.byTooltip('Close shift'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Expected amount'), findsOneWidget);
-      expect(find.text('Actual amount'), findsOneWidget);
+      expect(find.byType(AppTextField), findsWidgets);
+      expect(find.bySemanticsLabel('Expected amount'), findsWidgets);
+      expect(find.bySemanticsLabel('Actual amount'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

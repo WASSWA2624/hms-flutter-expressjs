@@ -1397,5 +1397,78 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'Claims create/update keep source ∩ (billing:write + insurance-claims), '
+      'not matrix billing:write alone',
+      () {
+        final AppAccessPolicy writeOnlyNoInsurance = _policyFor(
+          permissions: <AppPermission>{AppPermissions.billingWrite},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final AppAccessPolicy full = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.create.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isFalse,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.update.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isFalse,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.submit.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isFalse,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.reconcile.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isFalse,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.preAuth.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isFalse,
+        );
+        // Close / delete stay matrix write ∩ (billing-payments only).
+        expect(
+          BillingClaimsPendingAtomPermissions.close.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isTrue,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.delete.isAllowed(
+            writeOnlyNoInsurance,
+          ),
+          isTrue,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.create.isAllowed(full),
+          isTrue,
+        );
+        expect(
+          BillingClaimsPendingAtomPermissions.update.isAllowed(full),
+          isTrue,
+        );
+      },
+    );
   });
 }
