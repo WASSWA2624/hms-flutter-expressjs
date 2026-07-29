@@ -200,6 +200,22 @@ void _stubWorkspace(_MockSubscriptionsRepository repository) {
   );
 }
 
+Future<void> _selectPanelTab(WidgetTester tester, String label) async {
+  final Finder visible = find.text(label);
+  if (visible.evaluate().isNotEmpty) {
+    await tester.tap(visible.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  final Finder more = find.byKey(const ValueKey<String>('tabOverflowMore'));
+  expect(more, findsOneWidget);
+  await tester.tap(more);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pumpOverviewTab(
   WidgetTester tester, {
   required _MockSubscriptionsRepository repository,
@@ -207,6 +223,7 @@ Future<void> _pumpOverviewTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/subscriptions?panel=overview',
+  bool selectOverviewTab = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -257,6 +274,10 @@ Future<void> _pumpOverviewTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
   await tester.pumpAndSettle();
+
+  if (selectOverviewTab && find.byType(AppTabStrip).evaluate().isNotEmpty) {
+    await _selectPanelTab(tester, 'Overview');
+  }
 }
 
 void main() {
@@ -403,15 +424,17 @@ void main() {
     test('∪ route entry: system:admin alone satisfies AppRoutes entry', () {
       final AppAccessPolicy systemOnly = _policy(
         permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['SUPER_ADMIN'],
-        modules: const <AppModuleEntitlement>[],
-        tenantId: null,
+        roles: const <String>['OTHER'],
       );
       expect(
         SubscriptionsOverviewAtomPermissions.routeEntry.isAllowed(systemOnly),
         isTrue,
       );
       expect(canEnterSubscriptionsWorkspace(systemOnly), isTrue);
+      expect(
+        SubscriptionsOverviewAtomPermissions.tab.isAllowed(systemOnly),
+        isFalse,
+      );
     });
 
     test('nested cross-module _(n/a)_ reuses workspace read/write ∩', () {
@@ -500,7 +523,15 @@ void main() {
           accessPolicy: writer,
         );
 
-        expect(find.byType(AppTabToolbarPrimary), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(AppTabStrip).first,
+            matching: find.byType(AppTabToolbarPrimary),
+          ),
+          findsNothing,
+        );
+        expect(_toolbarPrimary('New subscription'), findsNothing);
+        expect(_toolbarPrimary('Create plan'), findsNothing);
         expect(find.text('Active plans'), findsOneWidget);
 
         await tester.tap(find.text('Active plans'));
@@ -517,28 +548,28 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin route entry; scoped session still needs '
-      'subscriptions:* for overview atoms',
+      '∪ allowance: system:admin satisfies route entry; overview atoms still '
+      'need subscriptions:read ∩ module',
       (WidgetTester tester) async {
-        final AppAccessPolicy scopedSystem = _policy(
+        // Non-elevated holder of system:admin (route ∪) without subscriptions:*.
+        final AppAccessPolicy systemOnly = _policy(
           permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
-          tenantId: 'tenant-1',
+          roles: const <String>['OTHER'],
         );
         expect(
-          SubscriptionsOverviewAtomPermissions.routeEntry
-              .isAllowed(scopedSystem),
+          SubscriptionsOverviewAtomPermissions.routeEntry.isAllowed(systemOnly),
           isTrue,
         );
         expect(
-          SubscriptionsOverviewAtomPermissions.tab.isAllowed(scopedSystem),
+          SubscriptionsOverviewAtomPermissions.tab.isAllowed(systemOnly),
           isFalse,
         );
 
         await _pumpOverviewTab(
           tester,
           repository: repository,
-          accessPolicy: scopedSystem,
+          accessPolicy: systemOnly,
+          selectOverviewTab: false,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);
@@ -562,6 +593,7 @@ void main() {
           tester,
           repository: repository,
           accessPolicy: noModule,
+          selectOverviewTab: false,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);

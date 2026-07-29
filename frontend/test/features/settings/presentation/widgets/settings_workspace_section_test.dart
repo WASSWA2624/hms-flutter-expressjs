@@ -173,6 +173,7 @@ void main() {
         AppPermissions.facilityAdmin,
       ],
       size: const Size(390, 844),
+      scrollable: true,
     );
 
     expect(find.text('Open'), findsOneWidget);
@@ -252,6 +253,7 @@ Future<void> _pumpWorkspace(
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
   Size size = const Size(1280, 1200),
   ThemeMode themeMode = ThemeMode.light,
+  bool scrollable = false,
   _FakeSettingsWorkspaceRepository? repository,
 }) async {
   final AuthSession session = AuthSession(
@@ -281,6 +283,10 @@ Future<void> _pumpWorkspace(
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
 
+  final Widget body = scrollable
+      ? const SingleChildScrollView(child: SettingsWorkspaceSection())
+      : const SettingsWorkspaceSection();
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -299,7 +305,7 @@ Future<void> _pumpWorkspace(
         themeMode: themeMode,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const Scaffold(body: SettingsWorkspaceSection()),
+        home: Scaffold(body: body),
       ),
     ),
   );

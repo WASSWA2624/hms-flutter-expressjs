@@ -234,7 +234,14 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const SubscriptionsWorkspaceQuery());
-    registerFallbackValue(const SubscriptionPlanDraft());
+    registerFallbackValue(
+      const SubscriptionPlanDraft(
+        name: 'fallback',
+        monthlyPrice: '0',
+        annualPrice: '0',
+        billingCycle: 'MONTHLY',
+      ),
+    );
   });
 
   setUp(() {
@@ -469,27 +476,27 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: system:admin route entry; scoped session still needs '
-      'subscriptions:* for plan atoms',
+      '∪ allowance: system:admin satisfies route entry; plan atoms still '
+      'need subscriptions:read ∩ module',
       (WidgetTester tester) async {
-        final AppAccessPolicy scopedSystem = _policy(
+        // Non-elevated holder of system:admin (route ∪) without subscriptions:*.
+        final AppAccessPolicy systemOnly = _policy(
           permissions: <AppPermission>{AppPermissions.systemAdmin},
-          roles: const <String>['SUPER_ADMIN'],
-          tenantId: 'tenant-1',
+          roles: const <String>['OTHER'],
         );
         expect(
-          SubscriptionsPlansAtomPermissions.routeEntry.isAllowed(scopedSystem),
+          SubscriptionsPlansAtomPermissions.routeEntry.isAllowed(systemOnly),
           isTrue,
         );
         expect(
-          SubscriptionsPlansAtomPermissions.tab.isAllowed(scopedSystem),
+          SubscriptionsPlansAtomPermissions.tab.isAllowed(systemOnly),
           isFalse,
         );
 
         await _pumpPlansTab(
           tester,
           repository: repository,
-          accessPolicy: scopedSystem,
+          accessPolicy: systemOnly,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);

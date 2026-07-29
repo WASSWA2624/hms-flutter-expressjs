@@ -1,6 +1,6 @@
 const express = require('express');
 const { HttpError } = require('@lib/errors');
-const { ROLES } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 const { isFeatureEnabled } = require('@config/feature-flags');
 const { authorize } = require('@middlewares/auth.middleware');
 const { validateRequest } = require('@middlewares/validate.middleware');
@@ -15,14 +15,16 @@ const {
 
 const router = express.Router();
 
-const ACCESS_ADMIN_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.OPERATIONS,
+// Permission-gated (not role-name gated) so custom roles holding the same
+// grants as predefined admin roles get identical access.
+const ACCESS_ADMIN_SCOPES = [
+  PERMISSIONS.ACCESS_ADMIN_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
 ];
 
-const SUPER_ADMIN_ONLY = [ROLES.SUPER_ADMIN];
+const PLATFORM_ADMIN_SCOPES = [PERMISSIONS.SYSTEM_ADMIN];
 
 const requireAccessAdminWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('access_admin_workspace_v1')) {

@@ -126,10 +126,18 @@ class _SubscriptionsWorkspacePageState
         }
         _openedRouteDetailSignature = signature;
         final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-        final bool canWrite =
-            item.resource == SubscriptionResource.subscriptionPlans
-            ? SubscriptionsPlansAtomPermissions.update.isAllowed(policy)
-            : canWriteSubscriptions(policy);
+        final bool canWrite = switch (item.resource) {
+          SubscriptionResource.subscriptionPlans =>
+            SubscriptionsPlansAtomPermissions.update.isAllowed(policy),
+          SubscriptionResource.subscriptions ||
+          SubscriptionResource.moduleSubscriptions =>
+            SubscriptionsAtomPermissions.update.isAllowed(policy),
+          SubscriptionResource.licenses =>
+            SubscriptionsLicensesAtomPermissions.update.isAllowed(policy),
+          SubscriptionResource.subscriptionInvoices =>
+            SubscriptionsInvoicesAtomPermissions.update.isAllowed(policy),
+          _ => canWriteSubscriptions(policy),
+        };
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -336,12 +344,27 @@ class _SubscriptionsWorkspaceContentState
                             .isAllowed(accessPolicy)) {
                       return;
                     }
-                    final bool itemCanWrite =
-                        item.resource ==
-                            SubscriptionResource.subscriptionPlans
-                        ? SubscriptionsPlansAtomPermissions.update
-                              .isAllowed(accessPolicy)
-                        : canWrite;
+                    if (state.query.panel == SubscriptionPanel.operations &&
+                        !SubscriptionsAtomPermissions.rowSelect
+                            .isAllowed(accessPolicy)) {
+                      return;
+                    }
+                    final bool itemCanWrite = switch (item.resource) {
+                      SubscriptionResource.subscriptionPlans =>
+                        SubscriptionsPlansAtomPermissions.update
+                            .isAllowed(accessPolicy),
+                      SubscriptionResource.subscriptions ||
+                      SubscriptionResource.moduleSubscriptions =>
+                        SubscriptionsAtomPermissions.update
+                            .isAllowed(accessPolicy),
+                      SubscriptionResource.licenses =>
+                        SubscriptionsLicensesAtomPermissions.update
+                            .isAllowed(accessPolicy),
+                      SubscriptionResource.subscriptionInvoices =>
+                        SubscriptionsInvoicesAtomPermissions.update
+                            .isAllowed(accessPolicy),
+                      _ => canWrite,
+                    };
                     unawaited(
                       _openSubscriptionDetailDialog(
                         context,
@@ -398,24 +421,29 @@ class _SubscriptionsWorkspaceContentState
         onPressed: () => _showPlanDialog(context, ref),
       );
     }
-    if (!canWriteSubscriptions(accessPolicy)) {
-      return null;
-    }
-    return switch (state.query.resource) {
-      SubscriptionResource.subscriptions => AppTabToolbarPrimary(
+    if (state.query.resource == SubscriptionResource.subscriptions) {
+      if (!SubscriptionsAtomPermissions.create.isAllowed(accessPolicy)) {
+        return null;
+      }
+      return AppTabToolbarPrimary(
         label: _SubscriptionsText.newSubscription,
         icon: Icons.add,
         enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
         onPressed: () => _showSubscriptionDialog(context, ref, state),
-      ),
-      SubscriptionResource.moduleSubscriptions => AppTabToolbarPrimary(
+      );
+    }
+    if (state.query.resource == SubscriptionResource.moduleSubscriptions) {
+      if (!SubscriptionsAtomPermissions.assignModule.isAllowed(accessPolicy)) {
+        return null;
+      }
+      return AppTabToolbarPrimary(
         label: _SubscriptionsText.assignModule,
         icon: Icons.extension_outlined,
         enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
         onPressed: () => _showModuleSubscriptionDialog(context, ref, state),
-      ),
-      _ => null,
-    };
+      );
+    }
+    return null;
   }
 
   List<AppWorkspaceSummaryNotification> _queueSummaryChips(
@@ -1747,31 +1775,37 @@ class _DetailActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canUpdateSubscription =
+        SubscriptionsAtomPermissions.update.isAllowed(accessPolicy);
     final List<Widget> actions = <Widget>[
       if (item.resource == SubscriptionResource.subscriptions &&
-          canWrite) ...<Widget>[
-        AppButton.secondary(
-          label: _SubscriptionsText.editSubscription,
-          leadingIcon: Icons.edit_outlined,
-          enabled: !state.isSaving,
-          onPressed: () =>
-              _showEditSubscriptionDialog(context, ref, state, item),
-        ),
-        if (item.canRenewSubscription)
+          canUpdateSubscription) ...<Widget>[
+        if (SubscriptionsAtomPermissions.edit.isAllowed(accessPolicy))
+          AppButton.secondary(
+            label: _SubscriptionsText.editSubscription,
+            leadingIcon: Icons.edit_outlined,
+            enabled: !state.isSaving,
+            onPressed: () =>
+                _showEditSubscriptionDialog(context, ref, state, item),
+          ),
+        if (item.canRenewSubscription &&
+            SubscriptionsAtomPermissions.renew.isAllowed(accessPolicy))
           AppButton.secondary(
             label: _SubscriptionsText.renew,
             leadingIcon: Icons.event_repeat_outlined,
             enabled: !state.isSaving,
             onPressed: () => _showRenewalDialog(context, ref),
           ),
-        if (state.lookups.plans.isNotEmpty)
+        if (state.lookups.plans.isNotEmpty &&
+            SubscriptionsAtomPermissions.changePlan.isAllowed(accessPolicy))
           AppButton.secondary(
             label: _SubscriptionsText.changePlan,
             leadingIcon: Icons.swap_horiz_outlined,
             enabled: !state.isSaving,
             onPressed: () => _showPlanChangeDialog(context, ref, state),
           ),
-        if (item.canActivateSubscription)
+        if (item.canActivateSubscription &&
+            SubscriptionsAtomPermissions.activate.isAllowed(accessPolicy))
           AppButton.secondary(
             label: _SubscriptionsText.activate,
             leadingIcon: Icons.play_circle_outline,
@@ -1783,7 +1817,8 @@ class _DetailActions extends ConsumerWidget {
                   .activateSelectedSubscription(),
             ),
           ),
-        if (item.canCancelSubscription)
+        if (item.canCancelSubscription &&
+            SubscriptionsAtomPermissions.cancel.isAllowed(accessPolicy))
           AppButton.secondary(
             label: _SubscriptionsText.cancelSubscription,
             leadingIcon: Icons.block_outlined,
@@ -1792,8 +1827,8 @@ class _DetailActions extends ConsumerWidget {
           ),
       ],
       if (item.resource == SubscriptionResource.moduleSubscriptions &&
-          canWrite &&
-          item.canToggleModule)
+          item.canToggleModule &&
+          SubscriptionsAtomPermissions.toggleModule.isAllowed(accessPolicy))
         AppButton.secondary(
           label: item.isActive == true
               ? _SubscriptionsText.disableModule

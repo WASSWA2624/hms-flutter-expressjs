@@ -386,6 +386,46 @@ void main() {
       expect(find.text('Save configuration'), findsNothing);
     },
   );
+
+  testWidgets(
+    'authorized reset confirm dialog mounts and syncs cleared fee',
+    (WidgetTester tester) async {
+      final _FakeTenantFacilityRepository repository =
+          _FakeTenantFacilityRepository(
+            nextLoad: Result<FacilitySetupSnapshot>.success(_snapshot()),
+          );
+
+      await _pumpSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+        ],
+        repository: repository,
+      );
+
+      await tester.tap(find.text('Reset to default'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reset configuration?'), findsOneWidget);
+      expect(
+        find.text(
+          'This will clear the configured values and revert to defaults.',
+        ),
+        findsOneWidget,
+      );
+
+      // Confirm in the dialog (second "Reset to default" = dialog primary).
+      await tester.tap(find.text('Reset to default').last);
+      await tester.pumpAndSettle();
+
+      expect(repository.saveFacilityCalls, 1);
+      expect(
+        find.text('Configuration saved successfully.'),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 Future<void> _pumpSettings(

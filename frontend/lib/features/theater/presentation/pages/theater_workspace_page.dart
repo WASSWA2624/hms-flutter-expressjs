@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
+import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
 import 'package:hosspi_hms/features/theater/presentation/widgets/theater_schedule_case_form.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -81,9 +82,9 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
     if (state?.selectedCase == null) {
       return;
     }
-    final bool canWrite = ref
-        .read(appAccessPolicyProvider)
-        .grants(AppPermissions.clinicalWrite);
+    final bool canWrite = canWriteTheaterClinical(
+      ref.read(appAccessPolicyProvider),
+    );
     // Panel-focused deep links open the mutation dialog directly (no empty
     // detail shell). Bare case links open detail with the stage next-action
     // omitted so it is not duplicated inside Quick Actions.
@@ -194,7 +195,7 @@ class _TheaterWorkspaceContentState
       return;
     }
     final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-    if (!accessPolicy.grants(AppPermissions.clinicalWrite)) {
+    if (!canScheduleTheaterCase(accessPolicy)) {
       return;
     }
     await _showScheduleCaseDialog(
@@ -296,9 +297,10 @@ class _TheaterWorkspaceContentState
   Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     TheaterWorkspaceState state,
-    bool canWrite,
+    bool canSchedule,
   ) {
-    if (!canWrite || _section.isFollowUps) {
+    // Follow-ups has no Schedule case primary (matrix / inventory).
+    if (!canSchedule || _section.isFollowUps) {
       return null;
     }
     return AppTabToolbarPrimary(
@@ -327,8 +329,30 @@ class _TheaterWorkspaceContentState
     final TheaterWorkspaceState state = widget.state;
     final controller = ref.read(theaterWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
+    final bool canWrite = canWriteTheaterClinical(accessPolicy);
+    final bool canSchedule = canScheduleTheaterCase(accessPolicy);
+    final List<TheaterSection> visibleSections = theaterAllowedSections(
+      accessPolicy,
+    );
     final AppFailure? lastFailure = state.lastFailure;
+
+    if (visibleSections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleSections.contains(_section)) {
+      final TheaterSection fallback =
+          theaterFallbackSection(accessPolicy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        setState(() => _section = fallback);
+        _updateUrlForSection(fallback);
+        if (!fallback.isFollowUps) {
+          _applyTabFilter(fallback);
+        }
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -339,7 +363,7 @@ class _TheaterWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final TheaterSection section in TheaterSection.values)
+                for (final TheaterSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -358,21 +382,20 @@ class _TheaterWorkspaceContentState
               ],
               selectedId: _section.name,
               onTabTapped: (String tabId) {
-                for (final TheaterSection section in TheaterSection.values) {
-                  if (section.name == tabId) {
-                    setState(() => _section = section);
-                    _updateUrlForSection(section);
-                    if (!section.isFollowUps) {
-                      _applyTabFilter(section);
-                    }
-                    break;
-                  }
+                final TheaterSection section = visibleSections.firstWhere(
+                  (TheaterSection s) => s.name == tabId,
+                  orElse: () => visibleSections.first,
+                );
+                setState(() => _section = section);
+                _updateUrlForSection(section);
+                if (!section.isFollowUps) {
+                  _applyTabFilter(section);
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state, canWrite),
+              primaryAction: _buildPrimaryAction(l10n, state, canSchedule),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
+            if (lastFailure != null && !_section.isFollowUps) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
                 onRetry: controller.refresh,
@@ -383,16 +406,18 @@ class _TheaterWorkspaceContentState
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'THEATRE'),
                 storageKeyPrefix: 'theater_follow_ups',
+                readRequirement: TheaterFollowUpsAtomPermissions.tab,
+                writeRequirement: TheaterFollowUpsAtomPermissions.write,
               )
             else
               _TheaterCaseBoard(
-              state: state,
-              section: _section,
-              canWrite: canWrite,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              onPageChanged: controller.changePage,
-            ),
+                state: state,
+                section: _section,
+                canWrite: canWrite,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                onPageChanged: controller.changePage,
+              ),
           ],
         ),
       ),

@@ -7,6 +7,9 @@ import 'package:hosspi_hms/features/profile/presentation/profile_access.dart';
 /// Product label from UI-permission prompts (`administration` / admin setup).
 const String settingsAdministrationModuleLabel = 'settings / admin setup';
 
+/// Product label for Configuration (`configuration`) — same entitlement surface.
+const String settingsConfigurationModuleLabel = settingsAdministrationModuleLabel;
+
 /// Matrix create/delete ∩ `facility:admin` — reserved on Preferences /
 /// Accessibility / Account / Administration when those surfaces have no
 /// create/delete atoms.
@@ -518,37 +521,63 @@ const AccessRequirement settingsConfigurationDeleteRequirement =
 
 /// Configuration tab atom → permission mapping.
 ///
-/// | Atom | Intent | Gate |
+/// Settings accordion tab `configuration` (`/settings?tab=configuration`).
+/// View = `profile:read` ∩ admin ∪. Mounted Save/Reset/fields use source
+/// tenant/facility panel gates (documented mapping vs matrix update ∩
+/// `facility:admin`). Create / delete and nested cross-module write rows are
+/// matrix-documented but **not mounted**. Admin / profile keys are
+/// core/platform (not plan-module mapped); subscription stripping does not
+/// apply beyond ABAC tenant/facility context on panel gates.
+///
+/// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Tab strip / section chrome | read | [tab] |
-/// | Loading / empty / error / retry | read | [tab] |
-/// | Tenant defaults panel + fields | update | source tenant |
-/// | Facility defaults panel + fields | update | source facility |
-/// | Save configuration | update | source panel write |
-/// | Reset to default (+ confirm dialog) | update | source panel write |
-/// | Create / delete | — | matrix ∩; **not mounted** |
+/// | Configuration strip tab | navigate | read ∩∪ ([tab]) |
+/// | Section title / body chrome | read chrome | ([read] / [listChrome]) |
+/// | Loading / empty / error / retry | read chrome | ([loading] / [empty] / [retry]) |
+/// | Tenant defaults panel | update | source tenant ([tenantPanel]) |
+/// | Tenant currency + consultation fee | update | source tenant ([tenantFields]) |
+/// | Tenant Save configuration | update | source tenant ([tenantSave]) |
+/// | Tenant Reset (+ confirm dialog) | update | source tenant ([tenantReset] / [tenantResetDialog]) |
+/// | Facility defaults panel | update | source facility ([facilityPanel]) |
+/// | Facility currency + consultation fee | update | source facility ([facilityFields]) |
+/// | Facility Save configuration | update | source facility ([facilitySave]) |
+/// | Facility Reset (+ confirm dialog) | update | source facility ([facilityReset] / [facilityResetDialog]) |
+/// | Success / validation snackbars | visible feedback | after authorized write ([success] / [validation]) |
+/// | Create / delete affordances | create/delete | matrix ∩ — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Settings route entry | navigate | authenticated core ([routeEntry]) |
 abstract final class SettingsConfigurationAtomPermissions {
   static const AccessRequirement tab = settingsConfigurationReadRequirement;
   static const AccessRequirement read = settingsConfigurationReadRequirement;
+  static const AccessRequirement listChrome =
+      settingsConfigurationReadRequirement;
   static const AccessRequirement loading = settingsConfigurationReadRequirement;
   static const AccessRequirement empty = settingsConfigurationReadRequirement;
   static const AccessRequirement retry = settingsConfigurationReadRequirement;
   static const AccessRequirement tenantPanel =
       settingsConfigurationTenantRequirement;
+  static const AccessRequirement tenantFields =
+      settingsConfigurationTenantRequirement;
   static const AccessRequirement facilityPanel =
+      settingsConfigurationFacilityRequirement;
+  static const AccessRequirement facilityFields =
       settingsConfigurationFacilityRequirement;
   static const AccessRequirement tenantSave =
       settingsConfigurationTenantRequirement;
   static const AccessRequirement tenantReset =
       settingsConfigurationTenantRequirement;
+  static const AccessRequirement tenantResetDialog =
+      settingsConfigurationTenantRequirement;
   static const AccessRequirement facilitySave =
       settingsConfigurationFacilityRequirement;
   static const AccessRequirement facilityReset =
       settingsConfigurationFacilityRequirement;
+  static const AccessRequirement facilityResetDialog =
+      settingsConfigurationFacilityRequirement;
   static const AccessRequirement success =
-      settingsConfigurationFacilityRequirement;
+      settingsConfigurationReadRequirement;
   static const AccessRequirement validation =
-      settingsConfigurationFacilityRequirement;
+      settingsConfigurationReadRequirement;
   static const AccessRequirement create =
       settingsConfigurationCreateRequirement;
   static const AccessRequirement update =
@@ -559,6 +588,8 @@ abstract final class SettingsConfigurationAtomPermissions {
       settingsConfigurationReadRequirement;
   static const AccessRequirement nestedWrite =
       settingsConfigurationUpdateRequirement;
+  static const AccessRequirement routeEntry =
+      RouteAccessCatalog.authenticatedCore;
 }
 
 /// True when the Configuration strip may appear: tab read gate plus at least

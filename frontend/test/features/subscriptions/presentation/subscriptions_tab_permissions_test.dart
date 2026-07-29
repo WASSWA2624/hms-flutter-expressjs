@@ -29,13 +29,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockSubscriptionsRepository extends Mock
     implements SubscriptionsRepository {}
 
-const SubscriptionItem _licenseItem = SubscriptionItem(
-  id: 'lic-1',
-  resource: SubscriptionResource.licenses,
-  displayId: 'LIC-1',
+const SubscriptionItem _subscriptionItem = SubscriptionItem(
+  id: 'sub-1',
+  resource: SubscriptionResource.subscriptions,
+  displayId: 'SUB-1',
   tenantId: 'tenant-1',
   tenantLabel: 'Acme Clinic',
-  licenseType: 'ENTERPRISE',
+  planId: 'plan-1',
+  planLabel: 'Starter Plan',
+  planCode: 'STARTER',
   status: 'ACTIVE',
 );
 
@@ -82,7 +84,7 @@ Finder _toolbarPrimary(String label) => find.descendant(
 
 void _stubWorkspace(
   _MockSubscriptionsRepository repository, {
-  List<SubscriptionItem> items = const <SubscriptionItem>[_licenseItem],
+  List<SubscriptionItem> items = const <SubscriptionItem>[_subscriptionItem],
   bool empty = false,
   AppFailure? failure,
 }) {
@@ -96,7 +98,7 @@ void _stubWorkspace(
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
     final List<SubscriptionItem> pageItems = empty
         ? const <SubscriptionItem>[]
-        : (query.resource == SubscriptionResource.licenses
+        : (query.resource == SubscriptionResource.subscriptions
               ? items
               : const <SubscriptionItem>[]);
     return Result<SubscriptionsWorkspaceData>.success(
@@ -104,19 +106,19 @@ void _stubWorkspace(
         query: query,
         summary: const <SubscriptionSummaryMetric>[
           SubscriptionSummaryMetric(
-            id: 'expiring_licenses',
-            label: 'Expiring licenses',
-            value: 2,
+            id: 'pending_changes',
+            label: 'Pending changes',
+            value: 1,
           ),
         ],
         queueSummaries: const <SubscriptionQueueSummary>[
           SubscriptionQueueSummary(
-            id: 'renewals_due',
-            label: 'Expiring licenses',
-            count: 2,
-            panel: SubscriptionPanel.governance,
-            resource: SubscriptionResource.licenses,
-            queue: 'renewals_due',
+            id: 'pending_changes',
+            label: 'Pending changes',
+            count: 1,
+            panel: SubscriptionPanel.operations,
+            resource: SubscriptionResource.subscriptions,
+            queue: 'pending_changes',
           ),
         ],
         panelSummaries: const <SubscriptionPanelSummary>[],
@@ -124,8 +126,14 @@ void _stubWorkspace(
           tenants: <SubscriptionLookupItem>[
             SubscriptionLookupItem(id: 'tenant-1', label: 'Acme Clinic'),
           ],
-          licenseTypes: <SubscriptionLookupItem>[
-            SubscriptionLookupItem(id: 'ENTERPRISE', label: 'Enterprise'),
+          plans: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'plan-1', label: 'Starter Plan'),
+          ],
+          modules: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'mod-1', label: 'Billing'),
+          ],
+          statuses: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'ACTIVE', label: 'Active'),
           ],
         ),
         items: AppPage<SubscriptionItem>(
@@ -185,15 +193,16 @@ Future<void> _selectPanelTab(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpLicensesTab(
+Future<void> _pumpSubscriptionsTab(
   WidgetTester tester, {
   required _MockSubscriptionsRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/subscriptions?panel=governance&resource=licenses',
-  bool selectLicensesTab = true,
-  List<SubscriptionItem> items = const <SubscriptionItem>[_licenseItem],
+  String initialLocation =
+      '/subscriptions?panel=operations&resource=subscriptions',
+  bool selectSubscriptionsTab = true,
+  List<SubscriptionItem> items = const <SubscriptionItem>[_subscriptionItem],
   bool empty = false,
   AppFailure? loadFailure,
 }) async {
@@ -252,8 +261,9 @@ Future<void> _pumpLicensesTab(
   await tester.pump(const Duration(milliseconds: 400));
   await tester.pumpAndSettle();
 
-  if (selectLicensesTab && find.byType(AppTabStrip).evaluate().isNotEmpty) {
-    await _selectPanelTab(tester, 'Licenses');
+  if (selectSubscriptionsTab &&
+      find.byType(AppTabStrip).evaluate().isNotEmpty) {
+    await _selectPanelTab(tester, 'Subscriptions');
   }
 }
 
@@ -263,9 +273,9 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const SubscriptionsWorkspaceQuery());
     registerFallbackValue(
-      const LicenseDraft(
+      const SubscriptionDraft(
         tenantId: 'tenant-1',
-        licenseType: 'ENTERPRISE',
+        planId: 'plan-1',
         status: 'ACTIVE',
       ),
     );
@@ -275,52 +285,64 @@ void main() {
     repository = _MockSubscriptionsRepository();
   });
 
-  group('subscriptions_access helpers (Licenses matrix)', () {
+  group('subscriptions_access helpers (Subscriptions matrix)', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        SubscriptionsLicensesAtomPermissions.tab,
+        SubscriptionsAtomPermissions.tab,
         same(subscriptionsWorkspaceReadRequirement),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.create,
+        SubscriptionsAtomPermissions.create,
         same(subscriptionsWorkspaceCreateRequirement),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.update,
+        SubscriptionsAtomPermissions.newSubscription,
+        same(subscriptionsWorkspaceCreateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.assignModule,
+        same(subscriptionsWorkspaceCreateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.update,
         same(subscriptionsWorkspaceUpdateRequirement),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.delete,
+        SubscriptionsAtomPermissions.edit,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.cancel,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.delete,
         same(subscriptionsWorkspaceDeleteRequirement),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.revoke,
-        same(subscriptionsWorkspaceDeleteRequirement),
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.catalogEntry,
+        SubscriptionsAtomPermissions.catalogEntry,
         same(RouteAccessCatalog.subscriptionsEntry),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.routeEntry,
+        SubscriptionsAtomPermissions.routeEntry,
         same(subscriptionsWorkspaceRouteEntryRequirement),
       );
       expect(
-        subscriptionsPanelTabRequirement(SubscriptionPanel.governance),
-        same(SubscriptionsLicensesAtomPermissions.tab),
+        subscriptionsPanelTabRequirement(SubscriptionPanel.operations),
+        same(SubscriptionsAtomPermissions.tab),
       );
     });
 
-    test('∩ denial: missing subscriptions:read blocks licenses tab', () {
+    test('∩ denial: missing subscriptions:read blocks subscriptions tab', () {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.subscriptionsWrite},
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.tab.isAllowed(writeOnly),
+        SubscriptionsAtomPermissions.tab.isAllowed(writeOnly),
         isFalse,
       );
       expect(
-        canViewSubscriptionsPanel(writeOnly, SubscriptionPanel.governance),
+        canViewSubscriptionsPanel(writeOnly, SubscriptionPanel.operations),
         isFalse,
       );
     });
@@ -329,28 +351,18 @@ void main() {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       );
+      expect(SubscriptionsAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
-        SubscriptionsLicensesAtomPermissions.tab.isAllowed(reader),
+        SubscriptionsAtomPermissions.listChrome.isAllowed(reader),
         isTrue,
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.listChrome.isAllowed(reader),
+        SubscriptionsAtomPermissions.pendingChangesChip.isAllowed(reader),
         isTrue,
       );
-      expect(
-        SubscriptionsLicensesAtomPermissions.expiringLicensesChip.isAllowed(
-          reader,
-        ),
-        isTrue,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.create.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.delete.isAllowed(reader),
-        isFalse,
-      );
+      expect(SubscriptionsAtomPermissions.create.isAllowed(reader), isFalse);
+      expect(SubscriptionsAtomPermissions.cancel.isAllowed(reader), isFalse);
+      expect(SubscriptionsAtomPermissions.delete.isAllowed(reader), isFalse);
     });
 
     test('∩ write requires subscriptions:write', () {
@@ -365,21 +377,13 @@ void main() {
       );
       expect(canWriteSubscriptions(reader), isFalse);
       expect(canWriteSubscriptions(writer), isTrue);
-      expect(
-        SubscriptionsLicensesAtomPermissions.create.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.update.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.delete.isAllowed(writer),
-        isFalse,
-      );
+      expect(SubscriptionsAtomPermissions.create.isAllowed(writer), isTrue);
+      expect(SubscriptionsAtomPermissions.update.isAllowed(writer), isTrue);
+      expect(SubscriptionsAtomPermissions.cancel.isAllowed(writer), isTrue);
+      expect(SubscriptionsAtomPermissions.delete.isAllowed(writer), isFalse);
     });
 
-    test('∩ delete requires subscriptions:delete', () {
+    test('∩ delete requires subscriptions:delete (HTTP delete not mounted)', () {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
           AppPermissions.subscriptionsRead,
@@ -392,18 +396,11 @@ void main() {
           AppPermissions.subscriptionsDelete,
         },
       );
-      expect(
-        SubscriptionsLicensesAtomPermissions.delete.isAllowed(writer),
-        isFalse,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.delete.isAllowed(deleter),
-        isTrue,
-      );
-      expect(
-        SubscriptionsLicensesAtomPermissions.create.isAllowed(deleter),
-        isFalse,
-      );
+      expect(SubscriptionsAtomPermissions.delete.isAllowed(writer), isFalse);
+      expect(SubscriptionsAtomPermissions.delete.isAllowed(deleter), isTrue);
+      // Soft cancel remains write ∩ — delete alone does not grant cancel.
+      expect(SubscriptionsAtomPermissions.cancel.isAllowed(deleter), isFalse);
+      expect(SubscriptionsAtomPermissions.create.isAllowed(deleter), isFalse);
     });
 
     test('∪ route entry: system:admin alone satisfies AppRoutes entry', () {
@@ -414,34 +411,28 @@ void main() {
         tenantId: null,
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.routeEntry.isAllowed(systemOnly),
+        SubscriptionsAtomPermissions.routeEntry.isAllowed(systemOnly),
         isTrue,
       );
       expect(canEnterSubscriptionsWorkspace(systemOnly), isTrue);
-
-      // Elevated-but-scoped (route ∪ without subscriptions:*): tab still denied.
-      final AppAccessPolicy elevatedScoped = _policy(
-        permissions: <AppPermission>{AppPermissions.systemAdmin},
-        roles: const <String>['OTHER'],
-      );
       expect(
-        SubscriptionsLicensesAtomPermissions.tab.isAllowed(elevatedScoped),
+        SubscriptionsAtomPermissions.tab.isAllowed(systemOnly),
         isFalse,
       );
     });
 
     test('nested cross-module _(n/a)_ reuses workspace read/write ∩', () {
       expect(
-        SubscriptionsLicensesAtomPermissions.nestedRead,
+        SubscriptionsAtomPermissions.nestedRead,
         same(subscriptionsWorkspaceReadRequirement),
       );
       expect(
-        SubscriptionsLicensesAtomPermissions.nestedWrite,
+        SubscriptionsAtomPermissions.nestedWrite,
         same(subscriptionsWorkspaceWriteRequirement),
       );
     });
 
-    test('subscription strip: role pack without module omits licenses', () {
+    test('subscription strip: role pack without module omits subscriptions', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.subscriptionsRead,
@@ -450,49 +441,47 @@ void main() {
         },
         modules: const <AppModuleEntitlement>[],
       );
-      expect(
-        SubscriptionsLicensesAtomPermissions.tab.isAllowed(noModule),
-        isFalse,
-      );
+      expect(SubscriptionsAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(subscriptionsAllowedPanels(noModule), isEmpty);
     });
   });
 
-  group('Licenses tab widget gates', () {
+  group('Subscriptions tab widget gates', () {
     testWidgets(
-      '∩ denial: read-only hides Add/Update/Revoke; list + chip remain',
+      '∩ denial: read-only hides New/Edit/Cancel; list + pending chip remain',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _policy(
           permissions: <AppPermission>{AppPermissions.subscriptionsRead},
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
 
-        expect(_tabLabel('Licenses'), findsWidgets);
+        expect(_tabLabel('Subscriptions'), findsWidgets);
         expect(
-          find.widgetWithText(FilterChip, 'Expiring licenses (2)'),
+          find.widgetWithText(FilterChip, 'Pending changes (1)'),
           findsOneWidget,
         );
-        expect(find.text('ENTERPRISE'), findsOneWidget);
-        expect(_toolbarPrimary('Add license'), findsNothing);
+        expect(find.text('Acme Clinic'), findsOneWidget);
+        expect(_toolbarPrimary('New subscription'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
-        await tester.tap(find.text('ENTERPRISE'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Update license'), findsNothing);
-        expect(find.text('Revoke license'), findsNothing);
+        expect(find.text('Edit subscription'), findsNothing);
+        expect(find.text('Change plan'), findsNothing);
+        expect(find.text('Cancel subscription'), findsNothing);
         expect(find.text('Acme Clinic'), findsWidgets);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
 
     testWidgets(
-      '∩ presence: write mounts Add/Update; Revoke needs delete',
+      '∩ presence: write mounts New/Edit/Cancel; HTTP delete not mounted',
       (WidgetTester tester) async {
         final AppAccessPolicy writer = _policy(
           permissions: <AppPermission>{
@@ -501,24 +490,27 @@ void main() {
           },
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: writer,
         );
 
-        expect(_toolbarPrimary('Add license'), findsOneWidget);
+        expect(_toolbarPrimary('New subscription'), findsOneWidget);
 
-        await tester.tap(find.text('ENTERPRISE'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Update license'), findsOneWidget);
+        expect(find.text('Edit subscription'), findsOneWidget);
+        expect(find.text('Change plan'), findsOneWidget);
+        expect(find.text('Cancel subscription'), findsOneWidget);
+        expect(find.text('Delete subscription'), findsNothing);
         expect(find.text('Revoke license'), findsNothing);
       },
     );
 
     testWidgets(
-      '∩ delete mounts Revoke without write create/update',
+      '∩ delete alone does not mount write atoms or HTTP delete control',
       (WidgetTester tester) async {
         final AppAccessPolicy deleter = _policy(
           permissions: <AppPermission>{
@@ -527,54 +519,55 @@ void main() {
           },
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: deleter,
         );
 
-        expect(_toolbarPrimary('Add license'), findsNothing);
+        expect(_toolbarPrimary('New subscription'), findsNothing);
 
-        await tester.tap(find.text('ENTERPRISE'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Update license'), findsNothing);
-        expect(find.text('Revoke license'), findsOneWidget);
+        expect(find.text('Edit subscription'), findsNothing);
+        expect(find.text('Cancel subscription'), findsNothing);
+        expect(find.text('Delete subscription'), findsNothing);
       },
     );
 
     testWidgets(
-      '∪ allowance: system:admin satisfies route entry; licenses atoms still '
-      'need subscriptions:read ∩ module',
+      '∪ allowance: system:admin satisfies route entry; subscriptions atoms '
+      'still need subscriptions:read ∩ module',
       (WidgetTester tester) async {
         final AppAccessPolicy systemOnly = _policy(
           permissions: <AppPermission>{AppPermissions.systemAdmin},
           roles: const <String>['OTHER'],
         );
         expect(
-          SubscriptionsLicensesAtomPermissions.routeEntry.isAllowed(systemOnly),
+          SubscriptionsAtomPermissions.routeEntry.isAllowed(systemOnly),
           isTrue,
         );
         expect(
-          SubscriptionsLicensesAtomPermissions.tab.isAllowed(systemOnly),
+          SubscriptionsAtomPermissions.tab.isAllowed(systemOnly),
           isFalse,
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: systemOnly,
-          selectLicensesTab: false,
+          selectSubscriptionsTab: false,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);
-        expect(find.text('Add license'), findsNothing);
+        expect(find.text('New subscription'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
 
     testWidgets(
-      'subscription/ABAC strip: module missing omits licenses strip',
+      'subscription/ABAC strip: module missing omits subscriptions strip',
       (WidgetTester tester) async {
         final AppAccessPolicy noModule = _policy(
           permissions: <AppPermission>{
@@ -585,14 +578,14 @@ void main() {
           modules: const <AppModuleEntitlement>[],
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: noModule,
         );
 
         expect(find.byType(AppTabStrip), findsNothing);
-        expect(find.text('ENTERPRISE'), findsNothing);
+        expect(find.text('Acme Clinic'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );
@@ -604,60 +597,27 @@ void main() {
           permissions: <AppPermission>{AppPermissions.subscriptionsRead},
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
 
-        await tester.tap(find.text('ENTERPRISE'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
 
         expect(find.text('Receive payment'), findsNothing);
         expect(find.text('Submit claim'), findsNothing);
         expect(find.text('Open operations'), findsNothing);
+        expect(find.text('Manage modules'), findsNothing);
       },
     );
 
     testWidgets(
-      'authorized Revoke flow syncs workspace after mutation',
+      'authorized Cancel flow syncs workspace after mutation',
       (WidgetTester tester) async {
         when(
-          () => repository.deleteLicense(any()),
-        ).thenAnswer((_) async => const Result<void>.success(null));
-
-        final AppAccessPolicy deleter = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.subscriptionsRead,
-            AppPermissions.subscriptionsDelete,
-          },
-        );
-
-        await _pumpLicensesTab(
-          tester,
-          repository: repository,
-          accessPolicy: deleter,
-        );
-
-        await tester.tap(find.text('ENTERPRISE'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Revoke license'));
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('Revoke this license?'), findsOneWidget);
-        await tester.tap(find.text('Revoke license').last);
-        await tester.pumpAndSettle();
-
-        verify(() => repository.deleteLicense('lic-1')).called(1);
-        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
-      },
-    );
-
-    testWidgets(
-      'authorized Update flow syncs workspace after mutation',
-      (WidgetTester tester) async {
-        when(
-          () => repository.updateLicense(any(), any()),
+          () => repository.cancelSubscription(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
 
         final AppAccessPolicy writer = _policy(
@@ -667,22 +627,59 @@ void main() {
           },
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: writer,
         );
 
-        await tester.tap(find.text('ENTERPRISE'));
+        await tester.tap(find.text('Acme Clinic'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Update license'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        await tester.tap(find.text('Update license').last);
+        await tester.tap(find.text('Cancel subscription'));
         await tester.pumpAndSettle();
 
-        verify(() => repository.updateLicense('lic-1', any())).called(1);
+        expect(
+          find.textContaining('Cancel this subscription?'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Cancel subscription').last);
+        await tester.pumpAndSettle();
+
+        verify(() => repository.cancelSubscription('sub-1')).called(1);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      },
+    );
+
+    testWidgets(
+      'authorized Edit flow syncs workspace after mutation',
+      (WidgetTester tester) async {
+        when(
+          () => repository.updateSubscription(any(), any()),
+        ).thenAnswer((_) async => const Result<void>.success(null));
+
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(find.text('Acme Clinic'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Edit subscription'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Save subscription'), findsOneWidget);
+        await tester.tap(find.text('Save subscription'));
+        await tester.pumpAndSettle();
+
+        verify(() => repository.updateSubscription('sub-1', any())).called(1);
         verify(() => repository.getWorkspace(any())).called(greaterThan(1));
       },
     );
@@ -694,7 +691,7 @@ void main() {
         permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       );
 
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: reader,
@@ -712,42 +709,45 @@ void main() {
         permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       );
 
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
       expect(find.text('Filters'), findsOneWidget);
-      expect(find.text('ENTERPRISE'), findsOneWidget);
+      expect(find.text('Acme Clinic'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilterChip, 'Pending changes (1)'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('mobile viewport: licenses list and detail remain usable', (
+    testWidgets('mobile viewport: subscriptions list and detail remain usable', (
       WidgetTester tester,
     ) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
           AppPermissions.subscriptionsRead,
           AppPermissions.subscriptionsWrite,
-          AppPermissions.subscriptionsDelete,
         },
       );
 
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: writer,
         physicalSize: const Size(390, 844),
       );
 
-      expect(find.text('ENTERPRISE'), findsWidgets);
-      await tester.tap(find.text('ENTERPRISE').first);
+      expect(find.text('Acme Clinic'), findsWidgets);
+      await tester.tap(find.text('Acme Clinic').first);
       await tester.pumpAndSettle();
-      expect(find.text('Update license'), findsOneWidget);
-      expect(find.text('Revoke license'), findsOneWidget);
+      expect(find.text('Edit subscription'), findsOneWidget);
+      expect(find.text('Cancel subscription'), findsOneWidget);
     });
 
-    testWidgets('desktop viewport: licenses table and mutations mount', (
+    testWidgets('desktop viewport: subscriptions table and mutations mount', (
       WidgetTester tester,
     ) async {
       final AppAccessPolicy writer = _policy(
@@ -757,7 +757,7 @@ void main() {
         },
       );
 
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: writer,
@@ -765,16 +765,16 @@ void main() {
       );
 
       expect(find.byType(AppListTable<SubscriptionItem>), findsOneWidget);
-      expect(_toolbarPrimary('Add license'), findsOneWidget);
-      await tester.tap(find.text('ENTERPRISE'));
+      expect(_toolbarPrimary('New subscription'), findsOneWidget);
+      await tester.tap(find.text('Acme Clinic'));
       await tester.pumpAndSettle();
-      expect(find.text('Update license'), findsOneWidget);
+      expect(find.text('Edit subscription'), findsOneWidget);
     });
 
-    testWidgets('light theme: authorized licenses chrome mounts', (
+    testWidgets('light theme: authorized subscriptions chrome mounts', (
       WidgetTester tester,
     ) async {
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -783,14 +783,14 @@ void main() {
         themeMode: ThemeMode.light,
       );
 
-      expect(_tabLabel('Licenses'), findsWidgets);
-      expect(find.text('ENTERPRISE'), findsOneWidget);
+      expect(_tabLabel('Subscriptions'), findsWidgets);
+      expect(find.text('Acme Clinic'), findsOneWidget);
     });
 
-    testWidgets('dark theme: authorized licenses chrome mounts', (
+    testWidgets('dark theme: authorized subscriptions chrome mounts', (
       WidgetTester tester,
     ) async {
-      await _pumpLicensesTab(
+      await _pumpSubscriptionsTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -802,10 +802,10 @@ void main() {
         themeMode: ThemeMode.dark,
       );
 
-      expect(_tabLabel('Licenses'), findsWidgets);
-      await tester.tap(find.text('ENTERPRISE'));
+      expect(_tabLabel('Subscriptions'), findsWidgets);
+      await tester.tap(find.text('Acme Clinic'));
       await tester.pumpAndSettle();
-      expect(find.text('Update license'), findsOneWidget);
+      expect(find.text('Edit subscription'), findsOneWidget);
     });
 
     testWidgets(
@@ -817,11 +817,11 @@ void main() {
           <AppPermission>[AppPermissions.subscriptionsRead],
         );
         expect(
-          SubscriptionsLicensesAtomPermissions.catalogEntry,
+          SubscriptionsAtomPermissions.catalogEntry,
           same(RouteAccessCatalog.subscriptionsEntry),
         );
 
-        await _pumpLicensesTab(
+        await _pumpSubscriptionsTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -829,7 +829,8 @@ void main() {
           ),
         );
 
-        expect(_tabLabel('Licenses'), findsWidgets);
+        expect(_tabLabel('Subscriptions'), findsWidgets);
+        expect(find.text('Acme Clinic'), findsOneWidget);
       },
     );
   });

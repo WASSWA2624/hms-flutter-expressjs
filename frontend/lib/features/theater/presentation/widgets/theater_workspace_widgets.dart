@@ -1,91 +1,41 @@
 part of '../pages/theater_workspace_page.dart';
 
-/// Stage-aware next step for a theater case row.
-enum TheaterNextActionKind {
-  updateReadiness,
-  startCase,
-  anesthesia,
-  postOp,
-  handover,
-}
-
-TheaterNextActionKind? theaterResolveNextActionKind(TheaterCase theaterCase) {
-  if (theaterCase.normalizedStatus == 'CANCELLED' ||
-      theaterCase.normalizedStatus == 'COMPLETED') {
-    return null;
-  }
-  if (!theaterCase.isReady) {
-    return TheaterNextActionKind.updateReadiness;
-  }
-  if (theaterCase.normalizedStatus == 'SCHEDULED') {
-    return TheaterNextActionKind.startCase;
-  }
-  if (!theaterCase.hasFinalAnesthesia) {
-    return TheaterNextActionKind.anesthesia;
-  }
-  if (!theaterCase.hasFinalPostOp) {
-    return TheaterNextActionKind.postOp;
-  }
-  return TheaterNextActionKind.handover;
-}
-
-String theaterNextActionLabel(
-  AppLocalizations l10n,
-  TheaterCase theaterCase,
-) {
-  final TheaterNextActionKind? kind = theaterResolveNextActionKind(theaterCase);
-  if (kind == null) {
-    return switch (theaterCase.normalizedStatus) {
-      'CANCELLED' => l10n.theaterStatusCancelled,
-      'COMPLETED' => l10n.theaterStatusCompleted,
-      _ => l10n.profileUnknownValue,
-    };
-  }
-  return switch (kind) {
-    TheaterNextActionKind.updateReadiness => l10n.theaterUpdateReadinessAction,
-    TheaterNextActionKind.startCase => l10n.theaterStartCaseAction,
-    TheaterNextActionKind.anesthesia => l10n.theaterAnesthesiaAction,
-    TheaterNextActionKind.postOp => l10n.theaterPostOpAction,
-    TheaterNextActionKind.handover => l10n.theaterHandoverAction,
-  };
-}
-
 List<AppListTableColumn<TheaterCase>> defaultTheaterColumnsForSection(
   BuildContext context,
-  TheaterSection section,
-  bool canWrite,
-) {
+  TheaterSection section, {
+  required bool showNextAction,
+}) {
   final Set<String> ids = switch (section) {
-    TheaterSection.scheduled => const <String>{
+    TheaterSection.scheduled => <String>{
       'patient',
       'procedure',
       'time',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.inTheater => const <String>{
+    TheaterSection.inTheater => <String>{
       'patient',
       'procedure',
       'room',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.recovery => const <String>{
+    TheaterSection.recovery => <String>{
       'patient',
       'procedure',
       'room',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.all || TheaterSection.followUps => const <String>{
+    TheaterSection.all || TheaterSection.followUps => <String>{
       'patient',
       'procedure',
       'time',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
   };
-  return _allTheaterColumns(context, canWrite: canWrite)
+  return _allTheaterColumns(context, showNextAction: showNextAction)
       .where(
         (AppListTableColumn<TheaterCase> column) => ids.contains(column.id),
       )
@@ -94,40 +44,40 @@ List<AppListTableColumn<TheaterCase>> defaultTheaterColumnsForSection(
 
 List<AppListTableColumn<TheaterCase>> theaterColumnChoicesForSection(
   BuildContext context,
-  TheaterSection section,
-  bool canWrite,
-) {
+  TheaterSection section, {
+  required bool showNextAction,
+}) {
   final Set<String> defaultIds = switch (section) {
-    TheaterSection.scheduled => const <String>{
+    TheaterSection.scheduled => <String>{
       'patient',
       'procedure',
       'time',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.inTheater => const <String>{
+    TheaterSection.inTheater => <String>{
       'patient',
       'procedure',
       'room',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.recovery => const <String>{
+    TheaterSection.recovery => <String>{
       'patient',
       'procedure',
       'room',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
-    TheaterSection.all || TheaterSection.followUps => const <String>{
+    TheaterSection.all || TheaterSection.followUps => <String>{
       'patient',
       'procedure',
       'time',
       'status',
-      'next_action',
+      if (showNextAction) 'next_action',
     },
   };
-  return _allTheaterColumns(context, canWrite: canWrite)
+  return _allTheaterColumns(context, showNextAction: showNextAction)
       .where(
         (AppListTableColumn<TheaterCase> column) =>
             !defaultIds.contains(column.id),
@@ -137,7 +87,7 @@ List<AppListTableColumn<TheaterCase>> theaterColumnChoicesForSection(
 
 List<AppListTableColumn<TheaterCase>> _allTheaterColumns(
   BuildContext context, {
-  required bool canWrite,
+  required bool showNextAction,
 }) {
   return <AppListTableColumn<TheaterCase>>[
     _theaterCaseIdColumn(context),
@@ -148,7 +98,7 @@ List<AppListTableColumn<TheaterCase>> _allTheaterColumns(
     _theaterStatusColumn(context),
     _theaterReadinessColumn(context),
     _theaterOwnerColumn(context),
-    _theaterNextActionColumn(context, canWrite: canWrite),
+    if (showNextAction) _theaterNextActionColumn(context),
   ];
 }
 
@@ -289,9 +239,8 @@ AppListTableColumn<TheaterCase> _theaterOwnerColumn(BuildContext context) {
 }
 
 AppListTableColumn<TheaterCase> _theaterNextActionColumn(
-  BuildContext context, {
-  required bool canWrite,
-}) {
+  BuildContext context,
+) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<TheaterCase>(
     id: 'next_action',
@@ -303,7 +252,7 @@ AppListTableColumn<TheaterCase> _theaterNextActionColumn(
           theaterNextActionLabel(l10n, right),
         ),
     cellBuilder: (BuildContext context, TheaterCase item) {
-      return _TheaterNextActionButton(theaterCase: item, canWrite: canWrite);
+      return _TheaterNextActionButton(theaterCase: item);
     },
   );
 }
@@ -345,13 +294,9 @@ bool theaterTableSearchMatcher(
 }
 
 class _TheaterNextActionButton extends ConsumerWidget {
-  const _TheaterNextActionButton({
-    required this.theaterCase,
-    required this.canWrite,
-  });
+  const _TheaterNextActionButton({required this.theaterCase});
 
   final TheaterCase theaterCase;
-  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -360,7 +305,7 @@ class _TheaterNextActionButton extends ConsumerWidget {
     final TheaterNextActionKind? kind = theaterResolveNextActionKind(
       theaterCase,
     );
-    if (kind == null || !canWrite) {
+    if (kind == null) {
       return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
 
