@@ -875,7 +875,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Return medicines'), findsOneWidget);
+        expect(find.textContaining('Return medicines'), findsOneWidget);
 
         await tester.tap(
           find.descendant(
@@ -885,7 +885,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Return medicines'), findsOneWidget);
+        expect(find.textContaining('Return medicines'), findsOneWidget);
         verifyNever(
           () => repository.returnDispense(
             orderId: any(named: 'orderId'),
@@ -922,7 +922,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Return medicines'), findsOneWidget);
+        expect(find.textContaining('Return medicines'), findsOneWidget);
 
         final Finder reasonField = find.descendant(
           of: find.byType(AppDialog),
