@@ -561,6 +561,41 @@ void main() {
     );
 
     testWidgets(
+      '∩ delete alone: KPIs remain; write/delete affordances stay unmounted',
+      (WidgetTester tester) async {
+        final AppAccessPolicy deleter = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsDelete,
+          },
+        );
+
+        await _pumpOverviewTab(
+          tester,
+          repository: repository,
+          accessPolicy: deleter,
+        );
+
+        expect(find.text('Active plans'), findsOneWidget);
+        expect(_toolbarPrimary('New subscription'), findsNothing);
+
+        await tester.tap(find.text('Active plans'));
+        await tester.pumpAndSettle();
+        expect(find.text('Edit subscription'), findsNothing);
+        expect(find.text('Delete subscription'), findsNothing);
+        expect(find.text('Revoke license'), findsNothing);
+
+        await tester.tap(find.text('Close').first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Not subscribed'));
+        await tester.pumpAndSettle();
+        expect(find.text('New subscription'), findsNothing);
+        expect(find.text('Delete subscription'), findsNothing);
+      },
+    );
+
+    testWidgets(
       '∪ allowance: system:admin satisfies route entry; overview atoms still '
       'need subscriptions:read ∩ module',
       (WidgetTester tester) async {
@@ -670,6 +705,51 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => repository.updateSubscription('sub-1', any())).called(1);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      },
+    );
+
+    testWidgets(
+      'authorized cohort New subscription syncs workspace after mutation',
+      (WidgetTester tester) async {
+        when(
+          () => repository.createSubscription(any()),
+        ).thenAnswer((_) async => const Result<void>.success(null));
+
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpOverviewTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(find.text('Not subscribed'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('New subscription'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        final Finder planField = find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> && widget.labelText == 'Plan',
+        );
+        expect(planField, findsOneWidget);
+        tester
+            .widget<AppSelectField<String>>(planField)
+            .onChanged
+            ?.call('plan-1');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('New subscription').last);
+        await tester.pumpAndSettle();
+
+        verify(() => repository.createSubscription(any())).called(1);
         verify(() => repository.getWorkspace(any())).called(greaterThan(1));
       },
     );

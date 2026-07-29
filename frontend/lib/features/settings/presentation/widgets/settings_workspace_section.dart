@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
@@ -31,7 +32,7 @@ import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 /// | Tenant / facility context selectors | read chrome | [contextSelector] |
 /// | Search / group / state / actionable filters | read chrome | [search] / [filters] |
 /// | Module groups + row metadata | read | [moduleList] / [moduleRow] |
-/// | Open | navigate | source section + backend `can_read` ([open]) |
+/// | Open | navigate | parent admin∨HR + backend `can_read` (matrix [open] documented) |
 /// | Create | create | [create] ∪ [hrCreate] + backend `can_create` |
 /// | Update / delete | — | matrix keys; **not mounted** |
 ///
@@ -52,11 +53,21 @@ class SettingsWorkspaceSection extends ConsumerWidget {
       settingsWorkspaceControllerProvider,
     );
 
-    return _SettingsWorkspaceBody(
+    final Widget body = _SettingsWorkspaceBody(
       workspaceState: workspaceState,
       onRefresh: () => unawaited(
         ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
       ),
+    );
+
+    // Source admin ∨ HR (OR of two [AccessRequirement]s) via nested gates.
+    return AppAccessGate(
+      requirement: SettingsWorkspaceAtomPermissions.adminGate,
+      deniedBuilder: (_, _) => AppAccessGate(
+        requirement: SettingsWorkspaceAtomPermissions.hrGate,
+        child: body,
+      ),
+      child: body,
     );
   }
 }
@@ -367,25 +378,17 @@ class _SettingsModuleGroupsPanel extends StatelessWidget {
   }
 }
 
-class _SettingsModuleRow extends ConsumerWidget {
+class _SettingsModuleRow extends StatelessWidget {
   const _SettingsModuleRow({required this.module});
 
   final SettingsModuleItem module;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final String? route = _mappedSettingsRoute(module.route);
     final String? createRoute = _mappedSettingsRoute(module.createRoute);
-    // Open: navigate — source section already mounted; backend `can_read`.
-    final bool canOpen = route != null && module.canRead;
-    // Create: [create] ∪ [hrCreate] via [settingsWorkspaceCanCreate] + `can_create`.
-    final bool canCreate =
-        createRoute != null &&
-        module.canCreate &&
-        settingsWorkspaceCanCreate(accessPolicy);
     final String reason = _moduleReason(l10n, module);
 
     return AppContentPanel(
@@ -428,17 +431,37 @@ class _SettingsModuleRow extends ConsumerWidget {
             spacing: theme.spacing.xs,
             runSpacing: theme.spacing.xs,
             children: <Widget>[
-              if (canOpen)
+              // Open: navigate — parent admin∨HR gate + backend `can_read`.
+              // Do not re-apply matrix [open] alone: source HR accepts `hr:write`
+              // while matrix view ∪ lists `hr:read` only.
+              if (route != null && module.canRead)
                 AppButton.tertiary(
                   label: l10n.settingsWorkspaceOpenAction,
                   leadingIcon: Icons.open_in_new,
                   onPressed: () => context.go(route),
                 ),
-              if (canCreate)
-                AppButton.tertiary(
-                  label: l10n.settingsWorkspaceCreateAction,
-                  leadingIcon: Icons.add,
-                  onPressed: () => context.go(createRoute),
+              // Create: [create] ∪ [hrCreate] + backend `can_create`.
+              if (createRoute != null && module.canCreate)
+                AppAccessActionGate(
+                  requirement: SettingsWorkspaceAtomPermissions.create,
+                  hideWhenDenied: false,
+                  builder: (BuildContext context, bool facilityCreate) {
+                    if (facilityCreate) {
+                      return AppButton.tertiary(
+                        label: l10n.settingsWorkspaceCreateAction,
+                        leadingIcon: Icons.add,
+                        onPressed: () => context.go(createRoute),
+                      );
+                    }
+                    return AppAccessActionGate(
+                      requirement: SettingsWorkspaceAtomPermissions.hrCreate,
+                      builder: (BuildContext context, _) => AppButton.tertiary(
+                        label: l10n.settingsWorkspaceCreateAction,
+                        leadingIcon: Icons.add,
+                        onPressed: () => context.go(createRoute),
+                      ),
+                    );
+                  },
                 ),
             ],
           ),

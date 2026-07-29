@@ -3966,9 +3966,12 @@ Future<void> _handleCohortAccountAction(
   required bool canCreate,
   required bool canUpdate,
 }) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
   final String? subscriptionId = account.subscriptionId;
   if (subscriptionId == null || subscriptionId.isEmpty) {
-    if (!canCreate) {
+    // Re-check Overview create ∩ at action time (stale grants / deep entry).
+    if (!canCreate ||
+        !SubscriptionsOverviewAtomPermissions.create.isAllowed(policy)) {
       return;
     }
     await _showSubscriptionDialog(
@@ -3980,7 +3983,8 @@ Future<void> _handleCohortAccountAction(
     return;
   }
 
-  if (!canUpdate) {
+  if (!canUpdate ||
+      !SubscriptionsOverviewAtomPermissions.update.isAllowed(policy)) {
     return;
   }
 

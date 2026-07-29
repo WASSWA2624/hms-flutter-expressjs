@@ -420,7 +420,7 @@ bool settingsWorkspaceCanCreate(AppAccessPolicy policy) {
 /// | Tenant context required + selectors | read chrome | [contextSelector] |
 /// | Search / group / state / actionable filters | read chrome | [search] / [filters] |
 /// | Module groups + row metadata | read | [moduleList] / [moduleRow] |
-/// | Open (navigate to setup / access admin) | navigate | [open] + backend `can_read` |
+/// | Open (navigate to setup / access admin) | navigate | parent admin∨HR + backend `can_read` ([open] documents matrix read) |
 /// | Create (navigate to create route) | create | [create] ∪ [hrCreate] + `can_create` |
 /// | Update / delete affordances | — | matrix keys; **not mounted** |
 /// | Nested cross-module panels | nested | _(n/a)_ |
