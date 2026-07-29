@@ -1,4 +1,4 @@
-"""Run prompts/dashboard.md 10 times sequentially with Cursor agents.
+"""Run prompts/dashboard-simplify.md 5 times sequentially with Cursor agents.
 
 Each iteration is a fresh agent chat. After every successful iteration,
 commits and pushes any resulting changes to GitHub before starting the next.
@@ -24,11 +24,11 @@ from cursor_sdk import (
 
 
 PROJECT_DIR = Path(__file__).parent
-PROMPT_FILE = PROJECT_DIR / "prompts" / "dashboard.md"
-PROMPT_KEY = "dashboard.md"
+PROMPT_FILE = PROJECT_DIR / "prompts" / "dashboard-simplify.md"
+PROMPT_KEY = "dashboard-simplify.md"
 STATE_FILE = PROJECT_DIR / ".run_prompts_state.json"
-# How many times to run dashboard.md, one after another.
-ITERATIONS = 10
+# How many times to run dashboard-simplify.md, one after another.
+ITERATIONS = 5
 MAX_ATTEMPTS = 3
 # Cursor agents may also touch git; retry through index.lock races.
 GIT_LOCK_RETRIES = 10
@@ -43,7 +43,7 @@ INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
 def _iteration_key(iteration: int) -> str:
-    """Stable id for state tracking of one sequential dashboard run."""
+    """Stable id for state tracking of one sequential simplify run."""
     return f"{PROMPT_KEY}#{iteration}/{ITERATIONS}"
 
 
@@ -233,7 +233,7 @@ async def run_iteration(
     client: AsyncClient,
     finished: set[str],
 ) -> dict:
-    """Run one dashboard.md iteration, then commit and push before returning."""
+    """Run one dashboard-simplify.md iteration, then commit and push."""
     key = _iteration_key(iteration)
     print(f"[START] {key}", flush=True)
     last_error = ""
@@ -440,7 +440,9 @@ async def main(argv: list[str] | None = None):
         print("\nRun incomplete; remaining iterations were not started.")
         sys.exit(1)
 
-    print(f"\nAll {ITERATIONS} dashboard iterations completed successfully.")
+    print(
+        f"\nAll {ITERATIONS} dashboard-simplify iterations completed successfully."
+    )
     if STATE_FILE.exists():
         STATE_FILE.unlink()
 
