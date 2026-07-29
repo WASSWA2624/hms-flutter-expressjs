@@ -1,4 +1,4 @@
-"""Run prompts/ui-permissions/**/*.md with Cursor agents.
+"""Run prompts/billing-integration/**/*.md with Cursor agents.
 
 Processing rules:
 - One folder at a time; never start the next folder until every prompt in
@@ -29,8 +29,8 @@ from cursor_sdk import (
 
 
 PROJECT_DIR = Path(__file__).parent
-PROMPTS_ROOT = PROJECT_DIR / "prompts" / "ui-permissions"
-STATE_FILE = PROJECT_DIR / ".run_prompts_state.json"
+PROMPTS_ROOT = PROJECT_DIR / "prompts" / "billing-integration"
+STATE_FILE = PROJECT_DIR / ".run_billing_integration_prompts_state.json"
 ITERATIONS = 3
 MAX_CONCURRENCY = 3
 MAX_ATTEMPTS = 3
@@ -38,7 +38,7 @@ GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
 MODEL = "auto"
-GIT_EXCLUDES = (".run_prompts_state.json",)
+GIT_EXCLUDES = (".run_billing_integration_prompts_state.json",)
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
@@ -53,7 +53,7 @@ def _iteration_key(prompt_rel: str, iteration: int) -> str:
 
 
 def _discover_folders() -> list[Path]:
-    """Return prompt folders under ui-permissions, sorted, one folder at a time."""
+    """Return prompt folders under billing-integration, sorted, one folder at a time."""
     if not PROMPTS_ROOT.is_dir():
         return []
     folders: list[Path] = []
@@ -278,7 +278,7 @@ async def run_prompt(
     git_lock: asyncio.Lock,
     sem: asyncio.Semaphore,
 ) -> dict:
-    """Run one ui-permissions prompt iteration, then commit and push."""
+    """Run one billing-integration prompt iteration, then commit and push."""
     prompt_rel = _prompt_rel(prompt_path)
     key = _iteration_key(prompt_rel, iteration)
 
@@ -370,7 +370,8 @@ async def run_prompt(
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run prompts/ui-permissions folder-by-folder with Cursor model=auto. "
+            "Run prompts/billing-integration folder-by-folder with Cursor "
+            "model=auto. "
             f"Max {MAX_CONCURRENCY} concurrent prompts per folder iteration; "
             f"each prompt runs {ITERATIONS} times; commit+push after each success."
         )
@@ -378,7 +379,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Ignore .run_prompts_state.json and re-run all prompt iterations.",
+        help=(
+            "Ignore .run_billing_integration_prompts_state.json and re-run "
+            "all prompt iterations."
+        ),
     )
     parser.add_argument(
         "--list",
@@ -390,8 +394,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="append",
         default=[],
         help=(
-            "Only run the named folder under prompts/ui-permissions "
-            "(repeatable). Example: --folder icu --folder opd"
+            "Only run the named folder under prompts/billing-integration "
+            "(repeatable). Example: --folder billing --folder pharmacy"
         ),
     )
     return parser.parse_args(argv)
@@ -454,7 +458,10 @@ async def main(argv: list[str] | None = None):
         finished: set[str] = set()
         if STATE_FILE.exists():
             STATE_FILE.unlink()
-            print("Cleared .run_prompts_state.json (--force).\n", flush=True)
+            print(
+                "Cleared .run_billing_integration_prompts_state.json (--force).\n",
+                flush=True,
+            )
     else:
         finished = _load_finished() & known
         _save_finished(finished)
@@ -473,12 +480,15 @@ async def main(argv: list[str] | None = None):
         f"({skipped} already finished, {len(pending_keys)} pending).",
         flush=True,
     )
-    print("Commit+push after each successful prompt; one folder at a time.\n", flush=True)
+    print(
+        "Commit+push after each successful prompt; one folder at a time.\n",
+        flush=True,
+    )
 
     if not pending_keys:
         print(
             "Nothing left to run. Pass --force to rerun all, "
-            "or delete .run_prompts_state.json."
+            "or delete .run_billing_integration_prompts_state.json."
         )
         return
 
@@ -608,7 +618,8 @@ async def main(argv: list[str] | None = None):
         sys.exit(1)
 
     print(
-        f"\nAll {len(all_keys)} ui-permissions prompt runs completed successfully."
+        f"\nAll {len(all_keys)} billing-integration prompt runs completed "
+        "successfully."
     )
     if STATE_FILE.exists():
         STATE_FILE.unlink()

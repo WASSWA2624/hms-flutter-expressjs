@@ -5,9 +5,10 @@ wire every financially relevant action into the Billing module.
 Shared rules: [`_shared-rules.md`](_shared-rules.md).
 Every prompt must follow [`../.cursor/prompt.mdc`](../.cursor/prompt.mdc).
 
-Mirror of the `prompts/ui-permissions/` tab inventory. Run with a
-dedicated agent runner (point `PROMPTS_ROOT` at this folder) or one
-prompt at a time.
+Mirror of the `prompts/ui-permissions/` tab inventory. Run via
+`python run_billing_integration_prompts.py` (one folder at a time, 3
+concurrent prompts, 3 iterations per folder), or one prompt at a time
+with the target tab’s file as the agent instruction.
 
 ## Index
 
