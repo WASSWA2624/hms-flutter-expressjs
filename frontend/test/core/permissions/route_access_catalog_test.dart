@@ -177,5 +177,27 @@ void main() {
       expect(canAccessShellRoute(AppRoutes.claims, billing), isTrue);
       expect(canAccessShellRoute(AppRoutes.opd, billing), isFalse);
     });
+
+    test('unique entry keys unlock matching shell routes for custom roles', () {
+      final AppAccessPolicy custom = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.ipdRead,
+          AppPermissions.nursingRead,
+          AppPermissions.icuRead,
+          AppPermissions.physiotherapyRead,
+          AppPermissions.housekeepingRead,
+          AppPermissions.emergencyRead,
+        },
+        roles: const <String>['CUSTOM_WARD_COORDINATOR'],
+      );
+      expect(canAccessShellRoute(AppRoutes.ipd, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.nursing, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.icu, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.physiotherapy, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.housekeeping, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.emergency, custom), isTrue);
+      expect(canAccessShellRoute(AppRoutes.clinical, custom), isFalse);
+      expect(canAccessShellRoute(AppRoutes.operations, custom), isFalse);
+    });
   });
 }

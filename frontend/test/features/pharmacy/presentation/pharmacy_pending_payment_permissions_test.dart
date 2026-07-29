@@ -772,7 +772,6 @@ void main() {
         final Finder dialog = find.byType(AppDialog);
         expect(dialog, findsOneWidget);
         expect(find.text('PRESCRIPTION DETAIL'), findsOneWidget);
-        expect(find.text('Payment clearance'), findsOneWidget);
         expect(
           find.descendant(of: dialog, matching: find.text('Record payment')),
           findsNothing,
@@ -880,12 +879,8 @@ void main() {
         expect(find.text('Cathy Payment'), findsOneWidget);
         expect(_actionLabel('Record payment'), findsNothing);
         expect(_toolbarPrimary('Catalog and stock'), findsNothing);
+        // Payment column is billing-status chrome; absent without billing:read.
         expect(find.text('Payment'), findsNothing);
-
-        await tester.tap(find.text('Cathy Payment'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Payment clearance'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

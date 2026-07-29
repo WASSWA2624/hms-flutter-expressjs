@@ -1534,7 +1534,7 @@ Future<void> showHrEditAccessUserDialog(
             (HrAccessPermission permission) => AppPermissionAssignmentOption(
               id: permission.effectiveId,
               code: permission.name ?? permission.effectiveId,
-              label: l10n.permissionCatalogLabelForCode(
+              label: l10n.permissionAssignmentLabelForCode(
                 permission.name ?? permission.effectiveId,
               ),
               description: permission.description,
@@ -1856,7 +1856,7 @@ Future<void> showHrAssignRolePermissionsDialog(
             (HrAccessPermission permission) => AppPermissionAssignmentOption(
               id: permission.effectiveId,
               code: permission.name ?? permission.effectiveId,
-              label: l10n.permissionCatalogLabelForCode(
+              label: l10n.permissionAssignmentLabelForCode(
                 permission.name ?? permission.effectiveId,
               ),
               description: permission.description,

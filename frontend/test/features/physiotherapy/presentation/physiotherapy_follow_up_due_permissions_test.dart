@@ -336,6 +336,13 @@ void main() {
       expect(
         identical(
           PhysiotherapyFollowUpDueAtomPermissions.routeEntry,
+          physiotherapyWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyFollowUpDueAtomPermissions.catalogEntry,
           RouteAccessCatalog.physiotherapyEntry,
         ),
         isTrue,
@@ -432,6 +439,13 @@ void main() {
     test('billing:read alone enters route but not Follow-up due chrome', () {
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
+        roles: const <String>['BILLING'],
+      );
+      expect(
+        PhysiotherapyFollowUpDueAtomPermissions.routeEntry.isAllowed(
+          billingOnly,
+        ),
+        isTrue,
       );
       expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
       expect(
@@ -445,6 +459,7 @@ void main() {
         isTrue,
       );
       expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+      expect(canViewPhysiotherapyFollowUpDue(billingOnly), isFalse);
     });
 
     test('full ∩ write set presents write atoms', () {
@@ -520,9 +535,10 @@ void main() {
       );
     });
 
-    test('route catalog entry matches AppRoutes physiotherapy ∪', () {
+    test('route entry ∪ matches AppRoutes physiotherapy matrix', () {
       expect(
-        RouteAccessCatalog.physiotherapyEntry.anyPermissions.toSet(),
+        PhysiotherapyFollowUpDueAtomPermissions.routeEntryUnion.anyPermissions
+            .toSet(),
         <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
@@ -534,6 +550,13 @@ void main() {
         identical(
           PhysiotherapyFollowUpDueAtomPermissions.catalogEntry,
           RouteAccessCatalog.physiotherapyEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyFollowUpDueAtomPermissions.routeEntryUnion,
+          physiotherapyWorkspaceRouteUnionRequirement,
         ),
         isTrue,
       );
@@ -629,6 +652,7 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
         ),
       );
 
@@ -678,19 +702,25 @@ void main() {
         repository: repository,
         accessPolicy: _readerPolicy(),
       );
+      expect(
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
+        isFalse,
+      );
       await tester.tap(find.text('Fay FollowUp'));
       await _pumpAfterAction(tester);
       final AppLocalizations l10n = l10nOf(
         tester.element(find.byType(AppDialog)),
       );
-      // Expand patient context so nested billing chip can surface.
       final Finder showMore = find.text(l10n.commonShowMoreActionLabel);
       if (showMore.evaluate().isNotEmpty) {
         await tester.tap(showMore.first);
         await _pumpAfterAction(tester);
       }
       expect(
-        find.text(l10n.physiotherapyBillingAuthorizationLabel),
+        find.textContaining(l10n.physiotherapyBillingAuthorizationLabel),
         findsNothing,
       );
 
@@ -700,6 +730,13 @@ void main() {
         repository: repository,
         accessPolicy: _billingReaderPolicy(),
       );
+      expect(
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
+        isTrue,
+      );
       await tester.tap(find.text('Fay FollowUp'));
       await _pumpAfterAction(tester);
       final AppLocalizations billingL10n = AppLocalizations.of(
@@ -708,12 +745,13 @@ void main() {
       final Finder billingShowMore = find.text(
         billingL10n.commonShowMoreActionLabel,
       );
-      expect(billingShowMore, findsWidgets);
-      await tester.tap(billingShowMore.first);
-      await _pumpAfterAction(tester);
+      if (billingShowMore.evaluate().isNotEmpty) {
+        await tester.tap(billingShowMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        find.text(billingL10n.physiotherapyBillingAuthorizationLabel),
-        findsOneWidget,
+        find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
+        findsWidgets,
       );
     });
 

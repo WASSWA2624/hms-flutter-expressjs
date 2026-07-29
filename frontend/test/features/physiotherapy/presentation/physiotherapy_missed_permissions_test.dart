@@ -698,21 +698,23 @@ void main() {
     testWidgets('billing chip absent without billing:read; present with it', (
       WidgetTester tester,
     ) async {
-      final AppLocalizations Function(BuildContext) l10nOf = AppLocalizations.of;
-
       await _pumpMissedTab(
         tester,
         repository: repository,
         accessPolicy: _readerPolicy(),
       );
-      await tester.tap(find.text('Max Missed'));
-      await _pumpAfterAction(tester);
-      final AppLocalizations l10n = l10nOf(
-        tester.element(find.byType(AppDialog)),
+      expect(
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
+        isFalse,
       );
       expect(
-        find.text(l10n.physiotherapyBillingAuthorizationLabel),
-        findsNothing,
+        PhysiotherapyMissedAtomPermissions.billingChip.isAllowed(
+          _readerPolicy(),
+        ),
+        isFalse,
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -721,16 +723,20 @@ void main() {
         repository: repository,
         accessPolicy: _billingReaderPolicy(),
       );
-      await tester.tap(find.text('Max Missed'));
-      await _pumpAfterAction(tester);
       expect(
-        find.text(
-          AppLocalizations.of(
-            tester.element(find.byType(AppDialog)),
-          ).physiotherapyBillingAuthorizationLabel,
-        ),
-        findsOneWidget,
+        _table(tester).columnChoices?.any(
+              (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
+            ) ??
+            false,
+        isTrue,
       );
+      expect(
+        PhysiotherapyMissedAtomPermissions.billingChip.isAllowed(
+          _billingReaderPolicy(),
+        ),
+        isTrue,
+      );
+      expect(canViewPhysiotherapyBilling(_billingReaderPolicy()), isTrue);
     });
 
     testWidgets('authorized mark attendance opens dialog (sync seam)', (

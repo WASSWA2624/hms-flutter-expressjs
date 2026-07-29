@@ -815,8 +815,8 @@ class _DetailContent extends ConsumerWidget {
               return AppPermissionAssignmentOption(
                 id: assignment.permissionId ?? assignment.id,
                 code: code,
-                label: l10n.permissionCatalogLabelForCode(code),
-                description: code,
+                label: l10n.permissionAssignmentLabelForCode(code),
+                description: l10n.permissionCatalogDescriptionForCode(code),
               );
             })
             .whereType<AppPermissionAssignmentOption>()

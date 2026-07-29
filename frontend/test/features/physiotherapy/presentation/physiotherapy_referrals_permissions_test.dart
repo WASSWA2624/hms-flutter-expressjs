@@ -336,6 +336,13 @@ void main() {
       expect(
         identical(
           PhysiotherapyReferralsAtomPermissions.routeEntry,
+          physiotherapyWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PhysiotherapyReferralsAtomPermissions.catalogEntry,
           RouteAccessCatalog.physiotherapyEntry,
         ),
         isTrue,
@@ -442,6 +449,11 @@ void main() {
     test('billing:read alone enters route but not Referrals chrome', () {
       final AppAccessPolicy billingOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
+        roles: const <String>['BILLING'],
+      );
+      expect(
+        PhysiotherapyReferralsAtomPermissions.routeEntry.isAllowed(billingOnly),
+        isTrue,
       );
       expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
       expect(
@@ -526,9 +538,10 @@ void main() {
       );
     });
 
-    test('route catalog entry matches AppRoutes physiotherapy ∪', () {
+    test('route entry ∪ matches AppRoutes physiotherapy matrix', () {
       expect(
-        RouteAccessCatalog.physiotherapyEntry.anyPermissions.toSet(),
+        PhysiotherapyReferralsAtomPermissions.routeEntryUnion.anyPermissions
+            .toSet(),
         <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
@@ -743,8 +756,14 @@ void main() {
       final AppLocalizations l10n = l10nOf(
         tester.element(find.byType(AppDialog)),
       );
+      // Expand patient context so nested billing chip can surface.
+      final Finder showMore = find.text(l10n.commonShowMoreActionLabel);
+      if (showMore.evaluate().isNotEmpty) {
+        await tester.tap(showMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        find.text(l10n.physiotherapyBillingAuthorizationLabel),
+        find.textContaining(l10n.physiotherapyBillingAuthorizationLabel),
         findsNothing,
       );
 
@@ -756,12 +775,18 @@ void main() {
       );
       await tester.tap(find.text('Rita Referral'));
       await _pumpAfterAction(tester);
+      final AppLocalizations billingL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder billingShowMore = find.text(
+        billingL10n.commonShowMoreActionLabel,
+      );
+      if (billingShowMore.evaluate().isNotEmpty) {
+        await tester.tap(billingShowMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        find.text(
-          AppLocalizations.of(
-            tester.element(find.byType(AppDialog)),
-          ).physiotherapyBillingAuthorizationLabel,
-        ),
+        find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
         findsOneWidget,
       );
     });

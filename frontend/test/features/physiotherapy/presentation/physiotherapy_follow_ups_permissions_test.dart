@@ -196,6 +196,24 @@ void main() {
         ),
         isTrue,
       );
+      // Mapping note: catalog entry currently matches AppRoutes ∪ (const-
+      // canonicalized with [physiotherapyWorkspaceEntryRequirement]).
+      expect(
+        identical(
+          PhysiotherapyFollowUpsAtomPermissions.routeEntry,
+          PhysiotherapyFollowUpsAtomPermissions.catalogEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        PhysiotherapyFollowUpsAtomPermissions.routeEntry.anyPermissions,
+        containsAll(<AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.patientRead,
+          AppPermissions.billingRead,
+        ]),
+      );
       expect(
         identical(
           PhysiotherapyFollowUpsAtomPermissions.billingColumn,
@@ -348,14 +366,20 @@ void main() {
           isTrue,
         );
         expect(
+          PhysiotherapyFollowUpsAtomPermissions.routeEntry.isAllowed(entryOnly),
+          isTrue,
+        );
+        expect(
+          PhysiotherapyFollowUpsAtomPermissions.catalogEntry.isAllowed(
+            entryOnly,
+          ),
+          isTrue,
+        );
+        expect(
           PhysiotherapyFollowUpsAtomPermissions.tab.isAllowed(entryOnly),
           isFalse,
         );
         expect(canViewPhysiotherapyFollowUps(entryOnly), isFalse);
-        expect(
-          PhysiotherapyFollowUpsAtomPermissions.routeEntry.isAllowed(entryOnly),
-          isTrue,
-        );
       },
     );
 

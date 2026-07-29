@@ -2253,8 +2253,8 @@ class _AccessAdminRoleDetailDialogState
         AppPermissionAssignmentOption(
           id: permissionId.isNotEmpty ? permissionId : assignment.id,
           code: code,
-          label: l10n.permissionCatalogLabelForCode(code),
-          description: code,
+          label: l10n.permissionAssignmentLabelForCode(code),
+          description: l10n.permissionCatalogDescriptionForCode(code),
         ),
       );
     }

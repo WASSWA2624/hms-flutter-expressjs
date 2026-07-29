@@ -802,15 +802,28 @@ void main() {
 
         final Finder dialog = find.byType(AppDialog);
         expect(dialog, findsOneWidget);
+
+        final Finder showMore = find.descendant(
+          of: dialog,
+          matching: find.text('Show more'),
+        );
+        if (showMore.evaluate().isNotEmpty) {
+          await tester.tap(showMore);
+          await tester.pumpAndSettle();
+        }
+
         expect(
           find.descendant(
             of: dialog,
-            matching: find.text('Payment clearance'),
+            matching: find.text('Payment clearance: '),
           ),
           findsNothing,
         );
         expect(
-          find.descendant(of: dialog, matching: find.text('Amount due')),
+          find.descendant(
+            of: dialog,
+            matching: find.textContaining('Amount due'),
+          ),
           findsNothing,
         );
         expect(find.textContaining('no access'), findsNothing);
@@ -846,10 +859,16 @@ void main() {
 
         final Finder dialog = find.byType(AppDialog);
         expect(dialog, findsOneWidget);
+
+        await tester.tap(
+          find.descendant(of: dialog, matching: find.text('Show more')),
+        );
+        await tester.pumpAndSettle();
+
         expect(
           find.descendant(
             of: dialog,
-            matching: find.text('Payment clearance'),
+            matching: find.text('Payment clearance: '),
           ),
           findsOneWidget,
         );

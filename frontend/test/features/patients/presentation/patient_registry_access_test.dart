@@ -20,16 +20,48 @@ void main() {
       expect(isPharmacyRegistryReader(policy), isTrue);
     });
 
+    test('returns true for custom role with pharmacy:read only', () {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['CUSTOM_PHARMACY']),
+          permissions: const <AppPermission>[AppPermissions.pharmacyRead],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(isPharmacyRegistryReader(policy), isTrue);
+    });
+
     test('returns false for pharmacist with patient write', () {
       final policy = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 'token'),
           user: const AuthUserProfile(roles: <String>['PHARMACIST']),
-          permissions: const <AppPermission>[AppPermissions.patientWrite],
+          permissions: const <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.patientWrite,
+          ],
+          isAuthorizationHydrated: true,
         ),
       );
 
       expect(isPharmacyRegistryReader(policy), isFalse);
+    });
+  });
+
+  group('isBillingRegistryReader', () {
+    test('returns true for custom role with billing:read only', () {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['CUSTOM_BILLING']),
+          permissions: const <AppPermission>[AppPermissions.billingRead],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(isBillingRegistryReader(policy), isTrue);
     });
   });
 

@@ -259,6 +259,76 @@ void main() {
     });
 
     test(
+      'custom role with doctor-like unique entry permissions matches doctor shell',
+      () {
+        final AppAccessPolicy doctor = policyForRole('DOCTOR');
+        final AppAccessPolicy custom = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['CUSTOM_CLINICIAN'],
+            ),
+            permissions: <AppPermission>[
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.emergencyRead,
+              AppPermissions.emergencyWrite,
+              AppPermissions.communicationsRead,
+              AppPermissions.communicationsWrite,
+              AppPermissions.profileRead,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.patientsRead,
+              AppPermissions.opdRead,
+              AppPermissions.ipdRead,
+              AppPermissions.roomsBedsRead,
+              AppPermissions.icuRead,
+              AppPermissions.nursingRead,
+              AppPermissions.physiotherapyRead,
+              AppPermissions.theaterRead,
+              AppPermissions.dischargeRead,
+              AppPermissions.breakGlassRequest,
+              AppPermissions.lastOfficeRead,
+              AppPermissions.labRead,
+              AppPermissions.radiologyRead,
+              AppPermissions.pharmacyRead,
+              AppPermissions.reportsRead,
+            ],
+            isAuthorizationHydrated: true,
+            moduleEntitlements: _activeShellModules,
+          ),
+        );
+
+        for (final AppRouteData route in <AppRouteData>[
+          AppRoutes.home,
+          AppRoutes.patients,
+          AppRoutes.opd,
+          AppRoutes.clinical,
+          AppRoutes.lab,
+          AppRoutes.pharmacy,
+          AppRoutes.reports,
+          AppRoutes.nursing,
+          AppRoutes.physiotherapy,
+          AppRoutes.ipd,
+          AppRoutes.icu,
+          AppRoutes.theater,
+          AppRoutes.discharge,
+          AppRoutes.emergency,
+          AppRoutes.billing,
+          AppRoutes.hr,
+        ]) {
+          expect(
+            canAccess(route, custom),
+            canAccess(route, doctor),
+            reason: route.name,
+          );
+        }
+      },
+    );
+
+    test(
       'custom patient grants unlock patient-flow workspaces only',
       () {
         final policy = AppAccessPolicy.fromSession(

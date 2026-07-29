@@ -585,7 +585,7 @@ void main() {
         'physiotherapy_today',
       );
       expect(
-        _table(tester).columnChoices.any(
+        _table(tester).columnChoices?.any(
           (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
         ),
         isFalse,
@@ -604,7 +604,7 @@ void main() {
       expect(find.byTooltip('Record session'), findsWidgets);
       expect(find.text('Tina Today'), findsOneWidget);
       expect(
-        _table(tester).columnChoices.any(
+        _table(tester).columnChoices?.any(
           (AppListTableColumn<TherapyWorkItem> c) => c.id == 'billing',
         ),
         isTrue,
@@ -700,8 +700,14 @@ void main() {
       final AppLocalizations l10n = l10nOf(
         tester.element(find.byType(AppDialog)),
       );
+      // Expand patient context so nested billing chip can surface.
+      final Finder showMore = find.text(l10n.commonShowMoreActionLabel);
+      if (showMore.evaluate().isNotEmpty) {
+        await tester.tap(showMore.first);
+        await _pumpAfterAction(tester);
+      }
       expect(
-        find.text(l10n.physiotherapyBillingAuthorizationLabel),
+        find.textContaining(l10n.physiotherapyBillingAuthorizationLabel),
         findsNothing,
       );
 
@@ -713,13 +719,18 @@ void main() {
       );
       await tester.tap(find.text('Tina Today'));
       await _pumpAfterAction(tester);
+      final AppLocalizations billingL10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      final Finder billingShowMore = find.text(
+        billingL10n.commonShowMoreActionLabel,
+      );
+      expect(billingShowMore, findsWidgets);
+      await tester.tap(billingShowMore.first);
+      await _pumpAfterAction(tester);
       expect(
-        find.text(
-          AppLocalizations.of(
-            tester.element(find.byType(AppDialog)),
-          ).physiotherapyBillingAuthorizationLabel,
-        ),
-        findsOneWidget,
+        find.textContaining(billingL10n.physiotherapyBillingAuthorizationLabel),
+        findsWidgets,
       );
     });
 

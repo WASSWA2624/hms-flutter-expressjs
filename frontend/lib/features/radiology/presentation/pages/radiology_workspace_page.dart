@@ -12,8 +12,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -23,6 +21,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
+import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart';
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_next_action_cell.dart';
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -100,17 +99,6 @@ class _RadiologyWorkspaceContent extends ConsumerStatefulWidget {
 class _RadiologyWorkspaceContentState
     extends ConsumerState<_RadiologyWorkspaceContent> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 220);
-
-  static const AccessRequirement _requestRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.radiologyWrite,
-    ],
-  );
-
-  static const AccessRequirement _workRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.radiologyWrite],
-  );
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<RadiologyOrder>
@@ -204,8 +192,9 @@ class _RadiologyWorkspaceContentState
       return;
     }
     final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-    final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
-    final bool canWork = _workRequirement.isAllowed(accessPolicy);
+    final bool canRequest = canRequestRadiologyImaging(accessPolicy);
+    final bool canWork = canWriteRadiology(accessPolicy);
+    final bool canViewBilling = canViewRadiologyBillingHold(accessPolicy);
     await _openRadiologyDetailDialog(
       context,
       ref,
@@ -213,6 +202,7 @@ class _RadiologyWorkspaceContentState
       order,
       canWork: canWork,
       canRequest: canRequest,
+      canViewBilling: canViewBilling,
     );
   }
 
@@ -343,14 +333,15 @@ class _RadiologyWorkspaceContentState
   Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     RadiologyWorkspaceState state,
-    AppAccessPolicy accessPolicy,
-  ) {
-    if (_section.isFollowUps) {
+    AppAccessPolicy accessPolicy, {
+    required RadiologyDeskSection section,
+  }) {
+    if (section.isFollowUps) {
       return null;
     }
 
     return AppAccessActionGate(
-      requirement: _requestRequirement,
+      requirement: radiologyStripCreateRequirement(section),
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.radiologyRequestImagingAction,
@@ -369,9 +360,10 @@ class _RadiologyWorkspaceContentState
   List<Widget> _buildSecondaryActions(
     AppLocalizations l10n,
     RadiologyWorkspaceState state,
-    AppAccessPolicy accessPolicy,
-  ) {
-    if (_section.isFollowUps) {
+    AppAccessPolicy accessPolicy, {
+    required RadiologyDeskSection section,
+  }) {
+    if (section.isFollowUps) {
       return const <Widget>[];
     }
     final bool isPatientsView =
@@ -400,7 +392,7 @@ class _RadiologyWorkspaceContentState
               },
       ),
       AppAccessActionGate(
-        requirement: _workRequirement,
+        requirement: radiologyStripConfigureRequirement(section),
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.radiologyConfigurationsAction,
