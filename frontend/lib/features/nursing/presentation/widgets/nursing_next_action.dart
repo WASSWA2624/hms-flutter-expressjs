@@ -56,12 +56,14 @@ AccessRequirement nursingNextActionRequirement(
         NursingDischargePendingAtomPermissions.nextActionDischarge,
       NursingQueueScope.handoverPending =>
         NursingHandoverPendingAtomPermissions.nextActionHandover,
-      NursingQueueScope.medicationDue => nursingMedicationWriteRequirement,
+      NursingQueueScope.medicationDue =>
+        NursingMedicationDueAtomPermissions.nextActionMedication,
       _ => nursingNextActionRequirement(kind),
     };
   }
   return switch (kind) {
-    NursingNextActionKind.medication => nursingMedicationWriteRequirement,
+    NursingNextActionKind.medication =>
+      NursingMedicationDueAtomPermissions.nextActionMedication,
     NursingNextActionKind.handover =>
       NursingHandoverPendingAtomPermissions.nextActionHandover,
     NursingNextActionKind.transfer =>

@@ -41,7 +41,6 @@ const NursingPatientSummary _handoverPatient = NursingPatientSummary(
   bedDisplayLabel: 'Bed 7',
   hasActiveBed: true,
   pendingHandoverCount: 1,
-  taskTypeCode: 'HANDOVER_PENDING',
 );
 
 const NursingHandover _pendingHandover = NursingHandover(
@@ -185,7 +184,7 @@ void _stubRepository(
             medicationReminders: const <MedicationReminder>[
               MedicationReminder(
                 id: 'med-1',
-                displayTitle: 'Paracetamol',
+                medicationLabel: 'Paracetamol',
                 status: 'DUE',
               ),
             ],
@@ -817,7 +816,6 @@ void main() {
       tester,
       repository: repository,
       accessPolicy: _readPolicy(),
-      themeMode: ThemeMode.light,
     );
 
     expect(find.text('Handover Pending Patient'), findsOneWidget);

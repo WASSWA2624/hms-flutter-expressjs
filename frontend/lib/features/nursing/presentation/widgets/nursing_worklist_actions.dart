@@ -138,7 +138,7 @@ class NursingNextActionCell extends ConsumerWidget {
 
     // hideWhenDenied (default): unauthorized next-action does not render.
     return AppAccessActionGate(
-      requirement: nursingNextActionRequirement(kind),
+      requirement: nursingNextActionRequirement(kind, scope: scope),
       builder: (BuildContext context, bool isAllowed) {
         void onPressed() => nursingExecuteRowAction(context, ref, item, scope);
         if (compact) {

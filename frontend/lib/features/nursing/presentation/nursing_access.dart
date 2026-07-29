@@ -233,6 +233,8 @@ NursingQueueScope? nursingFallbackScope(AppAccessPolicy policy) {
 AccessRequirement nursingWriteRequirementForScope(NursingQueueScope scope) {
   return switch (scope) {
     NursingQueueScope.assignedWard => NursingAssignedWardAtomPermissions.write,
+    NursingQueueScope.medicationDue =>
+      NursingMedicationDueAtomPermissions.write,
     NursingQueueScope.handoverPending =>
       NursingHandoverPendingAtomPermissions.write,
     NursingQueueScope.transferPending =>
@@ -253,8 +255,9 @@ bool nursingBoardShowsNextActionColumn(
   }
   return switch (scope) {
     NursingQueueScope.medicationDue =>
-      nursingMedicationWriteRequirement.isAllowed(policy) ||
-          nursingWriteRequirementForScope(scope).isAllowed(policy),
+      NursingMedicationDueAtomPermissions.nextActionMedication.isAllowed(
+        policy,
+      ),
     _ => nursingWriteRequirementForScope(scope).isAllowed(policy),
   };
 }
@@ -429,6 +432,93 @@ abstract final class NursingAssignedWardAtomPermissions {
   /// Nested cross-module read — medication panel uses [medicationsPanel].
   static const AccessRequirement nestedRead = nursingWorkspaceReadRequirement;
   static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      nursingWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry = RouteAccessCatalog.nursingEntry;
+}
+
+/// Medication due tab atom → permission mapping (inventory + matrix).
+///
+/// Worklist `?scope=medication-due`. Due meds; pharmacy:read ∩ clinical:write
+/// (or pharmacy:write) for charting/admin. Nested cross-module matrix rows are
+/// _(n/a)_. Source inventory (`screens/nursing.md`) lists Medication due as
+/// always when workspace loads — tab keeps [nursingWorkspaceReadRequirement]
+/// (∪ `clinical:read` | `patient:read`). Matrix View ∩ `clinical:read` +
+/// `pharmacy:read` maps to [readIntersection] / [medicationsPanel] for med
+/// data. Create/update/delete matrix ∩ `clinical:write` → [clinicalWrite];
+/// stage Administer uses [nextActionMedication] /
+/// [nursingMedicationAdministerRequirement]. Complementary detail writes keep
+/// source [nursingWriteRequirement] ∪. `last_office:read` alone must not
+/// unlock writes. Shift context uses roster/ops read ∩ `hr-rosters`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Medication due tab / count badge | navigate | read ∪ ([tab]; matrix ∩ → [readIntersection]) |
+/// | Shift context | progressive disclosure | ([shiftContext]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Medication due count column | nested read | ([medicationsPanel] / [medicationDueCount]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | ([success] / [validation]) |
+/// | Row select → detail | read | ([detail]) |
+/// | Next action Administer medication | create / update | ([nextActionMedication]) |
+/// | Detail complementary writes (note / vitals / …) | create / update | ([complementaryWrite]) |
+/// | Detail Administer medication | create / update | ([administerMedication]) |
+/// | Detail medications panel (data) | nested read | ([medicationsPanel]) |
+/// | Detail Open ICU | navigate | ([openIcu]) |
+/// | Detail Print summary | export | ([printSummary]) |
+/// | Admission checklist write steps | create / update | ([checklistWrite]) |
+/// | Nested mutation dialog / `panel=medication` | create / update | ([panelDeepLink]) |
+/// | Route entry (deep link) | navigate | ([routeEntry]) |
+abstract final class NursingMedicationDueAtomPermissions {
+  static const AccessRequirement tab = nursingWorkspaceReadRequirement;
+  static const AccessRequirement readUnion = nursingWorkspaceReadRequirement;
+  static const AccessRequirement readIntersection =
+      nursingMedicationDueReadIntersectionRequirement;
+  static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
+  static const AccessRequirement search = nursingWorkspaceReadRequirement;
+  static const AccessRequirement filters = nursingWorkspaceReadRequirement;
+  static const AccessRequirement settings = nursingWorkspaceReadRequirement;
+  static const AccessRequirement empty = nursingWorkspaceReadRequirement;
+  static const AccessRequirement loading = nursingWorkspaceReadRequirement;
+  static const AccessRequirement retry = nursingWorkspaceReadRequirement;
+  static const AccessRequirement success = nursingMedicationAdministerRequirement;
+  static const AccessRequirement validation =
+      nursingMedicationAdministerRequirement;
+  static const AccessRequirement rowSelect = nursingWorkspaceReadRequirement;
+  static const AccessRequirement detail = nursingWorkspaceReadRequirement;
+  static const AccessRequirement nextActionMedication =
+      nursingMedicationAdministerRequirement;
+  static const AccessRequirement create = nursingClinicalWriteRequirement;
+  static const AccessRequirement update = nursingClinicalWriteRequirement;
+  static const AccessRequirement delete = nursingClinicalWriteRequirement;
+  static const AccessRequirement write = nursingMedicationAdministerRequirement;
+  static const AccessRequirement clinicalWrite = nursingClinicalWriteRequirement;
+  static const AccessRequirement complementaryWrite = nursingWriteRequirement;
+  static const AccessRequirement checklistWrite = nursingWriteRequirement;
+  static const AccessRequirement recordVitals = nursingWriteRequirement;
+  static const AccessRequirement addNote = nursingWriteRequirement;
+  static const AccessRequirement administerMedication =
+      nursingMedicationAdministerRequirement;
+  static const AccessRequirement medicationDueCount =
+      nursingMedicationsPanelRequirement;
+  static const AccessRequirement medicationsPanel =
+      nursingMedicationsPanelRequirement;
+  static const AccessRequirement medicationRead =
+      nursingMedicationsPanelRequirement;
+  static const AccessRequirement medicationWrite =
+      nursingMedicationAdministerRequirement;
+  static const AccessRequirement shiftContext = nursingShiftContextRequirement;
+  static const AccessRequirement printSummary = nursingWriteRequirement;
+  static const AccessRequirement panelDeepLink =
+      nursingMedicationAdministerRequirement;
+  static const AccessRequirement openIcu = AccessRequirement();
+  static const AccessRequirement navigation = AccessRequirement();
+  /// Nested cross-module matrix rows _(n/a)_; medication uses [medicationsPanel].
+  static const AccessRequirement nestedRead = nursingMedicationsPanelRequirement;
+  static const AccessRequirement nestedWrite =
+      nursingMedicationAdministerRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
