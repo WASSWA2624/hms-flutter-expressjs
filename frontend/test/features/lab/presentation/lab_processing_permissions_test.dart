@@ -212,6 +212,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const LabWorkbenchQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -535,14 +536,14 @@ void main() {
         tester,
         repository: repository,
         workbenchOverride: Result<LabWorkbenchBundle>.failure(
-          AppFailure.unexpected(message: 'workbench failed'),
+          AppFailure.network(),
         ),
       );
 
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('post-mutation sync: receive sample reloads workbench', (
+    testWidgets('post-mutation sync: receive updates selected workflow in place', (
       WidgetTester tester,
     ) async {
       await _pumpProcessingTab(tester, repository: repository);
@@ -553,14 +554,13 @@ void main() {
       await tester.tap(find.text(l10n.labNextActionVerify).first);
       await tester.pumpAndSettle();
 
-      clearInteractions(repository);
-      _stubWorkspace(repository);
-
       await tester.tap(find.text(l10n.labReceiveSampleAction));
       await tester.pumpAndSettle();
 
       verify(() => repository.receiveSample(any(), any())).called(1);
-      verify(() => repository.loadWorkbench(any())).called(greaterThan(0));
+      // Detail stays open with synchronized workflow (in-place worklist replace).
+      expect(find.byType(LabResultEntryDialog), findsOneWidget);
+      expect(find.text(l10n.labReceiveSampleAction), findsNothing);
     });
 
     testWidgets('mobile viewport: processing chrome remains', (

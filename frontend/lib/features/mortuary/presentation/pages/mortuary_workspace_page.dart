@@ -11,10 +11,11 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
 import 'package:hosspi_hms/features/mortuary/presentation/controllers/mortuary_workspace_controller.dart';
+import 'package:hosspi_hms/features/mortuary/presentation/mortuary_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -27,16 +28,6 @@ class MortuaryWorkspacePage extends ConsumerWidget {
 
   final MortuaryRouteQuery? initialQuery;
 
-  static const AccessRequirement _readRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.mortuaryRead,
-      AppPermissions.mortuaryWrite,
-      AppPermissions.mortuaryApprove,
-      AppPermissions.mortuaryRelease,
-      AppPermissions.mortuaryAudit,
-    ],
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<Result<MortuaryWorkspaceState>> workspace = ref.watch(
@@ -45,7 +36,7 @@ class MortuaryWorkspacePage extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
 
     return AppAccessGate(
-      requirement: _readRequirement,
+      requirement: mortuaryWorkspaceRouteEntryRequirement,
       deniedBuilder: (_, _) => AppStateScaffold(
         variant: AppStateViewVariant.forbidden,
         title: l10n.routeForbiddenTitle,
@@ -236,6 +227,24 @@ class _MortuaryWorkspaceContentState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final MortuaryWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<String> visiblePanels = mortuaryAllowedPanels(accessPolicy);
+    if (visiblePanels.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visiblePanels.contains(_currentPanel)) {
+      final String? fallback = mortuaryFallbackPanel(accessPolicy);
+      if (fallback != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || visiblePanels.contains(_currentPanel)) {
+            return;
+          }
+          _switchPanel(fallback);
+          _updateUrl(panel: fallback);
+        });
+      }
+    }
+
     final MortuaryWorkspaceController controller = ref.read(
       mortuaryWorkspaceControllerProvider.notifier,
     );
@@ -249,7 +258,7 @@ class _MortuaryWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final String panel in mortuaryPanels)
+                for (final String panel in visiblePanels)
                   AppTabItem(
                     id: panel,
                     icon: _panelIcon(panel),
@@ -259,6 +268,9 @@ class _MortuaryWorkspaceContentState
               ],
               selectedId: _currentPanel,
               onTabTapped: (String tabId) {
+                if (!visiblePanels.contains(tabId)) {
+                  return;
+                }
                 _switchPanel(tabId);
                 _updateUrl(panel: tabId);
               },
@@ -296,6 +308,7 @@ class _MortuaryWorkspaceContentState
       return;
     }
 
+    final String detailPanel = _currentPanel;
     await showAppDialog<void>(
       context: context,
       builder: (_) => Consumer(
@@ -313,6 +326,7 @@ class _MortuaryWorkspaceContentState
             maxWidth: 980,
             content: _MortuaryDetailPanel(
               state: dialogState,
+              panel: detailPanel,
               onPrint: selected == null
                   ? null
                   : () {
@@ -839,15 +853,26 @@ _mortuarySortComparator(String panel, _MortuaryTableColumnId column) {
   };
 }
 
-class _MortuaryDetailPanel extends StatelessWidget {
-  const _MortuaryDetailPanel({required this.state, required this.onPrint});
+class _MortuaryDetailPanel extends ConsumerWidget {
+  const _MortuaryDetailPanel({
+    required this.state,
+    required this.panel,
+    required this.onPrint,
+  });
 
   final MortuaryWorkspaceState state;
+  final String panel;
   final VoidCallback? onPrint;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final AccessRequirement printRequirement = mortuaryPanelPrintRequirement(
+      panel,
+    );
+    final AccessRequirement billingRequirement =
+        mortuaryPanelBillingRequirement(panel);
     final MortuaryWorkspaceItem? item = state.selectedItem;
     if (item == null) {
       return AppWorkspaceDetailPanel(
@@ -881,7 +906,7 @@ class _MortuaryDetailPanel extends StatelessWidget {
             ? const <Widget>[]
             : <Widget>[
                 AppPermissionActionButton(
-                  requirement: _exportRequirement,
+                  requirement: printRequirement,
                   label: l10n.mortuaryPrintDocumentsAction,
                   icon: Icons.print_outlined,
                   onPressed: onPrint,
@@ -922,7 +947,7 @@ class _MortuaryDetailPanel extends StatelessWidget {
       _ViewingSection(item: item),
       _PostMortemSection(item: item),
       _ReleaseSection(item: item),
-      _BillingSection(item: item),
+      if (billingRequirement.isAllowed(policy)) _BillingSection(item: item),
       _DocumentsSection(item: item),
     ];
 
@@ -1946,11 +1971,3 @@ List<Widget> _withMortuaryDetailSectionSpacing(
 ) {
   return appWorkspaceDetailSectionSpacing(context, sections);
 }
-
-const AccessRequirement _exportRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.mortuaryExport,
-    AppPermissions.reportsRead,
-  ],
-  requiresFacilityContext: true,
-);

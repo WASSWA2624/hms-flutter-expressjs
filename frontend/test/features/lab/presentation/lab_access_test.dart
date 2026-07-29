@@ -250,6 +250,27 @@ void main() {
         identical(LabAllAtomPermissions.previewReport, labReportPreviewRequirement),
         isTrue,
       );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.worklist),
+          LabAllAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.worklist),
+          LabAllAtomPermissions.create,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.worklist),
+          LabAllAtomPermissions.configure,
+        ),
+        isTrue,
+      );
     });
 
     test('Awaiting results atom map reuses feature *Requirement helpers', () {
@@ -489,6 +510,156 @@ void main() {
       );
     });
 
+    test('Pending verification atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.tab,
+          labWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.create,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.configure,
+          labConfigurationsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.verify,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.requestFromClinical,
+          clinicalLabOrderWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.criticalNotify,
+          labCriticalNotifyRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabPendingVerificationAtomPermissions.previewReport,
+          labReportPreviewRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.verification),
+          LabPendingVerificationAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.verification),
+          LabPendingVerificationAtomPermissions.create,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.verification),
+          LabPendingVerificationAtomPermissions.configure,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Verified atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(LabVerifiedAtomPermissions.tab, labWorkspaceReadRequirement),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.create,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.configure,
+          labConfigurationsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.previewReport,
+          labReportPreviewRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.editVerifiedResult,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.requestFromClinical,
+          clinicalLabOrderWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.completed),
+          LabVerifiedAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.completed),
+          LabVerifiedAtomPermissions.create,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripConfigureRequirement(LabDeskSection.completed),
+          LabVerifiedAtomPermissions.configure,
+        ),
+        isTrue,
+      );
+    });
+
     test('All tab present for lab:read; clinical-only keeps worklist sections', () {
       final AppAccessPolicy labReader = _policyFor(
         permissions: <AppPermission>{AppPermissions.labRead},
@@ -511,11 +682,15 @@ void main() {
       expect(canViewLabAllTab(labReader), isTrue);
       expect(canViewLabAwaitingResultsTab(labReader), isTrue);
       expect(canViewLabProcessingTab(labReader), isTrue);
+      expect(canViewLabPendingVerificationTab(labReader), isTrue);
       expect(canViewLabCriticalTab(labReader), isTrue);
+      expect(canViewLabVerifiedTab(labReader), isTrue);
       expect(canViewLabAllTab(clinicalReader), isFalse);
       expect(canViewLabAwaitingResultsTab(clinicalReader), isFalse);
       expect(canViewLabProcessingTab(clinicalReader), isFalse);
+      expect(canViewLabPendingVerificationTab(clinicalReader), isFalse);
       expect(canViewLabCriticalTab(clinicalReader), isFalse);
+      expect(canViewLabVerifiedTab(clinicalReader), isFalse);
       expect(
         labAllowedSections(labReader),
         contains(LabDeskSection.worklist),
@@ -530,7 +705,15 @@ void main() {
       );
       expect(
         labAllowedSections(labReader),
+        contains(LabDeskSection.verification),
+      );
+      expect(
+        labAllowedSections(labReader),
         contains(LabDeskSection.critical),
+      );
+      expect(
+        labAllowedSections(labReader),
+        contains(LabDeskSection.completed),
       );
       expect(
         labAllowedSections(clinicalReader),
@@ -546,7 +729,15 @@ void main() {
       );
       expect(
         labAllowedSections(clinicalReader),
+        contains(LabDeskSection.verification),
+      );
+      expect(
+        labAllowedSections(clinicalReader),
         contains(LabDeskSection.critical),
+      );
+      expect(
+        labAllowedSections(clinicalReader),
+        contains(LabDeskSection.completed),
       );
       expect(
         labAllowedSections(clinicalReader),

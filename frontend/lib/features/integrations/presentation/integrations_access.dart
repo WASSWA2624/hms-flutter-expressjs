@@ -250,22 +250,24 @@ abstract final class IntegrationsIntegrationsAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | API keys tab | navigate | [tab] read ∩ `integration:read` |
-/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] / [search] / [filters] / [pagination] |
 /// | Empty / loading / error / retry | read chrome | [empty] / [loading] / [retry] |
 /// | Row select → detail | read | [rowSelect] / [detail] |
-/// | Next action Review key (warning) | update | [managePermissions] / [update] manage ∪ |
-/// | Next action Rotate or monitor (healthy) | read / navigate | [viewNextAction] / [nextAction] |
-/// | Create API key (+ secret reveal) | create | [create] manage ∪ (secret write-only) |
+/// | Next action Review key (warning) | update | [managePermissions] / [writeNextAction] / [update] manage ∪ |
+/// | Next action Rotate or monitor (healthy / write-denied fallback) | read / navigate | [viewNextAction] / [nextAction] |
+/// | Create API key (+ secret reveal) | create | [create] / [secretReveal] manage ∪ (secret write-only) |
 /// | Detail Manage permissions | update | [managePermissions] |
 /// | Detail Enable / Disable | update | [enableDisable] / [update] |
 /// | Detail Revoke key | delete | [revoke] / [delete] ∩ `integration:delete` |
 /// | Detail remove permission grant | update | [removePermission] / [update] |
 /// | Detail masked secret / rotation gap / grants list | read | [detail] |
+/// | Detail Close | progressive disclosure | always (dialog chrome) |
 /// | Nested cross-module read / write | — | _(n/a)_ |
 /// | Route entry (deep link) | navigate | [routeEntry] read ∪ write ∪ admin |
 ///
 /// Matrix create/update ∩ write maps to source manage ∪ (write \| admin).
-/// Nested cross-module matrix rows are _(n/a)_.
+/// Nested cross-module matrix rows are _(n/a)_. Unauthorized detail / deep-link
+/// entry no-ops (no routine "no access" banner).
 abstract final class IntegrationsApiKeysAtomPermissions {
   static const AccessRequirement tab = integrationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -284,6 +286,8 @@ abstract final class IntegrationsApiKeysAtomPermissions {
       integrationsWorkspaceReadRequirement;
   static const AccessRequirement viewNextAction =
       integrationsWorkspaceReadRequirement;
+  static const AccessRequirement writeNextAction =
+      integrationsWorkspaceManageRequirement;
   static const AccessRequirement create = integrationsWorkspaceManageRequirement;
   static const AccessRequirement update = integrationsWorkspaceManageRequirement;
   static const AccessRequirement delete = integrationsWorkspaceDeleteRequirement;

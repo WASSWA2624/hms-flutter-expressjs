@@ -160,12 +160,32 @@ bool canAuditMortuary(AppAccessPolicy policy) {
   return mortuaryAuditRequirement.isAllowed(policy);
 }
 
-/// Per-panel tab strip gate. Custody uses [MortuaryCustodyAtomPermissions.tab];
-/// other panels share ∩ `mortuary:read` until their tab scans land.
+/// Per-panel tab strip gate. Intake / Custody use their atom maps; other
+/// panels share ∩ `mortuary:read` until their tab scans land.
 AccessRequirement mortuaryPanelTabRequirement(String panel) {
   return switch (panel) {
+    mortuaryPanelIntake => MortuaryIntakeAtomPermissions.tab,
     mortuaryPanelCustody => MortuaryCustodyAtomPermissions.tab,
     _ => mortuaryWorkspaceReadRequirement,
+  };
+}
+
+/// Detail Print documents gate for the active panel (source ∪ export|reports).
+AccessRequirement mortuaryPanelPrintRequirement(String panel) {
+  return switch (panel) {
+    mortuaryPanelIntake => MortuaryIntakeAtomPermissions.printDocuments,
+    mortuaryPanelCustody => MortuaryCustodyAtomPermissions.printDocuments,
+    _ => mortuaryExportRequirement,
+  };
+}
+
+/// Detail Billing events panel gate for the active panel
+/// (∩ `mortuary:billing_event` + `billing:read`).
+AccessRequirement mortuaryPanelBillingRequirement(String panel) {
+  return switch (panel) {
+    mortuaryPanelIntake => MortuaryIntakeAtomPermissions.billingPanel,
+    mortuaryPanelCustody => MortuaryCustodyAtomPermissions.billingPanel,
+    _ => mortuaryBillingPanelRequirement,
   };
 }
 
@@ -201,6 +221,66 @@ String? mortuaryFallbackPanel(AppAccessPolicy policy) {
     return mortuaryPanelOverview;
   }
   return allowed.first;
+}
+
+/// Atom → requirement map for Mortuary Intake (`/mortuary?panel=intake`).
+///
+/// Inventory: `screens/mortuary.md` → Intake tab (cases worklist; receive-case
+/// create ∩ `mortuary:write` — no-op chrome removed). Read-only detail; Print
+/// documents when export ∪. Nested cross-module write matrix is n/a for this
+/// tab. Billing events use ∩ `mortuary:billing_event` + `billing:read`.
+/// Route entry ∪ is [routeEntry].
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Intake strip tab / count | navigate | read ∩ `mortuary:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Row select → detail | read / navigate | read ∩ |
+/// | Next action (guidance text only) | read | read ∩ |
+/// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
+/// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Print documents | export | export ∪ ([printDocuments]) |
+/// | Receive case | create | write ∩ ([create]) — not mounted |
+/// | Assign storage | update | manage_storage ∩ — not mounted |
+/// | Post-mortem request / approve / release | create / approve / update | fine-grained ∩ — not mounted |
+/// | Audit panel | read | audit ∩ — not mounted |
+/// | Route entry (deep link) | navigate | ∪ read\|write\|approve\|release\|audit ([routeEntry]) |
+abstract final class MortuaryIntakeAtomPermissions {
+  static const AccessRequirement tab = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement search = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement filters = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement settings = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement pagination = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement empty = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement loading = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement retry = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement success = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement validation = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement detail = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement create = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement update = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement delete = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement write = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement receiveCase = mortuaryWorkspaceWriteRequirement;
+  static const AccessRequirement manageStorage = mortuaryManageStorageRequirement;
+  static const AccessRequirement postMortemRequest =
+      mortuaryPostMortemRequestRequirement;
+  static const AccessRequirement approve = mortuaryApproveRequirement;
+  static const AccessRequirement release = mortuaryReleaseRequirement;
+  static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+  static const AccessRequirement printDocuments = mortuaryExportRequirement;
+  static const AccessRequirement export = mortuaryExportRequirement;
+  static const AccessRequirement audit = mortuaryAuditRequirement;
+  static const AccessRequirement nestedRead = mortuaryWorkspaceReadRequirement;
+  static const AccessRequirement entry = mortuaryWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      mortuaryWorkspaceRouteEntryRequirement;
+  static const AccessRequirement read = mortuaryWorkspaceReadRequirement;
 }
 
 /// Atom → requirement map for Mortuary Custody (`/mortuary?panel=custody`).

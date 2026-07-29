@@ -1347,7 +1347,7 @@ class _IntegrationNextActionButton extends ConsumerWidget {
       IntegrationDeskSection.webhooks =>
         IntegrationsWebhooksAtomPermissions.update.isAllowed(policy),
       IntegrationDeskSection.apiKeys =>
-        IntegrationsApiKeysAtomPermissions.update.isAllowed(policy),
+        IntegrationsApiKeysAtomPermissions.writeNextAction.isAllowed(policy),
       IntegrationDeskSection.integrations =>
         IntegrationsIntegrationsAtomPermissions.writeNextAction.isAllowed(
           policy,
@@ -1369,7 +1369,9 @@ class _IntegrationNextActionButton extends ConsumerWidget {
               ? l10n.integrationsNextActionReview
               : null,
         IntegrationDeskSection.apiKeys =>
-          l10n.integrationsNextActionRotateOrMonitor,
+          IntegrationsApiKeysAtomPermissions.viewNextAction.isAllowed(policy)
+              ? l10n.integrationsNextActionRotateOrMonitor
+              : null,
         _ => null,
       };
       if (viewLabel == null) {
@@ -2762,6 +2764,13 @@ Future<void> _openPermissionDialog(
   IntegrationWorkspaceState state, {
   ApiKeyRecord? apiKey,
 }) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsApiKeysAtomPermissions.managePermissions.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2782,6 +2791,13 @@ Future<void> _showCreatedSecretDialog(
   BuildContext context,
   ApiKeyRecord record,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsApiKeysAtomPermissions.secretReveal.isAllowed(policy)) {
+    return;
+  }
+
   final AppLocalizations l10n = context.l10n;
   final String secret = record.oneTimeSecret ?? l10n.integrationsSecretMissing;
 
@@ -2924,6 +2940,12 @@ Future<void> _toggleApiKey(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsApiKeysAtomPermissions.enableDisable.isAllowed(policy)) {
+    return;
+  }
   final ApiKeyRecord? key = item.apiKey;
   if (key == null) {
     return;
@@ -3004,6 +3026,12 @@ Future<void> _confirmRevokeApiKey(
   IntegrationsWorkspaceController controller,
   IntegrationWorkItem item,
 ) async {
+  final AppAccessPolicy policy = ProviderScope.containerOf(
+    context,
+  ).read(appAccessPolicyProvider);
+  if (!IntegrationsApiKeysAtomPermissions.revoke.isAllowed(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   final ApiKeyRecord? key = item.apiKey;
   if (key == null) {

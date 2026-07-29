@@ -132,6 +132,17 @@ Tab-strip **Refresh** was removed.
 - **`?orderId=` / `?encounterId=`** — opens result entry for the matching row (no select-only shell).
 - **`?section=` / `?search=`** — selects tab / pre-fills search.
 
+### All tab (`?section=all|worklist`)
+
+Default full worklist (`LabQueueScope.all`). Strip **Create Lab Order** /
+**Lab Configurations** use `LabAllAtomPermissions.create` / `.configure`
+(∩ `lab:write` + `lab-workflows`). Read chrome / row select / next-action use
+∩ `lab:read`. Nested result-entry writes reuse `canWriteLab` /
+`LabAllAtomPermissions` write atoms; preview is ∪ `lab:read`|`lab:write`.
+Readers with only `clinical:read` keep the All strip via route-entry ∪ but
+must not see create/config. Tests:
+`frontend/test/features/lab/presentation/lab_all_permissions_test.dart`.
+
 ### Follow-ups tab (`FollowUpWorklistPanel`)
 
 Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Hosted via
@@ -183,6 +194,7 @@ configurations / critical-notify UI is **not** opened from this tab. Route entry
 ### Manual checks (Req 7)
 
 - [ ] Unauthorized user: Create, Configurations, and dialog write actions absent; view toggle remains.
+- [ ] All (`?section=all`): lab:read alone omits create/config/detail writes; full lab:write ∩ mounts them; clinical-only route entry keeps All without create.
 - [ ] Every worklist tab: one **Create Lab Order** primary and one **Lab Configurations** secondary; no Refresh.
 - [ ] Ordered row **Next action** opens result entry; Collect runs without a confirm shell.
 - [ ] Deep link `/lab?orderId=…` opens result entry without hunting the row.

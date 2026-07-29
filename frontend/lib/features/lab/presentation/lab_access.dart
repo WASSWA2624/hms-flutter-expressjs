@@ -117,7 +117,7 @@ AccessRequirement labStripCreateRequirement(LabDeskSection section) {
     LabDeskSection.verification => LabPendingVerificationAtomPermissions.create,
     LabDeskSection.critical => LabCriticalAtomPermissions.create,
     LabDeskSection.completed => LabVerifiedAtomPermissions.create,
-    LabDeskSection.followUps => labWorkspaceWriteRequirement,
+    LabDeskSection.followUps => LabFollowUpsAtomPermissions.create,
   };
 }
 

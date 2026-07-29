@@ -277,10 +277,10 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_processing');
 
-    router.go('/lab?section=completed');
+    router.go('/lab?section=verified');
     await tester.pumpAndSettle();
 
-    expect(router.state.uri.queryParameters['section'], 'completed');
+    expect(router.state.uri.queryParameters['section'], 'verified');
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
     expect(find.byTooltip('Lab Configurations'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);

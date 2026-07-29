@@ -9,8 +9,8 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 - Feature code: `frontend/lib/features/integrations/`
 - Module entitlement: `integrations-core`
 - Billing system of record: `frontend/lib/features/billing/`, `backend/src/modules/billing/`, `backend/src/lib/billing/` (clinical-request billing, price-resolver, coverage-split, financials, realtime).
-- Supported payment methods (normalize via shared validators): `CASH`, `CREDIT_CARD`, `DEBIT_CARD`, `PREPAID_CARD`, `GIFT_CARD`, `VOUCHER`, `BANK_CHECK`, `MOBILE_MONEY`, `BANK_TRANSFER`, `INSURANCE`, `OTHER` (UI may expose the facility-enabled subset from `billingPaymentMethods`).
-- Section chrome: `AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel` (and wrappers that build them). See flat-section rules in shared rules.
+- Payment methods: facility-enabled subset of shared validators (`billingPaymentMethods`); full set in shared rules.
+- Section chrome: `AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel` (and wrappers). Flat-section rules in shared rules.
 - Financial focus for this tab: Interop payloads that create orders or payments must invoke the same Billing engine/idempotency paths as UI; webhooks must not acknowledge settlement without a Billing ledger entry. Tab role: Create integration primary.
 - Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
 - Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
@@ -24,8 +24,8 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 5. Close leakage classes on this tab: missing invoices, unbilled fulfilled services, double charges, unpaid required care progressing when policy forbids, discharge/dispense without clearance, and claim settlements that never update patient responsibility.
 6. UX: keep payment/billing affordances clean—minimal copy, only task-needed amounts/status/method, progressive disclosure for ledger detail, consistent design-system payment dialogs; remove redundant pay/issue entry points that duplicate Billing.
 7. Preserve authorized UI states: permission-filtered chrome, loading, empty, error/retry, validation, success, and visible feedback. Honor RBAC ∩ subscription ∩ ABAC; unauthorized financial controls must not render.
-8. Flat sections: inventory every section component on this tab and dialogs opened from it; un-nest so no section contains another section—siblings only under non-section parents (`Column`/`Row`/`Wrap`/`Flex`/workspace body). Identify content that needs sectioning and wrap each group in its own section without nesting; prefer promoting nested sections to siblings.
-9. Add/update tests: frontend widget/unit tests under `frontend/test/features/integrations/` and backend tests under `backend/src/tests/` proving (a) billable action posts a Billing record, (b) bypass paths are gone, (c) payment status matches across module UI and Billing, (d) idempotent replay does not duplicate, (e) unauthorized users cannot collect/adjust, (f) no section-in-section nesting remains on authorized UI for this tab. Cover integration, reuse of billing helpers, authorization, sync, UI states, one mobile + one desktop viewport, light + dark.
+8. Flat sections: inventory every section on this tab and dialogs from it; un-nest so no section contains another—siblings only under non-section parents (`Column`/`Row`/`Wrap`/`Flex`/workspace body). Identify content that needs sectioning; wrap each group without nesting; prefer promoting nested sections to siblings.
+9. Add/update tests under `frontend/test/features/integrations/` and `backend/src/tests/` proving (a) billable action posts a Billing record, (b) no bypass, (c) payment status parity with Billing, (d) idempotent replay, (e) unauthorized users cannot collect/adjust, (f) no section-in-section nesting on authorized UI. Cover integration, reuse, authorization, sync, UI states, one mobile + one desktop viewport, light + dark.
 
 ## Constraints
 

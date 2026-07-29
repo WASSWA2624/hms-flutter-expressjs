@@ -313,8 +313,16 @@ abstract final class RouteAccessCatalog {
     requirement: biomedicalEntry,
   );
 
+  /// Route entry ∪ matching [AppRoutes.mortuary] / `screens/mortuary.md`:
+  /// `mortuary:read` | `write` | `approve` | `release` | `audit`.
   static const AccessRequirement mortuaryEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.mortuaryRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.mortuaryRead,
+      AppPermissions.mortuaryWrite,
+      AppPermissions.mortuaryApprove,
+      AppPermissions.mortuaryRelease,
+      AppPermissions.mortuaryAudit,
+    ],
     activeModules: <String>['mortuary'],
     requiresFacilityContext: true,
   );
