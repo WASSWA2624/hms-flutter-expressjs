@@ -288,10 +288,19 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final List<PhysiotherapyQueueScope> visibleScopes =
         physiotherapyAllowedScopes(policy);
-    if (visibleScopes.isEmpty && !showFollowUpWorklist) {
+    final bool canViewFollowUps = canViewPhysiotherapyFollowUps(policy);
+    if (visibleScopes.isEmpty && !canViewFollowUps) {
       return const SizedBox.shrink();
     }
-    if (!showFollowUpWorklist &&
+    if (showFollowUpWorklist && !canViewFollowUps) {
+      if (visibleScopes.isNotEmpty) {
+        final PhysiotherapyQueueScope fallback =
+            physiotherapyFallbackScope(policy) ?? visibleScopes.first;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onTabChanged(fallback);
+        });
+      }
+    } else if (!showFollowUpWorklist &&
         visibleScopes.isNotEmpty &&
         !visibleScopes.contains(section)) {
       final PhysiotherapyQueueScope fallback =
@@ -316,7 +325,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                   count: _sectionCount(state, scope),
                   countTone: _sectionCountTone(scope),
                 ),
-              if (physiotherapyWorkspaceReadRequirement.isAllowed(policy))
+              if (canViewFollowUps)
                 AppTabItem(
                   id: _physiotherapyFollowUpsWorklistTabId,
                   icon: Icons.phone_callback_outlined,
@@ -326,7 +335,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                   ),
                 ),
             ],
-            selectedId: showFollowUpWorklist
+            selectedId: showFollowUpWorklist && canViewFollowUps
                 ? _physiotherapyFollowUpsWorklistTabId
                 : section.name,
             onTabTapped: (String tabId) {
@@ -343,12 +352,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             },
           ),
           SizedBox(height: theme.spacing.sm),
-          if (showFollowUpWorklist)
+          if (showFollowUpWorklist && canViewFollowUps)
             const FollowUpWorklistPanel(
               scope: FollowUpWorklistScope(),
               storageKeyPrefix: 'physiotherapy_follow_ups',
-              readRequirement: physiotherapyWorkspaceReadRequirement,
-              writeRequirement: physiotherapyWorkspaceWriteRequirement,
+              readRequirement: PhysiotherapyFollowUpsAtomPermissions.tab,
+              writeRequirement: PhysiotherapyFollowUpsAtomPermissions.write,
             )
           else
             _buildWorklist(context, ref, controller, policy),
@@ -670,7 +679,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             AppListTableMobileMeta(
               label: _workspaceStatusForStatus(l10n, item.status).label,
             ),
-            if (canViewPhysiotherapyBilling(policy) &&
+            if (_billingColumnAllowed(policy, section) &&
                 item.billingStatus.trim().isNotEmpty)
               AppListTableMobileMeta(
                 label: _billingLabel(l10n, item.billingStatus),
@@ -808,6 +817,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     final TherapyNextActionKind omit =
         omitNextActionKind ?? therapyResolveNextActionKind(item);
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    // Detail may open from any tab; billing chip uses shared billing ∩ helper
+    // (identical to Completed/ActivePlans [billingChip]).
     final bool showBilling = canViewPhysiotherapyBilling(policy);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -985,7 +996,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         cellBuilder: (BuildContext context, TherapyWorkItem item) =>
             Text(_attendanceLabel(l10n, item.attendanceStatus)),
       ),
-      if (canViewPhysiotherapyBilling(policy))
+      if (_billingColumnAllowed(policy, section))
         AppListTableColumn<TherapyWorkItem>(
           id: 'billing',
           label: l10n.physiotherapyBillingColumnLabel,
@@ -1282,7 +1293,8 @@ class _ActionsPanel extends ConsumerWidget {
         ),
         if (omit != TherapyNextActionKind.printInstructions)
           AppPermissionActionItem(
-            requirement: physiotherapyWorkspaceReadRequirement,
+            requirement:
+                PhysiotherapyCompletedAtomPermissions.printInstructions,
             label: l10n.physiotherapyPrintInstructionsAction,
             icon: Icons.print_outlined,
             onPressed: () {
@@ -2223,6 +2235,21 @@ String _formatDateTime(
 String _value(String? value, AppLocalizations l10n) {
   final String normalized = value?.trim() ?? '';
   return normalized.isEmpty ? l10n.physiotherapyMissingValueLabel : normalized;
+}
+
+/// Billing column / mobile meta — Completed (and Active plans) atom maps reuse
+/// [physiotherapyBillingReadRequirement] (∩ `billing:read` + `billing-payments`).
+bool _billingColumnAllowed(
+  AppAccessPolicy policy,
+  PhysiotherapyQueueScope section,
+) {
+  return switch (section) {
+    PhysiotherapyQueueScope.completed =>
+      PhysiotherapyCompletedAtomPermissions.billingColumn.isAllowed(policy),
+    PhysiotherapyQueueScope.activePlans =>
+      PhysiotherapyActivePlansAtomPermissions.billingColumn.isAllowed(policy),
+    _ => canViewPhysiotherapyBilling(policy),
+  };
 }
 
 DateTime _combineDateTime(DateTime date, AppTimeValue time) {

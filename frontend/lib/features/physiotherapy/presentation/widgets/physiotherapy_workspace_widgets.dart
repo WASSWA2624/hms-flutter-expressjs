@@ -102,8 +102,9 @@ AccessRequirement therapyNextActionRequirement(String status) {
 AccessRequirement therapyNextActionRequirementForKind(
   TherapyNextActionKind kind,
 ) {
+  // COMPLETED row next-action is Print instructions (Completed atom map).
   return kind == TherapyNextActionKind.printInstructions
-      ? physiotherapyNextActionReadRequirement
+      ? PhysiotherapyCompletedAtomPermissions.printInstructions
       : physiotherapyNextActionWriteRequirement;
 }
 

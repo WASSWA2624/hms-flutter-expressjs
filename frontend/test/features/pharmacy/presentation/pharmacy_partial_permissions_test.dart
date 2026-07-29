@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
@@ -121,26 +122,6 @@ const PharmacyInventoryWorkbench _inventoryWorkbench =
     );
 
 class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
-
-class _FakeSessionController extends SessionController {
-  _FakeSessionController(this._policy);
-
-  final AppAccessPolicy _policy;
-
-  @override
-  SessionState build() {
-    return SessionState(
-      status: SessionStatus.authenticated,
-      session: AuthSession(
-        tokens: SessionTokens(accessToken: 'token'),
-        user: _policy.session.user,
-        permissions: _policy.session.permissions,
-        moduleEntitlements: _policy.session.moduleEntitlements,
-        isAuthorizationHydrated: true,
-      ),
-    );
-  }
-}
 
 void _stubPharmacyRepository(
   _MockPharmacyRepository repository, {
@@ -277,15 +258,16 @@ Finder _actionLabel(String label) => find.descendant(
 
 Future<void> _pumpPartialTab(
   WidgetTester tester, {
-  required PharmacyRepository repository,
+  required _MockPharmacyRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1280, 800),
   ThemeMode themeMode = ThemeMode.light,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
+
   tester.view.physicalSize = physicalSize;
-  tester.view.devicePixelRatio = 1.0;
+  tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
@@ -307,32 +289,26 @@ Future<void> _pumpPartialTab(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         pharmacyRepositoryProvider.overrideWithValue(repository),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        appAccessPolicyProvider.overrideWithValue(accessPolicy),
-        sessionControllerProvider.overrideWith(
-          (Ref ref) => _FakeSessionController(accessPolicy),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
         ),
+        appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
         theme: ThemeData.light(useMaterial3: true),
         darkTheme: ThemeData.dark(useMaterial3: true),
         themeMode: themeMode,
+        routerConfig: router,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: router,
-        builder: (BuildContext context, Widget? child) {
-          return AppBreakpointScope(
-            breakpoint: physicalSize.width < 600
-                ? AppBreakpoint.mobile
-                : AppBreakpoint.desktop,
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
       ),
     ),
   );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
 }
 

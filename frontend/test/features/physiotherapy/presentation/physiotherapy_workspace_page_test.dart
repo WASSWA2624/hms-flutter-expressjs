@@ -82,7 +82,7 @@ AppAccessPolicy _therapyWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['PHYSIOTHERAPIST']),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
       permissions: <AppPermission>{
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
@@ -95,7 +95,12 @@ AppAccessPolicy _therapyWritePolicy() {
           code: 'encounters-vitals',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'patient-registry',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -116,7 +121,16 @@ AppAccessPolicy _therapyReadOnlyPolicy() {
           code: 'encounters-vitals',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'patient-registry',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'billing-payments',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }

@@ -875,7 +875,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Return medicines'), findsOneWidget);
+        expect(find.text('RETURN MEDICINES'), findsOneWidget);
 
         await tester.tap(
           find.descendant(
@@ -885,7 +885,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Return medicines'), findsOneWidget);
+        expect(find.text('RETURN MEDICINES'), findsOneWidget);
         verifyNever(
           () => repository.returnDispense(
             orderId: any(named: 'orderId'),
@@ -922,7 +922,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Return medicines'), findsOneWidget);
+        expect(find.text('RETURN MEDICINES'), findsOneWidget);
 
         final Finder reasonField = find.descendant(
           of: find.byType(AppDialog),
@@ -936,7 +936,7 @@ void main() {
         await tester.tap(find.text('Edit').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Edit return line'), findsOneWidget);
+        expect(find.text('EDIT RETURN LINE'), findsOneWidget);
         final Finder qtyField = find.descendant(
           of: find.byType(AppDialog).last,
           matching: find.byType(TextField),
