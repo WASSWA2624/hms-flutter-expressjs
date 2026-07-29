@@ -89,6 +89,10 @@ Future<void> showCommunicationsTemplateDetailDialog(
   CommunicationsWorkspaceState fallbackState,
   CommunicationTemplate item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!CommunicationsTemplatesAtomPermissions.detail.isAllowed(policy)) {
+    return;
+  }
   final CommunicationsWorkspaceController controller = ref.read(
     communicationsWorkspaceControllerProvider.notifier,
   );

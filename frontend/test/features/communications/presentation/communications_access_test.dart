@@ -247,6 +247,80 @@ void main() {
       );
     });
 
+    test('Templates atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.tab,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.listChrome,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.detail,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.create,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.update,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.delete,
+          communicationsWorkspaceDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.routeEntry,
+          communicationsWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      // Nested cross-module matrix rows are _(n/a)_ — nested gates stay in-module.
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.nestedRead,
+          communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.nestedWrite,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          communicationsPanelTabRequirement(CommunicationsPanel.templates),
+          CommunicationsTemplatesAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+    });
+
     test('allowed panels collapse when read is missing', () {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.communicationsWrite},

@@ -318,7 +318,9 @@ final class CommunicationsWorkspaceController
     _emit(
       current.copyWith(
         selectedTemplate: template,
-        query: current.query.copyWith(templateId: template.id),
+        // Do not rewrite query.templateId here — that would re-trigger the
+        // deep-link dialog scheduler after row select (same pattern as
+        // [selectDelivery]). Deep links keep templateId from the URL/query.
         clearSelectedConversation: true,
         clearSelectedNotification: true,
         clearSelectedDelivery: true,

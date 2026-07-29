@@ -73,7 +73,8 @@ AccessRequirement communicationsPanelTabRequirement(
       CommunicationsNotificationsAtomPermissions.tab,
     CommunicationsPanel.deliveries =>
       CommunicationsDeliveriesAtomPermissions.tab,
-    CommunicationsPanel.templates => communicationsWorkspaceReadRequirement,
+    CommunicationsPanel.templates =>
+      CommunicationsTemplatesAtomPermissions.tab,
   };
 }
 
@@ -282,4 +283,56 @@ abstract final class CommunicationsDeliveriesAtomPermissions {
   static const AccessRequirement entry = communicationsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry =
       communicationsWorkspaceEntryRequirement;
+}
+
+/// Templates tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Templates tab | navigate | read ∩ `communications:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | [listChrome] |
+/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
+/// | Row select → template detail (preview) | read | [detail] |
+/// | Detail metadata + preview panel | read | [detail] |
+/// | Tab-strip New message / New group | create | _(Messages only)_ [create] |
+/// | Create / update template (when exposed) | create / update | write ∩ |
+/// | Delete template (when exposed) | delete | delete ∩ |
+/// | Nested cross-module read / write | — | _(n/a)_ |
+/// | Route entry (deep link) | navigate | [routeEntry] read ∪ write |
+///
+/// Source inventory (`screens/communications.md`) documents Templates as
+/// read-focused: no next-action column; detail is preview-only. Matrix create /
+/// update / delete apply when CRUD controls are exposed — they must not mount
+/// for unauthorized users. Nested cross-module matrix rows are _(n/a)_.
+abstract final class CommunicationsTemplatesAtomPermissions {
+  static const AccessRequirement tab = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement search =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement filters =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement pagination =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement empty = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement loading =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement retry = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement detail = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement preview = communicationsWorkspaceReadRequirement;
+  static const AccessRequirement create = communicationsWorkspaceWriteRequirement;
+  static const AccessRequirement update = communicationsWorkspaceWriteRequirement;
+  static const AccessRequirement delete =
+      communicationsWorkspaceDeleteRequirement;
+  static const AccessRequirement write = communicationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      communicationsWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead =
+      communicationsWorkspaceReadRequirement;
+  static const AccessRequirement entry = communicationsWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry =
+      communicationsWorkspaceEntryRequirement;
+  static const AccessRequirement read = communicationsReadRequirement;
 }

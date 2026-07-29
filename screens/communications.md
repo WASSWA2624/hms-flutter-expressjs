@@ -4,10 +4,10 @@ Primary surface: `CommunicationsWorkspacePage` (`frontend/lib/features/communica
 
 Access helpers: `frontend/lib/features/communications/presentation/communications_access.dart`.
 - Read (∩): `communicationsWorkspaceReadRequirement` (`communications:read` + `notifications-communications`).
-- Write (∩): `communicationsWorkspaceWriteRequirement` (`communications:write` + module) — New message/group, compose, thread menu, mark read/unread, conversation archive, manage members.
+- Write (∩): `communicationsWorkspaceWriteRequirement` (`communications:write` + module) — New message/group, compose, thread menu, mark read/unread, conversation archive, manage members; template create/update when exposed.
 - Delete (∩): `communicationsWorkspaceDeleteRequirement` (`communications:delete` + module) — notification Archive (backend bulk archive); hard delete thread/template when exposed.
 - Route entry (∪): `communicationsWorkspaceEntryRequirement` (`communications:read` | `communications:write`).
-- Tab strip filters via `communicationsAllowedPanels` / per-tab `*AtomPermissions.tab`. Unauthorized write/delete controls do not render (no disabled stubs / routine “no access” banners).
+- Tab strip filters via `communicationsAllowedPanels` / per-tab `*AtomPermissions.tab` (`CommunicationsMessagesAtomPermissions`, `CommunicationsNotificationsAtomPermissions`, `CommunicationsDeliveriesAtomPermissions`, `CommunicationsTemplatesAtomPermissions`). Unauthorized write/delete controls do not render (no disabled stubs / routine “no access” banners).
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -93,7 +93,8 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 
 #### Template detail (from row select / deep link)
 
-- Shows metadata + preview panel. Read-only.
+- Shows metadata + preview panel. Read-only preview (`CommunicationsTemplatesAtomPermissions.detail`).
+- Create / Edit / Delete footer actions are not in the inventory UI; when exposed they use write ∩ / delete ∩ and must not mount unauthorized.
 
 ### Empty / loading / error / validation
 
@@ -106,13 +107,16 @@ Notifications, Deliveries, and Templates have no tab-strip toolbar actions. Tab-
 ## Verification (Req 7)
 
 - Widget/unit tests in `frontend/test/features/communications/presentation/`:
-  - `communications_access_test.dart` — requirement ∩/∪, module strip, plan delete cap, Messages/Notifications atom map reuse.
+  - `communications_access_test.dart` — requirement ∩/∪, module strip, plan delete cap, Messages/Notifications/Deliveries/Templates atom map reuse.
   - `communications_messages_permissions_test.dart` — unauthorized absence / authorized presence for Messages chrome, compose, thread menu; route-entry ∪; subscription strip; mobile/desktop; light/dark; post-send sync.
   - `communications_notifications_permissions_test.dart` — Notifications ∩ denial / presence, Archive delete gate, Mark read write gate, route-entry ∪, subscription/plan strip, sync, viewports, light/dark.
+  - `communications_deliveries_permissions_test.dart` — Deliveries ∩ denial / presence, read-only logs, route-entry ∪, subscription strip, sync, viewports, light/dark.
+  - `communications_templates_permissions_test.dart` — Templates ∩ denial / presence, detail preview without create/update/delete chrome, route-entry ∪, subscription/plan delete strip, sync, viewports, light/dark.
   - `communications_workspace_page_test.dart` — **Refresh** absent; **New message** / **New group** only on Messages with write; notification/delivery detail inventory (non-Messages tabs).
 - **Refresh** absent from the tab strip on inbox and other panels (desktop/mobile).
-- **New message** / **New group** only on Messages with write; absent when unauthorized.
+- **New message** / **New group** only on Messages with write; absent when unauthorized (including on Templates).
 - Notification detail shows **Archive** only when `communications:delete` (no Mark read/unread).
 - Row **Mark read** completes without a confirm dialog and shows success snackbar.
 - Delivery detail has no duplicate Open linked footer when no path.
+- Template detail is preview-only; no Create / Edit / Delete when unauthorized or when not inventoried.
 - Read-only detail hides Archive / Mark read / Mark unread.
