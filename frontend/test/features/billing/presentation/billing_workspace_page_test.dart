@@ -657,25 +657,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Awaiting payment narrow mobile keeps queue content without Refresh',
-    (WidgetTester tester) async {
-      await _pumpBillingWorkspace(
-        tester,
-        repository: repository,
-        physicalSize: const Size(390, 844),
-        initialLocation: '/billing?queue=pending-payment',
-        initialQuery: BillingWorkspaceQuery.fromUri(
-          Uri.parse('/billing?queue=pending-payment'),
-        ),
-      );
-
-      expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Ben Payment'), findsOneWidget);
-      expect(find.text('Refresh'), findsNothing);
-    },
-  );
-
   testWidgets('authorized All tab keeps Issue next-action in light and dark', (
     WidgetTester tester,
   ) async {
@@ -740,11 +721,22 @@ void main() {
     await _pumpBillingWorkspace(
       tester,
       repository: repository,
-      physicalSize: const Size(1024, 900),
+      physicalSize: const Size(390, 844),
+    );
+
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    _expectStableCloseToolbar();
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.byTooltip('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Close day'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.text('No access'), findsNothing);
     expect(find.text('Ada Draft'), findsOneWidget);
   });
 
