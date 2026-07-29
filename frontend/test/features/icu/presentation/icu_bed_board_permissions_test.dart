@@ -430,14 +430,23 @@ void main() {
       );
     });
 
-    test('nested cross-module manage ∪: unit:manage satisfies manageBeds', () {
-      final AppAccessPolicy unitManager = _policy(
+    test('nested cross-module manage ∪: system:admin satisfies manageBeds', () {
+      final AppAccessPolicy systemAdmin = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.systemAdmin,
+        },
+      );
+      expect(canManageIcuBedBoard(systemAdmin), isTrue);
+      // IPD nested matrix lists unit:manage — ICU manage keeps IPD source
+      // (admin perms / roles only); unit:manage alone does not unlock manage.
+      final AppAccessPolicy unitOnly = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.unitManage,
         },
       );
-      expect(canManageIcuBedBoard(unitManager), isTrue);
+      expect(canManageIcuBedBoard(unitOnly), isFalse);
     });
 
     test('subscription strip: icu-critical-care required for Bed board tab', () {

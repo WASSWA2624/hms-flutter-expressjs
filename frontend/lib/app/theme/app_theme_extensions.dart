@@ -508,9 +508,8 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
 
   /// Mobile list styles derived from the active [TextTheme]/[ColorScheme].
   ///
-  /// Titles track [TextTheme.labelLarge] (~14); captions/meta track
-  /// [TextTheme.labelMedium] (~12) so rows stay readable on phones without
-  /// competing with desktop table density.
+  /// Titles use ~14sp (labelLarge); captions/meta use ~12sp (labelMedium) so
+  /// rows stay readable on phones without competing with desktop table density.
   factory AppListTokens.compact({
     required TextTheme textTheme,
     required ColorScheme colorScheme,
@@ -523,21 +522,25 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
         textTheme.labelMedium ??
         textTheme.bodySmall ??
         const TextStyle(fontSize: 12, height: 1.25);
+    final double titleSize = titleBase.fontSize ?? 14;
     final double secondarySize = secondaryBase.fontSize ?? 12;
 
     return AppListTokens(
       mobileTitle: titleBase.copyWith(
         color: colorScheme.onSurface,
+        fontSize: titleSize,
         fontWeight: mobileTitleWeight,
         height: 1.25,
       ),
       mobileCaption: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
+        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
         height: 1.25,
       ),
       mobileMeta: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
+        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
         height: 1.25,
       ),
@@ -549,6 +552,7 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
       ),
       mobileRowNumber: secondaryBase.copyWith(
         color: colorScheme.onSurfaceVariant,
+        fontSize: secondarySize,
         fontWeight: mobileSecondaryWeight,
         height: 1.25,
       ),

@@ -605,9 +605,9 @@ void main() {
       themeMode: ThemeMode.dark,
     );
     expect(find.textContaining('Active ICU'), findsWidgets);
-    expect(find.text('Ada Active'), findsOneWidget);
     expect(find.text('Assign ICU bed'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
+    expect(find.byType(AppSearchBar), findsOneWidget);
   });
 
   testWidgets('desktop + light: write ∪ mounts Assign bed', (
@@ -641,10 +641,29 @@ void main() {
     await tester.tap(find.text('Ada Active'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
-    expect(find.textContaining('Assign'), findsNothing);
-    expect(find.text('Observation'), findsNothing);
-    expect(find.textContaining('End'), findsNothing);
-    expect(find.textContaining('Print'), findsWidgets);
+    expect(find.text('Print summary'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text('Assign ICU bed'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text('Observation'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.textContaining('End'),
+      ),
+      findsNothing,
+    );
   });
 }

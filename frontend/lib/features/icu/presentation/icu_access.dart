@@ -77,8 +77,8 @@ const AccessRequirement icuFollowUpsWriteRequirement =
 ///
 /// Prompt note: manage follows rooms-beds admin. Mirrors IPD
 /// `_ipdBedManageRequirement` (roles ∪ admin perms + inpatient module).
-/// Matrix nested write ∪ also lists `unit:manage` | `facility:admin` |
-/// `tenant:admin` on IPD — include `unit:manage` here for alignment.
+/// IPD nested matrix also lists `unit:manage` — keep IPD source (no
+/// `unit:manage`) so manage stays on rooms-beds admin, not HR unit packs.
 const AccessRequirement icuBedBoardManageRequirement = AccessRequirement(
   anyRoles: <AppRole>[
     AppRole.superAdmin,
@@ -89,7 +89,6 @@ const AccessRequirement icuBedBoardManageRequirement = AccessRequirement(
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
     AppPermissions.systemAdmin,
-    AppPermissions.unitManage,
   ],
   activeModules: <String>['inpatient-bed-management'],
 );
@@ -128,8 +127,8 @@ AccessRequirement icuBoardTabRequirement(IcuWorkspaceSection section) {
     IcuWorkspaceSection.discharge => IcuDischargeReadyAtomPermissions.tab,
     IcuWorkspaceSection.followUps => IcuActiveIcuAtomPermissions.followUpsTab,
     IcuWorkspaceSection.beds => IcuBedBoardAtomPermissions.tab,
-    IcuWorkspaceSection.transfers ||
-    IcuWorkspaceSection.ended => icuWorkspaceReadRequirement,
+    IcuWorkspaceSection.ended => IcuEndedStaysAtomPermissions.tab,
+    IcuWorkspaceSection.transfers => icuWorkspaceReadRequirement,
   };
 }
 
@@ -166,6 +165,10 @@ bool canViewIcuBedBoard(AppAccessPolicy policy) {
   return IcuBedBoardAtomPermissions.tab.isAllowed(policy);
 }
 
+bool canViewIcuEndedStays(AppAccessPolicy policy) {
+  return IcuEndedStaysAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canManageIcuBedBoard(AppAccessPolicy policy) {
   return IcuBedBoardAtomPermissions.manageBeds.isAllowed(policy);
 }
@@ -177,6 +180,7 @@ AccessRequirement icuDetailReadRequirement(IcuWorkspaceSection section) {
     IcuWorkspaceSection.all => IcuAllAtomPermissions.detail,
     IcuWorkspaceSection.critical => IcuCriticalAtomPermissions.detail,
     IcuWorkspaceSection.discharge => IcuDischargeReadyAtomPermissions.detail,
+    IcuWorkspaceSection.ended => IcuEndedStaysAtomPermissions.detail,
     IcuWorkspaceSection.beds => IcuBedBoardAtomPermissions.detail,
     _ => icuWorkspaceReadRequirement,
   };
@@ -189,6 +193,7 @@ AccessRequirement icuWriteRequirementForSection(IcuWorkspaceSection section) {
     IcuWorkspaceSection.all => IcuAllAtomPermissions.write,
     IcuWorkspaceSection.critical => IcuCriticalAtomPermissions.write,
     IcuWorkspaceSection.discharge => IcuDischargeReadyAtomPermissions.write,
+    IcuWorkspaceSection.ended => IcuEndedStaysAtomPermissions.write,
     IcuWorkspaceSection.beds => IcuBedBoardAtomPermissions.write,
     _ => icuWorkspaceWriteRequirement,
   };
