@@ -285,8 +285,9 @@ Future<void> _pumpWorkspace(
     ProviderScope(
       overrides: [
         appAccessPolicyProvider.overrideWithValue(policy),
+        // Ready session skips bearer-token waits during workspace bootstrap.
         initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(session: session),
+          const SessionState.ready(),
         ),
         settingsWorkspaceRepositoryProvider.overrideWithValue(
           resolvedRepository,
