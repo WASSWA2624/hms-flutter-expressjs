@@ -488,7 +488,7 @@ void main() {
       expect(find.text(EmergencyText.scheduleTheater), findsNothing);
       expect(find.text(EmergencyText.completeTrip), findsNothing);
       expect(find.textContaining('Open in'), findsOneWidget);
-      expect(find.text('Unit 7'), findsOneWidget);
+      expect(find.text('Triage and response'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
