@@ -297,6 +297,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
   static const AccessRequirement filters = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement columns = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement settings = roomsBedsWorkspaceReadRequirement;
+  static const AccessRequirement pagination = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement empty = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement loading = roomsBedsWorkspaceReadRequirement;
   static const AccessRequirement retry = roomsBedsWorkspaceReadRequirement;
@@ -316,6 +317,7 @@ abstract final class RoomsBedsAvailableAtomPermissions {
   static const AccessRequirement createBed = roomsBedsAdminRequirement;
   static const AccessRequirement manageCatalog = roomsBedsAdminRequirement;
   static const AccessRequirement updateBedStatus = roomsBedsAdminRequirement;
+  static const AccessRequirement markAvailable = roomsBedsAdminRequirement;
   static const AccessRequirement assign = roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement release = roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement transfer = roomsBedsOccupancyWriteRequirement;
@@ -324,6 +326,10 @@ abstract final class RoomsBedsAvailableAtomPermissions {
   static const AccessRequirement occupancyWrite =
       roomsBedsOccupancyWriteRequirement;
   static const AccessRequirement navigateCrossModule =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openOperations =
+      roomsBedsNavigationRequirement;
+  static const AccessRequirement openHousekeeping =
       roomsBedsNavigationRequirement;
   static const AccessRequirement nestedWrite = roomsBedsAdminRequirement;
   static const AccessRequirement nestedOccupancyWrite =
@@ -334,6 +340,8 @@ abstract final class RoomsBedsAvailableAtomPermissions {
       roomsBedsWorkspaceEntryRequirement;
   static const AccessRequirement routeUnion =
       roomsBedsWorkspaceRouteUnionRequirement;
+  static const AccessRequirement catalogEntry =
+      RouteAccessCatalog.roomsBedsEntry;
 }
 
 /// Occupied tab atom → permission mapping (inventory + matrix).

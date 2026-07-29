@@ -7,8 +7,12 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/state/settings_workspace_state.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -16,6 +20,21 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
+/// Administrative setup workspace tab (`/settings?tab=workspace`).
+///
+/// Inventory → matrix mapping (reuse [SettingsWorkspaceAtomPermissions];
+/// nested cross-module rows are _(n/a)_):
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Section chrome / tab strip entry | read | admin ∨ HR source ([tab]) |
+/// | Loading / empty / error / retry | read chrome | [loading] / [empty] / [retry] |
+/// | Tenant / facility context selectors | read chrome | [contextSelector] |
+/// | Search / group / state / actionable filters | read chrome | [search] / [filters] |
+/// | Module groups + row metadata | read | [moduleList] / [moduleRow] |
+/// | Open | navigate | [open] + backend `can_read` |
+/// | Create | create | matrix `facility:admin` ∪ source HR create + `can_create` |
+/// | Update / delete | — | matrix keys; **not mounted** |
 class SettingsWorkspaceSection extends ConsumerWidget {
   const SettingsWorkspaceSection({super.key});
 
@@ -25,6 +44,42 @@ class SettingsWorkspaceSection extends ConsumerWidget {
     final AsyncValue<Result<SettingsWorkspaceState>> workspaceState = ref.watch(
       settingsWorkspaceControllerProvider,
     );
+
+    return AppAccessGate(
+      requirement: SettingsWorkspaceAtomPermissions.adminGate,
+      deniedBuilder: (BuildContext context, AppAccessPolicy policy) {
+        if (!SettingsWorkspaceAtomPermissions.hrGate.isAllowed(policy)) {
+          return const SizedBox.shrink();
+        }
+        return _SettingsWorkspaceBody(
+          workspaceState: workspaceState,
+          onRefresh: () => unawaited(
+            ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
+          ),
+        );
+      },
+      child: _SettingsWorkspaceBody(
+        workspaceState: workspaceState,
+        onRefresh: () => unawaited(
+          ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsWorkspaceBody extends StatelessWidget {
+  const _SettingsWorkspaceBody({
+    required this.workspaceState,
+    required this.onRefresh,
+  });
+
+  final AsyncValue<Result<SettingsWorkspaceState>> workspaceState;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
 
     return AppScreenSection(
       title: l10n.settingsWorkspaceSectionTitle,
@@ -38,23 +93,17 @@ class SettingsWorkspaceSection extends ConsumerWidget {
         error: (_, _) => AppFailureStateView(
           failure: const AppFailure.unexpected(),
           title: l10n.settingsWorkspaceErrorTitle,
-          onRetry: () => unawaited(
-            ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
-          ),
+          onRetry: onRefresh,
         ),
         data: (Result<SettingsWorkspaceState> result) => result.when(
           success: (SettingsWorkspaceState state) => _SettingsWorkspaceContent(
             state: state,
-            onRefresh: () => unawaited(
-              ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
-            ),
+            onRefresh: onRefresh,
           ),
           failure: (AppFailure failure) => AppFailureStateView(
             failure: failure,
             title: l10n.settingsWorkspaceErrorTitle,
-            onRetry: () => unawaited(
-              ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
-            ),
+            onRetry: onRefresh,
           ),
         ),
       ),
