@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -261,10 +263,27 @@ void main() {
       );
       expect(
         identical(
+          RoomsBedsOccupiedAtomPermissions.nextAction,
+          roomsBedsOccupancyWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           RoomsBedsOccupiedAtomPermissions.transfer,
           roomsBedsOccupancyWriteRequirement,
         ),
         isTrue,
+      );
+      expect(
+        AppRoutes.roomsBeds.requiredAnyPermissions,
+        containsAll(<AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.operationsRead,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]),
       );
       expect(
         identical(
@@ -587,9 +606,74 @@ void main() {
         );
         expect(_toolbarAction('Manage catalog'), findsOneWidget);
         expect(find.text('Release bed'), findsNothing);
+        // Occupied next-action column requires occupancy write ∪ — omit empty.
+        expect(find.byType(RoomsBedsNextActionButton), findsNothing);
         expect(find.byType(AppTabToolbarPrimary), findsNothing);
       },
     );
+
+    testWidgets('error/retry state remains for authorized Occupied reader', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+      ).thenAnswer(
+        (_) async => const Result<FacilitySetupSnapshot>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/rooms-beds?section=occupied',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/rooms-beds',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: RoomsBedsWorkspacePage(
+                  initialQuery: RoomsBedsQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            roomsBedsRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await _pumpFrames(tester);
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Release bed'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    });
 
     testWidgets('nested cross-module write absent without occupancy rights', (
       WidgetTester tester,
@@ -781,6 +865,57 @@ void main() {
           canIpdWrite: false,
         ),
         isFalse,
+      );
+      expect(
+        RoomsBedsOccupiedAtomPermissions.nextAction.isAllowed(
+          _policy(
+            permissions: <AppPermission>{AppPermissions.clinicalRead},
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        RoomsBedsOccupiedAtomPermissions.nextAction.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+            },
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('occupied primary next-action is release (or complete transfer)', () {
+      final BedBoardItem occupied = BedBoardItem(
+        bed: _occupiedBed,
+        ward: _ward,
+        room: _room,
+        facility: _facility,
+        activeAssignment: _activeAssignment,
+      );
+      expect(
+        roomsBedsPrimaryNextActionKind(occupied),
+        RoomsBedsNextActionKind.release,
+      );
+
+      final BedBoardItem transferring = BedBoardItem(
+        bed: _occupiedBed,
+        ward: _ward,
+        room: _room,
+        facility: _facility,
+        activeAssignment: _activeAssignment,
+        admissionContext: const BedAdmissionContext(
+          admissionId: 'ADM-100',
+          admissionDisplayId: 'IPD-100',
+          transferRequestId: 'TRF-1',
+          transferStatus: 'REQUESTED',
+        ),
+      );
+      expect(
+        roomsBedsPrimaryNextActionKind(transferring),
+        RoomsBedsNextActionKind.completeTransfer,
       );
     });
   });

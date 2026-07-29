@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -13,29 +13,11 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
-const AccessRequirement _tenantConfigRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
-  requiresTenantContext: true,
-);
-
-const AccessRequirement _facilityConfigRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-  ],
-  requiresFacilityContext: true,
-);
-
+/// Configuration tab (`/settings?tab=configuration`).
+///
+/// See [SettingsConfigurationAtomPermissions] for the inventory → matrix map.
+/// Tenant/facility panel write gates keep source requirements (documented
+/// mapping vs matrix update ∩ `facility:admin`).
 class SettingsConfigurationSection extends ConsumerWidget {
   const SettingsConfigurationSection({super.key});
 
@@ -43,14 +25,16 @@ class SettingsConfigurationSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canConfigureTenant = _tenantConfigRequirement.isAllowed(
-      accessPolicy,
-    );
-    final bool canConfigureFacility = _facilityConfigRequirement.isAllowed(
-      accessPolicy,
-    );
+    final bool canConfigureTenant =
+        SettingsConfigurationAtomPermissions.tenantPanel.isAllowed(
+          accessPolicy,
+        );
+    final bool canConfigureFacility =
+        SettingsConfigurationAtomPermissions.facilityPanel.isAllowed(
+          accessPolicy,
+        );
 
-    if (!canConfigureTenant && !canConfigureFacility) {
+    if (!settingsConfigurationSectionVisible(accessPolicy)) {
       return const SizedBox.shrink();
     }
 
@@ -58,33 +42,19 @@ class SettingsConfigurationSection extends ConsumerWidget {
       tenantFacilitySetupControllerProvider,
     );
 
-    return AppScreenSection(
-      title: l10n.settingsConfigurationSectionTitle,
-      body: l10n.settingsConfigurationSectionBody,
-      child: setupAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
+    return AppAccessGate(
+      requirement: SettingsConfigurationAtomPermissions.tab,
+      child: AppScreenSection(
+        title: l10n.settingsConfigurationSectionTitle,
+        body: l10n.settingsConfigurationSectionBody,
+        child: setupAsync.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
           ),
-        ),
-        error: (_, _) => AppStateView(
-          title: l10n.settingsConfigurationSaveError,
-          body: l10n.settingsConfigurationSectionBody,
-          action: AppButton.secondary(
-            label: l10n.commonRefreshActionLabel,
-            leadingIcon: Icons.refresh,
-            onPressed: () =>
-                ref.invalidate(tenantFacilitySetupControllerProvider),
-          ),
-        ),
-        data: (Result<FacilitySetupSnapshot> result) => result.when(
-          success: (FacilitySetupSnapshot snapshot) => _ConfigurationContent(
-            snapshot: snapshot,
-            canConfigureTenant: canConfigureTenant,
-            canConfigureFacility: canConfigureFacility,
-          ),
-          failure: (_) => AppStateView(
+          error: (_, _) => AppStateView(
             title: l10n.settingsConfigurationSaveError,
             body: l10n.settingsConfigurationSectionBody,
             action: AppButton.secondary(
@@ -92,6 +62,23 @@ class SettingsConfigurationSection extends ConsumerWidget {
               leadingIcon: Icons.refresh,
               onPressed: () =>
                   ref.invalidate(tenantFacilitySetupControllerProvider),
+            ),
+          ),
+          data: (Result<FacilitySetupSnapshot> result) => result.when(
+            success: (FacilitySetupSnapshot snapshot) => _ConfigurationContent(
+              snapshot: snapshot,
+              canConfigureTenant: canConfigureTenant,
+              canConfigureFacility: canConfigureFacility,
+            ),
+            failure: (_) => AppStateView(
+              title: l10n.settingsConfigurationSaveError,
+              body: l10n.settingsConfigurationSectionBody,
+              action: AppButton.secondary(
+                label: l10n.commonRefreshActionLabel,
+                leadingIcon: Icons.refresh,
+                onPressed: () =>
+                    ref.invalidate(tenantFacilitySetupControllerProvider),
+              ),
             ),
           ),
         ),
@@ -149,11 +136,17 @@ class _ConfigurationContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (showTenant) ...<Widget>[
-          _TenantConfigPanel(tenant: tenant),
+          AppAccessGate(
+            requirement: SettingsConfigurationAtomPermissions.tenantPanel,
+            child: _TenantConfigPanel(tenant: tenant),
+          ),
           if (showFacility) SizedBox(height: theme.spacing.md),
         ],
         if (showFacility)
-          _FacilityConfigPanel(tenant: tenant, facility: facility),
+          AppAccessGate(
+            requirement: SettingsConfigurationAtomPermissions.facilityPanel,
+            child: _FacilityConfigPanel(tenant: tenant, facility: facility),
+          ),
       ],
     );
   }
@@ -227,17 +220,27 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
           spacing: theme.spacing.sm,
           runSpacing: theme.spacing.sm,
           children: <Widget>[
-            AppButton.tertiary(
-              label: l10n.settingsConfigurationResetAction,
-              leadingIcon: Icons.restart_alt_outlined,
-              enabled: !_saving && _hasValues,
-              onPressed: _saving ? null : _confirmReset,
+            AppAccessActionGate(
+              requirement: SettingsConfigurationAtomPermissions.tenantReset,
+              builder: (BuildContext context, bool _) {
+                return AppButton.tertiary(
+                  label: l10n.settingsConfigurationResetAction,
+                  leadingIcon: Icons.restart_alt_outlined,
+                  enabled: !_saving && _hasValues,
+                  onPressed: _saving ? null : _confirmReset,
+                );
+              },
             ),
-            AppButton.primary(
-              label: l10n.settingsConfigurationSaveAction,
-              leadingIcon: Icons.save_outlined,
-              isLoading: _saving,
-              onPressed: _saving ? null : _save,
+            AppAccessActionGate(
+              requirement: SettingsConfigurationAtomPermissions.tenantSave,
+              builder: (BuildContext context, bool _) {
+                return AppButton.primary(
+                  label: l10n.settingsConfigurationSaveAction,
+                  leadingIcon: Icons.save_outlined,
+                  isLoading: _saving,
+                  onPressed: _saving ? null : _save,
+                );
+              },
             ),
           ],
         ),
@@ -420,17 +423,27 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
           spacing: theme.spacing.sm,
           runSpacing: theme.spacing.sm,
           children: <Widget>[
-            AppButton.tertiary(
-              label: l10n.settingsConfigurationResetAction,
-              leadingIcon: Icons.restart_alt_outlined,
-              enabled: !_saving && _hasValues,
-              onPressed: _saving ? null : _confirmReset,
+            AppAccessActionGate(
+              requirement: SettingsConfigurationAtomPermissions.facilityReset,
+              builder: (BuildContext context, bool _) {
+                return AppButton.tertiary(
+                  label: l10n.settingsConfigurationResetAction,
+                  leadingIcon: Icons.restart_alt_outlined,
+                  enabled: !_saving && _hasValues,
+                  onPressed: _saving ? null : _confirmReset,
+                );
+              },
             ),
-            AppButton.primary(
-              label: l10n.settingsConfigurationSaveAction,
-              leadingIcon: Icons.save_outlined,
-              isLoading: _saving,
-              onPressed: _saving ? null : _save,
+            AppAccessActionGate(
+              requirement: SettingsConfigurationAtomPermissions.facilitySave,
+              builder: (BuildContext context, bool _) {
+                return AppButton.primary(
+                  label: l10n.settingsConfigurationSaveAction,
+                  leadingIcon: Icons.save_outlined,
+                  isLoading: _saving,
+                  onPressed: _saving ? null : _save,
+                );
+              },
             ),
           ],
         ),

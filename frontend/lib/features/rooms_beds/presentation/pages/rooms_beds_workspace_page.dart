@@ -439,13 +439,16 @@ class _RoomsBedsWorkspaceContentState
                 columns: roomsBedsBedBoardColumns(
                   l10n: l10n,
                   includeNextAction: switch (_section) {
-                    // Available primary is occupancy assign only.
-                    RoomsBedsSection.available => canIpdWrite,
+                    // Available / Occupied primaries are occupancy write only
+                    // (Assign / Release|complete transfer).
+                    RoomsBedsSection.available ||
+                    RoomsBedsSection.occupied => canIpdWrite,
                     // Turnover / OOS include navigate next-actions for board
                     // readers (Open operations); write buttons still omit.
                     RoomsBedsSection.turnover ||
                     RoomsBedsSection.outOfService => true,
-                    _ => canAdminBeds || canIpdWrite,
+                    // All beds mixes admin mark-available and occupancy writes.
+                    RoomsBedsSection.all => canAdminBeds || canIpdWrite,
                   },
                   nextActionCellBuilder:
                       (BuildContext context, BedBoardItem item) {

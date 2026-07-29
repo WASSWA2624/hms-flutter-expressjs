@@ -21,6 +21,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+// AppRole used by configuration gates below.
 
 @immutable
 final class SettingsPageQuery {
@@ -120,12 +121,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool showSettingsWorkspace =
-        _settingsWorkspaceRequirement.isAllowed(accessPolicy) ||
-        _hrSettingsWorkspaceRequirement.isAllowed(accessPolicy);
+    final bool showSettingsWorkspace = settingsWorkspaceSectionVisible(
+      accessPolicy,
+    );
     final bool showConfiguration =
-        _configTenantRequirement.isAllowed(accessPolicy) ||
-        _configFacilityRequirement.isAllowed(accessPolicy);
+        settingsConfigurationSectionVisible(accessPolicy);
     final bool showAccount =
         SettingsAccountAtomPermissions.tab.isAllowed(accessPolicy);
     final bool showAccessibility =
@@ -461,35 +461,9 @@ class _AccordionPanelContent extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Access requirements (workspace / configuration — administration lives in
+// Access requirements (configuration — workspace / administration live in
 // [settings_access.dart])
 // ---------------------------------------------------------------------------
-
-/// HR users with facility scope see department and unit setup modules only.
-const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrRead,
-    AppPermissions.hrWrite,
-  ],
-  anyRoles: <AppRole>[AppRole.hr],
-  requiresTenantContext: true,
-  requiresFacilityContext: true,
-);
-
-/// Matches backend [SETTINGS_WORKSPACE_ROLES]: super/tenant/facility admins only.
-const AccessRequirement _settingsWorkspaceRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-  ],
-  requiresTenantContext: true,
-);
 
 const AccessRequirement _configTenantRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[

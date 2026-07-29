@@ -15,6 +15,47 @@ const AccessRequirement settingsFacilityAdminRequirement = AccessRequirement(
 );
 
 // ---------------------------------------------------------------------------
+// Preferences (`/settings?tab=preferences`)
+// ---------------------------------------------------------------------------
+
+/// Preferences tab (`/settings?tab=preferences`) atom → permission map.
+///
+/// Authenticated profile prefs. Reuses [profileReadRequirement] /
+/// [profileUpdateRequirement]. No nested dialogs. Create/delete ∩
+/// `facility:admin` are documented but **not mounted**. View ∪ / nested
+/// cross-module rows are _(n/a)_. Profile rights are core/platform (not
+/// plan-module mapped); subscription stripping does not apply. Own-scoped
+/// via local theme prefs for the current user.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | `profile:read` ∩ ([tab]) |
+/// | App theme current value | read | `profile:read` ∩ ([themeModeValue]) |
+/// | App theme radio group | update | `profile:update` ∩ ([themeMode]) |
+/// | Save-error snackbar | visible feedback | update path ([success]/[validation]) |
+/// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+abstract final class SettingsPreferencesAtomPermissions {
+  static const AccessRequirement tab = profileReadRequirement;
+  static const AccessRequirement read = profileReadRequirement;
+  static const AccessRequirement listChrome = profileReadRequirement;
+  static const AccessRequirement themeModeValue = profileReadRequirement;
+  static const AccessRequirement loading = profileReadRequirement;
+  static const AccessRequirement empty = profileReadRequirement;
+  static const AccessRequirement retry = profileReadRequirement;
+  static const AccessRequirement update = profileUpdateRequirement;
+  static const AccessRequirement themeMode = profileUpdateRequirement;
+  static const AccessRequirement success = profileUpdateRequirement;
+  static const AccessRequirement validation = profileUpdateRequirement;
+  static const AccessRequirement create = settingsFacilityAdminRequirement;
+  static const AccessRequirement delete = settingsFacilityAdminRequirement;
+  static const AccessRequirement nestedRead = profileReadRequirement;
+  static const AccessRequirement nestedWrite = profileUpdateRequirement;
+  static const AccessRequirement routeEntry =
+      RouteAccessCatalog.authenticatedCore;
+}
+
+// ---------------------------------------------------------------------------
 // Account and security (`/settings?tab=account`)
 // ---------------------------------------------------------------------------
 
@@ -248,6 +289,148 @@ List<AccessRequirement> settingsAdministrationNavigateDestinations({
     settingsAdministrationSubscriptionsNavigateRequirement,
     settingsAdministrationAccessAdminNavigateRequirement,
   ];
+}
+
+// ---------------------------------------------------------------------------
+// Administrative setup workspace (`/settings?tab=workspace`)
+// ---------------------------------------------------------------------------
+
+/// Matrix view ∪ keys for Administrative setup (admin ∪ ∪ `hr:read`).
+const List<AppPermission> settingsWorkspaceViewAnyPermissions =
+    <AppPermission>[
+      AppPermissions.facilityAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.systemAdmin,
+      AppPermissions.hrRead,
+    ];
+
+/// Matrix view / read UI:
+/// `profile:read` ∩ (`facility:admin` ∪ `tenant:admin` ∪ `system:admin` ∪ `hr:read`).
+///
+/// Admin / profile keys are core/platform; `hr:read` is plan-scoped to
+/// `hr-rosters` via [PermissionModuleMap] when that union arm is used.
+const AccessRequirement settingsWorkspaceReadRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.profileRead],
+  anyPermissions: settingsWorkspaceViewAnyPermissions,
+);
+
+/// Source admin workspace gate (backend SETTINGS_WORKSPACE admin scopes +
+/// roles + tenant ABAC). Aligned with matrix ∩ `profile:read`; admin ∪ omits
+/// `hr:read` (HR path is [settingsWorkspaceHrRequirement]).
+const AccessRequirement settingsWorkspaceAdminRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.profileRead],
+  anyPermissions: settingsAdminAnyPermissions,
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+  ],
+  requiresTenantContext: true,
+);
+
+/// Source HR workspace gate. Matrix view ∪ lists `hr:read`; source also
+/// accepts `hr:write` and requires HR role pack + tenant/facility ABAC.
+const AccessRequirement settingsWorkspaceHrRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.profileRead],
+  anyPermissions: <AppPermission>[
+    AppPermissions.hrRead,
+    AppPermissions.hrWrite,
+  ],
+  anyRoles: <AppRole>[AppRole.hr],
+  requiresTenantContext: true,
+  requiresFacilityContext: true,
+);
+
+/// Matrix create ∩ `facility:admin`.
+const AccessRequirement settingsWorkspaceCreateRequirement =
+    settingsFacilityAdminRequirement;
+
+/// Source HR create for department/unit setup. Backend
+/// `canWriteSetupModule` uses `hr:write` ∪ `unit:manage`; matrix create is
+/// `facility:admin` ∩ — keep source and note the mapping in tests.
+const AccessRequirement settingsWorkspaceHrCreateRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.hrWrite,
+        AppPermissions.unitManage,
+      ],
+      requiresTenantContext: true,
+      requiresFacilityContext: true,
+    );
+
+/// Matrix update ∩ `profile:update` — no update atoms on this surface
+/// (search/filters/context selectors are read chrome).
+const AccessRequirement settingsWorkspaceUpdateRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.profileUpdate],
+);
+
+/// Matrix delete ∩ `facility:admin` — no delete atoms on this surface.
+const AccessRequirement settingsWorkspaceDeleteRequirement =
+    settingsFacilityAdminRequirement;
+
+/// True when the Administrative setup workspace strip may appear.
+bool settingsWorkspaceSectionVisible(AppAccessPolicy policy) {
+  return settingsWorkspaceAdminRequirement.isAllowed(policy) ||
+      settingsWorkspaceHrRequirement.isAllowed(policy);
+}
+
+/// Whether a module Create affordance may mount (matrix create ∪ source HR
+/// create), after backend `can_create` has already been applied.
+bool settingsWorkspaceCanCreate(AppAccessPolicy policy) {
+  return settingsWorkspaceCreateRequirement.isAllowed(policy) ||
+      settingsWorkspaceHrCreateRequirement.isAllowed(policy);
+}
+
+/// Administrative setup workspace atom → permission mapping.
+///
+/// | Atom | Intent | Gate |
+/// | --- | --- | --- |
+/// | Tab strip / section chrome | read | [tab] (admin ∨ HR source) |
+/// | Loading / empty / error / retry | read chrome | [loading] / [empty] / [retry] |
+/// | Tenant context required + selectors | read chrome | [contextSelector] |
+/// | Search / group / state / actionable filters | read chrome | [search] / [filters] |
+/// | Module groups + row metadata | read | [moduleList] / [moduleRow] |
+/// | Open (navigate to setup / access admin) | navigate | [open] + backend `can_read` |
+/// | Create (navigate to create route) | create | [create] ∪ [hrCreate] + `can_create` |
+/// | Update / delete affordances | — | matrix keys; **not mounted** |
+/// | Nested cross-module panels | nested | _(n/a)_ |
+abstract final class SettingsWorkspaceAtomPermissions {
+  static const AccessRequirement tab = settingsWorkspaceReadRequirement;
+  static const AccessRequirement read = settingsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = settingsWorkspaceReadRequirement;
+  static const AccessRequirement loading = settingsWorkspaceReadRequirement;
+  static const AccessRequirement empty = settingsWorkspaceReadRequirement;
+  static const AccessRequirement retry = settingsWorkspaceReadRequirement;
+  static const AccessRequirement contextSelector =
+      settingsWorkspaceReadRequirement;
+  static const AccessRequirement search = settingsWorkspaceReadRequirement;
+  static const AccessRequirement filters = settingsWorkspaceReadRequirement;
+  static const AccessRequirement moduleList = settingsWorkspaceReadRequirement;
+  static const AccessRequirement moduleRow = settingsWorkspaceReadRequirement;
+  static const AccessRequirement open = settingsWorkspaceReadRequirement;
+  static const AccessRequirement success = settingsWorkspaceReadRequirement;
+  static const AccessRequirement validation = settingsWorkspaceReadRequirement;
+
+  /// Matrix ∩ `facility:admin`.
+  static const AccessRequirement create = settingsWorkspaceCreateRequirement;
+
+  /// Source HR create (`hr:write` ∪ `unit:manage` + facility ABAC).
+  static const AccessRequirement hrCreate =
+      settingsWorkspaceHrCreateRequirement;
+
+  /// Matrix ∩ `profile:update` — not mounted on this tab.
+  static const AccessRequirement update = settingsWorkspaceUpdateRequirement;
+
+  /// Matrix ∩ `facility:admin` — not mounted on this tab.
+  static const AccessRequirement delete = settingsWorkspaceDeleteRequirement;
+
+  /// Nested cross-module — matrix _(n/a)_.
+  static const AccessRequirement nestedRead = settingsWorkspaceReadRequirement;
+  static const AccessRequirement nestedWrite = settingsWorkspaceCreateRequirement;
+
+  /// Source gates reused by the settings page strip.
+  static const AccessRequirement adminGate = settingsWorkspaceAdminRequirement;
+  static const AccessRequirement hrGate = settingsWorkspaceHrRequirement;
 }
 
 // ---------------------------------------------------------------------------

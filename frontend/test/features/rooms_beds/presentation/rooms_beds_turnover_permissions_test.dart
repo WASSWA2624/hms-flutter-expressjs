@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
@@ -776,6 +777,53 @@ void main() {
     expect(find.text('Bed C1'), findsWidgets);
   });
 
+  testWidgets('light theme: operations:read ∪ shows turnover board', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTurnoverTab(
+      tester,
+      repository: repository,
+      accessPolicy: _operationsReaderPolicy(),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('Turnover'), findsWidgets);
+    expect(find.text('Bed C1'), findsWidgets);
+    expect(find.text('Mark available'), findsNothing);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
+    expect(find.text('Open operations'), findsWidgets);
+  });
+
+  testWidgets('unit:manage ∪ shows Mark available and Manage catalog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTurnoverTab(
+      tester,
+      repository: repository,
+      accessPolicy: _unitManageOnlyPolicy(),
+    );
+
+    expect(_toolbarAction('Manage catalog'), findsOneWidget);
+    expect(find.text('Mark available'), findsWidgets);
+    expect(_toolbarPrimary('Create room'), findsNothing);
+    expect(_toolbarPrimary('Create bed'), findsNothing);
+  });
+
+  testWidgets(
+    'without inpatient module Turnover strip collapses (subscription ∩)',
+    (WidgetTester tester) async {
+      await _pumpTurnoverTab(
+        tester,
+        repository: repository,
+        accessPolicy: _adminWithoutModulePolicy(),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byType(AppListTable<BedBoardItem>), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
   testWidgets('empty turnover list state remains for authorized reader', (
     WidgetTester tester,
   ) async {
@@ -810,6 +858,29 @@ void main() {
     expect(_toolbarAction('Manage catalog'), findsNothing);
   });
 
+  testWidgets('authorized error/retry chrome remains on Turnover', (
+    WidgetTester tester,
+  ) async {
+    when(
+      () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+    ).thenAnswer(
+      (_) async => const Result<FacilitySetupSnapshot>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    await _pumpTurnoverTab(
+      tester,
+      repository: repository,
+      accessPolicy: _readerPolicy(),
+      stubRepository: false,
+    );
+
+    expect(find.text('Try again'), findsOneWidget);
+    expect(_toolbarAction('Manage catalog'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
   testWidgets('nested cross-module write entry points stay n/a absent', (
     WidgetTester tester,
   ) async {
@@ -821,6 +892,9 @@ void main() {
 
     expect(find.text('Create room'), findsNothing);
     expect(find.text('Create bed'), findsNothing);
-    expect(RoomsBedsTurnoverAtomPermissions.nestedWrite.isAllowed(_readerPolicy()), isFalse);
+    expect(
+      RoomsBedsTurnoverAtomPermissions.nestedWrite.isAllowed(_readerPolicy()),
+      isFalse,
+    );
   });
 }
