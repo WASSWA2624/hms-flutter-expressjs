@@ -4,7 +4,6 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory (read-only; do not modify): `screens/discharge.md` (reachable controls).
 - Target tab: **Completed** (`completed`). Completed discharges; prefer read.
 - Feature code: `frontend/lib/features/discharge/`
 - Module entitlement: `inpatient-bed-management`
@@ -42,7 +41,6 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Constraints
 
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Scope: this tab's UI tree and nested dialogs opened from it only; do not redesign unrelated screens.
 - Reuse `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate` / `AppAccessActionGate`, design-system components, routes, and feature `*Requirement` helpers; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or inaccessible actions; light and dark.
@@ -60,7 +58,6 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Relevant Files
 
-- `screens/discharge.md`
 - `frontend/lib/features/discharge/`
 - `frontend/lib/core/permissions/access_policy.dart`
 - `frontend/lib/core/permissions/access_requirement.dart`

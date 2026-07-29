@@ -63,6 +63,7 @@ void main() {
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
       expect(canViewPatientActiveTab(read), isTrue);
+      expect(canViewPatientBalanceDueTab(read), isFalse);
       expect(canWritePatientRegistry(read), isFalse);
       expect(canDeletePatientRegistry(read), isFalse);
 
@@ -75,8 +76,39 @@ void main() {
       expect(canWritePatientRegistry(write), isTrue);
       expect(
         patientRegistryAllowedSections(write),
-        equals(PatientRegistrySection.values),
+        equals(<PatientRegistrySection>[
+          PatientRegistrySection.all,
+          PatientRegistrySection.active,
+          PatientRegistrySection.admitted,
+        ]),
       );
     });
+
+    test(
+      'Balance due tab needs ∩ patient:read + billing:read (+ billing module)',
+      () {
+        final AppAccessPolicy balanceDue = policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.billingRead,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: patientRegistryModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canViewPatientBalanceDueTab(balanceDue), isTrue);
+        expect(
+          patientRegistryAllowedSections(balanceDue),
+          equals(PatientRegistrySection.values),
+        );
+      },
+    );
   });
 }

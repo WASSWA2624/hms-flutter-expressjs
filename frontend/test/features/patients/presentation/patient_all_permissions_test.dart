@@ -22,7 +22,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
-import 'package:hosspi_hms/features/patients/presentation/widgets/patient_active_work_helpers.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_Registry_work_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
@@ -35,13 +35,13 @@ class _MockPatientRepository extends Mock implements PatientRepository {}
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
 
-const Patient _activePatient = Patient(
-  id: 'patient-active-1',
-  publicId: 'PAT-ACT-1',
+const Patient _RegistryPatient = Patient(
+  id: 'patient-all-1',
+  publicId: 'PAT-ALL-1',
   tenantId: 'tenant-1',
   facilityId: 'facility-1',
-  firstName: 'Ada',
-  lastName: 'Active',
+  firstName: 'Alla',
+  lastName: 'Registry',
   gender: 'FEMALE',
   primaryPhone: '+256700000001',
   primaryIdentifierType: 'MRN',
@@ -70,7 +70,7 @@ const Patient _idlePatient = Patient(
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'ACTIVE'),
+    AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'Registry'),
   ],
   List<String> roles = const <String>['DOCTOR'],
   String? tenantId = 'tenant-1',
@@ -116,25 +116,25 @@ AppAccessPolicy _fullCrudPolicy() {
       AppPermissions.billingWrite,
     },
     modules: const <AppModuleEntitlement>[
-      AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: patientRegistryModule, licenseStatus: 'Registry'),
+      AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'Registry'),
+      AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'Registry'),
       AppModuleEntitlement(
         code: 'inpatient-bed-management',
-        licenseStatus: 'ACTIVE',
+        licenseStatus: 'Registry',
       ),
-      AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'Registry'),
       AppModuleEntitlement(
         code: 'radiology-workflows',
-        licenseStatus: 'ACTIVE',
+        licenseStatus: 'Registry',
       ),
-      AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
-      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'Registry'),
+      AppModuleEntitlement(code: 'physiotherapy', licenseStatus: 'Registry'),
+      AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'Registry'),
+      AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'Registry'),
       AppModuleEntitlement(
         code: 'reporting-analytics',
-        licenseStatus: 'ACTIVE',
+        licenseStatus: 'Registry',
       ),
     ],
     roles: const <String>['DOCTOR', 'RECEPTIONIST'],
@@ -143,9 +143,9 @@ AppAccessPolicy _fullCrudPolicy() {
 
 void _stubRegistry(
   _MockPatientRepository repository, {
-  Patient patient = _activePatient,
+  Patient patient = _RegistryPatient,
   PatientDetail? detail,
-  List<Patient> items = const <Patient>[_activePatient],
+  List<Patient> items = const <Patient>[_RegistryPatient],
   Result<AppPage<Patient>>? listOverride,
   Result<PatientRegistryOverview>? overviewOverride,
 }) {
@@ -154,7 +154,7 @@ void _stubRegistry(
         Result<PatientRegistryOverview>.success(
           PatientRegistryOverview(
             totalPatients: items.length,
-            activePatients: items.length,
+            RegistryPatients: items.length,
           ),
         );
   });
@@ -171,7 +171,7 @@ void _stubRegistry(
     final PatientListQuery query =
         invocation.positionalArguments.single as PatientListQuery;
     List<Patient> scoped = items;
-    if (query.section == PatientRegistrySection.active) {
+    if (query.section == PatientRegistrySection.Registry) {
       scoped = items
           .where((Patient p) => p.currentVisit != null)
           .toList(growable: false);
@@ -246,16 +246,16 @@ void _stubOpd(_MockOpdRepository opdRepository) {
   });
 }
 
-Future<GoRouter> _pumpActiveTab(
+Future<GoRouter> _pumpRegistryTab(
   WidgetTester tester, {
   required _MockPatientRepository patientRepository,
   required _MockOpdRepository opdRepository,
   AppAccessPolicy? policy,
   Size viewport = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/patients?section=active',
-  Patient patient = _activePatient,
-  List<Patient> items = const <Patient>[_activePatient],
+  String initialLocation = '/patients?section=Registry',
+  Patient patient = _RegistryPatient,
+  List<Patient> items = const <Patient>[_RegistryPatient],
   PatientDetail? detail,
   Result<AppPage<Patient>>? listOverride,
   Result<PatientRegistryOverview>? overviewOverride,
@@ -330,54 +330,54 @@ void main() {
     registerFallbackValue(<String, Object?>{});
   });
 
-  group('PatientActiveAtomPermissions reuse (AC1, AC4)', () {
+  group('PatientAllAtomPermissions reuse (AC1, AC4)', () {
     test('atom map reuses shared *Requirement helpers', () {
       expect(
         identical(
-          PatientActiveAtomPermissions.tab,
+          PatientAllAtomPermissions.tab,
           patientRegistryReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientActiveAtomPermissions.create,
+          PatientAllAtomPermissions.create,
           patientRegistryWriteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientActiveAtomPermissions.delete,
+          PatientAllAtomPermissions.delete,
           patientRegistryDeleteRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientActiveAtomPermissions.startOpd,
+          PatientAllAtomPermissions.startOpd,
           opdEncounterPermissionRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientActiveAtomPermissions.routeEntry,
+          PatientAllAtomPermissions.routeEntry,
           patientRegistryEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          PatientActiveAtomPermissions.catalogEntry,
+          PatientAllAtomPermissions.catalogEntry,
           RouteAccessCatalog.patientsEntry,
         ),
         isTrue,
       );
       expect(
         identical(
-          patientRegistrySectionTabRequirement(PatientRegistrySection.active),
-          PatientActiveAtomPermissions.tab,
+          patientRegistrySectionTabRequirement(PatientRegistrySection.Registry),
+          PatientAllAtomPermissions.tab,
         ),
         isTrue,
       );
@@ -385,21 +385,21 @@ void main() {
 
     test('intersection denial: patient:read alone fails write/delete', () {
       final AppAccessPolicy readOnly = _readPolicy();
-      expect(PatientActiveAtomPermissions.tab.isAllowed(readOnly), isTrue);
-      expect(PatientActiveAtomPermissions.register.isAllowed(readOnly), isFalse);
-      expect(PatientActiveAtomPermissions.edit.isAllowed(readOnly), isFalse);
-      expect(PatientActiveAtomPermissions.delete.isAllowed(readOnly), isFalse);
+      expect(PatientAllAtomPermissions.tab.isAllowed(readOnly), isTrue);
+      expect(PatientAllAtomPermissions.register.isAllowed(readOnly), isFalse);
+      expect(PatientAllAtomPermissions.edit.isAllowed(readOnly), isFalse);
+      expect(PatientAllAtomPermissions.delete.isAllowed(readOnly), isFalse);
       expect(
-        PatientActiveAtomPermissions.nextActionComplete.isAllowed(readOnly),
+        PatientAllAtomPermissions.nextActionComplete.isAllowed(readOnly),
         isFalse,
       );
     });
 
     test('full ∩ write set allows create/update; delete needs patient:delete', () {
       final AppAccessPolicy write = _readWritePolicy();
-      expect(PatientActiveAtomPermissions.register.isAllowed(write), isTrue);
-      expect(PatientActiveAtomPermissions.edit.isAllowed(write), isTrue);
-      expect(PatientActiveAtomPermissions.delete.isAllowed(write), isFalse);
+      expect(PatientAllAtomPermissions.register.isAllowed(write), isTrue);
+      expect(PatientAllAtomPermissions.edit.isAllowed(write), isTrue);
+      expect(PatientAllAtomPermissions.delete.isAllowed(write), isFalse);
 
       final AppAccessPolicy crud = _policy(
         permissions: <AppPermission>{
@@ -408,11 +408,11 @@ void main() {
           AppPermissions.patientDelete,
         },
       );
-      expect(PatientActiveAtomPermissions.delete.isAllowed(crud), isTrue);
+      expect(PatientAllAtomPermissions.delete.isAllowed(crud), isTrue);
     });
 
     test(
-      'union allowance: view-active OPD ∪ clinical:read | billing:read (source)',
+      'union allowance: view-Registry OPD ∪ clinical:read | billing:read (source)',
       () {
         final AppAccessPolicy clinicalOnly = _policy(
           permissions: <AppPermission>{
@@ -422,16 +422,16 @@ void main() {
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: patientRegistryModule,
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
             AppModuleEntitlement(
               code: 'encounters-vitals',
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
           ],
         );
         expect(
-          PatientActiveAtomPermissions.viewActiveOpd.isAllowed(clinicalOnly),
+          PatientAllAtomPermissions.viewRegistryOpd.isAllowed(clinicalOnly),
           isTrue,
         );
 
@@ -443,22 +443,22 @@ void main() {
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: patientRegistryModule,
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
             AppModuleEntitlement(
               code: 'billing-payments',
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
           ],
         );
         expect(
-          PatientActiveAtomPermissions.viewActiveOpd.isAllowed(billingOnly),
+          PatientAllAtomPermissions.viewRegistryOpd.isAllowed(billingOnly),
           isTrue,
         );
 
         final AppAccessPolicy neither = _readPolicy();
         expect(
-          PatientActiveAtomPermissions.viewActiveOpd.isAllowed(neither),
+          PatientAllAtomPermissions.viewRegistryOpd.isAllowed(neither),
           isFalse,
         );
       },
@@ -475,20 +475,20 @@ void main() {
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: patientRegistryModule,
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
             AppModuleEntitlement(
               code: 'insurance-claims',
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
             AppModuleEntitlement(
               code: 'billing-payments',
-              licenseStatus: 'ACTIVE',
+              licenseStatus: 'Registry',
             ),
           ],
         );
         expect(
-          PatientActiveAtomPermissions.enrollInsurance.isAllowed(billingWrite),
+          PatientAllAtomPermissions.enrollInsurance.isAllowed(billingWrite),
           isTrue,
         );
       },
@@ -503,7 +503,7 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
       expect(
-        PatientActiveAtomPermissions.entry.isAllowed(noModule),
+        PatientAllAtomPermissions.entry.isAllowed(noModule),
         isFalse,
       );
       expect(canEnterPatientRegistry(noModule), isFalse);
@@ -518,16 +518,16 @@ void main() {
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
             code: patientRegistryModule,
-            licenseStatus: 'ACTIVE',
+            licenseStatus: 'Registry',
           ),
           AppModuleEntitlement(
             code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
+            licenseStatus: 'Registry',
           ),
         ],
       );
       expect(
-        PatientActiveAtomPermissions.labOrder.isAllowed(clinicalNoLab),
+        PatientAllAtomPermissions.labOrder.isAllowed(clinicalNoLab),
         isFalse,
       );
 
@@ -539,39 +539,39 @@ void main() {
         modules: const <AppModuleEntitlement>[
           AppModuleEntitlement(
             code: patientRegistryModule,
-            licenseStatus: 'ACTIVE',
+            licenseStatus: 'Registry',
           ),
           AppModuleEntitlement(
             code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
+            licenseStatus: 'Registry',
           ),
-          AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
+          AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'Registry'),
         ],
       );
-      expect(PatientActiveAtomPermissions.labOrder.isAllowed(withLab), isTrue);
+      expect(PatientAllAtomPermissions.labOrder.isAllowed(withLab), isTrue);
     });
 
-    test('Active Work continue maps kinds to shared requirements', () {
+    test('Registry Work continue maps kinds to shared requirements', () {
       expect(
         identical(
-          patientActiveWorkContinueRequirement(
-            PatientActiveWorkKind.appointment,
+          patientRegistryWorkContinueRequirement(
+            PatientRegistryWorkKind.appointment,
           ),
-          PatientActiveAtomPermissions.activeWorkContinueAppointment,
+          PatientAllAtomPermissions.RegistryWorkContinueAppointment,
         ),
         isTrue,
       );
       expect(
         identical(
-          patientActiveWorkContinueRequirement(PatientActiveWorkKind.labOrder),
-          PatientActiveAtomPermissions.activeWorkContinueLab,
+          patientRegistryWorkContinueRequirement(PatientRegistryWorkKind.labOrder),
+          PatientAllAtomPermissions.RegistryWorkContinueLab,
         ),
         isTrue,
       );
       expect(
         identical(
-          patientActiveWorkContinueRequirement(PatientActiveWorkKind.admission),
-          PatientActiveAtomPermissions.activeWorkContinueAdmission,
+          patientRegistryWorkContinueRequirement(PatientRegistryWorkKind.admission),
+          PatientAllAtomPermissions.RegistryWorkContinueAdmission,
         ),
         isTrue,
       );
@@ -579,17 +579,17 @@ void main() {
 
     test('catalog entry uses patients:read; AppRoutes/matrix use patient:read', () {
       expect(
-        PatientActiveAtomPermissions.catalogEntry.allPermissions,
+        PatientAllAtomPermissions.catalogEntry.allPermissions,
         contains(AppPermissions.patientsRead),
       );
       expect(
-        PatientActiveAtomPermissions.entry.allPermissions,
+        PatientAllAtomPermissions.entry.allPermissions,
         contains(AppPermissions.patientRead),
       );
     });
   });
 
-  group('Active tab UI authorization (AC2-AC5)', () {
+  group('Registry tab UI authorization (AC2-AC5)', () {
     late _MockPatientRepository patientRepository;
     late _MockOpdRepository opdRepository;
 
@@ -598,24 +598,24 @@ void main() {
       opdRepository = _MockOpdRepository();
     });
 
-    testWidgets('deep link section=active selects Active strip', (
+    testWidgets('deep link section=Registry selects Registry strip', (
       WidgetTester tester,
     ) async {
-      final GoRouter router = await _pumpActiveTab(
+      final GoRouter router = await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
       );
 
-      expect(router.state.uri.queryParameters['section'], 'active');
-      expect(find.textContaining('Active'), findsWidgets);
+      expect(router.state.uri.queryParameters['section'], 'Registry');
+      expect(find.textContaining('Registry'), findsWidgets);
       expect(find.byType(AppTabStrip), findsOneWidget);
     });
 
     testWidgets(
       'intersection denial: patient:read alone omits Register/Edit/Delete',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpRegistryTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -639,7 +639,7 @@ void main() {
     testWidgets(
       'full ∩ write presents Register; delete absent without patient:delete',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpRegistryTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -661,7 +661,7 @@ void main() {
     testWidgets(
       'nested cross-module: lab/radiology chips absent without modules',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpRegistryTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -675,15 +675,15 @@ void main() {
             modules: const <AppModuleEntitlement>[
               AppModuleEntitlement(
                 code: patientRegistryModule,
-                licenseStatus: 'ACTIVE',
+                licenseStatus: 'Registry',
               ),
               AppModuleEntitlement(
                 code: 'scheduling-queue',
-                licenseStatus: 'ACTIVE',
+                licenseStatus: 'Registry',
               ),
               AppModuleEntitlement(
                 code: 'reporting-analytics',
-                licenseStatus: 'ACTIVE',
+                licenseStatus: 'Registry',
               ),
             ],
             roles: const <String>['DOCTOR', 'RECEPTIONIST'],
@@ -705,7 +705,7 @@ void main() {
     testWidgets(
       'authorized full set shows Register, Edit, Delete, nested chips',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpRegistryTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -729,10 +729,10 @@ void main() {
     );
 
     testWidgets(
-      'Active Work Continue for lab absent without lab module',
+      'Registry Work Continue for lab absent without lab module',
       (WidgetTester tester) async {
         final PatientDetail detail = PatientDetail(
-          patient: _activePatient,
+          patient: _RegistryPatient,
           workspace: const PatientWorkspaceSnapshot(),
           timeline: <PatientTimelineItem>[
             PatientTimelineItem(
@@ -745,7 +745,7 @@ void main() {
           ],
         );
 
-        await _pumpActiveTab(
+        await _pumpRegistryTab(
           tester,
           patientRepository: patientRepository,
           opdRepository: opdRepository,
@@ -753,10 +753,10 @@ void main() {
           detail: detail,
         );
 
-        await tester.tap(find.text('Ada Active').first);
+        await tester.tap(find.text('Alla Registry').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Active work'), findsOneWidget);
+        expect(find.text('Registry work'), findsOneWidget);
         expect(find.text('Collect sample'), findsNothing);
       },
     );
@@ -764,7 +764,7 @@ void main() {
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -817,7 +817,7 @@ void main() {
             home: const Scaffold(
               body: PatientRegistryPage(
                 initialQuery: PatientListQuery(
-                  section: PatientRegistrySection.active,
+                  section: PatientRegistrySection.Registry,
                 ),
               ),
             ),
@@ -842,7 +842,7 @@ void main() {
         return const Result<Patient>.success(_idlePatient);
       });
 
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -858,10 +858,10 @@ void main() {
       expect(find.text('EDIT PATIENT'), findsOneWidget);
     });
 
-    testWidgets('mobile viewport keeps Active chrome without overflow', (
+    testWidgets('mobile viewport keeps Registry chrome without overflow', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -872,10 +872,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('desktop viewport keeps Active chrome without overflow', (
+    testWidgets('desktop viewport keeps Registry chrome without overflow', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -887,10 +887,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('light and dark themes render Active strip', (
+    testWidgets('light and dark themes render Registry strip', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
@@ -898,7 +898,7 @@ void main() {
       );
       expect(find.byType(AppTabStrip), findsOneWidget);
 
-      await _pumpActiveTab(
+      await _pumpRegistryTab(
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,

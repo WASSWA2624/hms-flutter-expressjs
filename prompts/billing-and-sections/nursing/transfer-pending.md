@@ -4,7 +4,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Context
 
-- Screen inventory: `screens/nursing.md` (read-only reference for reachable controls; do not modify).
 - Target tab: **Transfer pending** (`transfer-pending`).
 - Feature code: `frontend/lib/features/nursing/`
 - Module entitlement: `inpatient-bed-management`
@@ -30,7 +29,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
@@ -48,7 +46,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Relevant Files
 
-- `screens/nursing.md`
 - `frontend/lib/features/nursing/`
 - `frontend/lib/features/billing/`
 - `frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart`

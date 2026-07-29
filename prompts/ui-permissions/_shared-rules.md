@@ -59,11 +59,11 @@ Use exact `AppPermissions` keys from `access_policy.dart` / `backend/src/config/
 - Synchronize frontend data after successful mutations.
 - Keep layouts responsive on mobile, tablet, and desktop; use theme tokens for light and dark.
 
-## Screen inventories (read-only)
+## Screen inventories
 
-- `screens/*.md` are read-only inventories of reachable controls.
-- Do **not** create, edit, delete, rename, or regenerate any file under `screens/`.
-- Implement permission and billing/section changes in frontend/backend/tests only; leave inventories unchanged even if they look stale.
+- The former `screens/` inventory folder has been removed.
+- Do **not** recreate `screens/` or write inventory markdown there.
+- Inventory atoms from feature presentation code, routes, and tests.
 
 ## Verification (every tab prompt)
 

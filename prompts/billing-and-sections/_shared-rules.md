@@ -50,11 +50,11 @@ Normalize with shared validators. Full set: `CASH`, `CREDIT_CARD`, `DEBIT_CARD`,
 - Do not duplicate Billing logic inside clinical modules; call shared services.
 - Flow ownership in `.cursor/flows/*` still applies (e.g. Billing owns payment gates; ICU clinical actions are not cashier-driven).
 
-## Screen inventories (read-only)
+## Screen inventories
 
-- `screens/*.md` are read-only inventories of reachable controls.
-- Do **not** create, edit, delete, rename, or regenerate any file under `screens/`.
-- Implement billing and section-layout changes in frontend/backend/tests only; leave inventories unchanged even if they look stale.
+- The former `screens/` inventory folder has been removed.
+- Do **not** recreate `screens/` or write inventory markdown there.
+- Inventory atoms from feature presentation code, routes, and tests.
 
 ## Leakage checklist (every tab)
 

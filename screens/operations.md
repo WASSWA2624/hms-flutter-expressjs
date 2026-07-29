@@ -132,4 +132,5 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - [x] Without write capability, create primary and write next-actions are absent; no Review request button.
 - [x] Status filter is absent on Open / In progress / Completed advanced filters (present on All requests).
 - [x] Mobile list exposes next-action trailing; tap opens Assign without detail first.
-- [ ] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render.
+- [x] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render.
+- [x] Assets tab: read ∩ shows list/detail/Report; write ∩ shows Create request; write-only ∪ entry without read omits Assets; module/ABAC strip as documented in `operations_assets_permissions_test.dart`.

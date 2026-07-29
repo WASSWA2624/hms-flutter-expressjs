@@ -1413,7 +1413,8 @@ void main() {
       expect(_patientTabLabel('All patients'), findsOneWidget);
       expect(_patientTabLabel('Active'), findsOneWidget);
       expect(_patientTabLabel('Admitted'), findsOneWidget);
-      expect(_patientTabLabel('Balance due'), findsOneWidget);
+      // Doctor role pack lacks billing:read — Balance due tab is absent.
+      expect(_patientTabLabel('Balance due'), findsNothing);
       expect(find.byTooltip('Register patient'), findsOneWidget);
       expect(find.byTooltip('Refresh'), findsNothing);
       expect(find.text('Refresh'), findsNothing);

@@ -4,7 +4,6 @@ Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nes
 
 ## Context
 
-- Screen inventory (read-only; do not modify): `screens/hr.md` (reachable controls).
 - Target tab: **Human resources** (`staff`). Staff directory; Add staff.
 - Feature code: `frontend/lib/features/hr/`
 - Module entitlement: `hr-rosters`
@@ -42,7 +41,6 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Constraints
 
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
 - Scope: this tab's UI tree and nested dialogs opened from it only; do not redesign unrelated screens.
 - Reuse `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate` / `AppAccessActionGate`, design-system components, routes, and feature `*Requirement` helpers; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop without clipping, overflow, duplication, or inaccessible actions; light and dark.
@@ -60,7 +58,6 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Relevant Files
 
-- `screens/hr.md`
 - `frontend/lib/features/hr/`
 - `frontend/lib/core/permissions/access_policy.dart`
 - `frontend/lib/core/permissions/access_requirement.dart`

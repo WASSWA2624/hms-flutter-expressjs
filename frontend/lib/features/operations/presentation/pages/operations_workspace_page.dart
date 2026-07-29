@@ -364,8 +364,13 @@ class _OperationsWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, state),
-              secondaryActions: _buildSecondaryActions(context, l10n, state),
+              primaryAction: _buildPrimaryAction(l10n, state, activeSection),
+              secondaryActions: _buildSecondaryActions(
+                context,
+                l10n,
+                state,
+                activeSection,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
@@ -407,9 +412,11 @@ class _OperationsWorkspaceContentState
   Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     OperationsWorkspaceState state,
+    OperationsDeskSection section,
   ) {
+    // Create ∩ via section atom map (AppAccessActionGate omits when denied).
     return AppAccessActionGate(
-      requirement: operationsWriteRequirement,
+      requirement: operationsSectionCreateRequirement(section),
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.operationsCreateRequestAction,
@@ -427,10 +434,11 @@ class _OperationsWorkspaceContentState
     BuildContext context,
     AppLocalizations l10n,
     OperationsWorkspaceState state,
+    OperationsDeskSection section,
   ) {
     return <Widget>[
       AppAccessGate(
-        requirement: operationsReportRequirement,
+        requirement: operationsSectionReportRequirement(section),
         child: AppTabToolbarAction(
           label: l10n.operationsOpenReportAction,
           icon: Icons.summarize_outlined,

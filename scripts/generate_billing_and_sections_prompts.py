@@ -245,7 +245,6 @@ def _parse_source(path: Path) -> dict[str, str] | None:
     )
     feature = re.search(r"Feature code: `([^`]+)`", text)
     module = re.search(r"Module entitlement: `([^`]+)`", text)
-    screen_inv = re.search(r"Screen inventory: `([^`]+)`", text)
     tab_slug = tab.group(2) if tab else path.stem
     tab_blurb = (tab.group(3).strip() if tab else "").rstrip(".")
     return {
@@ -259,7 +258,6 @@ def _parse_source(path: Path) -> dict[str, str] | None:
         "tab_blurb": tab_blurb,
         "feature": feature.group(1) if feature else f"frontend/lib/features/{path.parent.name}/",
         "module": module.group(1) if module else path.parent.name,
-        "screen_inv": screen_inv.group(1) if screen_inv else f"screens/{path.parent.name}.md",
     }
 
 
@@ -323,12 +321,10 @@ def render_prompt(meta: dict[str, str]) -> str:
     focus = _focus(meta)
     backend_lines = "\n".join(f"- `{p}`" for p in _backend_paths(meta["folder"]))
     feature = meta["feature"]
-    screen_inv = meta["screen_inv"]
     module = meta["module"]
     test_feature = feature.replace("frontend/lib/features/", "frontend/test/features/").rstrip("/")
 
     relevant = [
-        screen_inv,
         feature,
         "frontend/lib/features/billing/",
         "frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart",
@@ -359,7 +355,6 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 
 ## Context
 
-- Screen inventory: `{screen_inv}` (read-only reference for reachable controls; do not modify).
 - Target tab: **{tab}** (`{slug}`).
 - Feature code: `{feature}`
 - Module entitlement: `{module}`
@@ -369,6 +364,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 - Financial focus for this tab: {focus}
 - Shared rules: `prompts/billing-and-sections/_shared-rules.md`. Follow `prompts/.cursor/prompt.mdc`.
 - Permissions remain enforced (`prompts/ui-permissions/`); do not weaken gates while wiring Billing or flattening sections.
+- Inventory atoms from feature presentation code, routes, and tests—do not recreate `screens/`.
 
 ## Requirements
 
@@ -385,7 +381,7 @@ Deep-scan this tab for billing leakage and nested section chrome: wire every fin
 ## Constraints
 
 - Scope: this tab’s UI tree, nested dialogs opened from it, and the backend handlers those actions call. Do not redesign unrelated workspaces.
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
+- Do not recreate the removed `screens/` inventory folder.
 - Reuse Billing module services, clinical-request billing, price-resolver, coverage-split, receive-payment/adjustment dialogs, and feature billing helpers; no second billing engine.
 - Reuse existing section chrome (`AppScreenSection`, titled `AppSectionPanel`, `AppWorkspaceDetailPanel`); do not invent a parallel section widget.
 - Optional enhancements: none. Do not expand into unrelated refactors.
@@ -460,11 +456,11 @@ Normalize with shared validators. Full set: `CASH`, `CREDIT_CARD`, `DEBIT_CARD`,
 - Do not duplicate Billing logic inside clinical modules; call shared services.
 - Flow ownership in `.cursor/flows/*` still applies (e.g. Billing owns payment gates; ICU clinical actions are not cashier-driven).
 
-## Screen inventories (read-only)
+## Screen inventories
 
-- `screens/*.md` are read-only inventories of reachable controls.
-- Do **not** create, edit, delete, rename, or regenerate any file under `screens/`.
-- Implement billing and section-layout changes in frontend/backend/tests only; leave inventories unchanged even if they look stale.
+- The former `screens/` inventory folder has been removed.
+- Do **not** recreate `screens/` or write inventory markdown there.
+- Inventory atoms from feature presentation code, routes, and tests.
 
 ## Leakage checklist (every tab)
 

@@ -260,6 +260,13 @@ void main() {
     );
     expect(
       identical(
+        OperationsAllRequestsAtomPermissions.assign,
+        operationsWorkspaceWriteRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
         OperationsAllRequestsAtomPermissions.routeEntry,
         operationsWorkspaceEntryRequirement,
       ),
@@ -269,6 +276,14 @@ void main() {
       identical(
         OperationsAllRequestsAtomPermissions.report,
         operationsReportRequirement,
+      ),
+      isTrue,
+    );
+    // Report source inventory "Always" narrowed to matrix read ∩.
+    expect(
+      identical(
+        operationsWorkspaceReportRequirement,
+        operationsWorkspaceReadRequirement,
       ),
       isTrue,
     );
@@ -305,6 +320,7 @@ void main() {
       OperationsAllRequestsAtomPermissions.report.allPermissions,
       contains(AppPermissions.operationsRead),
     );
+    // Route entry ∪ read|write (matrix union allowance).
     expect(
       OperationsAllRequestsAtomPermissions.routeEntry.anyPermissions,
       containsAll(<AppPermission>[
@@ -315,6 +331,85 @@ void main() {
     expect(
       OperationsAllRequestsAtomPermissions.nestedWrite.allPermissions,
       contains(AppPermissions.operationsWrite),
+    );
+  });
+
+  test('atom map covers inventory verbs (AC1)', () {
+    expect(OperationsAllRequestsAtomPermissions.tab, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.listChrome, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.search, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.filters, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.settings, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.empty, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.loading, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.retry, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.success, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.validation, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.rowSelect, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.detail, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.nextAction, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.create, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.update, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.delete, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.createRequest, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.assign, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.updateStatus, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.serviceLog, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.note, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.closeout, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.report, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.nestedWrite, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.nestedRead, isNotNull);
+    expect(OperationsAllRequestsAtomPermissions.routeEntry, isNotNull);
+    expect(
+      OperationsAllRequestsAtomPermissions.tab.allPermissions,
+      contains(AppPermissions.operationsRead),
+    );
+    expect(
+      OperationsAllRequestsAtomPermissions.create.allPermissions,
+      contains(AppPermissions.operationsWrite),
+    );
+    expect(
+      OperationsAllRequestsAtomPermissions.delete.allPermissions,
+      contains(AppPermissions.operationsWrite),
+    );
+  });
+
+  test('section helpers wire All requests atom map for tab / create / report', () {
+    expect(
+      identical(
+        operationsSectionTabRequirement(OperationsDeskSection.allRequests),
+        OperationsAllRequestsAtomPermissions.tab,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        operationsSectionCreateRequirement(OperationsDeskSection.allRequests),
+        OperationsAllRequestsAtomPermissions.createRequest,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        operationsSectionReportRequirement(OperationsDeskSection.allRequests),
+        OperationsAllRequestsAtomPermissions.report,
+      ),
+      isTrue,
+    );
+    expect(
+      canViewOperationsSection(
+        _policy(permissions: <AppPermission>{AppPermissions.operationsRead}),
+        OperationsDeskSection.allRequests,
+      ),
+      isTrue,
+    );
+    expect(
+      canViewOperationsSection(
+        _policy(permissions: <AppPermission>{AppPermissions.operationsWrite}),
+        OperationsDeskSection.allRequests,
+      ),
+      isFalse,
     );
   });
 

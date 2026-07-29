@@ -1216,7 +1216,7 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 ## Constraints
 
 - Scope: this tab’s UI tree and nested dialogs opened from it; do not redesign unrelated screens.
-- Do not create, edit, delete, or regenerate any file under `screens/` (read-only inventory).
+- Do not recreate the removed `screens/` inventory folder.
 - Reuse design-system components and existing gates; no second permission vocabulary.
 - Theme tokens; responsive mobile/tablet/desktop; light and dark.
 - No exploit/PoC code; no secrets in tests—use policy fixtures.
@@ -1232,7 +1232,6 @@ Prefer existing feature `*Requirement` helpers when present; align them to this 
 
 ## Relevant Files
 
-- `{screen['inventory']}`
 - `{screen['feature']}`
 - `frontend/lib/core/permissions/access_policy.dart`
 - `frontend/lib/core/permissions/access_requirement.dart`

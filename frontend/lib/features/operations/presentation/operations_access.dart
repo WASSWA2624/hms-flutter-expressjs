@@ -125,6 +125,38 @@ AccessRequirement operationsSectionTabRequirement(
   };
 }
 
+/// Tab-strip Create request primary — matrix create ∩ via section atom map.
+AccessRequirement operationsSectionCreateRequirement(
+  OperationsDeskSection section,
+) {
+  return switch (section) {
+    OperationsDeskSection.allRequests =>
+      OperationsAllRequestsAtomPermissions.createRequest,
+    OperationsDeskSection.open => OperationsOpenAtomPermissions.createRequest,
+    OperationsDeskSection.inProgress =>
+      OperationsInProgressAtomPermissions.createRequest,
+    OperationsDeskSection.completed =>
+      OperationsCompletedAtomPermissions.createRequest,
+    OperationsDeskSection.assets =>
+      OperationsAssetsAtomPermissions.createRequest,
+  };
+}
+
+/// Tab-strip Report secondary — matrix report ∩ via section atom map.
+AccessRequirement operationsSectionReportRequirement(
+  OperationsDeskSection section,
+) {
+  return switch (section) {
+    OperationsDeskSection.allRequests =>
+      OperationsAllRequestsAtomPermissions.report,
+    OperationsDeskSection.open => OperationsOpenAtomPermissions.report,
+    OperationsDeskSection.inProgress =>
+      OperationsInProgressAtomPermissions.report,
+    OperationsDeskSection.completed => OperationsCompletedAtomPermissions.report,
+    OperationsDeskSection.assets => OperationsAssetsAtomPermissions.report,
+  };
+}
+
 bool canViewOperationsSection(
   AppAccessPolicy policy,
   OperationsDeskSection section,

@@ -499,6 +499,8 @@ class _PatientAdvancedFiltersDialog extends StatefulWidget {
     required this.facilities,
     required this.appointmentStatuses,
     required this.consentStatuses,
+    this.showActiveAdmissionFilter = true,
+    this.showOutstandingBalanceFilter = true,
   });
 
   final String patientId;
@@ -520,6 +522,8 @@ class _PatientAdvancedFiltersDialog extends StatefulWidget {
   final List<PatientReferenceOption> facilities;
   final List<String> appointmentStatuses;
   final List<String> consentStatuses;
+  final bool showActiveAdmissionFilter;
+  final bool showOutstandingBalanceFilter;
 
   @override
   State<_PatientAdvancedFiltersDialog> createState() =>
@@ -710,22 +714,29 @@ class _PatientAdvancedFiltersDialogState
                   ],
                 ),
               ),
-              AppResponsiveFieldRow.two(
-                left: AppSelectField<bool>(
-                  value: _hasActiveAdmission,
-                  labelText: l10n.patientsActiveAdmissionFilterLabel,
-                  onChanged: (bool? value) =>
-                      setState(() => _hasActiveAdmission = value),
-                  options: _booleanFilterOptions(l10n),
+              if (widget.showActiveAdmissionFilter ||
+                  widget.showOutstandingBalanceFilter)
+                AppResponsiveFieldRow.two(
+                  left: widget.showActiveAdmissionFilter
+                      ? AppSelectField<bool>(
+                          value: _hasActiveAdmission,
+                          labelText: l10n.patientsActiveAdmissionFilterLabel,
+                          onChanged: (bool? value) =>
+                              setState(() => _hasActiveAdmission = value),
+                          options: _booleanFilterOptions(l10n),
+                        )
+                      : const SizedBox.shrink(),
+                  right: widget.showOutstandingBalanceFilter
+                      ? AppSelectField<bool>(
+                          value: _hasOutstandingBalance,
+                          labelText:
+                              l10n.patientsOutstandingBalanceFilterLabel,
+                          onChanged: (bool? value) =>
+                              setState(() => _hasOutstandingBalance = value),
+                          options: _booleanFilterOptions(l10n),
+                        )
+                      : const SizedBox.shrink(),
                 ),
-                right: AppSelectField<bool>(
-                  value: _hasOutstandingBalance,
-                  labelText: l10n.patientsOutstandingBalanceFilterLabel,
-                  onChanged: (bool? value) =>
-                      setState(() => _hasOutstandingBalance = value),
-                  options: _booleanFilterOptions(l10n),
-                ),
-              ),
               AppResponsiveFieldRow.two(
                 left: PatientDateField(
                   value: _dateOfBirthFrom,
@@ -864,10 +875,17 @@ Future<void> _openPatientAdvancedFilters(
   BuildContext context,
   WidgetRef ref,
   PatientRegistryState state,
-  TextEditingController searchController,
-) async {
+  TextEditingController searchController, {
+  PatientRegistrySection section = PatientRegistrySection.all,
+}) async {
   final PatientRegistryState currentState = _readCurrentState(ref) ?? state;
   final PatientListQuery query = currentState.query;
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  final bool isAdmitted = section == PatientRegistrySection.admitted;
+  final bool showActiveAdmissionFilter = !isAdmitted ||
+      PatientAdmittedAtomPermissions.nestedRead.isAllowed(policy);
+  final bool showOutstandingBalanceFilter = !isAdmitted ||
+      PatientAdmittedAtomPermissions.financialStatus.isAllowed(policy);
   final _PatientFilterDraft? draft = await showAppDialog<_PatientFilterDraft>(
     context: context,
     builder: (_) => _PatientAdvancedFiltersDialog(
@@ -885,11 +903,17 @@ Future<void> _openPatientAdvancedFilters(
       createdTo: query.createdTo,
       dateOfBirthFrom: query.dateOfBirthFrom,
       dateOfBirthTo: query.dateOfBirthTo,
-      hasActiveAdmission: query.hasActiveAdmission,
-      hasOutstandingBalance: query.hasOutstandingBalance,
+      hasActiveAdmission: showActiveAdmissionFilter
+          ? query.hasActiveAdmission
+          : null,
+      hasOutstandingBalance: showOutstandingBalanceFilter
+          ? query.hasOutstandingBalance
+          : null,
       facilities: currentState.referenceData.facilities,
       appointmentStatuses: currentState.referenceData.appointmentStatuses,
       consentStatuses: _filterConsentStatuses(currentState),
+      showActiveAdmissionFilter: showActiveAdmissionFilter,
+      showOutstandingBalanceFilter: showOutstandingBalanceFilter,
     ),
   );
   if (draft == null || !context.mounted) {
@@ -1010,7 +1034,13 @@ class _PatientList extends ConsumerWidget {
         hasActiveFilters: _hasPatientAdvancedFilters(state.query),
         onAdvancedFilterPressed: () {
           unawaited(
-            _openPatientAdvancedFilters(context, ref, state, searchController),
+            _openPatientAdvancedFilters(
+              context,
+              ref,
+              state,
+              searchController,
+              section: section,
+            ),
           );
         },
       ),
