@@ -307,6 +307,12 @@ class _ReportItemsPanel extends ConsumerWidget {
         ),
         columnChoices: reportItemColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+          final String? nextLabel = reportNextActionLabel(
+            l10n,
+            item,
+            canWrite: canWrite,
+            canExport: canExport,
+          );
           return AppListTableMobileItem(
             title: item.title,
             caption: item.reference,
@@ -320,19 +326,21 @@ class _ReportItemsPanel extends ConsumerWidget {
               ),
             ],
             showAvatar: false,
-            trailing: ReportNextActionCell(
-              item: item,
-              canWrite: canWrite,
-              canExport: canExport,
-              isSaving: state.isSaving,
-              onPressed: () => _handleReportNextAction(
-                context,
-                ref,
-                state,
-                item,
-                policy,
-              ),
-            ),
+            trailing: nextLabel == null
+                ? null
+                : ReportNextActionCell(
+                    item: item,
+                    canWrite: canWrite,
+                    canExport: canExport,
+                    isSaving: state.isSaving,
+                    onPressed: () => _handleReportNextAction(
+                      context,
+                      ref,
+                      state,
+                      item,
+                      policy,
+                    ),
+                  ),
           );
         },
       ),
@@ -647,6 +655,12 @@ class _ReportSchedulesPanel extends ConsumerWidget {
               },
         ),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+          final String? nextLabel = reportNextActionLabel(
+            l10n,
+            item,
+            canWrite: canWrite,
+            canExport: canExport,
+          );
           return AppListTableMobileItem(
             title: item.title,
             caption: item.reference,
@@ -660,19 +674,21 @@ class _ReportSchedulesPanel extends ConsumerWidget {
               ),
             ],
             showAvatar: false,
-            trailing: ReportNextActionCell(
-              item: item,
-              canWrite: canWrite,
-              canExport: canExport,
-              isSaving: state.isSaving,
-              onPressed: () => _handleReportNextAction(
-                context,
-                ref,
-                state,
-                item,
-                policy,
-              ),
-            ),
+            trailing: nextLabel == null
+                ? null
+                : ReportNextActionCell(
+                    item: item,
+                    canWrite: canWrite,
+                    canExport: canExport,
+                    isSaving: state.isSaving,
+                    onPressed: () => _handleReportNextAction(
+                      context,
+                      ref,
+                      state,
+                      item,
+                      policy,
+                    ),
+                  ),
           );
         },
       ),

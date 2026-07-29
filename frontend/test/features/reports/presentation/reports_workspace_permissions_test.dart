@@ -200,6 +200,14 @@ void main() {
   setUp(() {
     repository = _MockReportsRepository();
     registerFallbackValue(const ReportsWorkspaceQuery());
+    registerFallbackValue(const ReportRunDraft());
+    registerFallbackValue(
+      const ReportScheduleDraft(
+        reportDefinitionId: 'definition-1',
+        name: 'Schedule',
+        frequency: 'DAILY',
+      ),
+    );
   });
 
   testWidgets('read-only user has no Run next-action (∩ write denial)', (
@@ -560,4 +568,146 @@ void main() {
     expect(canWriteReports(stripped), isFalse);
     expect(find.text('Run report'), findsNothing);
   });
+
+  testWidgets(
+    'union of reports:read + compliance:read shows Catalog and Audit filters',
+    (WidgetTester tester) async {
+      final AppAccessPolicy both = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.complianceRead,
+        },
+      );
+      await _pumpReports(tester, repository: repository, policy: both);
+
+      final AppListTable<ReportsWorkspaceItem> itemsTable = tester
+          .widgetList<AppListTable<ReportsWorkspaceItem>>(
+            find.byType(AppListTable<ReportsWorkspaceItem>),
+          )
+          .first;
+      final Iterable<String> panelLabels = itemsTable.search!.filterGroups
+          .expand((AppSearchBarFilterGroup group) => group.choices)
+          .map((AppSearchBarFilterChoice choice) => choice.label);
+
+      expect(panelLabels, contains('Catalog'));
+      expect(panelLabels, contains('Audit logs'));
+      expect(find.text('Daily census'), findsWidgets);
+      expect(find.text('Daily census email'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized run mutates, shows success snackbar, and syncs worklist',
+    (WidgetTester tester) async {
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.reportsRead,
+            AppPermissions.reportsWrite,
+          },
+        ),
+      );
+
+      when(
+        () => repository.runReportDefinitionNow(any(), any()),
+      ).thenAnswer(
+        (_) async => const Result<ReportsWorkspaceItem>.success(
+          ReportsWorkspaceItem(
+            id: 'run-1',
+            kind: ReportItemKind.run,
+            title: 'Daily census',
+            status: 'QUEUED',
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Run report').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.widgetWithText(AppButton, 'Run report'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reports workspace updated.'), findsOneWidget);
+      verify(() => repository.runReportDefinitionNow(any(), any())).called(1);
+      // Local merge sync: delivery worklist shows the queued run next-action.
+      expect(find.text('Cancel run'), findsWidgets);
+      expect(find.text('Queued'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'authorized schedule dialog keeps validation when name cleared',
+    (WidgetTester tester) async {
+      await _pumpReports(
+        tester,
+        repository: repository,
+        policy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.reportsRead,
+            AppPermissions.reportsWrite,
+          },
+        ),
+      );
+
+      final AppListTable<ReportsWorkspaceItem> itemsTable = tester
+          .widgetList<AppListTable<ReportsWorkspaceItem>>(
+            find.byType(AppListTable<ReportsWorkspaceItem>),
+          )
+          .first;
+      itemsTable.onRowSelected!(_definitionItem);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Schedule'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.byType(TextFormField),
+        ).first,
+        '',
+      );
+      await tester.tap(find.text('Create schedule'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsOneWidget);
+      expect(find.text('Create schedule'), findsOneWidget);
+      verifyNever(() => repository.createSchedule(any()));
+    },
+  );
+
+  testWidgets(
+    'schedule next-action absent without reports:write (∩ create denial)',
+    (WidgetTester tester) async {
+      await _pumpReports(tester, repository: repository, policy: _policy());
+
+      expect(find.text('Schedule'), findsNothing);
+      expect(find.text('Create schedule'), findsNothing);
+
+      final AppListTable<ReportsWorkspaceItem> schedulesTable = tester
+          .widgetList<AppListTable<ReportsWorkspaceItem>>(
+            find.byType(AppListTable<ReportsWorkspaceItem>),
+          )
+          .last;
+      expect(
+        schedulesTable.columns.any(
+          (AppListTableColumn<ReportsWorkspaceItem> column) =>
+              column.id == 'next_action',
+        ),
+        isFalse,
+      );
+    },
+  );
 }
