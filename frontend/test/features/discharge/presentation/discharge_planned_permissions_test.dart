@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -22,6 +23,8 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,15 +47,6 @@ const IpdAdmissionSummary _pending = IpdAdmissionSummary(
   stage: 'ADMITTED',
   dischargeStatus: 'SUMMARY_PENDING',
   wardDisplayName: 'Ward B',
-);
-
-const IpdAdmissionSummary _completed = IpdAdmissionSummary(
-  id: 'adm-done',
-  displayId: 'ADM-C1',
-  patientDisplayName: 'Carol Completed',
-  stage: 'DISCHARGED',
-  dischargeStatus: 'COMPLETED',
-  wardDisplayName: 'Ward C',
 );
 
 AppAccessPolicy _policy({
@@ -116,13 +110,9 @@ AppAccessPolicy _policy({
 
 void _stubQueue(
   _MockDischargeRepository repository, {
-  List<IpdAdmissionSummary> items = const <IpdAdmissionSummary>[
-    _planned,
-    _pending,
-    _completed,
-  ],
-  DischargeAdmissionDetail? detailOverride,
+  List<IpdAdmissionSummary> items = const <IpdAdmissionSummary>[_planned],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
+  DischargeAdmissionDetail? detailOverride,
 }) {
   when(() => repository.listQueue(any())).thenAnswer((_) async {
     if (listOverride != null) {
@@ -154,7 +144,28 @@ void _stubQueue(
     );
     return Result<DischargeAdmissionDetail>.success(
       DischargeAdmissionDetail(
-        ipd: IpdAdmissionDetail(summary: summary),
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        patientId: 'patient-1',
+        encounterId: 'encounter-1',
+        ipd: IpdAdmissionDetail(
+          summary: summary,
+          latestDischargeSummary: IpdDischargeSummary(
+            id: 'ds-1',
+            status: 'PLANNED',
+            summary: 'Plan ready; clearances pending.',
+          ),
+          dischargeSummaries: <IpdDischargeSummary>[
+            IpdDischargeSummary(
+              id: 'ds-1',
+              status: 'PLANNED',
+              summary: 'Plan ready; clearances pending.',
+            ),
+          ],
+          nursingNotes: const <IpdClinicalRecord>[
+            IpdClinicalRecord(id: 'note-1', kind: 'NURSING_NOTE'),
+          ],
+        ),
         pharmacyOrders: const <DischargeRelatedRecord>[
           DischargeRelatedRecord(
             id: 'rx-1',
@@ -175,27 +186,30 @@ void _stubQueue(
       ),
     );
   });
+  when(
+    () => repository.createFinalInvoice(any()),
+  ).thenAnswer((_) async => const Result<void>.success(null));
 }
 
-Future<void> _pumpAllTab(
+Future<void> _pumpPlannedTab(
   WidgetTester tester, {
   required _MockDischargeRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/discharge?section=all',
   List<IpdAdmissionSummary>? items,
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
+  DischargeAdmissionDetail? detailOverride,
+  String initialLocation = '/discharge?section=planned',
 }) async {
-  if (items != null || listOverride != null) {
-    _stubQueue(
-      repository,
-      items: items ?? const <IpdAdmissionSummary>[_planned, _pending, _completed],
-      listOverride: listOverride,
-    );
-  }
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
+  _stubQueue(
+    repository,
+    items: items ?? <IpdAdmissionSummary>[_planned],
+    listOverride: listOverride,
+    detailOverride: detailOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -222,6 +236,9 @@ Future<void> _pumpAllTab(
     ProviderScope(
       overrides: [
         dischargeRepositoryProvider.overrideWithValue(repository),
+        followUpTabCountProvider.overrideWith(
+          (Ref ref, FollowUpWorklistScope scope) => null,
+        ),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -248,42 +265,54 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const DischargeWorklistQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
     repository = _MockDischargeRepository();
-    _stubQueue(repository);
   });
 
-  group('DischargeAllPatientsAtomPermissions helpers', () {
+  group('DischargePlannedAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        DischargeAllPatientsAtomPermissions.tab,
+        DischargePlannedAtomPermissions.tab,
         same(dischargeWorkspaceReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.write,
+        DischargePlannedAtomPermissions.write,
         same(dischargeClinicalWriteRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.billingPanel,
+        DischargePlannedAtomPermissions.nextActionClearance,
+        same(dischargeClinicalWriteRequirement),
+      );
+      expect(
+        DischargePlannedAtomPermissions.billingPanel,
         same(billingReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.medicinesPanel,
+        DischargePlannedAtomPermissions.medicinesPanel,
         same(dischargePharmacyClearanceReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.roomTurnover,
+        DischargePlannedAtomPermissions.roomTurnover,
         same(dischargeOperationsClearanceReadRequirement),
       );
       expect(
-        dischargeSectionTabRequirement(DischargeDeskSection.all),
+        dischargeSectionTabRequirement(DischargeDeskSection.planned),
         same(dischargeWorkspaceReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.routeEntry,
+        DischargePlannedAtomPermissions.routeEntry,
         same(dischargeWorkspaceEntryRequirement),
+      );
+      expect(
+        DischargePlannedAtomPermissions.medicinesPanel,
+        same(DischargeAllPatientsAtomPermissions.medicinesPanel),
+      );
+      expect(
+        DischargePlannedAtomPermissions.write,
+        same(DischargeAllPatientsAtomPermissions.write),
       );
     });
 
@@ -291,50 +320,59 @@ void main() {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(DischargeAllPatientsAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(DischargePlannedAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
-        DischargeAllPatientsAtomPermissions.write.isAllowed(reader),
+        DischargePlannedAtomPermissions.write.isAllowed(reader),
         isFalse,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.nextActionPlan.isAllowed(reader),
+        DischargePlannedAtomPermissions.nextActionClearance.isAllowed(reader),
         isFalse,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.requestBilling.isAllowed(reader),
+        DischargePlannedAtomPermissions.requestBilling.isAllowed(reader),
         isFalse,
       );
+      expect(canWriteDischarge(reader), isFalse);
     });
 
-    test('∪ allowance: last_office:read alone satisfies All tab read', () {
+    test('∪ allowance: last_office:read alone satisfies Planned tab read', () {
       final AppAccessPolicy nursing = _policy(
         permissions: <AppPermission>{AppPermissions.lastOfficeRead},
         roles: const <String>['NURSE'],
       );
-      expect(DischargeAllPatientsAtomPermissions.tab.isAllowed(nursing), isTrue);
+      expect(DischargePlannedAtomPermissions.tab.isAllowed(nursing), isTrue);
       expect(
-        DischargeAllPatientsAtomPermissions.listChrome.isAllowed(nursing),
+        DischargePlannedAtomPermissions.listChrome.isAllowed(nursing),
         isTrue,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.write.isAllowed(nursing),
+        DischargePlannedAtomPermissions.write.isAllowed(nursing),
         isFalse,
       );
+      expect(canViewDischargePlanned(nursing), isTrue);
     });
 
-    test('∪ allowance: clinical:read alone satisfies All tab read', () {
+    test('∪ allowance: clinical:read alone satisfies Planned tab read', () {
       final AppAccessPolicy clinical = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       expect(
-        DischargeAllPatientsAtomPermissions.tab.isAllowed(clinical),
+        DischargePlannedAtomPermissions.tab.isAllowed(clinical),
+        isTrue,
+      );
+      expect(
+        canViewDischargeSection(clinical, DischargeDeskSection.planned),
         isTrue,
       );
     });
 
     test(
-      'route entry keeps catalog discharge:read (prompt ∪ maps to unique key)',
+      'route entry keeps source discharge:read (not prompt ∪ of module reads)',
       () {
+        // Source: RouteAccessCatalog.dischargeEntry = ∩ discharge:read +
+        // inpatient-bed-management. Prompt lists clinical|pharmacy|billing|
+        // operations ∪ — keep catalog and note the mapping here.
         final AppAccessPolicy pharmacyOnly = _policy(
           permissions: <AppPermission>{AppPermissions.pharmacyRead},
           roles: const <String>['PHARMACIST'],
@@ -349,56 +387,45 @@ void main() {
             ),
           ],
         );
-        // Prompt lists clinical|pharmacy|billing|operations any-of; source
-        // RouteAccessCatalog uses unique discharge:read — keep source.
         expect(
-          DischargeAllPatientsAtomPermissions.routeEntry.isAllowed(
-            pharmacyOnly,
-          ),
+          DischargePlannedAtomPermissions.routeEntry.isAllowed(pharmacyOnly),
           isFalse,
         );
         expect(
-          DischargeAllPatientsAtomPermissions.tab.isAllowed(pharmacyOnly),
+          DischargePlannedAtomPermissions.tab.isAllowed(pharmacyOnly),
           isFalse,
         );
         expect(
-          DischargeAllPatientsAtomPermissions.medicinesPanel.isAllowed(
+          DischargePlannedAtomPermissions.medicinesPanel.isAllowed(
             pharmacyOnly,
           ),
           isTrue,
         );
 
         final AppAccessPolicy withDischargeRead = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.dischargeRead,
-            AppPermissions.pharmacyRead,
-          },
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
           roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
-              licenseStatus: 'ACTIVE',
-            ),
           ],
         );
         expect(
-          DischargeAllPatientsAtomPermissions.routeEntry.isAllowed(
+          DischargePlannedAtomPermissions.routeEntry.isAllowed(
             withDischargeRead,
           ),
           isTrue,
         );
         expect(
-          DischargeAllPatientsAtomPermissions.tab.isAllowed(withDischargeRead),
+          DischargePlannedAtomPermissions.tab.isAllowed(withDischargeRead),
           isFalse,
         );
       },
     );
 
-    test('subscription strip: missing inpatient module denies All', () {
+    test('subscription strip: missing inpatient module denies Planned', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
@@ -412,13 +439,14 @@ void main() {
         ],
       );
       expect(
-        DischargeAllPatientsAtomPermissions.tab.isAllowed(noModule),
+        DischargePlannedAtomPermissions.tab.isAllowed(noModule),
         isFalse,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.write.isAllowed(noModule),
+        DischargePlannedAtomPermissions.write.isAllowed(noModule),
         isFalse,
       );
+      expect(canViewDischargePlanned(noModule), isFalse);
     });
 
     test('nested clearance reads ∩ per domain', () {
@@ -426,18 +454,40 @@ void main() {
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       expect(
-        DischargeAllPatientsAtomPermissions.medicinesPanel.isAllowed(
-          clinicalOnly,
+        DischargePlannedAtomPermissions.medicinesPanel.isAllowed(clinicalOnly),
+        isFalse,
+      );
+      expect(
+        DischargePlannedAtomPermissions.billingPanel.isAllowed(clinicalOnly),
+        isFalse,
+      );
+      expect(
+        DischargePlannedAtomPermissions.roomTurnover.isAllowed(clinicalOnly),
+        isFalse,
+      );
+
+      final List<DischargeClearanceItem> all = const <DischargeClearanceItem>[
+        DischargeClearanceItem(
+          code: DischargeClearanceCode.doctor,
+          state: DischargeClearanceState.complete,
         ),
-        isFalse,
-      );
+        DischargeClearanceItem(
+          code: DischargeClearanceCode.pharmacy,
+          state: DischargeClearanceState.pending,
+        ),
+        DischargeClearanceItem(
+          code: DischargeClearanceCode.billing,
+          state: DischargeClearanceState.pending,
+        ),
+        DischargeClearanceItem(
+          code: DischargeClearanceCode.bedRelease,
+          state: DischargeClearanceState.pending,
+        ),
+      ];
       expect(
-        DischargeAllPatientsAtomPermissions.billingPanel.isAllowed(clinicalOnly),
-        isFalse,
-      );
-      expect(
-        DischargeAllPatientsAtomPermissions.roomTurnover.isAllowed(clinicalOnly),
-        isFalse,
+        dischargeVisibleClearanceItems(clinicalOnly, all)
+            .map((DischargeClearanceItem item) => item.code),
+        <DischargeClearanceCode>[DischargeClearanceCode.doctor],
       );
 
       final AppAccessPolicy withNested = _policy(
@@ -447,62 +497,45 @@ void main() {
           AppPermissions.billingRead,
           AppPermissions.operationsRead,
         },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'inpatient-bed-management',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'pharmacy-dispensing',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'billing-payments',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'facilities-maintenance',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
       );
       expect(
-        DischargeAllPatientsAtomPermissions.medicinesPanel.isAllowed(
-          withNested,
-        ),
+        DischargePlannedAtomPermissions.medicinesPanel.isAllowed(withNested),
         isTrue,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.billingPanel.isAllowed(withNested),
+        DischargePlannedAtomPermissions.billingPanel.isAllowed(withNested),
         isTrue,
       );
       expect(
-        DischargeAllPatientsAtomPermissions.roomTurnover.isAllowed(withNested),
+        DischargePlannedAtomPermissions.roomTurnover.isAllowed(withNested),
         isTrue,
       );
+      expect(dischargeVisibleClearanceItems(withNested, all).length, all.length);
     });
   });
 
   testWidgets(
-    'read-only: All list + print visible; mutation atoms absent (∩ denial)',
+    'read-only: Planned list visible; Manage clearance absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
       expect(find.text('Alice Planned'), findsOneWidget);
-      expect(find.byTooltip('Start discharge plan'), findsNothing);
+      expect(find.textContaining('Planned'), findsWidgets);
       expect(find.byTooltip('Manage clearance'), findsNothing);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Start discharge plan'), findsNothing);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.tap(find.text('Bob Pending'));
+      await tester.tap(find.text('Alice Planned'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsOneWidget);
@@ -515,7 +548,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: plan next-action and detail mutations mount',
+    'full write ∩: Manage clearance and detail mutations mount',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -524,19 +557,18 @@ void main() {
         },
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.byTooltip('Start discharge plan'), findsOneWidget);
       expect(find.byTooltip('Manage clearance'), findsOneWidget);
+      expect(find.byTooltip('Start discharge plan'), findsNothing);
 
-      await tester.tap(find.text('Bob Pending'));
+      await tester.tap(find.text('Alice Planned'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Start discharge plan'), findsWidgets);
       expect(find.text('Request final billing'), findsOneWidget);
       expect(find.text('Request medicines'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -544,28 +576,28 @@ void main() {
   );
 
   testWidgets(
-    '∪ last_office:read shows All chrome without write controls',
+    '∪ last_office:read shows Planned chrome without write controls',
     (WidgetTester tester) async {
       final AppAccessPolicy nursing = _policy(
         permissions: <AppPermission>{AppPermissions.lastOfficeRead},
         roles: const <String>['NURSE'],
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: nursing,
       );
 
-      expect(find.textContaining('All patients'), findsWidgets);
+      expect(find.textContaining('Planned'), findsWidgets);
       expect(find.text('Alice Planned'), findsOneWidget);
-      expect(find.byTooltip('Start discharge plan'), findsNothing);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Manage clearance'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'pharmacy-only entry ∪ omits All tab (no clinical/last_office read)',
+    'pharmacy-only entry ∪ omits Planned tab (no clinical/last_office read)',
     (WidgetTester tester) async {
       final AppAccessPolicy pharmacyOnly = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyRead},
@@ -582,15 +614,17 @@ void main() {
         ],
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: pharmacyOnly,
+        items: <IpdAdmissionSummary>[_planned, _pending],
       );
 
-      expect(find.textContaining('All patients'), findsNothing);
+      expect(find.textContaining('Planned'), findsNothing);
+      expect(find.text('Alice Planned'), findsNothing);
       expect(
-        DischargeAllPatientsAtomPermissions.tab.isAllowed(pharmacyOnly),
+        DischargePlannedAtomPermissions.tab.isAllowed(pharmacyOnly),
         isFalse,
       );
       expect(find.textContaining('no access'), findsNothing);
@@ -607,7 +641,7 @@ void main() {
         },
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: clinicalOnly,
@@ -623,6 +657,9 @@ void main() {
       expect(find.text('Open pharmacy'), findsNothing);
       expect(find.text('Open billing'), findsNothing);
       expect(find.text('Open housekeeping'), findsNothing);
+      expect(find.text('Pharmacy medicines'), findsNothing);
+      expect(find.text('Final billing'), findsNothing);
+      expect(find.text('Bed release'), findsNothing);
     },
   );
 
@@ -638,27 +675,9 @@ void main() {
           AppPermissions.operationsRead,
           AppPermissions.lastOfficeRead,
         },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'inpatient-bed-management',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'pharmacy-dispensing',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'billing-payments',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'facilities-maintenance',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: withNested,
@@ -673,6 +692,9 @@ void main() {
       expect(find.text('Open billing'), findsOneWidget);
       expect(find.text('Open housekeeping'), findsOneWidget);
       expect(find.text('Open nursing'), findsOneWidget);
+      expect(find.text('Pharmacy medicines'), findsOneWidget);
+      expect(find.text('Final billing'), findsOneWidget);
+      expect(find.text('Bed release'), findsOneWidget);
     },
   );
 
@@ -686,22 +708,104 @@ void main() {
         },
       );
 
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      await tester.tap(find.byTooltip('Start discharge plan').first);
+      await tester.tap(find.byTooltip('Manage clearance').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      verify(() => repository.getAdmissionDetail('adm-pending')).called(1);
+      verify(() => repository.getAdmissionDetail('adm-planned')).called(1);
     },
   );
 
-  testWidgets('mobile viewport keeps All list and next-action reachable', (
+  testWidgets(
+    'post-mutation sync: request billing shows success snackbar on Planned',
+    (WidgetTester tester) async {
+      await _pumpPlannedTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Alice Planned'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Request final billing'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create invoice request'), findsOneWidget);
+      final Finder amountField = find.descendant(
+        of: find.byType(AppFormShell),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(amountField.first, '1000');
+      await tester.tap(find.text('Create invoice request'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discharge workflow updated.'), findsOneWidget);
+      verify(() => repository.createFinalInvoice(any())).called(1);
+    },
+  );
+
+  testWidgets('authorized empty Planned queue state remains observable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPlannedTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      ),
+      items: const <IpdAdmissionSummary>[],
+    );
+
+    expect(find.text('No discharges in this view'), findsOneWidget);
+    expect(find.text('Adjust filters to find discharge work.'), findsOneWidget);
+    expect(find.byType(AppTabStrip), findsOneWidget);
+  });
+
+  testWidgets('authorized load error + Try again remains observable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPlannedTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      ),
+      listOverride: const Result<AppPage<IpdAdmissionSummary>>.failure(
+        NetworkFailure(),
+      ),
+    );
+
+    expect(find.text('Try again'), findsOneWidget);
+
+    when(() => repository.listQueue(any())).thenAnswer(
+      (_) async => Result<AppPage<IpdAdmissionSummary>>.success(
+        AppPage<IpdAdmissionSummary>(
+          items: const <IpdAdmissionSummary>[_planned],
+          request: const AppPageRequest(pageSize: 12),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alice Planned'), findsOneWidget);
+  });
+
+  testWidgets('mobile + desktop viewports keep Planned list reachable', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -711,41 +815,59 @@ void main() {
       },
     );
 
-    await _pumpAllTab(
+    await _pumpPlannedTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      physicalSize: const Size(1440, 900),
+    );
+    expect(find.byTooltip('Manage clearance'), findsOneWidget);
+    expect(find.text('Alice Planned'), findsOneWidget);
+
+    await _pumpPlannedTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       physicalSize: const Size(390, 844),
     );
-
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('Alice'), findsWidgets);
     expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
   });
 
-  testWidgets('dark theme keeps authorized All chrome without no-access banners', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy reader = _policy(
-      permissions: <AppPermission>{AppPermissions.clinicalRead},
-    );
+  testWidgets(
+    'light + dark themes keep authorized Planned chrome without no-access',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
 
-    await _pumpAllTab(
-      tester,
-      repository: repository,
-      accessPolicy: reader,
-      themeMode: ThemeMode.dark,
-    );
+      await _pumpPlannedTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        themeMode: ThemeMode.light,
+      );
+      expect(find.text('Alice Planned'), findsOneWidget);
+      expect(find.byTooltip('Manage clearance'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
 
-    expect(find.text('Alice Planned'), findsOneWidget);
-    expect(find.byTooltip('Start discharge plan'), findsNothing);
-    expect(find.textContaining('no access'), findsNothing);
-  });
+      await _pumpPlannedTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        themeMode: ThemeMode.dark,
+      );
+      expect(find.text('Alice Planned'), findsOneWidget);
+      expect(find.byTooltip('Manage clearance'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
 
   testWidgets(
-    'subscription strip: missing inpatient module empties All chrome',
+    'subscription strip: missing inpatient module empties Planned chrome',
     (WidgetTester tester) async {
-      await _pumpAllTab(
+      await _pumpPlannedTab(
         tester,
         repository: repository,
         accessPolicy: _policy(

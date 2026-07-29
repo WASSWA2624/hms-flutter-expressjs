@@ -329,27 +329,26 @@ void main() {
     });
 
     test(
-      'route entry ∪: pharmacy:read alone satisfies entry, not Completed tab',
+      'route entry ∩: discharge:read satisfies entry, not Completed tab',
       () {
-        final AppAccessPolicy pharmacyOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+        // Source RouteAccessCatalog uses discharge:read (prompt any-of
+        // clinical/pharmacy/billing/operations is superseded).
+        final AppAccessPolicy entryOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
-              licenseStatus: 'ACTIVE',
-            ),
           ],
         );
         expect(
-          DischargeCompletedAtomPermissions.routeEntry.isAllowed(pharmacyOnly),
+          DischargeCompletedAtomPermissions.routeEntry.isAllowed(entryOnly),
           isTrue,
         );
         expect(
-          DischargeCompletedAtomPermissions.tab.isAllowed(pharmacyOnly),
+          DischargeCompletedAtomPermissions.tab.isAllowed(entryOnly),
           isFalse,
         );
       },
@@ -572,20 +571,19 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪ without tab read omits Completed chrome',
+    'route entry ∩ without Completed tab read omits Completed chrome',
     (WidgetTester tester) async {
+      // Entry ∩ discharge:read keeps Planned/Pending; Completed needs
+      // clinical:read | last_office:read.
       await _pumpCompletedTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
           ],
@@ -596,6 +594,8 @@ void main() {
       expect(find.text('Carol Completed'), findsNothing);
       expect(find.textContaining('Completed'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.textContaining('Planned'), findsWidgets);
     },
   );
 

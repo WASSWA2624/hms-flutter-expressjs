@@ -184,27 +184,26 @@ void main() {
     });
 
     test(
-      'route entry ∪: pharmacy:read alone satisfies entry, not Follow-ups tab',
+      'route entry ∩: discharge:read satisfies entry, not Follow-ups tab',
       () {
-        final AppAccessPolicy pharmacyOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+        // Source RouteAccessCatalog uses discharge:read (prompt any-of
+        // clinical/pharmacy/billing/operations is superseded).
+        final AppAccessPolicy entryOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
               licenseStatus: 'ACTIVE',
             ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
-              licenseStatus: 'ACTIVE',
-            ),
           ],
         );
         expect(
-          DischargeFollowUpsAtomPermissions.routeEntry.isAllowed(pharmacyOnly),
+          DischargeFollowUpsAtomPermissions.routeEntry.isAllowed(entryOnly),
           isTrue,
         );
         expect(
-          DischargeFollowUpsAtomPermissions.tab.isAllowed(pharmacyOnly),
+          DischargeFollowUpsAtomPermissions.tab.isAllowed(entryOnly),
           isFalse,
         );
       },
@@ -327,14 +326,13 @@ void main() {
         dischargeRepository: dischargeRepository,
         followUpRepository: followUpRepository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          // Entry ∩ discharge:read keeps Pending clearance (still entry-gated);
+          // Follow-ups / All / Planned / Completed need clinical|last_office read ∪.
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
           ],
@@ -345,10 +343,10 @@ void main() {
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      // Queue tabs that use entry ∪ remain (All/Completed need read ∪).
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('Planned'), findsWidgets);
+      expect(find.textContaining('Pending clearance'), findsWidgets);
       expect(find.textContaining('All patients'), findsNothing);
+      expect(_tab('Planned'), findsNothing);
     },
   );
 
@@ -728,14 +726,11 @@ void main() {
         dischargeRepository: dischargeRepository,
         followUpRepository: followUpRepository,
         accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.pharmacyRead},
+          permissions: <AppPermission>{AppPermissions.dischargeRead},
+          roles: const <String>['PHARMACIST'],
           modules: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'inpatient-bed-management',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'pharmacy-dispensing',
               licenseStatus: 'ACTIVE',
             ),
           ],
@@ -745,7 +740,7 @@ void main() {
 
       expect(_tab('Follow-ups'), findsNothing);
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
-      expect(find.textContaining('Planned'), findsWidgets);
+      expect(find.textContaining('Pending clearance'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

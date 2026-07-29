@@ -359,8 +359,8 @@ class _DischargeWorkspaceContentState
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(encounterType: 'IPD'),
                 storageKeyPrefix: 'discharge_follow_ups',
-                readRequirement: dischargeFollowUpsRequirement,
-                writeRequirement: dischargeFollowUpsWriteRequirement,
+                readRequirement: DischargeFollowUpsAtomPermissions.tab,
+                writeRequirement: DischargeFollowUpsAtomPermissions.write,
               )
             else if (dischargeSectionTabRequirement(_section).isAllowed(
               accessPolicy,
@@ -1516,23 +1516,31 @@ class _DischargeNextActionButton extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
 
     if (isCompletedDischarge(item)) {
-      return _DischargeCompactAction(
-        label: l10n.dischargePrintSummaryAction,
-        icon: Icons.print_outlined,
-        onPressed: () =>
-            unawaited(_printOrOpenDetailFromQueue(context, ref, item)),
+      return AppAccessActionGate(
+        requirement: DischargeCompletedAtomPermissions.nextActionPrint,
+        builder: (BuildContext context, bool isAllowed) {
+          return _DischargeCompactAction(
+            label: l10n.dischargePrintSummaryAction,
+            icon: Icons.print_outlined,
+            onPressed: () =>
+                unawaited(_printOrOpenDetailFromQueue(context, ref, item)),
+          );
+        },
       );
     }
 
+    final bool planned = isPlannedDischarge(item);
     return AppAccessActionGate(
-      requirement: DischargeAllPatientsAtomPermissions.nextActionPlan,
+      requirement: planned
+          ? DischargePlannedAtomPermissions.nextActionClearance
+          : DischargeAllPatientsAtomPermissions.nextActionPlan,
       builder: (BuildContext context, bool isAllowed) {
-        final String label = isPlannedDischarge(item)
+        final String label = planned
             ? l10n.dischargeManageClearanceAction
             : l10n.dischargeStartPlanAction;
         return _DischargeCompactAction(
           label: label,
-          icon: isPlannedDischarge(item)
+          icon: planned
               ? Icons.fact_check_outlined
               : Icons.edit_note_outlined,
           onPressed: () =>

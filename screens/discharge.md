@@ -97,9 +97,43 @@ Tab-strip toolbar actions were removed. Queue work refreshes after mutations, re
 
 ### Follow-ups tab
 
-- Follow-up worklist panel (`FollowUpWorklistPanel`, IPD scope)
-  - Location: Follow-ups section body.
-  - Condition: Follow-ups tab selected.
+Reachable only when Follow-ups strip tab is selected (`?section=follow-ups`). Nested planning / clearance / billing / pharmacy UI is **not** opened from this tab.
+
+- **Follow-ups** (strip tab + count)
+  - Location: `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Mounts IPD-scoped `FollowUpWorklistPanel`.
+  - Condition: Read ∪ `clinical:read` | `last_office:read` + `inpatient-bed-management`; tab omitted otherwise.
+
+- **Search / Clear / Settings (columns)**
+  - Location: Follow-ups `AppListTable` chrome.
+  - Opens modal: Table Settings.
+  - Immediate result: Filters / column visibility for scheduled follow-ups.
+  - Condition: Same read ∪ as the tab.
+
+- **Empty / loading / error / Try again**
+  - Location: Panel body / `AppStateView`.
+  - Opens modal: No.
+  - Immediate result: Authorized chrome states; retry reloads list.
+  - Condition: Same read ∪.
+
+- **Row select** → Follow-up details
+  - Location: Table row / mobile item.
+  - Opens modal: Shared reception follow-up detail dialog (write requirement overridden by discharge).
+  - Immediate result: Shows patient + schedule; Close only when write denied.
+  - Condition: Same read ∪.
+
+- **Reschedule follow-up** / **Mark completed**
+  - Location: Detail dialog actions.
+  - Opens modal: Reschedule opens Save follow-up dialog; complete mutates then closes.
+  - Immediate result: Updates follow-up; list refresh; empty state when none remain.
+  - Condition: Write ∩ `clinical:write` + module; unauthorized actions absent (no disabled stubs).
+
+- **Save follow-up** (nested reschedule dialog)
+  - Location: Reschedule dialog actions.
+  - Opens modal: N/A (already open).
+  - Immediate result: Persists new schedule; closes on success.
+  - Condition: Same write ∩.
 
 ---
 

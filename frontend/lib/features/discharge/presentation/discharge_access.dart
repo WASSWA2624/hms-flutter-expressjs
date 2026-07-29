@@ -32,7 +32,28 @@ const AccessRequirement dischargeWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement dischargeReadRequirement =
     dischargeWorkspaceReadRequirement;
 
+/// Pending clearance tab read (matrix ∪): multi-department clearance desk.
+///
+/// `clinical:read` | `pharmacy:read` | `billing:read` | `operations:read` |
+/// `last_office:read` + `inpatient-bed-management`. Section gates for meds /
+/// bills / room-turnover remain ∩ within each domain (union across sections).
+const AccessRequirement dischargePendingClearanceReadRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.clinicalRead,
+        AppPermissions.pharmacyRead,
+        AppPermissions.billingRead,
+        AppPermissions.operationsRead,
+        AppPermissions.lastOfficeRead,
+      ],
+      activeModules: <String>[dischargeInpatientBedModule],
+    );
+
 /// Route entry — unique atom from [RouteAccessCatalog.discharge].
+///
+/// Source gate is ∩ `discharge:read` + `inpatient-bed-management` (not the
+/// legacy prompt any-of clinical/pharmacy/billing/operations). Tab read ∪
+/// remains `clinical:read` | `last_office:read` after entry.
 const AccessRequirement dischargeWorkspaceEntryRequirement =
     RouteAccessCatalog.dischargeEntry;
 
@@ -127,11 +148,12 @@ AccessRequirement dischargeClearanceItemReadRequirement(
 /// Per-section tab strip gate.
 AccessRequirement dischargeSectionTabRequirement(DischargeDeskSection section) {
   return switch (section) {
-    DischargeDeskSection.all => dischargeWorkspaceReadRequirement,
-    DischargeDeskSection.completed => dischargeWorkspaceReadRequirement,
-    DischargeDeskSection.followUps => dischargeFollowUpsRequirement,
-    // Other desk tabs stay route-gated until their permission scans land.
-    _ => dischargeWorkspaceEntryRequirement,
+    DischargeDeskSection.all => DischargeAllPatientsAtomPermissions.tab,
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.tab,
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.tab,
+    DischargeDeskSection.completed => DischargeCompletedAtomPermissions.tab,
+    DischargeDeskSection.followUps => DischargeFollowUpsAtomPermissions.tab,
   };
 }
 
@@ -166,8 +188,20 @@ bool canViewDischargeAll(AppAccessPolicy policy) {
   return DischargeAllPatientsAtomPermissions.tab.isAllowed(policy);
 }
 
+bool canViewDischargePlanned(AppAccessPolicy policy) {
+  return DischargePlannedAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewDischargePendingClearance(AppAccessPolicy policy) {
+  return DischargePendingClearanceAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canViewDischargeCompleted(AppAccessPolicy policy) {
   return DischargeCompletedAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canReadDischargePendingClearance(AppAccessPolicy policy) {
+  return dischargePendingClearanceReadRequirement.isAllowed(policy);
 }
 
 bool canReadDischargePharmacyClearance(AppAccessPolicy policy) {
@@ -242,12 +276,13 @@ DischargeDeskSection? dischargeFallbackSection(AppAccessPolicy policy) {
 /// | Detail Open Billing | navigate | billing:read ∩ |
 /// | Detail Open Housekeeping | navigate | operations:read ∩ |
 /// | Planning Save plan / Finalize | create / update | write source ∩ |
-/// | Route entry (deep link) | navigate | entry ∪ |
+/// | Route entry (deep link) | navigate | catalog `discharge:read` ∩ module |
 ///
 /// Write keeps source roles + `clinical:write` + module rather than matrix ∩
-/// `clinical:write` alone. Inventory previously left request billing/pharmacy
-/// ungated; matrix create ∩ applies via [create]/[requestBilling]/
-/// [requestPharmacy].
+/// `clinical:write` alone. Route entry maps prompt ∪ to catalog unique
+/// `discharge:read` (see [dischargeWorkspaceEntryRequirement]). Inventory
+/// previously left request billing/pharmacy ungated; matrix create ∩ applies
+/// via [create]/[requestBilling]/[requestPharmacy].
 abstract final class DischargeAllPatientsAtomPermissions {
   static const AccessRequirement tab = dischargeWorkspaceReadRequirement;
   static const AccessRequirement listChrome = dischargeWorkspaceReadRequirement;
@@ -305,6 +340,196 @@ abstract final class DischargeAllPatientsAtomPermissions {
   static const AccessRequirement routeEntry = dischargeWorkspaceEntryRequirement;
 }
 
+/// Planned tab atom → permission mapping (inventory + matrix).
+///
+/// Worklist `?section=planned`. Rows are planned discharges; next-action is
+/// **Manage clearance** (create/update). Planning / finalize / request mutations
+/// need write. Clearance checklist meds / bills / room-turnover steps use nested
+/// ∩ reads (pharmacy / billing / operations); union across sections. Matrix
+/// nested cross-module write rows are _(n/a)_.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Planned tab / count badge | navigate | read ∪ `clinical:read` \| `last_office:read` |
+/// | Search / filters / columns | read chrome | read ∪ |
+/// | Empty / error / retry / loading | read chrome | read ∪ |
+/// | Row select → detail | read | read ∪ |
+/// | Next action Manage clearance | update | write source ∩ |
+/// | Detail Continue discharge | create / update | write source ∩ |
+/// | Detail Request billing / pharmacy | create | write source ∩ |
+/// | Detail Print summary | export / read | read ∪ |
+/// | Detail clearance pharmacy step / meds panel | nested read | pharmacy:read ∩ |
+/// | Detail clearance billing step / invoices panel | nested read | billing:read ∩ |
+/// | Detail clearance bed / housekeeping steps | nested read | operations:read ∩ |
+/// | Detail Open IPD | navigate | read ∪ |
+/// | Detail Open Nursing | navigate | last_office:read ∩ |
+/// | Detail Open Pharmacy | navigate | pharmacy:read ∩ |
+/// | Detail Open Billing | navigate | billing:read ∩ |
+/// | Detail Open Housekeeping | navigate | operations:read ∩ |
+/// | Planning Save plan / Finalize | create / update | write source ∩ |
+/// | Route entry (deep link) | navigate | entry ∩ `discharge:read` |
+///
+/// Write keeps source roles + `clinical:write` + module rather than matrix ∩
+/// `clinical:write` alone. Route entry keeps [RouteAccessCatalog.dischargeEntry]
+/// (`discharge:read` ∩ module); prompt any-of clinical/pharmacy/billing/
+/// operations is superseded by the catalog. Shared detail chrome reuses the
+/// same requirement instances as [DischargeAllPatientsAtomPermissions].
+abstract final class DischargePlannedAtomPermissions {
+  static const AccessRequirement tab = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement search = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement filters = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement settings = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement empty = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement loading = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement retry = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement rowSelect = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement detail = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement nextActionClearance =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement nextActionPlan =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement continueDischarge =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement create = dischargeClinicalWriteRequirement;
+  static const AccessRequirement update = dischargeClinicalWriteRequirement;
+  static const AccessRequirement delete = dischargeClinicalWriteRequirement;
+  static const AccessRequirement write = dischargeClinicalWriteRequirement;
+  static const AccessRequirement requestBilling =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement requestPharmacy =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement printSummary =
+      dischargeWorkspaceReadRequirement;
+  static const AccessRequirement medicinesPanel =
+      dischargePharmacyClearanceReadRequirement;
+  static const AccessRequirement billingPanel =
+      dischargeBillingClearanceReadRequirement;
+  static const AccessRequirement roomTurnover =
+      dischargeOperationsClearanceReadRequirement;
+  static const AccessRequirement openIpd = dischargeIpdNavigateRequirement;
+  static const AccessRequirement openNursing =
+      dischargeNursingNavigateRequirement;
+  static const AccessRequirement openPharmacy =
+      dischargePharmacyNavigateRequirement;
+  static const AccessRequirement openBilling =
+      dischargeBillingNavigateRequirement;
+  static const AccessRequirement openHousekeeping =
+      dischargeHousekeepingNavigateRequirement;
+  static const AccessRequirement nestedPharmacyRead =
+      dischargePharmacyClearanceReadRequirement;
+  static const AccessRequirement nestedBillingRead =
+      dischargeBillingClearanceReadRequirement;
+  static const AccessRequirement nestedOperationsRead =
+      dischargeOperationsClearanceReadRequirement;
+  static const AccessRequirement nestedWrite =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement nestedRead = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement entry = dischargeWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = dischargeWorkspaceEntryRequirement;
+}
+
+/// Pending clearance tab atom → permission mapping (inventory + matrix).
+///
+/// Worklist `?section=pending` / `pending-clearance`. Multi-department
+/// clearance; tab read ∪ includes pharmacy / billing / operations so those
+/// desks see this queue without clinical:read. Planning / finalize / request
+/// mutations need write source ∩. Clearance checklist meds / bills /
+/// room-turnover steps use nested ∩ reads; union across sections. Matrix nested
+/// cross-module write rows are _(n/a)_.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Pending clearance tab / count badge | navigate | read ∪ clinical\|pharmacy\|billing\|operations\|last_office |
+/// | Search / filters / columns | read chrome | pending read ∪ |
+/// | Empty / error / retry / loading | read chrome | pending read ∪ |
+/// | Row select → detail | read | pending read ∪ |
+/// | Next action Start plan | create / update | write source ∩ |
+/// | Detail Continue discharge | create / update | write source ∩ |
+/// | Detail Request billing / pharmacy | create | write source ∩ |
+/// | Detail Print summary | export / read | pending read ∪ |
+/// | Detail clearance pharmacy step / meds panel | nested read | pharmacy:read ∩ |
+/// | Detail clearance billing step / invoices panel | nested read | billing:read ∩ |
+/// | Detail clearance bed / housekeeping steps | nested read | operations:read ∩ |
+/// | Detail Open IPD | navigate | workspace read ∪ |
+/// | Detail Open Nursing | navigate | last_office:read ∩ |
+/// | Detail Open Pharmacy | navigate | pharmacy:read ∩ |
+/// | Detail Open Billing | navigate | billing:read ∩ |
+/// | Detail Open Housekeeping | navigate | operations:read ∩ |
+/// | Planning Save plan / Finalize | create / update | write source ∩ |
+/// | Route entry (deep link) | navigate | entry ∩ `discharge:read` (source) |
+///
+/// Write keeps source roles + `clinical:write` + module rather than matrix ∩
+/// `clinical:write` alone. Route entry keeps [RouteAccessCatalog.dischargeEntry]
+/// (`discharge:read`); prompt listed clinical/pharmacy/billing/operations any-of.
+/// Shared nested / write chrome reuses the same requirement instances as
+/// [DischargeAllPatientsAtomPermissions].
+abstract final class DischargePendingClearanceAtomPermissions {
+  static const AccessRequirement tab =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement listChrome =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement search =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement filters =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement settings =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement empty =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement loading =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement retry =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement rowSelect =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement detail =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement nextActionPlan =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement nextActionClearance =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement continueDischarge =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement create = dischargeClinicalWriteRequirement;
+  static const AccessRequirement update = dischargeClinicalWriteRequirement;
+  static const AccessRequirement delete = dischargeClinicalWriteRequirement;
+  static const AccessRequirement write = dischargeClinicalWriteRequirement;
+  static const AccessRequirement requestBilling =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement requestPharmacy =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement printSummary =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement medicinesPanel =
+      dischargePharmacyClearanceReadRequirement;
+  static const AccessRequirement billingPanel =
+      dischargeBillingClearanceReadRequirement;
+  static const AccessRequirement roomTurnover =
+      dischargeOperationsClearanceReadRequirement;
+  static const AccessRequirement openIpd = dischargeIpdNavigateRequirement;
+  static const AccessRequirement openNursing =
+      dischargeNursingNavigateRequirement;
+  static const AccessRequirement openPharmacy =
+      dischargePharmacyNavigateRequirement;
+  static const AccessRequirement openBilling =
+      dischargeBillingNavigateRequirement;
+  static const AccessRequirement openHousekeeping =
+      dischargeHousekeepingNavigateRequirement;
+  static const AccessRequirement nestedPharmacyRead =
+      dischargePharmacyClearanceReadRequirement;
+  static const AccessRequirement nestedBillingRead =
+      dischargeBillingClearanceReadRequirement;
+  static const AccessRequirement nestedOperationsRead =
+      dischargeOperationsClearanceReadRequirement;
+  static const AccessRequirement nestedWrite =
+      dischargeClinicalWriteRequirement;
+  static const AccessRequirement nestedRead =
+      dischargePendingClearanceReadRequirement;
+  static const AccessRequirement entry = dischargeWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = dischargeWorkspaceEntryRequirement;
+}
+
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
 /// Worklist `?section=completed`. Prefer read: next-action Print (no write
@@ -331,11 +556,13 @@ abstract final class DischargeAllPatientsAtomPermissions {
 /// | Detail Open Pharmacy | navigate | pharmacy:read ∩ |
 /// | Detail Open Billing | navigate | billing:read ∩ |
 /// | Detail Open Housekeeping | navigate | operations:read ∩ |
-/// | Route entry (deep link) | navigate | entry ∪ |
+/// | Route entry (deep link) | navigate | entry ∩ `discharge:read` |
 ///
 /// Write keeps source roles + `clinical:write` + module rather than matrix ∩
-/// `clinical:write` alone. Shared detail chrome reuses the same requirement
-/// instances as [DischargeAllPatientsAtomPermissions].
+/// `clinical:write` alone. Route entry keeps [RouteAccessCatalog.dischargeEntry]
+/// (`discharge:read` ∩ module); prompt any-of clinical/pharmacy/billing/
+/// operations is superseded by the catalog. Shared detail chrome reuses the
+/// same requirement instances as [DischargeAllPatientsAtomPermissions].
 abstract final class DischargeCompletedAtomPermissions {
   static const AccessRequirement tab = dischargeWorkspaceReadRequirement;
   static const AccessRequirement listChrome = dischargeWorkspaceReadRequirement;
@@ -406,7 +633,7 @@ abstract final class DischargeCompletedAtomPermissions {
 /// | Reschedule follow-up | update | write ∩ `clinical:write` |
 /// | Mark completed | update | write ∩ `clinical:write` |
 /// | Save follow-up (nested reschedule dialog) | update | write ∩ |
-/// | Route entry (deep link) | navigate | entry ∪ |
+/// | Route entry (deep link) | navigate | entry ∩ `discharge:read` (source) |
 abstract final class DischargeFollowUpsAtomPermissions {
   static const AccessRequirement tab = dischargeFollowUpsRequirement;
   static const AccessRequirement listChrome = dischargeFollowUpsRequirement;

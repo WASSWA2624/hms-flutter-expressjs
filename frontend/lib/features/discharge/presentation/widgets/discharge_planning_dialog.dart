@@ -342,25 +342,35 @@ class _DischargePlanningDialogState
             onPressed: _loadDetail,
           ),
           if (!_isPlanned)
-            AppButton.primary(
-              label: l10n.dischargeSavePlanAction,
-              isLoading: _submitting,
-              onPressed: _planDischarge,
+            AppAccessActionGate(
+              requirement: dischargeClinicalWriteRequirement,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.primary(
+                  label: l10n.dischargeSavePlanAction,
+                  isLoading: _submitting,
+                  onPressed: _planDischarge,
+                );
+              },
             )
           else
-            AppButton.primary(
-              label: clinicalDispositionActionLabel(
-                l10n,
-                sourceQueue: 'IPD',
-                status: detail.summary.admissionStatus,
-                stage: detail.summary.stage,
-                location: detail.summary.location,
-                hasAdmission: true,
-              ),
-              leadingIcon: Icons.logout_outlined,
-              isLoading: _submitting,
-              enabled: _canFinalize,
-              onPressed: _canFinalize ? _finalizeDischarge : null,
+            AppAccessActionGate(
+              requirement: dischargeClinicalWriteRequirement,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppButton.primary(
+                  label: clinicalDispositionActionLabel(
+                    l10n,
+                    sourceQueue: 'IPD',
+                    status: detail.summary.admissionStatus,
+                    stage: detail.summary.stage,
+                    location: detail.summary.location,
+                    hasAdmission: true,
+                  ),
+                  leadingIcon: Icons.logout_outlined,
+                  isLoading: _submitting,
+                  enabled: _canFinalize,
+                  onPressed: _canFinalize ? _finalizeDischarge : null,
+                );
+              },
             ),
         ],
       ],
@@ -572,7 +582,7 @@ class _RelatedRecordsSection extends StatelessWidget {
   }
 }
 
-class _ResolveLinksSection extends StatelessWidget {
+class _ResolveLinksSection extends ConsumerWidget {
   const _ResolveLinksSection({
     required this.detail,
     required this.enabled,
@@ -584,59 +594,63 @@ class _ResolveLinksSection extends StatelessWidget {
   final Future<void> Function(String location) onResolve;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final String admissionId = detail.summary.displayId ?? detail.summary.id;
+    final List<Widget> children = <Widget>[
+      if (dischargeNursingNavigateRequirement.isAllowed(policy))
+        AppButton.tertiary(
+          label: l10n.dischargeOpenNursingAction,
+          leadingIcon: Icons.health_and_safety_outlined,
+          enabled: enabled,
+          onPressed: () => onResolve(AppRoutes.nursing.path),
+        ),
+      if (dischargePharmacyNavigateRequirement.isAllowed(policy))
+        AppButton.tertiary(
+          label: l10n.dischargeOpenPharmacyAction,
+          leadingIcon: Icons.medication_outlined,
+          enabled: enabled,
+          onPressed: () => onResolve(AppRoutes.pharmacy.path),
+        ),
+      if (dischargeBillingNavigateRequirement.isAllowed(policy))
+        AppButton.tertiary(
+          label: l10n.dischargeOpenBillingAction,
+          leadingIcon: Icons.receipt_long_outlined,
+          enabled: enabled,
+          onPressed: () => onResolve(AppRoutes.billing.path),
+        ),
+      if (admissionId.isNotEmpty &&
+          dischargeIpdNavigateRequirement.isAllowed(policy))
+        AppButton.tertiary(
+          label: l10n.dischargeOpenIpdAction,
+          leadingIcon: Icons.local_hotel_outlined,
+          enabled: enabled,
+          onPressed: () => onResolve(
+            AppRoutes.ipd.location(
+              queryParameters: <String, String>{'id': admissionId},
+            ),
+          ),
+        ),
+      if (dischargeHousekeepingNavigateRequirement.isAllowed(policy))
+        AppButton.tertiary(
+          label: l10n.dischargeOpenHousekeepingAction,
+          leadingIcon: Icons.cleaning_services_outlined,
+          enabled: enabled,
+          onPressed: () => onResolve(AppRoutes.housekeeping.path),
+        ),
+    ];
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return AppWorkspaceDetailPanel(
       title: l10n.dischargeCrossModuleLinksTitle,
       child: Wrap(
         spacing: theme.spacing.sm,
         runSpacing: theme.spacing.sm,
-        children: <Widget>[
-          AppAccessGate(
-            requirement: dischargeNursingNavigateRequirement,
-            child: AppButton.tertiary(
-              label: l10n.dischargeOpenNursingAction,
-              leadingIcon: Icons.health_and_safety_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.nursing.path),
-            ),
-          ),
-          AppAccessGate(
-            requirement: dischargePharmacyNavigateRequirement,
-            child: AppButton.tertiary(
-              label: l10n.dischargeOpenPharmacyAction,
-              leadingIcon: Icons.medication_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.pharmacy.path),
-            ),
-          ),
-          AppAccessGate(
-            requirement: dischargeBillingNavigateRequirement,
-            child: AppButton.tertiary(
-              label: l10n.dischargeOpenBillingAction,
-              leadingIcon: Icons.receipt_long_outlined,
-              enabled: enabled,
-              onPressed: () => onResolve(AppRoutes.billing.path),
-            ),
-          ),
-          if (admissionId.isNotEmpty)
-            AppAccessGate(
-              requirement: dischargeIpdNavigateRequirement,
-              child: AppButton.tertiary(
-                label: l10n.dischargeOpenIpdAction,
-                leadingIcon: Icons.local_hotel_outlined,
-                enabled: enabled,
-                onPressed: () => onResolve(
-                  AppRoutes.ipd.location(
-                    queryParameters: <String, String>{'id': admissionId},
-                  ),
-                ),
-              ),
-            ),
-        ],
+        children: children,
       ),
     );
   }
