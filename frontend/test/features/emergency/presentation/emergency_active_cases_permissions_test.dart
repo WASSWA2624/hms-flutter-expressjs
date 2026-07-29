@@ -45,20 +45,58 @@ const EmergencyCaseDetail _activeDetail = EmergencyCaseDetail(
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
-  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
-  ],
+  List<AppModuleEntitlement>? modules,
+  String? tenantId = 'tenant-1',
 }) {
+  final bool needsPatient = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.patientWrite ||
+        permission == AppPermissions.patientRead,
+  );
+  final bool needsClinical = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.clinicalWrite ||
+        permission == AppPermissions.clinicalRead,
+  );
+  final bool needsOperations = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.operationsWrite ||
+        permission == AppPermissions.operationsRead,
+  );
+  final List<AppModuleEntitlement> resolvedModules =
+      modules ??
+      <AppModuleEntitlement>[
+        const AppModuleEntitlement(
+          code: 'scheduling-queue',
+          licenseStatus: 'ACTIVE',
+        ),
+        if (needsPatient)
+          const AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        if (needsClinical)
+          const AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        if (needsOperations)
+          const AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+      ];
+
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(
-        roles: <String>['NURSE'],
-        tenantId: 'tenant-1',
+      user: AuthUserProfile(
+        roles: const <String>['NURSE'],
+        tenantId: tenantId,
         facilityId: 'facility-1',
       ),
       permissions: permissions,
-      moduleEntitlements: modules,
+      moduleEntitlements: resolvedModules,
       isAuthorizationHydrated: true,
     ),
   );
@@ -168,14 +206,13 @@ Future<void> _pumpActiveTab(
       ),
     ),
   );
+  // Avoid pumpAndSettle — emergency adaptive polling keeps the frame busy.
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 500));
-  await tester.pumpAndSettle();
-  // Deep-link detail opens in a post-frame + async selectCase path.
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 400));
   if (initialLocation.contains('id=')) {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
   }
 }
 
@@ -199,87 +236,271 @@ void main() {
     repository = _MockEmergencyRepository();
   });
 
-  test('atom map reuses emergency *Requirement helpers (no second vocabulary)', () {
-    expect(
-      identical(
+  group('EmergencyActiveCasesAtomPermissions helpers', () {
+    test('reuses feature *Requirement helpers (no second vocabulary)', () {
+      expect(
         EmergencyActiveCasesAtomPermissions.tab,
-        emergencyWorkspaceReadRequirement,
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.listChrome,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.empty,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.loading,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.retry,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.printSummary,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
         EmergencyActiveCasesAtomPermissions.quickArrival,
-        emergencyWorkspaceWriteRequirement,
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.create,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.update,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.nextActionTriage,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.success,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.validation,
+        same(emergencyWriteRequirement),
+      );
+      expect(
         EmergencyActiveCasesAtomPermissions.delete,
-        emergencyWorkspaceDeleteRequirement,
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
+        same(emergencyDeleteRequirement),
+      );
+      expect(
         EmergencyActiveCasesAtomPermissions.handoff,
-        emergencyHandoffWriteRequirement,
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.nextActionHandoff,
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.panelDeepLink,
+        same(emergencyWriteRequirement),
+      );
+      expect(
         EmergencyActiveCasesAtomPermissions.routeEntry,
-        RouteAccessCatalog.emergencyEntry,
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
-        EmergencyAllAtomPermissions.quickArrival,
-        EmergencyActiveCasesAtomPermissions.quickArrival,
-      ),
-      isTrue,
-    );
-  });
+        same(RouteAccessCatalog.emergencyEntry),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.routeEntryUnion,
+        same(emergencyWorkspaceRouteUnionRequirement),
+      );
+      // Nested cross-module matrix _(n/a)_ — reuses emergency gates only.
+      expect(
+        EmergencyActiveCasesAtomPermissions.nestedWrite,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.nestedRead,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        emergencyBoardTabRequirement(EmergencyBoardTab.active),
+        same(EmergencyActiveCasesAtomPermissions.tab),
+      );
+    });
 
-  test('route entry ∪ allows operations:read with scheduling-queue', () {
-    final AppAccessPolicy opsEntry = _policy(
-      permissions: <AppPermission>{AppPermissions.operationsRead},
-      modules: const <AppModuleEntitlement>[
-        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
-        AppModuleEntitlement(
-          code: 'facilities-maintenance',
-          licenseStatus: 'ACTIVE',
-        ),
-      ],
-    );
-    expect(
-      EmergencyActiveCasesAtomPermissions.routeEntry.isAllowed(opsEntry),
-      isTrue,
-    );
-    expect(
-      EmergencyActiveCasesAtomPermissions.tab.isAllowed(opsEntry),
-      isFalse,
-    );
-    expect(canEnterEmergencyWorkspace(opsEntry), isTrue);
-    expect(canReadEmergency(opsEntry), isFalse);
-  });
+    test('∩ denial: missing emergency:read strips Active tab', () {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyWrite},
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(canViewEmergencyActive(writeOnly), isFalse);
+      expect(
+        EmergencyActiveCasesAtomPermissions.write.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
 
-  test('subscription strips write when scheduling-queue is absent', () {
-    final AppAccessPolicy capped = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.emergencyRead,
-        AppPermissions.emergencyWrite,
-        AppPermissions.emergencyDelete,
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyRead},
+      );
+      expect(canViewEmergencyActive(reader), isTrue);
+      expect(
+        EmergencyActiveCasesAtomPermissions.write.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.delete.isAllowed(reader),
+        isFalse,
+      );
+    });
+
+    test('∩ denial: write alone does not grant delete', () {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.delete.isAllowed(writer),
+        isFalse,
+      );
+      expect(canDeleteEmergency(writer), isFalse);
+
+      final AppAccessPolicy deleter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyDelete,
+        },
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.delete.isAllowed(deleter),
+        isTrue,
+      );
+    });
+
+    test(
+      '∪ allowance: clinical:write satisfies handoff without emergency:write',
+      () {
+        final AppAccessPolicy clinicalHandoff = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        expect(
+          EmergencyActiveCasesAtomPermissions.handoff.isAllowed(
+            clinicalHandoff,
+          ),
+          isTrue,
+        );
+        expect(
+          EmergencyActiveCasesAtomPermissions.nextActionHandoff.isAllowed(
+            clinicalHandoff,
+          ),
+          isTrue,
+        );
+        expect(
+          EmergencyActiveCasesAtomPermissions.quickArrival.isAllowed(
+            clinicalHandoff,
+          ),
+          isFalse,
+        );
+        expect(
+          EmergencyActiveCasesAtomPermissions.triage.isAllowed(clinicalHandoff),
+          isFalse,
+        );
+        expect(canShowEmergencyNextAction(clinicalHandoff), isTrue);
       },
-      modules: const <AppModuleEntitlement>[],
     );
-    expect(canReadEmergency(capped), isFalse);
-    expect(canWriteEmergency(capped), isFalse);
-    expect(canDeleteEmergency(capped), isFalse);
-    expect(emergencyAllowedBoardTabs(capped), isEmpty);
+
+    test('∪ allowance: operations:read satisfies catalog route-entry', () {
+      final AppAccessPolicy opsReader = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.routeEntry.isAllowed(opsReader),
+        isTrue,
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.routeEntryUnion.isAllowed(
+          opsReader,
+        ),
+        isTrue,
+      );
+      // Active tab chrome stays ∩ emergency:read.
+      expect(canViewEmergencyActive(opsReader), isFalse);
+      expect(canReadEmergency(opsReader), isFalse);
+    });
+
+    test('subscription strip: scheduling-queue required for Active tab', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.emergencyDelete,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+      expect(canWriteEmergency(noModule), isFalse);
+      expect(canDeleteEmergency(noModule), isFalse);
+      expect(emergencyAllowedBoardTabs(noModule), isEmpty);
+    });
+
+    test('ABAC: tenant context required for Active atoms', () {
+      final AppAccessPolicy noTenant = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+        tenantId: null,
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.tab.isAllowed(noTenant),
+        isFalse,
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.write.isAllowed(noTenant),
+        isFalse,
+      );
+      expect(canViewEmergencyActive(noTenant), isFalse);
+    });
+
+    test('next-action / panel deep-link requirements map correctly', () {
+      expect(
+        emergencyNextActionRequirement(
+          EmergencyNextActionKind.triage,
+          emergencyWriteRequirement,
+        ),
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        emergencyNextActionRequirement(
+          EmergencyNextActionKind.handoff,
+          emergencyWriteRequirement,
+        ),
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.triage),
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.handoff),
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyActiveCasesAtomPermissions.panelDeepLink,
+        same(emergencyWriteRequirement),
+      );
+    });
   });
 
   testWidgets(
@@ -291,22 +512,6 @@ void main() {
       expect(EmergencyActiveCasesAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
         EmergencyActiveCasesAtomPermissions.quickArrival.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.create.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.update.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.delete.isAllowed(reader),
-        isFalse,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.triage.isAllowed(reader),
         isFalse,
       );
       expect(
@@ -386,7 +591,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('Active Tab Patient'), findsOneWidget);
       expect(find.text('Priority'), findsNothing);
@@ -411,10 +617,6 @@ void main() {
       );
       expect(
         EmergencyActiveCasesAtomPermissions.quickArrival.isAllowed(writer),
-        isTrue,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.triage.isAllowed(writer),
         isTrue,
       );
       expect(
@@ -498,7 +700,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('Active Tab Patient'), findsOneWidget);
       expect(find.text('Priority'), findsWidgets);
@@ -525,16 +728,6 @@ void main() {
           AppPermissions.emergencyRead,
           AppPermissions.clinicalWrite,
         },
-        modules: const <AppModuleEntitlement>[
-          AppModuleEntitlement(
-            code: 'scheduling-queue',
-            licenseStatus: 'ACTIVE',
-          ),
-          AppModuleEntitlement(
-            code: 'encounters-vitals',
-            licenseStatus: 'ACTIVE',
-          ),
-        ],
       );
       expect(
         EmergencyActiveCasesAtomPermissions.handoff.isAllowed(clinicalHandoff),
@@ -545,17 +738,6 @@ void main() {
           clinicalHandoff,
         ),
         isFalse,
-      );
-      expect(
-        EmergencyActiveCasesAtomPermissions.triage.isAllowed(clinicalHandoff),
-        isFalse,
-      );
-      expect(
-        emergencyBoardShowsNextActionColumn(
-          clinicalHandoff,
-          EmergencyBoardTab.active,
-        ),
-        isTrue,
       );
 
       const EmergencyCaseSummary readyForHandoff = EmergencyCaseSummary(
@@ -594,6 +776,30 @@ void main() {
   );
 
   testWidgets(
+    'subscription strip collapses Active chrome without scheduling-queue',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Active Tab Patient'), findsNothing);
+      expect(find.text('Quick arrival'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized empty state remains observable for readers',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
@@ -609,6 +815,28 @@ void main() {
       expect(find.text('No emergency cases'), findsOneWidget);
       expect(find.text('Quick arrival'), findsNothing);
       expect(find.byType(AppSearchBar), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Active',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.emergencyWrite,
+          },
+        ),
+        listOverride: const Result<AppPage<EmergencyCaseSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -633,14 +861,15 @@ void main() {
       expect(find.text('Quick arrival'), findsOneWidget);
 
       await tester.tap(find.text('Quick arrival'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       await tester.enterText(find.byType(TextFormField).at(0), 'Active');
       await tester.enterText(find.byType(TextFormField).at(1), 'Patient');
       await tester.tap(find.text('Open case'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Active Tab Patient'), findsOneWidget);
       expect(find.text('Arrival opened'), findsOneWidget);

@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repo
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
+import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -57,6 +58,7 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
+  String? tenantId = 'tenant-1',
 }) {
   final bool needsPatient = permissions.any(
     (AppPermission permission) =>
@@ -102,7 +104,7 @@ AppAccessPolicy _policy({
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
+        tenantId: tenantId,
         facilityId: 'facility-1',
       ),
       permissions: permissions,
@@ -302,12 +304,28 @@ void main() {
         same(emergencyWorkspaceEntryRequirement),
       );
       expect(
+        EmergencyAllAtomPermissions.routeEntryUnion,
+        same(emergencyWorkspaceRouteUnionRequirement),
+      );
+      expect(
         EmergencyAllAtomPermissions.routeEntry,
         same(RouteAccessCatalog.emergencyEntry),
       );
       expect(
+        EmergencyAllAtomPermissions.nextActionTriage,
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
+        EmergencyAllAtomPermissions.nextActionHandoff,
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyAllAtomPermissions.panelDeepLink,
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
         emergencyBoardTabRequirement(EmergencyBoardTab.all),
-        same(emergencyWorkspaceReadRequirement),
+        same(EmergencyAllAtomPermissions.tab),
       );
       expect(
         canViewEmergencyAll(
@@ -331,11 +349,19 @@ void main() {
         EmergencyAllAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
+      expect(
+        EmergencyAllAtomPermissions.routeEntryUnion.isAllowed(writeOnly),
+        isTrue,
+      );
 
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
       );
       expect(canViewEmergencyAll(reader), isTrue);
+      expect(
+        EmergencyAllAtomPermissions.routeEntry.isAllowed(reader),
+        isTrue,
+      );
       expect(EmergencyAllAtomPermissions.write.isAllowed(reader), isFalse);
       expect(EmergencyAllAtomPermissions.success.isAllowed(reader), isFalse);
       expect(EmergencyAllAtomPermissions.validation.isAllowed(reader), isFalse);
@@ -426,8 +452,13 @@ void main() {
         EmergencyAllAtomPermissions.routeEntry.isAllowed(opsReadOnly),
         isTrue,
       );
+      expect(
+        EmergencyAllAtomPermissions.routeEntryUnion.isAllowed(opsReadOnly),
+        isTrue,
+      );
       // All tab content still requires ∩ emergency:read.
       expect(EmergencyAllAtomPermissions.tab.isAllowed(opsReadOnly), isFalse);
+      expect(canViewEmergencyAll(opsReadOnly), isFalse);
 
       final AppAccessPolicy withRead = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
@@ -437,6 +468,67 @@ void main() {
         isTrue,
       );
       expect(EmergencyAllAtomPermissions.tab.isAllowed(withRead), isTrue);
+    });
+
+    test('subscription strip: scheduling-queue required for All tab', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+      expect(EmergencyAllAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(canViewEmergencyAll(noModule), isFalse);
+      expect(
+        EmergencyAllAtomPermissions.quickArrival.isAllowed(noModule),
+        isFalse,
+      );
+    });
+
+    test('ABAC: tenant context required for All atoms', () {
+      final AppAccessPolicy noTenant = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+        tenantId: null,
+      );
+      expect(EmergencyAllAtomPermissions.tab.isAllowed(noTenant), isFalse);
+      expect(EmergencyAllAtomPermissions.write.isAllowed(noTenant), isFalse);
+      expect(
+        EmergencyAllAtomPermissions.quickArrival.isAllowed(noTenant),
+        isFalse,
+      );
+    });
+
+    test('next-action requirement maps handoff to source ∪', () {
+      expect(
+        emergencyNextActionRequirement(
+          EmergencyNextActionKind.triage,
+          emergencyWriteRequirement,
+        ),
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        emergencyNextActionRequirement(
+          EmergencyNextActionKind.handoff,
+          emergencyWriteRequirement,
+        ),
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.triage),
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        emergencyFocusedPanelRequirement(EmergencyDetailPanelFocus.handoff),
+        same(emergencyHandoffWriteRequirement),
+      );
+      expect(
+        EmergencyAllAtomPermissions.panelDeepLink,
+        same(emergencyWorkspaceWriteRequirement),
+      );
     });
 
     test('nested cross-module matrix rows are n/a (aliases keep emergency gates)', () {

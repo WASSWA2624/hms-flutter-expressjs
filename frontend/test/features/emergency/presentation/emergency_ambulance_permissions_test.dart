@@ -70,6 +70,7 @@ const EmergencyCaseDetail _ambulanceDetail = EmergencyCaseDetail(
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
+  String? tenantId = 'tenant-1',
 }) {
   final bool needsOperations = permissions.any(
     (AppPermission permission) =>
@@ -105,9 +106,9 @@ AppAccessPolicy _policy({
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(
-        roles: <String>['AMBULANCE_OPERATOR'],
-        tenantId: 'tenant-1',
+      user: AuthUserProfile(
+        roles: const <String>['AMBULANCE_OPERATOR'],
+        tenantId: tenantId,
         facilityId: 'facility-1',
       ),
       permissions: permissions,
@@ -297,6 +298,18 @@ void main() {
         same(emergencyHandoffWriteRequirement),
       );
       expect(
+        EmergencyAmbulanceAtomPermissions.printSummary,
+        same(emergencyAmbulanceTabRequirement),
+      );
+      expect(
+        EmergencyAmbulanceAtomPermissions.openReceivingModule,
+        same(emergencyAmbulanceTabRequirement),
+      );
+      expect(
+        EmergencyAmbulanceAtomPermissions.openInReceivingModule,
+        same(emergencyAmbulanceTabRequirement),
+      );
+      expect(
         EmergencyAmbulanceAtomPermissions.routeEntry,
         same(emergencyWorkspaceEntryRequirement),
       );
@@ -307,6 +320,10 @@ void main() {
       expect(
         emergencyBoardTabRequirement(EmergencyBoardTab.ambulance),
         same(EmergencyAmbulanceAtomPermissions.tab),
+      );
+      expect(
+        emergencyDetailReadRequirement(EmergencyBoardTab.ambulance),
+        same(EmergencyAmbulanceAtomPermissions.detail),
       );
     });
 
@@ -349,6 +366,11 @@ void main() {
         isTrue,
       );
       expect(
+        EmergencyAmbulanceAtomPermissions.detail.isAllowed(opsReader),
+        isTrue,
+      );
+      expect(canOpenEmergencyCaseDetail(opsReader), isTrue);
+      expect(
         EmergencyAmbulanceAtomPermissions.write.isAllowed(opsReader),
         isFalse,
       );
@@ -386,6 +408,24 @@ void main() {
       );
       expect(canViewEmergencyAmbulance(stripped), isFalse);
       expect(emergencyAllowedBoardTabs(stripped), isEmpty);
+      expect(canOpenEmergencyCaseDetail(stripped), isFalse);
+    });
+
+    test('ABAC: tenant context required for Ambulance atoms', () {
+      final AppAccessPolicy noTenant = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.operationsRead,
+        },
+        tenantId: null,
+      );
+      expect(EmergencyAmbulanceAtomPermissions.tab.isAllowed(noTenant), isFalse);
+      expect(
+        EmergencyAmbulanceAtomPermissions.write.isAllowed(noTenant),
+        isFalse,
+      );
+      expect(canOpenEmergencyCaseDetail(noTenant), isFalse);
     });
 
     test('nested cross-module matrix rows are n/a (aliases keep emergency gates)', () {
@@ -551,6 +591,22 @@ void main() {
       expect(find.text('Start trip'), findsNothing);
       expect(find.text(EmergencyText.activeCases), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.ensureVisible(find.text('Ambulance Tab Patient'));
+      await tester.tap(find.text('Ambulance Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('EMERGENCY CASE'), findsOneWidget);
+      expect(find.text(EmergencyText.printSummary), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Start trip'),
+        ),
+        findsNothing,
+      );
+      expect(find.text(EmergencyText.scheduleTheater), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -614,6 +670,49 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
+  testWidgets(
+    'authorized error/retry surface remains observable on Ambulance',
+    (WidgetTester tester) async {
+      await _pumpAmbulanceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.emergencyWrite,
+          },
+        ),
+        listOverride: const Result<AppPage<EmergencyCaseSummary>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('desktop viewport keeps authorized Ambulance chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAmbulanceTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+      ),
+      physicalSize: const Size(1440, 900),
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.text('Ambulance Tab Patient'), findsOneWidget);
+    expect(find.text('Quick arrival'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
   testWidgets('mobile viewport keeps authorized Ambulance chrome', (
     WidgetTester tester,
   ) async {
@@ -659,6 +758,27 @@ void main() {
         },
       ),
       themeMode: ThemeMode.dark,
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.text('Ambulance Tab Patient'), findsOneWidget);
+    expect(find.text('Quick arrival'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('light theme keeps authorized Ambulance chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpAmbulanceTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);

@@ -149,8 +149,15 @@ class _EmergencyWorkspaceContentState
 
     // Panel-focused deep links open the mutation dialog directly when
     // authorized (no empty detail shell). Insufficient write falls back to
-    // read detail; users without emergency:read see nothing.
+    // read detail; users with no visible board tab (incl. Ambulance ∪) see
+    // nothing.
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final AccessRequirement detailRead = emergencyDetailReadRequirement(
+      _currentTab,
+    );
+    final AccessRequirement writeRequirement = emergencyWriteRequirementForTab(
+      _currentTab,
+    );
     if (query.panel != EmergencyDetailPanelFocus.none) {
       if (emergencyFocusedPanelRequirement(query.panel).isAllowed(policy)) {
         await openEmergencyFocusedAction(
@@ -159,14 +166,15 @@ class _EmergencyWorkspaceContentState
           state,
           target,
           query.panel,
-          emergencyWriteRequirement,
+          writeRequirement,
+          readRequirement: detailRead,
         );
         return;
       }
-      if (!canReadEmergency(policy)) {
+      if (!canOpenEmergencyCaseDetail(policy)) {
         return;
       }
-    } else if (!canReadEmergency(policy)) {
+    } else if (!canOpenEmergencyCaseDetail(policy)) {
       return;
     }
 
@@ -175,7 +183,8 @@ class _EmergencyWorkspaceContentState
       ref,
       state,
       target,
-      emergencyWriteRequirement,
+      writeRequirement,
+      readRequirement: detailRead,
       omitNextActionKind: emergencyBoardNextActionKind(
         target,
         tab: _currentTab,
@@ -244,6 +253,9 @@ class _EmergencyWorkspaceContentState
       accessPolicy,
       _currentTab,
     );
+    final AccessRequirement writeRequirement = emergencyWriteRequirementForTab(
+      _currentTab,
+    );
     final List<EmergencyCaseSummary> rows = _filteredRows(state);
 
     return ResponsivePage(
@@ -286,13 +298,13 @@ class _EmergencyWorkspaceContentState
               columns: emergencyDefaultColumnsForTab(
                 context,
                 _currentTab,
-                writeRequirement: emergencyWriteRequirement,
+                writeRequirement: writeRequirement,
                 includeNextAction: showNextAction,
               ),
               columnChoices: emergencyColumnChoicesForTab(
                 context,
                 _currentTab,
-                writeRequirement: emergencyWriteRequirement,
+                writeRequirement: writeRequirement,
                 includeNextAction: showNextAction,
               ),
               columnVisibilityController: _columnVisibilityController,
@@ -336,7 +348,10 @@ class _EmergencyWorkspaceContentState
                     ref,
                     state,
                     summary,
-                    emergencyWriteRequirement,
+                    writeRequirement,
+                    readRequirement: emergencyDetailReadRequirement(
+                      _currentTab,
+                    ),
                     omitNextActionKind: emergencyBoardNextActionKind(
                       summary,
                       tab: _currentTab,
@@ -359,7 +374,7 @@ class _EmergencyWorkspaceContentState
                       ref,
                       item,
                       tab: _currentTab,
-                      writeRequirement: emergencyWriteRequirement,
+                      writeRequirement: writeRequirement,
                     );
                   },
             ),

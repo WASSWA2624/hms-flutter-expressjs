@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
+import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
@@ -277,7 +279,19 @@ void main() {
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
+        EmergencyCriticalAtomPermissions.retry,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.detail,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
         EmergencyCriticalAtomPermissions.printSummary,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.openInReceivingModule,
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
@@ -286,6 +300,22 @@ void main() {
       );
       expect(
         EmergencyCriticalAtomPermissions.quickArrival,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.nextAction,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.nextActionTriage,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.updatePriority,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.recordTriage,
         same(emergencyWriteRequirement),
       );
       expect(
@@ -309,16 +339,43 @@ void main() {
         same(emergencyHandoffWriteRequirement),
       );
       expect(
+        EmergencyCriticalAtomPermissions.panelDeepLink,
+        same(emergencyWriteRequirement),
+      );
+      expect(
         EmergencyCriticalAtomPermissions.routeEntry,
         same(RouteAccessCatalog.emergencyEntry),
       );
       expect(
-        EmergencyAllAtomPermissions.quickArrival,
-        same(emergencyWriteRequirement),
+        emergencyWriteRequirementForTab(EmergencyBoardTab.critical),
+        same(EmergencyCriticalAtomPermissions.write),
+      );
+      expect(
+        emergencyDetailReadRequirement(EmergencyBoardTab.critical),
+        same(EmergencyCriticalAtomPermissions.detail),
       );
       expect(
         emergencyBoardTabRequirement(EmergencyBoardTab.critical),
         same(EmergencyCriticalAtomPermissions.tab),
+      );
+    });
+
+    test('nested cross-module matrix _(n/a)_: no extra module keys', () {
+      expect(
+        EmergencyCriticalAtomPermissions.nestedWrite,
+        same(emergencyWriteRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.nestedRead,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.nestedWrite.anyPermissions,
+        isEmpty,
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.nestedRead.allPermissions,
+        <AppPermission>[AppPermissions.emergencyRead],
       );
     });
 
@@ -725,4 +782,98 @@ void main() {
     expect(find.text('Quick arrival'), findsOneWidget);
     expect(find.text('Critical Tab Patient'), findsOneWidget);
   });
+
+  testWidgets(
+    'tab ∩: emergency:write alone without emergency:read omits Critical chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyWrite},
+      );
+      expect(
+        EmergencyCriticalAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(EmergencyCriticalAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+
+      await _pumpCriticalTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.text('Critical Tab Patient'), findsNothing);
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Quick arrival'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  test('authorized retry path surfaces failure from controller refresh', () async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.emergencyRead},
+    );
+    when(() => repository.listEmergencyBoard(any())).thenAnswer(
+      (_) async => const Result<AppPage<EmergencyCaseSummary>>.failure(
+        AppFailure.network(),
+      ),
+    );
+    when(repository.loadReferenceData).thenAnswer(
+      (_) async =>
+          const Result<EmergencyReferenceData>.success(EmergencyReferenceData()),
+    );
+
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        emergencyRepositoryProvider.overrideWithValue(repository),
+        appAccessPolicyProvider.overrideWithValue(reader),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final AppFailure? failure = await container
+        .read(emergencyWorkspaceControllerProvider.notifier)
+        .refresh();
+    expect(failure, isNotNull);
+    expect(
+      EmergencyCriticalAtomPermissions.retry.isAllowed(reader),
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'post-mutation sync: Quick arrival patches Critical board',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+        },
+      );
+
+      await _pumpCriticalTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        items: const <EmergencyCaseSummary>[],
+      );
+
+      expect(find.text('No emergency cases'), findsOneWidget);
+      expect(find.text('Quick arrival'), findsOneWidget);
+
+      await tester.tap(find.text('Quick arrival'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Critical');
+      await tester.enterText(find.byType(TextFormField).at(1), 'Arrival');
+      await tester.tap(find.text(EmergencyText.openCase));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Critical Tab Patient'), findsOneWidget);
+      expect(find.text('Arrival opened'), findsOneWidget);
+      verify(() => repository.createQuickArrival(any())).called(1);
+    },
+  );
 }

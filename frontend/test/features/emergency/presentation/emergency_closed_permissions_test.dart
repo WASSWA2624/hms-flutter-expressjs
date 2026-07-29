@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
+import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
@@ -58,13 +60,14 @@ AppAccessPolicy _policy({
     AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
   ],
   List<String> roles = const <String>['NURSE'],
+  String? tenantId = 'tenant-1',
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
+        tenantId: tenantId,
         facilityId: 'facility-1',
       ),
       permissions: permissions,
@@ -222,6 +225,14 @@ void main() {
         same(emergencyWorkspaceReadRequirement),
       );
       expect(
+        EmergencyClosedAtomPermissions.listChrome,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
+        EmergencyClosedAtomPermissions.loading,
+        same(emergencyWorkspaceReadRequirement),
+      );
+      expect(
         EmergencyClosedAtomPermissions.write,
         same(emergencyWorkspaceWriteRequirement),
       );
@@ -234,8 +245,20 @@ void main() {
         same(emergencyHandoffWriteRequirement),
       );
       expect(
+        EmergencyClosedAtomPermissions.panelDeepLink,
+        same(emergencyWorkspaceWriteRequirement),
+      );
+      expect(
         EmergencyClosedAtomPermissions.routeEntry,
         same(emergencyWorkspaceEntryRequirement),
+      );
+      expect(
+        EmergencyClosedAtomPermissions.routeEntryUnion,
+        same(emergencyWorkspaceRouteUnionRequirement),
+      );
+      expect(
+        EmergencyClosedAtomPermissions.routeEntry,
+        same(RouteAccessCatalog.emergencyEntry),
       );
       expect(
         EmergencyClosedAtomPermissions.printSummary,
@@ -244,6 +267,10 @@ void main() {
       expect(
         EmergencyClosedAtomPermissions.quickArrival,
         same(EmergencyAllAtomPermissions.quickArrival),
+      );
+      expect(
+        emergencyBoardTabRequirement(EmergencyBoardTab.closed),
+        same(EmergencyClosedAtomPermissions.tab),
       );
       expect(
         emergencyBoardShowsNextActionColumn(
@@ -266,6 +293,14 @@ void main() {
         isFalse,
       );
       expect(
+        EmergencyClosedAtomPermissions.success.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        EmergencyClosedAtomPermissions.validation.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         EmergencyClosedAtomPermissions.delete.isAllowed(reader),
         isFalse,
       );
@@ -273,7 +308,7 @@ void main() {
       expect(canDeleteEmergency(reader), isFalse);
     });
 
-    test('∩ denial: write-only staff fail delete ∩', () {
+    test('∩ denial: write-only staff fail delete ∩ and tab read ∩', () {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
           AppPermissions.emergencyRead,
@@ -283,6 +318,31 @@ void main() {
       expect(EmergencyClosedAtomPermissions.write.isAllowed(writer), isTrue);
       expect(EmergencyClosedAtomPermissions.delete.isAllowed(writer), isFalse);
       expect(canDeleteEmergency(writer), isFalse);
+
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyWrite},
+        roles: const <String>['OTHER'],
+      );
+      expect(EmergencyClosedAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      expect(canViewEmergencyClosed(writeOnly), isFalse);
+      expect(
+        EmergencyClosedAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+    });
+
+    test('full ∩ set: read + write + delete atoms allowed', () {
+      final AppAccessPolicy full = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.emergencyDelete,
+        },
+      );
+      expect(EmergencyClosedAtomPermissions.tab.isAllowed(full), isTrue);
+      expect(EmergencyClosedAtomPermissions.write.isAllowed(full), isTrue);
+      expect(EmergencyClosedAtomPermissions.delete.isAllowed(full), isTrue);
+      expect(EmergencyClosedAtomPermissions.success.isAllowed(full), isTrue);
     });
 
     test('∪ allowance: operations:read alone satisfies route entry', () {
@@ -303,6 +363,10 @@ void main() {
       );
       expect(
         EmergencyClosedAtomPermissions.routeEntry.isAllowed(operations),
+        isTrue,
+      );
+      expect(
+        EmergencyClosedAtomPermissions.routeEntryUnion.isAllowed(operations),
         isTrue,
       );
       expect(canEnterEmergencyWorkspace(operations), isTrue);
@@ -363,6 +427,21 @@ void main() {
       expect(emergencyAllowedBoardTabs(noModule), isEmpty);
     });
 
+    test('ABAC: tenant context required for Closed atoms', () {
+      final AppAccessPolicy noTenant = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.emergencyDelete,
+        },
+        tenantId: null,
+      );
+      expect(EmergencyClosedAtomPermissions.tab.isAllowed(noTenant), isFalse);
+      expect(EmergencyClosedAtomPermissions.write.isAllowed(noTenant), isFalse);
+      expect(EmergencyClosedAtomPermissions.delete.isAllowed(noTenant), isFalse);
+      expect(canViewEmergencyClosed(noTenant), isFalse);
+    });
+
     test('nested cross-module matrix _(n/a)_: ambulance stays under read ∩', () {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.emergencyRead},
@@ -374,6 +453,10 @@ void main() {
       expect(
         EmergencyClosedAtomPermissions.nestedRead.isAllowed(reader),
         isTrue,
+      );
+      expect(
+        EmergencyClosedAtomPermissions.nestedWrite.isAllowed(reader),
+        isFalse,
       );
     });
   });
@@ -405,6 +488,7 @@ void main() {
       expect(find.text(EmergencyText.scheduleTheater), findsNothing);
       expect(find.text(EmergencyText.completeTrip), findsNothing);
       expect(find.textContaining('Open in'), findsOneWidget);
+      expect(find.text('Unit 7'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -471,6 +555,24 @@ void main() {
     },
   );
 
+  testWidgets('write-only without emergency:read hides Closed tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClosedTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.emergencyWrite},
+        roles: const <String>['OTHER'],
+      ),
+      items: <EmergencyCaseSummary>[_closedCase, _openCase],
+    );
+
+    expect(find.text(EmergencyText.closed), findsNothing);
+    expect(find.text('Closed Casey'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
   testWidgets('subscription strip: scheduling-queue missing omits Closed', (
     WidgetTester tester,
   ) async {
@@ -523,8 +625,6 @@ void main() {
       final EmergencyBoardQuery query =
           invocation.positionalArguments.single as EmergencyBoardQuery;
       if (!allowSuccess) {
-        // Retryable for UI, but keep failing until Try again so bootstrap
-        // retries (network) also fail.
         return const Result<AppPage<EmergencyCaseSummary>>.failure(
           AppFailure.network(),
         );
@@ -602,6 +702,73 @@ void main() {
 
     expect(find.text('Closed Casey'), findsOneWidget);
   });
+
+  test(
+    'post-mutation sync: Closed selectCase + applyScope keep board/detail aligned',
+    () async {
+      _stubBoard(repository);
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          emergencyRepositoryProvider.overrideWithValue(repository),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{AppPermissions.emergencyRead},
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(emergencyWorkspaceControllerProvider.future);
+      final AppFailure? scopeFailure = await container
+          .read(emergencyWorkspaceControllerProvider.notifier)
+          .applyScope(EmergencyBoardScope.closed);
+      expect(scopeFailure, isNull);
+
+      final AppFailure? selectFailure = await container
+          .read(emergencyWorkspaceControllerProvider.notifier)
+          .selectCase(_closedCase);
+      expect(selectFailure, isNull);
+
+      final EmergencyWorkspaceState state = container
+          .read(emergencyWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (EmergencyWorkspaceState value) => value,
+            failure: (AppFailure err) => throw StateError(err.code),
+          );
+      expect(state.query.scope, EmergencyBoardScope.closed);
+      expect(
+        state.board.items.any((EmergencyCaseSummary i) => i.id == _closedCase.id),
+        isTrue,
+      );
+      expect(state.selectedDetail?.summary.id, _closedCase.id);
+    },
+  );
+
+  testWidgets(
+    'panel deep link on closed case opens detail; triage dialog absent',
+    (WidgetTester tester) async {
+      await _pumpClosedTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.emergencyRead,
+            AppPermissions.emergencyWrite,
+          },
+        ),
+        initialLocation:
+            '/emergency?scope=closed&id=EME-CLOSED-1&panel=triage',
+      );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text(EmergencyText.printSummary), findsOneWidget);
+      expect(find.textContaining('Save triage'), findsNothing);
+      expect(find.text(EmergencyText.scheduleTheater), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
 
   testWidgets('Closed desktop + mobile viewports keep print reachable', (
     WidgetTester tester,

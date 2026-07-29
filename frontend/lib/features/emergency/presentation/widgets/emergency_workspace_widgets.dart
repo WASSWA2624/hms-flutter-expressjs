@@ -1020,6 +1020,7 @@ class EmergencyDetailPanel extends ConsumerWidget {
   const EmergencyDetailPanel({
     required this.state,
     required this.writeRequirement,
+    this.readRequirement = emergencyWorkspaceReadRequirement,
     this.isDialog = false,
     this.omitNextActionKind,
     super.key,
@@ -1027,6 +1028,8 @@ class EmergencyDetailPanel extends ConsumerWidget {
 
   final EmergencyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  /// Detail / print / ambulance panel / Open-in-module chrome (Ambulance ∪).
+  final AccessRequirement readRequirement;
   final bool isDialog;
   final EmergencyNextActionKind? omitNextActionKind;
 
@@ -1109,6 +1112,7 @@ class EmergencyDetailPanel extends ConsumerWidget {
           EmergencyHandoffOutcomePanel(
             outcome: summary.handoff!,
             isDialog: isDialog,
+            readRequirement: readRequirement,
           ),
         ],
         SizedBox(height: theme.spacing.md),
@@ -1116,12 +1120,16 @@ class EmergencyDetailPanel extends ConsumerWidget {
           detail: detail,
           referenceData: state.referenceData,
           writeRequirement: writeRequirement,
+          readRequirement: readRequirement,
           omitNextActionKind: omitNextActionKind,
         ),
         SizedBox(height: theme.spacing.md),
         EmergencyTimelinePanel(detail: detail),
         SizedBox(height: theme.spacing.md),
-        AmbulancePanel(detail: detail),
+        AppAccessGate(
+          requirement: readRequirement,
+          child: AmbulancePanel(detail: detail),
+        ),
       ],
     );
   }
@@ -1132,6 +1140,7 @@ class EmergencyActionPanel extends ConsumerWidget {
     required this.detail,
     required this.referenceData,
     required this.writeRequirement,
+    this.readRequirement = emergencyWorkspaceReadRequirement,
     this.omitNextActionKind,
     super.key,
   });
@@ -1139,6 +1148,7 @@ class EmergencyActionPanel extends ConsumerWidget {
   final EmergencyCaseDetail detail;
   final EmergencyReferenceData referenceData;
   final AccessRequirement writeRequirement;
+  final AccessRequirement readRequirement;
   final EmergencyNextActionKind? omitNextActionKind;
 
   @override
@@ -1233,7 +1243,7 @@ class EmergencyActionPanel extends ConsumerWidget {
       permissionActions: actions,
       extraActions: <Widget>[
         AppAccessActionGate(
-          requirement: emergencyWorkspaceReadRequirement,
+          requirement: readRequirement,
           builder: (BuildContext context, bool isAllowed) {
             if (!isAllowed) {
               return const SizedBox.shrink();
@@ -1511,11 +1521,13 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
   const EmergencyHandoffOutcomePanel({
     required this.outcome,
     this.isDialog = false,
+    this.readRequirement = emergencyWorkspaceReadRequirement,
     super.key,
   });
 
   final EmergencyHandoffOutcome outcome;
   final bool isDialog;
+  final AccessRequirement readRequirement;
 
   @override
   Widget build(BuildContext context) {
@@ -1558,7 +1570,7 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
       actions: <Widget>[
         if (canOpen)
           AppAccessActionGate(
-            requirement: emergencyWorkspaceReadRequirement,
+            requirement: readRequirement,
             builder: (BuildContext context, bool isAllowed) {
               if (!isAllowed) {
                 return const SizedBox.shrink();
@@ -1746,6 +1758,7 @@ Future<void> openEmergencyDetailDialog(
   EmergencyWorkspaceState fallbackState,
   EmergencyCaseSummary summary,
   AccessRequirement writeRequirement, {
+  AccessRequirement readRequirement = emergencyWorkspaceReadRequirement,
   EmergencyNextActionKind? omitNextActionKind,
 }) async {
   final EmergencyWorkspaceController controller = ref.read(
@@ -1775,6 +1788,7 @@ Future<void> openEmergencyDetailDialog(
       content: EmergencyDetailPanel(
         state: state,
         writeRequirement: writeRequirement,
+        readRequirement: readRequirement,
         isDialog: true,
         omitNextActionKind: omitNextActionKind,
       ),
@@ -1793,8 +1807,9 @@ Future<void> openEmergencyFocusedAction(
   EmergencyWorkspaceState fallbackState,
   EmergencyCaseSummary summary,
   EmergencyDetailPanelFocus panel,
-  AccessRequirement writeRequirement,
-) async {
+  AccessRequirement writeRequirement, {
+  AccessRequirement readRequirement = emergencyWorkspaceReadRequirement,
+}) async {
   final EmergencyNextActionKind? kind = switch (panel) {
     EmergencyDetailPanelFocus.triage => EmergencyNextActionKind.triage,
     EmergencyDetailPanelFocus.response => EmergencyNextActionKind.response,
@@ -1804,13 +1819,16 @@ Future<void> openEmergencyFocusedAction(
     EmergencyDetailPanelFocus.handoff => EmergencyNextActionKind.handoff,
     EmergencyDetailPanelFocus.none => null,
   };
-  if (kind == null) {
+  // Closed cases never mount mutation dialogs (inventory: no complementary
+  // writes / next-action). Fall back to read-only detail.
+  if (kind == null || !summary.isOpen) {
     await openEmergencyDetailDialog(
       context,
       ref,
       fallbackState,
       summary,
       writeRequirement,
+      readRequirement: readRequirement,
     );
     return;
   }
@@ -1827,6 +1845,7 @@ Future<void> openEmergencyFocusedAction(
       fallbackState,
       summary,
       writeRequirement,
+      readRequirement: readRequirement,
       omitNextActionKind: kind,
     );
     return;

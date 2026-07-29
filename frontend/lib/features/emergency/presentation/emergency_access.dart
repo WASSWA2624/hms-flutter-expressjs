@@ -132,6 +132,38 @@ bool canViewEmergencyAmbulance(AppAccessPolicy policy) {
   return EmergencyAmbulanceAtomPermissions.tab.isAllowed(policy);
 }
 
+/// Case detail / print / Open-in-module chrome for the active board tab.
+///
+/// Ambulance uses ∪ `emergency:read` | `operations:read`; other tabs use ∩
+/// `emergency:read`.
+AccessRequirement emergencyDetailReadRequirement(EmergencyBoardTab tab) {
+  return switch (tab) {
+    EmergencyBoardTab.ambulance => EmergencyAmbulanceAtomPermissions.detail,
+    EmergencyBoardTab.active => EmergencyActiveCasesAtomPermissions.detail,
+    EmergencyBoardTab.all => EmergencyAllAtomPermissions.detail,
+    EmergencyBoardTab.closed => EmergencyClosedAtomPermissions.detail,
+    EmergencyBoardTab.critical => EmergencyCriticalAtomPermissions.detail,
+    EmergencyBoardTab.handoff => EmergencyHandoffAtomPermissions.detail,
+  };
+}
+
+/// Create / update write ∩ for the active board tab (`*AtomPermissions.write`).
+AccessRequirement emergencyWriteRequirementForTab(EmergencyBoardTab tab) {
+  return switch (tab) {
+    EmergencyBoardTab.ambulance => EmergencyAmbulanceAtomPermissions.write,
+    EmergencyBoardTab.active => EmergencyActiveCasesAtomPermissions.write,
+    EmergencyBoardTab.all => EmergencyAllAtomPermissions.write,
+    EmergencyBoardTab.closed => EmergencyClosedAtomPermissions.write,
+    EmergencyBoardTab.critical => EmergencyCriticalAtomPermissions.write,
+    EmergencyBoardTab.handoff => EmergencyHandoffAtomPermissions.write,
+  };
+}
+
+/// Whether the user may open case detail (any visible board tab / Ambulance ∪).
+bool canOpenEmergencyCaseDetail(AppAccessPolicy policy) {
+  return emergencyAllowedBoardTabs(policy).isNotEmpty;
+}
+
 /// Whether any workflow next-action column may mount (write ∩ or handoff ∪).
 bool canShowEmergencyNextAction(AppAccessPolicy policy) {
   return canWriteEmergency(policy) || canHandoffEmergency(policy);
@@ -179,24 +211,26 @@ AccessRequirement emergencyFocusedPanelRequirement(
 
 /// Active cases tab atom → permission mapping (inventory + matrix).
 ///
-/// Live ED board; Quick arrival primary. Nested cross-module matrix rows are
-/// _(n/a)_. Handoff keeps source ∪ write keys. Route entry ∪ is
-/// [emergencyWorkspaceEntryRequirement]. Delete ∩ is documented but no Active
-/// delete control mounts — write-only staff must not see delete chrome.
+/// Live ED board (`/emergency?scope=active`); Quick arrival primary. Nested
+/// cross-module matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse
+/// emergency write/read only. Handoff keeps source ∪ write keys. Route entry ∪
+/// is [routeEntry]. Delete ∩ is documented but no Active delete control mounts
+/// — write-only staff must not see delete chrome.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Active cases tab | navigate | read ∩ `emergency:read` |
-/// | Search / filters / columns | read chrome | read ∩ ([listChrome]) |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Active cases tab / count badge | navigate | read ∩ `emergency:read` |
+/// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → detail | read | read ∩ ([detail]) |
 /// | Quick arrival | create | write ∩ `emergency:write` ([quickArrival]) |
 /// | Next action Triage / Response / Dispatch / Trip | create / update | write ∩ |
-/// | Next action Handoff | update | handoff ∪ ([handoff]) |
+/// | Next action Handoff | update | handoff ∪ ([nextActionHandoff]) |
 /// | Detail Priority / Triage / Response / Dispatch / Trip / Theater | create / update | write ∩ |
 /// | Detail Handoff | update | handoff ∪ |
 /// | Nested mutation dialogs | create / update | write ∩ / handoff ∪ |
-/// | Deep link `panel=` | create / update | write ∩ / handoff ∪ |
+/// | Deep link `panel=` | create / update | write ∩ / handoff ∪ ([panelDeepLink]) |
 /// | Print summary | export / read | read ∩ ([printSummary]) |
 /// | Open in {module} | navigate | read ∩ ([detail]) |
 /// | Ambulance timeline panel | read | read ∩ ([ambulanceContext]) |
@@ -222,6 +256,16 @@ abstract final class EmergencyActiveCasesAtomPermissions {
   static const AccessRequirement quickArrival =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextAction =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionTriage =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionResponse =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionDispatch =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionStartTrip =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionCompleteTrip =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextActionHandoff =
       emergencyHandoffWriteRequirement;
@@ -250,19 +294,33 @@ abstract final class EmergencyActiveCasesAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
+  /// Nested cross-module — matrix _(n/a)_; reuses emergency write ∩ only.
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
+  static const AccessRequirement panelDeepLink =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement entry = emergencyWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = emergencyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      emergencyWorkspaceRouteUnionRequirement;
+}
+
+bool canViewEmergencyActive(AppAccessPolicy policy) {
+  return EmergencyActiveCasesAtomPermissions.tab.isAllowed(policy);
 }
 
 /// All tab atom → permission mapping (inventory + matrix).
 ///
-/// Unfiltered board (`/emergency?scope=all`). Same gates as Active cases;
-/// nested cross-module matrix rows _(n/a)_. Handoff keeps source ∪. Route
-/// entry keeps catalog ∪ `emergency:read` | `emergency:write` |
-/// `operations:read`. Delete ∩ documented but no delete control mounts.
+/// Unfiltered board (`/emergency?scope=all`). Quick arrival / triage /
+/// response / dispatch / trip / priority / Schedule in Theater need
+/// ∩ `emergency:write`. Handoff keeps source ∪. Hard delete/void needs
+/// ∩ `emergency:delete` (no All delete control yet). Matrix nested
+/// cross-module rows are _(n/a)_. Route entry keeps catalog ∪
+/// `emergency:read` | `emergency:write` | `operations:read` ([routeEntry]).
+/// Tab chrome stays ∩ `emergency:read`. Ambulance vehicle context may also
+/// need `operations:read` for fleet panels elsewhere; do not expose delete to
+/// write-only staff.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -279,7 +337,10 @@ abstract final class EmergencyActiveCasesAtomPermissions {
 /// | Detail Schedule in Theater | navigate / update | write ∩ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Open in {module} (handoff outcome) | navigate | read ∩ |
+/// | Ambulance timeline panel | read | read ∩ ([ambulanceContext]) |
 /// | Hard delete / void | delete | delete ∩ (no UI atom yet) |
+/// | Nested mutation dialogs | create / update | write ∩ / handoff ∪ |
+/// | Panel deep link `?panel=` | create / update | write ∩ / handoff ∪ |
 /// | Route entry (deep link) | navigate | catalog ∪ |
 abstract final class EmergencyAllAtomPermissions {
   static const AccessRequirement tab = emergencyWorkspaceReadRequirement;
@@ -309,6 +370,16 @@ abstract final class EmergencyAllAtomPermissions {
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextAction =
       emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionTriage =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionResponse =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionDispatch =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionStartTrip =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextActionCompleteTrip =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextActionHandoff =
       emergencyHandoffWriteRequirement;
   static const AccessRequirement updatePriority =
@@ -333,8 +404,12 @@ abstract final class EmergencyAllAtomPermissions {
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
+  static const AccessRequirement panelDeepLink =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement entry = emergencyWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = emergencyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      emergencyWorkspaceRouteUnionRequirement;
 }
 
 bool canViewEmergencyAll(AppAccessPolicy policy) {
@@ -394,6 +469,8 @@ abstract final class EmergencyCriticalAtomPermissions {
   static const AccessRequirement write = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement quickArrival =
       emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement nextAction =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextActionTriage =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextActionResponse =
@@ -406,9 +483,18 @@ abstract final class EmergencyCriticalAtomPermissions {
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nextActionHandoff =
       emergencyHandoffWriteRequirement;
+  static const AccessRequirement updatePriority =
+      emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement recordTriage =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement triage = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement markResponse =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement response = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement dispatch = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement startTrip = emergencyWorkspaceWriteRequirement;
+  static const AccessRequirement completeTrip =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement trip = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement priority = emergencyWorkspaceWriteRequirement;
   static const AccessRequirement scheduleTheater =
@@ -418,8 +504,11 @@ abstract final class EmergencyCriticalAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement openReceivingModule =
       emergencyWorkspaceReadRequirement;
+  static const AccessRequirement openInReceivingModule =
+      emergencyWorkspaceReadRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
+  /// Nested cross-module — not used on this tab (matrix _(n/a)_).
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
@@ -510,6 +599,10 @@ abstract final class EmergencyAmbulanceAtomPermissions {
   static const AccessRequirement scheduleTheater =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement printSummary =
+      emergencyAmbulanceTabRequirement;
+  static const AccessRequirement openReceivingModule =
+      emergencyAmbulanceTabRequirement;
+  static const AccessRequirement openInReceivingModule =
       emergencyAmbulanceTabRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceTabRequirement;
@@ -624,15 +717,18 @@ abstract final class EmergencyHandoffAtomPermissions {
 /// Closed tab atom → permission mapping (inventory + matrix).
 ///
 /// Worklist `?scope=closed`. Closed cases; no Quick arrival; no next-action
-/// column. Detail omits complementary writes (`isOpen` false). Hard delete /
-/// void maps to [delete] but inventory has no delete control yet — gate kept so
-/// write-only staff never gain delete. Matrix nested cross-module rows _(n/a)_.
+/// column. Detail omits complementary writes (`isOpen` false). Panel deep
+/// links fall back to read detail for closed cases. Hard delete / void maps
+/// to [delete] but inventory has no delete control yet — gate kept so
+/// write-only staff never gain delete. Matrix nested cross-module rows
+/// _(n/a)_. Route entry keeps catalog ∪ ([routeEntry] / [routeEntryUnion]).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Closed tab / count badge | navigate | read ∩ `emergency:read` |
-/// | Search / Clear / Filters / Settings | read chrome | read ∩ |
+/// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → detail | read | read ∩ |
 /// | Quick arrival | create | write ∩ (absent on Closed) |
 /// | Next action column / cells | update | write ∩ (absent on Closed) |
@@ -640,8 +736,9 @@ abstract final class EmergencyHandoffAtomPermissions {
 /// | Detail Print summary | export / read | read ∩ |
 /// | Detail Open in {module} | navigate | read ∩ |
 /// | Detail Ambulance / timeline panels | read | read ∩ |
-/// | Hard delete / void | delete | delete ∩ `emergency:delete` |
-/// | Route entry (deep link) | navigate | entry ∪ read\|write\|operations:read |
+/// | Hard delete / void | delete | delete ∩ `emergency:delete` (no UI yet) |
+/// | Nested mutation / panel deep link | create / update | write ∩ (closed → detail) |
+/// | Route entry (deep link) | navigate | catalog ∪ |
 abstract final class EmergencyClosedAtomPermissions {
   static const AccessRequirement tab = emergencyWorkspaceReadRequirement;
   static const AccessRequirement listChrome = emergencyWorkspaceReadRequirement;
@@ -683,6 +780,11 @@ abstract final class EmergencyClosedAtomPermissions {
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
+  /// Panel deep-link write gate; closed cases still open read detail only.
+  static const AccessRequirement panelDeepLink =
+      emergencyWorkspaceWriteRequirement;
   static const AccessRequirement entry = emergencyWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = emergencyWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntryUnion =
+      emergencyWorkspaceRouteUnionRequirement;
 }
