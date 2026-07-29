@@ -9,7 +9,7 @@ Processing rules:
 - Completed prompt iterations recorded in
   .run_billing_and_sections_prompts_state.json are skipped on resume; pass
   --force to clear state and re-run everything.
-- Model is pinned to Kimi K3 Max (kimi-k3-max).
+- Model is set to Claude Fable 5 Thinking High (claude-fable-5-thinking-high).
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 BRIDGE_TIMEOUT_SECONDS = None
-MODEL = "gpt-5.6-luna"
+MODEL = "claude-fable-5-thinking-high"
 GIT_EXCLUDES = (".run_billing_and_sections_prompts_state.json", "screens")
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 

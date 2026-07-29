@@ -34,7 +34,7 @@ from cursor_sdk import (
 PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "ui-permissions"
 STATE_FILE = PROJECT_DIR / ".run_ui_permissions_prompts_state.json"
-ITERATIONS = 2
+ITERATIONS = 1
 MAX_CONCURRENCY = 10
 MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10

@@ -23,6 +23,7 @@ import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace
 import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
@@ -591,6 +592,54 @@ void main() {
   );
 
   testWidgets(
+    'nested billing holds panel absent in Scheduled Schedule dialog '
+    'without billing:read',
+    (WidgetTester tester) async {
+      await _pumpScheduledTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(_toolbarPrimary('Schedule case'));
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(ClinicalRequestBillingPanel), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested billing holds panel mounts in Scheduled Schedule dialog '
+    'with billing:read',
+    (WidgetTester tester) async {
+      await _pumpScheduledTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.billingRead,
+          },
+        ),
+      );
+
+      await tester.tap(_toolbarPrimary('Schedule case'));
+      await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(ClinicalRequestBillingPanel), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'ready case shows Start case next-action for writers only',
     (WidgetTester tester) async {
       _stubTheater(
@@ -1119,6 +1168,11 @@ void _stubTheater(
       ),
     );
   });
+  when(() => repository.searchSchedulePatients(any())).thenAnswer(
+    (_) async => const Result<List<TheaterSchedulePatient>>.success(
+      <TheaterSchedulePatient>[],
+    ),
+  );
   when(() => repository.getCase(any())).thenAnswer((
     Invocation invocation,
   ) async {
