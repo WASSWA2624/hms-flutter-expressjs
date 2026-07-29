@@ -447,21 +447,52 @@ void main() {
       );
     });
 
-    test('billing:read alone enters route but not Today chrome', () {
-      final AppAccessPolicy billingOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.billingRead},
-      );
-      expect(canEnterPhysiotherapyWorkspace(billingOnly), isTrue);
-      expect(
-        PhysiotherapyTodayAtomPermissions.tab.isAllowed(billingOnly),
-        isFalse,
-      );
-      expect(
-        PhysiotherapyTodayAtomPermissions.billingColumn.isAllowed(billingOnly),
-        isTrue,
-      );
-      expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
-    });
+    test(
+      'billing:read alone does not enter route or Today chrome; '
+      'billing column still allowed',
+      () {
+        final AppAccessPolicy billingOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          roles: const <String>['BILLING'],
+        );
+        expect(
+          PhysiotherapyTodayAtomPermissions.routeEntry.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(canEnterPhysiotherapyWorkspace(billingOnly), isFalse);
+        expect(
+          PhysiotherapyTodayAtomPermissions.tab.isAllowed(billingOnly),
+          isFalse,
+        );
+        expect(
+          PhysiotherapyTodayAtomPermissions.billingColumn.isAllowed(
+            billingOnly,
+          ),
+          isTrue,
+        );
+        expect(canViewPhysiotherapyBilling(billingOnly), isTrue);
+        expect(canViewPhysiotherapyToday(billingOnly), isFalse);
+      },
+    );
+
+    test(
+      '∩ physiotherapy:read + module satisfies route entry, not tab chrome',
+      () {
+        final AppAccessPolicy physioReader = _policy(
+          permissions: <AppPermission>{AppPermissions.physiotherapyRead},
+          roles: const <String>['CUSTOM_READER'],
+        );
+        expect(
+          PhysiotherapyTodayAtomPermissions.routeEntry.isAllowed(physioReader),
+          isTrue,
+        );
+        expect(canEnterPhysiotherapyWorkspace(physioReader), isTrue);
+        expect(
+          PhysiotherapyTodayAtomPermissions.tab.isAllowed(physioReader),
+          isFalse,
+        );
+      },
+    );
 
     test('full ∩ write set presents write atoms', () {
       final AppAccessPolicy writer = _writerPolicy();

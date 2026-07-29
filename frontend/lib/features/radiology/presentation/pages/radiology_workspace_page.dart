@@ -1640,9 +1640,6 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
         AppAccessActionGate(
           requirement: RadiologyAllOrdersAtomPermissions.printReport,
           builder: (BuildContext context, bool isAllowed) {
-            if (!isAllowed) {
-              return const SizedBox.shrink();
-            }
             return AppButton.tertiary(
               label: l10n.radiologyPrintReportAction,
               leadingIcon: Icons.print_outlined,
