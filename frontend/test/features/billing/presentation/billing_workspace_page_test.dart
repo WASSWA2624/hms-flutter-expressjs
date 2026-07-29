@@ -792,10 +792,16 @@ void main() {
     _expectStableCloseToolbar();
   });
 
-  testWidgets('each tab exposes five default columns', (
+  testWidgets('each tab exposes five default columns when mutations allowed', (
     WidgetTester tester,
   ) async {
-    await _pumpBillingWorkspace(tester, repository: repository);
+    // Approval required next-action column needs approve ∩; other queues need
+    // write (and claims module for Claims pending).
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _billingApproverPolicy(),
+    );
 
     for (final BillingQueueType queue in BillingQueueType.values) {
       if (queue != BillingQueueType.all) {
@@ -804,6 +810,26 @@ void main() {
       expect(_table(tester).columns.length, 5);
     }
   });
+
+  testWidgets(
+    'Approval required omits Next action column without financial:approve',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _billingWritePolicy(),
+      );
+      await _selectQueueTab(tester, 'Approval required');
+      expect(_table(tester).columns.length, 4);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('All tab shows status while Needs issue prioritizes encounter', (
     WidgetTester tester,
