@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
 import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
+import 'package:hosspi_hms/features/theater/presentation/theater_next_action.dart';
 import 'package:hosspi_hms/features/theater/presentation/widgets/theater_schedule_case_form.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -329,9 +330,14 @@ class _TheaterWorkspaceContentState
     final TheaterWorkspaceState state = widget.state;
     final controller = ref.read(theaterWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = canWriteTheaterClinical(accessPolicy);
+    final bool canWrite =
+        theaterWriteRequirementForSection(_section).isAllowed(accessPolicy);
     final bool canSchedule = canScheduleTheaterCase(accessPolicy);
-    final List<TheaterSection> visibleSections = theaterAllowedSections(
+    final bool showNextAction = theaterBoardShowsNextActionColumn(
+      accessPolicy,
+      _section,
+    );
+    final List<TheaterSection> visibleSections = theaterAllowedBoardSections(
       accessPolicy,
     );
     final AppFailure? lastFailure = state.lastFailure;
@@ -414,6 +420,7 @@ class _TheaterWorkspaceContentState
                 state: state,
                 section: _section,
                 canWrite: canWrite,
+                showNextAction: showNextAction,
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
                 onPageChanged: controller.changePage,
@@ -430,6 +437,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
     required this.state,
     required this.section,
     required this.canWrite,
+    required this.showNextAction,
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
@@ -438,6 +446,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
   final TheaterWorkspaceState state;
   final TheaterSection section;
   final bool canWrite;
+  final bool showNextAction;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<TheaterCase>
   columnVisibilityController;
@@ -586,8 +595,16 @@ class _TheaterCaseBoard extends ConsumerWidget {
         title: l10n.theaterNoCasesTitle,
         body: l10n.theaterNoCasesBody,
       ),
-      columns: defaultTheaterColumnsForSection(context, section, canWrite),
-      columnChoices: theaterColumnChoicesForSection(context, section, canWrite),
+      columns: defaultTheaterColumnsForSection(
+        context,
+        section,
+        showNextAction: showNextAction,
+      ),
+      columnChoices: theaterColumnChoicesForSection(
+        context,
+        section,
+        showNextAction: showNextAction,
+      ),
       mobileItemBuilder: (BuildContext context, TheaterCase item) {
         final AppLocalizations l10n = context.l10n;
         return AppListTableMobileItem(
@@ -608,10 +625,13 @@ class _TheaterCaseBoard extends ConsumerWidget {
               label: _caseStatusLabel(l10n, item.status),
             ),
           ],
-          trailing: _TheaterNextActionButton(
-            theaterCase: item,
-            canWrite: canWrite,
-          ),
+          trailing: showNextAction
+              ? FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: _TheaterNextActionButton(theaterCase: item),
+                )
+              : null,
         );
       },
     );

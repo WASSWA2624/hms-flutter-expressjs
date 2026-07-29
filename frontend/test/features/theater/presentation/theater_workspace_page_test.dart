@@ -47,7 +47,12 @@ AppAccessPolicy _theaterReadOnlyPolicy() {
           code: 'theatre-anesthesia',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -114,6 +119,7 @@ AppAccessPolicy _theaterWritePolicy() {
           licenseStatus: 'ACTIVE',
         ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -410,7 +416,7 @@ void main() {
     expect(_toolbarPrimary('Schedule case'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Update readiness'), findsNothing);
-    expect(find.text('Update readiness'), findsWidgets);
+    expect(find.text('Update readiness'), findsNothing);
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (

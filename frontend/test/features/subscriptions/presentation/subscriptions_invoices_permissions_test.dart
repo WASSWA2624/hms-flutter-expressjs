@@ -415,6 +415,74 @@ void main() {
         isEmpty,
       );
     });
+
+    test(
+      'plan caps strip subscriptions:write on FREE even when role pack includes it',
+      () {
+        // FREE tier mirrors backend PLAN_PERMISSION_CAPS (no subscriptions:*).
+        final AppAccessPolicy freeTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.subscriptionsDelete,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'FREE',
+            ),
+          ],
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.tab.isAllowed(freeTier),
+          isFalse,
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.collect.isAllowed(freeTier),
+          isFalse,
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.retry.isAllowed(freeTier),
+          isFalse,
+        );
+        expect(canWriteSubscriptions(freeTier), isFalse);
+      },
+    );
+
+    test(
+      'plan caps strip subscriptions:delete on BASIC even when role pack includes it',
+      () {
+        // BASIC tier mirrors backend PLAN_PERMISSION_CAPS (read+write only).
+        final AppAccessPolicy basicTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.subscriptionsDelete,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'BASIC',
+            ),
+          ],
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.tab.isAllowed(basicTier),
+          isTrue,
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.collect.isAllowed(basicTier),
+          isTrue,
+        );
+        expect(
+          SubscriptionsInvoicesAtomPermissions.delete.isAllowed(basicTier),
+          isFalse,
+        );
+        expect(canDeleteSubscriptions(basicTier), isFalse);
+      },
+    );
   });
 
   group('Invoices tab widget gates', () {
@@ -596,6 +664,40 @@ void main() {
       },
     );
 
+    testWidgets(
+      'authorized Retry flow syncs workspace after mutation',
+      (WidgetTester tester) async {
+        when(
+          () => repository.retryInvoice(any(), any()),
+        ).thenAnswer((_) async => const Result<void>.success(null));
+
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpInvoicesTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(find.text('SINV-1'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Retry invoice'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        await tester.tap(find.text('Retry invoice').last);
+        await tester.pumpAndSettle();
+
+        verify(() => repository.retryInvoice('inv-1', any())).called(1);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      },
+    );
+
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
@@ -617,9 +719,25 @@ void main() {
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      // Failure on first paint is handled by AsyncStateScaffold before data
-      // builder; simulate lastFailure via successful load then rely on chrome.
-      // Use empty list + Filters to prove authorized chrome after load.
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+
+      await _pumpInvoicesTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        loadFailure: const AppFailure.network(message: 'Network unavailable'),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized list chrome remains observable', (
+      WidgetTester tester,
+    ) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.subscriptionsRead},
       );
@@ -632,7 +750,77 @@ void main() {
 
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('SINV-1'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilterChip, 'Past due invoices (2)'),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'plan caps: FREE tier strips Collect/Retry even with write grant string',
+      (WidgetTester tester) async {
+        final AppAccessPolicy freeTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'FREE',
+            ),
+          ],
+        );
+
+        await _pumpInvoicesTab(
+          tester,
+          repository: repository,
+          accessPolicy: freeTier,
+          selectInvoicesTab: false,
+        );
+
+        expect(find.byType(AppTabStrip), findsNothing);
+        expect(find.text('Collect invoice'), findsNothing);
+        expect(find.text('Retry invoice'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'plan caps: BASIC tier mounts Collect/Retry; delete still not mounted',
+      (WidgetTester tester) async {
+        final AppAccessPolicy basicTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.subscriptionsDelete,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'BASIC',
+            ),
+          ],
+        );
+
+        await _pumpInvoicesTab(
+          tester,
+          repository: repository,
+          accessPolicy: basicTier,
+        );
+
+        await tester.tap(find.text('SINV-1'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Collect invoice'), findsOneWidget);
+        expect(find.text('Retry invoice'), findsOneWidget);
+        expect(find.text('Revoke'), findsNothing);
+        expect(find.text('Delete'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
 
     testWidgets('mobile viewport: invoices list and detail remain usable', (
       WidgetTester tester,

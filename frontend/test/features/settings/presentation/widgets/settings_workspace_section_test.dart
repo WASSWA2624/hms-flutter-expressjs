@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -13,6 +16,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/settings/data/repositories/settings_workspace_repository_impl.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/domain/repositories/settings_workspace_repository.dart';
+import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -105,6 +109,94 @@ void main() {
       expect(find.text('Administrative setup workspace'), findsOneWidget);
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Create'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'HR reader (hr:read ∪) sees Open but not Create without write ∩',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        workspace: _workspace(SettingsWorkspaceStatus.ready),
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.hrRead,
+        ],
+        roles: const <String>['HR'],
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'hr-rosters'),
+        ],
+      );
+
+      expect(find.text('Administrative setup workspace'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Create'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'system:admin ∪ with profile:read mounts authorized workspace chrome',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        workspace: _workspace(SettingsWorkspaceStatus.ready),
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.systemAdmin,
+        ],
+        roles: const <String>['SUPER_ADMIN'],
+      );
+
+      expect(find.text('Administrative setup workspace'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      // Create remains ∩ facility:admin — system:admin alone does not mount it.
+      expect(find.text('Create'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized loading and error/retry states remain observable',
+    (WidgetTester tester) async {
+      final Completer<Result<SettingsWorkspace>> pendingWorkspace =
+          Completer<Result<SettingsWorkspace>>();
+      final _FakeSettingsWorkspaceRepository repository =
+          _FakeSettingsWorkspaceRepository(
+            workspace: _workspace(SettingsWorkspaceStatus.ready),
+            referenceData: _referenceData(),
+            pendingWorkspace: pendingWorkspace,
+          );
+
+      await _pumpWorkspace(
+        tester,
+        workspace: _workspace(SettingsWorkspaceStatus.ready),
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+        ],
+        repository: repository,
+        settle: false,
+      );
+      await tester.pump();
+
+      expect(find.text('Loading settings workspace'), findsOneWidget);
+      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+
+      pendingWorkspace.complete(
+        const Result<SettingsWorkspace>.failure(AppFailure.network()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Settings workspace unavailable'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+
+      repository.pendingWorkspace = null;
+      repository.workspace = _workspace(SettingsWorkspaceStatus.ready);
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open'), findsOneWidget);
     },
   );
 
@@ -233,6 +325,60 @@ void main() {
     },
   );
 
+  testWidgets(
+    'settings page strip hides workspace without profile:read ∩',
+    (WidgetTester tester) async {
+      await _pumpSettingsPage(
+        tester,
+        permissions: <AppPermission>[AppPermissions.facilityAdmin],
+        tab: 'workspace',
+      );
+
+      expect(find.text('Administrative setup workspace'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'settings page strip shows workspace for facility:admin ∪ with profile:read',
+    (WidgetTester tester) async {
+      await _pumpSettingsPage(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.facilityAdmin,
+        ],
+        tab: 'workspace',
+      );
+
+      expect(find.text('Administrative setup workspace'), findsWidgets);
+      expect(find.text('Open'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'settings page strip shows workspace for hr:read ∪ with profile:read',
+    (WidgetTester tester) async {
+      await _pumpSettingsPage(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.hrRead,
+        ],
+        roles: const <String>['HR'],
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'hr-rosters'),
+        ],
+        tab: 'workspace',
+        workspace: _hrWorkspace(),
+      );
+
+      expect(find.text('Administrative setup workspace'), findsWidgets);
+      expect(find.text('Department'), findsWidgets);
+      expect(find.text('Unit'), findsWidgets);
+    },
+  );
+
   test('no nested cross-module write vocabulary on workspace helpers', () {
     expect(
       SettingsWorkspaceAtomPermissions.nestedRead.anyPermissions,
@@ -254,6 +400,7 @@ Future<void> _pumpWorkspace(
   Size size = const Size(1280, 1200),
   ThemeMode themeMode = ThemeMode.light,
   bool scrollable = false,
+  bool settle = true,
   _FakeSettingsWorkspaceRepository? repository,
 }) async {
   final AuthSession session = AuthSession(
@@ -310,6 +457,69 @@ Future<void> _pumpWorkspace(
     ),
   );
   await tester.pump();
+  if (!settle) {
+    return;
+  }
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpSettingsPage(
+  WidgetTester tester, {
+  required List<AppPermission> permissions,
+  required String tab,
+  List<String> roles = const <String>['FACILITY_ADMIN'],
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
+  SettingsWorkspace? workspace,
+  Size size = const Size(1280, 1400),
+}) async {
+  final AuthSession session = AuthSession(
+    tokens: SessionTokens(accessToken: 'access-token'),
+    permissions: permissions.toSet(),
+    isAuthorizationHydrated: true,
+    user: AuthUserProfile(
+      id: 'user-1',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      roles: roles,
+    ),
+    moduleEntitlements: modules,
+  );
+  final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+    session,
+  ).copyWithPermissions(permissions);
+
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appAccessPolicyProvider.overrideWithValue(policy),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        settingsWorkspaceRepositoryProvider.overrideWithValue(
+          _FakeSettingsWorkspaceRepository(
+            workspace: workspace ?? _workspace(SettingsWorkspaceStatus.ready),
+            referenceData: _referenceData(),
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(
+          body: SettingsPage(initialQuery: SettingsPageQuery(tab: tab)),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
   await tester.pumpAndSettle();
 }
@@ -319,10 +529,14 @@ final class _FakeSettingsWorkspaceRepository
   _FakeSettingsWorkspaceRepository({
     required this.workspace,
     required this.referenceData,
+    this.pendingWorkspace,
+    this.pendingReference,
   });
 
-  final SettingsWorkspace workspace;
-  final SettingsReferenceData referenceData;
+  SettingsWorkspace workspace;
+  SettingsReferenceData referenceData;
+  Completer<Result<SettingsWorkspace>>? pendingWorkspace;
+  Completer<Result<SettingsReferenceData>>? pendingReference;
   SettingsWorkspaceQuery? lastQuery;
 
   @override
@@ -330,6 +544,10 @@ final class _FakeSettingsWorkspaceRepository
     SettingsWorkspaceQuery query,
   ) async {
     lastQuery = query;
+    final Completer<Result<SettingsWorkspace>>? pending = pendingWorkspace;
+    if (pending != null) {
+      return pending.future;
+    }
     return Result<SettingsWorkspace>.success(workspace);
   }
 
@@ -338,6 +556,10 @@ final class _FakeSettingsWorkspaceRepository
     SettingsWorkspaceQuery query,
   ) async {
     lastQuery = query;
+    final Completer<Result<SettingsReferenceData>>? pending = pendingReference;
+    if (pending != null) {
+      return pending.future;
+    }
     return Result<SettingsReferenceData>.success(referenceData);
   }
 }
@@ -350,6 +572,86 @@ SettingsReferenceData _referenceData() {
     facilities: <SettingsReferenceOption>[
       SettingsReferenceOption(id: 'FAC-1', label: 'Central Hospital'),
     ],
+  );
+}
+
+SettingsWorkspace _hrWorkspace() {
+  return SettingsWorkspace(
+    status: SettingsWorkspaceStatus.ready,
+    generatedAt: DateTime.utc(2026, 5, 22, 9),
+    context: const SettingsWorkspaceContext(
+      state: SettingsWorkspaceStatus.ready,
+      tenantName: 'Acme Health',
+      facilityName: 'Central Hospital',
+      roleKeys: <String>['HR'],
+    ),
+    summaryCards: const <SettingsSummaryCard>[
+      SettingsSummaryCard(
+        id: 'organization',
+        labelKey: 'settings.workspace.summary.organization',
+        totalModules: 2,
+        configuredModules: 2,
+        attentionModules: 0,
+        totalRecords: 4,
+        state: 'configured',
+      ),
+    ],
+    checklist: const SettingsChecklist(
+      completedCount: 1,
+      totalCount: 1,
+      items: <SettingsChecklistItem>[
+        SettingsChecklistItem(
+          id: 'department',
+          labelKey: 'settings.workspace.checklist.department',
+          completed: true,
+          priority: 1,
+          route: '/settings/departments',
+        ),
+      ],
+    ),
+    quickActions: const <SettingsQuickAction>[],
+    moduleGroups: const <SettingsModuleGroup>[
+      SettingsModuleGroup(
+        id: 'organization',
+        labelKey: 'settings.sidebar.groups.organization',
+        modules: <SettingsModuleItem>[
+          SettingsModuleItem(
+            moduleId: 'department',
+            labelKey: 'settings.tabs.department',
+            groupId: 'organization',
+            count: 2,
+            state: SettingsModuleState.configured,
+            canRead: true,
+            canWrite: true,
+            canCreate: true,
+            dependencies: <SettingsModuleDependency>[],
+            route: '/settings/departments',
+            createRoute: '/settings/departments/create',
+          ),
+          SettingsModuleItem(
+            moduleId: 'unit',
+            labelKey: 'settings.tabs.unit',
+            groupId: 'organization',
+            count: 2,
+            state: SettingsModuleState.configured,
+            canRead: true,
+            canWrite: true,
+            canCreate: true,
+            dependencies: <SettingsModuleDependency>[],
+            route: '/settings/units',
+            createRoute: '/settings/units/create',
+          ),
+        ],
+      ),
+    ],
+    referenceData: _referenceData(),
+    stats: const SettingsWorkspaceStats(
+      totalModules: 2,
+      configuredModules: 2,
+      attentionModules: 0,
+      totalRecords: 4,
+    ),
+    permissions: const SettingsWorkspacePermissions(canWrite: true),
   );
 }
 

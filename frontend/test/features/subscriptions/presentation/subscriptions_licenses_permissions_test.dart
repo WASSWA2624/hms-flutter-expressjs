@@ -456,6 +456,40 @@ void main() {
       );
       expect(subscriptionsAllowedPanels(noModule), isEmpty);
     });
+
+    test(
+      'plan caps strip subscriptions:delete even when role pack includes it',
+      () {
+        // BASIC tier mirrors backend PLAN_PERMISSION_CAPS (read+write only).
+        final AppAccessPolicy basicTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.subscriptionsDelete,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'BASIC',
+            ),
+          ],
+        );
+        expect(
+          SubscriptionsLicensesAtomPermissions.tab.isAllowed(basicTier),
+          isTrue,
+        );
+        expect(
+          SubscriptionsLicensesAtomPermissions.create.isAllowed(basicTier),
+          isTrue,
+        );
+        expect(
+          SubscriptionsLicensesAtomPermissions.delete.isAllowed(basicTier),
+          isFalse,
+        );
+        expect(canDeleteSubscriptions(basicTier), isFalse);
+      },
+    );
   });
 
   group('Licenses tab widget gates', () {
@@ -650,6 +684,10 @@ void main() {
 
         verify(() => repository.deleteLicense('lic-1')).called(1);
         verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+        expect(
+          find.textContaining('Subscription workspace updated.'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -687,6 +725,83 @@ void main() {
       },
     );
 
+    testWidgets(
+      'authorized Add license flow syncs workspace after create',
+      (WidgetTester tester) async {
+        when(
+          () => repository.createLicense(any()),
+        ).thenAnswer((_) async => const Result<void>.success(null));
+
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpLicensesTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(_toolbarPrimary('Add license'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        final Finder tenantField = find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> && widget.labelText == 'Tenant',
+        );
+        expect(tenantField, findsOneWidget);
+        tester
+            .widget<AppSelectField<String>>(tenantField)
+            .onChanged
+            ?.call('tenant-1');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add license').last);
+        await tester.pumpAndSettle();
+
+        verify(() => repository.createLicense(any())).called(1);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+        expect(
+          find.textContaining('Subscription workspace updated.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'authorized Add license validation keeps dialog open',
+      (WidgetTester tester) async {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpLicensesTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(_toolbarPrimary('Add license'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        await tester.tap(find.text('Add license').last);
+        await tester.pumpAndSettle();
+
+        // Required tenant empty — dialog stays; no mutation.
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(find.textContaining('Select a tenant.'), findsWidgets);
+        verifyNever(() => repository.createLicense(any()));
+      },
+    );
+
     testWidgets('authorized empty state remains observable', (
       WidgetTester tester,
     ) async {
@@ -702,6 +817,26 @@ void main() {
       );
 
       expect(find.textContaining('No subscription records'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized error/retry remains observable', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+
+      await _pumpLicensesTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        loadFailure: const AppFailure.network(),
+        selectLicensesTab: false,
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byType(AppFailureStateView), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     });
 
@@ -721,6 +856,64 @@ void main() {
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('ENTERPRISE'), findsOneWidget);
     });
+
+    testWidgets(
+      'authorized loading/error chrome remains on licenses path',
+      (WidgetTester tester) async {
+        final AppAccessPolicy reader = _policy(
+          permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+        );
+
+        await _pumpLicensesTab(
+          tester,
+          repository: repository,
+          accessPolicy: reader,
+        );
+
+        expect(_tabLabel('Licenses'), findsWidgets);
+        expect(
+          find.widgetWithText(FilterChip, 'Expiring licenses (2)'),
+          findsOneWidget,
+        );
+        expect(find.text('ENTERPRISE'), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'plan caps: BASIC tier hides Revoke even with delete grant string',
+      (WidgetTester tester) async {
+        final AppAccessPolicy basicTier = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.subscriptionsDelete,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: subscriptionsControlsModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'BASIC',
+            ),
+          ],
+        );
+
+        await _pumpLicensesTab(
+          tester,
+          repository: repository,
+          accessPolicy: basicTier,
+        );
+
+        expect(_toolbarPrimary('Add license'), findsOneWidget);
+
+        await tester.tap(find.text('ENTERPRISE'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Update license'), findsOneWidget);
+        expect(find.text('Revoke license'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
 
     testWidgets('mobile viewport: licenses list and detail remain usable', (
       WidgetTester tester,

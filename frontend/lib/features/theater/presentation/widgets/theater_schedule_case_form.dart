@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
+import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
@@ -447,7 +449,7 @@ class TheaterScheduleCaseFormState
             ),
           ],
         ),
-        if (!widget.rescheduleOnly)
+        if (!widget.rescheduleOnly) ...<Widget>[
           AppFormSection(
             density: AppFormSectionDensity.compact,
             title: l10n.theaterScheduleBillingSection,
@@ -478,22 +480,26 @@ class TheaterScheduleCaseFormState
                       ),
                   ],
                 ),
-              ClinicalRequestBillingPanel(
-                lineItems: _billingLineItems.isEmpty
-                    ? clinicalRequestBillingLineItems(
-                        options: _selectedProcedures,
-                        catalogType: 'SERVICE',
-                        billingEntity: 'FACILITY',
-                      )
-                    : _billingLineItems,
-                billingEntity: 'FACILITY',
-                payerContext: _payerContext,
-                onChanged: (ClinicalRequestBillingSubmit value) {
-                  _billing = value;
-                },
-              ),
+              if (canViewTheaterBillingHolds(
+                ref.watch(appAccessPolicyProvider),
+              ))
+                ClinicalRequestBillingPanel(
+                  lineItems: _billingLineItems.isEmpty
+                      ? clinicalRequestBillingLineItems(
+                          options: _selectedProcedures,
+                          catalogType: 'SERVICE',
+                          billingEntity: 'FACILITY',
+                        )
+                      : _billingLineItems,
+                  billingEntity: 'FACILITY',
+                  payerContext: _payerContext,
+                  onChanged: (ClinicalRequestBillingSubmit value) {
+                    _billing = value;
+                  },
+                ),
             ],
           ),
+        ],
       ],
     );
   }

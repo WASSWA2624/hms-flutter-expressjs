@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_fac
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 
 void main() {
   test(
@@ -404,10 +405,12 @@ void main() {
         repository: repository,
       );
 
+      await tester.ensureVisible(find.text('Reset to default'));
       await tester.tap(find.text('Reset to default'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Reset configuration?'), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('RESET CONFIGURATION?'), findsOneWidget);
       expect(
         find.text(
           'This will clear the configured values and revert to defaults.',

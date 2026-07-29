@@ -42,6 +42,15 @@ const SubscriptionItem _planItem = SubscriptionItem(
   includedModuleIds: <String>['mod-1'],
 );
 
+const SubscriptionItem _moduleCatalogItem = SubscriptionItem(
+  id: 'mod-1',
+  resource: SubscriptionResource.modules,
+  displayId: 'MOD-1',
+  name: 'OPD Module',
+  code: 'OPD',
+  status: 'ACTIVE',
+);
+
 const List<AppModuleEntitlement> _subscriptionModules = <AppModuleEntitlement>[
   AppModuleEntitlement(
     code: subscriptionsControlsModule,
@@ -99,10 +108,11 @@ void _stubWorkspace(
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
     final List<SubscriptionItem> pageItems = empty
         ? const <SubscriptionItem>[]
-        : (query.resource == SubscriptionResource.subscriptionPlans ||
-                  query.resource == SubscriptionResource.modules
+        : (query.resource == SubscriptionResource.subscriptionPlans
               ? items
-              : const <SubscriptionItem>[]);
+              : query.resource == SubscriptionResource.modules
+                  ? const <SubscriptionItem>[_moduleCatalogItem]
+                  : const <SubscriptionItem>[]);
     return Result<SubscriptionsWorkspaceData>.success(
       SubscriptionsWorkspaceData(
         query: query,
@@ -597,6 +607,117 @@ void main() {
 
       expect(find.textContaining('No subscription records'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized error/retry remains observable', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+
+      await _pumpPlansTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        loadFailure: const AppFailure.network(),
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(_toolbarPrimary('Create plan'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      _stubWorkspace(repository);
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Starter Plan'), findsOneWidget);
+    });
+
+    testWidgets('authorized Create plan validation + sync + success feedback', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.subscriptionsRead,
+          AppPermissions.subscriptionsWrite,
+        },
+      );
+
+      await _pumpPlansTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+      );
+
+      await tester.tap(_toolbarPrimary('Create plan'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      await tester.tap(find.text('Create plan').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter a plan name.'), findsOneWidget);
+      verifyNever(() => repository.createPlan(any()));
+
+      Future<void> enterLabeledField(String label, String value) async {
+        final Finder field = find.descendant(
+          of: find.byWidgetPredicate(
+            (Widget widget) =>
+                widget is AppTextField && widget.labelText == label,
+          ),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(field, value);
+      }
+
+      await enterLabeledField('Plan name', 'Growth Plan');
+      await enterLabeledField('Monthly (USD)', '99');
+      await enterLabeledField('Annual (USD)', '990');
+      await tester.tap(find.text('Create plan').last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.createPlan(any())).called(1);
+      verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      expect(
+        find.text('Subscription workspace updated.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('nested Modules resource is read-only (no pack create primary)', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.subscriptionsRead,
+          AppPermissions.subscriptionsWrite,
+        },
+      );
+
+      await _pumpPlansTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+      );
+
+      expect(_toolbarPrimary('Create plan'), findsOneWidget);
+
+      // Navigate via nested resource strip (deep-link apply can race initial load).
+      await tester.tap(_tabLabel('Modules').last);
+      await tester.pumpAndSettle();
+
+      expect(_tabLabel('Modules'), findsWidgets);
+      expect(find.text('OPD Module'), findsOneWidget);
+      expect(_toolbarPrimary('Create plan'), findsNothing);
+      expect(_toolbarPrimary('Assign module'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('OPD Module'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit plan'), findsNothing);
+      expect(find.text('Manage modules'), findsNothing);
+      expect(find.text('Create plan'), findsNothing);
     });
 
     testWidgets('authorized filters chrome remains observable', (

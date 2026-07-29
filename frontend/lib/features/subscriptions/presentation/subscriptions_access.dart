@@ -231,14 +231,15 @@ abstract final class SubscriptionsOverviewAtomPermissions {
 /// | --- | --- | --- |
 /// | Plans strip tab (catalog) | navigate | read ∩ `subscriptions:read` ([tab]) |
 /// | Nested Plans / Modules resource tabs | navigate | read ∩ ([nestedResourceTabs]) |
-/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome]) |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Modules resource list / detail (catalog packs) | read | read ∩ ([listChrome] / [detail]) — **no write primary** |
+/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome] / [search] / [filters] / [columns] / [pagination]) |
+/// | Empty / loading / error / retry / success / validation | read chrome | read ∩ ([empty] / [loading] / [retryChrome]) |
 /// | Row select → plan detail | read | read ∩ ([rowSelect] / [detail]) |
 /// | Detail metrics / included modules / tenant accounts | read | read ∩ ([detail]) |
-/// | Create plan (tab primary) | create | write ∩ ([create]) |
+/// | Create plan (tab primary + form) | create | write ∩ ([create]) |
 /// | Edit plan (detail dialog action + form) | update | write ∩ ([edit] / [update]) |
-/// | Manage modules (detail + dialog) | update | write ∩ ([manageModules] / [update]) |
-/// | Destructive delete / void | delete | delete ∩ — **not mounted** |
+/// | Manage modules / module pack (detail + dialog) | update | write ∩ ([manageModules] / [update]) |
+/// | Destructive delete / void | delete | delete ∩ — **not mounted** ([delete]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Overview KPI active plans (shared chrome) | read | read ∩ ([overviewKpi]) |
 /// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
@@ -247,8 +248,9 @@ abstract final class SubscriptionsOverviewAtomPermissions {
 /// Matrix view ∪ and nested cross-module rows are _(n/a)_. Route entry ∪ is
 /// [subscriptionsWorkspaceRouteEntryRequirement]; atom gates still use
 /// `subscriptions:*` ∩ module so elevated-but-scoped sessions cannot
-/// over-grant. Create / edit / manage-modules share write ∩
-/// (`subscriptions:write`).
+/// over-grant. Create / edit / manage-modules (module packs) share write ∩
+/// (`subscriptions:write`). Modules nested resource is a read-only catalog;
+/// pack membership is edited via [manageModules] on a plan.
 abstract final class SubscriptionsPlansAtomPermissions {
   static const AccessRequirement tab = subscriptionsWorkspaceReadRequirement;
   static const AccessRequirement nestedResourceTabs =
@@ -309,20 +311,20 @@ abstract final class SubscriptionsPlansAtomPermissions {
 }
 
 /// Invoices tab (`panel=billing` / subscription invoices) atom → permission
-/// mapping (inventory + matrix).
+/// mapping (inventory + matrix). Issue / adjust map to Collect / Retry (write ∩).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Invoices strip tab | navigate | read ∩ `subscriptions:read` ([tab]) |
 /// | Past due invoices queue chip | navigate / read | read ∩ ([pastDueChip]) |
-/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome]) |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome] / [search] / [filters] / [columns] / [pagination]) |
+/// | Empty / loading / error / retry / success / validation | read chrome | read ∩ ([empty] / [loading] / [retryChrome]) |
 /// | Row select → detail | read | read ∩ ([rowSelect] / [detail]) |
 /// | Detail fields / timeline | read | read ∩ ([detail]) |
-/// | Collect invoice (detail + dialog) | update | write ∩ ([collect] / [update]) |
-/// | Retry invoice (detail + dialog) | update | write ∩ ([retry] / [update]) |
-/// | Tab primary create | create | write ∩ — **not mounted** on invoices |
-/// | Destructive delete / void | delete | delete ∩ — **not mounted** |
+/// | Collect invoice (detail + dialog) — issue/adjust | update | write ∩ ([collect] / [update]) |
+/// | Retry invoice (detail + dialog) — issue/adjust | update | write ∩ ([retry] / [update]) |
+/// | Tab primary create | create | write ∩ — **not mounted** on invoices ([create]) |
+/// | Destructive delete / void | delete | delete ∩ — **not mounted** ([delete]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Overview KPI past-due (shared chrome) | read | read ∩ ([pastDueChip]) |
 /// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
@@ -395,14 +397,16 @@ abstract final class SubscriptionsInvoicesAtomPermissions {
 /// | --- | --- | --- |
 /// | Licenses strip tab | navigate | read ∩ `subscriptions:read` ([tab]) |
 /// | Expiring licenses queue chip | navigate / read | read ∩ ([expiringLicensesChip]) |
-/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome]) |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Search / filters / columns / pagination | read chrome | read ∩ ([listChrome] / [search] / [filters] / [columns] / [pagination]) |
+/// | Empty / loading / error / retry / success / validation | read chrome | read ∩ ([empty] / [loading] / [retryChrome]) |
 /// | Row select → detail | read | read ∩ ([rowSelect] / [detail]) |
 /// | Detail fields / timeline | read | read ∩ ([detail]) |
-/// | Add license (toolbar + dialog) | create | write ∩ ([create] / [addLicense]) |
-/// | Update license (detail + dialog) | update | write ∩ ([update] / [updateLicense]) |
-/// | Revoke license (detail + confirm) | delete | delete ∩ ([delete] / [revoke]) |
+/// | Add license (toolbar primary + form dialog) | create | write ∩ ([create] / [addLicense]) |
+/// | Update license (detail action + form dialog) | update | write ∩ ([update] / [updateLicense]) |
+/// | Status→CANCELLED in update form | update | write ∩ ([update]) — soft revoke |
+/// | Revoke license (detail + confirm dialog) | delete | delete ∩ ([delete] / [revoke]) |
 /// | Nested cross-module read / write | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
+/// | Overview KPI expiring licenses (shared chrome) | read | read ∩ ([expiringLicensesChip]) |
 /// | Route entry (deep link) | navigate | ∪ `system:admin` ([routeEntry]) |
 /// | Catalog shell entry | navigate | ∩ read + module ([catalogEntry]) |
 ///
@@ -410,7 +414,8 @@ abstract final class SubscriptionsInvoicesAtomPermissions {
 /// [subscriptionsWorkspaceRouteEntryRequirement]; atom gates still use
 /// `subscriptions:*` ∩ module so elevated-but-scoped sessions cannot
 /// over-grant. Status→CANCELLED in the update form remains write ∩ (soft
-/// revoke via update); destructive [revoke] uses HTTP delete ∩.
+/// revoke via update); destructive [revoke] uses HTTP delete ∩. Dialog
+/// entry points re-check [create] / [update] / [delete] before mounting.
 abstract final class SubscriptionsLicensesAtomPermissions {
   static const AccessRequirement tab = subscriptionsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -440,7 +445,7 @@ abstract final class SubscriptionsLicensesAtomPermissions {
   static const AccessRequirement addLicense =
       subscriptionsWorkspaceCreateRequirement;
 
-  /// Matrix ∩ `subscriptions:write` — Update license.
+  /// Matrix ∩ `subscriptions:write` — Update license (incl. status→CANCELLED).
   static const AccessRequirement update =
       subscriptionsWorkspaceUpdateRequirement;
   static const AccessRequirement updateLicense =

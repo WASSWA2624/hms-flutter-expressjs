@@ -41,6 +41,30 @@ const SubscriptionItem _subscriptionItem = SubscriptionItem(
   status: 'ACTIVE',
 );
 
+const SubscriptionItem _cancelledSubscriptionItem = SubscriptionItem(
+  id: 'sub-cancelled',
+  resource: SubscriptionResource.subscriptions,
+  displayId: 'SUB-C',
+  tenantId: 'tenant-1',
+  tenantLabel: 'Closed Clinic',
+  planId: 'plan-1',
+  planLabel: 'Starter Plan',
+  planCode: 'STARTER',
+  status: 'CANCELLED',
+);
+
+const SubscriptionItem _moduleSubscriptionItem = SubscriptionItem(
+  id: 'mod-sub-1',
+  resource: SubscriptionResource.moduleSubscriptions,
+  displayId: 'MSUB-1',
+  tenantId: 'tenant-1',
+  tenantLabel: 'Acme Clinic',
+  moduleId: 'mod-1',
+  moduleLabel: 'Billing',
+  isActive: true,
+  status: 'ACTIVE',
+);
+
 const List<AppModuleEntitlement> _subscriptionModules = <AppModuleEntitlement>[
   AppModuleEntitlement(
     code: subscriptionsControlsModule,
@@ -96,11 +120,17 @@ void _stubWorkspace(
     }
     final SubscriptionsWorkspaceQuery query =
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
-    final List<SubscriptionItem> pageItems = empty
-        ? const <SubscriptionItem>[]
-        : (query.resource == SubscriptionResource.subscriptions
-              ? items
-              : const <SubscriptionItem>[]);
+    final List<SubscriptionItem> pageItems;
+    if (empty) {
+      pageItems = const <SubscriptionItem>[];
+    } else if (query.resource == SubscriptionResource.subscriptions ||
+        query.resource == SubscriptionResource.moduleSubscriptions) {
+      pageItems = items
+          .where((SubscriptionItem item) => item.resource == query.resource)
+          .toList(growable: false);
+    } else {
+      pageItems = const <SubscriptionItem>[];
+    }
     return Result<SubscriptionsWorkspaceData>.success(
       SubscriptionsWorkspaceData(
         query: query,
@@ -312,12 +342,36 @@ void main() {
         same(subscriptionsWorkspaceUpdateRequirement),
       );
       expect(
+        SubscriptionsAtomPermissions.renew,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.changePlan,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.activate,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
         SubscriptionsAtomPermissions.cancel,
+        same(subscriptionsWorkspaceUpdateRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.toggleModule,
         same(subscriptionsWorkspaceUpdateRequirement),
       );
       expect(
         SubscriptionsAtomPermissions.delete,
         same(subscriptionsWorkspaceDeleteRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.nestedRead,
+        same(subscriptionsWorkspaceReadRequirement),
+      );
+      expect(
+        SubscriptionsAtomPermissions.nestedWrite,
+        same(subscriptionsWorkspaceWriteRequirement),
       );
       expect(
         SubscriptionsAtomPermissions.catalogEntry,
@@ -415,8 +469,14 @@ void main() {
         isTrue,
       );
       expect(canEnterSubscriptionsWorkspace(systemOnly), isTrue);
+
+      // Elevated-but-scoped (route ∪ without subscriptions:*): tab still denied.
+      final AppAccessPolicy elevatedScoped = _policy(
+        permissions: <AppPermission>{AppPermissions.systemAdmin},
+        roles: const <String>['OTHER'],
+      );
       expect(
-        SubscriptionsAtomPermissions.tab.isAllowed(systemOnly),
+        SubscriptionsAtomPermissions.tab.isAllowed(elevatedScoped),
         isFalse,
       );
     });
@@ -481,7 +541,7 @@ void main() {
     );
 
     testWidgets(
-      '∩ presence: write mounts New/Edit/Cancel; HTTP delete not mounted',
+      '∩ presence: write mounts New/Edit/Cancel/Renew; HTTP delete not mounted',
       (WidgetTester tester) async {
         final AppAccessPolicy writer = _policy(
           permissions: <AppPermission>{
@@ -503,9 +563,94 @@ void main() {
 
         expect(find.text('Edit subscription'), findsOneWidget);
         expect(find.text('Change plan'), findsOneWidget);
+        expect(find.text('Renew'), findsOneWidget);
         expect(find.text('Cancel subscription'), findsOneWidget);
+        expect(find.text('Activate'), findsNothing);
         expect(find.text('Delete subscription'), findsNothing);
         expect(find.text('Revoke license'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '∩ presence: Activate mounts for cancelled subscription when write ∩',
+      (WidgetTester tester) async {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+          items: const <SubscriptionItem>[_cancelledSubscriptionItem],
+        );
+
+        await tester.tap(find.text('Closed Clinic'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Activate'), findsOneWidget);
+        expect(find.text('Cancel subscription'), findsNothing);
+        expect(find.text('Edit subscription'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nested Module subscriptions: read hides Assign/Disable',
+      (WidgetTester tester) async {
+        final AppAccessPolicy reader = _policy(
+          permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: reader,
+          initialLocation:
+              '/subscriptions?panel=operations&resource=module-subscriptions',
+          selectSubscriptionsTab: false,
+          items: const <SubscriptionItem>[_moduleSubscriptionItem],
+        );
+
+        expect(find.text('Module subscriptions'), findsWidgets);
+        expect(_toolbarPrimary('Assign module'), findsNothing);
+        expect(find.text('Billing'), findsOneWidget);
+
+        await tester.tap(find.text('Billing'));
+        await tester.pumpAndSettle();
+        expect(find.text('Disable module'), findsNothing);
+        expect(find.text('Enable module'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'nested Module subscriptions: write mounts Assign/Disable',
+      (WidgetTester tester) async {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+          initialLocation:
+              '/subscriptions?panel=operations&resource=module-subscriptions',
+          selectSubscriptionsTab: false,
+          items: const <SubscriptionItem>[_moduleSubscriptionItem],
+        );
+
+        expect(_toolbarPrimary('Assign module'), findsOneWidget);
+        expect(_toolbarPrimary('New subscription'), findsNothing);
+        await tester.tap(find.text('Billing'));
+        await tester.pumpAndSettle();
+        expect(find.text('Disable module'), findsOneWidget);
       },
     );
 
@@ -532,6 +677,7 @@ void main() {
 
         expect(find.text('Edit subscription'), findsNothing);
         expect(find.text('Cancel subscription'), findsNothing);
+        expect(find.text('Renew'), findsNothing);
         expect(find.text('Delete subscription'), findsNothing);
       },
     );
@@ -701,6 +847,72 @@ void main() {
       expect(find.textContaining('No subscription records'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     });
+
+    testWidgets('authorized error/retry remains observable', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+
+      await _pumpSubscriptionsTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        loadFailure: const AppFailure.network(),
+        selectSubscriptionsTab: false,
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets(
+      'authorized New subscription flow syncs workspace after mutation',
+      (WidgetTester tester) async {
+        when(
+          () => repository.createSubscription(any()),
+        ).thenAnswer((_) async => const Result<void>.success(null));
+
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+          },
+        );
+
+        await _pumpSubscriptionsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+        );
+
+        await tester.tap(_toolbarPrimary('New subscription'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        await tester.tap(find.text('Tenant').first);
+        await tester.pumpAndSettle();
+        final Finder tenantOption = find.text('Acme Clinic').last;
+        if (tenantOption.evaluate().isNotEmpty) {
+          await tester.tap(tenantOption);
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.text('Plan').first);
+        await tester.pumpAndSettle();
+        final Finder planOption = find.text('Starter Plan').last;
+        if (planOption.evaluate().isNotEmpty) {
+          await tester.tap(planOption);
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.text('New subscription').last);
+        await tester.pumpAndSettle();
+
+        verify(() => repository.createSubscription(any())).called(1);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      },
+    );
 
     testWidgets('authorized list chrome remains observable', (
       WidgetTester tester,

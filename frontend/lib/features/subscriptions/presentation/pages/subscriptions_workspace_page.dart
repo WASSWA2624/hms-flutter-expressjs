@@ -129,6 +129,8 @@ class _SubscriptionsWorkspacePageState
         final bool canWrite = switch (item.resource) {
           SubscriptionResource.subscriptionPlans =>
             SubscriptionsPlansAtomPermissions.update.isAllowed(policy),
+          // Catalog Modules is read-only; pack edits use Manage modules on a plan.
+          SubscriptionResource.modules => false,
           SubscriptionResource.subscriptions ||
           SubscriptionResource.moduleSubscriptions =>
             SubscriptionsAtomPermissions.update.isAllowed(policy),
@@ -353,6 +355,8 @@ class _SubscriptionsWorkspaceContentState
                       SubscriptionResource.subscriptionPlans =>
                         SubscriptionsPlansAtomPermissions.update
                             .isAllowed(accessPolicy),
+                      // Catalog Modules is read-only; pack edits use Manage modules.
+                      SubscriptionResource.modules => false,
                       SubscriptionResource.subscriptions ||
                       SubscriptionResource.moduleSubscriptions =>
                         SubscriptionsAtomPermissions.update
@@ -420,6 +424,11 @@ class _SubscriptionsWorkspaceContentState
         enabled: !state.isSaving,
         onPressed: () => _showPlanDialog(context, ref),
       );
+    }
+    // Catalog Modules nested resource: read-only catalog (no create primary).
+    // Module packs are edited via Manage modules on a plan detail.
+    if (state.query.resource == SubscriptionResource.modules) {
+      return null;
     }
     if (state.query.resource == SubscriptionResource.subscriptions) {
       if (!SubscriptionsAtomPermissions.create.isAllowed(accessPolicy)) {
@@ -1193,7 +1202,7 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
       children: <Widget>[
         _DetailHeader(item: item),
         SizedBox(height: Theme.of(context).spacing.md),
-        _DetailActions(item: item, state: state, canWrite: canWrite),
+        _DetailActions(item: item, state: state),
         SizedBox(height: Theme.of(context).spacing.md),
         _DetailFields(item: item),
         if (state.timeline.isNotEmpty) ...<Widget>[
@@ -1765,12 +1774,10 @@ class _DetailActions extends ConsumerWidget {
   const _DetailActions({
     required this.item,
     required this.state,
-    required this.canWrite,
   });
 
   final SubscriptionItem item;
   final SubscriptionsWorkspaceState state;
-  final bool canWrite;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1860,8 +1867,8 @@ class _DetailActions extends ConsumerWidget {
             onPressed: () => _showRevokeLicenseDialog(context, ref),
           ),
       ],
-      if (item.resource == SubscriptionResource.subscriptionInvoices &&
-          canWrite) ...<Widget>[
+      // Invoices: Collect / Retry = write ∩; no create/delete mounts on this tab.
+      if (item.resource == SubscriptionResource.subscriptionInvoices) ...<Widget>[
         if (item.canCollectInvoice &&
             SubscriptionsInvoicesAtomPermissions.collect.isAllowed(
               accessPolicy,
@@ -3556,6 +3563,13 @@ Future<void> _showPlanDialog(
   WidgetRef ref, {
   SubscriptionItem? initial,
 }) async {
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool allowed = initial == null
+      ? SubscriptionsPlansAtomPermissions.create.isAllowed(accessPolicy)
+      : SubscriptionsPlansAtomPermissions.edit.isAllowed(accessPolicy);
+  if (!allowed) {
+    return;
+  }
   final SubscriptionsWorkspaceState? state = _subscriptionsStateFromAsync(
     ref.read(subscriptionsWorkspaceControllerProvider),
   );
@@ -3596,6 +3610,11 @@ Future<void> _showPlanModulesDialog(
   WidgetRef ref,
   SubscriptionItem plan,
 ) async {
+  if (!SubscriptionsPlansAtomPermissions.manageModules.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionsWorkspaceState? state = _subscriptionsStateFromAsync(
     ref.read(subscriptionsWorkspaceControllerProvider),
   );
@@ -3652,6 +3671,11 @@ Future<void> _showSubscriptionDialog(
   SubscriptionsWorkspaceState state, {
   String? initialTenantId,
 }) async {
+  if (!SubscriptionsAtomPermissions.create.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionDraft? draft = await showAppDialog<SubscriptionDraft>(
     context: context,
     builder: (_) => _SubscriptionForm(
@@ -3679,6 +3703,11 @@ Future<void> _showEditSubscriptionDialog(
   SubscriptionsWorkspaceState state,
   SubscriptionItem item,
 ) async {
+  if (!SubscriptionsAtomPermissions.edit.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionDraft? draft = await showAppDialog<SubscriptionDraft>(
     context: context,
     builder: (_) => _SubscriptionForm(
@@ -3759,36 +3788,34 @@ Future<void> _openTenantCohortDialog(
             else ...<Widget>[
               for (final SubscriptionTenantAccount account
                   in summary.accounts) ...<Widget>[
-                Builder(
-                  builder: (BuildContext context) {
-                    final bool hasSubscription =
-                        account.subscriptionId != null &&
-                        account.subscriptionId!.isNotEmpty;
-                    final bool canMutate = hasSubscription
-                        ? canUpdate
-                        : canCreate;
-                    return _CohortAccountCard(
-                      account: account,
-                      canMutate: canMutate,
-                      isSaving: state.isSaving,
-                      onAction: canMutate
-                          ? () async {
-                              await Navigator.of(dialogContext).maybePop();
-                              if (!context.mounted) {
-                                return;
-                              }
-                              await _handleCohortAccountAction(
-                                context,
-                                ref,
-                                state: state,
-                                account: account,
-                                canCreate: canCreate,
-                                canUpdate: canUpdate,
-                              );
-                            }
-                          : null,
-                    );
-                  },
+                _CohortAccountCard(
+                  account: account,
+                  canMutate: _cohortAccountCanMutate(
+                    account,
+                    canCreate: canCreate,
+                    canUpdate: canUpdate,
+                  ),
+                  isSaving: state.isSaving,
+                  onAction: _cohortAccountCanMutate(
+                        account,
+                        canCreate: canCreate,
+                        canUpdate: canUpdate,
+                      )
+                      ? () async {
+                          await Navigator.of(dialogContext).maybePop();
+                          if (!context.mounted) {
+                            return;
+                          }
+                          await _handleCohortAccountAction(
+                            context,
+                            ref,
+                            state: state,
+                            account: account,
+                            canCreate: canCreate,
+                            canUpdate: canUpdate,
+                          );
+                        }
+                      : null,
                 ),
                 SizedBox(height: theme.spacing.sm),
               ],
@@ -3921,6 +3948,16 @@ class _CohortMetaChip extends StatelessWidget {
   }
 }
 
+bool _cohortAccountCanMutate(
+  SubscriptionTenantAccount account, {
+  required bool canCreate,
+  required bool canUpdate,
+}) {
+  final bool hasSubscription =
+      account.subscriptionId != null && account.subscriptionId!.isNotEmpty;
+  return hasSubscription ? canUpdate : canCreate;
+}
+
 Future<void> _handleCohortAccountAction(
   BuildContext context,
   WidgetRef ref, {
@@ -3974,6 +4011,11 @@ Future<void> _showPlanChangeDialog(
   WidgetRef ref,
   SubscriptionsWorkspaceState state,
 ) async {
+  if (!SubscriptionsAtomPermissions.changePlan.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionPlanChangeDraft? draft =
       await showAppDialog<SubscriptionPlanChangeDraft>(
         context: context,
@@ -3995,6 +4037,11 @@ Future<void> _showPlanChangeDialog(
 }
 
 Future<void> _showRenewalDialog(BuildContext context, WidgetRef ref) async {
+  if (!SubscriptionsAtomPermissions.renew.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionRenewalDraft? draft =
       await showAppDialog<SubscriptionRenewalDraft>(
         context: context,
@@ -4019,6 +4066,11 @@ Future<void> _showModuleSubscriptionDialog(
   WidgetRef ref,
   SubscriptionsWorkspaceState state,
 ) async {
+  if (!SubscriptionsAtomPermissions.assignModule.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final ModuleSubscriptionDraft? draft =
       await showAppDialog<ModuleSubscriptionDraft>(
         context: context,
@@ -4045,6 +4097,13 @@ Future<void> _showLicenseDialog(
   SubscriptionsWorkspaceState state, {
   SubscriptionItem? initial,
 }) async {
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool allowed = initial == null
+      ? SubscriptionsLicensesAtomPermissions.create.isAllowed(accessPolicy)
+      : SubscriptionsLicensesAtomPermissions.update.isAllowed(accessPolicy);
+  if (!allowed) {
+    return;
+  }
   final LicenseDraft? draft = await showAppDialog<LicenseDraft>(
     context: context,
     builder: (_) => _LicenseForm(
@@ -4077,6 +4136,11 @@ Future<void> _showRevokeLicenseDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!SubscriptionsLicensesAtomPermissions.delete.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -4102,6 +4166,11 @@ Future<void> _showToggleModuleDialog(
   WidgetRef ref,
   SubscriptionItem item,
 ) async {
+  if (!SubscriptionsAtomPermissions.toggleModule.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
         context: context,
@@ -4133,6 +4202,11 @@ Future<void> _showCancelSubscriptionDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!SubscriptionsAtomPermissions.cancel.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -4157,6 +4231,11 @@ Future<void> _showCollectInvoiceDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!SubscriptionsInvoicesAtomPermissions.collect.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
         context: context,
@@ -4180,6 +4259,11 @@ Future<void> _showRetryInvoiceDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!SubscriptionsInvoicesAtomPermissions.retry.isAllowed(
+    ref.read(appAccessPolicyProvider),
+  )) {
+    return;
+  }
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
         context: context,

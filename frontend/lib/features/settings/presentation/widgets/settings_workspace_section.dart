@@ -26,14 +26,18 @@ import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 ///
 /// | Atom | Intent | Gate |
 /// | --- | --- | --- |
-/// | Section chrome / tab strip entry | read | admin ∨ HR source ([tab]) |
+/// | Section chrome / tab strip entry | read | admin ∨ HR source ([adminGate] / [hrGate]) |
 /// | Loading / empty / error / retry | read chrome | [loading] / [empty] / [retry] |
 /// | Tenant / facility context selectors | read chrome | [contextSelector] |
 /// | Search / group / state / actionable filters | read chrome | [search] / [filters] |
 /// | Module groups + row metadata | read | [moduleList] / [moduleRow] |
-/// | Open | navigate | [open] + backend `can_read` |
-/// | Create | create | matrix `facility:admin` ∪ source HR create + `can_create` |
+/// | Open | navigate | source section + backend `can_read` ([open]) |
+/// | Create | create | [create] ∪ [hrCreate] + backend `can_create` |
 /// | Update / delete | — | matrix keys; **not mounted** |
+///
+/// Strip/section visibility uses source admin ∨ HR gates (roles + ABAC), not
+/// matrix [tab] alone — source HR also accepts `hr:write` (matrix view ∪ lists
+/// `hr:read`). Denied controls do not mount (no disabled stubs / banners).
 class SettingsWorkspaceSection extends ConsumerWidget {
   const SettingsWorkspaceSection({super.key});
 
@@ -375,7 +379,9 @@ class _SettingsModuleRow extends ConsumerWidget {
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final String? route = _mappedSettingsRoute(module.route);
     final String? createRoute = _mappedSettingsRoute(module.createRoute);
+    // Open: navigate — source section already mounted; backend `can_read`.
     final bool canOpen = route != null && module.canRead;
+    // Create: [create] ∪ [hrCreate] via [settingsWorkspaceCanCreate] + `can_create`.
     final bool canCreate =
         createRoute != null &&
         module.canCreate &&

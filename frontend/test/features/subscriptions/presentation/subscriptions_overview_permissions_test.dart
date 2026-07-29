@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -87,10 +88,16 @@ Finder _toolbarPrimary(String label) => find.descendant(
   matching: find.text(label),
 );
 
-void _stubWorkspace(_MockSubscriptionsRepository repository) {
+void _stubWorkspace(
+  _MockSubscriptionsRepository repository, {
+  AppFailure? failure,
+}) {
   when(() => repository.getWorkspace(any())).thenAnswer((
     Invocation invocation,
   ) async {
+    if (failure != null) {
+      return Result<SubscriptionsWorkspaceData>.failure(failure);
+    }
     final SubscriptionsWorkspaceQuery query =
         invocation.positionalArguments.single as SubscriptionsWorkspaceQuery;
     return Result<SubscriptionsWorkspaceData>.success(
@@ -134,6 +141,9 @@ void _stubWorkspace(_MockSubscriptionsRepository repository) {
           ],
           plans: <SubscriptionLookupItem>[
             SubscriptionLookupItem(id: 'plan-1', label: 'Starter Plan'),
+          ],
+          modules: <SubscriptionLookupItem>[
+            SubscriptionLookupItem(id: 'mod-1', label: 'OPD'),
           ],
         ),
         items: AppPage<SubscriptionItem>(
@@ -224,10 +234,11 @@ Future<void> _pumpOverviewTab(
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/subscriptions?panel=overview',
   bool selectOverviewTab = true,
+  AppFailure? loadFailure,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(repository, failure: loadFailure);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -544,6 +555,8 @@ void main() {
         await tester.tap(find.text('Not subscribed'));
         await tester.pumpAndSettle();
         expect(find.text('New subscription'), findsOneWidget);
+        expect(find.text('Delete subscription'), findsNothing);
+        expect(find.text('Revoke license'), findsNothing);
       },
     );
 
@@ -650,8 +663,10 @@ void main() {
         await tester.tap(find.text('Edit subscription'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Save subscription'), findsOneWidget);
-        await tester.tap(find.text('Save subscription'));
+        final Finder save = find.text('Save subscription');
+        expect(save, findsOneWidget);
+        await tester.ensureVisible(save);
+        await tester.tap(save);
         await tester.pumpAndSettle();
 
         verify(() => repository.updateSubscription('sub-1', any())).called(1);
@@ -679,7 +694,7 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
-    testWidgets('authorized loading/error chrome remains on overview path', (
+    testWidgets('authorized queue chrome remains on overview path', (
       WidgetTester tester,
     ) async {
       final AppAccessPolicy reader = _policy(
@@ -698,6 +713,36 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets('authorized error/retry remains observable', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.subscriptionsRead},
+      );
+
+      await _pumpOverviewTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        loadFailure: const AppFailure.network(),
+        selectOverviewTab: false,
+      );
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.text('Active plans'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      _stubWorkspace(repository);
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      if (find.byType(AppTabStrip).evaluate().isNotEmpty) {
+        await _selectPanelTab(tester, 'Overview');
+      }
+      expect(find.text('Active plans'), findsOneWidget);
     });
 
     testWidgets('mobile viewport: overview KPIs and cohort remain usable', (
