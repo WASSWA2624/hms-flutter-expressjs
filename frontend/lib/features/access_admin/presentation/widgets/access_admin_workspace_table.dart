@@ -683,11 +683,12 @@ List<AppListTableColumn<AccessAdminItem>> _registrationColumns(
         );
       },
     ),
-    _registrationNextActionColumn(
-      context,
-      canWrite: canWrite,
-      onRegistrationActivate: onRegistrationActivate,
-    ),
+    // Omit the column entirely when unauthorized (no empty/disabled cell).
+    if (canWrite)
+      _registrationNextActionColumn(
+        context,
+        onRegistrationActivate: onRegistrationActivate,
+      ),
     AppListTableColumn<AccessAdminItem>(
       id: 'reg_email',
       label: l10n.accessAdminEmailLabel,
@@ -743,7 +744,6 @@ AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
 
 AppListTableColumn<AccessAdminItem> _registrationNextActionColumn(
   BuildContext context, {
-  required bool canWrite,
   required Future<void> Function(AccessAdminItem item) onRegistrationActivate,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -752,9 +752,6 @@ AppListTableColumn<AccessAdminItem> _registrationNextActionColumn(
     label: l10n.accessAdminActivateRegistrationAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
-      if (!canWrite) {
-        return const SizedBox.shrink();
-      }
       return AppButton.tertiary(
         label: l10n.accessAdminActivateRegistrationAction,
         onPressed: () => onRegistrationActivate(item),
