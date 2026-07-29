@@ -149,6 +149,131 @@ void main() {
       expect(biomedicalWorkspaceEntryRequirement.isAllowed(neither), isFalse);
     });
 
+    test('Registry panel tab shares read requirement', () {
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.biomedRead},
+      );
+      expect(
+        canViewBiomedicalPanel(reader, BiomedicalPanels.registry),
+        isTrue,
+      );
+      expect(
+        identical(
+          biomedicalPanelTabRequirement(BiomedicalPanels.registry),
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Registry atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.tab,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.listChrome,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.detail,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.create,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.update,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.delete,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.write,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.registerAsset,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.editAsset,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.export,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.print,
+          biomedicalWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.nestedWrite,
+          biomedicalWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.nestedRead,
+          biomedicalWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.entry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BiomedicalRegistryAtomPermissions.routeEntry,
+          biomedicalWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('Overview panel tab shares read requirement', () {
       final AppAccessPolicy reader = _policyFor(
         permissions: <AppPermission>{AppPermissions.biomedRead},
@@ -526,6 +651,11 @@ void main() {
         modules: const <AppModuleEntitlement>[],
       );
 
+      expect(BiomedicalRegistryAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(
+        BiomedicalRegistryAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
       expect(BiomedicalOverviewAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(
         BiomedicalOverviewAtomPermissions.write.isAllowed(noModule),
