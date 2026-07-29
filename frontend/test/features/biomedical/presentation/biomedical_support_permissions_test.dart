@@ -485,6 +485,60 @@ void main() {
   );
 
   testWidgets(
+    'empty write-authorized Support keeps Report fault primary',
+    (WidgetTester tester) async {
+      await _pumpSupportTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+        assets: const <BiomedicalAsset>[],
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('No equipment records'), findsOneWidget);
+      expect(find.byTooltip('Report fault'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Support detail Log incident opens nested dialog',
+    (WidgetTester tester) async {
+      when(() => repository.createResource(any(), any())).thenAnswer(
+        (_) async => const Result<BiomedicalMutationResult>.success(
+          BiomedicalMutationResult(asset: _vendorAsset),
+        ),
+      );
+
+      await _pumpSupportTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Acme Biomedical Support'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log incident'), findsOneWidget);
+      await tester.tap(find.text('Log incident'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('LOG INCIDENT'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized error/retry surface remains observable on Support',
     (WidgetTester tester) async {
       await _pumpSupportTab(

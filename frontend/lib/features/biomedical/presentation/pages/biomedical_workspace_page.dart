@@ -184,7 +184,6 @@ class _BiomedicalWorkspaceContentState
       biomedicalWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = canWriteBiomedical(accessPolicy);
     final List<String> visiblePanels = <String>[
       for (final String panel in BiomedicalPanels.values)
         if (canViewBiomedicalPanel(accessPolicy, panel)) panel,
@@ -312,9 +311,7 @@ class _BiomedicalWorkspaceContentState
               },
               onPageChanged: controller.changePage,
               onRowSelected: (BiomedicalAsset asset) {
-                unawaited(
-                  _openAssetDetailDialog(context, asset, canWrite, canPrint),
-                );
+                unawaited(_openAssetDetailDialog(context, asset));
               },
               itemKeyBuilder: (BiomedicalAsset item) =>
                   ValueKey<String>('${item.resource}:${item.displayId}'),
@@ -347,12 +344,9 @@ class _BiomedicalWorkspaceContentState
               },
               columns: _defaultColumnsForPanel(
                 l10n,
-                canWrite: canWrite,
-                canPrint: canPrint,
                 state: state,
-                onOpenDetail: (BiomedicalAsset asset) => unawaited(
-                  _openAssetDetailDialog(context, asset, canWrite, canPrint),
-                ),
+                onOpenDetail: (BiomedicalAsset asset) =>
+                    unawaited(_openAssetDetailDialog(context, asset)),
               ),
               columnChoices: _columnChoicesForPanel(l10n),
             ),
@@ -414,14 +408,11 @@ class _BiomedicalWorkspaceContentState
 
   List<AppListTableColumn<BiomedicalAsset>> _defaultColumnsForPanel(
     AppLocalizations l10n, {
-    required bool canWrite,
-    required bool canPrint,
     required BiomedicalWorkspaceState state,
     required void Function(BiomedicalAsset asset) onOpenDetail,
   }) {
     final AppListTableColumn<BiomedicalAsset> nextAction = _nextActionColumn(
       l10n,
-      canWrite: canWrite,
       state: state,
       onOpenDetail: onOpenDetail,
     );
@@ -606,7 +597,6 @@ class _BiomedicalWorkspaceContentState
 
   AppListTableColumn<BiomedicalAsset> _nextActionColumn(
     AppLocalizations l10n, {
-    required bool canWrite,
     required BiomedicalWorkspaceState state,
     required void Function(BiomedicalAsset asset) onOpenDetail,
   }) {
@@ -617,7 +607,6 @@ class _BiomedicalWorkspaceContentState
       cellBuilder: (BuildContext context, BiomedicalAsset item) {
         return _BiomedicalNextActionCell(
           asset: item,
-          canWrite: canWrite,
           state: state,
           onOpenDetail: () => onOpenDetail(item),
         );
@@ -701,8 +690,6 @@ class _BiomedicalWorkspaceContentState
   Future<void> _openAssetDetailDialog(
     BuildContext context,
     BiomedicalAsset asset,
-    bool canWrite,
-    bool canPrint,
   ) async {
     ref.read(biomedicalWorkspaceControllerProvider.notifier).selectAsset(asset);
     await showAppDialog<void>(
@@ -719,11 +706,7 @@ class _BiomedicalWorkspaceContentState
             icon: const Icon(Icons.biotech_outlined),
             scrollable: true,
             maxWidth: 980,
-            content: _BiomedicalDetailPanel(
-              state: dialogState,
-              canWrite: canWrite,
-              canPrint: canPrint,
-            ),
+            content: _BiomedicalDetailPanel(state: dialogState),
           );
         },
       ),
@@ -745,15 +728,9 @@ final class _PanelAction {
 }
 
 class _BiomedicalDetailPanel extends ConsumerWidget {
-  const _BiomedicalDetailPanel({
-    required this.state,
-    required this.canWrite,
-    required this.canPrint,
-  });
+  const _BiomedicalDetailPanel({required this.state});
 
   final BiomedicalWorkspaceState state;
-  final bool canWrite;
-  final bool canPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1136,21 +1113,22 @@ IconData _mobilePanelFieldIcon(String panel) {
 class _BiomedicalNextActionCell extends ConsumerWidget {
   const _BiomedicalNextActionCell({
     required this.asset,
-    required this.canWrite,
     required this.state,
     required this.onOpenDetail,
   });
 
   final BiomedicalAsset asset;
-  final bool canWrite;
   final BiomedicalWorkspaceState state;
   final VoidCallback onOpenDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final _BiomedicalActionKind? actionKind = _nextActionKindForAsset(asset);
-    final bool hasWriteAction = actionKind != null && canWrite;
+    final bool hasWriteAction =
+        actionKind != null &&
+        _nextActionWriteRequirement(actionKind).isAllowed(policy);
     final String label = hasWriteAction
         ? _nextActionLabel(l10n, asset)
         : l10n.biomedicalNextActionReview;
@@ -1163,19 +1141,6 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
         return;
       }
       onOpenDetail();
-    }
-
-    if (hasWriteAction) {
-      return AppAccessActionGate(
-        requirement: _nextActionWriteRequirement(actionKind),
-        builder: (BuildContext context, bool isAllowed) {
-          return AppButton.tertiary(
-            label: label,
-            enabled: isAllowed && !state.isMutating,
-            onPressed: isAllowed && !state.isMutating ? onPressed : null,
-          );
-        },
-      );
     }
 
     return AppButton.tertiary(
@@ -1203,10 +1168,10 @@ enum _BiomedicalActionKind {
   fault,
 }
 
-/// Maps row next-action kinds to feature `*AtomPermissions` write gates.
+/// Maps row next-action / detail write kinds to feature `*AtomPermissions`.
 ///
 /// All branches resolve to the source ∪ write requirement (same as
-/// [BiomedicalOverviewAtomPermissions.write]); named atom fields document
+/// [BiomedicalWorkOrdersAtomPermissions.write]); named atom fields document
 /// which inventory control is gated.
 AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
   return switch (kind) {
@@ -1220,7 +1185,10 @@ AccessRequirement _nextActionWriteRequirement(_BiomedicalActionKind kind) {
     _BiomedicalActionKind.downtime => BiomedicalComplianceAtomPermissions.create,
     _BiomedicalActionKind.maintenance =>
       BiomedicalPreventiveAtomPermissions.performMaintenance,
-    _BiomedicalActionKind.workOrder ||
+    // Create / Update WO share the same write ∪ requirement; named fields
+    // document Create (tab primary / complementary) vs Update (detail).
+    _BiomedicalActionKind.workOrder =>
+      BiomedicalWorkOrdersAtomPermissions.createWorkOrder,
     _BiomedicalActionKind.startWorkOrder =>
       BiomedicalWorkOrdersAtomPermissions.startWorkOrder,
     _BiomedicalActionKind.returnToService =>
@@ -1252,7 +1220,8 @@ Future<void> _openActionDialog(
   BiomedicalAsset? asset,
 }) async {
   final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-  if (!canWriteBiomedical(policy)) {
+  // Belt-and-suspenders: nested write dialogs never open without the atom gate.
+  if (!_nextActionWriteRequirement(kind).isAllowed(policy)) {
     return;
   }
   final bool? saved = await showAppDialog<bool>(

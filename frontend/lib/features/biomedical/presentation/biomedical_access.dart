@@ -313,22 +313,23 @@ abstract final class BiomedicalComplianceAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Support tab | navigate | read ∩ `biomed:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
-/// | Row select → detail | read | read ∩ |
-/// | Report fault (tab primary) | create | write ∪ source |
-/// | Next action Review record | navigate / read | read ∩ |
-/// | Next action write (rare on support rows) | create / update | write ∪ source |
+/// | Support tab | navigate | [tab] read ∩ `biomed:read` |
+/// | Search / filters / columns / pagination | read chrome | [listChrome] |
+/// | Empty / error / retry / loading | read chrome | [listChrome] / page |
+/// | Row select → detail | read | [detail] |
+/// | Report fault (tab primary) | create | [reportFault] write ∪ source |
+/// | Next action Review record | navigate / read | [detail] |
+/// | Next action write (rare on support rows) | create / update | [write] / named gates |
 /// | Detail Log incident | create | [logIncident] write ∪ source |
-/// | Detail complementary writes | create / update / delete | write ∪ source |
+/// | Detail complementary writes | create / update / delete | [nestedWrite] |
 /// | Nested fault-report dialog | create | [reportFault] write ∪ source |
-/// | Print report | export | print (evidence:export ∩ …) |
-/// | Nested mutation dialogs | create / update / delete | write ∪ source |
-/// | Route entry (deep link) | navigate | read ∪ write |
+/// | Print report | export | [export]/[print] (evidence:export ∩ …) |
+/// | Nested mutation dialogs | create / update / delete | [nestedWrite] |
+/// | Route entry (deep link) | navigate | [routeEntry]/[entry] read ∪ write |
 ///
 /// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
 /// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+/// Exports keep source ∩ `evidence:export` (matrix notes reports:read | evidence:export).
 abstract final class BiomedicalSupportAtomPermissions {
   static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;

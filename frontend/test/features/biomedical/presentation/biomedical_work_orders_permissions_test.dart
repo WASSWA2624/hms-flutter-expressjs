@@ -219,6 +219,11 @@ void main() {
       expect(find.text('Pump repair'), findsOneWidget);
       expect(find.text('Work orders'), findsWidgets);
       expect(find.text('Risk'), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(
+        BiomedicalWorkOrdersAtomPermissions.listChrome.isAllowed(reader),
+        isTrue,
+      );
       expect(find.byTooltip('Create work order'), findsNothing);
       expect(find.text('Work order follow-up'), findsNothing);
       expect(find.text('Review record'), findsWidgets);
