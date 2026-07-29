@@ -1216,6 +1216,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
         ]
       };
+      const claimWhere = {
+        deleted_at: null,
+        invoice: { is: invoiceWhere }
+      };
+      const approvalWhere = directScope(scope, { includeTenant: true, includeFacility: true });
       const [
         invoicesToday,
         overdueInvoices,
@@ -1223,7 +1228,10 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         collectionsToday,
         refundsToday,
         overdueBalanceAmount,
-        pendingBalanceAmount
+        pendingBalanceAmount,
+        pendingInsuranceClaims,
+        pendingPreAuthorizations,
+        pendingApprovals
       ] = await Promise.all([
         prisma.invoice.count({ where: { ...invoiceWhere, issued_at: { gte: todayStart } } }),
         prisma.invoice.count({ where: { ...invoiceWhere, status: 'OVERDUE' } }),
@@ -1231,7 +1239,25 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         sumField(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }, 'amount'),
         sumField(prisma.refund, { deleted_at: null, refunded_at: { gte: todayStart }, payment: paymentWhere }, 'amount'),
         sumField(prisma.invoice, { ...invoiceWhere, status: 'OVERDUE' }, 'total_amount'),
-        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
+        sumField(prisma.invoice, openBalanceWhere, 'total_amount'),
+        prisma.insurance_claim.count({
+          where: { ...claimWhere, status: { in: ['SUBMITTED', 'REJECTED'] } }
+        }),
+        prisma.pre_authorization.count({
+          where: {
+            deleted_at: null,
+            status: { in: ['PENDING', 'DENIED'] },
+            coverage_plan: {
+              is: {
+                deleted_at: null,
+                ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+              }
+            }
+          }
+        }),
+        prisma.billing_approval.count({
+          where: { ...approvalWhere, status: 'PENDING' }
+        })
       ]);
       return {
         metrics: {
@@ -1241,7 +1267,9 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           collectionsToday,
           refundsToday,
           overdueBalanceAmount,
-          pendingBalanceAmount
+          pendingBalanceAmount,
+          pendingInsuranceClaims: pendingInsuranceClaims + pendingPreAuthorizations,
+          pendingApprovals
         },
         trendDates: await selectDateSeries(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: trendStart } }, 'paid_at'),
         statusCounts: await countByStatuses(prisma.invoice, invoiceWhere, ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']),
@@ -1296,6 +1324,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         deleted_at: null,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
       };
+      const rosterWhere = {
+        deleted_at: null,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
+      };
       const [
         activeStaff,
         shiftsToday,
@@ -1306,7 +1339,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         attendedToday,
         missedShiftsToday,
         payrollPending,
-        payrollProcessed
+        payrollProcessed,
+        rosterApprovals
       ] = await Promise.all([
         prisma.staff_profile.count({ where: staffProfileWhere }),
         prisma.shift.count({ where: shiftWhereToday }),
@@ -1349,7 +1383,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
             period_start: { lte: todayEnd },
             period_end: { gte: todayStart }
           }
-        })
+        }),
+        prisma.nurse_roster.count({ where: { ...rosterWhere, status: 'DRAFT' } })
       ]);
       const availableStaff = Math.max(0, activeStaff - onLeaveToday);
       const filledShiftsToday = attendedToday;
@@ -1362,13 +1397,15 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           shiftsToday,
           pendingLeaves,
           staffingBacklog,
+          departmentStaffing: staffingBacklog,
           unassignedShifts,
           attendanceRate,
           onLeaveToday,
           attendedToday,
           missedShiftsToday,
           payrollPending,
-          payrollProcessed
+          payrollProcessed,
+          rosterApprovals
         },
         trendDates: await selectDateSeries(
           prisma.shift,

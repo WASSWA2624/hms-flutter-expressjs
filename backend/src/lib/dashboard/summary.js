@@ -784,6 +784,12 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'open_balances', label: 'Open balances', value: metrics.openBalances || 0, required_permissions: ['billing:read'] },
       { id: 'refunds_today', label: 'Refunds today', value: metrics.refundsToday || 0, format: 'currency', required_permissions: ['billing:write'] },
       { id: 'pending_approvals', label: 'Pending approvals', value: metrics.pendingApprovals || 0, required_permissions: ['financial:approve'] },
+      {
+        id: 'pending_insurance_claims',
+        label: 'Pending insurance claims',
+        value: metrics.pendingInsuranceClaims || 0,
+        required_permissions: ['billing:read'],
+      },
     ];
   }
 
@@ -812,7 +818,18 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'payroll_processed', label: 'Payroll processed', value: metrics.payrollProcessed || 0, required_permissions: ['hr:read'] },
       { id: 'staffing_backlog', label: 'Staffing backlog', value: metrics.staffingBacklog || 0, required_permissions: ['hr:read'] },
       { id: 'attendance_rate', label: 'Attendance rate', value: metrics.attendanceRate || 0, format: 'percent', required_permissions: ['hr:read'] },
-      // Gap: roster_approvals (roster:approve) / department_staffing (unit:read) — no live KPI source yet.
+      {
+        id: 'roster_approvals',
+        label: 'Roster approvals',
+        value: metrics.rosterApprovals || 0,
+        required_permissions: ['roster:approve'],
+      },
+      {
+        id: 'department_staffing',
+        label: 'Department staffing',
+        value: metrics.departmentStaffing || metrics.staffingBacklog || 0,
+        required_permissions: ['unit:read'],
+      },
     ];
   }
 

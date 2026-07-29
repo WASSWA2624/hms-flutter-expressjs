@@ -8,6 +8,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.d
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 const List<AppModuleEntitlement> _activeModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
@@ -871,5 +872,87 @@ void main() {
         );
       },
     );
+
+    test(
+      'billing:read keeps pending_insurance_claims without financial:approve',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['BILLING'],
+          permissions: <AppPermission>[AppPermissions.billingRead],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(AppRole.billing);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(ids, contains('pending_insurance_claims'));
+        expect(ids, contains('collections_today'));
+        expect(ids, isNot(contains('pending_approvals')));
+      },
+    );
+
+    test(
+      'hr roster:approve and unit:read gate roster_approvals / department_staffing',
+      () {
+        final AppAccessPolicy hrOnly = _policy(
+          roles: <String>['HR'],
+          permissions: <AppPermission>[AppPermissions.hrRead],
+        );
+        final AppAccessPolicy withExtras = _policy(
+          roles: <String>['HR'],
+          permissions: <AppPermission>[
+            AppPermissions.hrRead,
+            AppPermissions.rosterApprove,
+            AppPermissions.unitRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(AppRole.hr);
+
+        final Set<String> without = _cardIds(
+          filterHomeDashboardForAccess(_dashboardForProfile(profile), hrOnly),
+        );
+        expect(without, contains('active_staff'));
+        expect(without, isNot(contains('roster_approvals')));
+        expect(without, isNot(contains('department_staffing')));
+
+        final Set<String> withAll = _cardIds(
+          filterHomeDashboardForAccess(
+            _dashboardForProfile(profile),
+            withExtras,
+          ),
+        );
+        expect(
+          withAll,
+          containsAll(<String>['roster_approvals', 'department_staffing']),
+        );
+      },
+    );
+
+    test('layout collapses metrics and charts when filtered empty', () {
+      final AppAccessPolicy policy = _policy(
+        roles: <String>['CUSTOM'],
+        permissions: <AppPermission>[AppPermissions.profileRead],
+      );
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+      final HomeDashboard filtered = filterHomeDashboardForAccess(
+        _dashboardForProfile(profile),
+        policy,
+      );
+      final RoleDashboardLayout layout = homeRoleDashboardLayoutAfterFilter(
+        profile: profile,
+        dashboard: filtered,
+        hasQuickActions: false,
+        hasPrioritySurface: false,
+      );
+
+      expect(filtered.statusCards, isEmpty);
+      expect(filtered.trend.hasData, isFalse);
+      expect(layout.showMetrics, isFalse);
+      expect(layout.showCharts, isFalse);
+      expect(layout.showQuickActions, isFalse);
+      expect(layout.showPriority, isFalse);
+    });
   });
 }

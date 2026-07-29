@@ -731,7 +731,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Approvals',
         requiredPermissions: <AppPermission>[AppPermissions.financialApprove],
       ),
-      // Gap: pending_insurance_claims — no dedicated claims KPI source yet.
+      HomeStatusCardTemplate(
+        id: 'pending_insurance_claims',
+        label: 'Claims',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
     ],
     quickActionIds: <String>[
       'create_invoice',
@@ -774,6 +778,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'refunds_today': HomeMetricRouteTarget(),
       'pending_approvals': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'needsApproval'},
+      ),
+      'pending_insurance_claims': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'claimsPending'},
       ),
     },
   ),
@@ -875,8 +882,16 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Payroll',
         requiredPermissions: <AppPermission>[AppPermissions.hrRead],
       ),
-      // Gap: roster_approvals (roster:approve) / department_staffing (unit:read)
-      // — no dedicated HR KPI payloads yet (Dashboard.md §11).
+      HomeStatusCardTemplate(
+        id: 'roster_approvals',
+        label: 'Roster approvals',
+        requiredPermissions: <AppPermission>[AppPermissions.rosterApprove],
+      ),
+      HomeStatusCardTemplate(
+        id: 'department_staffing',
+        label: 'Dept staffing',
+        requiredPermissions: <AppPermission>[AppPermissions.unitRead],
+      ),
     ],
     quickActionIds: <String>[],
     shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports'],
@@ -913,6 +928,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'payroll_pending': HomeMetricActionTarget(
         kind: HomeMetricActionKind.hrWorkQueue,
         hrQueue: 'PAYROLL_DRAFTS',
+      ),
+      'roster_approvals': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrWorkQueue,
+        hrQueue: 'ROSTER_DRAFTS',
+      ),
+      'department_staffing': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrStaffDirectory,
+        staffStatusFilter: 'ACTIVE',
       ),
     },
   ),
@@ -1274,23 +1297,34 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'active_mortuary_cases',
         label: 'Active mortuary cases',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'storage_assignments',
         label: 'Storage assignments',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
-      HomeStatusCardTemplate(id: 'viewings_today', label: 'Viewings today'),
+      HomeStatusCardTemplate(
+        id: 'viewings_today',
+        label: 'Viewings today',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
+      ),
       HomeStatusCardTemplate(
         id: 'post_mortem_requests',
         label: 'Post-mortem requests',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'custody_events_due',
         label: 'Custody events due',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'billable_events_to_capture',
         label: 'Billable events to capture',
+        requiredPermissions: <AppPermission>[
+          AppPermissions.mortuaryBillingEvent,
+        ],
       ),
     ],
     quickActionIds: <String>[
@@ -1314,26 +1348,32 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'active_mortuary_cases',
         label: 'Active mortuary cases',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'storage_occupancy',
         label: 'Storage occupancy',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'releases_awaiting_approval',
         label: 'Releases awaiting approval',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryApprove],
       ),
       HomeStatusCardTemplate(
         id: 'pending_post_mortem_requests',
         label: 'Pending post-mortem requests',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'custody_exceptions',
         label: 'Custody exceptions',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryRead],
       ),
       HomeStatusCardTemplate(
         id: 'audit_exports_due',
         label: 'Audit exports due',
+        requiredPermissions: <AppPermission>[AppPermissions.mortuaryAudit],
       ),
     ],
     quickActionIds: <String>[

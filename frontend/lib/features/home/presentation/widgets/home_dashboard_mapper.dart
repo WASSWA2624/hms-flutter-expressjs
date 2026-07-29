@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
@@ -43,7 +44,16 @@ List<DashboardMetricCardData> homeDashboardMetrics({
   final AppLocalizations l10n = context.l10n;
   final ThemeData theme = Theme.of(context);
 
+  // Defense-in-depth: never render KPI values that fail grantsAll, even if a
+  // caller skipped [filterHomeDashboardForAccess].
   return dashboard.statusCards
+      .where(
+        (HomeStatusCard card) =>
+            HomeDashboardAtomPermissions.isGranted(
+              policy,
+              card.effectiveRequiredPermissions,
+            ),
+      )
       .take(profile.effectiveMaxStatusCards)
       .map((HomeStatusCard card) {
         final AppWorkspaceStatusTone tone = homeMetricTone(card);
