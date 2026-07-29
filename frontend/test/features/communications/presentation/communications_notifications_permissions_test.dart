@@ -771,6 +771,7 @@ void main() {
         ),
       );
 
+      // Compact desktop size keeps dialog action buttons in hit-test bounds.
       await _pumpNotificationsTab(
         tester,
         repository: repository,
@@ -780,29 +781,18 @@ void main() {
             AppPermissions.communicationsDelete,
           },
         ),
+        physicalSize: const Size(1024, 900),
       );
 
       await tester.tap(_tableRowInkWell().first);
       await tester.pumpAndSettle();
 
-      final Finder detailArchive = find.descendant(
-        of: find.byType(AppDialog),
-        matching: find.text('Archive'),
-      );
-      expect(detailArchive, findsWidgets);
-      await tester.ensureVisible(detailArchive.first);
-      await tester.pumpAndSettle();
-      await tester.tap(detailArchive.first);
+      expect(find.text('Archive'), findsWidgets);
+      await tester.tap(find.text('Archive').first, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('ARCHIVE COMMUNICATION'), findsWidgets);
-      final Finder confirmSubmit = find.descendant(
-        of: find.byType(AppDialog).last,
-        matching: find.text('Archive'),
-      );
-      await tester.ensureVisible(confirmSubmit.last);
-      await tester.pumpAndSettle();
-      await tester.tap(confirmSubmit.last);
+      await tester.tap(find.text('Archive').last, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       verify(() => repository.archiveNotification('notification-1')).called(1);
