@@ -454,7 +454,6 @@ class _IntegrationsWorkspaceContentState
         IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
       IntegrationWorkItemKind.interop =>
         IntegrationsInteropAtomPermissions.update.isAllowed(policy),
-      _ => canManage,
     };
     final bool detailCanDelete = switch (item.kind) {
       IntegrationWorkItemKind.apiKey =>
@@ -1357,7 +1356,6 @@ class _IntegrationNextActionButton extends ConsumerWidget {
         IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
       IntegrationDeskSection.interop =>
         IntegrationsInteropAtomPermissions.runProbe.isAllowed(policy),
-      _ => canManage,
     };
 
     // Write-gated next-actions omit when unauthorized; view-only remains.
@@ -1474,7 +1472,6 @@ Future<void> _handleIntegrationNextAction(
         IntegrationsLogsAtomPermissions.replay.isAllowed(policy),
       IntegrationWorkItemKind.interop =>
         IntegrationsInteropAtomPermissions.update.isAllowed(policy),
-      _ => canManage,
     };
     final bool detailCanDelete = switch (item.kind) {
       IntegrationWorkItemKind.apiKey =>

@@ -426,6 +426,8 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           IpdBedBoardAtomPermissions.startAdmission,
         IpdWorkspaceSection.dischargePlanned =>
           IpdDischargeAtomPermissions.startAdmission,
+        IpdWorkspaceSection.transferPending =>
+          IpdTransfersAtomPermissions.startAdmission,
         IpdWorkspaceSection.activePatients =>
           IpdActivePatientsAtomPermissions.startAdmission,
         _ => IpdAdmissionQueueAtomPermissions.startAdmission,
@@ -1595,7 +1597,7 @@ class _WardRoundActionDialogState
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           AppAccessGate(
-            requirement: IpdBedBoardAtomPermissions.billingPanel,
+            requirement: ipdBillingPanelReadRequirement,
             child: ClinicalRequestBillingPanel(
               lineItems: lineItems,
               enabled: !_submitting,

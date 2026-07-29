@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -14,6 +15,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -43,20 +45,39 @@ const LabOrderSummary _completedOrder = LabOrderSummary(
   paymentStatus: 'PAID',
 );
 
-AppAccessPolicy _labWritePolicy() {
+AppAccessPolicy _policyFor({
+  required Set<AppPermission> permissions,
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
+    AppModuleEntitlement(code: labWorkflowsModule, licenseStatus: 'ACTIVE'),
+  ],
+  List<String> roles = const <String>['LAB_TECH'],
+}) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['LAB_TECH']),
-      permissions: <AppPermission>{
-        AppPermissions.labRead,
-        AppPermissions.labWrite,
-      },
-      moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
-      ],
+      user: AuthUserProfile(
+        roles: roles,
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+      permissions: permissions,
+      moduleEntitlements: modules,
+      isAuthorizationHydrated: true,
     ),
   );
+}
+
+AppAccessPolicy _labWritePolicy() {
+  return _policyFor(
+    permissions: <AppPermission>{
+      AppPermissions.labRead,
+      AppPermissions.labWrite,
+    },
+  );
+}
+
+AppAccessPolicy _labReadPolicy() {
+  return _policyFor(permissions: <AppPermission>{AppPermissions.labRead});
 }
 
 LabWorkbenchBundle _workbenchFor(LabWorkbenchQuery query) {
@@ -126,6 +147,7 @@ Future<GoRouter> _pumpLabWorkspace(
   String initialLocation = '/lab',
   Size viewport = const Size(1440, 900),
   AppAccessPolicy? policy,
+  ThemeMode themeMode = ThemeMode.light,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -165,6 +187,9 @@ Future<GoRouter> _pumpLabWorkspace(
         appAccessPolicyProvider.overrideWithValue(policy ?? _labWritePolicy()),
       ],
       child: MaterialApp.router(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeMode,
         routerConfig: router,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -322,22 +347,208 @@ void main() {
   testWidgets('read-only users keep view toggle; write actions absent', (
     WidgetTester tester,
   ) async {
-    final AppAccessPolicy readOnly = AppAccessPolicy.fromSession(
-      AuthSession(
-        tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(roles: <String>['LAB_VIEWER']),
-        permissions: <AppPermission>{AppPermissions.labRead},
-        moduleEntitlements: const <AppModuleEntitlement>[
-          AppModuleEntitlement(code: 'lab-workflows', licenseStatus: 'ACTIVE'),
-        ],
-      ),
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      policy: _labReadPolicy(),
     );
-
-    await _pumpLabWorkspace(tester, repository: repository, policy: readOnly);
 
     expect(find.byTooltip('Create Lab Order'), findsNothing);
     expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(find.byTooltip('Orders view'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.textContaining('All'), findsWidgets);
+    expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
+  });
+
+  testWidgets(
+    'intersection denial: lab:write without lab-workflows strips create',
+    (WidgetTester tester) async {
+      await _pumpLabWorkspace(
+        tester,
+        repository: repository,
+        policy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+          },
+          modules: const <AppModuleEntitlement>[],
+        ),
+      );
+
+      // No module → no allowed sections / empty panel; write chrome absent.
+      expect(find.byTooltip('Create Lab Order'), findsNothing);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'union route entry: clinical:read sees All chrome without create/config',
+    (WidgetTester tester) async {
+      await _pumpLabWorkspace(
+        tester,
+        repository: repository,
+        policy: _policyFor(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: labWorkflowsModule,
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          roles: const <String>['DOCTOR'],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.textContaining('All'), findsWidgets);
+      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Create Lab Order'), findsNothing);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
+      expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
+    },
+  );
+
+  testWidgets('full write set mounts create and configurations on All', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(tester, repository: repository);
+
+    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.textContaining('All'), findsWidgets);
+  });
+
+  testWidgets('read-only result entry omits edit/delete and additional create', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      policy: _labReadPolicy(),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    await tester.tap(find.text(l10n.labNextActionEnterResult).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LabResultEntryDialog), findsOneWidget);
+    expect(find.text(l10n.labEditOrderAction), findsNothing);
+    expect(find.text(l10n.labDeleteOrderAction), findsNothing);
+    expect(find.text(l10n.labCollectSampleAction), findsNothing);
+  });
+
+  testWidgets('authorized write result entry keeps edit/delete', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(tester, repository: repository);
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    await tester.tap(find.text(l10n.labNextActionEnterResult).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.labEditOrderAction), findsOneWidget);
+    expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+    expect(find.text(l10n.labCollectSampleAction), findsOneWidget);
+  });
+
+  testWidgets('mobile viewport: All tab authorized chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      viewport: const Size(390, 844),
+    );
+
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.textContaining('All'), findsWidgets);
+    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
+  });
+
+  testWidgets('desktop viewport: All tab authorized chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      viewport: const Size(1440, 900),
+    );
+
+    expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
+    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+  });
+
+  testWidgets('dark theme: All tab write chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      themeMode: ThemeMode.dark,
+    );
+
+    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.textContaining('All'), findsWidgets);
+  });
+
+  testWidgets('light theme: All tab write chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+    expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
+  });
+
+  testWidgets('nested cross-module request-from-clinical not on lab strip', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLabWorkspace(
+      tester,
+      repository: repository,
+      policy: _policyFor(
+        permissions: <AppPermission>{AppPermissions.clinicalWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: labWorkflowsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+        roles: const <String>['DOCTOR'],
+      ),
+    );
+
+    // clinical:write may request lab from clinical ∪, but lab strip create
+    // stays ∩ lab:write — absent here.
+    expect(find.byTooltip('Create Lab Order'), findsNothing);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
+    expect(find.byType(AppTabStrip), findsOneWidget);
   });
 }

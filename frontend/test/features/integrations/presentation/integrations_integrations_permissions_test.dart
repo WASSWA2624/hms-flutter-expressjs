@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -19,7 +20,6 @@ import 'package:hosspi_hms/features/integrations/presentation/integrations_acces
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -115,9 +115,13 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubWorkspace(_MockIntegrationsRepository repository) {
+void _stubWorkspace(
+  _MockIntegrationsRepository repository, {
+  Result<List<IntegrationRecord>>? integrationsOverride,
+}) {
   when(() => repository.listIntegrations()).thenAnswer(
     (_) async =>
+        integrationsOverride ??
         const Result<List<IntegrationRecord>>.success(<IntegrationRecord>[
           _integration,
           _failedIntegration,
@@ -173,17 +177,16 @@ Future<void> _pumpIntegrationsTab(
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/integrations?section=integrations',
   bool emptyIntegrations = false,
+  Result<List<IntegrationRecord>>? integrationsOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
-  if (emptyIntegrations) {
-    when(() => repository.listIntegrations()).thenAnswer(
-      (_) async => const Result<List<IntegrationRecord>>.success(
-        <IntegrationRecord>[],
-      ),
-    );
-  }
+  _stubWorkspace(
+    repository,
+    integrationsOverride: emptyIntegrations
+        ? const Result<List<IntegrationRecord>>.success(<IntegrationRecord>[])
+        : integrationsOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -378,6 +381,21 @@ void main() {
         isTrue,
       );
       expect(canManageIntegrations(admin), isTrue);
+    });
+
+    test('∪ allowance: facility:admin alone satisfies manage create', () {
+      final AppAccessPolicy facilityAdmin = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.integrationRead,
+          AppPermissions.facilityAdmin,
+        },
+      );
+      expect(
+        IntegrationsIntegrationsAtomPermissions.create.isAllowed(facilityAdmin),
+        isTrue,
+      );
+      expect(canManageIntegrations(facilityAdmin), isTrue);
+      expect(canDeleteIntegrations(facilityAdmin), isFalse);
     });
 
     test('subscription strip: module absent denies all atoms', () {
@@ -628,7 +646,6 @@ void main() {
             AppPermissions.integrationWrite,
           },
         ),
-        physicalSize: const Size(1440, 900),
         themeMode: ThemeMode.dark,
       );
 
@@ -656,5 +673,124 @@ void main() {
         expect(find.textContaining('no access'), findsNothing);
       },
     );
+
+    testWidgets(
+      'ABAC: missing facility context still allows Integrations read chrome '
+      '(row/own scope remains backend-authoritative)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{AppPermissions.integrationRead},
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(
+          IntegrationsIntegrationsAtomPermissions.tab.isAllowed(noFacility),
+          isTrue,
+        );
+        expect(
+          IntegrationsIntegrationsAtomPermissions.create.isAllowed(noFacility),
+          isFalse,
+        );
+
+        await _pumpIntegrationsTab(
+          tester,
+          repository: repository,
+          accessPolicy: noFacility,
+        );
+
+        expect(_tab('Integrations'), findsOneWidget);
+        expect(find.text('Lab HL7 Feed'), findsOneWidget);
+        expect(find.byTooltip('Create integration'), findsNothing);
+        expect(find.widgetWithText(AppButton, 'Monitor'), findsNothing);
+        expect(find.widgetWithText(AppButton, 'Review failure'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '∩ denial: failed-row Review failure write next-action omits for read-only',
+      (WidgetTester tester) async {
+        await _pumpIntegrationsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{AppPermissions.integrationRead},
+          ),
+        );
+
+        expect(find.text('Failed Sync'), findsOneWidget);
+        expect(find.widgetWithText(AppButton, 'Review failure'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'manage ∪ presents Review failure next-action for failed integration',
+      (WidgetTester tester) async {
+        await _pumpIntegrationsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.integrationRead,
+              AppPermissions.integrationWrite,
+            },
+          ),
+        );
+
+        expect(find.widgetWithText(AppButton, 'Review failure'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'authorized Filters chrome remains; create still gated for read-only',
+      (WidgetTester tester) async {
+        await _pumpIntegrationsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{AppPermissions.integrationRead},
+          ),
+        );
+
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Create integration'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'authorized error/retry surface remains observable on Integrations',
+      (WidgetTester tester) async {
+        await _pumpIntegrationsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{AppPermissions.integrationRead},
+          ),
+          integrationsOverride:
+              const Result<List<IntegrationRecord>>.failure(AppFailure.network()),
+        );
+
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets('light theme read-only Integrations list remains observable', (
+      WidgetTester tester,
+    ) async {
+      await _pumpIntegrationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.integrationRead},
+        ),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(_tab('Integrations'), findsOneWidget);
+      expect(find.text('Lab HL7 Feed'), findsOneWidget);
+      expect(find.byTooltip('Create integration'), findsNothing);
+    });
   });
 }

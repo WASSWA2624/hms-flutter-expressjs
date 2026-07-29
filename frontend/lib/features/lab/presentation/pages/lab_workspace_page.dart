@@ -9,8 +9,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
@@ -20,6 +18,7 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_controlle
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -74,11 +73,6 @@ class _LabWorkspaceContent extends ConsumerStatefulWidget {
 }
 
 class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
-  static const AccessRequirement _mutationRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.labWrite],
-    activeModules: <String>['lab-workflows'],
-  );
-
   static const String _paymentFilterKey = 'payment';
   static const String _statusFilterKey = 'status';
 
@@ -129,7 +123,30 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       labWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    final bool canMutate = canWriteLab(policy);
+    final List<LabDeskSection> allowedSections = labAllowedSections(policy);
+    final LabDeskSection effectiveSection =
+        allowedSections.contains(_section)
+        ? _section
+        : (labFallbackSection(policy) ?? _section);
+
+    if (effectiveSection != _section && allowedSections.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _section == effectiveSection) {
+          return;
+        }
+        setState(() {
+          _section = effectiveSection;
+          _filterValue = AppSearchBarFilterValue.empty;
+        });
+        _updateUrlForSection(effectiveSection);
+        if (!effectiveSection.isFollowUps) {
+          unawaited(
+            controller.applyScope(_scopeForSection(effectiveSection)),
+          );
+        }
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -138,75 +155,96 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppTabStrip(
-              tabs: <AppTabItem>[
-                for (final LabDeskSection section in LabDeskSection.values)
-                  AppTabItem(
-                    id: section.name,
-                    icon: _sectionIcon(section),
-                    label: _sectionLabel(l10n, section),
-                    count: section.isFollowUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(),
-                            ),
-                          )
-                        : _sectionCount(state, section),
-                    countTone: _sectionCountTone(section),
-                  ),
-              ],
-              selectedId: _section.name,
-              onTabTapped: (String tabId) {
-                for (final LabDeskSection section in LabDeskSection.values) {
-                  if (section.name == tabId) {
-                    setState(() {
-                      _section = section;
-                      _filterValue = AppSearchBarFilterValue.empty;
-                    });
-                    _updateUrlForSection(section);
-                    if (!section.isFollowUps) {
-                      unawaited(controller.applyScope(_scopeForSection(section)));
+            if (allowedSections.isNotEmpty)
+              AppTabStrip(
+                tabs: <AppTabItem>[
+                  for (final LabDeskSection section in allowedSections)
+                    AppTabItem(
+                      id: section.name,
+                      icon: _sectionIcon(section),
+                      label: _sectionLabel(l10n, section),
+                      count: section.isFollowUps
+                          ? ref.watch(
+                              followUpTabCountProvider(
+                                const FollowUpWorklistScope(),
+                              ),
+                            )
+                          : _sectionCount(state, section),
+                      countTone: _sectionCountTone(section),
+                    ),
+                ],
+                selectedId: effectiveSection.name,
+                onTabTapped: (String tabId) {
+                  for (final LabDeskSection section in allowedSections) {
+                    if (section.name == tabId) {
+                      setState(() {
+                        _section = section;
+                        _filterValue = AppSearchBarFilterValue.empty;
+                      });
+                      _updateUrlForSection(section);
+                      if (!section.isFollowUps) {
+                        unawaited(
+                          controller.applyScope(_scopeForSection(section)),
+                        );
+                      }
+                      break;
                     }
-                    break;
                   }
-                }
-              },
-              primaryAction: _buildPrimaryAction(l10n, state),
-              secondaryActions: _buildSecondaryActions(l10n, state),
-            ),
+                },
+                primaryAction: _buildPrimaryAction(
+                  l10n,
+                  state,
+                  section: effectiveSection,
+                ),
+                secondaryActions: _buildSecondaryActions(
+                  l10n,
+                  state,
+                  section: effectiveSection,
+                ),
+              ),
             SizedBox(height: theme.spacing.sm),
-            if (_section.isFollowUps)
+            if (allowedSections.isEmpty)
+              AppWorkspaceStatePanel.empty(
+                title: l10n.labNoOrdersTitle,
+                body: l10n.labNoOrdersBody,
+                icon: Icons.science_outlined,
+              )
+            else if (effectiveSection.isFollowUps)
               const FollowUpWorklistPanel(
                 scope: FollowUpWorklistScope(),
                 storageKeyPrefix: 'lab_follow_ups',
               )
             else
               _LabWorklistPanel(
-              state: state,
-              canMutate: canMutate,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              filterValue: _filterValue,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                setState(() => _filterValue = value);
-              },
-              onSearchChanged: _scheduleWorklistSearch,
-              onSearchSubmitted: _submitWorklistSearch,
-              onSearchCleared: _clearWorklistSearch,
-              sectionName: _section.name,
-            ),
+                state: state,
+                canMutate: canMutate,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                filterValue: _filterValue,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
+                onSearchChanged: _scheduleWorklistSearch,
+                onSearchSubmitted: _submitWorklistSearch,
+                onSearchCleared: _clearWorklistSearch,
+                sectionName: effectiveSection.name,
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget? _buildPrimaryAction(AppLocalizations l10n, LabWorkspaceState state) {
-    if (_section.isFollowUps) {
+  Widget? _buildPrimaryAction(
+    AppLocalizations l10n,
+    LabWorkspaceState state, {
+    required LabDeskSection section,
+  }) {
+    if (section.isFollowUps) {
       return null;
     }
     return AppAccessActionGate(
-      requirement: _mutationRequirement,
+      requirement: LabAllAtomPermissions.create,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.labCreateAction,
@@ -224,9 +262,10 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
 
   List<Widget> _buildSecondaryActions(
     AppLocalizations l10n,
-    LabWorkspaceState state,
-  ) {
-    if (_section.isFollowUps) {
+    LabWorkspaceState state, {
+    required LabDeskSection section,
+  }) {
+    if (section.isFollowUps) {
       return const <Widget>[];
     }
     final bool isPatientsView = state.query.view == LabWorkbenchView.patients;
@@ -252,7 +291,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         },
       ),
       AppAccessActionGate(
-        requirement: _mutationRequirement,
+        requirement: LabAllAtomPermissions.configure,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.labReferenceRangesAction,
@@ -452,7 +491,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       return;
     }
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    final bool canMutate = canWriteLab(policy);
     await _openLabDetailDialog(
       context,
       ref,
@@ -1292,9 +1331,9 @@ class _LabConfigurationsDialogState
 
   bool get _canEnableOfferings {
     // Mirrors backend LAB_CONFIG_WRITE_ROLES (super/tenant/facility admin +
-    // lab tech): all of these hold the lab:write permission.
+    // lab tech): matrix ∩ lab:write + lab-workflows.
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    return policy.grants(AppPermissions.labWrite);
+    return canConfigureLab(policy);
   }
 
   @override

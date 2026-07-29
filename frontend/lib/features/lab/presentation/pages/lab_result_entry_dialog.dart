@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/features/lab/presentation/widgets/lab_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -2488,9 +2489,7 @@ class _LabReportPreviewDialogState
       _allReportItems,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool printAuthorized =
-        policy.grants(AppPermissions.labRead) ||
-        policy.grants(AppPermissions.labWrite);
+    final bool printAuthorized = canPreviewLabReport(policy);
     final bool printEligible = appClinicalResultsPrintEligible(
       authorized: printAuthorized,
       hasPrintableReleasedContent: printableItems.isNotEmpty,

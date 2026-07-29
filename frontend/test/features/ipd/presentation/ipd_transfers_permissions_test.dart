@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,26 +30,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
 
-const IpdAdmissionSummary _pendingBed = IpdAdmissionSummary(
-  id: 'adm-queue',
-  displayId: 'ADM-QUEUE',
-  patientId: 'pat-queue',
-  patientDisplayName: 'Quinn Queue',
-  stage: 'ADMITTED_PENDING_BED',
+const IpdAdmissionSummary _transferPending = IpdAdmissionSummary(
+  id: 'adm-transfer',
+  displayId: 'ADM-XFER',
+  patientId: 'pat-xfer',
+  patientDisplayName: 'Terry Transfer',
+  stage: 'TRANSFER_REQUESTED',
   admissionStatus: 'ADMITTED',
-  nextStep: 'ASSIGN_BED',
-  encounterId: 'enc-queue',
+  nextStep: 'APPROVE_TRANSFER',
+  hasActiveBed: true,
+  openTransferRequestId: 'tr-1',
+  encounterId: 'enc-xfer',
+  wardDisplayName: 'Medical Ward',
+  bedDisplayLabel: 'Bed 101',
+  transferStatus: 'REQUESTED',
 );
 
-const IpdAdmissionSummary _requested = IpdAdmissionSummary(
-  id: 'adm-req',
-  displayId: 'ADM-REQ',
-  patientId: 'pat-req',
-  patientDisplayName: 'Rita Requested',
-  stage: 'ADMISSION_REQUESTED',
-  admissionStatus: 'REQUESTED',
-  nextStep: 'APPROVE_ADMISSION',
-  encounterId: 'enc-req',
+const IpdTransferRequest _openTransfer = IpdTransferRequest(
+  id: 'tr-1',
+  status: 'REQUESTED',
+  fromWard: IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
+  toWard: IpdWardOption(id: 'ward-2', name: 'Surgical Ward'),
 );
 
 AppAccessPolicy _policy({
@@ -117,7 +116,9 @@ AppAccessPolicy _policy({
 
 void _stubRepository(
   _MockIpdRepository repository, {
-  List<IpdAdmissionSummary> items = const <IpdAdmissionSummary>[_pendingBed],
+  List<IpdAdmissionSummary> items = const <IpdAdmissionSummary>[
+    _transferPending,
+  ],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
   IpdAdmissionDetail? detailOverride,
 }) {
@@ -140,6 +141,7 @@ void _stubRepository(
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
+      IpdWardOption(id: 'ward-2', name: 'Surgical Ward'),
     ]),
   );
   when(
@@ -150,7 +152,14 @@ void _stubRepository(
     ),
   ).thenAnswer(
     (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[
-      IpdBedOption(id: 'bed-1', label: 'Bed 101', status: 'AVAILABLE'),
+      IpdBedOption(id: 'bed-1', label: 'Bed 101', status: 'OCCUPIED'),
+      IpdBedOption(
+        id: 'bed-2',
+        label: 'Bed 201',
+        status: 'AVAILABLE',
+        wardId: 'ward-2',
+        wardName: 'Surgical Ward',
+      ),
     ]),
   );
   when(
@@ -176,23 +185,40 @@ void _stubRepository(
       orElse: () => items.first,
     );
     return Result<IpdAdmissionDetail>.success(
-      IpdAdmissionDetail(summary: summary),
+      IpdAdmissionDetail(
+        summary: summary,
+        openTransferRequest: _openTransfer,
+        transferRequests: const <IpdTransferRequest>[_openTransfer],
+        activeBedAssignment: const IpdBedAssignment(
+          id: 'ba-1',
+          bed: IpdBedOption(
+            id: 'bed-1',
+            label: 'Bed 101',
+            wardId: 'ward-1',
+            wardName: 'Medical Ward',
+          ),
+        ),
+      ),
     );
   });
-  when(() => repository.assignBed(any(), any())).thenAnswer(
+  when(() => repository.updateTransfer(any(), any())).thenAnswer(
     (_) async => Result<IpdAdmissionDetail>.success(
       IpdAdmissionDetail(
-        summary: _pendingBed.copyWith(
-          stage: 'ADMITTED_IN_BED',
-          hasActiveBed: true,
-          nextStep: 'RECORD_NURSING_NOTE',
+        summary: _transferPending.copyWith(
+          stage: 'TRANSFER_IN_PROGRESS',
+          nextStep: 'COMPLETE_TRANSFER',
+          transferStatus: 'IN_PROGRESS',
+        ),
+        openTransferRequest: const IpdTransferRequest(
+          id: 'tr-1',
+          status: 'IN_PROGRESS',
         ),
       ),
     ),
   );
 }
 
-Future<void> _pumpAdmissionQueue(
+Future<void> _pumpTransfersTab(
   WidgetTester tester, {
   required _MockIpdRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -200,13 +226,13 @@ Future<void> _pumpAdmissionQueue(
   ThemeMode themeMode = ThemeMode.light,
   List<IpdAdmissionSummary>? items,
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
-  String initialLocation = '/ipd?section=admission-queue',
+  String initialLocation = '/ipd?section=transfers',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubRepository(
     repository,
-    items: items ?? const <IpdAdmissionSummary>[_pendingBed],
+    items: items ?? const <IpdAdmissionSummary>[_transferPending],
     listOverride: listOverride,
   );
 
@@ -262,178 +288,162 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const IpdAdmissionQuery());
     registerFallbackValue(<String, Object?>{});
-    registerFallbackValue(_pendingBed);
+    registerFallbackValue(_transferPending);
   });
 
   setUp(() {
     repository = _MockIpdRepository();
   });
 
-  group('IpdAdmissionQueueAtomPermissions helpers', () {
+  group('IpdTransfersAtomPermissions helpers', () {
     test('reuses feature *Requirement helpers (no second vocabulary)', () {
       expect(
-        IpdAdmissionQueueAtomPermissions.tab,
+        IpdTransfersAtomPermissions.tab,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.listChrome,
+        IpdTransfersAtomPermissions.listChrome,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.empty,
+        IpdTransfersAtomPermissions.empty,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.loading,
+        IpdTransfersAtomPermissions.loading,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.retry,
+        IpdTransfersAtomPermissions.retry,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.startAdmission,
+        IpdTransfersAtomPermissions.startAdmission,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.create,
+        IpdTransfersAtomPermissions.create,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.update,
+        IpdTransfersAtomPermissions.update,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.delete,
+        IpdTransfersAtomPermissions.delete,
         same(ipdWorkspaceDeleteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.nextActionApprove,
+        IpdTransfersAtomPermissions.write,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.nextActionAssignBed,
+        IpdTransfersAtomPermissions.operationalWrite,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.nextActionContinueCare,
-        same(ipdWorkspaceReadRequirement),
-      );
-      expect(
-        IpdAdmissionQueueAtomPermissions.nextActionTheatreHandover,
-        same(ipdNavigationRequirement),
-      );
-      expect(
-        IpdAdmissionQueueAtomPermissions.clinicalWrite,
+        IpdTransfersAtomPermissions.clinicalWrite,
         same(ipdClinicalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.recordNursingNote,
-        same(ipdClinicalWriteRequirement),
+        IpdTransfersAtomPermissions.nextActionManageTransfer,
+        same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.clinicalOrders,
-        same(ipdClinicalWriteRequirement),
+        IpdTransfersAtomPermissions.manageTransfer,
+        same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.navigation,
-        same(ipdNavigationRequirement),
+        IpdTransfersAtomPermissions.requestTransfer,
+        same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.billingPanel,
+        IpdTransfersAtomPermissions.billingPanel,
         same(ipdBillingPanelReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.billingRead,
+        IpdTransfersAtomPermissions.billingRead,
         same(ipdBillingReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.manageBeds,
+        IpdTransfersAtomPermissions.manageBeds,
         same(ipdBedManageRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.routeEntry,
+        IpdTransfersAtomPermissions.routeEntry,
         same(RouteAccessCatalog.ipdEntry),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.routeEntryUnion,
-        same(ipdWorkspaceRouteUnionRequirement),
-      );
-      expect(
-        IpdAdmissionQueueAtomPermissions.nestedWrite,
+        IpdTransfersAtomPermissions.nestedWrite,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.nestedRead,
+        IpdTransfersAtomPermissions.nestedRead,
         same(ipdWorkspaceReadRequirement),
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.panelDeepLink,
+        IpdTransfersAtomPermissions.panelDeepLink,
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        ipdSectionTabRequirement(IpdWorkspaceSection.admissionQueue),
-        same(IpdAdmissionQueueAtomPermissions.tab),
+        ipdBoardTabRequirement(IpdWorkspaceSection.transferPending),
+        same(IpdTransfersAtomPermissions.tab),
       );
       expect(
-        ipdBoardNextActionRequirement(IpdBoardNextActionKind.assignBed),
+        ipdBoardNextActionRequirement(IpdBoardNextActionKind.manageTransfer),
         same(ipdOperationalWriteRequirement),
       );
       expect(
-        ipdBoardNextActionRequirement(IpdBoardNextActionKind.approveAdmission),
-        same(ipdOperationalWriteRequirement),
-      );
-      expect(
-        ipdBoardNextActionRequirement(IpdBoardNextActionKind.recordNursingNote),
-        same(ipdClinicalWriteRequirement),
-      );
-      expect(
-        ipdBoardNextActionRequirement(IpdBoardNextActionKind.continueCare),
-        isNull,
-      );
-      expect(
-        ipdFocusedMutationRequirement(action: 'approve'),
-        same(ipdOperationalWriteRequirement),
-      );
-      expect(
-        ipdFocusedMutationRequirement(panel: IpdDetailPanel.beds),
+        ipdFocusedMutationRequirement(panel: IpdDetailPanel.transfer),
         same(ipdOperationalWriteRequirement),
       );
       expect(ipdRouteEntryMatchesAppRoutes(), isTrue);
     });
 
-    test(
-      '∩ denial: clinical:write alone does not grant board read without read key',
-      () {
-        final AppAccessPolicy writeOnly = _policy(
-          permissions: <AppPermission>{AppPermissions.clinicalWrite},
-        );
-        // Source operational write still allows write when role pack passes,
-        // but tab chrome needs read ∪.
-        expect(
-          IpdAdmissionQueueAtomPermissions.tab.isAllowed(writeOnly),
-          isFalse,
-        );
-        expect(canViewIpdAdmissionQueue(writeOnly), isFalse);
-        expect(
-          IpdAdmissionQueueAtomPermissions.routeEntry.isAllowed(writeOnly),
-          isFalse,
-        );
-      },
-    );
-
-    test('∪ allowance: operations:read satisfies tab chrome', () {
-      final AppAccessPolicy opsReader = _policy(
-        permissions: <AppPermission>{AppPermissions.operationsRead},
+    test('∩ denial: operational write missing hides transfer write atoms', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(canViewIpdAdmissionQueue(opsReader), isTrue);
-      expect(canReadIpd(opsReader), isTrue);
+      expect(IpdTransfersAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(canViewIpdTransfers(reader), isTrue);
+      expect(IpdTransfersAtomPermissions.write.isAllowed(reader), isFalse);
       expect(
-        IpdAdmissionQueueAtomPermissions.startAdmission.isAllowed(opsReader),
+        IpdTransfersAtomPermissions.nextActionManageTransfer.isAllowed(reader),
         isFalse,
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.routeEntry.isAllowed(opsReader),
+        IpdTransfersAtomPermissions.manageTransfer.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        IpdTransfersAtomPermissions.startAdmission.isAllowed(reader),
+        isFalse,
+      );
+      expect(canWriteIpdOperational(reader), isFalse);
+    });
+
+    test('∪ allowance: operations:read satisfies Transfers tab chrome', () {
+      final AppAccessPolicy opsReader = _policy(
+        permissions: <AppPermission>{AppPermissions.operationsRead},
+      );
+      expect(canViewIpdTransfers(opsReader), isTrue);
+      expect(canReadIpd(opsReader), isTrue);
+      expect(
+        IpdTransfersAtomPermissions.listChrome.isAllowed(opsReader),
+        isTrue,
+      );
+      expect(
+        IpdTransfersAtomPermissions.startAdmission.isAllowed(opsReader),
+        isFalse,
+      );
+      expect(
+        IpdTransfersAtomPermissions.nextActionManageTransfer.isAllowed(
+          opsReader,
+        ),
+        isFalse,
+      );
+      expect(
+        IpdTransfersAtomPermissions.routeEntry.isAllowed(opsReader),
         isTrue,
       );
     });
@@ -443,13 +453,18 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.routeEntry.isAllowed(billingOnly),
+        IpdTransfersAtomPermissions.routeEntry.isAllowed(billingOnly),
         isTrue,
       );
-      expect(canViewIpdAdmissionQueue(billingOnly), isFalse);
-      expect(ipdAllowedSections(billingOnly), isEmpty);
+      expect(canViewIpdTransfers(billingOnly), isFalse);
       expect(
-        IpdAdmissionQueueAtomPermissions.billingPanel.isAllowed(billingOnly),
+        ipdAllowedSections(billingOnly).contains(
+          IpdWorkspaceSection.transferPending,
+        ),
+        isFalse,
+      );
+      expect(
+        IpdTransfersAtomPermissions.billingPanel.isAllowed(billingOnly),
         isTrue,
       );
     });
@@ -462,11 +477,35 @@ void main() {
         },
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.billingPanel.isAllowed(clinical),
+        IpdTransfersAtomPermissions.billingPanel.isAllowed(clinical),
         isFalse,
       );
       expect(canReadIpdBilling(clinical), isFalse);
     });
+
+    test(
+      'full intersection set: clinical write + module allows transfer ops',
+      () {
+        final AppAccessPolicy writer = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        );
+        expect(IpdTransfersAtomPermissions.tab.isAllowed(writer), isTrue);
+        expect(IpdTransfersAtomPermissions.write.isAllowed(writer), isTrue);
+        expect(
+          IpdTransfersAtomPermissions.nextActionManageTransfer.isAllowed(
+            writer,
+          ),
+          isTrue,
+        );
+        expect(
+          IpdTransfersAtomPermissions.startAdmission.isAllowed(writer),
+          isTrue,
+        );
+      },
+    );
 
     test('subscription strip: missing inpatient module denies tab + write', () {
       final AppAccessPolicy noModule = _policy(
@@ -481,16 +520,18 @@ void main() {
           ),
         ],
       );
-      expect(IpdAdmissionQueueAtomPermissions.tab.isAllowed(noModule), isFalse);
+      expect(IpdTransfersAtomPermissions.tab.isAllowed(noModule), isFalse);
       expect(
-        IpdAdmissionQueueAtomPermissions.startAdmission.isAllowed(noModule),
+        IpdTransfersAtomPermissions.nextActionManageTransfer.isAllowed(
+          noModule,
+        ),
         isFalse,
       );
-      expect(ipdAllowedSections(noModule), isEmpty);
+      expect(canViewIpdTransfers(noModule), isFalse);
     });
 
     test(
-      'source mapping: operations:write satisfies start admission without clinical:write',
+      'source mapping: operations:write satisfies manage transfer without clinical:write',
       () {
         final AppAccessPolicy opsWriter = _policy(
           permissions: <AppPermission>{
@@ -500,17 +541,30 @@ void main() {
           roles: const <String>['OPERATIONS'],
         );
         expect(
-          IpdAdmissionQueueAtomPermissions.startAdmission.isAllowed(opsWriter),
+          IpdTransfersAtomPermissions.startAdmission.isAllowed(opsWriter),
           isTrue,
         );
         expect(
-          IpdAdmissionQueueAtomPermissions.clinicalWrite.isAllowed(opsWriter),
+          IpdTransfersAtomPermissions.manageTransfer.isAllowed(opsWriter),
+          isTrue,
+        );
+        expect(
+          IpdTransfersAtomPermissions.nextActionManageTransfer.isAllowed(
+            opsWriter,
+          ),
+          isTrue,
+        );
+        // Clinical-only detail writes remain matrix ∩ clinical:write.
+        expect(
+          IpdTransfersAtomPermissions.nextActionNursingNote.isAllowed(
+            opsWriter,
+          ),
           isFalse,
         );
       },
     );
 
-    test('manage beds requires admin; unit packs alone do not unlock', () {
+    test('manage beds not unlocked by unit:manage alone (source gate)', () {
       final AppAccessPolicy unitManager = _policy(
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
@@ -519,46 +573,23 @@ void main() {
         roles: const <String>['UNIT_MANAGER'],
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.manageBeds.isAllowed(unitManager),
+        IpdTransfersAtomPermissions.manageBeds.isAllowed(unitManager),
         isFalse,
-      );
-
-      final AppAccessPolicy facilityAdmin = _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.facilityAdmin,
-        },
-        roles: const <String>['FACILITY_ADMIN'],
-      );
-      expect(
-        IpdAdmissionQueueAtomPermissions.manageBeds.isAllowed(facilityAdmin),
-        isTrue,
       );
     });
 
     test(
-      'ABAC: missing facility still allows Admission Queue chrome '
-      '(row/own scope remains backend-authoritative)',
+      'ABAC: missing facility still allows Transfers chrome '
+      '(facility scope enforced server-side)',
       () {
         final AppAccessPolicy noFacility = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-          },
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
           facilityId: null,
         );
-        expect(noFacility.hasFacilityContext, isFalse);
+        expect(canViewIpdTransfers(noFacility), isTrue);
         expect(
-          IpdAdmissionQueueAtomPermissions.tab.isAllowed(noFacility),
-          isTrue,
-        );
-        expect(
-          IpdAdmissionQueueAtomPermissions.startAdmission.isAllowed(noFacility),
-          isTrue,
-        );
-        expect(
-          IpdAdmissionQueueAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
+          IpdTransfersAtomPermissions.manageTransfer.isAllowed(noFacility),
+          isFalse,
         );
       },
     );
@@ -575,33 +606,33 @@ void main() {
         ),
       );
       expect(
-        RouteAccessCatalog.ipdEntry.anyPermissions.toSet(),
+        IpdTransfersAtomPermissions.routeEntry.anyPermissions.toSet(),
         equals(AppRoutes.ipd.requiredAnyPermissions.toSet()),
       );
     });
   });
 
   testWidgets(
-    'read-only ∪ denial: queue visible; Start admission / Assign bed absent',
+    'read-only ∪: Transfers visible; Start admission / Manage transfer absent',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      await _pumpAdmissionQueue(
+      await _pumpTransfersTab(
         tester,
         repository: repository,
         accessPolicy: reader,
       );
 
-      expect(find.textContaining('Admission Queue'), findsWidgets);
-      expect(find.text('Quinn Queue'), findsOneWidget);
+      expect(find.textContaining('Transfers'), findsWidgets);
+      expect(find.text('Terry Transfer'), findsOneWidget);
       expect(find.byTooltip('Start admission'), findsNothing);
-      expect(find.text('Assign bed'), findsNothing);
+      expect(find.text('Manage transfer'), findsNothing);
       expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
     },
   );
 
-  testWidgets('authorized writer: Start admission + Assign bed present', (
+  testWidgets('authorized writer: Start admission + Manage transfer', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -610,33 +641,33 @@ void main() {
         AppPermissions.clinicalWrite,
       },
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: writer,
     );
 
     expect(find.byTooltip('Start admission'), findsOneWidget);
-    expect(find.text('Assign bed'), findsWidgets);
-    expect(find.text('Quinn Queue'), findsOneWidget);
+    expect(find.text('Manage transfer'), findsWidgets);
+    expect(find.text('Terry Transfer'), findsOneWidget);
   });
 
-  testWidgets('∪ operations:read shows queue without write controls', (
+  testWidgets('∪ operations:read shows Transfers without write atoms', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy opsReader = _policy(
       permissions: <AppPermission>{AppPermissions.operationsRead},
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: opsReader,
     );
 
-    expect(find.textContaining('Admission Queue'), findsWidgets);
-    expect(find.text('Quinn Queue'), findsOneWidget);
+    expect(find.textContaining('Transfers'), findsWidgets);
+    expect(find.text('Terry Transfer'), findsOneWidget);
     expect(find.byTooltip('Start admission'), findsNothing);
-    expect(find.text('Assign bed'), findsNothing);
+    expect(find.text('Manage transfer'), findsNothing);
   });
 
   testWidgets('billing:read alone collapses strip (no board read)', (
@@ -645,7 +676,7 @@ void main() {
     final AppAccessPolicy billingOnly = _policy(
       permissions: <AppPermission>{AppPermissions.billingRead},
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: billingOnly,
@@ -661,7 +692,7 @@ void main() {
     final AppAccessPolicy reader = _policy(
       permissions: <AppPermission>{AppPermissions.clinicalRead},
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: reader,
@@ -677,127 +708,10 @@ void main() {
     expect(find.byTooltip('Start admission'), findsNothing);
   });
 
-  testWidgets('authorized loading chrome remains observable for readers', (
-    WidgetTester tester,
-  ) async {
-    final Completer<Result<AppPage<IpdAdmissionSummary>>> listCompleter =
-        Completer<Result<AppPage<IpdAdmissionSummary>>>();
-    when(() => repository.listAdmissions(any())).thenAnswer(
-      (_) => listCompleter.future,
-    );
-    when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
-      (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
-    );
-    when(
-      () => repository.listBeds(
-        search: any(named: 'search'),
-        status: any(named: 'status'),
-        wardId: any(named: 'wardId'),
-      ),
-    ).thenAnswer(
-      (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[]),
-    );
-    when(
-      () => repository.listBedBoard(
-        wardId: any(named: 'wardId'),
-        status: any(named: 'status'),
-        statusAny: any(named: 'statusAny'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          const Result<List<IpdBedBoardEntry>>.success(<IpdBedBoardEntry>[]),
-    );
-
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    tester.view.physicalSize = const Size(1440, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final GoRouter router = GoRouter(
-      initialLocation: '/ipd?section=admission-queue',
-      routes: <RouteBase>[
-        GoRoute(
-          path: '/ipd',
-          builder: (BuildContext context, GoRouterState state) {
-            return Scaffold(
-              body: IpdWorkspacePage(
-                initialQuery: IpdAdmissionQuery.fromUri(state.uri),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          ipdRepositoryProvider.overrideWithValue(repository),
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
-          ),
-          appAccessPolicyProvider.overrideWithValue(
-            _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
-          ),
-        ],
-        child: MaterialApp.router(
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: ThemeMode.light,
-          routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(AsyncStateScaffold<IpdWorkspaceState>), findsOneWidget);
-    expect(find.byTooltip('Start admission'), findsNothing);
-
-    listCompleter.complete(
-      Result<AppPage<IpdAdmissionSummary>>.success(
-        AppPage<IpdAdmissionSummary>(
-          items: const <IpdAdmissionSummary>[],
-          request: const AppPageRequest(pageIndex: 0, pageSize: 25),
-          totalItemCount: 0,
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-  });
-
-  testWidgets('light theme: authorized queue chrome remains visible', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy writer = _policy(
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
-      },
-    );
-    await _pumpAdmissionQueue(
-      tester,
-      repository: repository,
-      accessPolicy: writer,
-      themeMode: ThemeMode.light,
-    );
-
-    expect(find.textContaining('Admission Queue'), findsWidgets);
-    expect(find.byTooltip('Start admission'), findsOneWidget);
-    expect(find.text('Assign bed'), findsWidgets);
-  });
-
   testWidgets('authorized error/retry surface remains observable', (
     WidgetTester tester,
   ) async {
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
@@ -814,7 +728,7 @@ void main() {
     expect(find.textContaining('Try again'), findsWidgets);
   });
 
-  testWidgets('mobile viewport: queue + Start admission remain reachable', (
+  testWidgets('mobile viewport: Transfers row + Start admission remain reachable', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -823,21 +737,32 @@ void main() {
         AppPermissions.clinicalWrite,
       },
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.textContaining('Admission Queue'), findsWidgets);
-    expect(find.text('Quinn Queue'), findsOneWidget);
+    expect(find.textContaining('Transfers'), findsWidgets);
+    expect(find.text('Terry Transfer'), findsOneWidget);
     expect(find.byTooltip('Start admission'), findsOneWidget);
-    // Mobile list chrome omits the next-action column; row select remains.
-    expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
+    // Mobile list chrome omits the next-action column; row select opens detail.
+    await tester.tap(find.text('Terry Transfer'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    // Stage next-action Manage transfer is omitted from detail Quick Actions.
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Manage transfer'),
+      ),
+      findsNothing,
+    );
   });
 
-  testWidgets('desktop viewport: Assign bed next-action remains reachable', (
+  testWidgets('desktop viewport: Manage transfer next-action remains reachable', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -846,18 +771,18 @@ void main() {
         AppPermissions.clinicalWrite,
       },
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       physicalSize: const Size(1440, 900),
     );
 
-    expect(find.text('Assign bed'), findsWidgets);
+    expect(find.text('Manage transfer'), findsWidgets);
     expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
-  testWidgets('dark theme: authorized queue chrome remains visible', (
+  testWidgets('dark theme: authorized Transfers chrome remains visible', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -866,20 +791,20 @@ void main() {
         AppPermissions.clinicalWrite,
       },
     );
-    await _pumpAdmissionQueue(
+    await _pumpTransfersTab(
       tester,
       repository: repository,
       accessPolicy: writer,
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.textContaining('Admission Queue'), findsWidgets);
+    expect(find.textContaining('Transfers'), findsWidgets);
     expect(find.byTooltip('Start admission'), findsOneWidget);
-    expect(find.text('Assign bed'), findsWidgets);
+    expect(find.text('Manage transfer'), findsWidgets);
   });
 
   testWidgets(
-    'post-mutation sync: Assign bed refreshes queue via operational write',
+    'post-mutation sync: Manage transfer opens update dialog for writers',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -888,76 +813,54 @@ void main() {
         },
       );
       expect(
-        IpdAdmissionQueueAtomPermissions.assignBed.isAllowed(writer),
+        IpdTransfersAtomPermissions.manageTransfer.isAllowed(writer),
         isTrue,
       );
 
-      when(() => repository.assignBed(any(), any())).thenAnswer((_) async {
-        when(() => repository.listAdmissions(any())).thenAnswer((
-          Invocation invocation,
-        ) async {
-          final IpdAdmissionQuery query =
-              invocation.positionalArguments.single as IpdAdmissionQuery;
-          return Result<AppPage<IpdAdmissionSummary>>.success(
-            AppPage<IpdAdmissionSummary>(
-              items: const <IpdAdmissionSummary>[],
-              request: query.pageRequest,
-              totalItemCount: 0,
-            ),
-          );
-        });
-        return Result<IpdAdmissionDetail>.success(
-          IpdAdmissionDetail(
-            summary: _pendingBed.copyWith(
-              stage: 'ADMITTED_IN_BED',
-              hasActiveBed: true,
-            ),
-          ),
-        );
-      });
-
-      await _pumpAdmissionQueue(
+      await _pumpTransfersTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.text('Assign bed'), findsWidgets);
-      await tester.tap(find.text('Assign bed').first);
+      expect(find.text('Manage transfer'), findsWidgets);
+      await tester.tap(find.text('Manage transfer').first);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-      // Assign dialog opens for authorized writers (integration with gates).
       expect(find.byType(AppDialog), findsWidgets);
+      expect(find.textContaining('MANAGE TRANSFER'), findsWidgets);
     },
   );
 
-  testWidgets('approve next-action absent for read-only; present for writer', (
-    WidgetTester tester,
-  ) async {
-    final AppAccessPolicy reader = _policy(
-      permissions: <AppPermission>{AppPermissions.clinicalRead},
-    );
-    await _pumpAdmissionQueue(
-      tester,
-      repository: repository,
-      accessPolicy: reader,
-      items: const <IpdAdmissionSummary>[_requested],
-    );
-    expect(find.text('Rita Requested'), findsOneWidget);
-    expect(find.textContaining('Approve'), findsNothing);
+  testWidgets(
+    'detail omits Manage transfer next-action; nested write absent for readers',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
 
-    await _pumpAdmissionQueue(
-      tester,
-      repository: repository,
-      accessPolicy: _policy(
-        permissions: <AppPermission>{
-          AppPermissions.clinicalRead,
-          AppPermissions.clinicalWrite,
-        },
-      ),
-      items: const <IpdAdmissionSummary>[_requested],
-    );
-    expect(find.textContaining('Approve'), findsWidgets);
-  });
+      await tester.tap(find.text('Terry Transfer'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      final Finder dialog = find.byType(AppDialog);
+      expect(dialog, findsWidgets);
+      expect(
+        find.descendant(of: dialog, matching: find.text('Manage transfer')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Request transfer')),
+        findsNothing,
+      );
+    },
+  );
 }

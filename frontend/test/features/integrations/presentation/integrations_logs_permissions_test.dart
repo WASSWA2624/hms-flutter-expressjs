@@ -107,6 +107,14 @@ void _stubWorkspace(
   when(() => repository.listLogs()).thenAnswer(
     (_) async => Result<List<IntegrationLogRecord>>.success(logs),
   );
+  when(() => repository.getLog(any())).thenAnswer((Invocation invocation) async {
+    final String id = invocation.positionalArguments.first as String;
+    final IntegrationLogRecord match = logs.firstWhere(
+      (IntegrationLogRecord log) => log.id == id,
+      orElse: () => logs.isEmpty ? _healthyLog : logs.first,
+    );
+    return Result<IntegrationLogRecord>.success(match);
+  });
   when(
     () => repository.interopCapabilities(),
   ).thenReturn(const <InteropCapabilityStatus>[]);
@@ -173,6 +181,10 @@ Future<void> _pumpLogsTab(
 
 void main() {
   late _MockIntegrationsRepository repository;
+
+  setUpAll(() {
+    registerFallbackValue(<String, Object?>{});
+  });
 
   setUp(() {
     repository = _MockIntegrationsRepository();
@@ -243,10 +255,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('Sanitized log message'), findsOneWidget);
+      expect(find.text('Sanitized log message'), findsWidgets);
       expect(find.text('Message accepted'), findsWidgets);
       expect(find.text('Replay log'), findsNothing);
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Close'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -261,26 +273,35 @@ void main() {
         },
       );
       expect(IntegrationsLogsAtomPermissions.replay.isAllowed(manager), isTrue);
-      expect(
-        integrationsManageRequirement.isAllowed(manager),
-        isTrue,
-      );
+      expect(integrationsManageRequirement.isAllowed(manager), isTrue);
 
       await _pumpLogsTab(
         tester,
         repository: repository,
         accessPolicy: manager,
-        logs: const <IntegrationLogRecord>[_attentionLog],
+        logs: const <IntegrationLogRecord>[_attentionLog, _healthyLog],
       );
 
       expect(find.text('Failed Delivery'), findsWidgets);
       expect(find.text('Replay or escalate'), findsWidgets);
-      expect(find.text('Create integration'), findsNothing);
+      expect(find.byTooltip('Create integration'), findsNothing);
 
+      // Attention row: write next-action mounts Replay confirm entry.
+      await tester.ensureVisible(find.text('Replay or escalate').first);
       await tester.tap(find.text('Replay or escalate').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Replay log?'), findsOneWidget);
+      expect(find.text('REPLAY LOG?'), findsWidgets);
+      expect(find.text('Replay log'), findsWidgets);
+
+      await tester.tap(find.text('Cancel').first);
+      await tester.pumpAndSettle();
+
+      // Healthy row detail still exposes Replay when not the next-action.
+      await tester.tap(find.text('Review').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sanitized log message'), findsWidgets);
       expect(find.text('Replay log'), findsWidgets);
     },
   );
@@ -364,8 +385,8 @@ void main() {
       await tester.tap(find.text('Review').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Sanitized log message'), findsOneWidget);
-      expect(find.text('Replay log'), findsOneWidget);
+      expect(find.text('Sanitized log message'), findsWidgets);
+      expect(find.text('Replay log'), findsWidgets);
       expect(find.text('Delete'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -512,6 +533,9 @@ void main() {
                   ),
                 ],
         );
+      });
+      when(() => repository.getLog(any())).thenAnswer((_) async {
+        return const Result<IntegrationLogRecord>.success(_attentionLog);
       });
       when(() => repository.listIntegrations()).thenAnswer(
         (_) async => const Result<List<IntegrationRecord>>.success(

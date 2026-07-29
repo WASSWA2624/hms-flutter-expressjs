@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-
-const AccessRequirement _labWorkflowMutationRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.labWrite],
-  activeModules: <String>['lab-workflows'],
-);
 
 /// Maps backend order status + next_actions into the shared workflow stepper.
 class LabWorkflowProgressSection extends ConsumerWidget {
@@ -46,7 +39,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           id: 'collect',
           label: l10n.labCollectSampleAction,
           icon: Icons.bloodtype_outlined,
-          requirement: _labWorkflowMutationRequirement,
+          requirement: LabAllAtomPermissions.workflowMutate,
           capabilityAllowed: next.canCollect,
           isLoading: isSaving,
           onPressed: isSaving ? null : () => _collect(context, ref),
@@ -59,7 +52,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           id: 'receive',
           label: l10n.labReceiveSampleAction,
           icon: Icons.inbox_outlined,
-          requirement: _labWorkflowMutationRequirement,
+          requirement: LabAllAtomPermissions.workflowMutate,
           capabilityAllowed: next.canReceiveSample,
           isLoading: isSaving,
           onPressed: isSaving ? null : () => _receive(context, ref),
@@ -74,7 +67,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           id: 'verify',
           label: l10n.labWorkflowNextVerifyResults,
           icon: Icons.verified_outlined,
-          requirement: _labWorkflowMutationRequirement,
+          requirement: LabAllAtomPermissions.workflowMutate,
           capabilityAllowed: next.canVerifyResult || next.canVerifyAll,
           variant: AppButtonVariant.primary,
           isLoading: isSaving,
@@ -88,7 +81,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           id: 'reverse',
           label: l10n.labReverseWorkflowAction,
           icon: Icons.undo_outlined,
-          requirement: _labWorkflowMutationRequirement,
+          requirement: LabAllAtomPermissions.workflowMutate,
           capabilityAllowed: next.canReverseWorkflow,
           isLoading: isSaving,
           variant: AppButtonVariant.tertiary,

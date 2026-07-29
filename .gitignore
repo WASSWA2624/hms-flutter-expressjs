@@ -13,7 +13,6 @@ Thumbs.db
 # Local tooling
 .codex/
 .playwright-mcp/
-.run_prompts_state.json
 .run_ui_permissions_prompts_state.json
 .run_billing_integration_prompts_state.json
 
