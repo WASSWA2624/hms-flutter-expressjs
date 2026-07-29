@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -24,6 +25,7 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_board_next_acti
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -346,6 +348,13 @@ void main() {
       );
       expect(
         identical(
+          IpdActivePatientsAtomPermissions.billingPanel,
+          ipdBillingPanelReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           IpdActivePatientsAtomPermissions.manageBeds,
           ipdBedManageRequirement,
         ),
@@ -354,6 +363,13 @@ void main() {
       expect(
         identical(
           IpdActivePatientsAtomPermissions.routeEntry,
+          RouteAccessCatalog.ipdEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IpdActivePatientsAtomPermissions.catalogEntry,
           RouteAccessCatalog.ipdEntry,
         ),
         isTrue,
@@ -372,7 +388,18 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          IpdActivePatientsAtomPermissions.planOrManageDischarge,
+          ipdClinicalWriteRequirement,
+        ),
+        isTrue,
+      );
       expect(ipdRouteEntryMatchesAppRoutes(), isTrue);
+      expect(
+        AppRoutes.ipd.requiredAnyPermissions.toSet(),
+        IpdActivePatientsAtomPermissions.routeEntry.anyPermissions.toSet(),
+      );
     });
 
     test('∩ denial: clinical:read alone does not grant write atoms', () {
@@ -537,6 +564,10 @@ void main() {
         IpdActivePatientsAtomPermissions.billingRead.isAllowed(clinicalOnly),
         isFalse,
       );
+      expect(
+        IpdActivePatientsAtomPermissions.billingPanel.isAllowed(clinicalOnly),
+        isFalse,
+      );
       expect(canReadIpdBilling(clinicalOnly), isFalse);
 
       final AppAccessPolicy withBilling = _policy(
@@ -547,6 +578,10 @@ void main() {
       );
       expect(
         IpdActivePatientsAtomPermissions.billingRead.isAllowed(withBilling),
+        isTrue,
+      );
+      expect(
+        IpdActivePatientsAtomPermissions.billingPanel.isAllowed(withBilling),
         isTrue,
       );
     });
@@ -668,6 +703,68 @@ void main() {
       expect(find.text('Ada Active'), findsOneWidget);
       expect(find.text('Add nursing note'), findsNothing);
       expect(find.byTooltip('Start admission'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'source ∪ operations:write mounts Start admission without nursing note',
+    (WidgetTester tester) async {
+      final AppAccessPolicy opsWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.operationsRead,
+          AppPermissions.operationsWrite,
+        },
+        roles: const <String>['OPERATIONS'],
+      );
+      expect(
+        IpdActivePatientsAtomPermissions.startAdmission.isAllowed(opsWriter),
+        isTrue,
+      );
+      expect(
+        IpdActivePatientsAtomPermissions.nextActionNursingNote.isAllowed(
+          opsWriter,
+        ),
+        isFalse,
+      );
+
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: opsWriter,
+      );
+
+      expect(find.textContaining('Active Patients'), findsWidgets);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+      expect(find.text('Add nursing note'), findsNothing);
+      expect(find.text('Continue care'), findsOneWidget);
+      expect(find.byTooltip('Manage beds'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Manage beds not mounted on Active even for facility admin',
+    (WidgetTester tester) async {
+      final AppAccessPolicy facilityAdmin = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.facilityAdmin,
+        },
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+      expect(
+        IpdActivePatientsAtomPermissions.manageBeds.isAllowed(facilityAdmin),
+        isTrue,
+      );
+
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: facilityAdmin,
+      );
+
+      expect(find.byTooltip('Manage beds'), findsNothing);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
     },
   );
 
@@ -831,9 +928,35 @@ void main() {
       ),
     );
 
+    expect(find.byType(AsyncStateScaffold<IpdWorkspaceState>), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });
+
+  testWidgets(
+    'panel=nursing deep link does not open without clinical write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        ipdFocusedMutationRequirement(panel: IpdDetailPanel.nursing)!.isAllowed(
+          reader,
+        ),
+        isFalse,
+      );
+
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        initialLocation: '/ipd?section=active&id=adm-active-1&panel=nursing',
+      );
+
+      expect(find.text('Add nursing note'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
 
   testWidgets('mobile + dark: read-only chrome hides write atoms', (
     WidgetTester tester,

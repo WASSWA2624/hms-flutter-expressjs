@@ -412,12 +412,19 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       return null;
     }
     if (_section.isBedBoard && canManageBeds) {
-      return AppTabToolbarPrimary(
-        label: l10n.ipdBedBoardManageBedsAction,
-        icon: Icons.open_in_new,
-        tooltip: l10n.ipdBedBoardManageBedsAction,
-        semanticLabel: l10n.ipdBedBoardManageBedsAction,
-        onPressed: () => context.go(AppRoutes.roomsBeds.path),
+      // Nested manage ∪ — rooms-beds admin (source; matrix also lists
+      // unit:manage — keep source). Unauthorized control does not mount.
+      return AppAccessActionGate(
+        requirement: IpdBedBoardAtomPermissions.manageBeds,
+        builder: (BuildContext context, bool _) {
+          return AppTabToolbarPrimary(
+            label: l10n.ipdBedBoardManageBedsAction,
+            icon: Icons.open_in_new,
+            tooltip: l10n.ipdBedBoardManageBedsAction,
+            semanticLabel: l10n.ipdBedBoardManageBedsAction,
+            onPressed: () => context.go(AppRoutes.roomsBeds.path),
+          );
+        },
       );
     }
     return AppAccessActionGate(

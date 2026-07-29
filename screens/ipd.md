@@ -72,19 +72,73 @@ Tab-strip **Refresh** was removed.
   - Immediate result: Persists via controller; snackbar; refresh where needed. No empty detail shell. Continue-care shows plain label (row select opens detail).
   - Condition: Matching write gate; unauthorized next-action absent.
 
-### Bed board
+### Bed board tab
 
-- **Row select** (occupied bed)
-  - Location: Table row.
-  - Opens modal: Admission detail.
-  - Immediate result: Loads occupant admission.
-  - Condition: Occupant present.
+Occupancy board (`?section=bed-board`). Write gates:
+`IpdBedBoardAtomPermissions` → board read ∪ (`clinical:read` |
+`operations:read` + module), operational write ∪ for Start admission (source
+keeps ∪ `clinical:write` | `operations:write` rather than matrix ∩
+`clinical:write` alone), bed-manage for Manage beds / bed-status next-action
+(source rooms-beds admin ∪ — facility/tenant/system admin perms + roles +
+module; matrix also lists `unit:manage` — keep source, unit packs alone do not
+unlock), clinical write ∩ for detail complementary clinical writes, billing
+panel ∩ `billing:read` + `billing-payments`. Unauthorized write controls do not
+render.
 
-- **Next action** (status mutation)
-  - Location: `next_action` column.
-  - Opens modal: No — applies bed status (or shows no-action label).
-  - Immediate result: Updates bed status when manage gate allows. Single status action is a direct tap (no menu).
-  - Condition: Bed-manage gate for mutations; open-admission removed (use row select).
+- **Bed board** strip tab
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to occupancy board; loads bed board.
+  - Condition: Board read ∪; tab hidden when gate fails.
+
+- **Manage beds** (toolbar primary when bed-manage allows)
+  - Location: Tab-strip primary.
+  - Opens modal: No — navigates to `/rooms-beds`.
+  - Immediate result: Leaves IPD for rooms & beds admin.
+  - Condition: Bed-manage gate (`IpdBedBoardAtomPermissions.manageBeds`);
+    unauthorized control absent.
+
+- **Start admission**
+  - Location: Tab-strip primary when Manage beds absent; secondary when Manage
+    beds is primary.
+  - Opens modal: Yes — start admission dialog.
+  - Immediate result: Creates admission; snackbar; workspace refresh.
+  - Condition: Operational write ∪; unauthorized control absent.
+
+- **Search**, **Clear**, **Filters** (ward / status), **Settings** (columns)
+  - Location: `AppListTable` / `AppSearchBar` chrome.
+  - Opens modal: Advanced filters; Table Settings dialog.
+  - Immediate result: Search / ward / status filter / column visibility.
+  - Condition: Bed board read ∪.
+
+- **Row select** (occupied bed — desktop row / mobile item)
+  - Location: Table row / mobile list item.
+  - Opens modal: Admission detail (complementary writes; billing gated).
+  - Immediate result: Loads occupant admission. Sole open path (no Open
+    admission next-action).
+  - Condition: Occupant present + board read ∪.
+
+- **Next action** (bed status — Reserve / Block / Mark available / …)
+  - Location: `next_action` column (mounted only when bed-manage allows).
+  - Opens modal: No — applies bed status (or shows no-action label). Single
+    status action is a direct tap (no menu). Occupied beds have no status
+    mutation here (release via admission discharge / release-bed).
+  - Immediate result: Updates bed status; board reload.
+  - Condition: Bed-manage gate; unauthorized column / actions absent.
+
+- **Detail complementary writes** / billing panels
+  - Location: Detail `AppQuickActions` / nested panels.
+  - Condition: Operational / clinical write; billing ∩ `billing:read`.
+
+- **`?id=` / `?id=&panel=` / `?id=&action=`** deep links from board
+  - Opens detail or focused mutation when matching write allows.
+  - Condition: Forbidden feedback only when deep-linked without rights / 403.
+
+- **Try again** / empty / loading
+  - Location: Workspace / bed board body.
+  - Condition: Authorized Bed board readers; retry reloads board / workspace.
+
+Automated: `frontend/test/features/ipd/presentation/ipd_bed_board_permissions_test.dart`.
 
 ### Detail dialog
 
@@ -99,6 +153,66 @@ Tab-strip **Refresh** was removed.
 - **`?id=` / `?admissionId=`** — opens admission detail (next-action omitted).
 - **`?id=&panel=beds|transfers|discharge|nursing`** / **`?id=&action=approve`** — opens the focused mutation dialog directly (no empty detail shell).
 - **`?section=`** — selects tab.
+
+### Active Patients tab
+
+Current inpatients (`?section=active`). Write gates:
+`IpdActivePatientsAtomPermissions` → board read ∪, operational write ∪ for
+Start admission / transfer / reject (source keeps ∪ `clinical:write` |
+`operations:write` rather than matrix ∩ `clinical:write` alone), clinical
+write ∩ for nursing / discharge / orders, billing panel ∩ `billing:read`.
+Unauthorized write controls do not render. Nested cross-module matrix _(n/a)_
+except billing. Manage beds is not mounted on this tab.
+
+- **Active Patients** strip tab / count badge
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches to active inpatients queue; loads scoped list.
+  - Condition: Board read ∪ (`clinical:read` | `operations:read` + module); tab
+    hidden when gate fails.
+
+- **Start admission**
+  - Location: Tab-strip toolbar.
+  - Opens modal: Yes — start admission dialog.
+  - Immediate result: Creates admission; snackbar; workspace refresh.
+  - Condition: Operational write ∪; unauthorized control absent.
+
+- **Search**, **Clear**, **Filters** (ward), **Settings** (columns)
+  - Location: `AppListTable` / `AppSearchBar` chrome.
+  - Opens modal: Advanced filters; Table Settings dialog.
+  - Immediate result: Search / ward filter / column visibility.
+  - Condition: Active Patients read ∪.
+
+- **Row select** (desktop row / mobile item)
+  - Location: Table row / mobile list item.
+  - Opens modal: Admission detail dialog (context, records, complementary
+    writes; stage next-action omitted from Quick Actions).
+  - Immediate result: Loads detail.
+  - Condition: Active Patients read ∪.
+
+- **Next action** (nursing note / transfer / discharge / continue care / …)
+  - Location: `next_action` column (`IpdBoardNextActionCell`).
+  - Opens modal: Matching mutation dialog (or navigates for theatre handover).
+  - Immediate result: Persists via controller; snackbar; list refresh.
+    Continue-care shows plain label (row select opens detail).
+  - Condition: Matching write gate (operational ∪ or clinical ∩); unauthorized
+    next-action absent.
+
+- **Detail complementary writes** / billing panels
+  - Location: Detail `AppQuickActions` / nested panels.
+  - Condition: Operational / clinical write; billing ∩ `billing:read`; Manage
+    beds not mounted on this tab.
+
+- **`?id=&panel=nursing|beds|transfers|discharge`** / **`?id=&action=approve`**
+  - Opens the focused mutation dialog directly when the matching write gate
+    allows.
+  - Condition: Forbidden feedback only when deep-linked without rights / 403.
+
+- **Try again** / empty / loading
+  - Location: Board body / `AsyncStateScaffold`.
+  - Condition: Authorized Active Patients readers; retry reloads scoped list.
+
+Automated: `frontend/test/features/ipd/presentation/ipd_active_patients_permissions_test.dart`.
 
 ### Transfers tab
 
@@ -328,12 +442,14 @@ Unauthorized write controls do not render. Nested cross-module matrix _(n/a)_.
 - [ ] Transfer-pending row: **Manage transfer** next-action opens transfer dialog; detail omits Manage transfer.
 - [ ] Deep link `/ipd?id=…&panel=transfers` opens transfer dialog without an empty detail first.
 - [ ] Bed board: occupied row has no **Open admission** in next-action; row tap opens detail.
+- [ ] Bed board: without clinical|operations read, tab and panel absent; with clinical:read alone, board mounts and Start admission / Manage beds / next-action absent; with operational write ∪, Start admission mounts; with rooms-beds admin ∪, Manage beds + bed-status next-action mount and sync; `unit:manage` alone does not unlock Manage beds; billing panel absent without billing:read.
 - [ ] Without operational/clinical write, matching next-action and detail writes are absent.
 - [ ] Admission Queue: without clinical|operations read, tab absent; with clinical:read alone, list mounts and Start admission / Assign bed / Approve absent; with operational write ∪, mutations mount and sync; billing panel absent without billing:read.
+- [ ] Active Patients: without clinical|operations read, tab absent; with clinical:read alone, list mounts and nursing note / Start admission absent; with clinical:write ∩, nursing note mounts and syncs; billing panel absent without billing:read; Manage beds absent.
 - [ ] Transfers: without clinical|operations read, tab and panel absent; with clinical:read alone, list mounts and Manage transfer / Start admission absent; with operational write ∪, mutations mount and sync the list.
 - [ ] Follow-ups: without clinical|operations read, tab and panel absent; with clinical:read alone, list mounts and Mark completed / Reschedule absent; with clinical:write ∩, mutations mount and sync the list.
 - [ ] Discharge: without clinical|operations read, tab and panel absent; with clinical:read alone, list mounts and Manage discharge / Start admission absent; with clinical:write ∩, Manage discharge mounts and syncs; billing panel absent without billing:read; Release bed needs operational write ∪.
 - [ ] Loading / empty / error-retry / validation states still render on workspace and dialogs.
 - [ ] Mobile and desktop keep next-action and row select reachable; theme tokens only.
 
-Automated: `frontend/test/features/ipd/presentation/ipd_workspace_page_test.dart`, `frontend/test/features/ipd/presentation/ipd_workspace_ux_simplify_test.dart`, `frontend/test/features/ipd/presentation/ipd_admission_queue_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_follow_ups_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_transfers_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_discharge_permissions_test.dart`.
+Automated: `frontend/test/features/ipd/presentation/ipd_workspace_page_test.dart`, `frontend/test/features/ipd/presentation/ipd_workspace_ux_simplify_test.dart`, `frontend/test/features/ipd/presentation/ipd_admission_queue_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_active_patients_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_bed_board_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_follow_ups_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_transfers_permissions_test.dart`, `frontend/test/features/ipd/presentation/ipd_discharge_permissions_test.dart`.

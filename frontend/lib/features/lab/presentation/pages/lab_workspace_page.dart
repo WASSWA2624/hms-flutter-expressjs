@@ -244,7 +244,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       return null;
     }
     return AppAccessActionGate(
-      requirement: LabAllAtomPermissions.create,
+      requirement: labStripCreateRequirement(section),
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.labCreateAction,
@@ -291,7 +291,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         },
       ),
       AppAccessActionGate(
-        requirement: LabAllAtomPermissions.configure,
+        requirement: labStripConfigureRequirement(section),
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.labReferenceRangesAction,
@@ -357,6 +357,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         return LabDeskSection.worklist;
       case 'collection':
       case 'sample':
+      case 'awaiting-results':
+      case 'awaiting_results':
+      case 'awaitingresults':
         return LabDeskSection.collection;
       case 'processing':
       case 'in-process':
@@ -382,7 +385,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   static String _sectionToQueryValue(LabDeskSection section) {
     return switch (section) {
       LabDeskSection.worklist => 'worklist',
-      LabDeskSection.collection => 'collection',
+      LabDeskSection.collection => 'awaiting-results',
       LabDeskSection.processing => 'processing',
       LabDeskSection.verification => 'verification',
       LabDeskSection.critical => 'critical',

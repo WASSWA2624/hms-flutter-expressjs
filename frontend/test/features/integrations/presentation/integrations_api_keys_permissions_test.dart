@@ -19,7 +19,6 @@ import 'package:hosspi_hms/features/integrations/presentation/integrations_acces
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,7 +40,6 @@ const ApiKeyRecord _warningApiKey = ApiKeyRecord(
   id: 'api-key-2',
   name: 'Inactive Export Key',
   userId: 'user-1',
-  isActive: false,
   humanFriendlyId: 'key_inactive',
 );
 

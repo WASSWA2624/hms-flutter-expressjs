@@ -782,6 +782,27 @@ void main() {
     expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
+  testWidgets('light theme: authorized Transfers chrome remains visible', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy writer = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+    );
+    await _pumpTransfersTab(
+      tester,
+      repository: repository,
+      accessPolicy: writer,
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.textContaining('Transfers'), findsWidgets);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
+    expect(find.text('Manage transfer'), findsWidgets);
+  });
+
   testWidgets('dark theme: authorized Transfers chrome remains visible', (
     WidgetTester tester,
   ) async {
@@ -817,6 +838,35 @@ void main() {
         isTrue,
       );
 
+      when(() => repository.updateTransfer(any(), any())).thenAnswer((_) async {
+        when(() => repository.listAdmissions(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final IpdAdmissionQuery query =
+              invocation.positionalArguments.single as IpdAdmissionQuery;
+          return Result<AppPage<IpdAdmissionSummary>>.success(
+            AppPage<IpdAdmissionSummary>(
+              items: const <IpdAdmissionSummary>[],
+              request: query.pageRequest,
+              totalItemCount: 0,
+            ),
+          );
+        });
+        return Result<IpdAdmissionDetail>.success(
+          IpdAdmissionDetail(
+            summary: _transferPending.copyWith(
+              stage: 'TRANSFER_IN_PROGRESS',
+              nextStep: 'COMPLETE_TRANSFER',
+              transferStatus: 'IN_PROGRESS',
+            ),
+            openTransferRequest: const IpdTransferRequest(
+              id: 'tr-1',
+              status: 'IN_PROGRESS',
+            ),
+          ),
+        );
+      });
+
       await _pumpTransfersTab(
         tester,
         repository: repository,
@@ -829,8 +879,88 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
+      // Transfer update dialog opens for authorized writers (gate integration).
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.textContaining('MANAGE TRANSFER'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'panel=transfers deep link denied without operational write',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        ipdFocusedMutationRequirement(panel: IpdDetailPanel.transfer)!
+            .isAllowed(reader),
+        isFalse,
+      );
+
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+        initialLocation: '/ipd?section=transfers&id=adm-transfer&panel=transfers',
+      );
+
+      // Restricted deep link must not mount the write dialog; no routine banner.
+      expect(find.textContaining('MANAGE TRANSFER'), findsNothing);
+      expect(find.textContaining('No access'), findsNothing);
+      expect(find.text('Terry Transfer'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'panel=transfers deep link opens update dialog for operational writers',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        initialLocation: '/ipd?section=transfers&id=adm-transfer&panel=transfers',
+      );
+
+      expect(find.textContaining('MANAGE TRANSFER'), findsWidgets);
+      expect(find.text('ADMISSION DETAIL'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Manage beds not mounted on Transfers; billing panel absent without billing:read',
+    (WidgetTester tester) async {
+      final AppAccessPolicy clinicalWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: clinicalWriter,
+      );
+
+      expect(find.byTooltip('Manage beds'), findsNothing);
+      expect(find.textContaining('Manage beds'), findsNothing);
+
+      await tester.tap(find.text('Terry Transfer'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      // Nested billing / insurance panel needs ∩ billing:read + module.
+      expect(
+        IpdTransfersAtomPermissions.billingPanel.isAllowed(clinicalWriter),
+        isFalse,
+      );
+      expect(find.textContaining('Insurance'), findsNothing);
     },
   );
 

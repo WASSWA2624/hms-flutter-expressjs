@@ -252,6 +252,79 @@ void main() {
       );
     });
 
+    test('Awaiting results atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.tab,
+          labWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.create,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.configure,
+          labConfigurationsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.requestFromClinical,
+          clinicalLabOrderWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.criticalNotify,
+          labCriticalNotifyRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.previewReport,
+          labReportPreviewRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.workflowMutate,
+          labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.collection),
+          LabAwaitingResultsAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.collection),
+          LabAwaitingResultsAtomPermissions.create,
+        ),
+        isTrue,
+      );
+    });
+
     test('All tab present for lab:read; clinical-only keeps worklist sections', () {
       final AppAccessPolicy labReader = _policyFor(
         permissions: <AppPermission>{AppPermissions.labRead},
@@ -272,14 +345,24 @@ void main() {
       );
 
       expect(canViewLabAllTab(labReader), isTrue);
+      expect(canViewLabAwaitingResultsTab(labReader), isTrue);
       expect(canViewLabAllTab(clinicalReader), isFalse);
+      expect(canViewLabAwaitingResultsTab(clinicalReader), isFalse);
       expect(
         labAllowedSections(labReader),
         contains(LabDeskSection.worklist),
       );
       expect(
+        labAllowedSections(labReader),
+        contains(LabDeskSection.collection),
+      );
+      expect(
         labAllowedSections(clinicalReader),
         contains(LabDeskSection.worklist),
+      );
+      expect(
+        labAllowedSections(clinicalReader),
+        contains(LabDeskSection.collection),
       );
       expect(
         labAllowedSections(clinicalReader),

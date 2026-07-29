@@ -266,7 +266,9 @@ void main() {
     expect(find.byTooltip('Lab Configurations'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);
 
-    await tester.tap(find.textContaining('Processing').first);
+    // Prefer deep links over tab taps: AppTheme tab widths can overflow later
+    // sections into the More menu (labels not mounted until opened).
+    router.go('/lab?section=processing');
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'processing');
@@ -275,7 +277,7 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_processing');
 
-    await tester.tap(find.textContaining('Verified').first);
+    router.go('/lab?section=completed');
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'completed');

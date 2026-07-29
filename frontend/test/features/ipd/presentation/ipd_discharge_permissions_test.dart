@@ -353,11 +353,23 @@ void main() {
         same(ipdClinicalWriteRequirement),
       );
       expect(
+        IpdDischargeAtomPermissions.planOrManageDischarge,
+        same(ipdClinicalWriteRequirement),
+      );
+      expect(
         IpdDischargeAtomPermissions.planDischarge,
         same(ipdClinicalWriteRequirement),
       );
       expect(
         IpdDischargeAtomPermissions.manageDischarge,
+        same(ipdClinicalWriteRequirement),
+      );
+      expect(
+        IpdDischargeAtomPermissions.releaseBed,
+        same(ipdOperationalWriteRequirement),
+      );
+      expect(
+        IpdDischargeAtomPermissions.clinicalOrders,
         same(ipdClinicalWriteRequirement),
       );
       expect(
@@ -564,6 +576,26 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'ABAC: missing facility still allows Discharge chrome '
+      '(facility scope enforced server-side)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          facilityId: null,
+        );
+        expect(canViewIpdDischarge(noFacility), isTrue);
+        expect(
+          IpdDischargeAtomPermissions.manageDischarge.isAllowed(noFacility),
+          isFalse,
+        );
+        expect(
+          IpdDischargeAtomPermissions.releaseBed.isAllowed(noFacility),
+          isFalse,
+        );
+      },
+    );
 
     test('route entry keys match AppRoutes.ipd', () {
       expect(
@@ -818,6 +850,65 @@ void main() {
         find.descendant(of: dialog, matching: find.text('Manage discharge')),
         findsNothing,
       );
+    },
+  );
+
+  testWidgets(
+    'read-only detail: Release bed / Manage discharge / billing absent',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+
+      await tester.tap(find.text('Dana Discharge'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      final Finder dialog = find.byType(AppDialog);
+      expect(dialog, findsWidgets);
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.textContaining('Release bed'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Manage discharge')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.textContaining('Insurance')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'desktop viewport: Manage discharge next-action mounts for clinical writer',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        physicalSize: const Size(1440, 900),
+      );
+
+      expect(find.text('Manage discharge'), findsWidgets);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+      expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
     },
   );
 }
