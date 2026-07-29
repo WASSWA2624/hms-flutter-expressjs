@@ -151,7 +151,10 @@ Analytics permission tests in `frontend/test/features/biomedical/presentation/bi
 
 - [x] ∩ denial: `biomed:read` without `reports:read` omits Analytics tab.
 - [x] Nested ∪: `reports:read` (+ module) restores Analytics; subscription strip without biomed/reporting modules denies.
-- [x] Write ∪ source gate: `operations:write` (+ facilities module) satisfies write; read-only omits mutation/print atoms.
+- [x] Write ∪ source gate: `operations:write` (+ facilities module) mounts detail writes/print without `biomed:write`.
+- [x] Read-only omits mutation/print atoms; Filters / Location list chrome remain when authorized.
+- [x] Nested export: print absent without `evidence:export`; nested writes still mount.
+- [x] Route entry ∪ write-only without `biomed:read` omits Analytics chrome (even with `reports:read`).
 - [x] Authorized flows, empty/loading/error-retry states, mobile+dark / desktop+light, post-mutation sync.
 
 Support permission tests in `frontend/test/features/biomedical/presentation/biomedical_support_permissions_test.dart`:
@@ -190,7 +193,8 @@ Compliance permission tests in `frontend/test/features/biomedical/presentation/b
 - [x] Write ∪: `operations:write` (+ facilities-maintenance) mounts Compliance write atoms without `biomed:write`.
 - [x] Route entry ∪ write-only omits Compliance chrome; subscription strip without biomed module omits Compliance.
 - [x] Nested cross-module _(n/a)_: print absent without `evidence:export`; recall/calibration writes still mount.
-- [x] Authorized calibration next-action mutation sync, empty/error, mobile+desktop, light+dark.
+- [x] Authorized calibration next-action mutation sync; Record calibration validation keeps dialog open.
+- [x] Empty / loading→success / error-retry, mobile+desktop, light+dark authorized states.
 
 Preventive permission tests in `frontend/test/features/biomedical/presentation/biomedical_preventive_permissions_test.dart`:
 

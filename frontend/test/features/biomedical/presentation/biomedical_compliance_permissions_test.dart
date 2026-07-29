@@ -529,6 +529,35 @@ void main() {
   );
 
   testWidgets(
+    'authorized Record calibration validation keeps dialog open without mutation',
+    (WidgetTester tester) async {
+      await _pumpComplianceTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.biomedRead,
+            AppPermissions.biomedWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Record calibration'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('RECORD CALIBRATION'), findsOneWidget);
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('RECORD CALIBRATION'), findsOneWidget);
+      expect(find.textContaining('is required'), findsWidgets);
+      verifyNever(() => repository.createResource(any(), any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'empty authorized Compliance still shows chrome and empty state',
     (WidgetTester tester) async {
       await _pumpComplianceTab(
@@ -568,6 +597,88 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets('authorized loading then success on Compliance', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<BiomedicalWorkbench>.success(
+        BiomedicalWorkbench(
+          summary: const BiomedicalSummary(
+            totalEquipment: 1,
+            criticalDowntime: 1,
+            activeRecalls: 1,
+          ),
+          queues: const <BiomedicalQueueSummary>[],
+          panels: const <BiomedicalPanelSummary>[],
+          lookups: _lookups,
+          assets: AppPage<BiomedicalAsset>(
+            items: const <BiomedicalAsset>[_calibrationAsset],
+            request: const AppPageRequest(pageSize: 20),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/biomedical?panel=compliance',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biomedical',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: BiomedicalWorkspacePage(
+                initialQuery: BiomedicalRouteQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          biomedicalRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{AppPermissions.biomedRead},
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+          find.textContaining('Loading').evaluate().isNotEmpty ||
+          find.textContaining('Biomedical').evaluate().isNotEmpty,
+      isTrue,
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pumpAndSettle();
+    expect(find.text('Ventilator calibration'), findsOneWidget);
+    expect(find.text('Compliance'), findsWidgets);
+  });
 
   testWidgets('mobile viewport: authorized Compliance chrome remains', (
     WidgetTester tester,

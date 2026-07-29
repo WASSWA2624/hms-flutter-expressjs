@@ -362,11 +362,130 @@ void main() {
 
       expect(find.text('Analytics'), findsWidgets);
       expect(find.text('Ventilator utilization'), findsOneWidget);
+      expect(find.text('Location'), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.text('Next action'), findsOneWidget);
       expect(find.text('Review record'), findsWidgets);
       expect(find.byTooltip('Register asset'), findsNothing);
       expect(find.byTooltip('Create work order'), findsNothing);
       expect(find.byTooltip('Report fault'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'write ∪: operations:write without biomed:write mounts Analytics detail writes',
+    (WidgetTester tester) async {
+      final AppAccessPolicy operationsWriter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.biomedRead,
+          AppPermissions.reportsRead,
+          AppPermissions.operationsWrite,
+          AppPermissions.evidenceExport,
+        },
+        modules: const <AppModuleEntitlement>[
+          _biomedModule,
+          _reportsModule,
+          AppModuleEntitlement(
+            code: 'facilities-maintenance',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      // Matrix ∩ is biomed:write; source keeps biomed:write ∪ operations:write.
+      expect(
+        BiomedicalAnalyticsAtomPermissions.write.isAllowed(operationsWriter),
+        isTrue,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.export.isAllowed(operationsWriter),
+        isTrue,
+      );
+
+      await _pumpAnalytics(
+        tester,
+        repository: repository,
+        accessPolicy: operationsWriter,
+      );
+
+      await tester.tap(find.text('Ventilator utilization'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schedule maintenance'), findsOneWidget);
+      expect(find.text('Create work order'), findsOneWidget);
+      expect(find.text('Print report'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'nested export: print absent without evidence:export; nested writes mount',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writerNoExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.biomedRead,
+          AppPermissions.biomedWrite,
+          AppPermissions.reportsRead,
+        },
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.print.isAllowed(writerNoExport),
+        isFalse,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.nestedWrite.isAllowed(
+          writerNoExport,
+        ),
+        isTrue,
+      );
+
+      await _pumpAnalytics(
+        tester,
+        repository: repository,
+        accessPolicy: writerNoExport,
+      );
+
+      await tester.tap(find.text('Ventilator utilization'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schedule maintenance'), findsOneWidget);
+      expect(find.text('Create work order'), findsOneWidget);
+      expect(find.text('Print report'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'route entry ∪ write-only without biomed:read omits Analytics chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.biomedWrite,
+          AppPermissions.reportsRead,
+        },
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        BiomedicalAnalyticsAtomPermissions.read.isAllowed(writeOnly),
+        isFalse,
+      );
+
+      await _pumpAnalytics(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Ventilator utilization'), findsNothing);
+      expect(find.text('Analytics'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
