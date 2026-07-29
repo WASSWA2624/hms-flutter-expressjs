@@ -487,31 +487,34 @@ void main() {
       expect(find.text('CREATE REQUEST'), findsOneWidget);
 
       // Validation: submit without issue keeps dialog open.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AppDialog),
-          matching: find.text('Create request'),
-        ),
-      );
+      await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
       expect(find.text('CREATE REQUEST'), findsOneWidget);
       expect(find.text('This field is required.'), findsWidgets);
       verifyNever(() => repository.createRequest(any()));
 
-      // TextFields in create form: facility, location, issue, notes.
-      final Finder dialogFields = find.descendant(
+      // Issue is the required multiline field (maxLines: 3) among create form
+      // TextFormFields (facility, location, issue, notes — plus optional search).
+      final Finder formFields = find.descendant(
         of: find.byType(AppDialog),
-        matching: find.byType(TextField),
+        matching: find.byType(TextFormField),
       );
-      expect(dialogFields, findsAtLeastNWidgets(3));
-      await tester.enterText(dialogFields.at(2), 'Oil pressure fault');
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AppDialog),
-          matching: find.text('Create request'),
-        ),
+      TextFormField<String>? issueField;
+      for (final Element element in formFields.evaluate()) {
+        final TextFormField<String> field =
+            element.widget as TextFormField<String>;
+        if (field.maxLines != null && field.maxLines! >= 3) {
+          issueField = field;
+          break;
+        }
+      }
+      expect(issueField, isNotNull);
+      await tester.enterText(
+        find.byWidget(issueField!),
+        'Oil pressure fault',
       );
+      await tester.tap(find.text('Create request').last);
       await tester.pumpAndSettle();
 
       verify(

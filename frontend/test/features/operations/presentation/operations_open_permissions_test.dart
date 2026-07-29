@@ -265,6 +265,20 @@ void main() {
     );
     expect(
       identical(
+        OperationsOpenAtomPermissions.nextAction,
+        operationsWorkspaceReadRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
+        OperationsOpenAtomPermissions.mutate,
+        operationsMutationRequirement,
+      ),
+      isTrue,
+    );
+    expect(
+      identical(
         OperationsOpenAtomPermissions.report,
         operationsWorkspaceReportRequirement,
       ),
@@ -337,6 +351,7 @@ void main() {
         permissions: <AppPermission>{AppPermissions.operationsRead},
       );
       expect(OperationsOpenAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(OperationsOpenAtomPermissions.nextAction.isAllowed(reader), isTrue);
       expect(OperationsOpenAtomPermissions.write.isAllowed(reader), isFalse);
       expect(OperationsOpenAtomPermissions.assign.isAllowed(reader), isFalse);
       expect(OperationsOpenAtomPermissions.report.isAllowed(reader), isTrue);
@@ -663,10 +678,99 @@ void main() {
         ),
       );
 
+      expect(find.text('Try again'), findsOneWidget);
       expect(find.byType(AppFailureStateView), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets('authorized loading then success on Open', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.listRequests(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<AppPage<OperationsWorkItem>>.success(
+        AppPage<OperationsWorkItem>(
+          items: const <OperationsWorkItem>[_openRequest],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      );
+    });
+    when(() => repository.listAssets(any())).thenAnswer(
+      (_) async => Result<AppPage<OperationsAsset>>.success(
+        AppPage<OperationsAsset>(
+          items: const <OperationsAsset>[_generatorAsset],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => repository.listServiceLogs(any())).thenAnswer(
+      (_) async => const Result<AppPage<OperationsServiceLog>>.success(
+        AppPage<OperationsServiceLog>(
+          items: <OperationsServiceLog>[],
+          request: AppPageRequest(),
+        ),
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/operations?section=open',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/operations',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: OperationsWorkspacePage(
+                initialQuery: OperationsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          operationsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.operationsRead,
+                AppPermissions.operationsWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Loading'), findsWidgets);
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pumpAndSettle();
+    expect(find.text('Generator alarm'), findsOneWidget);
+  });
 
   testWidgets(
     'Open advanced filters omit status (tab owns status)',

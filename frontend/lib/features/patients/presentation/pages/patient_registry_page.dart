@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -211,6 +212,16 @@ class _PatientRegistryContentState
     };
   }
 
+  AccessRequirement get _sectionWriteRequirement {
+    return switch (_section) {
+      PatientRegistrySection.admitted =>
+        PatientAdmittedAtomPermissions.register,
+      PatientRegistrySection.active => PatientActiveAtomPermissions.register,
+      PatientRegistrySection.all ||
+      PatientRegistrySection.balanceDue => patientRegistryWriteRequirement,
+    };
+  }
+
   List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
     final List<PatientDuplicateCandidate> duplicates =
         widget.state.overview.duplicates;
@@ -220,7 +231,11 @@ class _PatientRegistryContentState
 
     return <Widget>[
       AppAccessActionGate(
-        requirement: PatientActiveAtomPermissions.duplicateReview,
+        requirement: switch (_section) {
+          PatientRegistrySection.admitted =>
+            PatientAdmittedAtomPermissions.duplicateReview,
+          _ => PatientActiveAtomPermissions.duplicateReview,
+        },
         builder: (BuildContext context, bool isAllowed) {
           if (!isAllowed) {
             return const SizedBox.shrink();
@@ -242,7 +257,7 @@ class _PatientRegistryContentState
 
   Widget _registerPatientPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
-      requirement: PatientActiveAtomPermissions.register,
+      requirement: _sectionWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         if (!isAllowed) {
           return const SizedBox.shrink();
@@ -1014,7 +1029,12 @@ class _PatientList extends ConsumerWidget {
       },
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
-        await showPatientDetailDialog(context, ref, patient.id);
+        await showPatientDetailDialog(
+          context,
+          ref,
+          patient.id,
+          registrySection: section,
+        );
       },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.patientsEmptyTitle,
@@ -1054,6 +1074,7 @@ List<AppListTableColumn<Patient>> _defaultPatientColumns(
   PatientRegistrySection section,
   AppLocalizations l10n,
 ) {
+  final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
   final Map<String, AppListTableColumn<Patient>> columns =
       _patientColumnDefinitions(context, ref, section, l10n);
   final List<String> ids = switch (section) {
@@ -1074,7 +1095,17 @@ List<AppListTableColumn<Patient>> _defaultPatientColumns(
       'next_action',
     ],
   };
-  return ids.map((String id) => columns[id]!).toList(growable: false);
+  return ids
+      .where((String id) {
+        if (id == 'visit' &&
+            section == PatientRegistrySection.admitted &&
+            !PatientAdmittedAtomPermissions.visitColumn.isAllowed(policy)) {
+          return false;
+        }
+        return true;
+      })
+      .map((String id) => columns[id]!)
+      .toList(growable: false);
 }
 
 List<AppListTableColumn<Patient>> _optionalPatientColumns(
@@ -1083,6 +1114,7 @@ List<AppListTableColumn<Patient>> _optionalPatientColumns(
   PatientRegistrySection section,
   AppLocalizations l10n,
 ) {
+  final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
   final Map<String, AppListTableColumn<Patient>> columns =
       _patientColumnDefinitions(context, ref, section, l10n);
   final List<String> ids = switch (section) {
@@ -1101,7 +1133,17 @@ List<AppListTableColumn<Patient>> _optionalPatientColumns(
       'gender',
     ],
   };
-  return ids.map((String id) => columns[id]!).toList(growable: false);
+  return ids
+      .where((String id) {
+        if (id == 'visit' &&
+            section == PatientRegistrySection.admitted &&
+            !PatientAdmittedAtomPermissions.visitColumn.isAllowed(policy)) {
+          return false;
+        }
+        return true;
+      })
+      .map((String id) => columns[id]!)
+      .toList(growable: false);
 }
 
 Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(

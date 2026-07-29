@@ -231,7 +231,8 @@ abstract final class OperationsAllRequestsAtomPermissions {
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
 /// | Row select → request detail | read | read ∩ |
-/// | Next action Assign | update | write ∩ |
+/// | Next-action column chrome | progressive disclosure | read ∩ |
+/// | Next action Assign | update | write ∩ ([assign] / [mutate]) |
 /// | Detail complementary writes | update | write ∩ |
 /// | Nested create / assign / status / log / notes | create / update | write ∩ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
@@ -239,7 +240,9 @@ abstract final class OperationsAllRequestsAtomPermissions {
 ///
 /// Report uses matrix read ∩ (source inventory "Always" narrowed — note in
 /// tests). Facility ABAC is on route entry only; in-page atoms reuse module +
-/// permission. Matrix nested cross-module rows are _(n/a)_.
+/// permission. Matrix nested cross-module rows are _(n/a)_. Next-action
+/// **column** stays under read ∩; Assign / other write controls still require
+/// [assign] / [mutate] before mount.
 abstract final class OperationsOpenAtomPermissions {
   static const AccessRequirement tab = operationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -255,8 +258,10 @@ abstract final class OperationsOpenAtomPermissions {
       operationsWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
   static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  /// Next-action **column** chrome (progressive disclosure) under read ∩;
+  /// Assign / other write controls still require [assign] / [mutate].
   static const AccessRequirement nextAction =
-      operationsWorkspaceWriteRequirement;
+      operationsWorkspaceReadRequirement;
   static const AccessRequirement create = operationsWorkspaceWriteRequirement;
   static const AccessRequirement update = operationsWorkspaceWriteRequirement;
   static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
@@ -295,16 +300,18 @@ abstract final class OperationsOpenAtomPermissions {
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
 /// | Row select → request detail | read | read ∩ |
-/// | Next action Update status (no asset) | update | write ∩ |
-/// | Next action Add service log (with asset) | update | write ∩ |
+/// | Next action Update status (no asset) | update | write ∩ ([updateStatus]) |
+/// | Next action Add service log (with asset) | update | write ∩ ([serviceLog]) |
 /// | Detail complementary writes | update | write ∩ |
 /// | Nested create / assign / status / log / notes | create / update | write ∩ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
 /// | Route entry (deep link) | navigate | entry ∪ read\|write |
 ///
-/// Report uses matrix read ∩ (source "Always" narrowed — note in tests).
-/// Facility ABAC is on route entry only; in-page atoms reuse module +
-/// permission. Matrix nested cross-module rows are _(n/a)_.
+/// Report uses matrix read ∩ (source inventory "Always" narrowed — note in
+/// tests). Facility ABAC is on route entry only; in-page atoms reuse module +
+/// permission. Matrix nested cross-module rows are _(n/a)_. [nextAction] maps
+/// to write ∩ because this tab's next-actions are stage writes (Update status /
+/// Add service log); unauthorized rows mount nothing ([canMutateOperations]).
 abstract final class OperationsInProgressAtomPermissions {
   static const AccessRequirement tab = operationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
@@ -320,6 +327,7 @@ abstract final class OperationsInProgressAtomPermissions {
       operationsWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = operationsWorkspaceReadRequirement;
   static const AccessRequirement detail = operationsWorkspaceReadRequirement;
+  /// Stage-write next-actions (Update status / Add service log) under write ∩.
   static const AccessRequirement nextAction =
       operationsWorkspaceWriteRequirement;
   static const AccessRequirement create = operationsWorkspaceWriteRequirement;
@@ -327,8 +335,7 @@ abstract final class OperationsInProgressAtomPermissions {
   static const AccessRequirement delete = operationsWorkspaceWriteRequirement;
   static const AccessRequirement write = operationsWorkspaceWriteRequirement;
   static const AccessRequirement mutate = operationsMutationRequirement;
-  static const AccessRequirement createRequest =
-      operationsWorkspaceWriteRequirement;
+  static const AccessRequirement createRequest = operationsWriteRequirement;
   static const AccessRequirement assign = operationsWorkspaceWriteRequirement;
   static const AccessRequirement updateStatus =
       operationsWorkspaceWriteRequirement;
@@ -348,16 +355,21 @@ abstract final class OperationsInProgressAtomPermissions {
 
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
+/// Target: `/operations?section=completed` (completed / cancelled).
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Completed tab | navigate | read ∩ `operations:read` |
 /// | Create request (tab primary) | create | write ∩ `operations:write` |
 /// | Report summary | read | report ∩ `operations:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Status filter | — | absent (tab owns status) |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Success snackbar / form validation | feedback | write ∩ |
 /// | Row select → request detail | read | read ∩ |
-/// | Next action Closeout | update | write ∩ |
+/// | Next-action column chrome | progressive disclosure | read ∩ |
+/// | Next action Closeout (write control) | update | write ∩ ([closeout]) |
+/// | Cancelled non-button copy | read chrome | read ∩ |
 /// | Detail complementary writes | update | write ∩ |
 /// | Nested create / assign / status / log / notes | create / update | write ∩ |
 /// | Nested cross-module read/write | — | _(n/a)_ |
@@ -365,7 +377,9 @@ abstract final class OperationsInProgressAtomPermissions {
 ///
 /// Report uses matrix read ∩ (source "Always" narrowed — note in tests).
 /// Facility ABAC is on route entry only; in-page atoms reuse module +
-/// permission.
+/// permission. Matrix nested cross-module rows are _(n/a)_. Next-action
+/// **column** stays under read ∩; Closeout / other write controls still
+/// require [closeout] / [mutate] before mount.
 abstract final class OperationsCompletedAtomPermissions {
   static const AccessRequirement tab = operationsWorkspaceReadRequirement;
   static const AccessRequirement listChrome =
