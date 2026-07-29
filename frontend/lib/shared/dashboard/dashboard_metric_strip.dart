@@ -76,6 +76,10 @@ class _DashboardMetricCard extends StatelessWidget {
   final DashboardMetricCardData card;
   final bool compact;
 
+  /// Fixed height so the value region can expand and auto-fit type.
+  static const double _compactHeight = 96;
+  static const double _regularHeight = 112;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -83,18 +87,20 @@ class _DashboardMetricCard extends StatelessWidget {
     final bool isActionable = card.onTap != null;
     final double iconBox = compact ? 28 : 32;
     final double iconGlyph = compact ? 16 : 18;
+    final double cardHeight = compact ? _compactHeight : _regularHeight;
     const TextHeightBehavior tightTextHeight = TextHeightBehavior(
       applyHeightToFirstAscent: false,
       applyHeightToLastDescent: false,
     );
 
-    final TextStyle? valueStyle =
-        (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)
-            ?.copyWith(
+    // Aspirational size — FittedBox scales up/down to the value region.
+    final TextStyle valueStyle =
+        (theme.textTheme.displaySmall ?? theme.textTheme.headlineMedium)!
+            .copyWith(
               color: card.accent,
               fontWeight: FontWeight.w600,
-              height: 1.15,
-              letterSpacing: -0.2,
+              height: 1.0,
+              letterSpacing: -0.4,
               leadingDistribution: TextLeadingDistribution.even,
             );
     final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
@@ -104,65 +110,64 @@ class _DashboardMetricCard extends StatelessWidget {
       leadingDistribution: TextLeadingDistribution.even,
     );
 
-    // Stack value above label so both stay readable at 4–6 card densities.
-    // FittedBox scales long currency/ratio strings without ellipsizing to "U…".
-    final Widget textColumn = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            card.value,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.visible,
-            textHeightBehavior: tightTextHeight,
-            style: valueStyle,
-          ),
+    final Widget cardBody = SizedBox(
+      height: cardHeight,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? theme.spacing.sm : theme.spacing.md,
+          vertical: compact ? theme.spacing.sm : theme.spacing.md,
         ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          card.label,
-          maxLines: 2,
-          softWrap: true,
-          overflow: TextOverflow.ellipsis,
-          textHeightBehavior: tightTextHeight,
-          style: labelStyle,
-        ),
-      ],
-    );
-
-    final Widget cardBody = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? theme.spacing.sm : theme.spacing.md,
-        vertical: compact ? theme.spacing.sm : theme.spacing.md,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: iconBox,
-            height: iconBox,
-            alignment: Alignment.center,
-            decoration: dashboardMetricIconDecoration(theme, card.accent),
-            child: Icon(card.icon, color: card.accent, size: iconGlyph),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(child: textColumn),
-          if (isActionable) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.xs),
-              child: Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: iconBox,
+                  height: iconBox,
+                  alignment: Alignment.center,
+                  decoration: dashboardMetricIconDecoration(theme, card.accent),
+                  child: Icon(card.icon, color: card.accent, size: iconGlyph),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    card.label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    textHeightBehavior: tightTextHeight,
+                    style: labelStyle,
+                  ),
+                ),
+                if (isActionable) ...<Widget>[
+                  SizedBox(width: theme.spacing.xs),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                  ),
+                ],
+              ],
+            ),
+            SizedBox(height: theme.spacing.xs),
+            // Value consumes all remaining space; type scales to the box.
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  card.value,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  textHeightBehavior: tightTextHeight,
+                  style: valueStyle,
+                ),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
 

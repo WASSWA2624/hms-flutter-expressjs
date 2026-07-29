@@ -417,6 +417,13 @@ void main() {
         expect(find.textContaining('Facilit…'), findsNothing);
         expect(find.textContaining('Adopti…'), findsNothing);
         expect(find.textContaining('U…'), findsNothing);
+
+        // Value region fills remaining card height; type scales to the box.
+        final Size shortValue = tester.getSize(find.text('128'));
+        final Size longValue = tester.getSize(find.text('UGX1.2M'));
+        expect(shortValue.height, greaterThan(24));
+        expect(longValue.width, greaterThan(40));
+        expect(tester.takeException(), isNull);
       },
     );
   });
