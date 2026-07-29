@@ -10,10 +10,11 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -345,14 +346,7 @@ AccessRequirement emergencyNextActionRequirement(
   AccessRequirement writeRequirement,
 ) {
   if (kind == EmergencyNextActionKind.handoff) {
-    return const AccessRequirement(
-      anyPermissions: <AppPermission>[
-        AppPermissions.emergencyWrite,
-        AppPermissions.patientWrite,
-        AppPermissions.clinicalWrite,
-        AppPermissions.operationsWrite,
-      ],
-    );
+    return emergencyHandoffWriteRequirement;
   }
   return writeRequirement;
 }
@@ -959,13 +953,13 @@ class EmergencyCaseNextActionCell extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: requirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return AppButton.primary(
           label: emergencyNextActionLabel(l10n, kind),
           leadingIcon: emergencyNextActionIcon(kind),
-          enabled: isAllowed,
-          onPressed: isAllowed
-              ? () => unawaited(_run(context, ref, kind))
-              : null,
+          onPressed: () => unawaited(_run(context, ref, kind)),
         );
       },
     );
@@ -1142,15 +1136,6 @@ class EmergencyActionPanel extends ConsumerWidget {
     super.key,
   });
 
-  static const AccessRequirement _handoffRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.emergencyWrite,
-      AppPermissions.patientWrite,
-      AppPermissions.clinicalWrite,
-      AppPermissions.operationsWrite,
-    ],
-  );
-
   final EmergencyCaseDetail detail;
   final EmergencyReferenceData referenceData;
   final AccessRequirement writeRequirement;
@@ -1215,7 +1200,9 @@ class EmergencyActionPanel extends ConsumerWidget {
           icon: Icons.play_arrow_outlined,
           onPressed: () => unawaited(_startTrip(context, referenceData)),
         ),
-      if (hasTrip && omit != EmergencyNextActionKind.completeTrip)
+      if (isOpen &&
+          hasTrip &&
+          omit != EmergencyNextActionKind.completeTrip)
         AppPermissionActionItem(
           requirement: writeRequirement,
           label: EmergencyText.completeTrip,
@@ -1226,7 +1213,7 @@ class EmergencyActionPanel extends ConsumerWidget {
         ),
       if (isOpen && omit != EmergencyNextActionKind.handoff)
         AppPermissionActionItem(
-          requirement: _handoffRequirement,
+          requirement: emergencyHandoffWriteRequirement,
           label: context.l10n.emergencyHandoffAction,
           icon: AppActionIcons.handoff,
           onPressed: () => unawaited(_openHandoffDialog(context)),
@@ -1245,25 +1232,33 @@ class EmergencyActionPanel extends ConsumerWidget {
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: actions,
       extraActions: <Widget>[
-        AppReportActionButton.print(
-          label: EmergencyText.printSummary,
-          onPressed: () async {
-            await printFormTemplateDocument(
-              ref: ref,
-              context: context,
-              title: 'Emergency summary',
-              patientContext: buildPrintFormPatientContext(
-                context.l10n,
-                patientName: detail.summary.displayTitle,
-                patientId:
-                    detail.summary.patientId ?? detail.summary.patientDisplayId,
-              ),
-              contextReference: PrintFormContextReference(
-                label: EmergencyText.caseLabel,
-                value: detail.summary.caseLabel,
-              ),
-              bodyHtml: emergencySummaryHtml(context, detail),
-              includeSignatures: true,
+        AppAccessActionGate(
+          requirement: emergencyWorkspaceReadRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            if (!isAllowed) {
+              return const SizedBox.shrink();
+            }
+            return AppReportActionButton.print(
+              label: EmergencyText.printSummary,
+              onPressed: () async {
+                await printFormTemplateDocument(
+                  ref: ref,
+                  context: context,
+                  title: 'Emergency summary',
+                  patientContext: buildPrintFormPatientContext(
+                    context.l10n,
+                    patientName: detail.summary.displayTitle,
+                    patientId: detail.summary.patientId ??
+                        detail.summary.patientDisplayId,
+                  ),
+                  contextReference: PrintFormContextReference(
+                    label: EmergencyText.caseLabel,
+                    value: detail.summary.caseLabel,
+                  ),
+                  bodyHtml: emergencySummaryHtml(context, detail),
+                  includeSignatures: true,
+                );
+              },
             );
           },
         ),
@@ -1562,10 +1557,18 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
           : EmergencyText.handoffOutcomeDescription,
       actions: <Widget>[
         if (canOpen)
-          AppButton.primary(
-            label: _openInModuleLabel(moduleName),
-            leadingIcon: Icons.open_in_new_outlined,
-            onPressed: () => _openReceivingModule(context),
+          AppAccessActionGate(
+            requirement: emergencyWorkspaceReadRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              if (!isAllowed) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.primary(
+                label: _openInModuleLabel(moduleName),
+                leadingIcon: Icons.open_in_new_outlined,
+                onPressed: () => _openReceivingModule(context),
+              );
+            },
           ),
       ],
       child: Column(
@@ -1781,6 +1784,9 @@ Future<void> openEmergencyDetailDialog(
 
 /// Opens the stage mutation dialog for a deep-linked [panel] without an empty
 /// detail shell in between.
+///
+/// When the user lacks the mutation gate, falls back to read-only detail
+/// (forbidden deep-link write) instead of mounting the write dialog.
 Future<void> openEmergencyFocusedAction(
   BuildContext context,
   WidgetRef ref,
@@ -1805,6 +1811,23 @@ Future<void> openEmergencyFocusedAction(
       fallbackState,
       summary,
       writeRequirement,
+    );
+    return;
+  }
+
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  final AccessRequirement requirement = emergencyNextActionRequirement(
+    kind,
+    writeRequirement,
+  );
+  if (!requirement.isAllowed(policy)) {
+    await openEmergencyDetailDialog(
+      context,
+      ref,
+      fallbackState,
+      summary,
+      writeRequirement,
+      omitNextActionKind: kind,
     );
     return;
   }

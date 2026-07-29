@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
+import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
-  const AccessRequirement writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.emergencyWrite],
-  );
+  const writeRequirement = emergencyWriteRequirement;
 
   Widget wrap(Widget child) {
     return MaterialApp(

@@ -70,7 +70,15 @@ final class EmergencyWorkspaceController
     await _syncVisibleData(plan: plan);
   }
 
-  Future<AppFailure?> refresh() {
+  Future<AppFailure?> refresh() async {
+    if (_currentState == null) {
+      state = const AsyncLoading<Result<EmergencyWorkspaceState>>();
+      state = await AsyncValue.guard(() => _loadInitialState());
+      return state.asData?.value.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+    }
     return _syncVisibleData(showLoading: true, refreshReferenceData: true);
   }
 

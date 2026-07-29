@@ -86,8 +86,14 @@ abstract final class RouteAccessCatalog {
     requirement: opdEntry,
   );
 
+  /// Route entry ∪ matches [AppRoutes.emergency] / Active matrix:
+  /// `emergency:read` | `emergency:write` | `operations:read`.
   static const AccessRequirement emergencyEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.emergencyRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.emergencyRead,
+      AppPermissions.emergencyWrite,
+      AppPermissions.operationsRead,
+    ],
     activeModules: <String>['scheduling-queue'],
     requiresTenantContext: true,
   );

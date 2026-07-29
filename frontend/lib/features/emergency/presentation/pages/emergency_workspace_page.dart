@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dialogs.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -68,10 +68,6 @@ class _EmergencyWorkspaceContent extends ConsumerStatefulWidget {
 
 class _EmergencyWorkspaceContentState
     extends ConsumerState<_EmergencyWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.emergencyWrite],
-  );
-
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<EmergencyCaseSummary>
   _columnVisibilityController;
@@ -151,18 +147,26 @@ class _EmergencyWorkspaceContentState
       return;
     }
 
-    // Panel-focused deep links open the mutation dialog directly (no empty
-    // detail shell). Bare case links open detail with the stage next-action
-    // omitted so it is not duplicated inside Quick Actions.
+    // Panel-focused deep links open the mutation dialog directly when
+    // authorized (no empty detail shell). Insufficient write falls back to
+    // read detail; users without emergency:read see nothing.
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     if (query.panel != EmergencyDetailPanelFocus.none) {
-      await openEmergencyFocusedAction(
-        context,
-        ref,
-        state,
-        target,
-        query.panel,
-        _writeRequirement,
-      );
+      if (emergencyFocusedPanelRequirement(query.panel).isAllowed(policy)) {
+        await openEmergencyFocusedAction(
+          context,
+          ref,
+          state,
+          target,
+          query.panel,
+          emergencyWriteRequirement,
+        );
+        return;
+      }
+      if (!canReadEmergency(policy)) {
+        return;
+      }
+    } else if (!canReadEmergency(policy)) {
       return;
     }
 
@@ -171,7 +175,7 @@ class _EmergencyWorkspaceContentState
       ref,
       state,
       target,
-      _writeRequirement,
+      emergencyWriteRequirement,
       omitNextActionKind: emergencyBoardNextActionKind(
         target,
         tab: _currentTab,
@@ -209,10 +213,37 @@ class _EmergencyWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final EmergencyWorkspaceState state = widget.state;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<EmergencyBoardTab> visibleTabs = emergencyAllowedBoardTabs(
+      accessPolicy,
+    );
+    if (visibleTabs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (!visibleTabs.contains(_currentTab)) {
+      final EmergencyBoardTab fallback = visibleTabs.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleTabs.contains(_currentTab)) {
+          return;
+        }
+        setState(() {
+          _currentTab = fallback;
+          _filterValue = AppSearchBarFilterValue.empty;
+        });
+        _updateUrlForTab(fallback);
+        ref
+            .read(emergencyWorkspaceControllerProvider.notifier)
+            .applyScope(emergencyBoardScopeForTab(fallback));
+      });
+    }
+
     final EmergencyWorkspaceController controller = ref.read(
       emergencyWorkspaceControllerProvider.notifier,
     );
-
+    final bool showNextAction = emergencyBoardShowsNextActionColumn(
+      accessPolicy,
+      _currentTab,
+    );
     final List<EmergencyCaseSummary> rows = _filteredRows(state);
 
     return ResponsivePage(
@@ -224,7 +255,7 @@ class _EmergencyWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final EmergencyBoardTab tab in EmergencyBoardTab.values)
+                for (final EmergencyBoardTab tab in visibleTabs)
                   AppTabItem(
                     id: tab.name,
                     icon: _tabIcon(tab),
@@ -235,7 +266,7 @@ class _EmergencyWorkspaceContentState
               ],
               selectedId: _currentTab.name,
               onTabTapped: (String tabId) {
-                for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
+                for (final EmergencyBoardTab tab in visibleTabs) {
                   if (tab.name == tabId) {
                     setState(() {
                       _currentTab = tab;
@@ -255,12 +286,14 @@ class _EmergencyWorkspaceContentState
               columns: emergencyDefaultColumnsForTab(
                 context,
                 _currentTab,
-                writeRequirement: _writeRequirement,
+                writeRequirement: emergencyWriteRequirement,
+                includeNextAction: showNextAction,
               ),
               columnChoices: emergencyColumnChoicesForTab(
                 context,
                 _currentTab,
-                writeRequirement: _writeRequirement,
+                writeRequirement: emergencyWriteRequirement,
+                includeNextAction: showNextAction,
               ),
               columnVisibilityController: _columnVisibilityController,
               columnVisibilityStorageKey: 'emergency_${_currentTab.name}',
@@ -303,7 +336,7 @@ class _EmergencyWorkspaceContentState
                     ref,
                     state,
                     summary,
-                    _writeRequirement,
+                    emergencyWriteRequirement,
                     omitNextActionKind: emergencyBoardNextActionKind(
                       summary,
                       tab: _currentTab,
@@ -326,7 +359,7 @@ class _EmergencyWorkspaceContentState
                       ref,
                       item,
                       tab: _currentTab,
-                      writeRequirement: _writeRequirement,
+                      writeRequirement: emergencyWriteRequirement,
                     );
                   },
             ),
@@ -340,16 +373,14 @@ class _EmergencyWorkspaceContentState
     if (!emergencyShowsQuickArrival(_currentTab)) {
       return null;
     }
-    return AppAccessActionGate(
-      requirement: _writeRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppTabToolbarPrimary(
-          label: context.l10n.emergencyQuickArrivalAction,
-          icon: Icons.add_circle_outline,
-          enabled: isAllowed,
-          onPressed: () => _openQuickArrivalDialog(context),
-        );
-      },
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    if (!EmergencyAllAtomPermissions.quickArrival.isAllowed(policy)) {
+      return null;
+    }
+    return AppTabToolbarPrimary(
+      label: context.l10n.emergencyQuickArrivalAction,
+      icon: Icons.add_circle_outline,
+      onPressed: () => _openQuickArrivalDialog(context),
     );
   }
 
@@ -507,7 +538,19 @@ List<AppListTableColumn<EmergencyCaseSummary>> emergencyDefaultColumnsForTab(
   BuildContext context,
   EmergencyBoardTab tab, {
   required AccessRequirement writeRequirement,
+  bool includeNextAction = true,
 }) {
+  AppListTableColumn<EmergencyCaseSummary>? nextActionColumn() {
+    if (!includeNextAction) {
+      return null;
+    }
+    return emergencyNextActionColumn(
+      context,
+      tab: tab,
+      writeRequirement: writeRequirement,
+    );
+  }
+
   return switch (tab) {
     EmergencyBoardTab.active ||
     EmergencyBoardTab.all => <AppListTableColumn<EmergencyCaseSummary>>[
@@ -515,44 +558,28 @@ List<AppListTableColumn<EmergencyCaseSummary>> emergencyDefaultColumnsForTab(
       emergencyPriorityColumn(),
       emergencyLocationColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyNextActionColumn(
-        context,
-        tab: tab,
-        writeRequirement: writeRequirement,
-      ),
+      ?nextActionColumn(),
     ],
     EmergencyBoardTab.critical => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
       emergencyPriorityColumn(),
       emergencyArrivalColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyNextActionColumn(
-        context,
-        tab: tab,
-        writeRequirement: writeRequirement,
-      ),
+      ?nextActionColumn(),
     ],
     EmergencyBoardTab.ambulance => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
       emergencyPriorityColumn(),
       emergencyAmbulanceColumn(),
       emergencyAmbulanceWorkflowStatusColumn(context),
-      emergencyNextActionColumn(
-        context,
-        tab: tab,
-        writeRequirement: writeRequirement,
-      ),
+      ?nextActionColumn(),
     ],
     EmergencyBoardTab.handoff => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
       emergencyPriorityColumn(),
       emergencyTriageColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyNextActionColumn(
-        context,
-        tab: tab,
-        writeRequirement: writeRequirement,
-      ),
+      ?nextActionColumn(),
     ],
     EmergencyBoardTab.closed => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
@@ -569,12 +596,14 @@ List<AppListTableColumn<EmergencyCaseSummary>> emergencyColumnChoicesForTab(
   BuildContext context,
   EmergencyBoardTab tab, {
   required AccessRequirement writeRequirement,
+  bool includeNextAction = true,
 }) {
   final Set<String> defaultIds =
       emergencyDefaultColumnsForTab(
             context,
             tab,
             writeRequirement: writeRequirement,
+            includeNextAction: includeNextAction,
           )
           .map((AppListTableColumn<EmergencyCaseSummary> column) => column.id)
           .whereType<String>()
