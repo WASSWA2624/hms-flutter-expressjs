@@ -43,6 +43,8 @@ const {
   retryReportRun,
 } = require('@services/report-run/report-run.service');
 const reportDefinitionService = require('@services/report-definition/report-definition.service');
+const { createReportSchedule } = require('@services/report-schedule/report-schedule.service');
+const reportScheduleRepository = require('@repositories/report-schedule/report-schedule.repository');
 
 const buildRunRecord = (overrides = {}) => ({
   id: 'report-run-123',
@@ -256,6 +258,63 @@ describe('reports workspace billing sections scan', () => {
       downloadReportRun('report-run-123', mutationContext)
     ).rejects.toMatchObject({ statusCode: 404 });
 
+    expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
+  });
+
+  it('create schedule does not post to patient billing ledger', async () => {
+    reportScheduleRepository.create.mockResolvedValue({
+      id: 'report-schedule-123',
+      human_friendly_id: 'RS-001',
+      tenant_id: 'tenant-123',
+      facility_id: 'facility-123',
+      report_definition_id: 'report-definition-123',
+      name: 'Daily census email',
+      status: 'ACTIVE',
+      frequency: 'DAILY',
+      time_of_day: '08:00',
+      timezone: 'UTC',
+      format: 'PDF',
+      retention_days: 30,
+      next_run_at: new Date('2026-03-09T08:00:00.000Z'),
+      created_at: new Date('2026-03-08T08:00:00.000Z'),
+      updated_at: new Date('2026-03-08T08:00:00.000Z'),
+      version: 1,
+    });
+
+    const result = await createReportSchedule(
+      {
+        report_definition_id: 'report-definition-123',
+        name: 'Daily census email',
+        frequency: 'DAILY',
+        format: 'PDF',
+      },
+      mutationContext
+    );
+
+    expect(result.id).toBe('RS-001');
+    expect(reportScheduleRepository.create).toHaveBeenCalled();
+    expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
+  });
+
+  it('run-now replay does not duplicate billing posts', async () => {
+    reportDefinitionRepository.findById.mockResolvedValue(buildDefinitionRecord());
+    enqueueReportRun.mockResolvedValue(buildRunRecord());
+
+    const payload = { format: 'PDF' };
+    await reportDefinitionService.runReportDefinitionNow(
+      'report-definition-123',
+      payload,
+      mutationContext
+    );
+    await reportDefinitionService.runReportDefinitionNow(
+      'report-definition-123',
+      payload,
+      mutationContext
+    );
+
+    expect(enqueueReportRun).toHaveBeenCalledTimes(2);
+    expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
   });
 });

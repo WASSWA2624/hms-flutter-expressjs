@@ -328,6 +328,32 @@ abstract final class HomeDashboardBillingInventory {
         ),
       };
 
+  /// Guided alerts / queue rows that surface billing worklists (read-only).
+  static const Map<String, HomeDashboardBillingAtom> worklistItems =
+      <String, HomeDashboardBillingAtom>{
+        'guided_billing_follow_up': HomeDashboardBillingAtom(
+          id: 'guided_billing_follow_up',
+          label: 'Billing follow-up queue',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'guided_billing_exceptions': HomeDashboardBillingAtom(
+          id: 'guided_billing_exceptions',
+          label: 'Billing follow-up',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+        'guided_overdue_invoices': HomeDashboardBillingAtom(
+          id: 'guided_overdue_invoices',
+          label: 'Overdue invoices',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+      };
+
   /// Every catalogued quick action id declared in [homeActionLibrary].
   static Iterable<String> get cataloguedFinancialQuickActionIds =>
       quickActions.keys;

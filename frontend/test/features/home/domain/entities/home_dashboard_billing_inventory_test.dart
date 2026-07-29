@@ -82,5 +82,45 @@ void main() {
         'pharmacy',
       );
     });
+
+    test('billing worklist items route to Billing queues (read-only)', () {
+      for (final MapEntry<String, HomeDashboardBillingAtom> entry
+          in HomeDashboardBillingInventory.worklistItems.entries) {
+        expect(
+          entry.value.billingRoute.path,
+          AppRoutes.billing.path,
+          reason: entry.key,
+        );
+        expect(entry.value.routeQuery['queue'], isNotNull, reason: entry.key);
+        expect(
+          HomeDashboardBillingInventory.isInlineCollectionForbidden(
+            entry.value.actionClass,
+          ),
+          isFalse,
+          reason: '${entry.key} is navigation-only',
+        );
+      }
+    });
+
+    test('every financial status card id is catalogued', () {
+      const List<String> cardIds = <String>[
+        'collections_today',
+        'billing_exceptions',
+        'billing_pending',
+        'pending_balance_amount',
+        'my_open_bills',
+        'billable_events_to_capture',
+        'pending_approvals',
+        'refunds_today',
+      ];
+
+      for (final String id in cardIds) {
+        expect(
+          HomeDashboardBillingInventory.statusCards.containsKey(id),
+          isTrue,
+          reason: 'Missing status card inventory for $id',
+        );
+      }
+    });
   });
 }

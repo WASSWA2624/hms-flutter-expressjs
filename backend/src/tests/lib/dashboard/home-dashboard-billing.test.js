@@ -77,4 +77,53 @@ describe('home dashboard billing metrics', () => {
       ])
     );
   });
+
+  it('patient portal open bills KPI reads live billing balance (no bypass)', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.PATIENT, {
+      myOpenBills: 3,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'my_open_bills',
+          value: 3,
+          required_permissions: ['billing:read'],
+        }),
+      ])
+    );
+  });
+
+  it('receptionist pending payments KPI requires billing:read', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.RECEPTIONIST, {
+      pendingBalanceAmount: 1500,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'pending_balance_amount',
+          value: 1500,
+          format: 'currency',
+          required_permissions: ['billing:read'],
+        }),
+      ])
+    );
+  });
+
+  it('mortuary billable events KPI requires mortuary:billing_event', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.MORTUARY_STAFF, {
+      billableEventsToCapture: 2,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'billable_events_to_capture',
+          value: 2,
+          required_permissions: ['mortuary:billing_event'],
+        }),
+      ])
+    );
+  });
 });

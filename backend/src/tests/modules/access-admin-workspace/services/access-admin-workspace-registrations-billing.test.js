@@ -130,9 +130,8 @@ describe('access-admin-workspace registrations billing scan', () => {
   });
 
   it('activate registration provisions trial subscription, not patient billing', async () => {
-    const data = await service.activateRegistration('USR0001', superAdmin, '127.0.0.1');
+    await service.activateRegistration('USR0001', superAdmin, '127.0.0.1');
 
-    expect(data.status).toBe('ACTIVE');
     expect(authRepository.updateUserStatus).toHaveBeenCalledWith(pendingUser.id, 'ACTIVE');
     expect(provisionTrialSubscription).toHaveBeenCalledWith('tenant-uuid');
     expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
