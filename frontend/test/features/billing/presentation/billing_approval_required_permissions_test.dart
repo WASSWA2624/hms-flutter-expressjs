@@ -657,20 +657,19 @@ void main() {
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Reject').last);
+      await tester.tap(find.widgetWithText(FilledButton, 'Reject').first);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Reason'), findsWidgets);
 
-      await tester.enterText(find.byType(TextFormField).first, 'Policy hold');
+      final Finder reasonField = find.descendant(
+        of: find.byType(AppDialog).last,
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(reasonField.first, 'Policy hold');
       await tester.pumpAndSettle();
 
-      final Finder submit = find.widgetWithText(FilledButton, 'Reject');
-      if (submit.evaluate().isNotEmpty) {
-        await tester.tap(submit.last);
-      } else {
-        await tester.tap(find.text('Reject').last);
-      }
+      await tester.tap(find.widgetWithText(FilledButton, 'Reject').last);
       await tester.pumpAndSettle();
 
       verify(() => repository.rejectApproval(any(), any())).called(1);

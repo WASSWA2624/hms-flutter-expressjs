@@ -537,6 +537,93 @@ void main() {
       },
     );
 
+    test(
+      'Claims pending next-action column mounts only with claims write ∩',
+      () {
+        final AppAccessPolicy readerWithInsurance = _policyFor(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        );
+        final AppAccessPolicy writerNoInsurance = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final AppAccessPolicy writerWithInsurance = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            readerWithInsurance,
+            BillingQueueType.claimsPending,
+          ),
+          isFalse,
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            writerNoInsurance,
+            BillingQueueType.claimsPending,
+          ),
+          isFalse,
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            writerWithInsurance,
+            BillingQueueType.claimsPending,
+          ),
+          isTrue,
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            writerWithInsurance,
+            BillingQueueType.needsIssue,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('View ledger gates claim/pre-auth via nested claims read ∩', () {
+      const BillingWorkItem claim = BillingWorkItem(
+        id: 'clm',
+        kind: BillingWorkItemKind.claim,
+        status: 'PENDING',
+        patientDisplayId: 'PT-1',
+      );
+      const BillingWorkItem invoice = BillingWorkItem(
+        id: 'inv',
+        kind: BillingWorkItemKind.invoice,
+        billingStatus: 'ISSUED',
+        patientDisplayId: 'PT-2',
+      );
+      final AppAccessPolicy readerWithInsurance = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy readerNoInsurance = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      expect(canViewBillingLedger(readerWithInsurance, claim), isTrue);
+      expect(canViewBillingLedger(readerNoInsurance, claim), isFalse);
+      expect(canViewBillingLedger(readerNoInsurance, invoice), isTrue);
+      expect(canViewBillingLedger(readerWithInsurance, invoice), isTrue);
+    });
+
     test('Awaiting payment atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
@@ -1026,6 +1113,27 @@ void main() {
       );
       expect(
         identical(
+          BillingClaimsPendingAtomPermissions.submit,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.reconcile,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingClaimsPendingAtomPermissions.preAuth,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingClaimsPendingAtomPermissions.create,
           billingClaimsWriteRequirement,
         ),
@@ -1132,8 +1240,50 @@ void main() {
         isFalse,
       );
       expect(
+        BillingClaimsPendingAtomPermissions.submit.isAllowed(
+          readerWithInsurance,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.reconcile.isAllowed(
+          writerNoInsurance,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.preAuth.isAllowed(
+          writerNoInsurance,
+        ),
+        isFalse,
+      );
+      expect(
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(
           writerWithInsurance,
+        ),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.submit.isAllowed(
+          writerWithInsurance,
+        ),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.nestedRead.isAllowed(
+          readerWithInsurance,
+        ),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.nestedRead.isAllowed(
+          writerNoInsurance,
+        ),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.document.isAllowed(
+          readerWithInsurance,
         ),
         isTrue,
       );
