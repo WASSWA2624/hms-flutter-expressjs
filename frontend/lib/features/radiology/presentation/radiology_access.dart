@@ -116,7 +116,7 @@ AccessRequirement radiologySectionTabRequirement(RadiologyDeskSection section) {
     RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.tab,
     RadiologyDeskSection.reporting => RadiologyReportingAtomPermissions.tab,
     RadiologyDeskSection.released => RadiologyReleasedAtomPermissions.tab,
-    RadiologyDeskSection.worklist => radiologyWorkspaceReadRequirement,
+    RadiologyDeskSection.worklist => RadiologyWorklistAtomPermissions.tab,
   };
 }
 
@@ -128,7 +128,7 @@ AccessRequirement radiologyStripCreateRequirement(RadiologyDeskSection section) 
     RadiologyDeskSection.followUps => RadiologyFollowUpsAtomPermissions.create,
     RadiologyDeskSection.reporting => RadiologyReportingAtomPermissions.create,
     RadiologyDeskSection.released => RadiologyReleasedAtomPermissions.create,
-    RadiologyDeskSection.worklist => radiologyRequestImagingRequirement,
+    RadiologyDeskSection.worklist => RadiologyWorklistAtomPermissions.create,
   };
 }
 
@@ -145,7 +145,7 @@ AccessRequirement radiologyStripConfigureRequirement(
       RadiologyReportingAtomPermissions.configure,
     RadiologyDeskSection.released =>
       RadiologyReleasedAtomPermissions.configure,
-    RadiologyDeskSection.worklist => radiologyConfigurationsWriteRequirement,
+    RadiologyDeskSection.worklist => RadiologyWorklistAtomPermissions.configure,
   };
 }
 
@@ -239,6 +239,104 @@ RadiologyDeskSection? radiologyFallbackSection(AppAccessPolicy policy) {
     return RadiologyDeskSection.allOrders;
   }
   return allowed.first;
+}
+
+/// Atom → requirement map for Radiology Worklist
+/// (`/radiology?section=worklist|work`).
+///
+/// Inventory: acquisition worklist board (`RadiologyDeskSection.worklist`).
+/// Nested cross-module matrix rows are _(n/a)_ for strip chrome; request-from-
+/// clinical ∪ is documented via [requestFromClinical] for reuse. Billing holds
+/// use [billingHold] (`billing:read`). Clinical:read alone may view shared
+/// results chrome via [entry] / route fallback but not config/create. Request
+/// imaging / configurations / reporting / release need ∩ `radiology:write`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Worklist strip tab / count | navigate | read ∩ `radiology:read` |
+/// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Billing gate filter | read chrome | billing hold ∩ `billing:read` |
+/// | Empty / loading / error / retry | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
+/// | Orders view / Patients view toggle | navigate | read ∩ |
+/// | Request imaging (primary) | create | write ∩ `radiology:write` |
+/// | Configurations (secondary) | update | write ∩ |
+/// | Row select / Next action → detail | read / navigate | read ∩ |
+/// | Optional billing column | data read | billing hold ∩ |
+/// | Detail payment field | data read | billing hold ∩ |
+/// | Detail Assign / Start / Perform study / Edit request | update | write ∩ |
+/// | Detail Draft / Release / Request+attest / Addendum / Cancel | update / delete | write ∩ |
+/// | Detail Print report | export / read | print ∩ `radiology:read` |
+/// | Nested configurations catalog enable | update | write ∩ |
+/// | Request-from-clinical (cross-module; not strip) | create | clinical radiology ∪ |
+/// | Route entry (deep link) | navigate | ∪ radiology\|clinical\|billing |
+abstract final class RadiologyWorklistAtomPermissions {
+  static const AccessRequirement tab = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement search = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement filters = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement billingFilter =
+      radiologyBillingHoldReadRequirement;
+  static const AccessRequirement settings = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement pagination = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement empty = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement loading = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement retry = radiologyWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = radiologyWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement detail = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement nextAction = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement viewToggle = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement create = radiologyRequestImagingRequirement;
+  static const AccessRequirement update = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement delete = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement write = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement configure =
+      radiologyConfigurationsWriteRequirement;
+  static const AccessRequirement assign = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement startImaging =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement performStudy =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement editRequest =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement draftReport =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement releaseReport =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement requestFinalization =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement attestFinalization =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement addendum = radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement cancelOrder =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement printReport = radiologyPrintReportRequirement;
+  static const AccessRequirement billingHold =
+      radiologyBillingHoldReadRequirement;
+  static const AccessRequirement billingColumn =
+      radiologyBillingHoldReadRequirement;
+  static const AccessRequirement paymentField =
+      radiologyBillingHoldReadRequirement;
+  /// Nested cross-module write — matrix _(n/a)_ on Worklist; reuse clinical ∪.
+  static const AccessRequirement requestFromClinical =
+      radiologyRequestFromClinicalWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      radiologyWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement entry = radiologyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement routeEntry =
+      radiologyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      radiologyWorkspaceCatalogEntryRequirement;
+  static const AccessRequirement read = radiologyWorkspaceReadRequirement;
+}
+
+bool canViewRadiologyWorklistTab(AppAccessPolicy policy) {
+  return RadiologyWorklistAtomPermissions.tab.isAllowed(policy);
 }
 
 /// Atom → requirement map for Radiology All orders
