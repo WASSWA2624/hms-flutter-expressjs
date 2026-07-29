@@ -186,15 +186,18 @@ class _AccessAdminWorkspaceContentState
         state.query.panel == AccessAdminPanel.permissions;
     final bool isRegistrationsPanel =
         state.query.panel == AccessAdminPanel.registrations;
+    final bool isDemoPanel = state.query.panel == AccessAdminPanel.demo;
     final bool canReadRoles = canReadAccessAdminRoles(policy);
     final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
     final bool canReadPermissions = canReadAccessAdminPermissions(policy);
     final bool canReadRegistrations = canReadAccessAdminRegistrations(policy);
+    final bool canReadDemo = canReadAccessAdminDemo(policy);
     final bool hideFilteredPanelWorklist =
         (isRolesPanel && !canReadRoles) ||
         (isEntitlementsPanel && !canReadEntitlements) ||
         (isPermissionsPanel && !canReadPermissions) ||
-        (isRegistrationsPanel && !canReadRegistrations);
+        (isRegistrationsPanel && !canReadRegistrations) ||
+        (isDemoPanel && !canReadDemo);
 
     _ensureAuthorizedPanel(controller, state, policy);
 

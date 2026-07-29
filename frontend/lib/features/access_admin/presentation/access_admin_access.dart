@@ -297,21 +297,28 @@ abstract final class AccessAdminRolesAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Demo tab | navigate | read ∪ |
+/// | Demo tab | navigate / progressive-disclosure | read ∪ |
 /// | Search / filters / columns / pagination | read chrome | read ∪ |
 /// | Empty / error / retry | read chrome | read ∪ |
 /// | Row select → detail | read | read ∪ |
 /// | Create user | create | write ∩ + canWrite |
 /// | Activate / Deactivate | update | write ∩ + canWrite |
 /// | Reset demo password | update | write ∩ + canResetDemoPasswords |
+/// | Delete | delete | write ∩ (matrix; no delete UI on Demo today) |
 /// | Open HR profile | navigate | linked profile (nested n/a) |
 /// | Detail Close | progressive-disclosure | read ∪ |
+/// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
+/// `tenant:admin` is applied via [canWriteAccessAdmin] /
+/// [canResetDemoPasswordAccessAdmin]. Same write gate as Directory.
 abstract final class AccessAdminDemoAtomPermissions {
   static const AccessRequirement tab = accessAdminDemoReadRequirement;
   static const AccessRequirement listChrome = accessAdminDemoReadRequirement;
   static const AccessRequirement detail = accessAdminDemoReadRequirement;
   static const AccessRequirement create = accessAdminCreateRequirement;
   static const AccessRequirement update = accessAdminUpdateRequirement;
+  static const AccessRequirement delete = accessAdminDeleteRequirement;
   static const AccessRequirement write = accessAdminWriteRequirement;
 }
 

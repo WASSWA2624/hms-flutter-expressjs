@@ -102,6 +102,21 @@ void _stubWorkspace(
       data ?? _demoData(),
     ),
   );
+  when(
+    () => repository.getUserDetail(
+      any(),
+      tenantId: any(named: 'tenantId'),
+      facilityId: any(named: 'facilityId'),
+    ),
+  ).thenAnswer(
+    (_) async => Result<AccessAdminUserDetail>.success(
+      AccessAdminUserDetail(
+        item: (data ?? _demoData()).items.isNotEmpty
+            ? (data ?? _demoData()).items.first
+            : _demoUser,
+      ),
+    ),
+  );
 }
 
 Future<void> _pumpDemo(
@@ -292,6 +307,20 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        identical(
+          AccessAdminDemoAtomPermissions.delete,
+          accessAdminDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDemoAtomPermissions.write,
+          accessAdminWriteRequirement,
+        ),
+        isTrue,
+      );
       expect(accessAdminModuleLabel, 'access administration');
     });
 
@@ -313,6 +342,10 @@ void main() {
     test('nested cross-module rows are n/a for Demo matrix', () {
       // Inventory Open HR is staffProfileId-only; matrix nested rows are n/a.
       expect(AccessAdminDemoAtomPermissions.write.allPermissions, isNotEmpty);
+      expect(
+        AccessAdminDemoAtomPermissions.delete.allPermissions,
+        AccessAdminDemoAtomPermissions.write.allPermissions,
+      );
     });
   });
 
@@ -392,7 +425,26 @@ void main() {
 
         expect(find.text(l10n.accessAdminPanelDemo), findsOneWidget);
         expect(find.text('Demo Nurse'), findsWidgets);
+        // Elevated SUPER_ADMIN qualifies write via canWriteAccessAdmin.
         expect(find.text(l10n.accessAdminCreateUserAction), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'missing admin permissions: workspace gate hides Demo surface',
+      (WidgetTester tester) async {
+        final AppAccessPolicy none = _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          roles: const <String>['DOCTOR'],
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: none,
+        );
+
+        expect(find.text('Demo Nurse'), findsNothing);
+        expect(find.byType(AppTabStrip), findsNothing);
       },
     );
 
@@ -417,6 +469,91 @@ void main() {
         expect(find.text('Demo Nurse'), findsWidgets);
         expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
         expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Reset demo password present when write ∩ + backend reset flag',
+      (WidgetTester tester) async {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: tenant,
+          data: _demoData(canWrite: true, canResetDemoPasswords: true),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        await tester.tap(find.text('Demo Nurse').first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.accessAdminResetDemoPasswordAction),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Reset demo password absent without backend reset flag (∩ write alone)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: tenant,
+          data: _demoData(canWrite: true, canResetDemoPasswords: false),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        await tester.tap(find.text('Demo Nurse').first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.accessAdminResetDemoPasswordAction),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'Reset demo password absent for facility:admin (∩ denial)',
+      (WidgetTester tester) async {
+        final AppAccessPolicy facilityOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.facilityAdmin},
+          roles: const <String>['FACILITY_ADMIN'],
+        );
+        await _pumpDemo(
+          tester,
+          repository: repository,
+          policy: facilityOnly,
+          data: _demoData(canWrite: true, canResetDemoPasswords: true),
+        );
+
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
+
+        await tester.tap(find.text('Demo Nurse').first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.accessAdminResetDemoPasswordAction),
+          findsNothing,
+        );
       },
     );
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -69,6 +71,7 @@ AppAccessPolicy _policy({
   List<String> roles = const <String>['TENANT_ADMIN'],
   String? tenantId = 'tenant-1',
   String? facilityId = 'facility-1',
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[],
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -83,6 +86,7 @@ AppAccessPolicy _policy({
             AppPermissions.tenantAdmin,
             AppPermissions.facilityAdmin,
           },
+      moduleEntitlements: modules,
       isAuthorizationHydrated: true,
     ),
   );
@@ -176,6 +180,15 @@ void main() {
       );
       expect(canReadAccessAdminDirectory(facilityOnly), isTrue);
       expect(accessAdminDirectoryReadRequirement.isAllowed(facilityOnly), isTrue);
+      expect(
+        AccessAdminDirectoryAtomPermissions.tab.isAllowed(facilityOnly),
+        isTrue,
+      );
+      expect(
+        accessAdminAllowedPanels(facilityOnly)
+            .contains(AccessAdminPanel.directory),
+        isTrue,
+      );
     });
 
     test('∪ read: system:admin alone satisfies directory read', () {
@@ -206,6 +219,18 @@ void main() {
         isFalse,
       );
       expect(accessAdminWriteRequirement.isAllowed(facilityOnly), isFalse);
+      expect(
+        AccessAdminDirectoryAtomPermissions.create.isAllowed(facilityOnly),
+        isFalse,
+      );
+      expect(
+        AccessAdminDirectoryAtomPermissions.update.isAllowed(facilityOnly),
+        isFalse,
+      );
+      expect(
+        AccessAdminDirectoryAtomPermissions.delete.isAllowed(facilityOnly),
+        isFalse,
+      );
     });
 
     test('∩ write: tenant:admin + workspace canWrite allows write', () {
@@ -214,6 +239,10 @@ void main() {
       );
       expect(canWriteAccessAdmin(tenant, workspaceCanWrite: true), isTrue);
       expect(canWriteAccessAdmin(tenant, workspaceCanWrite: false), isFalse);
+      expect(
+        AccessAdminDirectoryAtomPermissions.create.isAllowed(tenant),
+        isTrue,
+      );
     });
 
     test('ABAC: missing tenant context denies read requirement', () {
@@ -239,6 +268,55 @@ void main() {
       expect(
         accessAdminAllowedPanels(elevated)
             .contains(AccessAdminPanel.registrations),
+        isTrue,
+      );
+    });
+
+    test(
+      'subscription commercial modules do not gate admin keys (platform)',
+      () {
+        final AppAccessPolicy tenant = _policy(
+          permissions: <AppPermission>{AppPermissions.tenantAdmin},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        expect(canReadAccessAdminDirectory(tenant), isTrue);
+        expect(canWriteAccessAdmin(tenant, workspaceCanWrite: true), isTrue);
+        expect(accessAdminModuleLabel, 'access administration');
+        expect(accessAdminActiveModule, 'access_admin');
+      },
+    );
+
+    test('route integration accepts any admin ∪ key', () {
+      final AppAccessPolicy facilityOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.facilityAdmin},
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+      expect(canAccessShellRoute(AppRoutes.accessAdmin, facilityOnly), isTrue);
+      expect(
+        canAccessShellRoute(
+          AppRoutes.accessAdmin,
+          _policy(permissions: <AppPermission>{AppPermissions.clinicalRead}),
+        ),
+        isFalse,
+      );
+    });
+
+    test('nested cross-module rows are n/a for Directory matrix', () {
+      // Inventory Open HR is staffProfileId-only; matrix nested rows are n/a.
+      expect(
+        AccessAdminDirectoryAtomPermissions.create.allPermissions,
+        isNotEmpty,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.create,
+          accessAdminCreateRequirement,
+        ),
         isTrue,
       );
     });
@@ -269,6 +347,34 @@ void main() {
         identical(
           accessAdminDirectoryReadRequirement,
           accessAdminWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.tab,
+          accessAdminDirectoryReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.create,
+          accessAdminCreateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.update,
+          accessAdminUpdateRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          AccessAdminDirectoryAtomPermissions.delete,
+          accessAdminDeleteRequirement,
         ),
         isTrue,
       );
@@ -528,6 +634,30 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
+    testWidgets('mobile viewport: writer sees Create + Deactivate', (
+      WidgetTester tester,
+    ) async {
+      final AppAccessPolicy tenant = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      await _pumpDirectory(
+        tester,
+        repository: repository,
+        policy: tenant,
+        data: _directoryData(canWrite: true),
+        viewport: const Size(390, 844),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
+      expect(find.text(l10n.accessAdminCreateUserAction), findsOneWidget);
+      expect(find.text(l10n.accessAdminDeactivateAction), findsWidgets);
+      expect(find.text('Ada Lovelace'), findsWidgets);
+    });
+
     testWidgets('dark theme: authorized Directory atoms remain visible', (
       WidgetTester tester,
     ) async {
@@ -635,6 +765,27 @@ void main() {
           .toList();
 
       expect(ids, isNot(contains('next_action')));
+    });
+
+    testWidgets('includes next_action column when canWrite is true', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(wrap(const SizedBox.shrink()));
+      final BuildContext context = tester.element(find.byType(SizedBox));
+
+      final List<String> ids = accessAdminDefaultColumns(
+            context,
+            resource: AccessAdminResource.users,
+            canWrite: true,
+            onUserStatusToggle: (_) async {},
+            onRoleEdit: (_) {},
+            onRegistrationActivate: (_) async {},
+          )
+          .map((AppListTableColumn<AccessAdminItem> column) => column.id)
+          .whereType<String>()
+          .toList();
+
+      expect(ids, contains('next_action'));
     });
   });
 }
