@@ -23,6 +23,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
+<<<<<<< Updated upstream
   testWidgets(
     'renders flat workspace with module Open and Create for facility:admin',
     (WidgetTester tester) async {
@@ -51,6 +52,9 @@ void main() {
   );
 
   testWidgets('omits Open when module cannot be read', (
+=======
+  testWidgets('renders flattened workspace with module Open as sole entry', (
+>>>>>>> Stashed changes
     WidgetTester tester,
   ) async {
     await _pumpWorkspace(
@@ -67,9 +71,46 @@ void main() {
     );
 
     expect(find.text('Tenant'), findsWidgets);
+<<<<<<< Updated upstream
     expect(find.text('Open'), findsNothing);
     expect(find.text('Create'), findsNothing);
     expect(find.text('Unavailable'), findsNothing);
+=======
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Create'), findsOneWidget);
+
+    // Nested overview/setup/modules shell and parallel shortcuts removed.
+    expect(find.text('Context summary'), findsNothing);
+    expect(find.text('Quick actions'), findsNothing);
+    expect(find.text('Create Tenant'), findsNothing);
+  });
+
+  testWidgets('checklist is status-only; modules own Open and Create', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        overrides: [
+          settingsWorkspaceRepositoryProvider.overrideWithValue(
+            _FakeSettingsWorkspaceRepository(
+              workspace: _workspace(SettingsWorkspaceStatus.ready),
+              referenceData: _referenceData(),
+            ),
+          ),
+        ],
+        child: const SettingsWorkspaceSection(),
+      ),
+      size: const Size(1280, 1200),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Setup checklist'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Create'), findsOneWidget);
+    expect(find.text('Quick actions'), findsNothing);
+    expect(find.text('Manage tenants'), findsNothing);
+>>>>>>> Stashed changes
   });
 
   testWidgets(

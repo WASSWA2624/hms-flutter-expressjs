@@ -7,9 +7,12 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+<<<<<<< Updated upstream
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+=======
+>>>>>>> Stashed changes
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
 import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
@@ -569,6 +572,23 @@ String _labelForKey(AppLocalizations l10n, String key) {
   };
 }
 
+<<<<<<< Updated upstream
+=======
+IconData _checklistEntityIcon(String entityKey) {
+  return switch (entityKey) {
+    'tenant' => Icons.business_outlined,
+    'facility' => Icons.local_hospital_outlined,
+    'department' => Icons.folder_outlined,
+    'ward' => Icons.home_outlined,
+    'bed' => Icons.bed_outlined,
+    'user' => Icons.person_outline,
+    'role' => Icons.shield_outlined,
+    'permission' => Icons.key_outlined,
+    _ => Icons.layers_outlined,
+  };
+}
+
+>>>>>>> Stashed changes
 String? _mappedSettingsRoute(String? backendRoute) {
   if (backendRoute == null || backendRoute.trim().isEmpty) {
     return null;

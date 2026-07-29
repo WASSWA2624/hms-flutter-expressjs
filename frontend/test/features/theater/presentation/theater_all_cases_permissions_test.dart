@@ -40,7 +40,6 @@ const TheaterCase _scheduledCase = TheaterCase(
   status: 'SCHEDULED',
   workflowStage: 'PRE_OP',
   checklistTotal: 2,
-  checklistCompleted: 0,
 );
 
 const TheaterCase _readyScheduledCase = TheaterCase(
@@ -838,10 +837,10 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
 
       listCompleter.complete(
-        Result<AppPage<TheaterCase>>.success(
+        const Result<AppPage<TheaterCase>>.success(
           AppPage<TheaterCase>(
-            items: const <TheaterCase>[_scheduledCase],
-            request: const AppPageRequest(pageSize: 12),
+            items: <TheaterCase>[_scheduledCase],
+            request: AppPageRequest(pageSize: 12),
             totalItemCount: 1,
           ),
         ),
@@ -884,7 +883,6 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       ),
-      physicalSize: const Size(1440, 900),
     );
 
     expect(find.text('All Cases Patient'), findsOneWidget);
@@ -904,7 +902,6 @@ void main() {
           AppPermissions.clinicalWrite,
         },
       ),
-      themeMode: ThemeMode.light,
     );
 
     expect(find.text('All Cases Patient'), findsOneWidget);
