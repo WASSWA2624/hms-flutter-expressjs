@@ -517,6 +517,8 @@ Future<void> _runBillingNextAction(
   if (!billingNextActionIsAllowed(policy, item)) {
     return;
   }
+  // Select before mutation dialogs that operate on the workspace selection.
+  ref.read(billingWorkspaceControllerProvider.notifier).selectItem(item);
   if (item.canApproveOrReject) {
     await _showApproveDialog(context, ref);
     return;

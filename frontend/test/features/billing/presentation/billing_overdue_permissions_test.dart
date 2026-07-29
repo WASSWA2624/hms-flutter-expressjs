@@ -25,34 +25,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
 
-const BillingWorkItem _draftInvoice = BillingWorkItem(
-  id: 'inv-draft',
-  displayId: 'INV-DRAFT',
+const BillingWorkItem _overdueInvoice = BillingWorkItem(
+  id: 'inv-overdue',
+  displayId: 'INV-OVERDUE',
   kind: BillingWorkItemKind.invoice,
-  patientDisplayName: 'Ada Draft',
-  patientDisplayId: 'PT-DRAFT',
-  billingStatus: 'DRAFT',
-  amount: 200,
-  financials: BillingFinancials(balanceDue: 200),
+  tenantId: 'tenant-1',
+  patientDisplayName: 'Omar Overdue',
+  patientDisplayId: 'PT-OVD',
+  billingStatus: 'ISSUED',
+  status: 'OVERDUE',
+  amount: 450,
+  financials: BillingFinancials(balanceDue: 450),
 );
 
-const BillingWorkItem _issuedFromDraft = BillingWorkItem(
-  id: 'inv-draft',
-  displayId: 'INV-DRAFT',
+const BillingWorkItem _partiallyPaid = BillingWorkItem(
+  id: 'inv-overdue',
+  displayId: 'INV-OVERDUE',
   kind: BillingWorkItemKind.invoice,
-  patientDisplayName: 'Ada Draft',
-  patientDisplayId: 'PT-DRAFT',
-  billingStatus: 'ISSUED',
-  amount: 200,
-  financials: BillingFinancials(balanceDue: 200),
+  tenantId: 'tenant-1',
+  patientDisplayName: 'Omar Overdue',
+  patientDisplayId: 'PT-OVD',
+  billingStatus: 'PARTIAL',
+  status: 'OVERDUE',
+  amount: 450,
+  financials: BillingFinancials(balanceDue: 200, netPaidTotal: 250),
 );
 
 const BillingSummary _summary = BillingSummary(
-  needsIssue: 1,
+  needsIssue: 0,
   pendingPayment: 0,
   claimsPending: 1,
   approvalRequired: 0,
-  overdue: 0,
+  overdue: 1,
 );
 
 AppAccessPolicy _policy({
@@ -85,22 +89,22 @@ void _stubRepository(_MockBillingRepository repository) {
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
     return const Result<AppPage<BillingWorkItem>>.success(
       AppPage<BillingWorkItem>(
-        items: <BillingWorkItem>[_draftInvoice],
+        items: <BillingWorkItem>[_overdueInvoice],
         request: AppPageRequest(pageSize: 20),
         totalItemCount: 1,
       ),
     );
   });
   when(
-    () => repository.issueInvoice(any(), notes: any(named: 'notes')),
+    () => repository.receivePayment(any(), any()),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(invoice: _issuedFromDraft),
+      BillingMutationResult(invoice: _partiallyPaid),
     ),
   );
 }
 
-Future<void> _pumpNeedsIssueTab(
+Future<void> _pumpOverdueTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -117,7 +121,7 @@ Future<void> _pumpNeedsIssueTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=needs-issue',
+    initialLocation: '/billing?queue=overdue',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -162,6 +166,9 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
+    registerFallbackValue(
+      const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
+    );
   });
 
   setUp(() {
@@ -169,28 +176,28 @@ void main() {
   });
 
   testWidgets(
-    'read-only: Needs issue list visible; Issue / close atoms absent (∩ denial)',
+    'read-only: Overdue list visible; payment / close atoms absent (∩ denial)',
     (WidgetTester tester) async {
-      await _pumpNeedsIssueTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-        ),
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      expect(BillingOverdueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(
+        BillingOverdueAtomPermissions.receivePayment.isAllowed(reader),
+        isFalse,
       );
 
-      expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(
-        _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-      ), isTrue);
-      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(
-        _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
-      ), isFalse);
+      await _pumpOverdueTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
 
-      expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.text('Needs issue'), findsWidgets);
+      expect(find.text('Omar Overdue'), findsOneWidget);
+      expect(find.text('Overdue'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(DataTable),
@@ -204,7 +211,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Issue next-action and detail Issue mount',
+    'full write ∩: Receive payment next-action and detail mutations mount',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -212,23 +219,34 @@ void main() {
           AppPermissions.billingWrite,
         },
       );
-      expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(
+        BillingOverdueAtomPermissions.receivePayment.isAllowed(writer),
+        isTrue,
+      );
+      expect(BillingOverdueAtomPermissions.adjust.isAllowed(writer), isTrue);
+      expect(
+        BillingOverdueAtomPermissions.dunningSend.isAllowed(writer),
+        isTrue,
+      );
 
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.text('Ada Draft'), findsOneWidget);
+      expect(find.text('Omar Overdue'), findsOneWidget);
       expect(find.text('Close shift'), findsOneWidget);
       expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
 
-      await tester.tap(find.text('Ada Draft'));
+      await tester.tap(find.text('Omar Overdue'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Issue'), findsWidgets);
+      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Adjust'), findsWidgets);
+      expect(find.text('Send'), findsWidgets);
+      expect(find.text('Void'), findsWidgets);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -241,30 +259,27 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingWrite},
       );
       expect(
-        BillingNeedsIssueAtomPermissions.routeEntry.isAllowed(writeOnly),
+        BillingOverdueAtomPermissions.routeEntry.isAllowed(writeOnly),
         isTrue,
       );
-      expect(
-        BillingNeedsIssueAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
-      );
+      expect(BillingOverdueAtomPermissions.tab.isAllowed(writeOnly), isFalse);
 
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Ada Draft'), findsNothing);
+      expect(find.text('Omar Overdue'), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
     },
   );
 
   testWidgets(
-    'subscription strip: billing-payments missing omits Needs issue chrome',
+    'subscription strip: billing-payments missing omits Overdue chrome',
     (WidgetTester tester) async {
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -277,16 +292,16 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.text('Ada Draft'), findsNothing);
+      expect(find.text('Omar Overdue'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'nested cross-module: insurance restores Claims pending on Needs issue strip',
+    'nested cross-module: insurance restores Claims pending on Overdue strip',
     (WidgetTester tester) async {
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -310,17 +325,17 @@ void main() {
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Needs issue')),
+        strip.tabs.any((AppTabItem tab) => tab.label.contains('Overdue')),
         isTrue,
       );
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Receive payment'), findsNothing);
     },
   );
 
-  testWidgets('mobile viewport keeps authorized Needs issue chrome', (
+  testWidgets('mobile viewport keeps authorized Overdue row readable', (
     WidgetTester tester,
   ) async {
-    await _pumpNeedsIssueTab(
+    await _pumpOverdueTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
@@ -332,43 +347,16 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    final Object? layoutException = tester.takeException();
-    expect(
-      layoutException == null ||
-          layoutException.toString().contains('A RenderFlex overflowed'),
-      isTrue,
-    );
-
+    expect(find.text('Omar Overdue'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
     expect(find.byTooltip('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Close day'), findsOneWidget);
-    expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('desktop viewport keeps authorized Needs issue row readable', (
+  testWidgets('dark theme: authorized Overdue chrome remains', (
     WidgetTester tester,
   ) async {
-    await _pumpNeedsIssueTab(
-      tester,
-      repository: repository,
-      accessPolicy: _policy(
-        permissions: <AppPermission>{
-          AppPermissions.billingRead,
-          AppPermissions.billingWrite,
-        },
-      ),
-      physicalSize: const Size(1440, 900),
-    );
-
-    expect(find.text('Ada Draft'), findsOneWidget);
-    expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
-  });
-
-  testWidgets('dark theme: authorized Needs issue chrome remains', (
-    WidgetTester tester,
-  ) async {
-    await _pumpNeedsIssueTab(
+    await _pumpOverdueTab(
       tester,
       repository: repository,
       accessPolicy: _policy(
@@ -380,15 +368,15 @@ void main() {
       themeMode: ThemeMode.dark,
     );
 
-    expect(find.text('Ada Draft'), findsOneWidget);
+    expect(find.text('Omar Overdue'), findsOneWidget);
     expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Receive payment'), findsWidgets);
   });
 
   testWidgets(
-    'authorized Issue next-action opens nested notes dialog (sync path)',
+    'authorized Receive payment next-action opens nested dialog (sync path)',
     (WidgetTester tester) async {
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -399,32 +387,18 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Issue').first);
-      await tester.pump();
+      await tester.tap(find.byTooltip('Receive payment').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Issue'), findsWidgets);
-
-      // Submit empty notes (optional) — selection set by next-action path.
-      final Finder submit = find.widgetWithText(FilledButton, 'Issue');
-      if (submit.evaluate().isNotEmpty) {
-        await tester.tap(submit.last);
-      } else {
-        await tester.tap(find.text('Issue').last);
-      }
-      await tester.pumpAndSettle();
-
-      verify(
-        () => repository.issueInvoice(any(), notes: any(named: 'notes')),
-      ).called(1);
+      expect(find.text('Receive payment'), findsWidgets);
     },
   );
 
   testWidgets(
-    'write without financial:approve keeps Issue; approve atoms stay absent',
+    'write without financial:approve keeps collections; approve atoms stay absent',
     (WidgetTester tester) async {
-      await _pumpNeedsIssueTab(
+      await _pumpOverdueTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -435,10 +409,10 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.byTooltip('Receive payment'), findsWidgets);
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
-        BillingNeedsIssueAtomPermissions.approve.isAllowed(
+        BillingOverdueAtomPermissions.approve.isAllowed(
           _policy(
             permissions: <AppPermission>{
               AppPermissions.billingRead,

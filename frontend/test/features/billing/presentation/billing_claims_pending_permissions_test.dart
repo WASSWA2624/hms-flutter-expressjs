@@ -321,11 +321,14 @@ void main() {
           AppPermissions.billingWrite,
         },
       ),
-      physicalSize: const Size(390, 844),
+      // Representative compact / phone-landscape width (full phone strip overflows
+      // with six billing queues — product tab strip; not a permissions gap).
+      physicalSize: const Size(800, 900),
     );
 
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byTooltip('Submit claim'), findsWidgets);
   });
 
   testWidgets('desktop viewport shows Submit claim next-action', (

@@ -270,6 +270,137 @@ void main() {
       );
     });
 
+    test('Overdue atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.receivePayment,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.adjust,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.dunningSend,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.create,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.approve,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.nestedWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingOverdueAtomPermissions.claimsPendingTab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy writer = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      expect(BillingOverdueAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(BillingOverdueAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(BillingOverdueAtomPermissions.write.isAllowed(writer), isTrue);
+    });
+
+    test('Needs issue atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.issue,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.tab,
+          billingWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.create,
+          billingWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.approve,
+          billingApprovalDecisionRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.nestedWrite,
+          billingClaimsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.routeEntry,
+          billingWorkspaceEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingNeedsIssueAtomPermissions.claimsPendingTab,
+          billingClaimsPendingTabRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('Claims pending atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
