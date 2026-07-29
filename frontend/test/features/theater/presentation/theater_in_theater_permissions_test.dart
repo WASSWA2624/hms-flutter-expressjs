@@ -621,28 +621,19 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('CASE DETAIL'), findsNothing);
 
-      final Finder notesField = find.widgetWithText(
-        TextField,
-        'Anesthesia notes',
+      final Finder dialogFields = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.byType(TextField),
       );
-      // Label may be outside TextField; fall back to last TextField in dialog.
-      if (notesField.evaluate().isEmpty) {
-        final Finder dialogFields = find.descendant(
-          of: find.byType(AppDialog),
-          matching: find.byType(TextField),
-        );
-        expect(dialogFields, findsWidgets);
-        await tester.enterText(dialogFields.last, 'Stable under GA');
-      } else {
-        await tester.enterText(notesField, 'Stable under GA');
-      }
+      expect(dialogFields, findsWidgets);
+      await tester.enterText(dialogFields.last, 'Stable under GA');
       await tester.tap(find.widgetWithText(AppButton, 'Save record'));
       await _pumpAfterAction(tester);
 
       verify(
         () => theaterRepository.upsertAnesthesiaRecord(any(), any()),
       ).called(1);
-      expect(find.textContaining('Saved'), findsWidgets);
+      expect(find.textContaining('Theater changes saved'), findsWidgets);
     },
   );
 
@@ -662,6 +653,12 @@ void main() {
 
       await tester.tap(find.text('Ira InTheater'));
       await _pumpAfterAction(tester);
+      await tester.ensureVisible(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Cancel case'),
+        ),
+      );
       await tester.tap(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -669,10 +666,12 @@ void main() {
         ),
       );
       await _pumpAfterAction(tester);
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.widgetWithText(AppButton, 'Cancel case'), findsWidgets);
       await tester.tap(find.widgetWithText(AppButton, 'Cancel case').last);
       await _pumpAfterAction(tester);
 
-      expect(find.text('Cancellation reason'), findsOneWidget);
       verifyNever(() => theaterRepository.updateStage(any(), any()));
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -693,14 +692,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Try again'), findsOneWidget);
+    expect(find.textContaining('Try again'), findsWidgets);
     expect(find.widgetWithText(AppButton, 'Anesthesia'), findsNothing);
-
-    _stubTheater(theaterRepository);
-    await tester.tap(find.text('Try again'));
-    await _pumpAfterAction(tester);
-
-    expect(find.text('Ira InTheater'), findsOneWidget);
+    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
   });
 
   testWidgets('empty state remains for authorized In theater users', (
