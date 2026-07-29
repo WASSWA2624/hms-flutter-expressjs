@@ -230,9 +230,11 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 /// | Nested prepare / submit / record dialogs | create / update | write ∩ |
 /// | Nested close-as-paid dialog | approve | financial:approve ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
+/// | Next-action column chrome | progressive disclosure | write ∪ approve |
 ///
-/// Nested cross-module matrix rows are _(n/a)_. Settlement uses
-/// [claimsFinancialApproveRequirement] (source inventory), not write alone.
+/// Nested cross-module matrix rows are _(n/a)_ — no Settled-style export ∪
+/// on this tab. Settlement uses [claimsFinancialApproveRequirement] (source
+/// inventory), not write alone.
 abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
@@ -242,6 +244,9 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement delete = claimsWorkspaceWriteRequirement;
   static const AccessRequirement write = claimsWorkspaceWriteRequirement;
   static const AccessRequirement prepare = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement submit = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement resubmit = claimsWorkspaceWriteRequirement;
+  static const AccessRequirement recordResponse = claimsWorkspaceWriteRequirement;
   static const AccessRequirement sync = claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement closeAsPaid = claimsFinancialApproveRequirement;

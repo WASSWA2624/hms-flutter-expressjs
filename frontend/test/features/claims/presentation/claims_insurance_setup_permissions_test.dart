@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -13,6 +15,7 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
@@ -25,6 +28,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClaimsRepository extends Mock implements ClaimsRepository {}
 
+class _MockApiClient extends Mock implements ApiClient {}
+
 const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   authorizationPendingCount: 0,
   authorizationApprovedCount: 0,
@@ -32,6 +37,26 @@ const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   approvedClaimsCount: 0,
   paidClosedCount: 0,
 );
+
+AuthSession _session({
+  required Set<AppPermission> permissions,
+  List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
+    AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+    AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+  ],
+}) {
+  return AuthSession(
+    tokens: SessionTokens(accessToken: 'access-token'),
+    user: const AuthUserProfile(
+      roles: <String>['BILLING'],
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+    ),
+    permissions: permissions,
+    moduleEntitlements: modules,
+    isAuthorizationHydrated: true,
+  );
+}
 
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
@@ -41,12 +66,7 @@ AppAccessPolicy _policy({
   ],
 }) {
   return AppAccessPolicy.fromSession(
-    AuthSession(
-      tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(roles: <String>['BILLING']),
-      permissions: permissions,
-      moduleEntitlements: modules,
-    ),
+    _session(permissions: permissions, modules: modules),
   );
 }
 
@@ -73,6 +93,8 @@ Future<void> _pumpInsuranceSetupTab(
   WidgetTester tester, {
   required _MockClaimsRepository repository,
   required AppAccessPolicy accessPolicy,
+  AuthSession? session,
+  InsuranceCatalogRepository? catalogRepository,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/claims?section=insurance-setup',
@@ -85,6 +107,12 @@ Future<void> _pumpInsuranceSetupTab(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+
+  // Most UI gates use [accessPolicy]. Authenticated session is only required
+  // when catalog forms read tenant/facility from [sessionStateProvider].
+  final SessionState sessionState = session == null
+      ? const SessionState.ready()
+      : SessionState.authenticated(session: session);
 
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
@@ -106,10 +134,12 @@ Future<void> _pumpInsuranceSetupTab(
     ProviderScope(
       overrides: [
         claimsRepositoryProvider.overrideWithValue(repository),
+        if (catalogRepository != null)
+          insuranceCatalogRepositoryProvider.overrideWithValue(
+            catalogRepository,
+          ),
         sharedPreferencesProvider.overrideWithValue(preferences),
-        initialSessionStateProvider.overrideWithValue(
-          const SessionState.ready(),
-        ),
+        initialSessionStateProvider.overrideWithValue(sessionState),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
       child: MaterialApp.router(
@@ -132,6 +162,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const ClaimsQueueQuery());
+    registerFallbackValue(<String, Object?>{});
+    registerFallbackValue(Uri.parse('https://example.test/api'));
   });
 
   setUp(() {
@@ -161,6 +193,7 @@ void main() {
         find.textContaining('Manage insurance companies'),
         findsOneWidget,
       );
+      // Create strip collapses when all permissionActions are filtered.
       expect(find.textContaining('Add company'), findsNothing);
       expect(find.textContaining('Add scheme'), findsNothing);
       expect(find.textContaining('Add offer'), findsNothing);
@@ -245,6 +278,37 @@ void main() {
   );
 
   testWidgets(
+    'read ∪: tenant:admin without billing:read shows Insurance Setup tab',
+    (WidgetTester tester) async {
+      final AppAccessPolicy tenantAdmin = _policy(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(tenantAdmin),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.create.isAllowed(tenantAdmin),
+        isFalse,
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: tenantAdmin,
+      );
+
+      expect(find.textContaining('Insurance Setup'), findsWidgets);
+      expect(
+        find.textContaining('Manage insurance companies'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Add company'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'route entry ∪ financial:approve alone omits Insurance Setup tab',
     (WidgetTester tester) async {
       final AppAccessPolicy approveOnly = _policy(
@@ -271,6 +335,37 @@ void main() {
       // Queue tabs need billing:read ∩ — approve-only yields empty chrome
       // (no routine "no access" banner).
       expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'route entry ∪ billing:write alone without read ∪ omits Insurance Setup',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.billingWrite},
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.create.isAllowed(writeOnly),
+        isTrue,
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.textContaining('Insurance Setup'), findsNothing);
+      expect(find.textContaining('Add company'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -406,7 +501,7 @@ void main() {
   });
 
   testWidgets(
-    'authorized Add company opens nested dialog (integration + write reuse)',
+    'authorized Add company: validation blocks empty submit',
     (WidgetTester tester) async {
       await _pumpInsuranceSetupTab(
         tester,
@@ -423,9 +518,99 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.textContaining('no access'), findsNothing);
-      // Post-mutation sync: dialog success path calls controller.refresh()
-      // (see openClaimsInsuranceCompanyDialog) — nested write entry is gated.
+      await tester.tap(find.text('Save company'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Enter the insurance company name'),
+        findsWidgets,
+      );
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Insurance configuration saved'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Add company saves, snackbar, and refreshes reference (sync)',
+    (WidgetTester tester) async {
+      final _MockApiClient apiClient = _MockApiClient();
+      when(
+        () => apiClient.post<InsuranceCompanyOption>(
+          any(),
+          decoder: any(named: 'decoder'),
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((Invocation invocation) async {
+        final ApiResponseDecoder<InsuranceCompanyOption> decoder =
+            invocation.namedArguments[#decoder]
+                as ApiResponseDecoder<InsuranceCompanyOption>;
+        return Result<InsuranceCompanyOption>.success(
+          decoder(<String, Object?>{
+            'id': 'co-1',
+            'display_id': 'CO-1',
+            'name': 'Acme Health',
+            'code': 'ACME',
+            'is_active': true,
+          }),
+        );
+      });
+
+      final AppAccessPolicy writer = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      final AuthSession session = _session(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        session: session,
+        catalogRepository: InsuranceCatalogRepository(apiClient: apiClient),
+      );
+
+      clearInteractions(repository);
+      _stubClaimsRepository(repository);
+
+      await tester.tap(find.textContaining('Add company'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add insurance company'), findsOneWidget);
+
+      final Finder nameField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Company name',
+      );
+      final Finder codeField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Company code',
+      );
+      await tester.enterText(nameField, 'Acme Health');
+      await tester.enterText(codeField, 'ACME');
+      await tester.tap(find.text('Save company'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => apiClient.post<InsuranceCompanyOption>(
+          any(),
+          decoder: any(named: 'decoder'),
+          data: any(named: 'data'),
+        ),
+      ).called(1);
+      verify(
+        () => repository.loadReferenceData(),
+      ).called(greaterThanOrEqualTo(1));
+      expect(
+        find.textContaining('Insurance configuration saved'),
+        findsOneWidget,
+      );
       expect(
         identical(
           ClaimsInsuranceSetupAtomPermissions.create,
@@ -433,6 +618,7 @@ void main() {
         ),
         isTrue,
       );
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -456,4 +642,77 @@ void main() {
       expect(find.byType(AppTabStrip), findsOneWidget);
     },
   );
+
+  testWidgets('authorized load error exposes retry', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.listQueue(any())).thenAnswer(
+      (_) async => const Result<AppPage<ClaimsQueueItem>>.failure(
+        AppFailure.unexpected(),
+      ),
+    );
+    when(() => repository.loadReferenceData()).thenAnswer(
+      (_) async =>
+          const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
+    );
+    when(() => repository.loadWorkspaceSummary()).thenAnswer(
+      (_) async => const Result<ClaimsWorkspaceSummary>.success(_summary),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=insurance-setup',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.billingRead,
+                AppPermissions.billingWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Try again'), findsWidgets);
+  });
 }

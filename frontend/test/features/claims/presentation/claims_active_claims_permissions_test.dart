@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -24,6 +25,20 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClaimsRepository extends Mock implements ClaimsRepository {}
+
+const ClaimsQueueItem _draftClaim = ClaimsQueueItem.claim(
+  InsuranceClaimRecord(
+    id: 'claim-draft',
+    displayId: 'CLM-DRAFT',
+    coveragePlanId: 'plan-1',
+    coveragePlanDisplayId: 'PLAN-001',
+    invoiceId: 'inv-0',
+    invoiceDisplayId: 'INV-000',
+    status: 'DRAFT',
+    patientDisplayId: 'PT-DRAFT',
+    claimAmount: 200,
+  ),
+);
 
 const ClaimsQueueItem _submittedClaim = ClaimsQueueItem.claim(
   InsuranceClaimRecord(
@@ -75,6 +90,16 @@ const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   rejectedResubmissionCount: 0,
 );
 
+const ClaimsReferenceData _referenceData = ClaimsReferenceData(
+  coveragePlans: <CoveragePlanOption>[
+    CoveragePlanOption(
+      id: 'plan-1',
+      displayId: 'PLAN-001',
+      name: 'Standard Plan',
+    ),
+  ],
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
@@ -97,12 +122,17 @@ AppAccessPolicy _policy({
   );
 }
 
-List<ClaimsQueueItem> _itemsForQuery(ClaimsQueueQuery query) {
-  final List<ClaimsQueueItem> all = <ClaimsQueueItem>[
-    _pendingAuth,
-    _submittedClaim,
-    _approvedClaim,
-  ];
+List<ClaimsQueueItem> _itemsForQuery(
+  ClaimsQueueQuery query, {
+  List<ClaimsQueueItem>? allItems,
+}) {
+  final List<ClaimsQueueItem> all = allItems ??
+      <ClaimsQueueItem>[
+        _pendingAuth,
+        _draftClaim,
+        _submittedClaim,
+        _approvedClaim,
+      ];
   List<ClaimsQueueItem> items = List<ClaimsQueueItem>.of(all);
   final String? authStatus = preAuthorizationStatusForFilter(query.filter);
   final String? claimStatus = insuranceClaimStatusForFilter(query.filter);
@@ -124,13 +154,24 @@ List<ClaimsQueueItem> _itemsForQuery(ClaimsQueueQuery query) {
   return items;
 }
 
-void _stubRepository(_MockClaimsRepository repository) {
+void _stubRepository(
+  _MockClaimsRepository repository, {
+  List<ClaimsQueueItem>? allItems,
+  ClaimsWorkspaceSummary summary = _summary,
+  Result<AppPage<ClaimsQueueItem>>? queueOverride,
+}) {
   when(() => repository.listQueue(any())).thenAnswer((
     Invocation invocation,
   ) async {
+    if (queueOverride != null) {
+      return queueOverride;
+    }
     final ClaimsQueueQuery query =
         invocation.positionalArguments.single as ClaimsQueueQuery;
-    final List<ClaimsQueueItem> items = _itemsForQuery(query);
+    final List<ClaimsQueueItem> items = _itemsForQuery(
+      query,
+      allItems: allItems,
+    );
     return Result<AppPage<ClaimsQueueItem>>.success(
       AppPage<ClaimsQueueItem>(
         items: items,
@@ -141,10 +182,10 @@ void _stubRepository(_MockClaimsRepository repository) {
   });
   when(() => repository.loadReferenceData()).thenAnswer(
     (_) async =>
-        const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
+        const Result<ClaimsReferenceData>.success(_referenceData),
   );
   when(() => repository.loadWorkspaceSummary()).thenAnswer(
-    (_) async => const Result<ClaimsWorkspaceSummary>.success(_summary),
+    (_) async => Result<ClaimsWorkspaceSummary>.success(summary),
   );
   when(() => repository.getDetail(any())).thenAnswer((
     Invocation invocation,
@@ -177,10 +218,18 @@ Future<void> _pumpActiveClaimsTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/claims?section=active-claims',
+  List<ClaimsQueueItem>? allItems,
+  ClaimsWorkspaceSummary summary = _summary,
+  Result<AppPage<ClaimsQueueItem>>? queueOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository);
+  _stubRepository(
+    repository,
+    allItems: allItems,
+    summary: summary,
+    queueOverride: queueOverride,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -669,4 +718,273 @@ void main() {
       expect(find.textContaining('PREPARE'), findsWidgets);
     },
   );
+
+  testWidgets(
+    'nested cross-module _(n/a)_: Active Claims Print stays read ∩ (not Settled export ∪)',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      // Matrix nested rows are n/a — Print uses document/read ∩, not export ∪.
+      expect(
+        ClaimsActiveClaimsAtomPermissions.document.isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        claimsDetailPrintRequirement(
+          ClaimsDeskSection.activeClaims,
+        ).isAllowed(reader),
+        isTrue,
+      );
+      expect(
+        ClaimsSettledAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+
+      await tester.tap(find.text('CLM-SUB'));
+      await tester.pumpAndSettle();
+      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Sync insurer status'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'write ∩ + financial:approve: Prepare and Close as paid both present',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Prepare claim'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Record response'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.textContaining('Approved (').first);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Close as paid'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'Submit claim next-action mounts for draft when write ∩ allowed',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+        // Bypass default Submitted filter so DRAFT rows remain visible.
+        queueOverride: Result<AppPage<ClaimsQueueItem>>.success(
+          AppPage<ClaimsQueueItem>(
+            items: const <ClaimsQueueItem>[_draftClaim],
+            request: const AppPageRequest(pageSize: 20),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+
+      expect(find.text('CLM-DRAFT'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Submit claim'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.submit.isAllowed(
+          _policy(
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'detail Sync insurer status mutates and refreshes queue (sync)',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('CLM-SUB'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sync insurer status'), findsOneWidget);
+
+      clearInteractions(repository);
+      _stubRepository(repository);
+
+      await tester.tap(find.text('Sync insurer status'));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.syncClaimStatus(any())).called(1);
+      verify(() => repository.listQueue(any())).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  testWidgets('authorized load error exposes retry', (WidgetTester tester) async {
+    when(() => repository.listQueue(any())).thenAnswer(
+      (_) async => const Result<AppPage<ClaimsQueueItem>>.failure(
+        AppFailure.unexpected(),
+      ),
+    );
+    when(() => repository.loadReferenceData()).thenAnswer(
+      (_) async =>
+          const Result<ClaimsReferenceData>.success(_referenceData),
+    );
+    when(() => repository.loadWorkspaceSummary()).thenAnswer(
+      (_) async => const Result<ClaimsWorkspaceSummary>.success(_summary),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/claims?section=active-claims',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/claims',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          claimsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.billingRead,
+                AppPermissions.billingWrite,
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Try again'), findsWidgets);
+  });
+
+  testWidgets('mobile viewport: read-only omits next-action trailing', (
+    WidgetTester tester,
+  ) async {
+    await _pumpActiveClaimsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      ),
+      physicalSize: const Size(390, 844),
+    );
+
+    expect(find.textContaining('CLM-SUB'), findsOneWidget);
+    expect(find.byTooltip('Prepare claim'), findsNothing);
+    expect(find.byTooltip('Record response'), findsNothing);
+  });
+
+  testWidgets('light theme: authorized Active Claims chrome remains', (
+    WidgetTester tester,
+  ) async {
+    await _pumpActiveClaimsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      ),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(find.text('CLM-SUB'), findsOneWidget);
+    expect(find.byTooltip('Prepare claim'), findsOneWidget);
+    expect(find.textContaining('Submitted ('), findsWidgets);
+  });
+
+  testWidgets('summary chips remain for authorized reader (read chrome)', (
+    WidgetTester tester,
+  ) async {
+    await _pumpActiveClaimsTab(
+      tester,
+      repository: repository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      ),
+    );
+
+    expect(find.textContaining('Submitted ('), findsWidgets);
+    expect(find.textContaining('Approved ('), findsWidgets);
+    expect(find.byTooltip('Prepare claim'), findsNothing);
+  });
 }

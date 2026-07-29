@@ -33,7 +33,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches `_section`, updates URL `?section=…`, applies default section filter.
-  - Condition: Always when workspace loads.
+  - Condition: Per-tab read gate (`claimsDeskSectionRequirement`); unauthorized tabs omitted from the strip. Insurance Setup uses read ∪ (`billing:read` | `facility:admin` | `tenant:admin`).
 
 - **Request authorization** (primary, Authorizations)
   - Location: Tab-strip primary (`claimsRequestAuthorizationAction`).
@@ -135,4 +135,4 @@ Settled and Insurance Setup have no tab-strip toolbar actions.
 - [x] Without write capability, Request authorization / next-action / Insurance Setup creates are absent.
 - [x] Mobile list exposes next-action trailing; tap opens mutation without detail first.
 - [x] Settled Print statement requires nested export ∪ (`reports:read` | `evidence:export`); omitted for billing:read alone.
-- [ ] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render on simplified surfaces.
+- [x] After mutations, snackbar + refreshed queue; loading / empty / error-retry / validation still render on simplified surfaces.

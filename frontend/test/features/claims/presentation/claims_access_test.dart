@@ -162,6 +162,20 @@ void main() {
       );
       expect(
         identical(
+          ClaimsActiveClaimsAtomPermissions.submit,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.recordResponse,
+          claimsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           ClaimsActiveClaimsAtomPermissions.closeAsPaid,
           claimsFinancialApproveRequirement,
         ),
@@ -180,6 +194,31 @@ void main() {
           claimsWorkspaceEntryRequirement,
         ),
         isTrue,
+      );
+    });
+
+    test('Active Claims nested cross-module matrix rows are n/a (document = read ∩)', () {
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.document,
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          claimsDetailPrintRequirement(ClaimsDeskSection.activeClaims),
+          claimsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      // Settled uses export ∪ — Active Claims must not.
+      expect(
+        identical(
+          ClaimsActiveClaimsAtomPermissions.document,
+          claimsNestedExportRequirement,
+        ),
+        isFalse,
       );
     });
 
@@ -257,9 +296,12 @@ void main() {
       );
     });
 
-    test('Insurance Setup read ∪ allows facility:admin without billing:read', () {
+    test('Insurance Setup read ∪ allows facility/tenant admin without billing:read', () {
       final AppAccessPolicy facilityAdmin = _policyFor(
         permissions: <AppPermission>{AppPermissions.facilityAdmin},
+      );
+      final AppAccessPolicy tenantAdmin = _policyFor(
+        permissions: <AppPermission>{AppPermissions.tenantAdmin},
       );
       final AppAccessPolicy approveOnly = _policyFor(
         permissions: <AppPermission>{AppPermissions.financialApprove},
@@ -270,12 +312,23 @@ void main() {
         isTrue,
       );
       expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(tenantAdmin),
+        isTrue,
+      );
+      expect(
         ClaimsInsuranceSetupAtomPermissions.read.isAllowed(facilityAdmin),
         isFalse,
       );
       expect(
         canViewClaimsDeskSection(
           facilityAdmin,
+          ClaimsDeskSection.insuranceSetup,
+        ),
+        isTrue,
+      );
+      expect(
+        canViewClaimsDeskSection(
+          tenantAdmin,
           ClaimsDeskSection.insuranceSetup,
         ),
         isTrue,

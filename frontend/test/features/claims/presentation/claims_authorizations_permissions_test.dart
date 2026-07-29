@@ -582,6 +582,36 @@ void main() {
   );
 
   testWidgets(
+    'facility:admin ∪ setup without billing:read never mounts Authorizations body',
+    (WidgetTester tester) async {
+      final AppAccessPolicy setupOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.facilityAdmin},
+      );
+      expect(
+        ClaimsAuthorizationsAtomPermissions.tab.isAllowed(setupOnly),
+        isFalse,
+      );
+      expect(
+        ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(setupOnly),
+        isTrue,
+      );
+
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: setupOnly,
+      );
+
+      // Deep link targeted Authorizations, but body must fall back immediately
+      // (no queue leakage before post-frame section sync).
+      expect(find.text('AUTH-PENDING'), findsNothing);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+      expect(find.byTooltip('Update status'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'authorized Update status next-action opens nested dialog and syncs queue',
     (WidgetTester tester) async {
       await _pumpAuthorizationsTab(
@@ -838,6 +868,52 @@ void main() {
       );
 
       expect(find.textContaining('REQUEST'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'authorized Request authorization dialog validates required coverage scheme',
+    (WidgetTester tester) async {
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Request authorization'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('REQUEST'), findsWidgets);
+      // Submit without selecting coverage → validation; no mutation.
+      clearInteractions(repository);
+      _stubRepository(repository);
+      await tester.tap(find.text('Request authorization').last);
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.requestPreAuthorization(any()));
+      expect(find.textContaining('REQUEST'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'read chrome: summary chips mount when counts > 0 for billing:read ∩',
+    (WidgetTester tester) async {
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        ),
+      );
+
+      expect(find.textContaining('Auth pending'), findsOneWidget);
+      expect(find.textContaining('Auth approved'), findsOneWidget);
+      expect(find.byTooltip('Request authorization'), findsNothing);
     },
   );
 }

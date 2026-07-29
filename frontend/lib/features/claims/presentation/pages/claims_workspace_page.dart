@@ -152,7 +152,9 @@ class _ClaimsWorkspaceContentState
     }
     if (query.action == 'preauth' && mounted) {
       final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-      if (canWriteClaims(policy)) {
+      if (ClaimsAuthorizationsAtomPermissions.requestAuthorization.isAllowed(
+        policy,
+      )) {
         unawaited(
           _openRequestAuthorizationDialog(context, controller, widget.state),
         );
@@ -161,7 +163,7 @@ class _ClaimsWorkspaceContentState
     if ((query.action == 'prepare' || query.action == 'prepare-claim') &&
         mounted) {
       final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-      if (canWriteClaims(policy)) {
+      if (ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(policy)) {
         unawaited(
           _openPrepareClaimDialog(context, controller, widget.state),
         );
@@ -293,13 +295,18 @@ class _ClaimsWorkspaceContentState
       // No authorized sections — omit chrome (no routine "no access" banner).
       return const SizedBox.shrink();
     }
-    if (!visibleSections.contains(_section)) {
-      final ClaimsDeskSection fallback = visibleSections.first;
+    // Never mount unauthorized section body (deep link / stale section) —
+    // render the first allowed tab immediately; sync URL/_section next frame.
+    final ClaimsDeskSection effectiveSection =
+        visibleSections.contains(_section)
+        ? _section
+        : visibleSections.first;
+    if (effectiveSection != _section) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || visibleSections.contains(_section)) {
           return;
         }
-        _selectSection(fallback);
+        _selectSection(effectiveSection);
       });
     }
     final Widget tabStrip = AppTabStrip(
@@ -313,7 +320,7 @@ class _ClaimsWorkspaceContentState
             countTone: _sectionCountTone(section),
           ),
       ],
-      selectedId: _section.name,
+      selectedId: effectiveSection.name,
       onTabTapped: (String tabId) {
         for (final ClaimsDeskSection section in visibleSections) {
           if (section.name == tabId) {
@@ -327,6 +334,7 @@ class _ClaimsWorkspaceContentState
         state,
         controller,
         accessPolicy,
+        effectiveSection,
       ),
       // Refresh and insurance-setup creates were removed from the strip —
       // mutations/realtime refresh the queue; setup actions live on the panel.
@@ -343,26 +351,29 @@ class _ClaimsWorkspaceContentState
           children: <Widget>[
             tabStrip,
             SizedBox(height: theme.spacing.sm),
-            if (_section == ClaimsDeskSection.authorizations ||
-                _section == ClaimsDeskSection.activeClaims) ...<Widget>[
+            if (effectiveSection == ClaimsDeskSection.authorizations ||
+                effectiveSection == ClaimsDeskSection.activeClaims) ...<Widget>[
               _ClaimsSummaryBar(
                 state: state,
-                section: _section,
+                section: effectiveSection,
                 onFilterApplied: (ClaimsQueueFilter filter) {
                   unawaited(_applySummaryFilter(controller, filter));
                 },
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (_section == ClaimsDeskSection.insuranceSetup)
+            if (effectiveSection == ClaimsDeskSection.insuranceSetup)
               Expanded(child: _ClaimsInsuranceSetupPanel(state: state))
             else
               Expanded(
-                child: _ClaimsQueuePanel(
-                  state: state,
-                  section: _section,
-                  searchController: _searchController,
-                  columnVisibilityController: _tableColumnController,
+                child: AppAccessGate(
+                  requirement: claimsDeskSectionRequirement(effectiveSection),
+                  child: _ClaimsQueuePanel(
+                    state: state,
+                    section: effectiveSection,
+                    searchController: _searchController,
+                    columnVisibilityController: _tableColumnController,
+                  ),
                 ),
               ),
           ],
@@ -376,37 +387,45 @@ class _ClaimsWorkspaceContentState
     ClaimsWorkspaceState state,
     ClaimsWorkspaceController controller,
     AppAccessPolicy accessPolicy,
+    ClaimsDeskSection section,
   ) {
     // Settled is review-only; Insurance Setup actions live on the panel.
-    if (_section == ClaimsDeskSection.settled ||
-        _section == ClaimsDeskSection.insuranceSetup) {
+    if (section == ClaimsDeskSection.settled ||
+        section == ClaimsDeskSection.insuranceSetup) {
       return null;
     }
     // Unauthorized write chrome must not mount (no disabled stub).
-    if (!canWriteClaims(accessPolicy)) {
-      return null;
-    }
-    return switch (_section) {
-      ClaimsDeskSection.authorizations => AppTabToolbarPrimary(
-        label: l10n.claimsRequestAuthorizationAction,
-        icon: Icons.verified_user_outlined,
-        semanticLabel: l10n.claimsRequestAuthorizationAction,
-        tooltip: l10n.claimsRequestAuthorizationAction,
-        isLoading: state.isSaving,
-        onPressed: () => unawaited(
-          _openRequestAuthorizationDialog(context, controller, state),
+    // Authorizations + Active Claims prepare share write ∩ (`billing:write`).
+    return switch (section) {
+      ClaimsDeskSection.authorizations
+          when ClaimsAuthorizationsAtomPermissions.requestAuthorization
+              .isAllowed(accessPolicy) =>
+        AppTabToolbarPrimary(
+          label: l10n.claimsRequestAuthorizationAction,
+          icon: Icons.verified_user_outlined,
+          semanticLabel: l10n.claimsRequestAuthorizationAction,
+          tooltip: l10n.claimsRequestAuthorizationAction,
+          isLoading: state.isSaving,
+          onPressed: () => unawaited(
+            _openRequestAuthorizationDialog(context, controller, state),
+          ),
         ),
-      ),
-      ClaimsDeskSection.activeClaims => AppTabToolbarPrimary(
-        label: l10n.claimsPrepareClaimAction,
-        icon: Icons.receipt_long_outlined,
-        semanticLabel: l10n.claimsPrepareClaimAction,
-        tooltip: l10n.claimsPrepareClaimAction,
-        isLoading: state.isSaving,
-        onPressed: () => unawaited(
-          _openPrepareClaimDialog(context, controller, state),
+      ClaimsDeskSection.activeClaims
+          when ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(
+            accessPolicy,
+          ) =>
+        AppTabToolbarPrimary(
+          label: l10n.claimsPrepareClaimAction,
+          icon: Icons.receipt_long_outlined,
+          semanticLabel: l10n.claimsPrepareClaimAction,
+          tooltip: l10n.claimsPrepareClaimAction,
+          isLoading: state.isSaving,
+          onPressed: () => unawaited(
+            _openPrepareClaimDialog(context, controller, state),
+          ),
         ),
-      ),
+      ClaimsDeskSection.authorizations ||
+      ClaimsDeskSection.activeClaims ||
       ClaimsDeskSection.settled ||
       ClaimsDeskSection.insuranceSetup => null,
     };
@@ -1192,6 +1211,12 @@ Future<void> _handleClaimsNextAction(
   WidgetRef ref,
   ClaimsQueueItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  // Defense in depth: gated chrome must not open write dialogs without rights.
+  if (!claimsNextActionIsAllowed(policy, item)) {
+    return;
+  }
+
   final ClaimsWorkspaceController controller = ref.read(
     claimsWorkspaceControllerProvider.notifier,
   );
