@@ -422,8 +422,17 @@ void main() {
 
       expect(find.text('REGISTER EQUIPMENT'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField).first, 'Infusion Pump');
-      await tester.tap(find.text('Create'));
+      final Finder dialogFields = find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(dialogFields.first, 'Infusion Pump');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Create'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       verify(

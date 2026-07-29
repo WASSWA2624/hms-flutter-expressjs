@@ -140,6 +140,13 @@ Widget tests in `frontend/test/features/biomedical/presentation/biomedical_works
 - [x] Detail does not offer a separate print-preview dialog control alongside print.
 - [x] Filters exclude Panel; search / deep-link / mobile tab strip still work.
 
+Registry permission tests in `frontend/test/features/biomedical/presentation/biomedical_registry_permissions_test.dart`:
+
+- [x] ∩ denial: `biomed:read` without write omits Register asset / detail writes / print.
+- [x] Source write ∪: `operations:write` (+ facilities module) mounts Register / Edit; print needs `evidence:export`.
+- [x] Route entry ∪ without tab read ∩ omits Registry chrome; subscription strip without module denies.
+- [x] Authorized Register / Edit mutations sync; empty/loading/error, mobile+desktop, light+dark.
+
 Analytics permission tests in `frontend/test/features/biomedical/presentation/biomedical_analytics_permissions_test.dart`:
 
 - [x] ∩ denial: `biomed:read` without `reports:read` omits Analytics tab.

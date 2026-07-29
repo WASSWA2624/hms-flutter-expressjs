@@ -307,6 +307,88 @@ abstract final class BiomedicalComplianceAtomPermissions {
   static const AccessRequirement routeEntry = biomedicalWorkspaceEntryRequirement;
 }
 
+/// Support tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Support tab | navigate | read ∩ `biomed:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Report fault (tab primary) | create | write ∪ source |
+/// | Next action Review record | navigate / read | read ∩ |
+/// | Next action write (rare on support rows) | create / update | write ∪ source |
+/// | Detail Log incident / complementary writes | create / update / delete | write ∪ source |
+/// | Nested fault-report dialog | create | write ∪ source |
+/// | Print report | export | print (evidence:export ∩ …) |
+/// | Nested mutation dialogs | create / update / delete | write ∪ source |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
+/// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+abstract final class BiomedicalSupportAtomPermissions {
+  static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement create = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement reportFault = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement logIncident = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement export = biomedicalWorkspacePrintRequirement;
+  static const AccessRequirement print = biomedicalWorkspacePrintRequirement;
+  static const AccessRequirement nestedWrite = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement entry = biomedicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = biomedicalWorkspaceEntryRequirement;
+}
+
+/// Work orders tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Work orders tab | navigate | read ∩ `biomed:read` |
+/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Empty / error / retry | read chrome | read ∩ |
+/// | Row select → detail | read | read ∩ |
+/// | Create work order (tab primary) | create | write ∪ source |
+/// | Next action Review record | navigate / read | read ∩ |
+/// | Next action Work order follow-up (start) | update | write ∪ source |
+/// | Next action Return to service | update | write ∪ source |
+/// | Detail Update work order | update | write ∪ source |
+/// | Detail Start / Return WO (status-gated) | update | write ∪ source (omitted when next-action) |
+/// | Detail complementary writes (transfer, PM, …) | create / update / delete | write ∪ source |
+/// | Print report | export | print (evidence:export ∩ …) |
+/// | Nested mutation dialogs | create / update / delete | write ∪ source |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Matrix nested cross-module rows are _(n/a)_. Write keeps source ∪
+/// `biomed:write` | `operations:write` rather than matrix ∩ `biomed:write` alone.
+abstract final class BiomedicalWorkOrdersAtomPermissions {
+  static const AccessRequirement tab = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement create = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement createWorkOrder =
+      biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement startWorkOrder =
+      biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement updateWorkOrder =
+      biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement returnToService =
+      biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement export = biomedicalWorkspacePrintRequirement;
+  static const AccessRequirement print = biomedicalWorkspacePrintRequirement;
+  static const AccessRequirement nestedWrite = biomedicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = biomedicalWorkspaceReadRequirement;
+  static const AccessRequirement entry = biomedicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = biomedicalWorkspaceEntryRequirement;
+}
+
 /// Analytics tab atom → permission mapping (inventory + matrix).
 ///
 /// | Atom | Kind | Gate |
