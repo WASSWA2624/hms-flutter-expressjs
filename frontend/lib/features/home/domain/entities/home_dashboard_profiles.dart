@@ -230,6 +230,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'hr',
     ],
     emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'collections_today': HomeMetricRouteTarget(),
+      'billing_exceptions': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'overdue'},
+      ),
+    },
   ),
   AppRole.doctor: HomeDashboardProfile(
     id: 'doctor',
@@ -1480,6 +1486,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     quickActionIds: <String>['update_own_profile', 'contact_facility'],
     shortcutIds: <String>[],
     emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'my_open_bills': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
+      ),
+      'my_upcoming_appointments': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'appointments'},
+      ),
+    },
   ),
   AppRole.integrationAdmin: HomeDashboardProfile(
     id: 'integration_admin',

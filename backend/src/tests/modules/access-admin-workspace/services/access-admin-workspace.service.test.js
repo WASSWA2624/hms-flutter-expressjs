@@ -221,4 +221,63 @@ describe('access-admin-workspace service', () => {
       service.resetDemoUserPassword('USR0001', { roles: ['HR'] })
     ).rejects.toMatchObject({ statusCode: 403 });
   });
+
+  it('returns permissions catalog without patient billing side effects', async () => {
+    repository.findPermissions.mockResolvedValue({
+      items: [
+        {
+          id: 'perm-billing-uuid',
+          human_friendly_id: 'PRM0099',
+          name: 'billing:write',
+          display_name: 'Billing Write',
+          description: 'Allows write access within billing.'}],
+      total: 1});
+
+    const data = await service.getWorkspace(
+      { panel: 'permissions', resource: 'permissions' },
+      1,
+      20,
+      { roles: ['TENANT_ADMIN'], tenant_id: 'tenant-uuid' }
+    );
+
+    expect(data.state).toBe('ready');
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0].name).toBe('billing:write');
+    expect(repository.findPermissions).toHaveBeenCalled();
+    expect(repository.findUsers).not.toHaveBeenCalled();
+    expect(repository.findRoles).not.toHaveBeenCalled();
+  });
+
+  it('permissions panel read is idempotent on replay', async () => {
+    repository.findPermissions.mockResolvedValue({
+      items: [
+        {
+          id: 'perm-uuid',
+          human_friendly_id: 'PRM0001',
+          name: 'clinical:read'}],
+      total: 1});
+
+    const query = { panel: 'permissions', resource: 'permissions' };
+    const user = { roles: ['TENANT_ADMIN'], tenant_id: 'tenant-uuid' };
+
+    const first = await service.getWorkspace(query, 1, 20, user);
+    const second = await service.getWorkspace(query, 1, 20, user);
+
+    expect(first.items).toEqual(second.items);
+    expect(repository.findPermissions).toHaveBeenCalledTimes(2);
+  });
+
+  it('denies permissions workspace read for actors without admin keys', async () => {
+    repository.findPermissions.mockResolvedValue({ items: [], total: 0 });
+
+    const data = await service.getWorkspace(
+      { panel: 'permissions', resource: 'permissions' },
+      1,
+      20,
+      { roles: ['DOCTOR'], permissions: ['clinical:read'], tenant_id: 'tenant-uuid' }
+    );
+
+    expect(data.permissions.can_write).toBe(false);
+    expect(repository.findPermissions).toHaveBeenCalled();
+  });
 });

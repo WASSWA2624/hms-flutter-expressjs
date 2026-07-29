@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admi
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -363,6 +364,14 @@ class _AccessAdminWorkspaceContentState
       accessAdminWorkspaceControllerProvider.notifier,
     );
     controller.selectItem(item);
+
+    if (item.resource == AccessAdminResource.permissions) {
+      await showAccessAdminPermissionDetailDialog(
+        context,
+        permission: item,
+      );
+      return;
+    }
 
     if (item.resource == AccessAdminResource.users ||
         item.resource == AccessAdminResource.demoUsers) {

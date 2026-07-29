@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -234,8 +235,13 @@ final class BillingWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
+    final String idempotencyKey = createIdempotencyKey();
     return _submitReceivePayment(
-      () => _repository.receivePayment(selected, draft),
+      () => _repository.receivePayment(
+        selected,
+        draft,
+        idempotencyKey: idempotencyKey,
+      ),
     );
   }
 

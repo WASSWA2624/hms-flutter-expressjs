@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -269,6 +270,12 @@ AccessAdminPanel? accessAdminFallbackPanel(AppAccessPolicy policy) {
 
 /// Directory tab atom → permission mapping (inventory + matrix).
 ///
+/// Financial classifications: [AccessAdminDirectoryBillingInventory]
+/// (`access_admin_directory_billing.dart`). All mounted atoms are
+/// `NOT_REQUIRED` / `NOT_BILLED` / `NO_CHARGE`; no patient Billing posts.
+/// Role/permission previews in read-only detail must not mutate historical
+/// ledgers.
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Directory tab | navigate / progressive-disclosure | read ∪ |
@@ -299,6 +306,11 @@ abstract final class AccessAdminDirectoryAtomPermissions {
 
 /// Roles tab atom → permission mapping (inventory + matrix).
 ///
+/// Financial classifications: [AccessAdminRolesBillingInventory]
+/// (`access_admin_roles_billing.dart`). All mounted atoms are `NOT_REQUIRED` /
+/// `NOT_BILLED` / `NO_CHARGE`; no patient Billing posts. Permission sync/editor
+/// and restore/purge are unmounted on this tab (ManageRolesPermissionsPanel).
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Roles tab | navigate / progressive-disclosure | read ∪ |
@@ -326,6 +338,10 @@ abstract final class AccessAdminRolesAtomPermissions {
 }
 
 /// Demo tab atom → permission mapping (inventory + matrix).
+///
+/// Financial classifications: [AccessAdminDemoBillingInventory]
+/// (`access_admin_demo_billing.dart`). All mounted atoms are `NOT_REQUIRED` /
+/// `NOT_BILLED` (display-only grants); no patient Billing posts.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -358,6 +374,10 @@ abstract final class AccessAdminDemoAtomPermissions {
 
 /// Entitlements tab atom → permission mapping (inventory + matrix).
 ///
+/// Financial classifications: [AccessAdminEntitlementsBillingInventory]
+/// (`access_admin_entitlements_billing.dart`). All mounted atoms are
+/// `NOT_REQUIRED` / `NOT_BILLED` (display-only); no patient Billing posts.
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Entitlements tab | navigate / progressive-disclosure | read ∪ |
@@ -389,6 +409,10 @@ abstract final class AccessAdminEntitlementsAtomPermissions {
 }
 
 /// Permissions tab atom → permission mapping (inventory + matrix).
+///
+/// Financial classifications: [AccessAdminPermissionsBillingInventory]
+/// (`access_admin_permissions_billing.dart`). All mounted atoms are
+/// `NOT_REQUIRED` / `NOT_BILLED` / `NO_CHARGE`; no patient Billing posts.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |

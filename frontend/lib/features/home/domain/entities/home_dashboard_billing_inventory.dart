@@ -1,0 +1,358 @@
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
+
+/// Financial action classification for the home dashboard scan.
+enum HomeBillingActionClass {
+  /// Creates invoice lines via Billing / clinical-request billing downstream.
+  createCharge,
+
+  /// Collects payment, applies deposit, or clears outstanding balance.
+  settle,
+
+  /// Discount, waive, write-off, credit note, or price correction.
+  adjust,
+
+  /// Refund, payment reversal, or void linked to Billing.
+  reverse,
+
+  /// Pay-later / outstanding status still recorded in Billing.
+  defer,
+
+  /// Read-only navigation, SaaS subscription, or audited no-charge protocol.
+  notBillable,
+}
+
+/// One financially relevant atom reachable from the home dashboard.
+final class HomeDashboardBillingAtom {
+  const HomeDashboardBillingAtom({
+    required this.id,
+    required this.label,
+    required this.actionClass,
+    required this.requiredPermissions,
+    this.billingRoute = AppRoutes.billing,
+    this.routeQuery = const <String, String>{},
+    this.auditNote,
+    this.delegatesToModule,
+  });
+
+  final String id;
+  final String label;
+  final HomeBillingActionClass actionClass;
+  final List<AppPermission> requiredPermissions;
+  final AppRouteData billingRoute;
+  final Map<String, String> routeQuery;
+  final String? auditNote;
+  final String? delegatesToModule;
+}
+
+/// Canonical inventory of financially relevant home dashboard atoms (AC1).
+///
+/// Home coordinates navigation and read-only KPIs; collection and ledger
+/// mutations happen in Billing (or owning clinical modules via shared billing).
+abstract final class HomeDashboardBillingInventory {
+  static const List<AppPermission> billingRead = <AppPermission>[
+    AppPermissions.billingRead,
+  ];
+  static const List<AppPermission> billingWrite = <AppPermission>[
+    AppPermissions.billingWrite,
+  ];
+  static const List<AppPermission> financialApprove = <AppPermission>[
+    AppPermissions.financialApprove,
+  ];
+
+  /// Quick actions / next steps that touch revenue or balances.
+  static const Map<String, HomeDashboardBillingAtom> quickActions =
+      <String, HomeDashboardBillingAtom>{
+        'create_invoice': HomeDashboardBillingAtom(
+          id: 'create_invoice',
+          label: 'Create invoice',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: billingWrite,
+          routeQuery: <String, String>{},
+        ),
+        'receive_payment': HomeDashboardBillingAtom(
+          id: 'receive_payment',
+          label: 'Receive payment',
+          actionClass: HomeBillingActionClass.settle,
+          requiredPermissions: billingWrite,
+        ),
+        'process_refund': HomeDashboardBillingAtom(
+          id: 'process_refund',
+          label: 'Process refund',
+          actionClass: HomeBillingActionClass.reverse,
+          requiredPermissions: billingWrite,
+        ),
+        'close_shift': HomeDashboardBillingAtom(
+          id: 'close_shift',
+          label: 'Close shift',
+          actionClass: HomeBillingActionClass.settle,
+          requiredPermissions: billingWrite,
+          auditNote: 'Shift close reconciles Billing payments',
+        ),
+        'review_overdue_invoices': HomeDashboardBillingAtom(
+          id: 'review_overdue_invoices',
+          label: 'Overdue invoices',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+        'review_pending_payments': HomeDashboardBillingAtom(
+          id: 'review_pending_payments',
+          label: 'Pending payments',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'review_claims_pending': HomeDashboardBillingAtom(
+          id: 'review_claims_pending',
+          label: 'Claims pending',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          billingRoute: AppRoutes.claims,
+        ),
+        'review_open_patient_balances': HomeDashboardBillingAtom(
+          id: 'review_open_patient_balances',
+          label: 'Open patient balances',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+          billingRoute: AppRoutes.patients,
+          routeQuery: <String, String>{'has_outstanding_balance': 'true'},
+          auditNote: 'Patient list filtered by live Billing balance',
+        ),
+        'add_mortuary_billable_event': HomeDashboardBillingAtom(
+          id: 'add_mortuary_billable_event',
+          label: 'Add billable event',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[
+            AppPermissions.mortuaryBillingEvent,
+          ],
+          billingRoute: AppRoutes.mortuary,
+          delegatesToModule: 'mortuary',
+        ),
+        'record_pharmacy_sale': HomeDashboardBillingAtom(
+          id: 'record_pharmacy_sale',
+          label: 'Record pharmacy sale',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
+          billingRoute: AppRoutes.pharmacy,
+          routeQuery: <String, String>{'section': 'sales'},
+          delegatesToModule: 'pharmacy',
+        ),
+        'dispense_medication': HomeDashboardBillingAtom(
+          id: 'dispense_medication',
+          label: 'Dispense medication',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[AppPermissions.pharmacyWrite],
+          billingRoute: AppRoutes.pharmacy,
+          routeQuery: <String, String>{'section': 'orders'},
+          delegatesToModule: 'pharmacy',
+        ),
+        'order_lab': HomeDashboardBillingAtom(
+          id: 'order_lab',
+          label: 'Order lab test',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+          billingRoute: AppRoutes.lab,
+          delegatesToModule: 'lab',
+          auditNote: 'Clinical-request billing at order time',
+        ),
+        'order_radiology': HomeDashboardBillingAtom(
+          id: 'order_radiology',
+          label: 'Order imaging',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+          billingRoute: AppRoutes.radiology,
+          delegatesToModule: 'radiology',
+          auditNote: 'Clinical-request billing at order time',
+        ),
+        'manage_subscription': HomeDashboardBillingAtom(
+          id: 'manage_subscription',
+          label: 'Manage subscription',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+          billingRoute: AppRoutes.subscriptions,
+          auditNote: 'SaaS subscription path — not patient ledger',
+        ),
+      };
+
+  /// KPI cards that surface balances or collections (read-only on home).
+  static const Map<String, HomeDashboardBillingAtom> statusCards =
+      <String, HomeDashboardBillingAtom>{
+        'collections_today': HomeDashboardBillingAtom(
+          id: 'collections_today',
+          label: 'Collections today',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+        ),
+        'billing_exceptions': HomeDashboardBillingAtom(
+          id: 'billing_exceptions',
+          label: 'Billing exceptions',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+        'billing_pending': HomeDashboardBillingAtom(
+          id: 'billing_pending',
+          label: 'Billing pending',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'pending_balance_amount': HomeDashboardBillingAtom(
+          id: 'pending_balance_amount',
+          label: 'Pending balances',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'pending_payments': HomeDashboardBillingAtom(
+          id: 'pending_payments',
+          label: 'Pending payments',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'overdue_balance_amount': HomeDashboardBillingAtom(
+          id: 'overdue_balance_amount',
+          label: 'Overdue amount',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+        'overdue_invoices': HomeDashboardBillingAtom(
+          id: 'overdue_invoices',
+          label: 'Overdue invoices',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'overdue'},
+        ),
+        'open_balances': HomeDashboardBillingAtom(
+          id: 'open_balances',
+          label: 'Open balances',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'invoices_today': HomeDashboardBillingAtom(
+          id: 'invoices_today',
+          label: 'Invoices today',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'needsIssue'},
+        ),
+        'refunds_today': HomeDashboardBillingAtom(
+          id: 'refunds_today',
+          label: 'Refunds today',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingWrite,
+        ),
+        'pending_approvals': HomeDashboardBillingAtom(
+          id: 'pending_approvals',
+          label: 'Pending approvals',
+          actionClass: HomeBillingActionClass.adjust,
+          requiredPermissions: financialApprove,
+          routeQuery: <String, String>{'queue': 'needsApproval'},
+        ),
+        'pending_insurance_claims': HomeDashboardBillingAtom(
+          id: 'pending_insurance_claims',
+          label: 'Claims pending',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'claimsPending'},
+        ),
+        'my_open_bills': HomeDashboardBillingAtom(
+          id: 'my_open_bills',
+          label: 'My open bills',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'open_invoices': HomeDashboardBillingAtom(
+          id: 'open_invoices',
+          label: 'Open invoices',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: billingRead,
+          routeQuery: <String, String>{'queue': 'pendingPayment'},
+        ),
+        'payments_today': HomeDashboardBillingAtom(
+          id: 'payments_today',
+          label: 'Payments today',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+        ),
+        'billable_events_to_capture': HomeDashboardBillingAtom(
+          id: 'billable_events_to_capture',
+          label: 'Billable events to capture',
+          actionClass: HomeBillingActionClass.createCharge,
+          requiredPermissions: <AppPermission>[
+            AppPermissions.mortuaryBillingEvent,
+          ],
+          billingRoute: AppRoutes.mortuary,
+          delegatesToModule: 'mortuary',
+        ),
+      };
+
+  /// Navigation shortcuts with billing impact.
+  static const Map<String, HomeDashboardBillingAtom> shortcuts =
+      <String, HomeDashboardBillingAtom>{
+        'billing': HomeDashboardBillingAtom(
+          id: 'billing',
+          label: 'Billing',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+        ),
+        'claims': HomeDashboardBillingAtom(
+          id: 'claims',
+          label: 'Claims',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: billingRead,
+          billingRoute: AppRoutes.claims,
+        ),
+        'discharge': HomeDashboardBillingAtom(
+          id: 'discharge',
+          label: 'Discharge',
+          actionClass: HomeBillingActionClass.defer,
+          requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+          billingRoute: AppRoutes.discharge,
+          auditNote: 'Financial clearance enforced in discharge workspace',
+        ),
+        'subscriptions': HomeDashboardBillingAtom(
+          id: 'subscriptions',
+          label: 'Subscriptions',
+          actionClass: HomeBillingActionClass.notBillable,
+          requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
+          billingRoute: AppRoutes.subscriptions,
+          auditNote: 'Commercial SaaS billing — not patient ledger',
+        ),
+      };
+
+  /// Every catalogued quick action id declared in [homeActionLibrary].
+  static Iterable<String> get cataloguedFinancialQuickActionIds =>
+      quickActions.keys;
+
+  /// Returns true when a home quick action routes through Billing (not shadow ledger).
+  static bool quickActionUsesBillingModule(String actionId) {
+    final String canonical = homeCanonicalActionId(actionId);
+    final HomeDashboardBillingAtom? atom = quickActions[canonical];
+    if (atom == null) {
+      return false;
+    }
+    if (atom.delegatesToModule != null) {
+      return true;
+    }
+    return atom.billingRoute.path == AppRoutes.billing.path ||
+        atom.billingRoute.path == AppRoutes.claims.path;
+  }
+
+  /// Billable classes that must never mutate balances on the home tab itself.
+  static bool isInlineCollectionForbidden(HomeBillingActionClass actionClass) {
+    return switch (actionClass) {
+      HomeBillingActionClass.settle ||
+      HomeBillingActionClass.adjust ||
+      HomeBillingActionClass.reverse => true,
+      _ => false,
+    };
+  }
+}

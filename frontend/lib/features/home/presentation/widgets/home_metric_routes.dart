@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_billing_inventory.dart';
 import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
@@ -19,6 +20,56 @@ bool homeHrMetricAccessAllowed(AppAccessPolicy policy) {
     AppPermissions.hrRead,
     AppPermissions.rosterRead,
   ]);
+}
+
+/// Default Billing workspace deep links for financial KPI cards.
+Map<String, String> homeDefaultBillingMetricQuery(String cardId) {
+  return switch (cardId.trim().toLowerCase()) {
+    'overdue_balance_amount' ||
+    'overdue_invoices' ||
+    'billing_exceptions' => <String, String>{'queue': 'overdue'},
+    'pending_balance_amount' ||
+    'open_balances' ||
+    'billing_pending' ||
+    'pending_payments' ||
+    'my_open_bills' ||
+    'open_invoices' => <String, String>{'queue': 'pendingPayment'},
+    'invoices_today' => <String, String>{'queue': 'needsIssue'},
+    'pending_approvals' => <String, String>{'queue': 'needsApproval'},
+    'pending_insurance_claims' => <String, String>{'queue': 'claimsPending'},
+    _ => const <String, String>{},
+  };
+}
+
+/// Canonical Billing / Claims routes for balance and collection KPIs (any persona).
+HomeMetricNavigation? homeBillingMetricNavigation({
+  required String cardId,
+  required HomeDashboardProfile profile,
+  required AppAccessPolicy policy,
+}) {
+  final String normalized = cardId.trim().toLowerCase();
+  if (!HomeDashboardBillingInventory.statusCards.containsKey(normalized)) {
+    return null;
+  }
+  final HomeDashboardBillingAtom atom =
+      HomeDashboardBillingInventory.statusCards[normalized]!;
+  if (!homeAllows(policy, homeAtomRequirement(atom.requiredPermissions))) {
+    return null;
+  }
+
+  final AppRouteData route = atom.billingRoute;
+  if (!canAccessShellRoute(route, policy)) {
+    return null;
+  }
+
+  final HomeMetricRouteTarget? target = profile.metricRouteTargets[normalized];
+  final Map<String, String> queryParameters = target?.queryParameters.isNotEmpty == true
+      ? target!.queryParameters
+      : atom.routeQuery.isNotEmpty
+      ? atom.routeQuery
+      : homeDefaultBillingMetricQuery(normalized);
+
+  return HomeMetricNavigation(route: route, queryParameters: queryParameters);
 }
 
 /// Resolves a tappable destination for a home KPI card when the profile defines one.
@@ -39,6 +90,14 @@ HomeMetricNavigation? homeMetricNavigation({
   }
   if (profile.metricActionTargets.containsKey(card.id)) {
     return null;
+  }
+  final HomeMetricNavigation? billingNavigation = homeBillingMetricNavigation(
+    cardId: card.id,
+    profile: profile,
+    policy: policy,
+  );
+  if (billingNavigation != null) {
+    return billingNavigation;
   }
   if (profile.metricRouteTargets.containsKey(card.id)) {
     final AppRouteData? route = _clinicalMetricRoute(
@@ -182,23 +241,6 @@ AppRouteData? _clinicalMetricRoute({
         AppRoutes.emergency,
       'pending_balance_amount' when policy.grants(AppPermissions.billingRead) =>
         AppRoutes.billing,
-      _ => null,
-    };
-  }
-
-  if (profile.id == 'billing' &&
-      policy.grantsAny(const <AppPermission>[
-        AppPermissions.billingRead,
-        AppPermissions.billingWrite,
-      ])) {
-    return switch (cardId) {
-      'collections_today' ||
-      'overdue_balance_amount' ||
-      'pending_balance_amount' ||
-      'invoices_today' ||
-      'overdue_invoices' ||
-      'open_balances' ||
-      'refunds_today' => AppRoutes.billing,
       _ => null,
     };
   }

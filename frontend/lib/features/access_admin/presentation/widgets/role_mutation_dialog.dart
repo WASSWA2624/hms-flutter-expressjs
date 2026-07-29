@@ -959,9 +959,18 @@ class _RoleTargetMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return AppFormSection(
-      title: label,
+    // Plain label + list — must not wrap in [AppFormSection] (nested section
+    // inside the scope [AppFormSection] on the Roles create/edit dialog).
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 220),
           child: Material(

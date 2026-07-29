@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/billing/data/dtos/billing_dtos.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -93,8 +94,9 @@ final class BillingRepositoryImpl implements BillingRepository {
   @override
   Future<Result<BillingMutationResult>> receivePayment(
     BillingWorkItem invoice,
-    BillingPaymentDraft draft,
-  ) async {
+    BillingPaymentDraft draft, {
+    String? idempotencyKey,
+  }) async {
     final String? tenantId = _nonEmpty(invoice.tenantId);
     if (tenantId == null || invoice.id.isEmpty) {
       return Result<BillingMutationResult>.failure(
@@ -115,6 +117,7 @@ final class BillingRepositoryImpl implements BillingRepository {
         'paid_at': DateTime.now().toUtc().toIso8601String(),
         'transaction_ref': draft.reference,
       }),
+      options: _idempotentOptions(idempotencyKey),
       decoder: decodeBillingRecordId,
     );
 
@@ -465,4 +468,12 @@ List<int> _decodeBytes(Object? data) {
     return data.whereType<int>().toList(growable: false);
   }
   return const <int>[];
+}
+
+Options? _idempotentOptions(String? idempotencyKey) {
+  final String? key = idempotencyKey?.trim();
+  if (key == null || key.isEmpty) {
+    return null;
+  }
+  return idempotentRequestOptions(idempotencyKey: key);
 }

@@ -134,7 +134,13 @@ void main() {
         expect(failure, isNull);
         expect(submittedInvoice?.id, 'invoice-1');
         expect(submittedDraft?.amount, '1000.00');
-        verify(() => repository.receivePayment(any(), any())).called(1);
+        verify(
+          () => repository.receivePayment(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey', that: isNotEmpty),
+          ),
+        ).called(1);
         // Instant patch must not wait on a post-payment workspace GET.
         verify(() => repository.getWorkspace(any())).called(1);
         verify(() => repository.listWorkItems(any())).called(1);

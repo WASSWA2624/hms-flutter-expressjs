@@ -18,6 +18,7 @@ describe('billing schema', () => {
   it('validates workspace/work-items queries', () => {
     expect(workspaceQuerySchema.safeParse({ page: '1', limit: '20', search: 'john' }).success).toBe(true);
     expect(workItemsQuerySchema.safeParse({ queue: 'APPROVAL_REQUIRED', page: '1', limit: '10' }).success).toBe(true);
+    expect(workItemsQuerySchema.safeParse({ page: '1', limit: '20' }).success).toBe(true);
     expect(
       workItemsQuerySchema.safeParse({
         queue: 'PENDING_PAYMENT',

@@ -23,8 +23,9 @@ abstract interface class BillingRepository {
 
   Future<Result<BillingMutationResult>> receivePayment(
     BillingWorkItem invoice,
-    BillingPaymentDraft draft,
-  );
+    BillingPaymentDraft draft, {
+    String? idempotencyKey,
+  });
 
   Future<Result<BillingMutationResult>> requestRefund(BillingRefundDraft draft);
 

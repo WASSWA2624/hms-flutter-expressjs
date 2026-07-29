@@ -514,5 +514,73 @@ void main() {
         AppRoutes.clinical,
       );
     });
+
+    test('facility admin revenue KPI navigates to billing workspace', () {
+      final HomeDashboardProfile profile = homeProfileForRole(
+        AppRole.facilityAdmin,
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['FACILITY_ADMIN']),
+          permissions: const <AppPermission>[
+            AppPermissions.billingRead,
+            AppPermissions.patientRead,
+          ],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      final HomeMetricNavigation? revenue = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'collections_today',
+          label: 'Revenue',
+          value: 100,
+          requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+        ),
+        policy: policy,
+      );
+
+      expect(revenue?.route, AppRoutes.billing);
+    });
+
+    test('patient open bills KPI navigates to billing pending queue', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.patient);
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['PATIENT']),
+          permissions: const <AppPermission>[AppPermissions.billingRead],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      final HomeMetricNavigation? bills = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'my_open_bills',
+          label: 'Bills',
+          value: 2,
+          requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+        ),
+        policy: policy,
+      );
+
+      expect(bills?.route, AppRoutes.billing);
+      expect(bills?.queryParameters['queue'], 'pendingPayment');
+    });
   });
 }

@@ -66,6 +66,25 @@ void main() {
       },
     );
   });
+
+  group('profile financial inventory', () {
+    test('profile tab has no billable actions', () {
+      expect(profileTabHasNoBillableActions(), isTrue);
+    });
+
+    test('inventory covers view and mutation atoms', () {
+      final Set<String> ids = profileFinancialInventory
+          .map((ProfileFinancialAtom atom) => atom.id)
+          .toSet();
+      expect(ids, containsAll(<String>[
+        'tab_surface',
+        'change_password',
+        'edit_profile',
+        'edit_profile_save',
+        'account_details_read',
+      ]));
+    });
+  });
 }
 
 AppAccessPolicy _policy(List<AppPermission> permissions) {

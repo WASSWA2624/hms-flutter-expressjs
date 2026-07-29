@@ -174,54 +174,49 @@ class _SettingsAccountSectionState
 
     return AppAccessGate(
       requirement: SettingsAccountAtomPermissions.tab,
-      child: AppScreenSection(
-        title: l10n.settingsAccountSectionTitle,
-        body: l10n.settingsAccountSectionBody,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (canUpdate)
-              Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.sm,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (canUpdate)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  AppAccessActionGate(
+                    requirement: SettingsAccountAtomPermissions.changePassword,
+                    builder: (BuildContext context, bool _) {
+                      return AppTabToolbarAction(
+                        label: l10n.settingsChangePasswordActionTitle,
+                        icon: Icons.lock_reset_outlined,
+                        onPressed: () => unawaited(_changePassword(context)),
+                      );
+                    },
+                  ),
+                  if (editableRecord != null)
                     AppAccessActionGate(
-                      requirement:
-                          SettingsAccountAtomPermissions.changePassword,
+                      requirement: SettingsAccountAtomPermissions.editProfile,
                       builder: (BuildContext context, bool _) {
-                        return AppTabToolbarAction(
-                          label: l10n.settingsChangePasswordActionTitle,
-                          icon: Icons.lock_reset_outlined,
-                          onPressed: () => unawaited(_changePassword(context)),
+                        return AppTabToolbarPrimary(
+                          label: l10n.profileEditActionTitle,
+                          icon: Icons.edit_outlined,
+                          enabled: !isSaving,
+                          onPressed: isSaving
+                              ? null
+                              : () => unawaited(
+                                  _editProfile(context, ref, editableRecord),
+                                ),
                         );
                       },
                     ),
-                    if (editableRecord != null)
-                      AppAccessActionGate(
-                        requirement: SettingsAccountAtomPermissions.editProfile,
-                        builder: (BuildContext context, bool _) {
-                          return AppTabToolbarPrimary(
-                            label: l10n.profileEditActionTitle,
-                            icon: Icons.edit_outlined,
-                            enabled: !isSaving,
-                            onPressed: isSaving
-                                ? null
-                                : () => unawaited(
-                                    _editProfile(context, ref, editableRecord),
-                                  ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
+                ],
               ),
-            if (canUpdate) SizedBox(height: theme.spacing.sm),
-            const _ProfilePanel(),
-          ],
-        ),
+            ),
+          if (canUpdate) SizedBox(height: theme.spacing.sm),
+          const _ProfilePanel(),
+        ],
       ),
     );
   }
