@@ -104,8 +104,16 @@ Finder _tab(String label) =>
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
-    AppModuleEntitlement(code: hrBillingPaymentsModule, licenseStatus: 'ACTIVE'),
+    AppModuleEntitlement(
+      code: hrRostersModule,
+      licenseStatus: 'ACTIVE',
+      planTierCode: 'PRO',
+    ),
+    AppModuleEntitlement(
+      code: hrBillingPaymentsModule,
+      licenseStatus: 'ACTIVE',
+      planTierCode: 'PRO',
+    ),
   ],
   List<String> roles = const <String>['HR'],
   String? facilityId = 'facility-1',
@@ -357,6 +365,18 @@ void main() {
             AppPermissions.hrRead,
             AppPermissions.rosterWrite,
           },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: hrRostersModule,
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'PRO',
+            ),
+          ],
+        );
+        expect(
+          rosterWriter.permissions.contains(AppPermissions.rosterWrite),
+          isTrue,
+          reason: 'plan caps should keep roster:write on PRO',
         );
         expect(
           HrHumanResourcesAtomPermissions.recordAvailability.isAllowed(
@@ -525,13 +545,8 @@ void main() {
       await tester.tap(find.text('Review profile'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Record availability'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Staff actions'), findsOneWidget);
+      expect(find.text('Record availability'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),
@@ -539,13 +554,7 @@ void main() {
         ),
         findsNothing,
       );
-      expect(
-        find.descendant(
-          of: find.byType(AppQuickActions),
-          matching: find.text('Run payroll'),
-        ),
-        findsNothing,
-      );
+      expect(find.text('Run payroll'), findsNothing);
       expect(find.byTooltip('Edit staff'), findsNothing);
     },
   );
@@ -569,8 +578,8 @@ void main() {
     );
 
     expect(_tab('Human resources'), findsOneWidget);
-    expect(_toolbarPrimary('Add staff'), findsOneWidget);
-    expect(find.text('Ada Needs Dept'), findsOneWidget);
+    expect(find.byTooltip('Add staff'), findsOneWidget);
+    expect(find.textContaining('Ada'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
 

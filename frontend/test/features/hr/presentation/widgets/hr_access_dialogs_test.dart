@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -28,24 +29,24 @@ const HrAccessUser _accessUser = HrAccessUser(
   profileName: 'HR Admin',
 );
 
-SessionState _authenticatedSession({String? tenantId}) {
-  if (tenantId == null) {
-    return const SessionState.authenticated();
-  }
+SessionState _authenticatedSession({
+  String? tenantId,
+  List<AppPermission> permissions = const <AppPermission>[
+    AppPermissions.hrRead,
+    AppPermissions.hrWrite,
+    AppPermissions.tenantAdmin,
+  ],
+}) {
   return SessionState.authenticated(
     session: AuthSession(
       tokens: SessionTokens(accessToken: 'token'),
       user: AuthUserProfile(
         tenantId: tenantId,
-        facilityId: 'facility-1',
+        facilityId: tenantId == null ? null : 'facility-1',
         email: 'hr.admin@example.com',
         roles: const <String>['TENANT_ADMIN'],
       ),
-      permissions: const <AppPermission>[
-        AppPermissions.hrRead,
-        AppPermissions.hrWrite,
-        AppPermissions.tenantAdmin,
-      ],
+      permissions: permissions,
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
       ],
@@ -103,14 +104,15 @@ Future<void> _pumpAccessDialog(
   String? tenantId = _tenantUuid,
 }) async {
   _stubWorkspaceBootstrap(repository);
+  final SessionState session = _authenticatedSession(tenantId: tenantId);
+  final AppAccessPolicy policy = AppAccessPolicy.fromSession(session.session);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         hrRepositoryProvider.overrideWithValue(repository),
-        initialSessionStateProvider.overrideWithValue(
-          _authenticatedSession(tenantId: tenantId),
-        ),
+        initialSessionStateProvider.overrideWithValue(session),
+        appAccessPolicyProvider.overrideWithValue(policy),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

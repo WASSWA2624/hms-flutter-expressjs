@@ -63,7 +63,10 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubWorkspace(_MockHrRepository repository) {
+void _stubWorkspace(
+  _MockHrRepository repository, {
+  List<HrAccessUser> accessUsers = const <HrAccessUser>[_accessUser],
+}) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async =>
         const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
@@ -71,8 +74,16 @@ void _stubWorkspace(_MockHrRepository repository) {
   when(() => repository.listStaffProfiles(any())).thenAnswer(
     (_) async => const Result<AppPage<HrStaffProfile>>.success(
       AppPage<HrStaffProfile>(
-        items: <HrStaffProfile>[],
+        items: <HrStaffProfile>[
+          HrStaffProfile(
+            id: 'staff-1',
+            displayId: 'STF-1',
+            tenantId: _tenantUuid,
+            status: 'ACTIVE',
+          ),
+        ],
         request: AppPageRequest(),
+        totalItemCount: 1,
       ),
     ),
   );
@@ -93,11 +104,11 @@ void _stubWorkspace(_MockHrRepository repository) {
     ),
   );
   when(() => repository.listAccessUsers(any())).thenAnswer(
-    (_) async => const Result<AppPage<HrAccessUser>>.success(
+    (_) async => Result<AppPage<HrAccessUser>>.success(
       AppPage<HrAccessUser>(
-        items: <HrAccessUser>[_accessUser],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 1,
+        items: accessUsers,
+        request: const AppPageRequest(pageSize: 12),
+        totalItemCount: accessUsers.length,
       ),
     ),
   );
@@ -130,10 +141,11 @@ Future<void> _pumpAccessTab(
   required AppAccessPolicy accessPolicy,
   Size viewport = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
+  List<HrAccessUser> accessUsers = const <HrAccessUser>[_accessUser],
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(repository, accessUsers: accessUsers);
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -162,19 +174,7 @@ Future<void> _pumpAccessTab(
         hrRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(
-            session: AuthSession(
-              tokens: SessionTokens(accessToken: 'access-token'),
-              user: AuthUserProfile(
-                tenantId: _tenantUuid,
-                facilityId: 'facility-1',
-                roles: const <String>['TENANT_ADMIN'],
-              ),
-              permissions: accessPolicy.permissions,
-              moduleEntitlements: accessPolicy.moduleEntitlements.values,
-              isAuthorizationHydrated: true,
-            ),
-          ),
+          const SessionState.ready(),
         ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
       ],
@@ -426,15 +426,6 @@ void main() {
   testWidgets('authorized empty / loading states remain observable', (
     WidgetTester tester,
   ) async {
-    when(() => repository.listAccessUsers(any())).thenAnswer(
-      (_) async => const Result<AppPage<HrAccessUser>>.success(
-        AppPage<HrAccessUser>(
-          items: <HrAccessUser>[],
-          request: AppPageRequest(pageSize: 12),
-          totalItemCount: 0,
-        ),
-      ),
-    );
     final AppAccessPolicy policy = _policy(
       permissions: <AppPermission>{
         AppPermissions.hrRead,
@@ -447,6 +438,7 @@ void main() {
       tester,
       repository: repository,
       accessPolicy: policy,
+      accessUsers: const <HrAccessUser>[],
     );
 
     expect(find.text('No staff accounts match your search.'), findsOneWidget);

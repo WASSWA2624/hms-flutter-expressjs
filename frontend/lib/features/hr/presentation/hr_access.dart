@@ -33,24 +33,33 @@ const AccessRequirement hrWriteRequirement = AccessRequirement(
 /// Alias — workspace write ∩ (leave approve / request / reject).
 const AccessRequirement hrWorkspaceWriteRequirement = hrWriteRequirement;
 
-/// Roster / shift create & update (matrix ∩ `roster:write` + module).
+/// Roster / shift mutations (source ∪ `hr:write` | `roster:write` + module).
 ///
-/// Shifts tab schedule templates / override / preview-generate and staff
-/// assign/swap use this helper. Template delete uses [hrWriteRequirement].
+/// screens/hr.md and staff-detail roster actions keep this union. Shifts tab
+/// atoms that need ∩ `roster:write` alone use a local stricter requirement.
 const AccessRequirement hrRosterWriteRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.rosterWrite],
+  anyPermissions: <AppPermission>[
+    AppPermissions.hrWrite,
+    AppPermissions.rosterWrite,
+  ],
   activeModules: <String>[hrRostersModule],
 );
 
-/// Swap approve/reject (matrix nested key ∩ `roster:approve` + module).
+/// Swap / roster approve (source ∪ `hr:write` | `roster:approve` + module).
 const AccessRequirement hrRosterApproveRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.rosterApprove],
+  anyPermissions: <AppPermission>[
+    AppPermissions.hrWrite,
+    AppPermissions.rosterApprove,
+  ],
   activeModules: <String>[hrRostersModule],
 );
 
-/// Roster publish (matrix nested key ∩ `roster:publish` + module).
+/// Roster publish (source ∪ `hr:write` | `roster:publish` + module).
 const AccessRequirement hrRosterPublishRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.rosterPublish],
+  anyPermissions: <AppPermission>[
+    AppPermissions.hrWrite,
+    AppPermissions.rosterPublish,
+  ],
   activeModules: <String>[hrRostersModule],
 );
 
@@ -99,12 +108,10 @@ const List<AppPermission> hrAccessAdminReadPermissions = <AppPermission>[
   AppPermissions.systemAdmin,
 ];
 
-/// Access tab view — matrix ∩ `hr:read` **or** ∪ admin keys (either path).
+/// Access tab view (matrix ∩ `hr:read` and ∪ admin keys + module).
 const AccessRequirement hrAccessReadRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrRead,
-    ...hrAccessAdminReadPermissions,
-  ],
+  allPermissions: <AppPermission>[AppPermissions.hrRead],
+  anyPermissions: hrAccessAdminReadPermissions,
   activeModules: <String>[hrRostersModule],
 );
 
@@ -268,7 +275,7 @@ abstract final class HrHumanResourcesAtomPermissions {
   static const AccessRequirement offboard = hrWriteRequirement;
   static const AccessRequirement revokeRole = hrWriteRequirement;
   static const AccessRequirement endAssignment = hrWriteRequirement;
-  static const AccessRequirement recordAvailability = hrWriteRequirement;
+  static const AccessRequirement recordAvailability = hrRosterWriteRequirement;
   static const AccessRequirement assignShift = hrRosterWriteRequirement;
   static const AccessRequirement swapShift = hrRosterWriteRequirement;
   static const AccessRequirement runPayroll = hrPayrollRequirement;

@@ -116,8 +116,9 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
 
 ### Access tab
 
-- Embedded `HrAccessWorkspacePanel`: users / roles / permissions toggle, search, create actions when Access create ∩ + tenant UUID available.
-- Row select opens user / role / permission detail dialogs.
+- Tab strip: omitted when `HrManageUsersRolesAtomPermissions.tab` fails (`hr:read` ∩ admin ∪).
+- Embedded `HrAccessWorkspacePanel`: users / roles / permissions toggle, search; create actions when create ∩ (`tenant:admin` + source `hr:write`) + tenant UUID.
+- Row select opens user / role / permission detail; edit/assign when update ∩; remove role/permission when delete ∩ (`hr:write`).
 
 ### Empty / loading / error / validation
 
@@ -136,6 +137,7 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Staff **Assign department** next-action opens the assign dialog without Staff actions.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
+- Access tab suite `frontend/test/features/hr/presentation/hr_manage_users_roles_permissions_test.dart` proves ∩ denial (no admin ∪), ∪ allowance (facility/tenant admin), create ∩ mapping (source `hr:write` ∩ matrix `tenant:admin`), subscription strip, empty state, viewports, light/dark.
 - Shifts permission suite `frontend/test/features/hr/presentation/hr_shifts_permissions_test.dart` proves:
   - ∩ denial: missing `roster:write` hides Schedule templates / Override; missing `hr:write` hides template Delete.
   - ∩ presence: `roster:write` shows create/edit templates; full set shows Delete.
