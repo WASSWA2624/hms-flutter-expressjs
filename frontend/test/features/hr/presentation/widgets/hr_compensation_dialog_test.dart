@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -18,6 +19,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
@@ -136,6 +138,9 @@ void main() {
       WidgetTester tester, {
       required List<HrStaffCompensation> history,
     }) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
       const HrStaffProfile staff = HrStaffProfile(
         id: 'staff-1',
         userFullName: 'Dr. Belinda Lim',
@@ -145,8 +150,9 @@ void main() {
         ProviderScope(
           overrides: [
             hrRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
             initialSessionStateProvider.overrideWithValue(
-              const SessionState.authenticated(),
+              const SessionState.ready(),
             ),
             appAccessPolicyProvider.overrideWithValue(_hrWritePolicy()),
           ],

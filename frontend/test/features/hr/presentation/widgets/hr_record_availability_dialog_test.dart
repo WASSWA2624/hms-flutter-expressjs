@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -19,6 +20,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
@@ -167,14 +169,17 @@ Future<void> _pumpRecordAvailabilityDialog(
   WidgetTester tester,
   _MockHrRepository repository,
 ) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubWorkspaceBootstrap(repository);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         hrRepositoryProvider.overrideWithValue(repository),
+        sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.authenticated(),
+          const SessionState.ready(),
         ),
         appAccessPolicyProvider.overrideWithValue(_hrRosterWritePolicy()),
       ],
