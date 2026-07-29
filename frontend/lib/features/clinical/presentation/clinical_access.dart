@@ -210,6 +210,7 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | All tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
@@ -240,6 +241,11 @@ abstract final class ClinicalAllAtomPermissions {
   static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
   static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
@@ -341,23 +347,26 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 ///
 /// Active outpatient consultation worklist (`screens/clinical.md`); richest
 /// nested action bar (same encounter detail chrome as All). Matrix nested
-/// write rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
-/// radiology / pharmacy / admission.
+/// write / read rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
+/// radiology / pharmacy / admission. Discharge Open billing reuses
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | In consultation tab / count badge | navigate | read ∩ `clinical:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
+/// | Search / clear / Filters / columns / pagination | read chrome | read ∩ |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
-/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
@@ -377,9 +386,14 @@ abstract final class ClinicalInConsultationAtomPermissions {
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
   static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
   static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
       clinicalWorkspaceReadRequirement;
   static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
@@ -735,23 +749,28 @@ bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
 /// read; reopen / mutations need write. No dedicated reopen control in
 /// `screens/clinical.md` — [reopen] maps post-completion encounter write
 /// mutations (notes / orders / diagnoses). Vitals and disposition stay
-/// non-terminal-only (hidden for completed rows).
+/// non-terminal-only (hidden for completed rows). Matrix nested write rows
+/// are _(n/a)_; prompt narrative ∪ helpers still gate lab / radiology /
+/// pharmacy / admission. Discharge Open billing uses
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Completed tab | navigate | read ∩ `clinical:read` |
+/// | Completed tab / count badge | navigate | read ∩ `clinical:read` |
 /// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Completed tab count badge | read | read ∩ |
-/// | Empty / error / retry | read chrome | read ∩ |
+/// | Completed tab count / summary chip | read | read ∩ |
+/// | Empty / error / retry / loading | read chrome | read ∩ |
+/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → encounter detail | read | read ∩ |
 /// | Next action Review encounter | navigate / read | read ∩ |
-/// | Next action WorkflowActionButton | navigate / write | registry requirement |
+/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ (non-terminal; N/A here) |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source ([reopen]) |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ (non-terminal; absent) |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
@@ -770,7 +789,14 @@ abstract final class ClinicalCompletedAtomPermissions {
   static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
   static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
   static const AccessRequirement completedChip = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
   static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  /// Authorized success snackbar path (mutation entry already write-gated).
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  /// Authorized form validation feedback (nested write dialogs).
+  static const AccessRequirement validation =
+      clinicalWorkspaceWriteRequirement;
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement openEncounter =
@@ -781,6 +807,7 @@ abstract final class ClinicalCompletedAtomPermissions {
   static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  /// Post-completion encounter mutations (no dedicated reopen control).
   static const AccessRequirement reopen = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
   static const AccessRequirement recordVitals =

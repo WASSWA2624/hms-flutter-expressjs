@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,7 @@ import 'package:hosspi_hms/features/clinical/data/repositories/clinical_reposito
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
+import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -50,6 +53,38 @@ final ClinicalWorklistEntry _completedEncounter = ClinicalWorklistEntry(
   status: 'COMPLETED',
   stage: 'COMPLETED',
   updatedAt: DateTime.now(),
+);
+
+const ClinicalEncounterBundle _completedBundle = ClinicalEncounterBundle(
+  entry: ClinicalWorklistEntry(
+    id: 'encounter-completed-1',
+    sourceQueue: 'OPD',
+    encounterId: 'encounter-completed-1',
+    encounterPublicId: 'ENC-DONE-1',
+    patientDisplayName: 'Completed Tab Patient',
+    patientPublicId: 'PAT-DONE-1',
+    providerDisplayName: 'Dr Done',
+    encounterType: 'OUTPATIENT',
+    currentLocation: 'Clinic C',
+    status: 'COMPLETED',
+    stage: 'COMPLETED',
+  ),
+  labOrders: <ClinicalRelatedRecord>[
+    ClinicalRelatedRecord(
+      id: 'lab-done-1',
+      kind: 'LAB_ORDER',
+      status: 'ORDERED',
+      title: 'CBC',
+    ),
+  ],
+  diagnoses: <ClinicalRelatedRecord>[
+    ClinicalRelatedRecord(
+      id: 'dx-done-1',
+      kind: 'DIAGNOSIS',
+      status: 'ACTIVE',
+      title: 'Hypertension',
+    ),
+  ],
 );
 
 AppAccessPolicy _policy({
@@ -118,22 +153,8 @@ void _stubClinical(
         bundle ??
             ClinicalEncounterBundle(
               entry: entry,
-              labOrders: const <ClinicalRelatedRecord>[
-                ClinicalRelatedRecord(
-                  id: 'lab-done-1',
-                  kind: 'LAB_ORDER',
-                  status: 'ORDERED',
-                  title: 'CBC',
-                ),
-              ],
-              diagnoses: const <ClinicalRelatedRecord>[
-                ClinicalRelatedRecord(
-                  id: 'dx-done-1',
-                  kind: 'DIAGNOSIS',
-                  status: 'ACTIVE',
-                  title: 'Hypertension',
-                ),
-              ],
+              labOrders: _completedBundle.labOrders,
+              diagnoses: _completedBundle.diagnoses,
             ),
       ),
     );
@@ -278,6 +299,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const IpdAdmissionQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -291,7 +313,55 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalCompletedAtomPermissions.listChrome,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.search,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.completedChip,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.empty,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.loading,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.retry,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.nextActionReview,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.printSummary,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.nestedRead,
+        same(clinicalWorkspaceReadRequirement),
+      );
+      expect(
         ClinicalCompletedAtomPermissions.write,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.create,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.update,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.delete,
         same(clinicalEncounterWriteRequirement),
       );
       expect(
@@ -299,7 +369,19 @@ void main() {
         same(clinicalWorkspaceWriteRequirement),
       );
       expect(
+        ClinicalCompletedAtomPermissions.success,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.validation,
+        same(clinicalEncounterWriteRequirement),
+      );
+      expect(
         ClinicalCompletedAtomPermissions.requestLab,
+        same(clinicalLabOrderWriteRequirement),
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.nestedLabWrite,
         same(clinicalLabOrderWriteRequirement),
       );
       expect(
@@ -322,6 +404,10 @@ void main() {
         ClinicalCompletedAtomPermissions.routeEntry,
         same(clinicalWorkspaceEntryRequirement),
       );
+      expect(
+        clinicalSectionTabRequirement(ClinicalWorkspaceSection.completed),
+        same(clinicalWorkspaceReadRequirement),
+      );
     });
 
     test('∩ denial: missing clinical:read fails tab; write alone fails tab', () {
@@ -337,6 +423,14 @@ void main() {
       expect(
         ClinicalCompletedAtomPermissions.reopen.isAllowed(writeOnly),
         isTrue,
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.success.isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        ClinicalCompletedAtomPermissions.loading.isAllowed(writeOnly),
+        isFalse,
       );
       expect(
         ClinicalCompletedAtomPermissions.routeEntry.isAllowed(writeOnly),
@@ -814,7 +908,239 @@ void main() {
       await tester.tap(find.text('Add clinical note').first);
       await tester.pumpAndSettle();
 
+      // Detail remains mounted after opening write dialog (sync path ready).
       expect(find.byType(AppDialog), findsWidgets);
+      expect(find.text('Completed Tab Patient'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'authorized Add clinical note shows validation for empty submit',
+    (WidgetTester tester) async {
+      await _pumpCompletedTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Completed Tab Patient'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add clinical note').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsWidgets);
+
+      await tester.tap(find.text('Add clinical note').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsWidgets);
+      verifyNever(() => clinicalRepository.createClinicalNote(any()));
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  test(
+    'post-mutation sync: deleteDiagnosis reloads Completed encounter bundle',
+    () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_completedEncounter);
+
+      clearInteractions(clinicalRepository);
+      when(
+        () => clinicalRepository.deleteDiagnosis(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(() => clinicalRepository.loadEncounterBundle(any())).thenAnswer((
+        invocation,
+      ) {
+        final ClinicalWorklistEntry entry =
+            invocation.positionalArguments.single as ClinicalWorklistEntry;
+        return Future<Result<ClinicalEncounterBundle>>.value(
+          Result<ClinicalEncounterBundle>.success(
+            ClinicalEncounterBundle(
+              entry: entry,
+              labOrders: _completedBundle.labOrders,
+              diagnoses: const <ClinicalRelatedRecord>[],
+            ),
+          ),
+        );
+      });
+
+      final AppFailure? failure = await controller.deleteDiagnosis('dx-done-1');
+      expect(failure, isNull);
+      verify(() => clinicalRepository.deleteDiagnosis('dx-done-1')).called(1);
+      verify(
+        () => clinicalRepository.loadEncounterBundle(any()),
+      ).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  testWidgets(
+    'write ∪: system:admin mounts reopen mutations with clinical:read',
+    (WidgetTester tester) async {
+      await _pumpCompletedTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.systemAdmin,
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Completed Tab Patient'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add clinical note'), findsWidgets);
+      expect(find.text('Request lab'), findsWidgets);
+      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Record vitals'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized loading chrome remains observable on Completed',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+
+      final Completer<Result<AppPage<ClinicalWorklistEntry>>> listCompleter =
+          Completer<Result<AppPage<ClinicalWorklistEntry>>>();
+      when(() => clinicalRepository.listEncounters(any())).thenAnswer(
+        (_) => listCompleter.future,
+      );
+      when(() => clinicalRepository.listAdmissions(any())).thenAnswer(
+        (invocation) async => Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: const <ClinicalWorklistEntry>[],
+            request:
+                (invocation.positionalArguments.single as ClinicalWorklistQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(clinicalRepository.loadReferenceData).thenAnswer(
+        (_) async => const Result<ClinicalReferenceData>.success(
+          ClinicalReferenceData(),
+        ),
+      );
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/clinical?section=completed',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/clinical',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: ClinicalWorkspacePage(
+                  initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            ipdRepositoryProvider.overrideWithValue(ipdRepository),
+            followUpTabCountProvider.overrideWith(
+              (Ref ref, FollowUpWorklistScope scope) => null,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{
+                  AppPermissions.clinicalRead,
+                  AppPermissions.clinicalWrite,
+                },
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Loading clinical workspace'), findsOneWidget);
+      expect(find.textContaining('no access'), findsNothing);
+
+      listCompleter.complete(
+        Result<AppPage<ClinicalWorklistEntry>>.success(
+          AppPage<ClinicalWorklistEntry>(
+            items: <ClinicalWorklistEntry>[_completedEncounter],
+            request: const AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Completed Tab Patient'), findsOneWidget);
     },
   );
 }
