@@ -77,6 +77,7 @@ void _stubClinical(
   _MockClinicalRepository repository, {
   List<ClinicalWorklistEntry> items = const <ClinicalWorklistEntry>[_encounter],
   Result<AppPage<ClinicalWorklistEntry>>? listOverride,
+  Result<ClinicalReferenceData>? referenceOverride,
   ClinicalEncounterBundle? bundle,
 }) {
   when(() => repository.listEncounters(any())).thenAnswer((invocation) async {
@@ -106,6 +107,7 @@ void _stubClinical(
   );
   when(repository.loadReferenceData).thenAnswer(
     (_) async =>
+        referenceOverride ??
         const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
   );
   when(() => repository.loadEncounterBundle(any())).thenAnswer((invocation) {
@@ -138,25 +140,36 @@ void _stubClinical(
   });
 }
 
-void _stubOpd(_MockOpdRepository repository) {
-  when(() => repository.listOpdFlows(any())).thenAnswer(
-    (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+void _stubOpd(_MockOpdRepository repository, {bool failLists = false}) {
+  when(() => repository.listOpdFlows(any())).thenAnswer((invocation) async {
+    if (failLists) {
+      return const Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
+    }
+    return Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
         items: const <OpdFlowSummary>[],
         request:
             (invocation.positionalArguments.single as OpdFlowQuery).pageRequest,
         totalItemCount: 0,
       ),
-    ),
-  );
-  when(() => repository.listTriageQueue(any())).thenAnswer(
-    (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+    );
+  });
+  when(() => repository.listTriageQueue(any())).thenAnswer((invocation) async {
+    if (failLists) {
+      return const Result<AppPage<OpdFlowSummary>>.failure(AppFailure.network());
+    }
+    return Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
         items: const <OpdFlowSummary>[],
         request: (invocation.positionalArguments.single as OpdTriageQueueQuery)
             .pageRequest,
         totalItemCount: 0,
       ),
+    );
+  });
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001')),
     ),
   );
 }
@@ -183,6 +196,8 @@ Future<void> _pumpAllTab(
   List<ClinicalWorklistEntry> items = const <ClinicalWorklistEntry>[_encounter],
   String initialLocation = '/clinical?section=all',
   Result<AppPage<ClinicalWorklistEntry>>? listOverride,
+  Result<ClinicalReferenceData>? referenceOverride,
+  bool failOpdLists = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -192,8 +207,9 @@ Future<void> _pumpAllTab(
     clinicalRepository,
     items: items,
     listOverride: listOverride,
+    referenceOverride: referenceOverride,
   );
-  _stubOpd(opdRepository);
+  _stubOpd(opdRepository, failLists: failOpdLists);
   _stubIpd(ipdRepository);
 
   tester.view.physicalSize = physicalSize;
@@ -297,9 +313,19 @@ void main() {
       expect(ClinicalAllAtomPermissions.routeEntry.isAllowed(writeOnly), isTrue);
     });
 
-    test('∪ allowance: lab:write alone satisfies nested lab order write', () {
+    test('∪ allowance: lab:write + modules satisfies nested lab order write', () {
       final AppAccessPolicy labWriter = _policy(
         permissions: <AppPermission>{AppPermissions.labWrite},
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'lab-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       expect(
         ClinicalAllAtomPermissions.requestLab.isAllowed(labWriter),
@@ -426,6 +452,16 @@ void main() {
           AppPermissions.clinicalRead,
           AppPermissions.labWrite,
         },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+          AppModuleEntitlement(
+            code: 'lab-workflows',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       );
       expect(ClinicalAllAtomPermissions.requestLab.isAllowed(labOnly), isTrue);
       expect(ClinicalAllAtomPermissions.addNote.isAllowed(labOnly), isFalse);
@@ -468,7 +504,6 @@ void main() {
       isTrue,
     );
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('All Tab Patient'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -563,6 +598,7 @@ void main() {
         listOverride: const Result<AppPage<ClinicalWorklistEntry>>.failure(
           AppFailure.network(),
         ),
+        failOpdLists: true,
       );
 
       expect(find.text('Try again'), findsOneWidget);

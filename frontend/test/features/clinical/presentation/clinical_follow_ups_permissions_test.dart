@@ -230,7 +230,9 @@ void main() {
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-      expect(_tab('All'), findsOneWidget);
+      // Worklist tabs also require clinical:read — write-only omits strip chrome.
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_tab('All'), findsNothing);
     },
   );
 
@@ -494,7 +496,8 @@ void main() {
 
       expect(_tab('Follow-ups'), findsNothing);
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
-      expect(_tab('All'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(_tab('All'), findsNothing);
     },
   );
 }

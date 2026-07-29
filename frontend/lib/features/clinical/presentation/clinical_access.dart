@@ -170,13 +170,7 @@ bool canViewClinicalSection(
   AppAccessPolicy policy,
   ClinicalWorkspaceSection section,
 ) {
-  if (section.isFollowUps) {
-    return canReadClinicalFollowUps(policy);
-  }
-  // Non–Follow-ups tabs stay available for users who already reached the
-  // workspace. Other tab scans may tighten [clinicalSectionTabRequirement]
-  // in page chrome separately.
-  return true;
+  return clinicalSectionTabRequirement(section).isAllowed(policy);
 }
 
 /// Sections the user may open; empty when no clinical read (and Follow-ups).

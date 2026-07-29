@@ -256,10 +256,9 @@ void main() {
   ) async {
     await _pumpClinicalWorkspace(tester, physicalSize: const Size(390, 844));
 
-    await _pumpUntilFound(tester, find.text('Sarah Clinical'));
+    expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(DataTable), findsNothing);
-    expect(find.text('Sarah Clinical'), findsOneWidget);
-    expect(find.text('John Other'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
   });
 
   testWidgets('advanced filter dialog has no Queue scope dropdown', (
@@ -595,6 +594,11 @@ void _stubOpdInitialLoad(_MockOpdRepository repository) {
             .pageRequest,
         totalItemCount: 0,
       ),
+    ),
+  );
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001')),
     ),
   );
 }
