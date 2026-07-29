@@ -112,6 +112,12 @@ def _save_finished(finished: set[str]) -> None:
     )
 
 
+def _mark_finished(finished: set[str], key: str) -> None:
+    """Record one completed iteration and persist state immediately."""
+    finished.add(key)
+    _save_finished(finished)
+
+
 def _log(message: str, *, err: bool = False) -> None:
     """Print one flushable progress line."""
     print(message, file=sys.stderr if err else sys.stdout, flush=True)

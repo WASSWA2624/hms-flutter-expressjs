@@ -279,8 +279,13 @@ abstract final class RouteAccessCatalog {
     requirement: subscriptionsEntry,
   );
 
+  /// Route entry matches [AppRoutes.operations]: ∪ `operations:read` |
+  /// `operations:write` + facilities-maintenance + facility context.
   static const AccessRequirement operationsEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.operationsRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
     activeModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );

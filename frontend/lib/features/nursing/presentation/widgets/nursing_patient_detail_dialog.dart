@@ -87,7 +87,9 @@ class _NursingPatientDetailContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = canWriteNursing(policy);
-    final bool canReadMeds = canReadNursingMedications(policy);
+    // Meds panel / due chip — ∩ pharmacy:read (MedicationDueAtomPermissions).
+    final bool canReadMeds =
+        NursingMedicationDueAtomPermissions.medicationsPanel.isAllowed(policy);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,7 +275,8 @@ class _NursingActionBar extends ConsumerWidget {
         ),
         if (omit != NursingNextActionKind.medication)
           AppPermissionActionItem(
-            requirement: nursingMedicationAdministerRequirement,
+            requirement:
+                NursingMedicationDueAtomPermissions.administerMedication,
             label: l10n.nursingActionAdministerMedication,
             icon: Icons.medication_outlined,
             onPressed: () => _openMedicationDialog(context, detail),

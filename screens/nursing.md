@@ -120,4 +120,5 @@ Tab-strip primary write, **Add note**, and **Refresh** were removed.
 - [x] All-tab permission scan: ∩ denial / ∪ allowance / subscription strip / meds panel / shift context / viewports / themes. *(widget: `nursing_all_permissions_test.dart`)*
 - [x] Urgent-tab permission scan: ∩ denial / ∪ allowance / subscription strip / Escalate next-action / meds panel / shift context / viewports / themes. *(widget: `nursing_urgent_permissions_test.dart`)*
 - [x] Discharge-pending permission scan: ∩ `clinical:write` for discharge CTA; ∪ read; nested billing/pharmacy; subscription strip; complementary source ∪; viewports / themes. *(widget: `nursing_discharge_pending_permissions_test.dart`)*
+- [x] Medication-due permission scan: ∩ `pharmacy:read` (+ clinical|pharmacy write) for Administer / med panel; ∪ `clinical:read` \| `patient:read` for tab; matrix View ∩ / create∩ mapping noted; subscription strip; shift context; viewports / themes. *(widget: `nursing_medication_due_permissions_test.dart`)*
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths. *(manual — dialog validation / snackbars reuse shared nursing helpers)*

@@ -347,7 +347,15 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
 
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    if (!OpdAllAtomPermissions.detail.isAllowed(policy)) {
+    final AccessRequirement detailRequirement = switch (_section) {
+      OpdWorkspaceSection.active => OpdActiveAtomPermissions.detail,
+      OpdWorkspaceSection.arrivals => OpdArrivalsAtomPermissions.detail,
+      OpdWorkspaceSection.followUps => OpdFollowUpsAtomPermissions.detail,
+      OpdWorkspaceSection.queue => OpdQueueAtomPermissions.detail,
+      OpdWorkspaceSection.triage => OpdTriageAtomPermissions.detail,
+      OpdWorkspaceSection.all => OpdAllAtomPermissions.detail,
+    };
+    if (!detailRequirement.isAllowed(policy)) {
       return;
     }
 
@@ -2319,8 +2327,21 @@ class _OpdMainTable extends ConsumerWidget {
           for (final _OpdTableColumnId column in columnChoices)
             _opdDataColumn(context, column, state: state),
         ],
-        onRowSelected: (_OpdTableItem item) =>
-            _openOpdTableItemActions(context, item, state: state),
+        onRowSelected: (_OpdTableItem item) {
+          final AccessRequirement rowSelectRequirement = switch (section) {
+            OpdWorkspaceSection.active => OpdActiveAtomPermissions.rowSelect,
+            OpdWorkspaceSection.arrivals => OpdArrivalsAtomPermissions.rowSelect,
+            OpdWorkspaceSection.queue => OpdQueueAtomPermissions.rowSelect,
+            OpdWorkspaceSection.triage => OpdTriageAtomPermissions.rowSelect,
+            OpdWorkspaceSection.all => OpdAllAtomPermissions.rowSelect,
+            OpdWorkspaceSection.followUps =>
+              OpdFollowUpsAtomPermissions.rowSelect,
+          };
+          if (!rowSelectRequirement.isAllowed(policy)) {
+            return;
+          }
+          unawaited(_openOpdTableItemActions(context, item, state: state));
+        },
         onPageChanged: onPageChanged,
         pageLabelBuilder: (AppPage<_OpdTableItem> page) =>
             _opdPageLabel(context, page),
@@ -2421,6 +2442,7 @@ Future<void> _openOpdTableItemActions(
     final bool? changed = await showQueueActionsDialog(
       context: context,
       entry: queueEntry,
+      actionRequirement: OpdQueueAtomPermissions.write,
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(

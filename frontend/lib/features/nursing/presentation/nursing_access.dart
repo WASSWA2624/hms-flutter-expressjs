@@ -60,9 +60,10 @@ const AccessRequirement nursingWriteRequirement = AccessRequirement(
 );
 
 /// Matrix-aligned ∩ `clinical:write` (+ source roles + module). Prefer for
-/// transfer / discharge pending stage write atoms when tighter than source
-/// ∪; [nursingWriteRequirement] remains the historical shared gate for
-/// complementary detail writes and All / Assigned ward / Urgent / Handover.
+/// handover / transfer / discharge pending stage write atoms when tighter
+/// than source ∪; [nursingWriteRequirement] remains the historical shared
+/// gate for complementary detail writes and All / Assigned ward / Urgent
+/// non-stage chrome.
 const AccessRequirement nursingClinicalWriteRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
   anyRoles: nursingWriteRoles,
@@ -345,7 +346,8 @@ abstract final class NursingAllAtomPermissions {
   static const AccessRequirement nextActionMedication =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement nextActionVitals = nursingWriteRequirement;
-  static const AccessRequirement nextActionHandover = nursingWriteRequirement;
+  static const AccessRequirement nextActionHandover =
+      NursingHandoverPendingAtomPermissions.nextActionHandover;
   static const AccessRequirement nextActionTransfer =
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement nextActionDischarge =
@@ -363,7 +365,8 @@ abstract final class NursingAllAtomPermissions {
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement dischargeClearance =
       NursingDischargePendingAtomPermissions.write;
-  static const AccessRequirement acceptHandover = nursingWriteRequirement;
+  static const AccessRequirement acceptHandover =
+      NursingHandoverPendingAtomPermissions.acceptHandover;
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
   static const AccessRequirement medicationsPanel =
@@ -436,7 +439,8 @@ abstract final class NursingAssignedWardAtomPermissions {
   static const AccessRequirement nextActionMedication =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement nextActionVitals = nursingWriteRequirement;
-  static const AccessRequirement nextActionHandover = nursingWriteRequirement;
+  static const AccessRequirement nextActionHandover =
+      NursingHandoverPendingAtomPermissions.nextActionHandover;
   static const AccessRequirement nextActionTransfer =
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement nextActionDischarge =
@@ -454,7 +458,8 @@ abstract final class NursingAssignedWardAtomPermissions {
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement dischargeClearance =
       NursingDischargePendingAtomPermissions.write;
-  static const AccessRequirement acceptHandover = nursingWriteRequirement;
+  static const AccessRequirement acceptHandover =
+      NursingHandoverPendingAtomPermissions.acceptHandover;
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
   static const AccessRequirement medicationsPanel =
@@ -533,7 +538,8 @@ abstract final class NursingUrgentAtomPermissions {
   static const AccessRequirement nextActionMedication =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement nextActionVitals = nursingWriteRequirement;
-  static const AccessRequirement nextActionHandover = nursingWriteRequirement;
+  static const AccessRequirement nextActionHandover =
+      NursingHandoverPendingAtomPermissions.nextActionHandover;
   static const AccessRequirement nextActionTransfer =
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement nextActionDischarge =
@@ -551,7 +557,8 @@ abstract final class NursingUrgentAtomPermissions {
       NursingTransferPendingAtomPermissions.nextActionTransfer;
   static const AccessRequirement dischargeClearance =
       NursingDischargePendingAtomPermissions.write;
-  static const AccessRequirement acceptHandover = nursingWriteRequirement;
+  static const AccessRequirement acceptHandover =
+      NursingHandoverPendingAtomPermissions.acceptHandover;
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
   static const AccessRequirement medicationsPanel =

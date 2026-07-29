@@ -6,6 +6,9 @@ Processing rules:
 - Within a folder iteration, at most MAX_CONCURRENCY prompts run at once.
 - Each folder is iterated ITERATIONS times so every prompt runs that many times.
 - After each successful prompt run, commit and push to GitHub.
+- Completed prompt iterations recorded in
+  .run_billing_and_sections_prompts_state.json are skipped on resume; pass
+  --force to clear state and re-run everything.
 - Model is always "auto".
 """
 
@@ -105,6 +108,12 @@ def _save_finished(finished: set[str]) -> None:
         json.dumps({"finished": sorted(finished)}, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def _mark_finished(finished: set[str], key: str) -> None:
+    """Record one completed iteration and persist state immediately."""
+    finished.add(key)
+    _save_finished(finished)
 
 
 def _error_text(err: BaseException) -> str:
@@ -282,7 +291,13 @@ async def run_prompt(
     prompt_rel = _prompt_rel(prompt_path)
     key = _iteration_key(prompt_rel, iteration)
 
+    if key in finished:
+        return {"file": key, "status": "finished", "skipped": True}
+
     async with sem:
+        # Re-check after waiting for a slot in case another task finished it.
+        if key in finished:
+            return {"file": key, "status": "finished", "skipped": True}
         print(f"[START] {key}", flush=True)
         last_error = ""
         for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -373,7 +388,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Run prompts/billing-and-sections folder-by-folder with Cursor "
             "model=auto. "
             f"Max {MAX_CONCURRENCY} concurrent prompts per folder iteration; "
-            f"each prompt runs {ITERATIONS} times; commit+push after each success."
+            f"each prompt runs {ITERATIONS} times; commit+push after each success. "
+            "Resume skips completed iterations in "
+            ".run_billing_and_sections_prompts_state.json."
         )
     )
     parser.add_argument(
@@ -463,7 +480,9 @@ async def main(argv: list[str] | None = None):
                 flush=True,
             )
     else:
-        finished = _load_finished() & known
+        # Keep the full state set so --folder / stop-restart never wipes
+        # finished iterations outside the current plan.
+        finished = _load_finished()
         _save_finished(finished)
 
     pending_keys = [k for k in all_keys if k not in finished]
@@ -493,136 +512,171 @@ async def main(argv: list[str] | None = None):
         return
 
     results: list[dict] = [
-        {"file": name, "status": "finished"} for name in sorted(finished)
+        {"file": name, "status": "finished", "skipped": True}
+        for name in sorted(finished & known)
     ]
     git_lock = asyncio.Lock()
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
     failed = False
 
-    async with await AsyncClient.launch_bridge(
-        workspace=str(PROJECT_DIR),
-        client_timeout=BRIDGE_TIMEOUT_SECONDS,
-        max_retries=2,
-    ) as client:
-        for folder in folders:
-            prompts = _folder_prompts(folder)
-            folder_keys = [
-                _iteration_key(_prompt_rel(p), i)
-                for i in range(1, ITERATIONS + 1)
-                for p in prompts
-            ]
-            folder_pending = [k for k in folder_keys if k not in finished]
-            if not folder_pending:
-                print(
-                    f"[FOLDER] {folder.name}: all "
-                    f"{len(folder_keys)} runs already finished; skipping.",
-                    flush=True,
-                )
-                continue
-
-            print(
-                f"[FOLDER] {folder.name}: {len(prompts)} prompt(s), "
-                f"{len(folder_pending)}/{len(folder_keys)} runs pending",
-                flush=True,
-            )
-
-            for iteration in range(1, ITERATIONS + 1):
-                batch = [
-                    p
+    try:
+        async with await AsyncClient.launch_bridge(
+            workspace=str(PROJECT_DIR),
+            client_timeout=BRIDGE_TIMEOUT_SECONDS,
+            max_retries=2,
+        ) as client:
+            for folder in folders:
+                prompts = _folder_prompts(folder)
+                folder_keys = [
+                    _iteration_key(_prompt_rel(p), i)
+                    for i in range(1, ITERATIONS + 1)
                     for p in prompts
-                    if _iteration_key(_prompt_rel(p), iteration) not in finished
                 ]
-                if not batch:
+                folder_pending = [k for k in folder_keys if k not in finished]
+                if not folder_pending:
                     print(
-                        f"[FOLDER] {folder.name} iteration {iteration}/{ITERATIONS}: "
-                        "already finished",
+                        f"[FOLDER] {folder.name}: all "
+                        f"{len(folder_keys)} runs already finished; skipping.",
                         flush=True,
                     )
                     continue
 
                 print(
-                    f"[FOLDER] {folder.name} iteration {iteration}/{ITERATIONS}: "
-                    f"starting {len(batch)} prompt(s) "
-                    f"(max {MAX_CONCURRENCY} concurrent)",
+                    f"[FOLDER] {folder.name}: {len(prompts)} prompt(s), "
+                    f"{len(folder_pending)}/{len(folder_keys)} runs pending",
                     flush=True,
                 )
-                batch_results = await asyncio.gather(
-                    *[
-                        run_prompt(
-                            prompt_path=prompt,
-                            iteration=iteration,
-                            client=client,
-                            finished=finished,
-                            git_lock=git_lock,
-                            sem=sem,
-                        )
-                        for prompt in batch
-                    ]
-                )
-                results.extend(batch_results)
 
-                errors = [r for r in batch_results if r["status"] != "finished"]
-                if errors:
+                for iteration in range(1, ITERATIONS + 1):
+                    batch = [
+                        p
+                        for p in prompts
+                        if _iteration_key(_prompt_rel(p), iteration)
+                        not in finished
+                    ]
+                    if not batch:
+                        print(
+                            f"[FOLDER] {folder.name} iteration "
+                            f"{iteration}/{ITERATIONS}: already finished",
+                            flush=True,
+                        )
+                        continue
+
+                    print(
+                        f"[FOLDER] {folder.name} iteration "
+                        f"{iteration}/{ITERATIONS}: starting {len(batch)} "
+                        f"prompt(s) (max {MAX_CONCURRENCY} concurrent)",
+                        flush=True,
+                    )
+                    batch_results = await asyncio.gather(
+                        *[
+                            run_prompt(
+                                prompt_path=prompt,
+                                iteration=iteration,
+                                client=client,
+                                finished=finished,
+                                git_lock=git_lock,
+                                sem=sem,
+                            )
+                            for prompt in batch
+                        ]
+                    )
+                    results.extend(batch_results)
+
+                    errors = [
+                        r for r in batch_results if r["status"] != "finished"
+                    ]
+                    if errors:
+                        failed = True
+                        print(
+                            f"\nStopping: {len(errors)} prompt(s) failed in "
+                            f"{folder.name} iteration {iteration}/{ITERATIONS}. "
+                            "Re-run to resume remaining work. "
+                            "Not advancing to later iterations/folders.",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                        break
+
+                if failed:
+                    break
+
+                still_open = [k for k in folder_keys if k not in finished]
+                if still_open:
                     failed = True
                     print(
-                        f"\nStopping: {len(errors)} prompt(s) failed in "
-                        f"{folder.name} iteration {iteration}/{ITERATIONS}. "
-                        "Re-run to resume remaining work. "
-                        "Not advancing to later iterations/folders.",
+                        f"\nStopping: folder {folder.name} still has "
+                        f"{len(still_open)} unfinished run(s); "
+                        "not proceeding to the next folder.",
                         file=sys.stderr,
                         flush=True,
                     )
                     break
 
-            if failed:
-                break
-
-            still_open = [k for k in folder_keys if k not in finished]
-            if still_open:
-                failed = True
                 print(
-                    f"\nStopping: folder {folder.name} still has "
-                    f"{len(still_open)} unfinished run(s); "
-                    "not proceeding to the next folder.",
-                    file=sys.stderr,
+                    f"[FOLDER] {folder.name}: completed all "
+                    f"{len(folder_keys)} runs.\n",
                     flush=True,
                 )
-                break
-
-            print(
-                f"[FOLDER] {folder.name}: completed all "
-                f"{len(folder_keys)} runs.\n",
-                flush=True,
-            )
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        _save_finished(finished)
+        print(
+            f"\nStopped. Progress saved ({len(finished & known)}/"
+            f"{len(all_keys)} in-scope iterations done). "
+            "Re-run to continue without repeating finished work.",
+            file=sys.stderr,
+            flush=True,
+        )
+        sys.exit(130)
 
     results.sort(key=lambda r: r["file"])
+    this_run = [r for r in results if not r.get("skipped")]
+    errors = [r for r in this_run if r["status"] != "finished"]
+    finished_count = sum(1 for k in all_keys if k in finished)
 
     print("\n--- Summary ---")
-    for r in results:
-        extra = ""
-        if r.get("committed"):
-            extra = " (committed+pushed)"
-        elif r.get("committed") is False:
-            extra = " (no git changes)"
-        print(f"  {r['file']}: {r['status']}{extra}")
-
-    errors = [r for r in results if r["status"] != "finished"]
-    finished_count = len([r for r in results if r["status"] == "finished"])
+    if this_run:
+        ok = sum(1 for r in this_run if r["status"] == "finished")
+        bad = sum(1 for r in this_run if r["status"] != "finished")
+        committed = sum(1 for r in this_run if r.get("committed"))
+        print(
+            f"  this run: {ok} ok - {bad} failed - "
+            f"{committed} committed - {skipped} skipped from before",
+            flush=True,
+        )
+        for r in this_run:
+            if r["status"] != "finished":
+                print(
+                    f"  fail   {r['file']}: {r.get('message', '')}",
+                    flush=True,
+                )
+            else:
+                extra = ""
+                if r.get("committed"):
+                    extra = " (committed+pushed)"
+                elif r.get("committed") is False:
+                    extra = " (no git changes)"
+                print(f"  {r['file']}: {r['status']}{extra}", flush=True)
+    else:
+        print(
+            f"  {finished_count}/{len(all_keys)} complete - "
+            "nothing new this session",
+            flush=True,
+        )
 
     if errors or failed or finished_count < len(all_keys):
         print(
-            f"\n{len(errors)} run(s) did not finish successfully; "
-            f"{finished_count}/{len(all_keys)} complete."
+            f"\n{finished_count}/{len(all_keys)} complete. "
+            "Re-run to finish the rest (already-done iterations are skipped)."
         )
-        print("Re-run the same command to retry only the failed/remaining ones.")
         sys.exit(1)
 
     print(
         f"\nAll {len(all_keys)} billing-and-sections prompt runs completed "
         "successfully."
     )
-    if STATE_FILE.exists():
-        STATE_FILE.unlink()
+    # Keep .run_billing_and_sections_prompts_state.json so a later start
+    # skips completed runs. Use --force (or delete the state file) to re-run.
 
 
 if __name__ == "__main__":

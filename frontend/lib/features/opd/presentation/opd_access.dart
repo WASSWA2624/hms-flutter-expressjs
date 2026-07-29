@@ -139,6 +139,14 @@ bool canViewOpdArrivals(AppAccessPolicy policy) {
   return OpdArrivalsAtomPermissions.tab.isAllowed(policy);
 }
 
+bool canViewOpdQueue(AppAccessPolicy policy) {
+  return OpdQueueAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canViewOpdTriage(AppAccessPolicy policy) {
+  return OpdTriageAtomPermissions.tab.isAllowed(policy);
+}
+
 bool canViewOpdActive(AppAccessPolicy policy) {
   return OpdActiveAtomPermissions.tab.isAllowed(policy);
 }
@@ -265,12 +273,21 @@ bool opdBoardShowsNextActionColumn(
           OpdArrivalsAtomPermissions.nextActionCheckIn.isAllowed(policy),
     OpdWorkspaceSection.all =>
       OpdAllAtomPermissions.startEncounter.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextAction.isAllowed(policy) ||
           OpdAllAtomPermissions.nextActionVitals.isAllowed(policy) ||
           OpdAllAtomPermissions.nextActionPay.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionCheckIn.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionAssignDoctor.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionDoctorReview.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionDisposition.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionAdmissionHandoff.isAllowed(policy) ||
+          OpdAllAtomPermissions.nextActionCorrectStage.isAllowed(policy) ||
           OpdAllAtomPermissions.frontDesk.isAllowed(policy),
     OpdWorkspaceSection.triage =>
       OpdTriageAtomPermissions.startEncounter.isAllowed(policy) ||
-          OpdTriageAtomPermissions.nextActionVitals.isAllowed(policy),
+          OpdTriageAtomPermissions.nextActionVitals.isAllowed(policy) ||
+          OpdTriageAtomPermissions.nextActionAssignDoctor.isAllowed(policy) ||
+          OpdTriageAtomPermissions.nextActionCorrectStage.isAllowed(policy),
     OpdWorkspaceSection.active =>
       OpdActiveAtomPermissions.nextAction.isAllowed(policy) ||
           OpdActiveAtomPermissions.nextActionVitals.isAllowed(policy) ||
@@ -282,6 +299,9 @@ bool opdBoardShowsNextActionColumn(
             policy,
           ) ||
           OpdActiveAtomPermissions.nextActionCorrectStage.isAllowed(policy) ||
+          OpdActiveAtomPermissions.nextActionDepartmentHandoff.isAllowed(
+            policy,
+          ) ||
           OpdActiveAtomPermissions.startEncounter.isAllowed(policy),
   };
 }
@@ -292,9 +312,27 @@ bool opdBoardShowsNextActionColumn(
 /// matrix rows are _(n/a)_ — billing payment keeps source
 /// [opdBillingActionRequirement]; admission handoff keeps source
 /// [opdAdmissionHandoffRequirement]. Start encounter / vitals / doctor /
-/// front-desk keep source role gates rather than matrix ∩ `clinical:write`
-/// alone. Route entry keeps catalog ∩ `opd:read`. Tab chrome stays ∪
-/// `patient:read` | `clinical:read`.
+/// front-desk / reception keep source role gates rather than matrix ∩
+/// `clinical:write` alone. Route entry keeps catalog ∩ `opd:read`. Tab
+/// chrome stays ∪ `patient:read` | `clinical:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Active tab / count badge | navigate | read ∪ ([tab]) |
+/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
+/// | Row select → Flow Actions | read | ([rowSelect] / [detail]) |
+/// | Next action Record vitals | update | source vitals ([nextActionVitals]) |
+/// | Next action Pay consultation | update | source billing ([nextActionPay]) |
+/// | Next action Assign / change doctor | update | source reception |
+/// | Next action Doctor review / Disposition | update | source doctor |
+/// | Next action Admission handoff | update | source admission |
+/// | Next action Correct stage / department handoff | update / navigate | source reception |
+/// | Nested Flow Actions writes | update | matching source stage gate |
+/// | Deep link `panel=` mutation | update | [opdFocusedPanelRequirement] |
+/// | Route entry (deep link) | navigate | catalog ∩ `opd:read` |
 abstract final class OpdActiveAtomPermissions {
   static const AccessRequirement tab = opdWorkspaceReadRequirement;
   static const AccessRequirement listChrome = opdWorkspaceReadRequirement;
@@ -329,8 +367,10 @@ abstract final class OpdActiveAtomPermissions {
       opdAdmissionHandoffRequirement;
   static const AccessRequirement nextActionCorrectStage =
       opdReceptionActionRequirement;
+
+  /// Source keep: board maps department handoff → [opdReceptionActionRequirement].
   static const AccessRequirement nextActionDepartmentHandoff =
-      opdWorkspaceReadRequirement;
+      opdReceptionActionRequirement;
   static const AccessRequirement recordVitals = opdVitalsActionRequirement;
   static const AccessRequirement payConsultation = opdBillingActionRequirement;
   static const AccessRequirement assignDoctor = opdReceptionActionRequirement;
@@ -358,11 +398,35 @@ abstract final class OpdActiveAtomPermissions {
   static const AccessRequirement catalogEntry = RouteAccessCatalog.opdEntry;
 }
 
-/// All worklist tab atom → permission mapping (shared matrix with Active).
+/// All worklist tab atom → permission mapping (inventory + matrix).
 ///
-/// Combined worklist (`/opd` / `?section=all`). Same read ∪ / clinical write ∩
-/// / source stage gates as [OpdActiveAtomPermissions]. Appointment / front-desk
-/// mutations keep source [opdFrontDeskActionRequirement] on [write].
+/// Combined OPD worklist (`/opd` / `?section=all`). Nested cross-module matrix
+/// rows are _(n/a)_ — billing payment keeps source [opdBillingActionRequirement];
+/// admission handoff keeps source [opdAdmissionHandoffRequirement]. Start
+/// encounter / vitals / doctor / front-desk / reception keep source role gates
+/// rather than matrix ∩ `clinical:write` alone. Appointment hub / check-in
+/// next-action keep source [opdFrontDeskActionRequirement] on [write] /
+/// [nextActionCheckIn]. Route entry keeps catalog ∩ `opd:read`. Tab chrome
+/// stays ∪ `patient:read` | `clinical:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | All worklist tab / count badge | navigate | read ∪ ([tab]) |
+/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
+/// | Row select → Flow / Appointment / Queue Actions | read | ([rowSelect] / [detail]) |
+/// | Next action Start / Continue (arrival) | create / update | source front-desk |
+/// | Next action Record vitals | update | source vitals ([nextActionVitals]) |
+/// | Next action Pay consultation | update | source billing ([nextActionPay]) |
+/// | Next action Assign / change doctor | update | source reception |
+/// | Next action Doctor review / Disposition | update | source doctor |
+/// | Next action Admission handoff | update | source admission |
+/// | Next action Correct stage / department handoff | update / navigate | source reception |
+/// | Nested hub writes | update | matching source stage / front-desk gate |
+/// | Deep link `panel=` mutation | update | [opdFocusedPanelRequirement] |
+/// | Route entry (deep link) | navigate | catalog ∩ `opd:read` |
 abstract final class OpdAllAtomPermissions {
   static const AccessRequirement tab = opdWorkspaceReadRequirement;
   static const AccessRequirement listChrome = opdWorkspaceReadRequirement;
@@ -376,6 +440,8 @@ abstract final class OpdAllAtomPermissions {
   static const AccessRequirement validation = opdClinicalWriteRequirement;
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
+
+  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
   static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
@@ -388,12 +454,36 @@ abstract final class OpdAllAtomPermissions {
   static const AccessRequirement nextActionVitals = opdVitalsActionRequirement;
   static const AccessRequirement nextActionPay = opdBillingActionRequirement;
   static const AccessRequirement nextActionCheckIn = opdFrontDeskActionRequirement;
+  static const AccessRequirement nextActionContinue =
+      opdFrontDeskActionRequirement;
+  static const AccessRequirement nextActionAssignDoctor =
+      opdReceptionActionRequirement;
+  static const AccessRequirement nextActionDoctorReview =
+      opdDoctorActionRequirement;
+  static const AccessRequirement nextActionDisposition =
+      opdDoctorActionRequirement;
+  static const AccessRequirement nextActionAdmissionHandoff =
+      opdAdmissionHandoffRequirement;
+  static const AccessRequirement nextActionCorrectStage =
+      opdReceptionActionRequirement;
+
+  /// Source keep: board maps department handoff → [opdReceptionActionRequirement].
+  static const AccessRequirement nextActionDepartmentHandoff =
+      opdReceptionActionRequirement;
   static const AccessRequirement recordVitals = opdVitalsActionRequirement;
   static const AccessRequirement payConsultation = opdBillingActionRequirement;
+  static const AccessRequirement assignDoctor = opdReceptionActionRequirement;
+  static const AccessRequirement doctorReview = opdDoctorActionRequirement;
+  static const AccessRequirement disposition = opdDoctorActionRequirement;
   static const AccessRequirement admissionHandoff =
       opdAdmissionHandoffRequirement;
+  static const AccessRequirement correctStage = opdReceptionActionRequirement;
   static const AccessRequirement frontDesk = opdFrontDeskActionRequirement;
+
+  /// Nested cross-module write — matrix _(n/a)_; appointment hub uses front-desk.
   static const AccessRequirement nestedWrite = opdFrontDeskActionRequirement;
+
+  /// Nested cross-module read — matrix _(n/a)_; reuses board read ∪.
   static const AccessRequirement nestedRead = opdWorkspaceReadRequirement;
   static const AccessRequirement nestedBillingWrite =
       opdBillingActionRequirement;
@@ -479,7 +569,31 @@ abstract final class OpdArrivalsAtomPermissions {
   static const AccessRequirement catalogEntry = RouteAccessCatalog.opdEntry;
 }
 
-/// Queue tab — same board read ∪; queue hub uses front-desk source gate.
+/// Queue tab atom → permission mapping (inventory + matrix).
+///
+/// Waiting queue call-next / requeue (`/opd?section=queue`). Nested
+/// cross-module matrix rows are _(n/a)_. Start OPD encounter keeps source
+/// [opdEncounterPermissionRequirement]; queue hub mutations (prioritize /
+/// change status / assign doctor) keep source [opdFrontDeskActionRequirement]
+/// rather than matrix ∩ `clinical:write` alone (prompt note maps stage
+/// actions to clinical write — source front-desk is authoritative). Matrix
+/// create/update/delete document ∩ `clinical:write`. No row next-action
+/// column (inventory: row select is the sole hub entry). Tab chrome stays ∪
+/// `patient:read` | `clinical:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Queue tab / count badge | navigate | read ∪ ([tab]) |
+/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
+/// | Row select → Queue Actions | read | ([rowSelect] / [detail]) |
+/// | Next action column | update | absent on Queue ([nextAction] unused) |
+/// | Nested prioritize / change status / assign doctor | update | source front-desk |
+/// | Nested encounter dialog (toolbar) | create | source encounter |
+/// | Nested billing / admission panels | nested write | _(n/a)_ — not reachable |
+/// | Route entry (deep link) | navigate | catalog ∩ `opd:read` |
 abstract final class OpdQueueAtomPermissions {
   static const AccessRequirement tab = opdWorkspaceReadRequirement;
   static const AccessRequirement listChrome = opdWorkspaceReadRequirement;
@@ -487,23 +601,75 @@ abstract final class OpdQueueAtomPermissions {
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
+  static const AccessRequirement loading = opdWorkspaceReadRequirement;
+  static const AccessRequirement retry = opdWorkspaceReadRequirement;
+  static const AccessRequirement success = opdClinicalWriteRequirement;
+  static const AccessRequirement validation = opdClinicalWriteRequirement;
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
-  static const AccessRequirement startEncounter = opdStartEncounterRequirement;
-  static const AccessRequirement frontDesk = opdFrontDeskActionRequirement;
-  static const AccessRequirement write = opdFrontDeskActionRequirement;
+  static const AccessRequirement close = opdWorkspaceReadRequirement;
+
+  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
+  static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
+
+  /// Source front-desk gate for queue hub writes (keep source).
+  static const AccessRequirement write = opdFrontDeskActionRequirement;
   static const AccessRequirement clinicalWrite = opdClinicalWriteRequirement;
+  static const AccessRequirement startEncounter = opdStartEncounterRequirement;
+
+  /// Inventory: queue next-action is empty; row select is the sole hub entry.
+  static const AccessRequirement nextAction = opdFrontDeskActionRequirement;
+  static const AccessRequirement prioritize = opdFrontDeskActionRequirement;
+  static const AccessRequirement changeStatus = opdFrontDeskActionRequirement;
+  static const AccessRequirement moveQueue = opdFrontDeskActionRequirement;
+  static const AccessRequirement assignDoctor = opdFrontDeskActionRequirement;
+  static const AccessRequirement frontDesk = opdFrontDeskActionRequirement;
+
+  /// Nested cross-module write — matrix _(n/a)_; queue hub uses front-desk.
   static const AccessRequirement nestedWrite = opdFrontDeskActionRequirement;
+
+  /// Nested cross-module read — matrix _(n/a)_; reuses board read ∪.
   static const AccessRequirement nestedRead = opdWorkspaceReadRequirement;
+  static const AccessRequirement nestedBillingWrite =
+      opdBillingActionRequirement;
+  static const AccessRequirement nestedAdmissionWrite =
+      opdAdmissionHandoffRequirement;
+  static const AccessRequirement panelDeepLink = opdFrontDeskActionRequirement;
+  static const AccessRequirement entry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       opdWorkspaceRouteUnionRequirement;
   static const AccessRequirement catalogEntry = RouteAccessCatalog.opdEntry;
 }
 
-/// Triage tab — same board read ∪; vitals / clinical stage gates.
+/// Triage tab atom → permission mapping (inventory + matrix).
+///
+/// Triage vitals/acuity (`/opd?section=triage`). Nested cross-module matrix
+/// rows are _(n/a)_ — billing payment keeps source
+/// [opdBillingActionRequirement]; admission handoff keeps source
+/// [opdAdmissionHandoffRequirement] (not reachable from triage queue stages).
+/// Start encounter keeps source [opdEncounterPermissionRequirement]; vitals /
+/// assign-doctor / correct-stage keep source role gates rather than matrix ∩
+/// `clinical:write` alone. Route entry keeps catalog ∩ `opd:read`. Tab chrome
+/// stays ∪ `patient:read` | `clinical:read`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Triage tab / count badge | navigate | read ∪ ([tab]) |
+/// | Start OPD encounter (toolbar) | create | source encounter ([startEncounter]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Triage scope filter (waiting/urgent/…) | read chrome | ([filters]) |
+/// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
+/// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
+/// | Row select → Flow Actions | read | ([rowSelect] / [detail]) |
+/// | Next action Record vitals | update | source vitals ([nextActionVitals]) |
+/// | Next action Assign / Change doctor | update | source reception ([nextActionAssignDoctor]) |
+/// | Next action Correct stage | update | source reception ([nextActionCorrectStage]) |
+/// | Nested vitals / assign / routing dialogs | update | source stage gates |
+/// | Nested billing / admission panels | nested write | _(n/a)_ — not on triage stages |
+/// | Route entry (deep link) | navigate | catalog ∩ `opd:read` |
 abstract final class OpdTriageAtomPermissions {
   static const AccessRequirement tab = opdWorkspaceReadRequirement;
   static const AccessRequirement listChrome = opdWorkspaceReadRequirement;
@@ -511,16 +677,41 @@ abstract final class OpdTriageAtomPermissions {
   static const AccessRequirement filters = opdWorkspaceReadRequirement;
   static const AccessRequirement settings = opdWorkspaceReadRequirement;
   static const AccessRequirement empty = opdWorkspaceReadRequirement;
+  static const AccessRequirement loading = opdWorkspaceReadRequirement;
+  static const AccessRequirement retry = opdWorkspaceReadRequirement;
+  static const AccessRequirement success = opdClinicalWriteRequirement;
+  static const AccessRequirement validation = opdClinicalWriteRequirement;
   static const AccessRequirement rowSelect = opdWorkspaceReadRequirement;
   static const AccessRequirement detail = opdWorkspaceReadRequirement;
-  static const AccessRequirement startEncounter = opdStartEncounterRequirement;
-  static const AccessRequirement nextActionVitals = opdVitalsActionRequirement;
-  static const AccessRequirement write = opdClinicalWriteRequirement;
+
+  /// Matrix ∩ `clinical:write`; toolbar create uses [startEncounter] (source).
   static const AccessRequirement create = opdClinicalWriteRequirement;
   static const AccessRequirement update = opdClinicalWriteRequirement;
+  static const AccessRequirement delete = opdWorkspaceDeleteRequirement;
+  static const AccessRequirement write = opdClinicalWriteRequirement;
   static const AccessRequirement clinicalWrite = opdClinicalWriteRequirement;
+  static const AccessRequirement startEncounter = opdStartEncounterRequirement;
+  static const AccessRequirement nextAction = opdClinicalWriteRequirement;
+  static const AccessRequirement nextActionVitals = opdVitalsActionRequirement;
+  static const AccessRequirement nextActionAssignDoctor =
+      opdReceptionActionRequirement;
+  static const AccessRequirement nextActionCorrectStage =
+      opdReceptionActionRequirement;
+  static const AccessRequirement recordVitals = opdVitalsActionRequirement;
+  static const AccessRequirement assignDoctor = opdReceptionActionRequirement;
+  static const AccessRequirement correctStage = opdReceptionActionRequirement;
+
+  /// Nested cross-module write — matrix _(n/a)_; reuses clinical write ∩.
   static const AccessRequirement nestedWrite = opdClinicalWriteRequirement;
+
+  /// Nested cross-module read — matrix _(n/a)_; reuses board read ∪.
   static const AccessRequirement nestedRead = opdWorkspaceReadRequirement;
+  static const AccessRequirement nestedBillingWrite =
+      opdBillingActionRequirement;
+  static const AccessRequirement nestedAdmissionWrite =
+      opdAdmissionHandoffRequirement;
+  static const AccessRequirement panelDeepLink = opdClinicalWriteRequirement;
+  static const AccessRequirement entry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = opdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
       opdWorkspaceRouteUnionRequirement;

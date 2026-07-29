@@ -8,13 +8,13 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
+import 'package:hosspi_hms/features/operations/presentation/operations_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -74,11 +74,6 @@ class _OperationsWorkspaceContent extends ConsumerStatefulWidget {
 
 class _OperationsWorkspaceContentState
     extends ConsumerState<_OperationsWorkspaceContent> {
-  static const AccessRequirement _mutationRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.operationsWrite],
-    activeModules: <String>['facilities-maintenance'],
-  );
-
   late OperationsDeskSection _section;
   late final TextEditingController _searchController;
   late final TextEditingController _assetsSearchController;
@@ -192,7 +187,7 @@ class _OperationsWorkspaceContentState
     }
 
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    final bool canMutate = canMutateOperations(policy);
     OperationsWorkItem? item = _findWorkItem(
       _operationsStateFromAsync(
             ref.read(operationsWorkspaceControllerProvider),
@@ -319,7 +314,31 @@ class _OperationsWorkspaceContentState
       operationsWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    final OperationsCapabilities capabilities =
+        OperationsCapabilities.fromPolicy(policy);
+    final List<OperationsDeskSection> visibleSections =
+        operationsAllowedSections(policy);
+    if (visibleSections.isEmpty) {
+      // No authorized sections — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    final bool canShowCurrentSection = visibleSections.contains(_section);
+    if (!canShowCurrentSection) {
+      final OperationsDeskSection fallback =
+          operationsFallbackSection(policy) ?? visibleSections.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visibleSections.contains(_section)) {
+          return;
+        }
+        setState(() => _section = fallback);
+        _updateUrlForSection(fallback);
+        unawaited(_awaitSectionFilter(fallback));
+      });
+    }
+    final OperationsDeskSection activeSection = canShowCurrentSection
+        ? _section
+        : visibleSections.first;
+    final bool canMutate = capabilities.canMutate;
     final AppFailure? lastFailure = state.lastFailure;
 
     return ResponsivePage(
@@ -331,8 +350,7 @@ class _OperationsWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final OperationsDeskSection section
-                    in OperationsDeskSection.values)
+                for (final OperationsDeskSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -341,19 +359,16 @@ class _OperationsWorkspaceContentState
                     countTone: _sectionCountTone(section),
                   ),
               ],
-              selectedId: _section.name,
+              selectedId: activeSection.name,
               onTabTapped: (String tabId) {
-                for (final OperationsDeskSection section
-                    in OperationsDeskSection.values) {
+                for (final OperationsDeskSection section in visibleSections) {
                   if (section.name == tabId) {
                     _onTabChanged(section);
                     break;
                   }
                 }
               },
-              primaryAction: canMutate
-                  ? _buildPrimaryAction(l10n, state)
-                  : null,
+              primaryAction: _buildPrimaryAction(l10n, state),
               secondaryActions: _buildSecondaryActions(context, l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -364,43 +379,51 @@ class _OperationsWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            if (_section == OperationsDeskSection.assets)
-              _OperationsAssetsPanel(
-                state: state,
-                searchController: _assetsSearchController,
-                columnVisibilityController: _assetsColumnController,
-                onAssetSelected: (OperationsAsset asset) {
-                  unawaited(_openAssetDetailDialog(context, asset));
-                },
-              )
-            else
-              _OperationsQueuePanel(
-                state: state,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                canMutate: canMutate,
-                onItemSelected: (OperationsWorkItem item) {
-                  unawaited(_openRequestDetailDialog(context, item, canMutate));
-                },
-                section: _section,
-              ),
+            if (canShowCurrentSection)
+              if (activeSection == OperationsDeskSection.assets)
+                _OperationsAssetsPanel(
+                  state: state,
+                  searchController: _assetsSearchController,
+                  columnVisibilityController: _assetsColumnController,
+                  onAssetSelected: (OperationsAsset asset) {
+                    unawaited(_openAssetDetailDialog(context, asset));
+                  },
+                )
+              else
+                _OperationsQueuePanel(
+                  state: state,
+                  searchController: _searchController,
+                  columnVisibilityController: _tableColumnController,
+                  canMutate: canMutate,
+                  onItemSelected: (OperationsWorkItem item) {
+                    unawaited(
+                      _openRequestDetailDialog(context, item, canMutate),
+                    );
+                  },
+                  section: activeSection,
+                ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPrimaryAction(
+  Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     OperationsWorkspaceState state,
   ) {
-    return AppTabToolbarPrimary(
-      label: l10n.operationsCreateRequestAction,
-      icon: Icons.add,
-      enabled: !state.isMutating,
-      onPressed: state.isMutating
-          ? null
-          : () => _showCreateRequestDialog(context, ref, state),
+    return AppAccessActionGate(
+      requirement: operationsWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.operationsCreateRequestAction,
+          icon: Icons.add,
+          enabled: !state.isMutating,
+          onPressed: state.isMutating
+              ? null
+              : () => _showCreateRequestDialog(context, ref, state),
+        );
+      },
     );
   }
 
@@ -410,13 +433,16 @@ class _OperationsWorkspaceContentState
     OperationsWorkspaceState state,
   ) {
     return <Widget>[
-      AppTabToolbarAction(
-        label: l10n.operationsOpenReportAction,
-        icon: Icons.summarize_outlined,
-        enabled: !state.isMutating,
-        onPressed: state.isMutating
-            ? null
-            : () => _showOperationsReportDialog(context, state),
+      AppAccessGate(
+        requirement: operationsReportRequirement,
+        child: AppTabToolbarAction(
+          label: l10n.operationsOpenReportAction,
+          icon: Icons.summarize_outlined,
+          enabled: !state.isMutating,
+          onPressed: state.isMutating
+              ? null
+              : () => _showOperationsReportDialog(context, state),
+        ),
       ),
     ];
   }
