@@ -38,6 +38,10 @@ const AccessRequirement accessAdminReadRequirement =
 const AccessRequirement accessAdminDirectoryReadRequirement =
     accessAdminWorkspaceReadRequirement;
 
+/// Roles tab read — same union as workspace entry.
+const AccessRequirement accessAdminRolesReadRequirement =
+    accessAdminWorkspaceReadRequirement;
+
 /// Demo tab read — same union as Directory / workspace entry.
 const AccessRequirement accessAdminDemoReadRequirement =
     accessAdminWorkspaceReadRequirement;
@@ -60,6 +64,10 @@ const AccessRequirement accessAdminUpdateRequirement =
 const AccessRequirement accessAdminDeleteRequirement =
     accessAdminWriteRequirement;
 
+/// Roles create / update / delete (matrix ∩): same as workspace write ∩.
+const AccessRequirement accessAdminRolesWriteRequirement =
+    accessAdminWriteRequirement;
+
 /// Entitlements tab read — same ∪ as workspace entry (no stricter panel gate).
 const AccessRequirement accessAdminEntitlementsReadRequirement =
     accessAdminWorkspaceReadRequirement;
@@ -79,6 +87,27 @@ const AccessRequirement accessAdminPermissionsReadRequirement =
 const AccessRequirement accessAdminPermissionsWriteRequirement =
     accessAdminWriteRequirement;
 
+/// Registrations tab read (matrix ∩ `system:admin`).
+///
+/// Source inventory additionally requires elevated (`SUPER_ADMIN`). Prefer
+/// [canReadAccessAdminRegistrations] / [canAccessAccessAdminRegistrations].
+/// Workspace route entry still uses [accessAdminWorkspaceReadRequirement] (∪).
+const AccessRequirement accessAdminRegistrationsReadRequirement =
+    AccessRequirement(
+      allPermissions: <AppPermission>[AppPermissions.systemAdmin],
+    );
+
+/// Registrations create / update / delete (matrix ∩): `tenant:admin`.
+/// Prefer [canMutateAccessAdminRegistrations] (intersects workspace `canWrite`).
+const AccessRequirement accessAdminRegistrationsWriteRequirement =
+    accessAdminWriteRequirement;
+const AccessRequirement accessAdminRegistrationsCreateRequirement =
+    accessAdminCreateRequirement;
+const AccessRequirement accessAdminRegistrationsUpdateRequirement =
+    accessAdminUpdateRequirement;
+const AccessRequirement accessAdminRegistrationsDeleteRequirement =
+    accessAdminDeleteRequirement;
+
 bool canReadAccessAdmin(AppAccessPolicy policy) {
   return accessAdminWorkspaceReadRequirement.isAllowed(policy) ||
       policy.isElevated;
@@ -90,6 +119,19 @@ bool canReadAccessAdminWorkspace(AppAccessPolicy policy) {
 
 bool canReadAccessAdminDirectory(AppAccessPolicy policy) {
   return canReadAccessAdmin(policy);
+}
+
+bool canReadAccessAdminRoles(AppAccessPolicy policy) {
+  return accessAdminRolesReadRequirement.isAllowed(policy) ||
+      policy.isElevated;
+}
+
+/// Roles mutations: create / edit / delete — write ∩ + workspace `canWrite`.
+bool canMutateAccessAdminRoles(
+  AppAccessPolicy policy, {
+  bool workspaceCanWrite = true,
+}) {
+  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
 bool canReadAccessAdminDemo(AppAccessPolicy policy) {
@@ -144,9 +186,28 @@ bool canMutateAccessAdminPermissions(
   return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
+/// Registrations tab read — matrix ∩ `system:admin` (see
+/// [accessAdminRegistrationsReadRequirement]).
+///
+/// Source inventory (`screens/admin-access.md`) keeps the tab **elevated-only**
+/// (`SUPER_ADMIN`). Prefer that gate so bare `system:admin` without elevation
+/// does not unlock the panel. Elevated role packs include `system:admin`.
+bool canReadAccessAdminRegistrations(AppAccessPolicy policy) {
+  return policy.isElevated;
+}
+
+/// Registrations create / update / delete: write ∩ + workspace `canWrite`.
+/// Elevated writers qualify via [canWriteAccessAdmin].
+bool canMutateAccessAdminRegistrations(
+  AppAccessPolicy policy, {
+  bool workspaceCanWrite = true,
+}) {
+  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+}
+
 /// Registrations tab: elevated (super-admin) only — source inventory.
 bool canAccessAccessAdminRegistrations(AppAccessPolicy policy) {
-  return policy.isElevated;
+  return canReadAccessAdminRegistrations(policy);
 }
 
 /// Whether [panel] may appear in the tab strip for [policy].
@@ -204,6 +265,32 @@ abstract final class AccessAdminDirectoryAtomPermissions {
   static const AccessRequirement create = accessAdminCreateRequirement;
   static const AccessRequirement update = accessAdminUpdateRequirement;
   static const AccessRequirement delete = accessAdminDeleteRequirement;
+}
+
+/// Roles tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Roles tab | navigate / progressive-disclosure | read ∪ |
+/// | Search / filters / columns / pagination | read chrome | read ∪ |
+/// | Empty / error / retry | read chrome | read ∪ |
+/// | Row select → role detail | read | read ∪ |
+/// | Create role | create | write ∩ + canWrite |
+/// | Edit role (next-action) | update | write ∩ + canWrite; not system-critical |
+/// | Delete role (detail) | delete | write ∩ + canWrite; not system-critical |
+/// | Detail Close | progressive-disclosure | read ∪ |
+/// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Source inventory maps write chrome to workspace `canWrite`; matrix ∩
+/// `tenant:admin` is applied via [canWriteAccessAdmin] / [canMutateAccessAdminRoles].
+abstract final class AccessAdminRolesAtomPermissions {
+  static const AccessRequirement tab = accessAdminRolesReadRequirement;
+  static const AccessRequirement listChrome = accessAdminRolesReadRequirement;
+  static const AccessRequirement detail = accessAdminRolesReadRequirement;
+  static const AccessRequirement create = accessAdminCreateRequirement;
+  static const AccessRequirement update = accessAdminUpdateRequirement;
+  static const AccessRequirement delete = accessAdminDeleteRequirement;
+  static const AccessRequirement write = accessAdminRolesWriteRequirement;
 }
 
 /// Demo tab atom → permission mapping (inventory + matrix).
@@ -268,4 +355,36 @@ abstract final class AccessAdminPermissionsAtomPermissions {
   static const AccessRequirement delete = accessAdminDeleteRequirement;
   static const AccessRequirement write =
       accessAdminPermissionsWriteRequirement;
+}
+
+/// Registrations tab atom → permission mapping (inventory + matrix).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Registrations tab | navigate | elevated (source); matrix ∩ `system:admin` |
+/// | Search / filters / columns / pagination | read chrome | elevated |
+/// | Empty / error / retry | read chrome | elevated |
+/// | Row select → registration detail | read | elevated |
+/// | Activate registration (next-action) | update | write ∩ + canWrite |
+/// | Reject registration (detail) | delete | write ∩ + canWrite |
+/// | Create user / Create role primary | create | _(absent on this resource)_ |
+/// | Detail Close | progressive-disclosure | elevated |
+/// | Nested cross-module | n/a | _(n/a)_ |
+///
+/// Workspace entry remains read ∪ (`tenant:admin` \| `facility:admin` \|
+/// `system:admin`). This tab is stricter than that union.
+abstract final class AccessAdminRegistrationsAtomPermissions {
+  static const AccessRequirement tab = accessAdminRegistrationsReadRequirement;
+  static const AccessRequirement listChrome =
+      accessAdminRegistrationsReadRequirement;
+  static const AccessRequirement detail =
+      accessAdminRegistrationsReadRequirement;
+  static const AccessRequirement create =
+      accessAdminRegistrationsCreateRequirement;
+  static const AccessRequirement update =
+      accessAdminRegistrationsUpdateRequirement;
+  static const AccessRequirement delete =
+      accessAdminRegistrationsDeleteRequirement;
+  static const AccessRequirement write =
+      accessAdminRegistrationsWriteRequirement;
 }

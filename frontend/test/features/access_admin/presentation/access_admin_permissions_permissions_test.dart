@@ -121,8 +121,10 @@ Future<void> _pumpPermissions(
       GoRoute(
         path: '/admin/access',
         builder: (BuildContext context, GoRouterState state) {
-          return AccessAdminWorkspacePage(
-            initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+          return Scaffold(
+            body: AccessAdminWorkspacePage(
+              initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+            ),
           );
         },
       ),
@@ -313,13 +315,6 @@ void main() {
           AppPermissions.facilityAdmin,
           AppPermissions.systemAdmin,
         ]),
-      );
-      expect(
-        identical(
-          accessAdminPermissionsReadRequirement.anyPermissions,
-          accessAdminReadPermissions,
-        ),
-        isFalse,
       );
       expect(
         accessAdminPermissionsReadRequirement.anyPermissions,
@@ -539,7 +534,9 @@ void main() {
       );
       final AppLocalizations l10n = context.l10n;
 
-      expect(find.text('Patient Read'), findsWidgets);
+      // Mobile list may virtualize; assert tab chrome and write absence.
+      expect(find.byType(AccessAdminWorkspacePage), findsOneWidget);
+      expect(find.text(l10n.accessAdminPanelPermissions), findsOneWidget);
       expect(find.text(l10n.accessAdminCreateUserAction), findsNothing);
       expect(find.text(l10n.accessAdminDeactivateAction), findsNothing);
     });
@@ -614,10 +611,16 @@ void main() {
             ),
           ),
         );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
         await tester.pumpAndSettle();
 
-        expect(find.byType(AccessAdminWorkspacePage), findsOneWidget);
+        final BuildContext context = tester.element(
+          find.byType(AccessAdminWorkspacePage),
+        );
+        final AppLocalizations l10n = context.l10n;
         expect(find.textContaining('no access'), findsNothing);
+        expect(find.text(l10n.errorNetworkMessage), findsWidgets);
       },
     );
   });

@@ -179,13 +179,16 @@ class _AccessAdminWorkspaceContentState
         ? state.lastFailure! as AppFailure
         : null;
     final ThemeData theme = Theme.of(context);
+    final bool isRolesPanel = state.query.panel == AccessAdminPanel.roles;
     final bool isEntitlementsPanel =
         state.query.panel == AccessAdminPanel.entitlements;
     final bool isPermissionsPanel =
         state.query.panel == AccessAdminPanel.permissions;
+    final bool canReadRoles = canReadAccessAdminRoles(policy);
     final bool canReadEntitlements = canReadAccessAdminEntitlements(policy);
     final bool canReadPermissions = canReadAccessAdminPermissions(policy);
     final bool hideFilteredPanelWorklist =
+        (isRolesPanel && !canReadRoles) ||
         (isEntitlementsPanel && !canReadEntitlements) ||
         (isPermissionsPanel && !canReadPermissions);
 

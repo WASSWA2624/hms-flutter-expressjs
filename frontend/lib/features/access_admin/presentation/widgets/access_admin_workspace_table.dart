@@ -470,7 +470,9 @@ List<AppListTableColumn<AccessAdminItem>> _roleColumns(
           left.userCount.compareTo(right.userCount),
       cellBuilder: (_, AccessAdminItem item) => Text('${item.userCount}'),
     ),
-    _roleNextActionColumn(context, canWrite: canWrite, onRoleEdit: onRoleEdit),
+    // Omit the column entirely when unauthorized (no empty/disabled cell).
+    if (canWrite)
+      _roleNextActionColumn(context, onRoleEdit: onRoleEdit),
     AppListTableColumn<AccessAdminItem>(
       id: 'role_details',
       label: l10n.accessAdminColumnDetails,
@@ -719,7 +721,6 @@ AppListTableColumn<AccessAdminItem> _userNextActionColumn(
 
 AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
   BuildContext context, {
-  required bool canWrite,
   required void Function(AccessAdminItem item) onRoleEdit,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -728,7 +729,7 @@ AppListTableColumn<AccessAdminItem> _roleNextActionColumn(
     label: l10n.accessAdminEditRoleAction,
     alwaysVisible: true,
     cellBuilder: (BuildContext context, AccessAdminItem item) {
-      if (!canWrite || item.isSystemCritical) {
+      if (item.isSystemCritical) {
         return const SizedBox.shrink();
       }
       return AppButton.tertiary(
