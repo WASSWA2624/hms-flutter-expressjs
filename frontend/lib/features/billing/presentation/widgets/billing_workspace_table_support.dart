@@ -181,10 +181,10 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnsForQueue(
       );
   final List<String> ids =
       billingDefaultColumnIds[queue] ?? billingDefaultColumnIds.values.first;
-  final bool showNextAction =
-      canWrite ||
-      canDecideBillingApproval(accessPolicy) ||
-      canMutateBillingClaims(accessPolicy);
+  final bool showNextAction = billingQueueShowsNextActionColumn(
+    accessPolicy,
+    queue,
+  );
   return <AppListTableColumn<BillingWorkItem>>[
     for (final String id in ids)
       if (id != billingNextActionColumnId || showNextAction) columns[id]!,

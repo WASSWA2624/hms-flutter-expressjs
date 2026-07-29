@@ -12,6 +12,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Claims pending tab | `billingClaimsPendingTabRequirement` (`billing:read` ∩ `billing-payments` ∩ `insurance-claims`) |
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
 | Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close) |
+| All atom map | `BillingAllAtomPermissions` (tab/list/detail/issue/receivePayment/close/approve/claims) |
 | Awaiting payment atom map | `BillingAwaitingPaymentAtomPermissions` (tab/list/detail/receivePayment/refund/adjust/void/send/close) |
 | Overdue atom map | `BillingOverdueAtomPermissions` (tab/list/detail/receivePayment/adjust/dunningSend/close) |
 | Needs issue atom map | `BillingNeedsIssueAtomPermissions` (tab/list/detail/issue/close) |
@@ -102,7 +103,7 @@ Fields: patient ID, invoice #, encounter #; source module; billing status; issue
   - Location: Next-action column (`billingNextActionColumnLabel`).
   - Opens modal: The mutation dialog for the item’s top allowed action (issue, receive payment, approve, submit/reconcile claim, pre-auth approve, refund, adjust, void, or send).
   - Immediate result: Completes that mutation path without opening the full detail first.
-  - Condition: `billingNextActionRequirement(item)`; column omitted when the user has no mutation rights; absent when unauthorized for that item.
+  - Condition: `billingNextActionRequirement(item)`; column omitted when the user has no mutation rights for that queue (`billingQueueShowsNextActionColumn` — Approval required needs approve ∩); absent when unauthorized for that item.
 
 ### Detail dialog (from row select)
 

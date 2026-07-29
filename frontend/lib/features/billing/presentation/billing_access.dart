@@ -148,7 +148,27 @@ bool billingNextActionIsAllowed(
   return billingNextActionRequirement(item).isAllowed(policy);
 }
 
+/// Whether the Next action column mounts for [queue].
+///
+/// Approval required rows only expose approve/reject — write alone must not
+/// mount an empty mutation column. Other queues keep write / approve / claims.
+bool billingQueueShowsNextActionColumn(
+  AppAccessPolicy policy,
+  BillingQueueType queue,
+) {
+  return switch (queue) {
+    BillingQueueType.approvalRequired => canDecideBillingApproval(policy),
+    _ =>
+      canWriteBilling(policy) ||
+      canDecideBillingApproval(policy) ||
+      canMutateBillingClaims(policy),
+  };
+}
+
 /// All tab atom → permission mapping (inventory + matrix).
+///
+/// Full billing queue (`?queue=all` or default). Mixed next-actions inherit
+/// per-item gates via [billingNextActionRequirement].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -157,13 +177,18 @@ bool billingNextActionIsAllowed(
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Close shift / Close day | update | write ∩ `billing:write` |
-/// | Next action Issue / Pay / Refund / … | create / update / delete | write ∩ |
+/// | Next action Issue / Pay / Refund / Adjust / Void / Send | create / update / delete | write ∩ |
 /// | Next action Approve | approve | write ∩ financial:approve |
 /// | Detail invoice mutations | CRUD | write ∩ |
 /// | Detail Approve / Reject | approve | write ∩ financial:approve |
+/// | Nested mutation dialogs | create / update / delete | write ∩ / approval ∩ / claims write |
 /// | Claim / pre-auth mutations | nested write | claims write |
 /// | Claims pending tab (strip) | navigate | claims pending tab |
 /// | View ledger / Print / Download | read / export | document read ∩ |
+/// | Route entry (deep link) | navigate | read ∪ write |
+///
+/// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
+/// [billingClaimsPendingTabRequirement] when insurance is entitled.
 abstract final class BillingAllAtomPermissions {
   static const AccessRequirement tab = billingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = billingWorkspaceReadRequirement;
@@ -172,6 +197,9 @@ abstract final class BillingAllAtomPermissions {
   static const AccessRequirement update = billingWorkspaceWriteRequirement;
   static const AccessRequirement delete = billingWorkspaceWriteRequirement;
   static const AccessRequirement write = billingWorkspaceWriteRequirement;
+  static const AccessRequirement close = billingWorkspaceWriteRequirement;
+  static const AccessRequirement issue = billingWorkspaceWriteRequirement;
+  static const AccessRequirement receivePayment = billingWorkspaceWriteRequirement;
   static const AccessRequirement approve = billingApprovalDecisionRequirement;
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
@@ -179,6 +207,7 @@ abstract final class BillingAllAtomPermissions {
       billingClaimsPendingTabRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
   static const AccessRequirement entry = billingWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }
 
 /// Approval required tab atom → permission mapping (inventory + matrix).

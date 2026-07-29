@@ -309,6 +309,46 @@ void main() {
       },
     );
 
+    test(
+      'Approval required next-action column mounts only with approve ∩',
+      () {
+        final AppAccessPolicy writer = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        );
+        final AppAccessPolicy approver = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+          },
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            writer,
+            BillingQueueType.approvalRequired,
+          ),
+          isFalse,
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            approver,
+            BillingQueueType.approvalRequired,
+          ),
+          isTrue,
+        );
+        expect(
+          billingQueueShowsNextActionColumn(
+            writer,
+            BillingQueueType.needsIssue,
+          ),
+          isTrue,
+        );
+      },
+    );
+
     test('Awaiting payment atom map reuses feature *Requirement helpers', () {
       expect(
         identical(
