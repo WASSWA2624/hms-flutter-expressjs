@@ -71,6 +71,8 @@ AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
   List<String> roles = const <String>['NURSE'],
+  String? tenantId = 'tenant-1',
+  String? facilityId = 'facility-1',
 }) {
   final bool needsClinical = permissions.any(
     (AppPermission permission) =>
@@ -116,8 +118,8 @@ AppAccessPolicy _policy({
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
+        tenantId: tenantId,
+        facilityId: facilityId,
       ),
       permissions: permissions,
       moduleEntitlements: resolvedModules,
@@ -517,6 +519,27 @@ void main() {
       expect(IcuTransfersAtomPermissions.write.isAllowed(noModule), isFalse);
     });
 
+    test(
+      'ABAC: missing facility still allows Transfers chrome '
+      '(row/own scope remains backend-authoritative)',
+      () {
+        final AppAccessPolicy noFacility = _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          facilityId: null,
+        );
+        expect(noFacility.hasFacilityContext, isFalse);
+        expect(IcuTransfersAtomPermissions.tab.isAllowed(noFacility), isTrue);
+        expect(IcuTransfersAtomPermissions.write.isAllowed(noFacility), isTrue);
+        expect(
+          IcuTransfersAtomPermissions.routeEntry.isAllowed(noFacility),
+          isTrue,
+        );
+      },
+    );
+
     test('next-action / panel requirements map transfer kinds to write ∪', () {
       expect(
         icuBoardNextActionKind(
@@ -567,6 +590,9 @@ void main() {
       expect(find.text('Transfer Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.textContaining('Transfers'), findsWidgets);
+      // Transfer status column remains readable for ∪ clinical|emergency read.
+      expect(find.text('Transfer'), findsWidgets);
+      expect(find.text('Requested'), findsWidgets);
       expect(find.text('Manage transfer'), findsNothing);
       expect(find.text('Request transfer'), findsNothing);
       expect(

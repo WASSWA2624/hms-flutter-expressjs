@@ -1,14 +1,14 @@
 """Run prompts/ui-permissions/**/*.md with Cursor agents.
 
 Processing rules:
-- One folder at a time; never start the next folder until every prompt in
-  the current folder has finished all iterations.
-- Within a folder iteration, at most MAX_CONCURRENCY prompts run at once.
-- Each folder is iterated ITERATIONS times so every prompt runs that many times.
+- Up to MAX_CONCURRENCY prompts run at once, drawn from any folder
+  (folder boundaries do not throttle concurrency).
+- Each prompt runs ITERATIONS times sequentially in its worker slot.
+- After a prompt finishes all ITERATIONS successfully, commit and push
+  its results to GitHub.
 - Completed prompt iterations recorded in
-  .run_ui_permissions_prompts_state.json are skipped on resume; pass --force
-  to clear state and re-run everything.
-- After each successful prompt run, commit and push to GitHub.
+  .run_ui_permissions_prompts_state.json are skipped on resume; pass
+  --force to clear state and re-run everything.
 - Model is always "auto".
 """
 
@@ -35,7 +35,7 @@ PROJECT_DIR = Path(__file__).parent
 PROMPTS_ROOT = PROJECT_DIR / "prompts" / "ui-permissions"
 STATE_FILE = PROJECT_DIR / ".run_ui_permissions_prompts_state.json"
 ITERATIONS = 2
-MAX_CONCURRENCY = 5
+MAX_CONCURRENCY = 10
 MAX_ATTEMPTS = 3
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
@@ -55,8 +55,13 @@ def _iteration_key(prompt_rel: str, iteration: int) -> str:
     return f"{prompt_rel}#{iteration}/{ITERATIONS}"
 
 
+def _prompt_complete_key(prompt_rel: str) -> str:
+    """Label used when committing after all iterations finish."""
+    return f"{prompt_rel}#{ITERATIONS}/{ITERATIONS}"
+
+
 def _discover_folders() -> list[Path]:
-    """Return prompt folders under ui-permissions, sorted, one folder at a time."""
+    """Return prompt folders under ui-permissions, sorted."""
     if not PROMPTS_ROOT.is_dir():
         return []
     folders: list[Path] = []
@@ -81,15 +86,12 @@ def _folder_prompts(folder: Path) -> list[Path]:
     )
 
 
-def _all_jobs() -> list[tuple[Path, Path, int]]:
-    """(folder, prompt_path, iteration) for every planned run, folder-major order."""
-    jobs: list[tuple[Path, Path, int]] = []
-    for folder in _discover_folders():
-        prompts = _folder_prompts(folder)
-        for iteration in range(1, ITERATIONS + 1):
-            for prompt in prompts:
-                jobs.append((folder, prompt, iteration))
-    return jobs
+def _all_prompts(folders: list[Path]) -> list[Path]:
+    """All prompt files across the selected folders, folder then name order."""
+    prompts: list[Path] = []
+    for folder in folders:
+        prompts.extend(_folder_prompts(folder))
+    return prompts
 
 
 def _load_finished() -> set[str]:
@@ -116,7 +118,7 @@ def _log(message: str, *, err: bool = False) -> None:
 
 
 def _display_name(prompt_path: Path, iteration: int) -> str:
-    """Human label like 'clinical/all.md (2/3)'."""
+    """Human label like 'clinical/all.md (2/2)'."""
     try:
         rel = prompt_path.relative_to(PROMPTS_ROOT).as_posix()
     except ValueError:
@@ -125,7 +127,7 @@ def _display_name(prompt_path: Path, iteration: int) -> str:
 
 
 def _display_key(iteration_key: str) -> str:
-    """Turn 'prompts/ui-permissions/clinical/all.md#2/3' into 'clinical/all.md (2/3)'."""
+    """Turn 'prompts/ui-permissions/clinical/all.md#2/2' into 'clinical/all.md (2/2)'."""
     path_part, _, iter_part = iteration_key.partition("#")
     prefix = f"prompts/{PROMPTS_ROOT.name}/"
     short = path_part[len(prefix) :] if path_part.startswith(prefix) else Path(path_part).name
@@ -221,9 +223,9 @@ def _git_has_staged_changes() -> bool:
     return staged.returncode != 0
 
 
-def _commit_and_push(iteration_key: str) -> dict:
-    """Stage, commit, and push workspace changes after a successful prompt run."""
-    label = _display_key(iteration_key)
+def _commit_and_push(commit_key: str) -> dict:
+    """Stage, commit, and push workspace changes after a prompt completes all iterations."""
+    label = _display_key(commit_key)
     last_error = ""
     for attempt in range(1, GIT_LOCK_RETRIES + 1):
         try:
@@ -234,7 +236,7 @@ def _commit_and_push(iteration_key: str) -> dict:
             if not _git_has_staged_changes():
                 return {"committed": False, "pushed": False}
 
-            message = f"Apply prompt: {iteration_key}"
+            message = f"Apply prompt: {commit_key}"
             try:
                 _run_git(["commit", "-m", message])
             except subprocess.CalledProcessError as err:
@@ -279,106 +281,171 @@ def _commit_and_push(iteration_key: str) -> dict:
     )
 
 
+async def _run_one_iteration(
+    *,
+    prompt_path: Path,
+    prompt_rel: str,
+    iteration: int,
+    client: AsyncClient,
+) -> dict:
+    """Run a single prompt iteration (agent only; no git)."""
+    key = _iteration_key(prompt_rel, iteration)
+    label = _display_name(prompt_path, iteration)
+    _log(f"  start  {label}")
+    last_error = ""
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            prompt_text = prompt_path.read_text(encoding="utf-8")
+            async with await client.create_agent(
+                AgentOptions(
+                    api_key=os.environ["CURSOR_API_KEY"],
+                    model=MODEL,
+                    local=LocalAgentOptions(cwd=str(PROJECT_DIR)),
+                )
+            ) as agent:
+                run = await agent.send(prompt_text)
+                result = await run.wait()
+            status = result.status
+            if status != "finished":
+                last_error = f"agent status={status}"
+                result_id = getattr(result, "id", None)
+                if result_id:
+                    last_error = f"{last_error} run={result_id}"
+                if attempt < MAX_ATTEMPTS:
+                    wait_s = 2 ** (attempt - 1)
+                    _log(
+                        f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
+                        f"({last_error}), wait {wait_s}s",
+                        err=True,
+                    )
+                    await asyncio.sleep(wait_s)
+                    continue
+                _log(f"  fail   {label} - {last_error}", err=True)
+                return {"file": key, "status": "error", "message": last_error}
+
+            _log(f"  done   {label}")
+            return {"file": key, "status": "finished"}
+        except CursorAgentError as err:
+            last_error = _error_text(err)
+            if attempt < MAX_ATTEMPTS and _is_retryable(err):
+                wait_s = 2 ** (attempt - 1)
+                _log(
+                    f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
+                    f"({last_error}), wait {wait_s}s",
+                    err=True,
+                )
+                await asyncio.sleep(wait_s)
+                continue
+            _log(f"  fail   {label} - {last_error}", err=True)
+            return {"file": key, "status": "error", "message": last_error}
+        except Exception as err:
+            last_error = _error_text(err)
+            if attempt < MAX_ATTEMPTS and _is_retryable(err):
+                wait_s = 2 ** (attempt - 1)
+                _log(
+                    f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
+                    f"({last_error}), wait {wait_s}s",
+                    err=True,
+                )
+                await asyncio.sleep(wait_s)
+                continue
+            _log(f"  fail   {label} - {last_error}", err=True)
+            return {"file": key, "status": "error", "message": last_error}
+
+    return {"file": key, "status": "error", "message": last_error}
+
+
 async def run_prompt(
     prompt_path: Path,
-    iteration: int,
     client: AsyncClient,
     finished: set[str],
     git_lock: asyncio.Lock,
     sem: asyncio.Semaphore,
 ) -> dict:
-    """Run one ui-permissions prompt iteration, then commit and push."""
+    """Run all remaining iterations for one prompt, then commit and push once."""
     prompt_rel = _prompt_rel(prompt_path)
-    key = _iteration_key(prompt_rel, iteration)
-    label = _display_name(prompt_path, iteration)
+    complete_key = _prompt_complete_key(prompt_rel)
+    try:
+        short = prompt_path.relative_to(PROMPTS_ROOT).as_posix()
+    except ValueError:
+        short = prompt_path.name
+
+    pending_iterations = [
+        iteration
+        for iteration in range(1, ITERATIONS + 1)
+        if _iteration_key(prompt_rel, iteration) not in finished
+    ]
+
+    if not pending_iterations:
+        return {
+            "file": complete_key,
+            "status": "finished",
+            "committed": False,
+            "pushed": False,
+            "skipped": True,
+        }
 
     async with sem:
-        _log(f"  start  {label}")
-        last_error = ""
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                prompt_text = prompt_path.read_text(encoding="utf-8")
-                async with await client.create_agent(
-                    AgentOptions(
-                        api_key=os.environ["CURSOR_API_KEY"],
-                        model=MODEL,
-                        local=LocalAgentOptions(cwd=str(PROJECT_DIR)),
-                    )
-                ) as agent:
-                    run = await agent.send(prompt_text)
-                    result = await run.wait()
-                status = result.status
-                if status != "finished":
-                    last_error = f"agent status={status}"
-                    result_id = getattr(result, "id", None)
-                    if result_id:
-                        last_error = f"{last_error} run={result_id}"
-                    if attempt < MAX_ATTEMPTS:
-                        wait_s = 2 ** (attempt - 1)
-                        _log(
-                            f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
-                            f"({last_error}), wait {wait_s}s",
-                            err=True,
-                        )
-                        await asyncio.sleep(wait_s)
-                        continue
-                    _log(f"  fail   {label} - {last_error}", err=True)
-                    return {
-                        "file": key,
-                        "status": "error",
-                        "message": last_error,
-                    }
-
-                async with git_lock:
-                    git_info = await asyncio.to_thread(_commit_and_push, key)
-                finished.add(key)
-                _save_finished(finished)
-                if git_info.get("committed"):
-                    outcome = "committed & pushed"
-                else:
-                    outcome = "no code changes"
-                _log(f"  done   {label} - {outcome}")
+        _log(
+            f"  prompt {short}: running iteration(s) "
+            f"{pending_iterations} of {ITERATIONS}"
+        )
+        iteration_results: list[dict] = []
+        for iteration in pending_iterations:
+            result = await _run_one_iteration(
+                prompt_path=prompt_path,
+                prompt_rel=prompt_rel,
+                iteration=iteration,
+                client=client,
+            )
+            iteration_results.append(result)
+            if result["status"] != "finished":
                 return {
-                    "file": key,
-                    "status": "finished",
-                    **git_info,
+                    "file": complete_key,
+                    "status": "error",
+                    "message": result.get("message", "iteration failed"),
+                    "failed_iteration": result["file"],
                 }
-            except CursorAgentError as err:
-                last_error = _error_text(err)
-                if attempt < MAX_ATTEMPTS and _is_retryable(err):
-                    wait_s = 2 ** (attempt - 1)
-                    _log(
-                        f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
-                        f"({last_error}), wait {wait_s}s",
-                        err=True,
-                    )
-                    await asyncio.sleep(wait_s)
-                    continue
-                _log(f"  fail   {label} - {last_error}", err=True)
-                return {"file": key, "status": "error", "message": last_error}
-            except Exception as err:
-                last_error = _error_text(err)
-                if attempt < MAX_ATTEMPTS and _is_retryable(err):
-                    wait_s = 2 ** (attempt - 1)
-                    _log(
-                        f"  retry  {label} - attempt {attempt}/{MAX_ATTEMPTS} "
-                        f"({last_error}), wait {wait_s}s",
-                        err=True,
-                    )
-                    await asyncio.sleep(wait_s)
-                    continue
-                _log(f"  fail   {label} - {last_error}", err=True)
-                return {"file": key, "status": "error", "message": last_error}
 
-        return {"file": key, "status": "error", "message": last_error}
+            finished.add(result["file"])
+            _save_finished(finished)
+
+        still_open = [
+            _iteration_key(prompt_rel, iteration)
+            for iteration in range(1, ITERATIONS + 1)
+            if _iteration_key(prompt_rel, iteration) not in finished
+        ]
+        if still_open:
+            return {
+                "file": complete_key,
+                "status": "error",
+                "message": f"unfinished iterations: {', '.join(still_open)}",
+            }
+
+        async with git_lock:
+            git_info = await asyncio.to_thread(_commit_and_push, complete_key)
+
+        if git_info.get("committed"):
+            outcome = "committed & pushed"
+        else:
+            outcome = "no code changes"
+        _log(f"  prompt {short}: all {ITERATIONS} iterations done - {outcome}")
+        return {
+            "file": complete_key,
+            "status": "finished",
+            "iterations": [r["file"] for r in iteration_results],
+            **git_info,
+        }
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run prompts/ui-permissions folder-by-folder with Cursor model=auto. "
-            f"Max {MAX_CONCURRENCY} concurrent prompts per folder iteration; "
-            f"each prompt runs {ITERATIONS} times; commit+push after each success."
+            "Run prompts/ui-permissions with Cursor model=auto. "
+            f"Always up to {MAX_CONCURRENCY} prompts concurrent across folders; "
+            f"each prompt runs {ITERATIONS} times then commit+push. "
+            "Resume skips completed iterations in "
+            ".run_ui_permissions_prompts_state.json."
         )
     )
     parser.add_argument(
@@ -427,25 +494,30 @@ async def main(argv: list[str] | None = None):
     if not folders:
         sys.exit(f"No prompt folders found under {PROMPTS_ROOT}")
 
-    all_keys: list[str] = []
-    for folder in folders:
-        for iteration in range(1, ITERATIONS + 1):
-            for prompt in _folder_prompts(folder):
-                all_keys.append(_iteration_key(_prompt_rel(prompt), iteration))
+    prompts = _all_prompts(folders)
+    all_keys: list[str] = [
+        _iteration_key(_prompt_rel(prompt), iteration)
+        for prompt in prompts
+        for iteration in range(1, ITERATIONS + 1)
+    ]
 
     if args.list:
         _log(
-            f"Plan: {len(folders)} folders - {ITERATIONS} passes each - "
-            f"up to {MAX_CONCURRENCY} at a time - model={MODEL}"
+            f"Plan: {len(folders)} folders - {len(prompts)} prompts - "
+            f"{ITERATIONS} iterations each - "
+            f"up to {MAX_CONCURRENCY} concurrent (any folder) - model={MODEL}"
         )
         for folder in folders:
-            prompts = _folder_prompts(folder)
-            total = len(prompts) * ITERATIONS
-            _log(f"\n{folder.name}: {len(prompts)} prompts x {ITERATIONS} = {total}")
-            for iteration in range(1, ITERATIONS + 1):
-                names = ", ".join(p.stem for p in prompts)
-                _log(f"  pass {iteration}/{ITERATIONS}: {names}")
-        _log(f"\nTotal: {len(all_keys)} runs")
+            folder_prompts = _folder_prompts(folder)
+            total = len(folder_prompts) * ITERATIONS
+            _log(f"\n{folder.name}: {len(folder_prompts)} prompts x {ITERATIONS} = {total}")
+            for prompt in folder_prompts:
+                _log(f"  {_prompt_rel(prompt)}")
+        _log(
+            f"\nTotal: {len(all_keys)} runs "
+            f"({len(prompts)} prompts, commit+push after each completes "
+            f"{ITERATIONS}/{ITERATIONS})"
+        )
         return
 
     api_key = os.environ.get("CURSOR_API_KEY", "").strip()
@@ -462,114 +534,90 @@ async def main(argv: list[str] | None = None):
             STATE_FILE.unlink()
             _log("Cleared saved progress (--force).\n")
     else:
-        finished = _load_finished() & known
+        # Keep the full state set so --folder / stop-restart never wipes
+        # finished iterations outside the current plan.
+        finished = _load_finished()
         _save_finished(finished)
 
+    pending_prompts = [
+        prompt
+        for prompt in prompts
+        if any(
+            _iteration_key(_prompt_rel(prompt), iteration) not in finished
+            for iteration in range(1, ITERATIONS + 1)
+        )
+    ]
     pending_keys = [k for k in all_keys if k not in finished]
     skipped = len(all_keys) - len(pending_keys)
 
     _log(
-        f"UI permissions - {len(folders)} folders - {ITERATIONS} passes - "
-        f"up to {MAX_CONCURRENCY} at a time"
+        f"UI permissions - {len(folders)} folders - {len(prompts)} prompts - "
+        f"{ITERATIONS} passes - up to {MAX_CONCURRENCY} concurrent (any folder)"
     )
     _log(
         f"{len(all_keys)} runs total - {skipped} already done - "
-        f"{len(pending_keys)} left\n"
+        f"{len(pending_keys)} left across {len(pending_prompts)} prompt(s)"
+    )
+    _log(
+        f"Commit+push after each prompt completes all {ITERATIONS} iterations.\n"
     )
 
-    if not pending_keys:
+    if not pending_prompts:
         _log("Nothing left to run. Use --force to start over.")
         return
 
     results: list[dict] = [
-        {"file": name, "status": "finished"} for name in sorted(finished)
+        {
+            "file": _prompt_complete_key(_prompt_rel(prompt)),
+            "status": "finished",
+            "skipped": True,
+        }
+        for prompt in prompts
+        if all(
+            _iteration_key(_prompt_rel(prompt), iteration) in finished
+            for iteration in range(1, ITERATIONS + 1)
+        )
     ]
     git_lock = asyncio.Lock()
     sem = asyncio.Semaphore(MAX_CONCURRENCY)
-    failed = False
 
-    async with await AsyncClient.launch_bridge(
-        workspace=str(PROJECT_DIR),
-        client_timeout=BRIDGE_TIMEOUT_SECONDS,
-        max_retries=2,
-    ) as client:
-        for folder in folders:
-            prompts = _folder_prompts(folder)
-            folder_keys = [
-                _iteration_key(_prompt_rel(p), i)
-                for i in range(1, ITERATIONS + 1)
-                for p in prompts
-            ]
-            folder_pending = [k for k in folder_keys if k not in finished]
-            if not folder_pending:
-                _log(f"{folder.name}: already complete - skip")
-                continue
-
+    try:
+        async with await AsyncClient.launch_bridge(
+            workspace=str(PROJECT_DIR),
+            client_timeout=BRIDGE_TIMEOUT_SECONDS,
+            max_retries=2,
+        ) as client:
             _log(
-                f"\n{folder.name}: {len(prompts)} prompts - "
-                f"{len(folder_pending)}/{len(folder_keys)} left"
+                f"Pool: starting {len(pending_prompts)} prompt(s) "
+                f"(max {MAX_CONCURRENCY} concurrent, any folder)"
             )
-
-            for iteration in range(1, ITERATIONS + 1):
-                batch = [
-                    p
-                    for p in prompts
-                    if _iteration_key(_prompt_rel(p), iteration) not in finished
-                ]
-                if not batch:
-                    _log(f"  pass {iteration}/{ITERATIONS}: already done")
-                    continue
-
-                _log(
-                    f"  pass {iteration}/{ITERATIONS}: "
-                    f"running {len(batch)} (max {MAX_CONCURRENCY})"
-                )
-                batch_results = await asyncio.gather(
-                    *[
-                        run_prompt(
-                            prompt_path=prompt,
-                            iteration=iteration,
-                            client=client,
-                            finished=finished,
-                            git_lock=git_lock,
-                            sem=sem,
-                        )
-                        for prompt in batch
-                    ]
-                )
-                results.extend(batch_results)
-
-                errors = [r for r in batch_results if r["status"] != "finished"]
-                if errors:
-                    failed = True
-                    _log(
-                        f"\nStopped: {len(errors)} failed in {folder.name} "
-                        f"pass {iteration}/{ITERATIONS}. "
-                        "Re-run to continue from here.",
-                        err=True,
+            batch_results = await asyncio.gather(
+                *[
+                    run_prompt(
+                        prompt_path=prompt,
+                        client=client,
+                        finished=finished,
+                        git_lock=git_lock,
+                        sem=sem,
                     )
-                    break
+                    for prompt in pending_prompts
+                ]
+            )
+            results.extend(batch_results)
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        _save_finished(finished)
+        _log(
+            f"\nStopped. Progress saved ({len(finished & known)}/"
+            f"{len(all_keys)} in-scope iterations done). "
+            "Re-run to continue without repeating finished work.",
+            err=True,
+        )
+        sys.exit(130)
 
-            if failed:
-                break
-
-            still_open = [k for k in folder_keys if k not in finished]
-            if still_open:
-                failed = True
-                _log(
-                    f"\nStopped: {folder.name} still has "
-                    f"{len(still_open)} unfinished. "
-                    "Not moving to the next folder.",
-                    err=True,
-                )
-                break
-
-            _log(f"{folder.name}: complete")
-
+    results.sort(key=lambda r: r["file"])
+    this_run = [r for r in results if not r.get("skipped")]
     errors = [r for r in results if r["status"] != "finished"]
-    finished_count = len([r for r in results if r["status"] == "finished"])
-    this_run = [r for r in results if "committed" in r or r.get("message")]
-    this_run.sort(key=lambda r: r["file"])
+    finished_count = sum(1 for k in all_keys if k in finished)
 
     _log("\nSummary")
     if this_run:
@@ -586,10 +634,10 @@ async def main(argv: list[str] | None = None):
     else:
         _log(f"  {finished_count}/{len(all_keys)} complete - nothing new this session")
 
-    if errors or failed or finished_count < len(all_keys):
+    if errors or finished_count < len(all_keys):
         _log(
             f"\n{finished_count}/{len(all_keys)} complete. "
-            "Re-run to finish the rest."
+            "Re-run to finish the rest (already-done iterations are skipped)."
         )
         sys.exit(1)
 
