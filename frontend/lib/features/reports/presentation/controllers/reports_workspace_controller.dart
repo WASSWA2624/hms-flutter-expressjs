@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
@@ -8,6 +10,7 @@ import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
+import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final reportsWorkspaceControllerProvider =
@@ -20,6 +23,8 @@ final class ReportsWorkspaceController
     extends AsyncNotifier<Result<ReportsWorkspaceState>> {
   ReportsRepository get _repository => ref.read(reportsRepositoryProvider);
 
+  AppAccessPolicy get _policy => ref.read(appAccessPolicyProvider);
+
   @override
   Future<Result<ReportsWorkspaceState>> build() async {
     watchSessionEpoch(ref);
@@ -30,25 +35,11 @@ final class ReportsWorkspaceController
       onRefresh: (_) => refresh(),
     );
     return runWorkspaceInitialLoad(ref, () async {
-      const ReportsWorkspaceQuery query = ReportsWorkspaceQuery();
-      final Result<ReportsWorkspaceOverview> overviewResult =
-          await _loadReportingOverview(query);
-
-      return overviewResult.when(
-        success: (ReportsWorkspaceOverview overview) {
-          return Result<ReportsWorkspaceState>.success(
-            ReportsWorkspaceState(
-              query: query,
-              overview: overview,
-              complianceLogs: _emptyCompliancePage(query.pageRequest),
-              selectedItem: overview.items.items.firstOrNull,
-            ),
-          );
-        },
-        failure: (AppFailure failure) {
-          return Result<ReportsWorkspaceState>.failure(failure);
-        },
-      );
+      final ReportsWorkspacePanel? panel = reportsFallbackPanel(_policy);
+      if (panel == null) {
+        return Result<ReportsWorkspaceState>.success(_emptyWorkspaceState());
+      }
+      return _loadForQuery(_queryForPanel(panel));
     });
   }
 
@@ -59,6 +50,16 @@ final class ReportsWorkspaceController
       return null;
     }
 
+    final ReportsWorkspacePanel panel = current.query.panel;
+    if (!canAccessReportsPanel(_policy, panel)) {
+      final ReportsWorkspacePanel? fallback = reportsFallbackPanel(_policy);
+      if (fallback == null) {
+        _emit(_emptyWorkspaceState());
+        return null;
+      }
+      return applyPanel(fallback);
+    }
+
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
     return _refreshCurrent(
       preferredItemId: current.selectedItem?.id,
@@ -67,6 +68,9 @@ final class ReportsWorkspaceController
   }
 
   Future<AppFailure?> applyPanel(ReportsWorkspacePanel panel) {
+    if (!canAccessReportsPanel(_policy, panel)) {
+      return Future<AppFailure?>.value(null);
+    }
     final ReportsWorkspaceResource resource =
         ReportsWorkspaceResource.defaultForPanel(panel);
     return _applyQuery(
@@ -326,49 +330,18 @@ final class ReportsWorkspaceController
     final ReportsWorkspaceState current = _currentState!;
     final ReportsWorkspaceQuery query = current.query;
 
-    if (query.panel.isCompliance) {
-      final Result<AppPage<ComplianceLogItem>> logsResult = await _repository
-          .listComplianceLogs(query);
-      return logsResult.when(
-        success: (AppPage<ComplianceLogItem> logs) {
-          _emit(
-            _currentState!.copyWith(
-              complianceLogs: logs,
-              selectedComplianceLog: _selectComplianceLog(
-                logs.items,
-                preferredComplianceId,
-              ),
-              isRefreshing: false,
-              isSaving: false,
-              clearSelectedItem: true,
-            ),
-          );
-          return null;
-        },
-        failure: (AppFailure failure) {
-          _emit(
-            _currentState!.copyWith(
-              isRefreshing: false,
-              isSaving: false,
-              lastFailure: failure,
-            ),
-          );
-          return failure;
-        },
-      );
-    }
-
-    final Result<ReportsWorkspaceOverview> overviewResult =
-        await _loadReportingOverview(query);
-    return overviewResult.when(
-      success: (ReportsWorkspaceOverview overview) {
+    final Result<ReportsWorkspaceState> loaded = await _loadForQuery(
+      query,
+      preferredItemId: preferredItemId,
+      preferredComplianceId: preferredComplianceId,
+      preserveOverview: query.panel.isCompliance ? current.overview : null,
+    );
+    return loaded.when(
+      success: (ReportsWorkspaceState next) {
         _emit(
-          _currentState!.copyWith(
-            overview: overview,
-            selectedItem: _selectItem(overview, preferredItemId),
+          next.copyWith(
             isRefreshing: false,
             isSaving: false,
-            clearSelectedComplianceLog: true,
           ),
         );
         return null;
@@ -382,6 +355,61 @@ final class ReportsWorkspaceController
           ),
         );
         return failure;
+      },
+    );
+  }
+
+  Future<Result<ReportsWorkspaceState>> _loadForQuery(
+    ReportsWorkspaceQuery query, {
+    String? preferredItemId,
+    String? preferredComplianceId,
+    ReportsWorkspaceOverview? preserveOverview,
+  }) async {
+    if (query.panel.isCompliance) {
+      if (!canReadReportsCompliance(_policy)) {
+        return Result<ReportsWorkspaceState>.success(_emptyWorkspaceState());
+      }
+      final Result<AppPage<ComplianceLogItem>> logsResult = await _repository
+          .listComplianceLogs(query);
+      return logsResult.when(
+        success: (AppPage<ComplianceLogItem> logs) {
+          return Result<ReportsWorkspaceState>.success(
+            ReportsWorkspaceState(
+              query: query,
+              overview: preserveOverview ?? const ReportsWorkspaceOverview(),
+              complianceLogs: logs,
+              selectedComplianceLog: _selectComplianceLog(
+                logs.items,
+                preferredComplianceId,
+              ),
+            ),
+          );
+        },
+        failure: (AppFailure failure) {
+          return Result<ReportsWorkspaceState>.failure(failure);
+        },
+      );
+    }
+
+    if (!canReadReportsCatalog(_policy)) {
+      return Result<ReportsWorkspaceState>.success(_emptyWorkspaceState());
+    }
+
+    final Result<ReportsWorkspaceOverview> overviewResult =
+        await _loadReportingOverview(query);
+    return overviewResult.when(
+      success: (ReportsWorkspaceOverview overview) {
+        return Result<ReportsWorkspaceState>.success(
+          ReportsWorkspaceState(
+            query: query,
+            overview: overview,
+            complianceLogs: _emptyCompliancePage(query.pageRequest),
+            selectedItem: _selectItem(overview, preferredItemId),
+          ),
+        );
+      },
+      failure: (AppFailure failure) {
+        return Result<ReportsWorkspaceState>.failure(failure);
       },
     );
   }
@@ -409,6 +437,23 @@ final class ReportsWorkspaceController
       failure: (AppFailure failure) async {
         return Result<ReportsWorkspaceOverview>.failure(failure);
       },
+    );
+  }
+
+  ReportsWorkspaceQuery _queryForPanel(ReportsWorkspacePanel panel) {
+    return ReportsWorkspaceQuery(
+      panel: panel,
+      resource: ReportsWorkspaceResource.defaultForPanel(panel),
+    );
+  }
+
+  ReportsWorkspaceState _emptyWorkspaceState({
+    ReportsWorkspaceQuery query = const ReportsWorkspaceQuery(),
+  }) {
+    return ReportsWorkspaceState(
+      query: query,
+      overview: const ReportsWorkspaceOverview(),
+      complianceLogs: _emptyCompliancePage(query.pageRequest),
     );
   }
 

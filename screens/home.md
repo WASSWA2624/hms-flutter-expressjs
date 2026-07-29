@@ -31,7 +31,7 @@ Dialog chrome: each home-invoked `AppDialog` has an icon-only **Close** that onl
 | **View all** (queue / results / follow-ups) | navigate | First filtered item target; absent when no entitled target |
 | Quick links (module shortcuts) | navigate | Per-shortcut catalog ∩ (`homeShortcutRequirement` / `shortcuts`) |
 | Trend / distribution charts | read | `reports:read` ∩ (`homeChartsRequirement`) |
-| Nested write dialogs opened from Next steps / empty manage / metric actions | create / update / approve | Parent action / card write keys ∩; dialog not opened without those rights |
+| Nested write dialogs opened from Next steps / empty manage / metric actions | create / update / approve | Parent action / card write keys ∩; dialog not opened without those rights (`homeInvokeAction` re-checks `isAllowed`) |
 | Tab create / update / delete matrix rows | — | _(n/a — verbs live on per-atom Dashboard.md / action defs)_ |
 | Nested cross-module matrix rows | — | _(n/a at tab matrix; cross-module atoms use their own module `*:read`/`*:write`)_ |
 

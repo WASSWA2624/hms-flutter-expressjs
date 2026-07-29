@@ -78,13 +78,18 @@ RoleDashboardLayout homeRoleDashboardLayoutAfterFilter({
   required HomeDashboard dashboard,
   required bool hasQuickActions,
   required bool hasPrioritySurface,
+  bool chartsAllowed = true,
 }) {
   final bool showMetrics =
       profile.showMetricsSection && dashboard.statusCards.isNotEmpty;
-  final bool showCharts = profile.showChartsWhenData(
-    trend: dashboard.trend,
-    distribution: dashboard.distribution,
-  );
+  // [filterHomeDashboardForAccess] clears unauthorized chart payloads; also
+  // honor [chartsAllowed] so showCharts never outlives AppAccessGate deny.
+  final bool showCharts =
+      chartsAllowed &&
+      profile.showChartsWhenData(
+        trend: dashboard.trend,
+        distribution: dashboard.distribution,
+      );
 
   return RoleDashboardLayout(
     showMetrics: showMetrics,

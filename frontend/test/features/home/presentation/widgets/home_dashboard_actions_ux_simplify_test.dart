@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -29,6 +31,25 @@ void main() {
       expect(homeCanonicalActionId('manage_users_roles'), 'manage_users');
       expect(homeCanonicalActionId('view_my_care'), 'update_own_profile');
       expect(homeCanonicalActionId('staff_profile'), 'add_staff_profile');
+    });
+
+    test('denies HomeActionDefinition with empty permission lists', () {
+      final AppAccessPolicy policy = _elevatedPolicy(
+        roles: <String>['SUPER_ADMIN'],
+        permissions: AppPermissions.all,
+      );
+      const HomeActionDefinition bare = HomeActionDefinition(
+        id: 'ungated_probe',
+        label: 'Ungated probe',
+        icon: Icons.warning_amber_outlined,
+        route: AppRoutes.home,
+      );
+
+      expect(bare.isAllowed(policy), isFalse);
+      expect(
+        homeVisibleActions(const <String>['ungated_probe'], policy),
+        isEmpty,
+      );
     });
 
     test('dedupes alias ids against the canonical definition', () {

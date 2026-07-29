@@ -14,25 +14,6 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-RoleDashboardLayout homeRoleDashboardLayout(
-  HomeDashboardProfile profile, {
-  required HomeDashboardTrend trend,
-  required HomeDashboardDistribution distribution,
-}) {
-  return RoleDashboardLayout(
-    showMetrics: profile.showMetricsSection,
-    showQuickActions: !profile.suppressHomeQuickActions,
-    showPriority:
-        profile.showQueuePanel ||
-        profile.showShortcutsSection(quickActionCount: profile.maxQuickActions),
-    showCharts: profile.showChartsWhenData(
-      trend: trend,
-      distribution: distribution,
-    ),
-    alertsBeforeMetrics: profile.alertsBeforeMetrics,
-  );
-}
-
 List<DashboardMetricCardData> homeDashboardMetrics({
   required BuildContext context,
   required WidgetRef ref,

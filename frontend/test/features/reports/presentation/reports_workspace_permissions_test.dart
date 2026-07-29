@@ -259,6 +259,10 @@ void main() {
     expect(find.text('Daily census email'), findsNothing);
     expect(find.text('Run report'), findsNothing);
     expect(find.text('EXPORT | REPORT_RUN'), findsWidgets);
+    // Authorized compliance load must not hit catalog workspace APIs.
+    verifyNever(() => repository.getWorkspace(any()));
+    verifyNever(() => repository.listSchedules(any()));
+    verify(() => repository.listComplianceLogs(any())).called(greaterThan(0));
 
     final List<AppListTable<ComplianceLogItem>> complianceTables = tester
         .widgetList<AppListTable<ComplianceLogItem>>(

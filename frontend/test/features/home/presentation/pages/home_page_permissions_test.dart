@@ -280,6 +280,26 @@ void main() {
     );
 
     testWidgets(
+      'charts present with profile:read + reports:read and trend data',
+      (WidgetTester tester) async {
+        await _pumpHome(
+          tester,
+          permissions: <AppPermission>[
+            AppPermissions.profileRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+            AppPermissions.reportsRead,
+          ],
+          dashboard: _doctorDashboard(),
+        );
+
+        expect(find.byType(DashboardChartsRow), findsOneWidget);
+        expect(find.text('Consultation trend'), findsOneWidget);
+        expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'profile:read only collapses KPI/actions; empty queue copy remains',
       (WidgetTester tester) async {
         await _pumpHome(

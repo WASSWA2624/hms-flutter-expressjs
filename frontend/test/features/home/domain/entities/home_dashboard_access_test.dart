@@ -954,5 +954,20 @@ void main() {
       expect(layout.showQuickActions, isFalse);
       expect(layout.showPriority, isFalse);
     });
+
+    test('chartsAllowed:false collapses charts even when trend data remains', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+      final HomeDashboard dashboard = _dashboardForProfile(profile);
+      final RoleDashboardLayout layout = homeRoleDashboardLayoutAfterFilter(
+        profile: profile,
+        dashboard: dashboard,
+        hasQuickActions: true,
+        hasPrioritySurface: true,
+        chartsAllowed: false,
+      );
+
+      expect(dashboard.trend.hasData, isTrue);
+      expect(layout.showCharts, isFalse);
+    });
   });
 }

@@ -9,6 +9,7 @@ Access helpers: `frontend/lib/features/reports/presentation/reports_access.dart`
 | Workspace / catalog panels / schedules / timeline | `reportsCatalogReadRequirement` / `canReadReportsCatalog` | ∪ `reports:read` (+ admin overlay) |
 | Compliance panels (audit / PHI / processing) | `reportsComplianceReadRequirement` / `canReadReportsCompliance` | ∪ `compliance:read`, `compliance:review` (+ admin) |
 | Route entry | `reportsWorkspaceReadRequirement` / route any-of | ∪ `reports:read`, `compliance:read` |
+| Initial load / panel switch | `reportsFallbackPanel` / `canAccessReportsPanel` | Loads only an allowed panel; compliance-only skips catalog `getWorkspace` |
 | Run / Schedule / Retry / Cancel | `reportsWriteRequirement` / `canWriteReports` | ∩ `reports:write` (+ admin overlay per inventory) |
 | Download / Print / Export evidence | `reportsExportRequirement` / `canExportEvidence` | ∪ `evidence:export` (+ admin; not `reports:write`) |
 | Hard delete (no UI on this tab yet) | `reportsDeleteRequirement` / `canDeleteReports` | ∩ `reports:delete` (+ admin overlay) |

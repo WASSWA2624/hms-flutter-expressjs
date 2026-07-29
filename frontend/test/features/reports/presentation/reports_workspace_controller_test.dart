@@ -2,6 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
@@ -10,6 +17,25 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockReportsRepository extends Mock implements ReportsRepository {}
+
+const List<AppModuleEntitlement> _reportsModule = <AppModuleEntitlement>[
+  AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
+];
+
+AppAccessPolicy _policy(Set<AppPermission> permissions) {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'token'),
+      user: const AuthUserProfile(
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        roles: <String>['REPORTING'],
+      ),
+      permissions: permissions,
+      moduleEntitlements: _reportsModule,
+    ),
+  );
+}
 
 void main() {
   setUpAll(() {
@@ -32,8 +58,9 @@ void main() {
         _stubWorkspace(repository);
         _stubSchedules(repository);
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [reportsRepositoryProvider.overrideWithValue(repository)],
+        final ProviderContainer container = _container(
+          repository: repository,
+          policy: _policy(<AppPermission>{AppPermissions.reportsRead}),
         );
         addTearDown(container.dispose);
 
@@ -44,8 +71,73 @@ void main() {
         expect(state.selectedItem?.id, 'run-1');
         verify(() => repository.getWorkspace(any())).called(1);
         verify(() => repository.listSchedules(any())).called(1);
+        verifyNever(() => repository.listComplianceLogs(any()));
       },
     );
+
+    test(
+      'compliance-only initial load skips catalog workspace APIs (∪ read)',
+      () async {
+        final _MockReportsRepository repository = _MockReportsRepository();
+        when(() => repository.listComplianceLogs(any())).thenAnswer((
+          invocation,
+        ) async {
+          final ReportsWorkspaceQuery query =
+              invocation.positionalArguments.single as ReportsWorkspaceQuery;
+          expect(query.panel, ReportsWorkspacePanel.audit);
+          return Result<AppPage<ComplianceLogItem>>.success(
+            AppPage<ComplianceLogItem>(
+              items: const <ComplianceLogItem>[
+                ComplianceLogItem(
+                  id: 'audit-1',
+                  kind: ComplianceLogKind.audit,
+                  title: 'EXPORT | REPORT_RUN',
+                ),
+              ],
+              request: query.pageRequest,
+              totalItemCount: 1,
+            ),
+          );
+        });
+
+        final ProviderContainer container = _container(
+          repository: repository,
+          policy: _policy(<AppPermission>{AppPermissions.complianceRead}),
+        );
+        addTearDown(container.dispose);
+
+        final ReportsWorkspaceState state = await _readState(container);
+
+        expect(state.query.panel, ReportsWorkspacePanel.audit);
+        expect(state.complianceLogs.items.single.id, 'audit-1');
+        expect(state.overview.items.items, isEmpty);
+        verify(() => repository.listComplianceLogs(any())).called(1);
+        verifyNever(() => repository.getWorkspace(any()));
+        verifyNever(() => repository.listSchedules(any()));
+      },
+    );
+
+    test('refuses unauthorized panel switches without fetching', () async {
+      final _MockReportsRepository repository = _MockReportsRepository();
+      _stubWorkspace(repository);
+      _stubSchedules(repository);
+
+      final ProviderContainer container = _container(
+        repository: repository,
+        policy: _policy(<AppPermission>{AppPermissions.reportsRead}),
+      );
+      addTearDown(container.dispose);
+      await container.read(reportsWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(reportsWorkspaceControllerProvider.notifier)
+          .applyPanel(ReportsWorkspacePanel.audit);
+      final ReportsWorkspaceState state = _currentState(container);
+
+      expect(failure, isNull);
+      expect(state.query.panel.isCompliance, isFalse);
+      verifyNever(() => repository.listComplianceLogs(any()));
+    });
 
     test('switches to audit panel and loads compliance logs', () async {
       final _MockReportsRepository repository = _MockReportsRepository();
@@ -72,8 +164,12 @@ void main() {
         );
       });
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [reportsRepositoryProvider.overrideWithValue(repository)],
+      final ProviderContainer container = _container(
+        repository: repository,
+        policy: _policy(<AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.complianceRead,
+        }),
       );
       addTearDown(container.dispose);
       await container.read(reportsWorkspaceControllerProvider.future);
@@ -108,8 +204,12 @@ void main() {
         ),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [reportsRepositoryProvider.overrideWithValue(repository)],
+      final ProviderContainer container = _container(
+        repository: repository,
+        policy: _policy(<AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.reportsWrite,
+        }),
       );
       addTearDown(container.dispose);
       await container.read(reportsWorkspaceControllerProvider.future);
@@ -136,6 +236,19 @@ void main() {
       verify(() => repository.getWorkspace(any())).called(2);
     });
   });
+}
+
+ProviderContainer _container({
+  required _MockReportsRepository repository,
+  required AppAccessPolicy policy,
+}) {
+  return ProviderContainer(
+    overrides: [
+      reportsRepositoryProvider.overrideWithValue(repository),
+      appAccessPolicyProvider.overrideWithValue(policy),
+      initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+    ],
+  );
 }
 
 Future<ReportsWorkspaceState> _readState(ProviderContainer container) async {

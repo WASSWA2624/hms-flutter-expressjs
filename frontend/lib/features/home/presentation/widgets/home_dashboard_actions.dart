@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
@@ -55,19 +56,18 @@ final class HomeActionDefinition {
   final List<String> requiredModules;
 
   bool isAllowed(AppAccessPolicy policy) {
-    // Authority order: Plan (modules) → Role → Rights, then route requirement.
-    // Custom roles: when permission requirements are present, they can satisfy
-    // the action even if the role name is not a canonical AppRole.
+    // Authority order: Plan (modules) → Rights, then route requirement.
+    // Custom roles: declared permission requirements can satisfy the action
+    // even if the role name is not a canonical AppRole.
     if (!policy.hasAllActiveModules(requiredModules)) {
       return false;
     }
 
     final bool hasPermissionRequirements =
         requiredPermissions.isNotEmpty || requiredAnyPermissions.isNotEmpty;
-    if (allowedRoles.isNotEmpty && !allowedRoles.any(policy.hasRole)) {
-      if (!hasPermissionRequirements) {
-        return false;
-      }
+    // Empty permission lists must not silently mean public (align with homeAllows).
+    if (!hasPermissionRequirements) {
+      return false;
     }
     if (!policy.grantsAll(requiredPermissions)) {
       return false;
@@ -1498,6 +1498,11 @@ void homeInvokeAction(
   HomeActionDefinition action, {
   HomeDashboardRequest request = HomeDashboardRequest.empty,
 }) {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  // Defense-in-depth: never open nested write/navigate paths without a live gate.
+  if (!action.isAllowed(policy)) {
+    return;
+  }
   if (action.id == 'add_staff_profile') {
     unawaited(
       showHrStaffOnboardingDialog(context, ref).then((bool? saved) {

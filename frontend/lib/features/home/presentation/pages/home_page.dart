@@ -128,6 +128,14 @@ class _HomeDashboardContent extends ConsumerWidget {
         priorityData.showShortcuts ||
         priorityData.emptyMessage.isNotEmpty ||
         priorityData.emptyActions.isNotEmpty;
+    final bool chartsAllowed = homeAllows(policy, homeChartsRequirement);
+    final RoleDashboardLayout layout = homeRoleDashboardLayoutAfterFilter(
+      profile: profile,
+      dashboard: authorized,
+      hasQuickActions: actions.isNotEmpty,
+      hasPrioritySurface: hasPrioritySurface,
+      chartsAllowed: chartsAllowed,
+    );
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -143,12 +151,7 @@ class _HomeDashboardContent extends ConsumerWidget {
               )
             else
               RoleDashboardScaffold(
-                layout: homeRoleDashboardLayoutAfterFilter(
-                  profile: profile,
-                  dashboard: authorized,
-                  hasQuickActions: actions.isNotEmpty,
-                  hasPrioritySurface: hasPrioritySurface,
-                ),
+                layout: layout,
                 spacing: spacing,
                 leadingPanel: profile.alertsBeforeMetrics
                     ? DashboardAlertsPanel(
@@ -191,21 +194,28 @@ class _HomeDashboardContent extends ConsumerWidget {
                   ],
                 ),
                 priorityPanel: DashboardPriorityPanel(data: priorityData),
-                charts: AppAccessGate(
-                  requirement: homeChartsRequirement,
-                  child: LayoutBuilder(
-                    builder:
-                        (BuildContext context, BoxConstraints constraints) {
-                      return DashboardChartsRow(
-                        data: homeDashboardChartsData(
-                          dashboard: authorized,
-                          l10n: l10n,
+                // Mount charts only when layout allows — avoids empty chrome
+                // if AppAccessGate would shrink while showCharts stayed true.
+                charts: layout.showCharts
+                    ? AppAccessGate(
+                        requirement: homeChartsRequirement,
+                        child: LayoutBuilder(
+                          builder:
+                              (
+                                BuildContext context,
+                                BoxConstraints constraints,
+                              ) {
+                            return DashboardChartsRow(
+                              data: homeDashboardChartsData(
+                                dashboard: authorized,
+                                l10n: l10n,
+                              ),
+                              twoColumns: constraints.maxWidth >= 980,
+                            );
+                          },
                         ),
-                        twoColumns: constraints.maxWidth >= 980,
-                      );
-                    },
-                  ),
-                ),
+                      )
+                    : const SizedBox.shrink(),
               ),
           ],
         ),
