@@ -2,7 +2,7 @@
 
 Primary surface: `HrWorkspacePage` (`frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`).
 
-Write gates: `hrWriteRequirement` (staff / leave / access mutations), `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (roster & shifts), `hrPayrollRequirement` (payroll process; `hr:write` ∩ `financial:approve`). Preview payroll uses `hrPayrollPreviewRequirement` (`hr:read`). Access panel writes use Access helpers (`canCreateHrAccess` / `canUpdateHrAccess` / `canDeleteHrAccess`). Unauthorized controls do not render.
+Write gates: `hrWriteRequirement` (staff / leave / access mutations; schedule-template **delete**), `hrRosterWriteRequirement` / `hrRosterApproveRequirement` / `hrRosterPublishRequirement` (roster & shifts create/update / approve / publish — ∩ `roster:write` / `roster:approve` / `roster:publish`), `hrPayrollRequirement` (payroll process; `hr:write` ∩ `financial:approve`). Preview payroll uses `hrPayrollPreviewRequirement` (`hr:read`). Access panel writes use Access helpers (`canCreateHrAccess` / `canUpdateHrAccess` / `canDeleteHrAccess`). Unauthorized controls do not render.
 
 Atom maps: `HrLeaveRequestsAtomPermissions`, `HrShiftsAtomPermissions`, `HrPayrollDraftsAtomPermissions`, `HrManageUsersRolesAtomPermissions` in `hr_access.dart`. Tab strip filters via `hrAllowedSections`.
 
@@ -50,8 +50,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - **Schedule templates** (primary, Shifts)
   - Location: Tab-strip primary (`hrShiftTemplateAction`).
   - Opens modal: Yes — manage schedule templates dialog.
-  - Immediate result: Create / edit / delete shift templates.
-  - Condition: `hrRosterWriteRequirement` / `HrShiftsAtomPermissions.scheduleTemplates`; omitted when unauthorized.
+  - Immediate result: Create / edit shift templates (`HrShiftsAtomPermissions.create` / `update`, ∩ `roster:write`); delete uses `HrShiftsAtomPermissions.delete` (∩ `hr:write`) and is omitted when unauthorized.
+  - Condition: `HrShiftsAtomPermissions.scheduleTemplates` for strip entry; omitted when unauthorized.
 
 Payroll drafts and Manage users and roles have no tab-strip primary. Access creates (**Create staff** / role / permission) live on the embedded Access panel.
 
@@ -136,4 +136,10 @@ Tab-strip **Refresh**, housekeeping, and fault shortcuts were removed.
   - Staff **Assign department** next-action opens the assign dialog without Staff actions.
   - Leave **Approve leave** next-action opens approve without Quick actions detail shell.
   - **Review profile** still opens staff detail with Staff actions (including **Run payroll**).
+- Shifts permission suite `frontend/test/features/hr/presentation/hr_shifts_permissions_test.dart` proves:
+  - ∩ denial: missing `roster:write` hides Schedule templates / Override; missing `hr:write` hides template Delete.
+  - ∩ presence: `roster:write` shows create/edit templates; full set shows Delete.
+  - ∪ allowance: `roster:publish` alone shows Publish; `roster:approve` alone shows Approve swap.
+  - Module entitlement strips Shifts atoms without `hr-rosters`.
+  - Mobile/desktop and light/dark chrome remain for authorized readers.
 - Payroll drafts permission tests in `frontend/test/features/hr/presentation/hr_payroll_drafts_permissions_test.dart` prove preview/process ∩/∪ mapping, unauthorized absence, authorized presence, sync, viewports, and themes.

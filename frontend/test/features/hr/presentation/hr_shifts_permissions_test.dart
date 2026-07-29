@@ -652,7 +652,8 @@ void main() {
     );
 
     expect(_tab('Shifts'), findsOneWidget);
-    expect(_toolbarPrimary('Schedule templates'), findsOneWidget);
+    // Compact widths hide toolbar labels; tooltip remains the stable atom.
+    expect(find.byTooltip('Schedule templates'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
 
     await _pumpShiftsTab(
@@ -664,7 +665,7 @@ void main() {
       physicalSize: const Size(390, 844),
       themeMode: ThemeMode.dark,
     );
-    expect(_toolbarPrimary('Schedule templates'), findsNothing);
+    expect(find.byTooltip('Schedule templates'), findsNothing);
   });
 
   testWidgets('desktop light: empty queue + activity secondary remain', (

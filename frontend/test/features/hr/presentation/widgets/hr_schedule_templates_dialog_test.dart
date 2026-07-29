@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -12,6 +15,7 @@ import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -47,7 +51,20 @@ const HrReferenceData _referenceData = HrReferenceData(
 
 final AuthSession _testSession = AuthSession(
   tokens: SessionTokens(accessToken: 'access-token'),
+  user: const AuthUserProfile(roles: <String>['HR'], tenantId: 'tenant-1'),
+  permissions: <AppPermission>{
+    AppPermissions.hrRead,
+    AppPermissions.hrWrite,
+    AppPermissions.rosterWrite,
+  },
+  moduleEntitlements: const <AppModuleEntitlement>[
+    AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
+  ],
+  isAuthorizationHydrated: true,
 );
+
+AppAccessPolicy get _fullTemplatePolicy =>
+    AppAccessPolicy.fromSession(_testSession);
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
   when(() => repository.loadOverview()).thenAnswer(
@@ -134,6 +151,7 @@ Future<void> _pumpManageDialog(
         secureSessionStorageProvider.overrideWithValue(
           SecureAppSessionStorage(storage),
         ),
+        appAccessPolicyProvider.overrideWithValue(_fullTemplatePolicy),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
