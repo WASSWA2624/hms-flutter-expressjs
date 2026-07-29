@@ -57,11 +57,17 @@ const HrPayrollPreview _preview = HrPayrollPreview(
   ],
 );
 
+Finder _tab(String label) =>
+    find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
-    AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
-    AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+    AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
+    AppModuleEntitlement(
+      code: hrBillingPaymentsModule,
+      licenseStatus: 'ACTIVE',
+    ),
   ],
   String? facilityId = 'facility-1',
 }) {
@@ -649,5 +655,261 @@ void main() {
 
     expect(find.text('Process payroll'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
+  });
+
+  testWidgets(
+    '∪ nestedWriteMatrix alone does not mount Process (source ∩ stricter)',
+    (WidgetTester tester) async {
+      // Matrix ∪ allows financial:approve alone; UI process stays source ∩.
+      final AppAccessPolicy financialOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        HrPayrollDraftsAtomPermissions.nestedWriteMatrix.isAllowed(
+          financialOnly,
+        ),
+        isTrue,
+      );
+
+      await _pumpPayrollTab(
+        tester,
+        repository: repository,
+        accessPolicy: financialOnly,
+      );
+
+      expect(_tab('Payroll drafts'), findsOneWidget);
+      expect(find.text('Process payroll'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.text('run-1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preview payroll'), findsOneWidget);
+      expect(find.text('Process payroll'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'subscription strip: missing hr-rosters denies Payroll chrome',
+    (WidgetTester tester) async {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.financialApprove,
+        },
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: hrBillingPaymentsModule,
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      await _pumpPayrollTab(
+        tester,
+        repository: repository,
+        accessPolicy: noModule,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Process payroll'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'write-only ∩ denial: catalog entry fails; Payroll chrome omitted',
+    (WidgetTester tester) async {
+      final AppAccessPolicy writeOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+      expect(
+        HrPayrollDraftsAtomPermissions.routeEntry.isAllowed(writeOnly),
+        isFalse,
+      );
+      expect(HrPayrollDraftsAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+
+      await _pumpPayrollTab(
+        tester,
+        repository: repository,
+        accessPolicy: writeOnly,
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.text('Process payroll'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized Preview opens nested dialog; Process dialog shows fields',
+    (WidgetTester tester) async {
+      final AppAccessPolicy full = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.hrRead,
+          AppPermissions.hrWrite,
+          AppPermissions.financialApprove,
+        },
+      );
+
+      await _pumpPayrollTab(
+        tester,
+        repository: repository,
+        accessPolicy: full,
+      );
+
+      await tester.tap(find.text('run-1').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Preview payroll'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Casey Payroll'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.close).last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Process payroll').last);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Notes'), findsWidgets);
+      expect(find.textContaining('Replace'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized error/retry surface remains observable on Payroll',
+    (WidgetTester tester) async {
+      when(() => repository.loadOverview()).thenAnswer(
+        (_) async => const Result<HrWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+      when(() => repository.listStaffProfiles(any())).thenAnswer(
+        (_) async => const Result<AppPage<HrStaffProfile>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/hr?section=payroll',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/hr',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: HrWorkspacePage(
+                  initialQuery: HrWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            hrRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{
+                  AppPermissions.hrRead,
+                  AppPermissions.hrWrite,
+                  AppPermissions.financialApprove,
+                },
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets('mobile + light: Payroll chrome + process ∩ present', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy full = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.hrWrite,
+        AppPermissions.financialApprove,
+      },
+    );
+
+    await _pumpPayrollTab(
+      tester,
+      repository: repository,
+      accessPolicy: full,
+      physicalSize: const Size(390, 844),
+      themeMode: ThemeMode.light,
+    );
+
+    expect(_tab('Payroll drafts'), findsOneWidget);
+    expect(find.textContaining('run-1'), findsWidgets);
+    expect(find.byType(AppTabToolbarPrimary), findsNothing);
+
+    // Narrow layouts may collapse the next-action column; detail still gates.
+    await tester.tap(find.textContaining('run-1').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Preview payroll'), findsOneWidget);
+    expect(find.text('Process payroll'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
+
+  testWidgets('desktop + dark: read-only Process absent', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy reader = _policy(
+      permissions: <AppPermission>{AppPermissions.hrRead},
+    );
+
+    await _pumpPayrollTab(
+      tester,
+      repository: repository,
+      accessPolicy: reader,
+      physicalSize: const Size(1440, 900),
+      themeMode: ThemeMode.dark,
+    );
+
+    expect(find.textContaining('run-1'), findsWidgets);
+    expect(find.text('Process payroll'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
   });
 }

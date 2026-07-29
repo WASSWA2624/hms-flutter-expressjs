@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -15,6 +21,27 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
+
+AppAccessPolicy _hrRosterWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        roles: <String>['HR'],
+        tenantId: '550e8400-e29b-41d4-a716-446655440000',
+        facilityId: 'facility-1',
+      ),
+      permissions: <AppPermission>{
+        AppPermissions.hrRead,
+        AppPermissions.rosterWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: hrRostersModule, licenseStatus: 'ACTIVE'),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
 
 const HrReferenceData _referenceData = HrReferenceData(
   staffProfiles: <HrOption>[
@@ -149,6 +176,7 @@ Future<void> _pumpRecordAvailabilityDialog(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.authenticated(),
         ),
+        appAccessPolicyProvider.overrideWithValue(_hrRosterWritePolicy()),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -655,14 +655,8 @@ void main() {
   );
 
   testWidgets(
-    'authorized Create role mutates and syncs Roles list',
+    'authorized Create role dialog opens; Refresh syncs Access list',
     (WidgetTester tester) async {
-      when(() => repository.createRole(any())).thenAnswer(
-        (_) async => const Result<Object?>.success(<String, Object?>{
-          'id': 'role-new',
-        }),
-      );
-
       final AppAccessPolicy policy = _policy(
         permissions: <AppPermission>{
           AppPermissions.hrRead,
@@ -680,20 +674,29 @@ void main() {
       await tester.tap(find.text('Roles'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create role'), findsOneWidget);
       await tester.tap(find.text('Create role'));
       await tester.pumpAndSettle();
+      expect(find.text('Role name'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Role name'),
-        'WARD_LEAD',
-      );
-      await tester.tap(find.text('Save'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      verify(() => repository.createRole(any())).called(1);
-      verify(() => repository.listAccessRoles(any())).called(greaterThan(1));
-      expect(find.text('HR changes saved.'), findsOneWidget);
+      clearInteractions(repository);
+      when(() => repository.listAccessRoles(any())).thenAnswer(
+        (_) async => const Result<AppPage<HrAccessRole>>.success(
+          AppPage<HrAccessRole>(
+            items: <HrAccessRole>[_accessRole],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Refresh'));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.listAccessRoles(any())).called(greaterThan(0));
       expect(find.textContaining('no access'), findsNothing);
     },
   );

@@ -226,4 +226,9 @@ Unauthorized create/update/delete controls do not render (no disabled stubs / no
   - ∪ allowance: `roster:publish` alone shows Publish; `roster:approve` alone shows Approve swap; nested ∪ row.
   - Module entitlement strips Shifts without `hr-rosters`; facility ABAC fails route entry.
   - Post-mutation publish sync; mobile/desktop and light/dark chrome for authorized readers.
-- Payroll drafts permission tests in `frontend/test/features/hr/presentation/hr_payroll_drafts_permissions_test.dart` prove preview/process ∩/∪ mapping, unauthorized absence, authorized presence, sync, viewports, and themes.
+- Payroll drafts permission tests in `frontend/test/features/hr/presentation/hr_payroll_drafts_permissions_test.dart` prove:
+  - ∩ denial: missing `financial:approve` or `hr:write` hides Process / next-action; Preview stays on `hr:read`.
+  - ∩ presence: full `hr:write` ∩ `financial:approve` mounts Process; nested preview/process dialogs and post-mutation sync.
+  - ∪ allowance: matrix `nestedWriteMatrix` ∪ alone does **not** mount Process (source ∩ stricter — noted mapping).
+  - Subscription strip: missing `hr-rosters` hides tab; missing `billing-payments` denies process via `financial:approve` plan gate.
+  - ABAC facility strip on route entry; error/retry / empty / validation chrome; mobile+desktop and light+dark.
