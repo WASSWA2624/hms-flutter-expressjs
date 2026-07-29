@@ -149,6 +149,15 @@ bool canReadAccessAdminDemo(AppAccessPolicy policy) {
   return canReadAccessAdmin(policy);
 }
 
+/// Demo mutations: create user / activate / deactivate — same write ∩ as
+/// Directory + workspace `canWrite`. Prefer over bare [accessAdminWriteRequirement].
+bool canMutateAccessAdminDemo(
+  AppAccessPolicy policy, {
+  bool workspaceCanWrite = true,
+}) {
+  return canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+}
+
 /// Effective write gate: matrix ∩ `tenant:admin` and workspace `canWrite`.
 /// Elevated actors also qualify when the workspace reports `canWrite`.
 bool canWriteAccessAdmin(
@@ -168,7 +177,7 @@ bool canResetDemoPasswordAccessAdmin(
   required bool workspaceCanResetDemoPasswords,
 }) {
   return workspaceCanResetDemoPasswords &&
-      canWriteAccessAdmin(policy, workspaceCanWrite: workspaceCanWrite);
+      canMutateAccessAdminDemo(policy, workspaceCanWrite: workspaceCanWrite);
 }
 
 bool canReadAccessAdminEntitlements(AppAccessPolicy policy) {
