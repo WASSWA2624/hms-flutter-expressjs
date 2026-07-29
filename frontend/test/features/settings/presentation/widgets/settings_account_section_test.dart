@@ -253,6 +253,7 @@ void main() {
         AppPermissions.profileUpdate,
       ],
       size: const Size(390, 844),
+      themeMode: ThemeMode.light,
     );
 
     expect(find.byTooltip('Change password'), findsOneWidget);
@@ -277,6 +278,59 @@ void main() {
     expect(find.text('Alex Demo'), findsWidgets);
   });
 
+  testWidgets(
+    'authorized empty roles and permissions copy remain visible',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[AppPermissions.profileRead],
+        session: _session(
+          const <AppPermission>[],
+          roles: const <String>[],
+        ),
+      );
+
+      expect(find.text('Alex Demo'), findsWidgets);
+      expect(
+        find.text('No roles are assigned to this account.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('No direct permissions are assigned to this account.'),
+        findsOneWidget,
+      );
+      expect(find.text('Edit profile'), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'authorized change-password validation remains observable',
+    (WidgetTester tester) async {
+      await _pumpAccountSection(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.profileUpdate,
+        ],
+      );
+
+      await tester.tap(find.text('Change password'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Change password'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('This field is required.'), findsWidgets);
+      expect(find.byType(AppDialog), findsOneWidget);
+    },
+  );
+
   test('feature helpers match AccessRequirement matrix keys', () {
     expect(
       profileReadRequirement.allPermissions,
@@ -295,6 +349,7 @@ void main() {
 Future<void> _pumpAccountSection(
   WidgetTester tester, {
   required List<AppPermission> permissions,
+  AuthSession? session,
   String? initialPanel,
   ValueChanged<String>? onPanelChanged,
   Size size = const Size(1280, 1200),
@@ -302,9 +357,9 @@ Future<void> _pumpAccountSection(
   UserProfileRepository? repository,
   bool settle = true,
 }) async {
-  final AuthSession session = _session(permissions);
+  final AuthSession resolvedSession = session ?? _session(permissions);
   final AppAccessPolicy policy = AppAccessPolicy.fromSession(
-    session,
+    resolvedSession,
   ).copyWithPermissions(permissions);
 
   tester.view.devicePixelRatio = 1;
@@ -317,13 +372,13 @@ Future<void> _pumpAccountSection(
       overrides: [
         appAccessPolicyProvider.overrideWithValue(policy),
         initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(session: session),
+          SessionState.authenticated(session: resolvedSession),
         ),
         secureSessionStorageProvider.overrideWithValue(
           _TestSecureSessionStorage(),
         ),
         userProfileRepositoryProvider.overrideWithValue(
-          repository ?? _FakeUserProfileRepository(session),
+          repository ?? _FakeUserProfileRepository(resolvedSession),
         ),
       ],
       child: MaterialApp(
@@ -349,12 +404,15 @@ Future<void> _pumpAccountSection(
   }
 }
 
-AuthSession _session(List<AppPermission> permissions) {
+AuthSession _session(
+  List<AppPermission> permissions, {
+  List<String> roles = const <String>['doctor'],
+}) {
   return AuthSession(
     tokens: SessionTokens(accessToken: 'access-token'),
     permissions: permissions,
     isAuthorizationHydrated: true,
-    user: const AuthUserProfile(
+    user: AuthUserProfile(
       id: 'user-1',
       displayId: 'USR-1',
       email: 'alex@example.com',
@@ -364,7 +422,7 @@ AuthSession _session(List<AppPermission> permissions) {
       tenantName: 'Acme Health',
       facilityId: 'facility-1',
       facilityName: 'Central Hospital',
-      roles: <String>['doctor'],
+      roles: roles,
       staffPosition: 'physician',
     ),
   );

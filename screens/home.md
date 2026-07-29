@@ -2,9 +2,43 @@
 
 Primary surface: `HomePage` (`frontend/lib/features/home/presentation/pages/home_page.dart`).
 
-Authority: shell route access via `canAccessShellRoute` plus per-action role / permission / module checks in `homeActionLibrary`. Backend RBAC remains authoritative for mutations opened from dialogs.
+Authority: shell route is authenticated; tab content requires `profile:read`
+(`homeTabReadRequirement` / `AppAccessGate`). Per-atom KPI / queue / alert /
+chart / shortcut / action gates use `HomeDashboardAtomPermissions` and
+`homeActionLibrary` (all-of within each atom; union across grants). Backend
+RBAC remains authoritative for mutations opened from dialogs.
+
+Permission helpers: `frontend/lib/features/home/presentation/home_access.dart`
+(`homeTabReadRequirement`, `homeChartsRequirement`, `homeAtomRequirement`,
+`homeStatusCardRequirement`, `homeShortcutRequirement`).
 
 Dialog chrome: each home-invoked `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
+
+---
+
+## Permission atom map
+
+| Atom | Intent | Requirement |
+| --- | --- | --- |
+| Home surface (`HomePage` body) | read | `profile:read` ∩ (`homeTabReadRequirement`) |
+| Load / **Try again** | read chrome | `profile:read` ∩ |
+| Tenant / Facility / Branch + **Open dashboard** | navigate / chrome | `profile:read` ∩ (context panel when required) |
+| Status / KPI cards | read (navigate when entitled) | Per-card `requiredPermissions` / `HomeDashboardAtomPermissions.statusCards` ∩ |
+| Next steps (`AppQuickActions`) | create / update / navigate | Per-action `HomeActionDefinition.requiredPermissions` ∩ (+ modules / shell route) |
+| Queue / results / follow-ups rows | read / navigate | Per-item catalog ∩ (`queueItems` / module slug) |
+| Alerts rows | read / navigate | Per-alert catalog ∩ (`alerts`) |
+| Empty-queue manage actions | create / update / navigate | Same as Next-step action defs ∩; ids excluded when already in Next steps |
+| **View all** (queue / results / follow-ups) | navigate | First filtered item target; absent when no entitled target |
+| Quick links (module shortcuts) | navigate | Per-shortcut catalog ∩ (`homeShortcutRequirement` / `shortcuts`) |
+| Trend / distribution charts | read | `reports:read` ∩ (`homeChartsRequirement`) |
+| Nested write dialogs opened from Next steps / empty manage / metric actions | create / update / approve | Parent action / card write keys ∩; dialog not opened without those rights |
+| Tab create / update / delete matrix rows | — | _(n/a — verbs live on per-atom Dashboard.md / action defs)_ |
+| Nested cross-module matrix rows | — | _(n/a at tab matrix; cross-module atoms use their own module `*:read`/`*:write`)_ |
+
+Union across grants filters the visible atom set; intersection within each atom.
+Subscription / plan module map strips atoms whose permission domains are inactive
+even when a role pack string is present. Shell keeps Home for authenticated users;
+without `profile:read` the body is empty (`SizedBox.shrink`), not a “no access” banner.
 
 ---
 

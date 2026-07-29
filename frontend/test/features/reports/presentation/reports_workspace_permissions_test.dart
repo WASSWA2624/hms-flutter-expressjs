@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -314,6 +315,104 @@ void main() {
 
     expect(canExportEvidence(complianceReader), isFalse);
     expect(find.text('Export evidence'), findsNothing);
+    final List<AppListTable<ComplianceLogItem>> complianceTables = tester
+        .widgetList<AppListTable<ComplianceLogItem>>(
+          find.byType(AppListTable<ComplianceLogItem>),
+        )
+        .toList();
+    expect(complianceTables, isNotEmpty);
+    expect(
+      complianceTables.first.columns.any(
+        (AppListTableColumn<ComplianceLogItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('export next-action present with evidence:export (∪ export)', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy exporter = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.complianceRead,
+        AppPermissions.evidenceExport,
+      },
+    );
+    await _pumpReports(tester, repository: repository, policy: exporter);
+    await tester.pumpAndSettle();
+
+    expect(canExportEvidence(exporter), isTrue);
+    expect(find.text('Export evidence'), findsWidgets);
+    expect(find.text('EXPORT | REPORT_RUN'), findsWidgets);
+  });
+
+  testWidgets('detail Print absent without export; present with export', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReports(tester, repository: repository, policy: _policy());
+
+    final AppListTable<ReportsWorkspaceItem> table = tester
+        .widgetList<AppListTable<ReportsWorkspaceItem>>(
+          find.byType(AppListTable<ReportsWorkspaceItem>),
+        )
+        .first;
+    table.onRowSelected!(_definitionItem);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    final AppAccessPolicy exporter = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.reportsRead,
+        AppPermissions.evidenceExport,
+      },
+    );
+    await _pumpReports(tester, repository: repository, policy: exporter);
+    final AppListTable<ReportsWorkspaceItem> exportTable = tester
+        .widgetList<AppListTable<ReportsWorkspaceItem>>(
+          find.byType(AppListTable<ReportsWorkspaceItem>),
+        )
+        .first;
+    exportTable.onRowSelected!(_definitionItem);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('read-only omits next_action column (∩ write denial chrome)', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReports(tester, repository: repository, policy: _policy());
+
+    final AppListTable<ReportsWorkspaceItem> itemsTable = tester
+        .widgetList<AppListTable<ReportsWorkspaceItem>>(
+          find.byType(AppListTable<ReportsWorkspaceItem>),
+        )
+        .first;
+    expect(
+      itemsTable.columns.any(
+        (AppListTableColumn<ReportsWorkspaceItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
+    expect(find.text('Schedule'), findsNothing);
   });
 
   testWidgets('authorized writer keeps empty worklist state observable', (
@@ -402,12 +501,48 @@ void main() {
 
     expect(find.byType(ReportsWorkspacePage), findsOneWidget);
     expect(find.byType(AppListTable<ReportsWorkspaceItem>), findsWidgets);
+    expect(find.text('Run report'), findsWidgets);
     expect(canWriteReports(_policy(
       permissions: <AppPermission>{
         AppPermissions.reportsRead,
         AppPermissions.reportsWrite,
       },
     )), isTrue);
+  });
+
+  testWidgets('authorized error surface keeps Try again retry', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.getWorkspace(any())).thenAnswer(
+      (_) async => Result<ReportsWorkspaceOverview>.failure(
+        const AppFailure.network(),
+      ),
+    );
+    when(() => repository.listSchedules(any())).thenAnswer((invocation) async {
+      final ReportsWorkspaceQuery query =
+          invocation.positionalArguments.single as ReportsWorkspaceQuery;
+      return Result<AppPage<ReportsWorkspaceItem>>.success(
+        AppPage<ReportsWorkspaceItem>(
+          items: const <ReportsWorkspaceItem>[],
+          request: query.pageRequest,
+          totalItemCount: 0,
+        ),
+      );
+    });
+
+    await _pumpReports(
+      tester,
+      repository: repository,
+      policy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.reportsRead,
+          AppPermissions.reportsWrite,
+        },
+      ),
+      stubDefaults: false,
+    );
+
+    expect(find.textContaining('Try again'), findsWidgets);
   });
 
   testWidgets('module strip hides write affordances despite permission string', (

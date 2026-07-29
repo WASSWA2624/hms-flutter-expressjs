@@ -203,7 +203,7 @@ void main() {
     registerFallbackValue(const ReportsWorkspaceQuery());
   });
 
-  testWidgets('overview tables use adaptive mode and five default columns', (
+  testWidgets('overview tables use adaptive mode and four default columns', (
     WidgetTester tester,
   ) async {
     await _pumpReportsWorkspace(tester, repository: repository);
@@ -215,6 +215,74 @@ void main() {
     expect(itemsTable.columnVisibilityTitle, 'Table Settings');
     expect(itemsTable.search?.advancedFilterButtonLabel, 'Filters');
     expect(itemsTable.search?.advancedFilterTitle, 'Advanced filters');
+    // Read-only: next_action column must not mount (no write/export).
+    expect(itemsTable.columns.length, 4);
+    expect(
+      itemsTable.columns.any(
+        (AppListTableColumn<ReportsWorkspaceItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
+    expect(find.text('Daily census'), findsWidgets);
+
+    final AppListTable<ReportsWorkspaceItem> schedulesTable = _schedulesTable(
+      tester,
+    );
+    expect(schedulesTable.displayMode, AppListTableDisplayMode.adaptive);
+    expect(schedulesTable.columnVisibilityStorageKey, 'reports_schedules');
+    expect(schedulesTable.columnWidthStorageKey, 'reports_schedules_cw');
+    expect(schedulesTable.columns.length, 4);
+    expect(find.text('Daily census email'), findsOneWidget);
+  });
+
+  testWidgets('writer mounts next_action column on items and schedules', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    _stubWorkspace(repository);
+    _stubSchedules(repository);
+
+    tester.view.physicalSize = const Size(1920, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/reports',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/reports',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: ReportsWorkspacePage());
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          reportsRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(_reportsWritePolicy()),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    final AppListTable<ReportsWorkspaceItem> itemsTable = _itemsTable(tester);
     expect(itemsTable.columns.length, 5);
     expect(
       itemsTable.columns.any(
@@ -224,16 +292,42 @@ void main() {
       isTrue,
     );
     expect(find.text('Next action'), findsWidgets);
-    expect(find.text('Daily census'), findsWidgets);
+    expect(find.text('Run report'), findsWidgets);
+  });
 
-    final AppListTable<ReportsWorkspaceItem> schedulesTable = _schedulesTable(
-      tester,
+  testWidgets('complianceLogColumns omits next_action without export', (
+    WidgetTester tester,
+  ) async {
+    late List<AppListTableColumn<ComplianceLogItem>> columns;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Consumer(
+            builder: (BuildContext context, WidgetRef ref, _) {
+              columns = complianceLogColumns(
+                context,
+                ref,
+                AppLocalizations.of(context),
+                canExport: false,
+                onNextAction: (_, _, _) async {},
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
     );
-    expect(schedulesTable.displayMode, AppListTableDisplayMode.adaptive);
-    expect(schedulesTable.columnVisibilityStorageKey, 'reports_schedules');
-    expect(schedulesTable.columnWidthStorageKey, 'reports_schedules_cw');
-    expect(schedulesTable.columns.length, 5);
-    expect(find.text('Daily census email'), findsOneWidget);
+
+    expect(columns.length, 4);
+    expect(
+      columns.any(
+        (AppListTableColumn<ComplianceLogItem> column) =>
+            column.id == 'next_action',
+      ),
+      isFalse,
+    );
   });
 
   testWidgets('complianceLogColumns exposes five default columns', (

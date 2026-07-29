@@ -126,7 +126,14 @@ List<DashboardWorklistItemData> homeDashboardWorklistItems({
   required AppAccessPolicy policy,
   required List<HomeQueueItem> items,
 }) {
+  // Defense-in-depth: never render queue rows that fail grantsAll.
   return items
+      .where(
+        (HomeQueueItem item) => HomeDashboardAtomPermissions.isGranted(
+          policy,
+          item.effectiveRequiredPermissions,
+        ),
+      )
       .map(
         (HomeQueueItem item) => DashboardWorklistItemData(
           icon: homeModuleIcon(item.moduleSlug),
@@ -189,6 +196,12 @@ DashboardPriorityPanelData homeDashboardPriorityData({
           emptyMessage.isNotEmpty);
   final List<DashboardWorklistItemData> alertItems = alertsAllowed
       ? dashboard.alerts
+            .where(
+              (HomeAlertItem alert) => HomeDashboardAtomPermissions.isGranted(
+                policy,
+                alert.effectiveRequiredPermissions,
+              ),
+            )
             .take(3)
             .map(
               (HomeAlertItem alert) => DashboardWorklistItemData(
@@ -313,25 +326,33 @@ DashboardPriorityPanelData homeDashboardAlertsPanelData({
 }) {
   final HomeDashboardProfile profile = dashboard.profile;
 
-  return DashboardPriorityPanelData(
-    alertsTitle: homeAlertsTitle(profile.role),
-    alertItems: dashboard.alerts
-        .take(3)
-        .map(
-          (HomeAlertItem alert) => DashboardWorklistItemData(
-            icon: Icons.warning_amber_outlined,
-            title: alert.label,
-            subtitle: '${alert.count}',
-            status: AppWorkspaceStatus(
-              label: homeStatusLabel(alert.severity),
-              tone: homeSeverityTone(alert.severity),
-            ),
-            onTap: homeWorklistTap(context, ref, policy, alert.target),
+  final List<DashboardWorklistItemData> alertItems = dashboard.alerts
+      .where(
+        (HomeAlertItem alert) => HomeDashboardAtomPermissions.isGranted(
+          policy,
+          alert.effectiveRequiredPermissions,
+        ),
+      )
+      .take(3)
+      .map(
+        (HomeAlertItem alert) => DashboardWorklistItemData(
+          icon: Icons.warning_amber_outlined,
+          title: alert.label,
+          subtitle: '${alert.count}',
+          status: AppWorkspaceStatus(
+            label: homeStatusLabel(alert.severity),
+            tone: homeSeverityTone(alert.severity),
           ),
-        )
-        .toList(growable: false),
+          onTap: homeWorklistTap(context, ref, policy, alert.target),
+        ),
+      )
+      .toList(growable: false);
+
+  return DashboardPriorityPanelData(
+    alertsTitle: alertItems.isEmpty ? null : homeAlertsTitle(profile.role),
+    alertItems: alertItems,
     showQueue: false,
-    showAlerts: true,
+    showAlerts: alertItems.isNotEmpty,
     showShortcuts: false,
   );
 }

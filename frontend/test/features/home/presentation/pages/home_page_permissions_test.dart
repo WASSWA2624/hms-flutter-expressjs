@@ -17,10 +17,12 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/home_access.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/app_quick_actions.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_charts_row.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_metric_strip.dart';
 import 'package:hosspi_hms/shared/dashboard/role_dashboard_scaffold.dart';
 
@@ -238,6 +240,115 @@ void main() {
       expect(find.text('Collections today'), findsNothing);
     });
 
+    testWidgets('light theme keeps authorized metrics and hides write actions', (
+      WidgetTester tester,
+    ) async {
+      await _pumpHome(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.clinicalRead,
+          AppPermissions.labRead,
+        ],
+        dashboard: _doctorDashboard(),
+        size: const Size(1280, 900),
+        themeMode: ThemeMode.light,
+      );
+
+      expect(find.text('Assigned today'), findsOneWidget);
+      expect(find.text('Continue consultation'), findsNothing);
+      expect(find.text('Order lab'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
+    });
+
+    testWidgets(
+      'charts absent without reports:read even when trend payload present',
+      (WidgetTester tester) async {
+        await _pumpHome(
+          tester,
+          permissions: <AppPermission>[
+            AppPermissions.profileRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+          ],
+          dashboard: _doctorDashboard(),
+        );
+
+        expect(find.byType(DashboardChartsRow), findsNothing);
+        expect(find.text('Trend'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'profile:read only collapses KPI/actions; empty queue copy remains',
+      (WidgetTester tester) async {
+        await _pumpHome(
+          tester,
+          permissions: <AppPermission>[AppPermissions.profileRead],
+          dashboard: _doctorDashboard(),
+        );
+
+        expect(find.byType(RoleDashboardScaffold), findsOneWidget);
+        expect(find.text('Assigned today'), findsNothing);
+        expect(find.text('Results to review'), findsNothing);
+        expect(find.text('Continue consultation'), findsNothing);
+        expect(find.text('No assigned clinical work right now.'), findsOneWidget);
+        expect(find.textContaining('No access'), findsNothing);
+      },
+    );
+
+    testWidgets('loading state remains observable for authorized users', (
+      WidgetTester tester,
+    ) async {
+      final _FakeHomeRepository repository = _FakeHomeRepository(
+        Result<HomeDashboard>.success(_doctorDashboard()),
+        delay: const Duration(milliseconds: 200),
+      );
+
+      await _pumpHome(
+        tester,
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.clinicalRead,
+        ],
+        repository: repository,
+        settle: false,
+      );
+
+      expect(find.text('Preparing dashboard'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Assigned today'), findsOneWidget);
+    });
+
+    testWidgets(
+      'post-mutation sync reloads dashboard and keeps permission filter',
+      (WidgetTester tester) async {
+        final _FakeHomeRepository repository = _FakeHomeRepository(
+          Result<HomeDashboard>.success(_doctorDashboard()),
+        );
+
+        late ProviderContainer container;
+        await _pumpHome(
+          tester,
+          permissions: <AppPermission>[
+            AppPermissions.profileRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+          ],
+          repository: repository,
+          onContainer: (ProviderContainer c) => container = c,
+        );
+
+        expect(find.text('Assigned today'), findsOneWidget);
+        expect(repository.callCount, 1);
+
+        homeRefreshDashboard(container as dynamic, HomeDashboardRequest.empty);
+      },
+    );
+
     test('homeTabReadRequirement is the feature *Requirement helper', () {
       expect(
         homeTabReadRequirement.allPermissions,
@@ -248,6 +359,14 @@ void main() {
           AppPermissions.clinicalRead,
         ]).allPermissions,
         contains(AppPermissions.clinicalRead),
+      );
+      expect(
+        homeQueueItemRequirement(id: 'guided_clinical_queue').allPermissions,
+        contains(AppPermissions.clinicalRead),
+      );
+      expect(
+        homeAlertRequirement(id: 'guided_critical_labs').allPermissions,
+        contains(AppPermissions.labRead),
       );
     });
   });

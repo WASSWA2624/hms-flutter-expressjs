@@ -56,3 +56,31 @@ AccessRequirement homeShortcutRequirement({
   }
   return homeAtomRequirement(HomeDashboardAtomPermissions.forShortcut(id));
 }
+
+/// Queue / results / follow-up row requirement from catalog or declared list.
+AccessRequirement homeQueueItemRequirement({
+  required String id,
+  String? moduleSlug,
+  List<AppPermission> declared = const <AppPermission>[],
+}) {
+  if (declared.isNotEmpty) {
+    return homeAtomRequirement(declared);
+  }
+  return homeAtomRequirement(
+    HomeDashboardAtomPermissions.forQueueItem(id: id, moduleSlug: moduleSlug),
+  );
+}
+
+/// Alert row requirement from catalog or declared list.
+AccessRequirement homeAlertRequirement({
+  required String id,
+  String? moduleSlug,
+  List<AppPermission> declared = const <AppPermission>[],
+}) {
+  if (declared.isNotEmpty) {
+    return homeAtomRequirement(declared);
+  }
+  return homeAtomRequirement(
+    HomeDashboardAtomPermissions.forAlert(id: id, moduleSlug: moduleSlug),
+  );
+}

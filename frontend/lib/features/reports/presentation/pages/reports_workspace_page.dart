@@ -320,6 +320,19 @@ class _ReportItemsPanel extends ConsumerWidget {
               ),
             ],
             showAvatar: false,
+            trailing: ReportNextActionCell(
+              item: item,
+              canWrite: canWrite,
+              canExport: canExport,
+              isSaving: state.isSaving,
+              onPressed: () => _handleReportNextAction(
+                context,
+                ref,
+                state,
+                item,
+                policy,
+              ),
+            ),
           );
         },
       ),
@@ -525,6 +538,10 @@ class _ComplianceLogPanel extends ConsumerWidget {
         ),
         columnChoices: complianceLogColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ComplianceLogItem item) {
+          final String? exportLabel = complianceNextActionLabel(
+            l10n,
+            canExport: canExport,
+          );
           return AppListTableMobileItem(
             title: item.title,
             caption: item.recordReference,
@@ -541,6 +558,18 @@ class _ComplianceLogPanel extends ConsumerWidget {
               ),
             ],
             showAvatar: false,
+            trailing: exportLabel == null
+                ? null
+                : ComplianceNextActionCell(
+                    label: exportLabel,
+                    onPressed: () => _handleComplianceNextAction(
+                      context,
+                      ref,
+                      state,
+                      item,
+                      policy,
+                    ),
+                  ),
           );
         },
       ),
@@ -631,6 +660,19 @@ class _ReportSchedulesPanel extends ConsumerWidget {
               ),
             ],
             showAvatar: false,
+            trailing: ReportNextActionCell(
+              item: item,
+              canWrite: canWrite,
+              canExport: canExport,
+              isSaving: state.isSaving,
+              onPressed: () => _handleReportNextAction(
+                context,
+                ref,
+                state,
+                item,
+                policy,
+              ),
+            ),
           );
         },
       ),
@@ -1518,6 +1560,10 @@ Future<void> _printReportItem(
   WidgetRef ref,
   ReportsWorkspaceItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canExportEvidence(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   await printFormTemplateDocument(
     ref: ref,
@@ -1538,6 +1584,10 @@ Future<void> _printComplianceItem(
   WidgetRef ref,
   ComplianceLogItem item,
 ) async {
+  final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canExportEvidence(policy)) {
+    return;
+  }
   final AppLocalizations l10n = context.l10n;
   await printFormTemplateDocument(
     ref: ref,

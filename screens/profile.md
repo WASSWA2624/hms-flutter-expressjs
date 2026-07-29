@@ -113,6 +113,8 @@ current-user profile API.
   - Profile body present with `profile:read`, absent without it.
   - Helpers reuse `profileReadRequirement` / `profileUpdateRequirement`.
   - Matrix has no ∪ rows — union allowance N/A; nested cross-module N/A.
-  - Authorized edit refreshes detail; loading / empty / error / validation / success remain.
+  - Authorized edit refreshes detail; loading / empty / error / validation / success remain
+    (empty roles/permissions copy; change-password field validation).
   - Narrow + desktop viewports; light + dark themes.
+  - Settings Account strip present with `profile:read`, collapsed without it.
   - Summary omits role/permission count badges.

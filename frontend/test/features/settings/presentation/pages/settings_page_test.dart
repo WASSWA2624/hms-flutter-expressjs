@@ -6,9 +6,13 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/profile/data/repositories/user_profile_repository_impl.dart';
+import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
+import 'package:hosspi_hms/features/profile/domain/repositories/user_profile_repository.dart';
 import 'package:hosspi_hms/features/settings/data/repositories/settings_workspace_repository_impl.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/domain/repositories/settings_workspace_repository.dart';
@@ -187,6 +191,56 @@ void main() {
       expect(find.text('App theme'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Account and security strip is present with profile:read',
+    (WidgetTester tester) async {
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        permissions: <AppPermission>{AppPermissions.profileRead},
+        isAuthorizationHydrated: true,
+        user: const AuthUserProfile(
+          id: 'user-1',
+          email: 'alex@example.com',
+          firstName: 'Alex',
+          lastName: 'Demo',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['doctor'],
+        ),
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        session,
+      ).copyWithPermissions(<AppPermission>[AppPermissions.profileRead]);
+
+      await pumpLocalizedWidget(
+        tester,
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(policy),
+            initialSessionStateProvider.overrideWithValue(
+              SessionState.authenticated(session: session),
+            ),
+            secureSessionStorageProvider.overrideWithValue(
+              _TestSecureSessionStorage(),
+            ),
+            userProfileRepositoryProvider.overrideWithValue(
+              _FakeUserProfileRepository(session),
+            ),
+          ],
+          child: const SettingsPage(
+            initialQuery: SettingsPageQuery(tab: 'account'),
+          ),
+        ),
+        size: const Size(900, 1000),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Account and security'), findsWidgets);
+      expect(find.text('Edit profile'), findsNothing);
+      expect(find.text('Change password'), findsNothing);
+    },
+  );
 }
 
 final class _FakeSettingsWorkspaceRepository
@@ -212,6 +266,59 @@ final class _FakeSettingsWorkspaceRepository
   ) async {
     return Result<SettingsReferenceData>.success(referenceData);
   }
+}
+
+final class _FakeUserProfileRepository implements UserProfileRepository {
+  const _FakeUserProfileRepository(this.session);
+
+  final AuthSession session;
+
+  @override
+  Future<Result<UserProfileView>> loadCurrentProfile(
+    AuthSession session,
+  ) async {
+    return Result<UserProfileView>.success(
+      UserProfileView(
+        session: this.session,
+        record: const UserProfileRecord(
+          id: 'profile-1',
+          userId: 'user-1',
+          firstName: 'Alex',
+          lastName: 'Demo',
+          gender: 'UNKNOWN',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<Result<UserProfileRecord>> updateProfile(
+    String profileId,
+    UserProfileDraft draft,
+  ) async {
+    return Result<UserProfileRecord>.success(
+      UserProfileRecord(
+        id: profileId,
+        userId: 'user-1',
+        firstName: draft.firstName,
+        middleName: draft.middleName,
+        lastName: draft.lastName,
+        gender: draft.gender,
+      ),
+    );
+  }
+}
+
+final class _TestSecureSessionStorage implements SecureSessionStorage {
+  @override
+  Future<SessionTokens?> readTokens() async =>
+      SessionTokens(accessToken: 'access-token');
+
+  @override
+  Future<void> writeTokens(SessionTokens tokens) async {}
+
+  @override
+  Future<void> clear() async {}
 }
 
 SettingsReferenceData _referenceData() {

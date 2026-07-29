@@ -251,14 +251,15 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(
         );
       },
     ),
-    _reportNextActionColumn(
-      ref: ref,
-      l10n: l10n,
-      canWrite: canWrite,
-      canExport: canExport,
-      isSaving: isSaving,
-      onAction: onNextAction,
-    ),
+    if (canWrite || canExport)
+      _reportNextActionColumn(
+        ref: ref,
+        l10n: l10n,
+        canWrite: canWrite,
+        canExport: canExport,
+        isSaving: isSaving,
+        onAction: onNextAction,
+      ),
   ];
 }
 
@@ -389,14 +390,15 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
         );
       },
     ),
-    _reportNextActionColumn(
-      ref: ref,
-      l10n: l10n,
-      canWrite: canWrite,
-      canExport: canExport,
-      isSaving: isSaving,
-      onAction: onNextAction,
-    ),
+    if (canWrite || canExport)
+      _reportNextActionColumn(
+        ref: ref,
+        l10n: l10n,
+        canWrite: canWrite,
+        canExport: canExport,
+        isSaving: isSaving,
+        onAction: onNextAction,
+      ),
   ];
 }
 
@@ -453,12 +455,13 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
         return Text(reportsDateTime(context, item.occurredAt));
       },
     ),
-    _complianceNextActionColumn(
-      ref: ref,
-      l10n: l10n,
-      canExport: canExport,
-      onAction: onNextAction,
-    ),
+    if (canExport)
+      _complianceNextActionColumn(
+        ref: ref,
+        l10n: l10n,
+        canExport: canExport,
+        onAction: onNextAction,
+      ),
   ];
 }
 
