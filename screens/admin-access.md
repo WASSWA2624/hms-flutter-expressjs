@@ -151,7 +151,23 @@ Helpers: `AccessAdminRolesAtomPermissions`, `canReadAccessAdminRoles`, `canMutat
   - Location: `next_action` column; mobile `AppListTableMobileItem.trailing` via `accessAdminMobileNextAction`.
   - Opens modal: No.
   - Immediate result: Activates the registration follow-up.
-  - Condition: `canWrite` (tab elevated-only).
+  - Condition: elevated tab + write ∩ `tenant:admin` + workspace `canWrite` (`canMutateAccessAdminRegistrations`).
+
+### Registrations tab atoms (matrix)
+
+| Atom | Kind | Gate |
+| --- | --- | --- |
+| Registrations tab | navigate | elevated (source); matrix ∩ `system:admin` |
+| Search / filters / columns / pagination | read chrome | elevated |
+| Empty / error / retry | read chrome | elevated |
+| Row select → registration detail | read | elevated |
+| Activate registration (next-action / mobile trailing) | update | elevated + write ∩ `tenant:admin` + workspace `canWrite` |
+| Reject registration (detail) | delete | elevated + write ∩ + `canWrite` |
+| Create user / Create role primary | create | _(absent on this resource)_ ; reserved write ∩ if added |
+| Detail Close | progressive-disclosure | elevated |
+| Nested cross-module | — | _(n/a)_ |
+
+Helpers: `AccessAdminRegistrationsAtomPermissions`, `canReadAccessAdminRegistrations`, `canMutateAccessAdminRegistrations`, `canAccessAccessAdminRegistrations`. Workspace route entry remains read ∪ (`tenant:admin` \| `facility:admin` \| `system:admin`); this tab is stricter (elevated-only). Source inventory write chrome maps to workspace `canWrite`; matrix ∩ `tenant:admin` (and elevated writers) via `canWriteAccessAdmin` plus the elevated tab gate. Prompt ∩ `system:admin` maps to `accessAdminRegistrationsReadRequirement`; runtime tab gate prefers elevated (`SUPER_ADMIN`) so bare `system:admin` without elevation does not unlock the panel. Assignable rights stay within actor ceiling / subscription (backend authoritative).
 
 ### Detail dialog (shared)
 
@@ -188,7 +204,7 @@ Helpers: `AccessAdminRolesAtomPermissions`, `canReadAccessAdminRoles`, `canMutat
   - Location: Detail body actions.
   - Opens modal: No.
   - Immediate result: Rejects the registration follow-up.
-  - Condition: `canWrite`.
+  - Condition: elevated tab + write ∩ `tenant:admin` + workspace `canWrite` (`canMutateAccessAdminRegistrations`). Activate stays on the list next-action only.
 
 Permissions and entitlements details are read-only summaries (no write next-actions on those resources).
 
@@ -216,4 +232,4 @@ Helpers: `AccessAdminPermissionsAtomPermissions`, `canReadAccessAdminPermissions
 - **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated; Permissions catalog never mounts create / next-action / delete even for tenant writers.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
 
-Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_demo_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_directory_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_permissions_permissions_test.dart`.
+Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_roles_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_demo_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_directory_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_permissions_permissions_test.dart`, `frontend/test/features/access_admin/presentation/access_admin_registrations_permissions_test.dart`.
