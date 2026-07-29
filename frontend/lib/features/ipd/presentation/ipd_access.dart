@@ -565,8 +565,10 @@ abstract final class IpdBedBoardAtomPermissions {
   static const AccessRequirement billingRead = ipdBillingReadRequirement;
   /// Nested cross-module write for Manage beds (source admin ∪, no unit:manage).
   static const AccessRequirement nestedWrite = ipdBedManageRequirement;
-  /// Nested cross-module read — billing panels; board read ∪ otherwise.
-  static const AccessRequirement nestedRead = ipdBillingPanelReadRequirement;
+  /// Nested cross-module read — billing panels use [billingPanel]; other nested
+  /// read (admission detail from occupied row) reuses board read ∪.
+  static const AccessRequirement nestedRead = ipdWorkspaceReadRequirement;
+  static const AccessRequirement navigation = AccessRequirement();
   static const AccessRequirement panelDeepLink = ipdOperationalWriteRequirement;
   static const AccessRequirement entry = ipdWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = ipdWorkspaceEntryRequirement;
