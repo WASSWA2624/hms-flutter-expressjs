@@ -970,6 +970,8 @@ class _DetailActions extends ConsumerWidget {
         label: l10n.biomedicalDisposeTransferAction,
         icon: Icons.move_down_outlined,
       ),
+      // Identical to BiomedicalAnalyticsAtomPermissions.print / export
+      // (and every tab *AtomPermissions.print) — shared detail print gate.
       if (biomedicalPrintRequirement.isAllowed(policy))
         AppReportActionButton.print(
           label: l10n.biomedicalPrintReportAction,
