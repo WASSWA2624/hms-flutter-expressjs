@@ -167,6 +167,9 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
     registerFallbackValue(
+      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
+    );
+    registerFallbackValue(
       const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
     );
   });

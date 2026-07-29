@@ -13,6 +13,7 @@ Permission helpers: `frontend/lib/features/billing/presentation/billing_access.d
 | Claim submit / reconcile / pre-auth | `billingClaimsWriteRequirement` → `claimsWorkspaceWriteRequirement` |
 | Claims pending atom map | `BillingClaimsPendingAtomPermissions` (tab/list/detail/claimWrite/close) |
 | Overdue atom map | `BillingOverdueAtomPermissions` (tab/list/detail/receivePayment/adjust/dunningSend/close) |
+| Needs issue atom map | `BillingNeedsIssueAtomPermissions` (tab/list/detail/issue/close) |
 
 Route entry any-of: `billing:read` \| `billing:write` + `billing-payments`. Backend remains authoritative.
 
@@ -121,13 +122,14 @@ Invoice actions (`billingWorkspaceWriteRequirement`); approve/reject (`billingAp
 
 ## Verification (Req 7)
 
-- Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart` and `billing_access_test.dart` prove:
+- Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart`, `billing_access_test.dart`, `billing_needs_issue_permissions_test.dart`, and `billing_approval_required_permissions_test.dart` prove:
   - **Refresh** is absent from the tab strip on every queue (desktop/mobile).
   - **Close shift** is the sole primary and **Close day** the sole secondary, stable across tabs when write-authorized.
   - Unauthorized users see no Close shift / Close day / next-action controls.
   - Writer without `financial:approve` sees no Approve next-action / detail buttons; approver with both sees them.
   - Claims pending tab and claim mutations absent without `insurance-claims`.
   - `BillingClaimsPendingAtomPermissions` reuses tab/claim-write helpers; widget tests in `billing_claims_pending_permissions_test.dart`.
+  - `BillingNeedsIssueAtomPermissions` reuses read/write/issue helpers; widget tests in `billing_needs_issue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, Issue sync path, light/dark, mobile/desktop).
   - `BillingOverdueAtomPermissions` reuses read/write/approve/claims helpers; widget tests in `billing_overdue_permissions_test.dart` (∩ denial for read-only, ∪ route entry, subscription strip, nested Claims pending, receive-payment sync path, light/dark, mobile/desktop).
   - Advanced filters omit a Queue group; clearing filters does not reset the active tab queue.
   - Finalize financial clearance is absent from next-action and detail actions.
