@@ -46,6 +46,7 @@ AppAccessPolicy _biomedWritePolicy() {
         AppPermissions.biomedWrite,
         AppPermissions.operationsRead,
         AppPermissions.operationsWrite,
+        AppPermissions.reportsRead,
         AppPermissions.evidenceExport,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
@@ -53,7 +54,12 @@ AppAccessPolicy _biomedWritePolicy() {
           code: 'biomedical-engineering-suite',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'reporting-analytics',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
+      isAuthorizationHydrated: true,
     ),
   );
 }
@@ -362,13 +368,19 @@ void main() {
                 permissions: <AppPermission>{
                   AppPermissions.biomedRead,
                   AppPermissions.operationsRead,
+                  AppPermissions.reportsRead,
                 },
                 moduleEntitlements: const <AppModuleEntitlement>[
                   AppModuleEntitlement(
                     code: 'biomedical-engineering-suite',
                     licenseStatus: 'ACTIVE',
                   ),
+                  AppModuleEntitlement(
+                    code: 'reporting-analytics',
+                    licenseStatus: 'ACTIVE',
+                  ),
                 ],
+                isAuthorizationHydrated: true,
               ),
             ),
           ),

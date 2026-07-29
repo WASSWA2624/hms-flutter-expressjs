@@ -2,7 +2,7 @@
 
 Primary surface: `BiomedicalWorkspacePage` (`frontend/lib/features/biomedical/presentation/pages/biomedical_workspace_page.dart`).
 
-Write gate: `_writeRequirement` (`biomedWrite` or `operationsWrite` + `biomedical-engineering-suite`). Print gate: `_printRequirement` (`evidenceExport` + biomed/operations read or write + module). Unauthorized write / print controls do not render.
+Write gate: `biomedicalWriteRequirement` (`biomedWrite` or `operationsWrite` + `biomedical-engineering-suite`). Print gate: `biomedicalExportRequirement` / `biomedicalPrintRequirement` (`evidenceExport` + biomed/operations read or write + module). Analytics tab gate: `biomedicalAnalyticsTabRequirement` (`biomed:read` ∩ + `reports:read` ∪ + module). Unauthorized write / print / Analytics controls do not render.
 
 Dialog chrome: each `AppDialog` has a **Close** control that only dismisses; noted once here.
 
@@ -33,7 +33,7 @@ Dialog chrome: each `AppDialog` has a **Close** control that only dismisses; not
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
   - Immediate result: Switches panel/resource, updates URL `?panel=…` (Registry omits query).
-  - Condition: Always for authorized biomedical module users.
+  - Condition: Workspace entry (`biomed:read` ∪ `biomed:write` + module). **Analytics** additionally requires nested `reports:read` (∪) via `biomedicalAnalyticsTabRequirement`; unauthorized Analytics tab does not mount.
   - Counts: Registry (equipment total), Preventive (overdue PM), Work orders (open WOs), Compliance (critical downtime + active recalls) when &gt; 0.
 
 - **Register asset** (primary)
@@ -139,3 +139,10 @@ Widget tests in `frontend/test/features/biomedical/presentation/biomedical_works
 - [x] Row selection opens a single detail dialog without decorative related-section action labels as status badges.
 - [x] Detail does not offer a separate print-preview dialog control alongside print.
 - [x] Filters exclude Panel; search / deep-link / mobile tab strip still work.
+
+Analytics permission tests in `frontend/test/features/biomedical/presentation/biomedical_analytics_permissions_test.dart`:
+
+- [x] ∩ denial: `biomed:read` without `reports:read` omits Analytics tab.
+- [x] Nested ∪: `reports:read` (+ module) restores Analytics; subscription strip without biomed/reporting modules denies.
+- [x] Write ∪ source gate: `operations:write` (+ facilities module) satisfies write; read-only omits mutation/print atoms.
+- [x] Authorized flows, empty/loading states, mobile+dark / desktop+light, post-mutation sync.

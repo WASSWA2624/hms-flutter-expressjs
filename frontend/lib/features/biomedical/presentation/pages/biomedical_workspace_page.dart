@@ -11,11 +11,10 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
+import 'package:hosspi_hms/features/biomedical/presentation/biomedical_access.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/controllers/biomedical_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -70,24 +69,6 @@ class _BiomedicalWorkspaceContent extends ConsumerStatefulWidget {
 
 class _BiomedicalWorkspaceContentState
     extends ConsumerState<_BiomedicalWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.biomedWrite,
-      AppPermissions.operationsWrite,
-    ],
-    activeModules: <String>['biomedical-engineering-suite'],
-  );
-  static const AccessRequirement _printRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.evidenceExport],
-    anyPermissions: <AppPermission>[
-      AppPermissions.biomedRead,
-      AppPermissions.biomedWrite,
-      AppPermissions.operationsRead,
-      AppPermissions.operationsWrite,
-    ],
-    activeModules: <String>['biomedical-engineering-suite'],
-  );
-
   late final TextEditingController _searchController;
   late AppListTableColumnVisibilityController<BiomedicalAsset>
   _tableColumnController;
@@ -142,7 +123,10 @@ class _BiomedicalWorkspaceContentState
 
     final String? panel = _panelFromQuery(query.panel);
     if (panel != null) {
-      _switchPanel(panel);
+      final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+      if (canViewBiomedicalPanel(policy, panel)) {
+        _switchPanel(panel);
+      }
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -199,8 +183,28 @@ class _BiomedicalWorkspaceContentState
       biomedicalWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = _writeRequirement.isAllowed(accessPolicy);
-    final bool canPrint = _printRequirement.isAllowed(accessPolicy);
+    final bool canWrite = canWriteBiomedical(accessPolicy);
+    final bool canPrint = canPrintBiomedical(accessPolicy);
+    final List<String> visiblePanels = <String>[
+      for (final String panel in BiomedicalPanels.values)
+        if (canViewBiomedicalPanel(accessPolicy, panel)) panel,
+    ];
+    if (visiblePanels.isEmpty) {
+      // No authorized panels — omit chrome (no routine "no access" banner).
+      return const SizedBox.shrink();
+    }
+    final bool canShowCurrentPanel = visiblePanels.contains(_currentPanel);
+    if (!canShowCurrentPanel) {
+      final String fallback =
+          biomedicalFallbackPanel(accessPolicy) ?? visiblePanels.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visiblePanels.contains(_currentPanel)) {
+          return;
+        }
+        _switchPanel(fallback);
+        _updateUrlForPanel(fallback);
+      });
+    }
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -211,7 +215,7 @@ class _BiomedicalWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final String panel in BiomedicalPanels.values)
+                for (final String panel in visiblePanels)
                   AppTabItem(
                     id: panel,
                     icon: _panelIcon(panel),
@@ -219,15 +223,21 @@ class _BiomedicalWorkspaceContentState
                     count: _panelCount(panel, state.workbench.summary),
                   ),
               ],
-              selectedId: _currentPanel,
+              selectedId: canShowCurrentPanel
+                  ? _currentPanel
+                  : visiblePanels.first,
               onTabTapped: (String tabId) {
+                if (!visiblePanels.contains(tabId)) {
+                  return;
+                }
                 _switchPanel(tabId);
                 _updateUrlForPanel(tabId);
               },
               primaryAction: _primaryActionWidget(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
-            AppListTable<BiomedicalAsset>(
+            if (canShowCurrentPanel)
+              AppListTable<BiomedicalAsset>(
               page: state.workbench.assets,
               isLoading: state.isRefreshing,
               columnVisibilityController: _tableColumnController,
@@ -361,7 +371,7 @@ class _BiomedicalWorkspaceContentState
       return null;
     }
     return AppAccessActionGate(
-      requirement: _writeRequirement,
+      requirement: biomedicalWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: action.label,
@@ -1128,9 +1138,11 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final String label = _nextActionLabel(l10n, asset);
     final _BiomedicalActionKind? actionKind = _nextActionKindForAsset(asset);
     final bool hasWriteAction = actionKind != null && canWrite;
+    final String label = hasWriteAction
+        ? _nextActionLabel(l10n, asset)
+        : l10n.biomedicalNextActionReview;
 
     void onPressed() {
       if (hasWriteAction) {
@@ -1144,7 +1156,7 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
 
     if (hasWriteAction) {
       return AppAccessActionGate(
-        requirement: _BiomedicalWorkspaceContentState._writeRequirement,
+        requirement: biomedicalWriteRequirement,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.tertiary(
             label: label,
@@ -1197,6 +1209,9 @@ Future<void> _openActionDialog(
   BiomedicalAsset? asset,
 }) async {
   final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+  if (!canWriteBiomedical(policy)) {
+    return;
+  }
   final bool? saved = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
