@@ -167,4 +167,6 @@ as the agent instruction.
 | Reports workspace | Reports (all panels) | `_screens/reports.md` |
 | Profile | Profile | `_screens/profile.md` |
 
-Total prompts: **154**
+Shell menu / route entry (cross-cutting): [`../app-menu-access.md`](../app-menu-access.md) — gate every sidebar/rail/drawer/bottom-nav destination and deep-link route so users only open screens their effective permissions allow.
+
+Total prompts: **154** (+ 1 shell menu prompt outside this tree)
