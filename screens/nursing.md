@@ -2,7 +2,7 @@
 
 Primary surface: `NursingWorkspacePage` (`frontend/lib/features/nursing/presentation/pages/nursing_workspace_page.dart`).
 
-Write gate: `nursingWriteRequirement` / `NursingPatientDetailDialog.writeRequirement` (`clinicalWrite` | `patientWrite` | `lastOfficeWrite` + nurse/manager/admin roles + `inpatient-bed-management`). Matrix All / Assigned ward create/update/delete lists ∩ `clinical:write` alone — keep this source ∪; mapping noted in `NursingAllAtomPermissions` / `NursingAssignedWardAtomPermissions` / tests. Open ICU navigation remains without write. Unauthorized write controls do not render.
+Write gate: `nursingWriteRequirement` / `NursingPatientDetailDialog.writeRequirement` (`clinicalWrite` | `patientWrite` | `lastOfficeWrite` + nurse/manager/admin roles + `inpatient-bed-management`). Matrix All / Assigned ward create/update/delete lists ∩ `clinical:write` alone — keep this source ∪; mapping noted in `NursingAllAtomPermissions` / `NursingAssignedWardAtomPermissions` / tests. Transfer / Discharge pending stage writes prefer matrix ∩ `clinical:write` (`nursingClinicalWriteRequirement` / tab `*AtomPermissions.write`). Open ICU navigation remains without write. Unauthorized write controls do not render.
 
 Read chrome (All / Assigned ward): ∪ `clinical:read` | `patient:read` + `inpatient-bed-management` (`nursingWorkspaceReadRequirement` / `NursingAllAtomPermissions.tab` / `NursingAssignedWardAtomPermissions.tab`). Route entry ∪ also allows `last_office:read` | `operations:read` (`RouteAccessCatalog.nursingEntry` / `AppRoutes.nursing`); those alone do not unlock All / Assigned ward chrome or writes.
 

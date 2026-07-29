@@ -60,8 +60,9 @@ const AccessRequirement nursingWriteRequirement = AccessRequirement(
 );
 
 /// Matrix-aligned ∩ `clinical:write` (+ source roles + module). Prefer for
-/// discharge / handover / transfer pending write atoms when tighter than source
-/// ∪; [nursingWriteRequirement] remains the historical shared gate.
+/// transfer / discharge pending stage write atoms when tighter than source
+/// ∪; [nursingWriteRequirement] remains the historical shared gate for
+/// complementary detail writes and All / Assigned ward / Urgent / Handover.
 const AccessRequirement nursingClinicalWriteRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
   anyRoles: nursingWriteRoles,
