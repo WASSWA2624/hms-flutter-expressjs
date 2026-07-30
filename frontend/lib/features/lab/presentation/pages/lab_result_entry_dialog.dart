@@ -1780,7 +1780,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final double tableWidth = availableWidth
-        .clamp(860.0, double.infinity)
+        .clamp(980.0, double.infinity)
         .toDouble();
     final Color borderColor = colorScheme.outlineVariant;
     final TableBorder tableBorder = TableBorder(
@@ -1793,11 +1793,11 @@ class _LabResultEntryRowsTable extends StatelessWidget {
       child: Table(
         border: tableBorder,
         columnWidths: const <int, TableColumnWidth>{
-          0: FlexColumnWidth(2.2),
-          1: FlexColumnWidth(1.35),
-          2: FlexColumnWidth(3.4),
-          3: FlexColumnWidth(),
-          4: FlexColumnWidth(1.45),
+          0: FlexColumnWidth(2.0),
+          1: FlexColumnWidth(1.4),
+          2: FlexColumnWidth(3.5),
+          3: FlexColumnWidth(1.6),
+          4: FlexColumnWidth(1.4),
         },
         children: <TableRow>[
           TableRow(
@@ -1865,7 +1865,10 @@ class _LabResultTableCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(Theme.of(context).spacing.sm),
-      child: child,
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: child,
+      ),
     );
   }
 }
@@ -2102,30 +2105,55 @@ class _LabResultFlagCell extends StatelessWidget {
         ),
         if (canMutate && draft.enabled) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
-          Material(
-            type: MaterialType.transparency,
-            child: CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(
-                l10n.labInterpretationOverrideLabel,
-                style: theme.textTheme.bodySmall,
-              ),
-              value: draft.interpretationOverride,
-              onChanged: (bool? value) {
-                draft.interpretationOverride = value ?? false;
-                draft.notifyChanged();
-              },
+          InkWell(
+            onTap: () {
+              draft.interpretationOverride = !draft.interpretationOverride;
+              draft.notifyChanged();
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    value: draft.interpretationOverride,
+                    onChanged: (bool? value) {
+                      draft.interpretationOverride = value ?? false;
+                      draft.notifyChanged();
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      l10n.labInterpretationOverrideLabel,
+                      style: theme.textTheme.bodySmall,
+                      softWrap: true,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (draft.interpretationOverride)
-            AppTextField(
-              controller: draft.resultFlagOverrideController,
-              labelText: l10n.labResultFlagOverrideLabel,
-              enabled: draft.enabled,
-              onChanged: (_) => draft.notifyChanged(),
+          if (draft.interpretationOverride) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            AppActionLabelScope(
+              showLabels: false,
+              forceIconOnly: true,
+              child: AppTextField(
+                controller: draft.resultFlagOverrideController,
+                labelText: l10n.labResultFlagOverrideLabel,
+                enabled: draft.enabled,
+                isDense: true,
+                onChanged: (_) => draft.notifyChanged(),
+              ),
             ),
+          ],
         ],
       ],
     );
@@ -2268,119 +2296,130 @@ class _CompactResultInputState extends State<_CompactResultInput> {
   Widget build(BuildContext context) {
     final LabOrderItem item = widget.draft.item;
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final bool enabled = widget.enabled;
 
-    return Form(
-      key: widget.draft.formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (item.isNumeric) ...<Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool stackFields = constraints.maxWidth < 300;
-                final Widget valueField = AppTextField(
-                  controller: widget.draft.valueController,
-                  labelText: l10n.labResultValueLabel,
-                  enabled: enabled,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: enabled
-                      ? (_) => widget.draft.notifyChanged()
-                      : null,
-                  validator: (String? value) {
-                    final String normalized = value?.trim() ?? '';
-                    if (normalized.isEmpty) {
-                      return null;
-                    }
-                    return num.tryParse(normalized) == null
-                        ? l10n.labNumericRangeValidationMessage
-                        : null;
-                  },
-                );
-                final Widget unitField = _ResultUnitInput(
-                  item: item,
-                  controller: widget.draft.unitController,
-                  enabled: enabled,
-                  onChanged: () {
-                    setState(() {});
-                    widget.draft.notifyChanged();
-                  },
-                );
+    // Keep field-affixed clear/dropdown controls icon-only so toolbar
+    // showLabels scope cannot expand them into overflowing labeled pills.
+    return AppActionLabelScope(
+      showLabels: false,
+      forceIconOnly: true,
+      child: Form(
+        key: widget.draft.formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (item.isNumeric) ...<Widget>[
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool stackFields = constraints.maxWidth < 420;
+                  final Widget valueField = AppTextField(
+                    controller: widget.draft.valueController,
+                    labelText: l10n.labResultValueLabel,
+                    enabled: enabled,
+                    isDense: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: enabled
+                        ? (_) => widget.draft.notifyChanged()
+                        : null,
+                    validator: (String? value) {
+                      final String normalized = value?.trim() ?? '';
+                      if (normalized.isEmpty) {
+                        return null;
+                      }
+                      return num.tryParse(normalized) == null
+                          ? l10n.labNumericRangeValidationMessage
+                          : null;
+                    },
+                  );
+                  final Widget unitField = _ResultUnitInput(
+                    item: item,
+                    controller: widget.draft.unitController,
+                    enabled: enabled,
+                    onChanged: () {
+                      setState(() {});
+                      widget.draft.notifyChanged();
+                    },
+                  );
 
-                if (stackFields) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  if (stackFields) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        valueField,
+                        SizedBox(height: theme.spacing.xs),
+                        unitField,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      valueField,
-                      SizedBox(height: Theme.of(context).spacing.xs),
-                      unitField,
+                      Expanded(flex: 3, child: valueField),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(flex: 2, child: unitField),
                     ],
                   );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(flex: 6, child: valueField),
-                    SizedBox(width: Theme.of(context).spacing.sm),
-                    Expanded(flex: 5, child: unitField),
-                  ],
-                );
-              },
-            ),
-          ] else if (item.isQualitative && item.resultOptions.isNotEmpty)
-            AppSelectField<String>.searchable(
-              value: widget.draft.selectedOption,
-              labelText: l10n.labResultValueLabel,
-              enabled: enabled,
-              options: <AppSelectOption<String>>[
-                for (final LabResultOption option in item.resultOptions)
-                  AppSelectOption<String>(
-                    value: option.value ?? option.label ?? option.id,
-                    label: option.displayLabel,
-                    leadingIcon: const Icon(Icons.checklist_outlined),
-                    searchText:
-                        '${option.id} ${option.label ?? ''} ${option.value ?? ''} ${option.status ?? ''} ${option.resultFlag ?? ''}',
-                  ),
-              ],
-              onChanged: enabled
-                  ? (String? value) {
-                      setState(() => widget.draft.selectedOption = value);
-                      widget.draft.notifyChanged();
-                    }
-                  : null,
-            )
-          else
+                },
+              ),
+            ] else if (item.isQualitative && item.resultOptions.isNotEmpty)
+              AppSelectField<String>.searchable(
+                value: widget.draft.selectedOption,
+                labelText: l10n.labResultValueLabel,
+                enabled: enabled,
+                options: <AppSelectOption<String>>[
+                  for (final LabResultOption option in item.resultOptions)
+                    AppSelectOption<String>(
+                      value: option.value ?? option.label ?? option.id,
+                      label: option.displayLabel,
+                      leadingIcon: const Icon(Icons.checklist_outlined),
+                      searchText:
+                          '${option.id} ${option.label ?? ''} ${option.value ?? ''} ${option.status ?? ''} ${option.resultFlag ?? ''}',
+                    ),
+                ],
+                onChanged: enabled
+                    ? (String? value) {
+                        setState(() => widget.draft.selectedOption = value);
+                        widget.draft.notifyChanged();
+                      }
+                    : null,
+              )
+            else
+              AppTextField(
+                controller: widget.draft.textController,
+                labelText: item.isQualitative
+                    ? l10n.labResultValueLabel
+                    : l10n.labResultTextLabel,
+                enabled: enabled,
+                isDense: true,
+                maxLines: item.isText ? 3 : 1,
+                onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
+              ),
+            SizedBox(height: theme.spacing.xs),
             AppTextField(
-              controller: widget.draft.textController,
-              labelText: item.isQualitative
-                  ? l10n.labResultValueLabel
-                  : l10n.labResultTextLabel,
+              controller: widget.draft.notesController,
+              labelText: l10n.labNotesLabel,
               enabled: enabled,
-              maxLines: item.isText ? 3 : 1,
+              isDense: true,
               onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
             ),
-          AppTextField(
-            controller: widget.draft.notesController,
-            labelText: l10n.labNotesLabel,
-            enabled: enabled,
-            onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
-          ),
-          if (widget.draft.showValidationError) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.xs),
-            Text(
-              widget.draft.hasEntry
-                  ? l10n.labBatchEntryValidationMessage
-                  : l10n.labResultEntryRequiredMessage,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-                fontWeight: FontWeight.w500,
+            if (widget.draft.showValidationError) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                widget.draft.hasEntry
+                    ? l10n.labBatchEntryValidationMessage
+                    : l10n.labResultEntryRequiredMessage,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -2407,13 +2446,15 @@ class _ResultUnitInput extends StatelessWidget {
         controller: controller,
         labelText: l10n.labResultUnitLabel,
         enabled: enabled,
+        isDense: true,
       );
     }
 
-    return AppSelectField<String>.searchable(
+    return AppSelectField<String>(
       value: controller.text.trim().isEmpty ? null : controller.text.trim(),
       labelText: l10n.labResultUnitLabel,
       enabled: enabled,
+      allowClear: false,
       options: <AppSelectOption<String>>[
         for (final LabUnitOption option in item.unitOptions)
           AppSelectOption<String>(
