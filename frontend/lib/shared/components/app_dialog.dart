@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_dialog_title.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
 
@@ -744,41 +744,55 @@ class _DialogActions extends StatelessWidget {
       compact ? theme.spacing.md : theme.spacing.lg,
     ).copyWith(top: theme.spacing.sm);
 
+    final Widget actionRow;
+    if (compact) {
+      // Stack full-width actions on phones so Preview/Save stay tappable
+      // without horizontal squeeze or unreadably scaled labels.
+      actionRow = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int i = 0; i < actions.length; i++) ...<Widget>[
+            if (i > 0) SizedBox(height: theme.spacing.sm),
+            SizedBox(width: double.infinity, child: actions[i]),
+          ],
+        ],
+      );
+    } else if (actions.length <= 2) {
+      actionRow = Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerEnd,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int i = 0; i < actions.length; i++)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: i == 0 ? 0 : theme.spacing.sm,
+                  ),
+                  child: actions[i],
+                ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      actionRow = OverflowBar(
+        alignment: MainAxisAlignment.end,
+        overflowAlignment: OverflowBarAlignment.end,
+        spacing: theme.spacing.sm,
+        overflowSpacing: theme.spacing.sm,
+        children: actions,
+      );
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
       ),
-      child: Padding(
-        padding: padding,
-        child: actions.length <= 2
-            ? Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      for (int i = 0; i < actions.length; i++)
-                        Padding(
-                          padding: EdgeInsetsDirectional.only(
-                            start: i == 0 ? 0 : theme.spacing.sm,
-                          ),
-                          child: actions[i],
-                        ),
-                    ],
-                  ),
-                ),
-              )
-            : OverflowBar(
-                alignment: MainAxisAlignment.end,
-                overflowAlignment: OverflowBarAlignment.end,
-                spacing: theme.spacing.sm,
-                overflowSpacing: theme.spacing.sm,
-                children: actions,
-              ),
-      ),
+      child: Padding(padding: padding, child: actionRow),
     );
   }
 }

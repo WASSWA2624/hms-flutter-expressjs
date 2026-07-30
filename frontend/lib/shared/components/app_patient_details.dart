@@ -330,7 +330,12 @@ class _PatientDetailsTitle extends StatelessWidget {
         spacing: theme.spacing.xs,
         runSpacing: theme.spacing.xs / 2,
         children: <Widget>[
-          if (showPatientName) Text(patientName, style: nameStyle),
+          if (showPatientName)
+            Text(
+              patientName,
+              style: nameStyle,
+              softWrap: true,
+            ),
           if (showPatientName && normalizedId.isNotEmpty)
             Text(
               '·',

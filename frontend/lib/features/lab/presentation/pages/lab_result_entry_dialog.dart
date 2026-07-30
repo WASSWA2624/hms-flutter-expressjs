@@ -19,7 +19,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_result_value_unit_fields.dart';
-import 'package:hosspi_hms/shared/lab_catalog/lab_unit_conversion.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
@@ -222,6 +221,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         title: Text(l10n.labResultEntryDialogTitle),
         icon: const Icon(Icons.biotech_outlined),
         scrollable: true,
+        pinActionsToBottom: true,
         maxWidth: compact ? double.infinity : 1600,
         closeEnabled: !_isSaving,
         content: _buildContent(
@@ -243,6 +243,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                     return AppReportActionButton.preview(
                       label: l10n.labPreviewReportAction,
                       enabled: canPreview,
+                      fullWidth: compact,
                       onPressed: canPreview
                           ? () => _openPrintPreview(context, workflows)
                           : null,
@@ -259,6 +260,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                       leadingIcon: Icons.save_outlined,
                       isLoading: _isSaving,
                       enabled: canSave,
+                      fullWidth: compact,
                       onPressed: canSave
                           ? () => _saveResultsDrafts(saveableDrafts)
                           : null,
@@ -812,6 +814,9 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
     this.embeddedInPanel = false,
   });
 
+  /// Prefer stacked cards until the panel is wide enough for a usable table.
+  static const double cardLayoutBelowWidth = AppBreakpoints.lg;
+
   final List<_ResultDraft> drafts;
   final bool canMutate;
   final ValueChanged<_ResultDraft> onEditSaved;
@@ -822,7 +827,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth < 760) {
+        if (constraints.maxWidth < cardLayoutBelowWidth) {
           return _LabResultEntryCards(
             drafts: drafts,
             canMutate: canMutate,
@@ -859,6 +864,12 @@ class _LabResultEntryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final bool narrow = AppBreakpoints.of(context).isMobile;
+    final EdgeInsets cardPadding = EdgeInsets.all(
+      narrow ? theme.spacing.sm : theme.spacing.md,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -881,7 +892,7 @@ class _LabResultEntryCards extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: EdgeInsets.all(theme.spacing.sm),
+              padding: cardPadding,
               child: KeyedSubtree(
                 key: draft.rowKey,
                 child: Column(
@@ -889,16 +900,33 @@ class _LabResultEntryCards extends StatelessWidget {
                   children: <Widget>[
                     _LabResultTestCell(draft: draft),
                     SizedBox(height: theme.spacing.sm),
+                    Text(
+                      l10n.labReferenceRangeLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
                     _LabReferenceRangeCell(
                       draft: draft,
                       patientGender: patientGender,
                     ),
                     SizedBox(height: theme.spacing.sm),
+                    Text(
+                      l10n.labReportResultLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
                     draft.item.canEnterResult
                         ? _CompactResultInput(
                             draft: draft,
                             enabled: canMutate && draft.item.canEnterResult,
                             patientGender: patientGender,
+                            stackValueUnit: true,
                           )
                         : _CompletedResultReadout(
                             item: draft.item,
@@ -941,9 +969,10 @@ class _LabResultEntryTable extends StatelessWidget {
       drafts,
       catalogPanels,
     );
+    final bool narrow = AppBreakpoints.of(context).isMobile;
     final EdgeInsetsGeometry panelPadding = EdgeInsets.symmetric(
-      horizontal: theme.spacing.sm,
-      vertical: theme.spacing.sm,
+      horizontal: narrow ? theme.spacing.xs : theme.spacing.sm,
+      vertical: narrow ? theme.spacing.xs : theme.spacing.sm,
     );
 
     return Column(
@@ -1086,9 +1115,9 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
-    final double tableWidth = availableWidth
-        .clamp(900.0, double.infinity)
-        .toDouble();
+    // Fill the panel width; avoid forcing a min wider than the viewport
+    // (that caused awkward horizontal scroll just above the card breakpoint).
+    final double tableWidth = availableWidth;
     final Color borderColor = colorScheme.outlineVariant;
     final TableBorder tableBorder = TableBorder(
       horizontalInside: BorderSide(color: borderColor),
@@ -1100,9 +1129,9 @@ class _LabResultEntryRowsTable extends StatelessWidget {
       child: Table(
         border: tableBorder,
         columnWidths: const <int, TableColumnWidth>{
-          0: FlexColumnWidth(2.2),
-          1: FlexColumnWidth(1.6),
-          2: FlexColumnWidth(4.0),
+          0: FlexColumnWidth(2.0),
+          1: FlexColumnWidth(2.2),
+          2: FlexColumnWidth(3.6),
         },
         children: <TableRow>[
           TableRow(
@@ -1127,13 +1156,8 @@ class _LabResultEntryRowsTable extends StatelessWidget {
       ),
     );
 
-    final Widget scrollable = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: table,
-    );
-
     if (embeddedInPanel) {
-      return scrollable;
+      return table;
     }
 
     return Material(
@@ -1143,7 +1167,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      child: scrollable,
+      child: table,
     );
   }
 }
@@ -1267,7 +1291,11 @@ class _LabResultTestCell extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(item.displayTitle, style: titleStyle),
+        Text(
+          item.displayTitle,
+          style: titleStyle,
+          softWrap: true,
+        ),
         if (draft.showValidationError) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           _LabResultValidationMessage(draft: draft),
@@ -1304,6 +1332,7 @@ class _LabReferenceRangeCell extends StatelessWidget {
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
+          softWrap: true,
         ),
         if (draft.interpretationOverride) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
@@ -1325,11 +1354,15 @@ class _CompactResultInput extends StatefulWidget {
     required this.draft,
     required this.enabled,
     this.patientGender,
+    this.stackValueUnit = false,
   });
 
   final _ResultDraft draft;
   final bool enabled;
   final String? patientGender;
+
+  /// When true (mobile cards), always stack value above unit.
+  final bool stackValueUnit;
 
   @override
   State<_CompactResultInput> createState() => _CompactResultInputState();
@@ -1371,6 +1404,9 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                 item: item,
                 enabled: enabled,
                 valueStyle: valueStyle,
+                stackBelowWidth: widget.stackValueUnit
+                    ? double.infinity
+                    : AppBreakpoints.md,
                 onChanged: enabled
                     ? () {
                         setState(() {});
@@ -1446,6 +1482,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                   color: theme.colorScheme.error,
                   fontWeight: FontWeight.w500,
                 ),
+                softWrap: true,
               ),
             ],
           ],
@@ -1499,13 +1536,17 @@ class _CompletedResultReadout extends StatelessWidget {
             color: valueColor,
             fontWeight: FontWeight.w600,
           ),
+          softWrap: true,
         ),
         if (onEdit != null) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
-          AppButton.tertiary(
-            label: l10n.labEditVerifiedResultAction,
-            leadingIcon: Icons.edit_outlined,
-            onPressed: onEdit,
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppButton.tertiary(
+              label: l10n.labEditVerifiedResultAction,
+              leadingIcon: Icons.edit_outlined,
+              onPressed: onEdit,
+            ),
           ),
         ],
       ],
@@ -2719,15 +2760,6 @@ String? _computedNumericFlagToken(
   String? patientGender,
   String? resultUnit,
 }) {
-  final String normalized = valueText.trim();
-  if (normalized.isEmpty) {
-    return null;
-  }
-  final num? value = num.tryParse(normalized);
-  if (value == null) {
-    return null;
-  }
-
   final LabReferenceRange? nativeRange = resolveLabReferenceRangeForPatient(
     item.referenceRanges,
     patientGender: patientGender,
@@ -2736,48 +2768,11 @@ String? _computedNumericFlagToken(
     return null;
   }
 
-  final String? selectedUnit = (resultUnit ?? item.resultUnit ?? item.unit)
-      ?.trim();
-  final LabReferenceRange? convertedRange = convertLabReferenceRangeToUnit(
-    nativeRange,
-    targetUnit: selectedUnit,
+  return interpretLabNumericResultFlag(
+    valueText: valueText,
+    range: nativeRange,
+    resultUnit: (resultUnit ?? item.resultUnit ?? item.unit)?.trim(),
   );
-  final String? rangeUnit = normalizeLabUnitToken(nativeRange.unit);
-  final String? valueUnit = normalizeLabUnitToken(selectedUnit);
-  if (rangeUnit != null &&
-      valueUnit != null &&
-      rangeUnit != valueUnit &&
-      convertedRange == null) {
-    // Units differ and conversion is impossible — do not compare.
-    return null;
-  }
-  final LabReferenceRange range = convertedRange ?? nativeRange;
-
-  final num? criticalMin = num.tryParse(
-    (range.criticalMinValue ?? '').trim(),
-  );
-  final num? criticalMax = num.tryParse(
-    (range.criticalMaxValue ?? '').trim(),
-  );
-  if (criticalMin != null && value <= criticalMin) {
-    return 'CRITICAL';
-  }
-  if (criticalMax != null && value >= criticalMax) {
-    return 'CRITICAL';
-  }
-
-  final num? normalMin = num.tryParse((range.normalMinValue ?? '').trim());
-  final num? normalMax = num.tryParse((range.normalMaxValue ?? '').trim());
-  if (normalMin != null && value < normalMin) {
-    return 'LOW';
-  }
-  if (normalMax != null && value > normalMax) {
-    return 'HIGH';
-  }
-  if (normalMin != null || normalMax != null) {
-    return 'NORMAL';
-  }
-  return null;
 }
 
 String? _resultInterpretationFlagToken(

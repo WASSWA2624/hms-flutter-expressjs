@@ -511,6 +511,36 @@ void main() {
       tester.getTopLeft(applyAction).dy,
     );
   });
+
+  testWidgets('mobile AppDialog stacks footer actions full width', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Lab result entry'),
+        content: const Text('Body'),
+        pinActionsToBottom: true,
+        actions: <Widget>[
+          AppButton.secondary(
+            label: 'Preview report',
+            fullWidth: true,
+            onPressed: () {},
+          ),
+          AppButton.primary(
+            label: 'Save results',
+            fullWidth: true,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    final Offset preview = tester.getCenter(find.text('Preview report'));
+    final Offset save = tester.getCenter(find.text('Save results'));
+    expect(save.dy, greaterThan(preview.dy));
+  });
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {

@@ -16,6 +16,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -28,6 +29,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -40,6 +42,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -52,6 +55,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -64,6 +68,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -76,6 +81,7 @@ class AppReportActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.enabled = true,
+    this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -88,6 +94,7 @@ class AppReportActionButton extends StatelessWidget {
   final IconData? icon;
   final bool isLoading;
   final bool enabled;
+  final bool fullWidth;
   final String? semanticLabel;
   final String? tooltip;
 
@@ -100,6 +107,7 @@ class AppReportActionButton extends StatelessWidget {
       leadingIcon: icon ?? _defaultIcon(kind),
       isLoading: isLoading,
       enabled: enabled,
+      fullWidth: fullWidth,
       semanticLabel: semanticLabel,
       tooltip: tooltip,
     );

@@ -138,6 +138,9 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                           ?.copyWith(
                                         fontWeight: FontWeight.w700,
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
                                     ),
                               ),
                             ],

@@ -76,6 +76,47 @@ void main() {
     });
   });
 
+  group('interpretLabNumericResultFlag', () {
+    const LabReferenceRange adultMale = LabReferenceRange(
+      id: 'male',
+      label: 'Adult male',
+      unit: 'g/dL',
+      gender: 'MALE',
+      normalMinValue: '13.5',
+      normalMaxValue: '17.5',
+    );
+
+    test('15 is NORMAL in g/dL and LOW in g/L against 13.5-17.5 g/dL', () {
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '15',
+          range: adultMale,
+          resultUnit: 'g/dL',
+        ),
+        'NORMAL',
+      );
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '15',
+          range: adultMale,
+          resultUnit: 'g/L',
+        ),
+        'LOW',
+      );
+    });
+
+    test('returns null when units cannot be converted', () {
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '15',
+          range: adultMale,
+          resultUnit: '%',
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('resolveLabOrderItemDisplayReferenceRange with resultUnit', () {
     test('converts gender-matched catalog range into result unit', () {
       const LabOrderItem item = LabOrderItem(

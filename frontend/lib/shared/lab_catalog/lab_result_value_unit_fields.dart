@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -19,7 +20,7 @@ class LabResultValueUnitFields extends StatelessWidget {
     this.onChanged,
     this.valueValidator,
     this.valueStyle,
-    this.stackBelowWidth = 420,
+    this.stackBelowWidth = AppBreakpoints.md,
     this.valueFlex = 3,
     this.unitFlex = 2,
     super.key,
