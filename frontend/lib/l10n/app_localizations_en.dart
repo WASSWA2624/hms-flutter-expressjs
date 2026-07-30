@@ -13601,6 +13601,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportTableColumnsTitle => 'Report table columns';
 
   @override
+  String get labReportSettingsTitle => 'Report settings';
+
+  @override
+  String get labReportSettingsDisplaySection => 'Result and range display';
+
+  @override
+  String get labReportSettingsMetadataSection => 'Report metadata';
+
+  @override
+  String get labReportDecimalPlacesLabel => 'Decimal places';
+
+  @override
+  String get labReportShowRangeLabelLabel => 'Show range name/label';
+
+  @override
+  String get labReportShowRangeMethodLabel => 'Show method on ranges';
+
+  @override
+  String get labReportShowRangeGenderLabel => 'Show gender on ranges';
+
+  @override
+  String get labReportShowRangeAgeLabel => 'Show age on ranges';
+
+  @override
+  String get labReportPatientGenderLabel => 'Patient gender';
+
+  @override
+  String get labReportPatientAgeLabel => 'Patient age';
+
+  @override
+  String get labReportApplySettingsAction => 'Apply settings';
+
+  @override
+  String get labReportResetSettingsAction => 'Reset settings';
+
+  @override
   String get labReportTitle => 'Laboratory result report';
 
   @override

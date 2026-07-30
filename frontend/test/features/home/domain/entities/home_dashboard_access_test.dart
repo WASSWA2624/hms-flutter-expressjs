@@ -437,7 +437,7 @@ void main() {
 
         expect(profile.role, AppRole.doctor);
         expect(ids, containsAll(<String>['assigned', 'results_pending_review']));
-        expect(ids, contains('orders_today'));
+        expect(ids, contains('lab_pending'));
         expect(ids, isNot(contains('collections_today')));
         expect(ids, isNot(contains('pending_dispense')));
         expect(ids, isNot(contains('draft_reports')));

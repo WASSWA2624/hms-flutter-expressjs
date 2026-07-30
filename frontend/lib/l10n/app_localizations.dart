@@ -25118,6 +25118,78 @@ abstract class AppLocalizations {
   /// **'Report table columns'**
   String get labReportTableColumnsTitle;
 
+  /// Title for the lab result report preview settings dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Report settings'**
+  String get labReportSettingsTitle;
+
+  /// Section heading for decimal places and range fragment toggles.
+  ///
+  /// In en, this message translates to:
+  /// **'Result and range display'**
+  String get labReportSettingsDisplaySection;
+
+  /// Section heading for which patient/order metadata appears on the report.
+  ///
+  /// In en, this message translates to:
+  /// **'Report metadata'**
+  String get labReportSettingsMetadataSection;
+
+  /// Label for numeric result and range decimal places setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal places'**
+  String get labReportDecimalPlacesLabel;
+
+  /// Toggle to include reference range label on report ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show range name/label'**
+  String get labReportShowRangeLabelLabel;
+
+  /// Toggle to include method on reference ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show method on ranges'**
+  String get labReportShowRangeMethodLabel;
+
+  /// Toggle to include gender on reference ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show gender on ranges'**
+  String get labReportShowRangeGenderLabel;
+
+  /// Toggle to include age band on reference ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show age on ranges'**
+  String get labReportShowRangeAgeLabel;
+
+  /// Metadata toggle label for patient gender on the report.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient gender'**
+  String get labReportPatientGenderLabel;
+
+  /// Metadata toggle label for patient age on the report.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient age'**
+  String get labReportPatientAgeLabel;
+
+  /// Primary action to apply lab report preview settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply settings'**
+  String get labReportApplySettingsAction;
+
+  /// Action to reset lab report preview settings to defaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset settings'**
+  String get labReportResetSettingsAction;
+
   /// Localized text for labReportTitle.
   ///
   /// In en, this message translates to:

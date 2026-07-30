@@ -23,7 +23,7 @@ Make the home dashboard **permission-driven**: each KPI card, queue item, alert,
    - Facility admin: admissions/waiting/beds → `patient:read`; emergency queue → `emergency:read`; revenue → `billing:read`; pharmacy → `pharmacy:read`; lab → `lab:read`; HR attendance → `hr:read`; equipment → `biomed:read`; operations → `operations:read`; reports → `reports:read`
    - Doctor: assigned/appointments/waiting/critical/notes → `clinical:read`; lab-awaiting → `lab:read`; radiology → `radiology:read`; prescriptions → `pharmacy:read`; emergency → `emergency:read`; schedule → `roster:read`
    - Nurse: assigned/vitals/tasks → `clinical:read`; meds → `pharmacy:read`; transfers → `patient:read`; emergency → `emergency:read`; lab requests → `lab:read`; shift → `roster:read`
-   - Lab: pending/samples/critical/completed → `lab:read`; results pending validation → `lab:write`; equipment alerts → `biomed:read`
+   - Lab: pending/critical/completed/all-patients → `lab:read`; equipment alerts → `biomed:read`
    - Pharmacy: queue/low-stock/expiring/controlled/dispensed → `pharmacy:read`; pending dispensing → `pharmacy:write`; billing pending → `billing:read`
    - Reception: appointments/walk-in/waiting → `patient:read`; registrations/admissions → `patient:write`; payments → `billing:read`; emergency arrivals → `emergency:read`
    - Billing: revenue/outstanding/claims/events → `billing:read`; pending approvals → `financial:approve`; refunds → `billing:write`; revenue trend → `reports:read`

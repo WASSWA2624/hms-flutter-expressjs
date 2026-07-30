@@ -1122,20 +1122,57 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.LAB_TECH) {
-      const [ordersToday, inProcess, pending, critical, completed] = await Promise.all([
-        prisma.lab_order.count({ where: { ...labOrderWhere, ordered_at: { gte: todayStart } } }),
-        prisma.lab_order.count({ where: { ...labOrderWhere, status: 'IN_PROCESS' } }),
-        prisma.lab_result.count({
+      // Match Lab desk summary: Pending / Critical today / Completed today / All.
+      const endOfToday = shiftDays(todayStart, 1);
+      const pendingStatuses = ['ORDERED', 'COLLECTED', 'IN_PROCESS'];
+      const abnormalStatuses = ['ABNORMAL', 'CRITICAL'];
+      const resultEnteredToday = {
+        OR: [
+          { reported_at: { gte: todayStart, lt: endOfToday } },
+          {
+            reported_at: null,
+            updated_at: { gte: todayStart, lt: endOfToday }
+          }
+        ]
+      };
+      const [pending, critical, completed, totalOrders, patientGroups] = await Promise.all([
+        prisma.lab_order.count({
+          where: { ...labOrderWhere, status: { in: pendingStatuses } }
+        }),
+        prisma.lab_order.count({
           where: {
-            ...labResultWhere,
-            status: { in: ['PENDING', 'ABNORMAL', 'CRITICAL'] }
+            ...labOrderWhere,
+            items: {
+              some: {
+                deleted_at: null,
+                results: {
+                  some: {
+                    deleted_at: null,
+                    status: { in: abnormalStatuses },
+                    ...resultEnteredToday
+                  }
+                }
+              }
+            }
           }
         }),
-        prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
-        prisma.lab_order.count({ where: { ...labOrderWhere, status: 'COMPLETED' } })
+        prisma.lab_order.count({
+          where: {
+            ...labOrderWhere,
+            status: 'COMPLETED',
+            updated_at: { gte: todayStart, lt: endOfToday }
+          }
+        }),
+        prisma.lab_order.count({ where: labOrderWhere }),
+        prisma.lab_order.groupBy({
+          by: ['patient_id'],
+          where: labOrderWhere,
+          _count: { _all: true }
+        })
       ]);
+      const allPatients = Array.isArray(patientGroups) ? patientGroups.length : totalOrders;
       return {
-        metrics: { ordersToday, inProcess, pending, critical, completed },
+        metrics: { pending, critical, completed, totalOrders, allPatients },
         trendDates: await selectDateSeries(prisma.lab_order, { ...labOrderWhere, ordered_at: { gte: trendStart } }, 'ordered_at'),
         statusCounts: await countByStatuses(prisma.lab_result, labResultWhere, ['PENDING', 'NORMAL', 'ABNORMAL', 'CRITICAL']),
         activity: {

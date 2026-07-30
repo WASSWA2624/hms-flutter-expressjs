@@ -724,12 +724,12 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
   }
 
   if (packId === ROLE_PACKS.LAB_TECH) {
+    // Align with Lab desk tabs: Pending → Critical → Completed → All patients.
     return [
-      { id: 'orders_today', label: 'Lab orders today', value: metrics.ordersToday || 0, required_permissions: ['lab:read'] },
-      { id: 'in_process', label: 'Orders in process', value: metrics.inProcess || 0, required_permissions: ['lab:read'] },
-      { id: 'pending_results', label: 'Results queue', value: metrics.pending || 0, required_permissions: ['lab:write'] },
-      { id: 'critical_results', label: 'Critical results', value: metrics.critical || 0, required_permissions: ['lab:read'] },
-      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0, required_permissions: ['lab:read'] },
+      { id: 'lab_pending', label: 'Pending', value: metrics.pending || 0, required_permissions: ['lab:read'] },
+      { id: 'critical_results', label: 'Critical', value: metrics.critical || 0, required_permissions: ['lab:read'] },
+      { id: 'completed_orders', label: 'Completed', value: metrics.completed || 0, required_permissions: ['lab:read'] },
+      { id: 'lab_all_patients', label: 'All patients', value: metrics.allPatients || metrics.totalOrders || 0, required_permissions: ['lab:read'] },
     ];
   }
 

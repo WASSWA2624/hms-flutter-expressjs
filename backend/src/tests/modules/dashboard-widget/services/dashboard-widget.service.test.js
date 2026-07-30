@@ -601,11 +601,11 @@ describe('Dashboard Widget Service', () => {
     it('does not append OPD unread notification signals for unrelated roles', async () => {
       dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
         metrics: {
-          ordersToday: 2,
-          inProcess: 1,
-          pending: 0,
-          critical: 0,
-          completed: 3},
+          pending: 2,
+          critical: 1,
+          completed: 3,
+          allPatients: 4,
+          totalOrders: 5},
         trendDates: [],
         statusCounts: {},
         activity: {}});

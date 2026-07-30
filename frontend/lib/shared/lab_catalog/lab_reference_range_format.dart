@@ -1,6 +1,28 @@
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_unit_conversion.dart';
 
+/// Optional fragments / numeric rounding for reference-range display.
+final class LabReferenceRangeDisplayOptions {
+  const LabReferenceRangeDisplayOptions({
+    this.includeLabel = true,
+    this.includeMethod = true,
+    this.includeGender = true,
+    this.includeAge = true,
+    this.decimalPlaces,
+  });
+
+  static const LabReferenceRangeDisplayOptions defaults =
+      LabReferenceRangeDisplayOptions();
+
+  final bool includeLabel;
+  final bool includeMethod;
+  final bool includeGender;
+  final bool includeAge;
+
+  /// When set, numeric bounds are rounded with [num.toStringAsFixed].
+  final int? decimalPlaces;
+}
+
 /// Canonical lab reference-range display text.
 ///
 /// Matches backend `buildLabReferenceRangeRowSummary`:
@@ -20,12 +42,20 @@ String? formatLabReferenceRangeDisplay({
   String? referenceText,
   String? summary,
   bool preferReferenceText = false,
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
 }) {
   final String? trimmedUnit = preferReferenceText ? null : _trimOrNull(unit);
   final String? trimmedText = _trimOrNull(referenceText);
   final String? bounds = formatLabReferenceRangeBounds(
-    normalMinValue: normalMinValue,
-    normalMaxValue: normalMaxValue,
+    normalMinValue: formatLabNumericBoundDisplay(
+      normalMinValue,
+      decimalPlaces: options.decimalPlaces,
+    ),
+    normalMaxValue: formatLabNumericBoundDisplay(
+      normalMaxValue,
+      decimalPlaces: options.decimalPlaces,
+    ),
   );
   // Qualitative rows often carry reference_text plus placeholder 0/0 bounds.
   // Prefer the textual expected result and drop meaningless numeric bounds.
@@ -38,17 +68,17 @@ String? formatLabReferenceRangeDisplay({
     final List<String> parts = <String>[];
 
     final String? trimmedLabel = _trimOrNull(label);
-    if (trimmedLabel != null) {
+    if (options.includeLabel && trimmedLabel != null) {
       parts.add(trimmedLabel);
     }
 
     final String? trimmedMethod = _trimOrNull(method);
-    if (trimmedMethod != null) {
+    if (options.includeMethod && trimmedMethod != null) {
       parts.add('Method $trimmedMethod');
     }
 
     final String? trimmedGender = _trimOrNull(gender);
-    if (trimmedGender != null) {
+    if (options.includeGender && trimmedGender != null) {
       parts.add(trimmedGender);
     }
 
@@ -58,7 +88,7 @@ String? formatLabReferenceRangeDisplay({
       ageMaxValue: ageMaxValue,
       ageMaxUnit: ageMaxUnit,
     );
-    if (ageSummary != null) {
+    if (options.includeAge && ageSummary != null) {
       parts.add(ageSummary);
     }
 
@@ -85,7 +115,11 @@ String? formatLabReferenceRangeDisplay({
   return trimmedUnit;
 }
 
-String? formatLabReferenceRange(LabReferenceRange range) {
+String? formatLabReferenceRange(
+  LabReferenceRange range, {
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
+}) {
   return formatLabReferenceRangeDisplay(
     label: range.label,
     unit: range.unit,
@@ -99,7 +133,51 @@ String? formatLabReferenceRange(LabReferenceRange range) {
     normalMaxValue: range.normalMaxValue,
     referenceText: range.referenceText,
     summary: range.summary,
+    options: options,
   );
+}
+
+/// Formats a numeric lab value for report display when [decimalPlaces] is set.
+String? formatLabNumericBoundDisplay(
+  String? value, {
+  int? decimalPlaces,
+}) {
+  final String? trimmed = _trimOrNull(value);
+  if (trimmed == null || decimalPlaces == null) {
+    return trimmed;
+  }
+  final num? parsed = num.tryParse(trimmed);
+  if (parsed == null) {
+    return trimmed;
+  }
+  return parsed.toStringAsFixed(decimalPlaces);
+}
+
+/// Formats an order-item result value + unit for report preview / printout.
+String? formatLabOrderItemResultDisplay(
+  LabOrderItem item, {
+  required int decimalPlaces,
+}) {
+  final String? rawValue = _trimOrNull(item.resultValue);
+  final String? unit = _trimOrNull(item.resultUnit) ?? _trimOrNull(item.unit);
+  if (rawValue != null) {
+    final String displayValue =
+        formatLabNumericBoundDisplay(rawValue, decimalPlaces: decimalPlaces) ??
+        rawValue;
+    return _joinDisplayParts(<String?>[displayValue, unit]);
+  }
+  return _trimOrNull(item.resultText);
+}
+
+String? _joinDisplayParts(Iterable<String?> values) {
+  final List<String> parts = <String>[
+    for (final String? value in values)
+      if (_trimOrNull(value) != null) _trimOrNull(value)!,
+  ];
+  if (parts.isEmpty) {
+    return null;
+  }
+  return parts.join(' | ');
 }
 
 /// Returns [range] with numeric bounds rewritten into [targetUnit] when
@@ -189,10 +267,12 @@ LabReferenceRange? convertLabReferenceRangeToUnit(
 String? formatLabReferenceRangeForResultUnit(
   LabReferenceRange range, {
   String? resultUnit,
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
 }) {
   final LabReferenceRange display =
       convertLabReferenceRangeToUnit(range, targetUnit: resultUnit) ?? range;
-  return formatLabReferenceRange(display);
+  return formatLabReferenceRange(display, options: options);
 }
 
 /// Compares [value] to [range] bounds expressed in [resultUnit] when convertible.
@@ -265,6 +345,8 @@ String? interpretLabNumericResultFlag({
 String? formatLabReferenceRangeFromMap(
   Map<String, Object?>? applied, {
   String? resultUnit,
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
 }) {
   if (applied == null || applied.isEmpty) {
     return null;
@@ -321,6 +403,7 @@ String? formatLabReferenceRangeFromMap(
     referenceText: applied['reference_text']?.toString(),
     summary: summary,
     preferReferenceText: _trimOrNull(applied['reference_text']?.toString()) != null,
+    options: options,
   );
 }
 
@@ -439,6 +522,8 @@ String? resolveLabOrderItemDisplayReferenceRange(
   LabOrderItem item, {
   String? patientGender,
   String? resultUnit,
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
 }) {
   if (item.interpretationOverride) {
     final String? overrideText = _trimOrNull(item.referenceRangeOverride);
@@ -451,6 +536,7 @@ String? resolveLabOrderItemDisplayReferenceRange(
     final String? qualitative = _formatQualitativeOrderItemReferenceRange(
       item,
       patientGender: patientGender,
+      options: options,
     );
     if (qualitative != null) {
       return qualitative;
@@ -465,6 +551,7 @@ String? resolveLabOrderItemDisplayReferenceRange(
     final String? built = formatLabReferenceRangeForResultUnit(
       chosen,
       resultUnit: resultUnit,
+      options: options,
     );
     if (built != null) {
       return built;
@@ -474,6 +561,7 @@ String? resolveLabOrderItemDisplayReferenceRange(
   final String? applied = formatLabReferenceRangeFromMap(
     item.appliedReferenceRange,
     resultUnit: resultUnit,
+    options: options,
   );
   if (applied != null) {
     return applied;
@@ -495,6 +583,8 @@ String? resolveLabOrderItemDisplayReferenceRange(
 String? _formatQualitativeOrderItemReferenceRange(
   LabOrderItem item, {
   String? patientGender,
+  LabReferenceRangeDisplayOptions options =
+      LabReferenceRangeDisplayOptions.defaults,
 }) {
   final LabReferenceRange? chosen = resolveLabReferenceRangeForPatient(
     item.referenceRanges,
@@ -530,6 +620,7 @@ String? _formatQualitativeOrderItemReferenceRange(
           item.appliedReferenceRange?['summary']?.toString() ??
           item.referenceRangeSummary,
       preferReferenceText: true,
+      options: options,
     );
     if (built != null) {
       return built;

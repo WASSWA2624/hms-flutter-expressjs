@@ -429,22 +429,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Laboratory technologist',
     homeTitle: 'Laboratory',
     emptyMessage: 'No lab work is pending.',
+    // Match Lab desk tabs: Pending → Critical → Completed → All patients.
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
-        id: 'orders_today',
-        label: 'Orders',
+        id: 'lab_pending',
+        label: 'Pending',
         requiredPermissions: <AppPermission>[AppPermissions.labRead],
-      ),
-      HomeStatusCardTemplate(
-        id: 'in_process',
-        label: 'In process',
-        requiredPermissions: <AppPermission>[AppPermissions.labRead],
-      ),
-      HomeStatusCardTemplate(
-        id: 'pending_results',
-        label: 'Results queue',
-        requiredPermissions: <AppPermission>[AppPermissions.labWrite],
       ),
       HomeStatusCardTemplate(
         id: 'critical_results',
@@ -456,6 +447,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Completed',
         requiredPermissions: <AppPermission>[AppPermissions.labRead],
       ),
+      HomeStatusCardTemplate(
+        id: 'lab_all_patients',
+        label: 'All patients',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
     ],
     quickActionIds: <String>[
       'receive_sample',
@@ -465,20 +461,17 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     shortcutIds: <String>['lab', 'patients', 'communications', 'settings', 'reports'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
-      'orders_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'all'},
-      ),
-      'in_process': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'processing'},
-      ),
-      'pending_results': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'results'},
+      'lab_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'pending'},
       ),
       'critical_results': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'critical'},
+        queryParameters: <String, String>{'section': 'critical'},
       ),
       'completed_orders': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'scope': 'completed'},
+        queryParameters: <String, String>{'section': 'completed-today'},
+      ),
+      'lab_all_patients': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'worklist'},
       ),
     },
   ),
@@ -1784,7 +1777,9 @@ List<HomeStatusCardTemplate> _prioritizeCrossDomainCards(
     'assigned': 10,
     'results_pending_review': 11,
     'orders_today': 12,
+    'lab_pending': 12,
     'critical_results': 13,
+    'lab_all_patients': 13,
     // Doctor secondary atoms when granted onto clinical bases (Dashboard.md §4).
     'radiology_pending': 14,
     'prescriptions_pending': 15,

@@ -115,15 +115,13 @@ Purpose: Treat patients.
 
 `lab@hosspi.com`
 
-| Component                   | Permissions   |
-| --------------------------- | ------------- |
-| Pending Tests               | `lab:read`    |
-| Samples Awaiting Collection | `lab:read`    |
-| Samples In Progress         | `lab:read`    |
-| Results Pending Validation  | `lab:write`   |
-| Critical Results            | `lab:read`    |
-| Completed Tests Today       | `lab:read`    |
-| Equipment Alerts            | `biomed:read` |
+| Component         | Permissions  |
+| ----------------- | ------------ |
+| Pending           | `lab:read`   |
+| Critical today    | `lab:read`   |
+| Completed today   | `lab:read`   |
+| All patients      | `lab:read`   |
+| Equipment Alerts  | `biomed:read` |
 
 ---
 

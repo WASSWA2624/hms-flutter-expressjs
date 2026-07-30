@@ -19,6 +19,41 @@ void main() {
       );
     });
 
+    test('hides gender and age when display options disable them', () {
+      expect(
+        formatLabReferenceRangeDisplay(
+          label: 'Adult male',
+          unit: '%',
+          gender: 'MALE',
+          ageMinValue: 18,
+          ageMinUnit: 'YEAR',
+          normalMinValue: '41.0000',
+          normalMaxValue: '53.0000',
+          options: const LabReferenceRangeDisplayOptions(
+            includeGender: false,
+            includeAge: false,
+            decimalPlaces: 2,
+          ),
+        ),
+        'Adult male | 41.00 - 53.00 %',
+      );
+    });
+
+    test('formats numeric result values with decimal places', () {
+      expect(
+        formatLabOrderItemResultDisplay(
+          const LabOrderItem(
+            id: 'item-1',
+            resultValue: '60.1234',
+            resultUnit: '%',
+            resultKind: 'NUMERIC',
+          ),
+          decimalPlaces: 2,
+        ),
+        '60.12 | %',
+      );
+    });
+
     test('omits unset age max of zero for open-ended adult ranges', () {
       expect(
         formatLabReferenceRangeDisplay(

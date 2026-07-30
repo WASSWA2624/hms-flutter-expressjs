@@ -17446,6 +17446,54 @@
   "@labReportTableColumnsTitle": {
     "description": "Title for configuring visible columns in the lab report preview table."
   },
+  "labReportSettingsTitle": "Report settings",
+  "@labReportSettingsTitle": {
+    "description": "Title for the lab result report preview settings dialog."
+  },
+  "labReportSettingsDisplaySection": "Result and range display",
+  "@labReportSettingsDisplaySection": {
+    "description": "Section heading for decimal places and range fragment toggles."
+  },
+  "labReportSettingsMetadataSection": "Report metadata",
+  "@labReportSettingsMetadataSection": {
+    "description": "Section heading for which patient/order metadata appears on the report."
+  },
+  "labReportDecimalPlacesLabel": "Decimal places",
+  "@labReportDecimalPlacesLabel": {
+    "description": "Label for numeric result and range decimal places setting."
+  },
+  "labReportShowRangeLabelLabel": "Show range name/label",
+  "@labReportShowRangeLabelLabel": {
+    "description": "Toggle to include reference range label on report ranges."
+  },
+  "labReportShowRangeMethodLabel": "Show method on ranges",
+  "@labReportShowRangeMethodLabel": {
+    "description": "Toggle to include method on reference ranges."
+  },
+  "labReportShowRangeGenderLabel": "Show gender on ranges",
+  "@labReportShowRangeGenderLabel": {
+    "description": "Toggle to include gender on reference ranges."
+  },
+  "labReportShowRangeAgeLabel": "Show age on ranges",
+  "@labReportShowRangeAgeLabel": {
+    "description": "Toggle to include age band on reference ranges."
+  },
+  "labReportPatientGenderLabel": "Patient gender",
+  "@labReportPatientGenderLabel": {
+    "description": "Metadata toggle label for patient gender on the report."
+  },
+  "labReportPatientAgeLabel": "Patient age",
+  "@labReportPatientAgeLabel": {
+    "description": "Metadata toggle label for patient age on the report."
+  },
+  "labReportApplySettingsAction": "Apply settings",
+  "@labReportApplySettingsAction": {
+    "description": "Primary action to apply lab report preview settings."
+  },
+  "labReportResetSettingsAction": "Reset settings",
+  "@labReportResetSettingsAction": {
+    "description": "Action to reset lab report preview settings to defaults."
+  },
   "labReportTitle": "Laboratory result report",
   "@labReportTitle": {
     "description": "Localized text for labReportTitle."

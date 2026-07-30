@@ -58,7 +58,11 @@ void main() {
         'enter_lab_result',
         'flag_critical_lab',
       ]);
-      expect(profile.metricRouteTargets.keys, contains('pending_results'));
+      expect(profile.metricRouteTargets.keys, contains('lab_pending'));
+      expect(
+        profile.metricRouteTargets['lab_pending']!.queryParameters,
+        <String, String>{'section': 'pending'},
+      );
     });
 
     test('pharmacist dashboard shows four metrics and quick actions', () {

@@ -8,10 +8,14 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_report_preview_preferences.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
+import 'package:hosspi_hms/features/lab/presentation/pages/lab_report_preview_settings_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -20,11 +24,10 @@ import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_result_value_unit_fields.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'lab_result_entry_status.dart';
 
-const String _labReportFlagFilterKey = 'flag';
-const String _labReportSelectionFilterKey = 'selection';
 const int _maxVisibleLabReportPreviewItems = 120;
 
 /// Full-screen lab result entry workspace opened from the lab worklist or queue.
@@ -1671,13 +1674,14 @@ class _LabReportPreviewDialogState
   static const String _referenceRangeColumnKey = 'reference_range';
   static const String _resultColumnKey = 'result';
   static const String _flagColumnKey = 'flag';
+  static const String _columnStorageKey = 'lab_report_preview_columns';
 
   late Set<String> _selectedOrderIds;
   late Set<String> _selectedItemIds;
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<LabOrderItem>
   _columnVisibilityController;
-  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  LabReportPreviewSettings _settings = LabReportPreviewSettings.defaults;
   bool _isPrinting = false;
 
   @override
@@ -1686,8 +1690,11 @@ class _LabReportPreviewDialogState
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<LabOrderItem>(
-          storageKey: 'lab_report_preview_columns',
+          storageKey: _columnStorageKey,
         );
+    _settings = LabReportPreviewPreferences.read(
+      ref.read(sharedPreferencesProvider),
+    );
     _resetSelection();
   }
 
@@ -1733,16 +1740,12 @@ class _LabReportPreviewDialogState
           items: _allReportItems,
           selectedItemIds: _selectedItemIds,
           searchController: _searchController,
-          filterValue: _filterValue,
-          hasActiveFilters: _filterValue.isActive,
-          filterGroups: _reportPreviewFilterGroups(l10n),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            setState(() => _filterValue = value);
-          },
+          settings: _settings,
           columnVisibilityController: _columnVisibilityController,
           columns: _reportPreviewColumns(context),
           columnChoices: _reportPreviewColumnChoices(context),
           onToggleItem: _toggleReportItem,
+          onOpenSettings: _openReportSettings,
         ),
       ),
       actions: <Widget>[
@@ -1760,6 +1763,38 @@ class _LabReportPreviewDialogState
         ),
       ],
     );
+  }
+
+  Future<void> _openReportSettings() async {
+    final SharedPreferences prefs = ref.read(sharedPreferencesProvider);
+    final List<AppListTableColumn<LabOrderItem>> columnChoices =
+        _reportPreviewColumnChoices(context);
+    _columnVisibilityController.syncColumns(
+      columns: columnChoices,
+      columnChoices: columnChoices,
+      storageKey: _columnStorageKey,
+    );
+    final LabReportPreviewSettingsResult? result =
+        await showLabReportPreviewSettingsDialog<LabOrderItem>(
+          context: context,
+          columns: columnChoices,
+          visibleColumnKeys: _columnVisibilityController.visibleColumnKeys,
+          defaultColumnKeys: _columnVisibilityController.defaultColumnKeys.isEmpty
+              ? columnChoices
+                    .map((AppListTableColumn<LabOrderItem> column) => column.key)
+                    .toSet()
+              : _columnVisibilityController.defaultColumnKeys,
+          settings: _settings,
+          preferences: prefs,
+        );
+    if (result == null || !mounted) {
+      return;
+    }
+    _columnVisibilityController.applyVisibleColumnKeys(
+      result.visibleColumnKeys,
+      storageKey: _columnStorageKey,
+    );
+    setState(() => _settings = result.settings);
   }
 
   List<AppListTableColumn<LabOrderItem>> _reportPreviewColumns(
@@ -1781,6 +1816,9 @@ class _LabReportPreviewDialogState
     BuildContext context,
   ) {
     final AppLocalizations l10n = context.l10n;
+    final LabReferenceRangeDisplayOptions rangeOptions =
+        _rangeDisplayOptions(_settings);
+    final String? patientGender = widget.workflows.first.order.patientGender;
     return <AppListTableColumn<LabOrderItem>>[
       AppListTableColumn<LabOrderItem>(
         id: _testsColumnKey,
@@ -1797,13 +1835,26 @@ class _LabReportPreviewDialogState
         label: l10n.labReferenceRangeLabel,
         sortComparator: (LabOrderItem left, LabOrderItem right) {
           return appListTableCompareText(
-            left.displayReferenceRange,
-            right.displayReferenceRange,
+            _reportItemReferenceRange(
+              left,
+              patientGender: patientGender,
+              options: rangeOptions,
+            ),
+            _reportItemReferenceRange(
+              right,
+              patientGender: patientGender,
+              options: rangeOptions,
+            ),
           );
         },
         cellBuilder: (BuildContext context, LabOrderItem item) {
           return Text(
-            item.displayReferenceRange ?? context.l10n.profileUnknownValue,
+            _reportItemReferenceRange(
+                  item,
+                  patientGender: patientGender,
+                  options: rangeOptions,
+                ) ??
+                context.l10n.profileUnknownValue,
           );
         },
       ),
@@ -1812,12 +1863,21 @@ class _LabReportPreviewDialogState
         label: l10n.labReportResultLabel,
         sortComparator: (LabOrderItem left, LabOrderItem right) {
           return appListTableCompareText(
-            left.displayResultValue,
-            right.displayResultValue,
+            formatLabOrderItemResultDisplay(
+              left,
+              decimalPlaces: _settings.decimalPlaces,
+            ),
+            formatLabOrderItemResultDisplay(
+              right,
+              decimalPlaces: _settings.decimalPlaces,
+            ),
           );
         },
         cellBuilder: (BuildContext context, LabOrderItem item) {
-          return _ReportPreviewResultCell(item: item);
+          return _ReportPreviewResultCell(
+            item: item,
+            decimalPlaces: _settings.decimalPlaces,
+          );
         },
       ),
       AppListTableColumn<LabOrderItem>(
@@ -1896,68 +1956,9 @@ class _LabReportPreviewDialogState
     return _allReportItems
         .where(
           (LabOrderItem item) =>
-              _matchesReportItemFilter(
-                context,
-                item,
-                _filterValue,
-                _selectedItemIds,
-              ) &&
               _matchesReportItemSearch(context, item, query),
         )
         .toList(growable: false);
-  }
-
-  List<AppSearchBarFilterGroup> _reportPreviewFilterGroups(
-    AppLocalizations l10n,
-  ) {
-    return <AppSearchBarFilterGroup>[
-      AppSearchBarFilterGroup(
-        key: _labReportFlagFilterKey,
-        label: l10n.labReportFlagFilterLabel,
-        allLabel: l10n.labReportAllFlagsLabel,
-        choices: _reportFlagFilterChoices(l10n),
-      ),
-      AppSearchBarFilterGroup(
-        key: _labReportSelectionFilterKey,
-        label: l10n.labReportSelectionFilterLabel,
-        allLabel: l10n.labReportSelectionAllLabel,
-        choices: <AppSearchBarFilterChoice>[
-          AppSearchBarFilterChoice(
-            value: 'selected',
-            label: l10n.labReportSelectionSelectedLabel,
-          ),
-          AppSearchBarFilterChoice(
-            value: 'unselected',
-            label: l10n.labReportSelectionUnselectedLabel,
-          ),
-        ],
-      ),
-    ];
-  }
-
-  List<AppSearchBarFilterChoice> _reportFlagFilterChoices(
-    AppLocalizations l10n,
-  ) {
-    return <AppSearchBarFilterChoice>[
-      AppSearchBarFilterChoice(value: 'NORMAL', label: l10n.labStatusNormal),
-      AppSearchBarFilterChoice(
-        value: 'ABNORMAL',
-        label: l10n.labStatusAbnormal,
-      ),
-      AppSearchBarFilterChoice(
-        value: 'CRITICAL',
-        label: l10n.labStatusCritical,
-      ),
-      AppSearchBarFilterChoice(value: 'PENDING', label: l10n.labStatusPending),
-      AppSearchBarFilterChoice(
-        value: 'CANCELLED',
-        label: l10n.labStatusCancelled,
-      ),
-      AppSearchBarFilterChoice(
-        value: 'NEGATIVE',
-        label: l10n.labNegativeOption,
-      ),
-    ];
   }
 
   void _toggleFilteredReportItems(
@@ -2055,13 +2056,15 @@ class _LabReportPreviewDialogState
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
-      patientContext: _reportPatientContext(context, workflows),
-      contextReference: _reportContextReference(context, workflows),
+      patientContext: _reportPatientContext(context, workflows, _settings),
+      contextReference: _reportContextReference(context, workflows, _settings),
+      metadata: _reportMetadata(context, workflows, _settings),
       pages: _reportPages(
         context,
         workflows,
         itemIdsToPrint,
         _visibleReportColumnKeys(),
+        _settings,
       ),
       footerNote: l10n.labReportFooter,
       includeSignatures: true,
@@ -2078,35 +2081,30 @@ class _LabReportPreview extends StatelessWidget {
     required this.items,
     required this.selectedItemIds,
     required this.searchController,
-    required this.filterValue,
-    required this.hasActiveFilters,
-    required this.filterGroups,
-    required this.onFilterChanged,
+    required this.settings,
     required this.columnVisibilityController,
     required this.columns,
     required this.columnChoices,
     required this.onToggleItem,
+    required this.onOpenSettings,
   });
 
   final List<LabOrderWorkflow> workflows;
   final List<LabOrderItem> items;
   final Set<String> selectedItemIds;
   final TextEditingController searchController;
-  final AppSearchBarFilterValue filterValue;
-  final bool hasActiveFilters;
-  final List<AppSearchBarFilterGroup> filterGroups;
-  final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
+  final LabReportPreviewSettings settings;
   final AppListTableColumnVisibilityController<LabOrderItem>
   columnVisibilityController;
   final List<AppListTableColumn<LabOrderItem>> columns;
   final List<AppListTableColumn<LabOrderItem>> columnChoices;
   final void Function(LabOrderItem item, {required bool selected}) onToggleItem;
+  final Future<void> Function() onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final LabOrderSummary firstOrder = workflows.first.order;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -2117,20 +2115,9 @@ class _LabReportPreview extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.lg,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            _PreviewMeta(
-              label: l10n.labReportPatientLabel,
-              value: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
-            ),
-            if (firstOrder.patientId != null)
-              _PreviewMeta(
-                label: l10n.labPatientIdFieldLabel,
-                value: firstOrder.patientId!,
-              ),
-          ],
+        _LabReportPreviewPatientDetails(
+          workflows: workflows,
+          settings: settings,
         ),
         SizedBox(height: theme.spacing.md),
         AppListTable<LabOrderItem>(
@@ -2139,10 +2126,12 @@ class _LabReportPreview extends StatelessWidget {
           columns: columns,
           columnChoices: columnChoices,
           columnVisibilityController: columnVisibilityController,
+          columnVisibilityStorageKey: 'lab_report_preview_columns',
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.labReportTableColumnsTitle,
-          columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
-          columnVisibilityResetLabel: l10n.labResetColumnsAction,
+          columnVisibilityTitle: l10n.labReportSettingsTitle,
+          columnVisibilityApplyLabel: l10n.labReportApplySettingsAction,
+          columnVisibilityResetLabel: l10n.labReportResetSettingsAction,
+          onSettingsPressed: onOpenSettings,
           displayMode: AppListTableDisplayMode.table,
           shrinkWrap: true,
           search: AppListTableSearch<LabOrderItem>(
@@ -2150,23 +2139,8 @@ class _LabReportPreview extends StatelessWidget {
             semanticLabel: l10n.labReportSearchLabel,
             hintText: l10n.labReportSearchHint,
             matcher: (LabOrderItem item, String query) {
-              return _matchesReportItemSearch(context, item, query) &&
-                  _matchesReportItemFilter(
-                    context,
-                    item,
-                    filterValue,
-                    selectedItemIds,
-                  );
+              return _matchesReportItemSearch(context, item, query);
             },
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.labReportFiltersLabel,
-            advancedFilterTitle: l10n.labReportFiltersLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            filterGroups: filterGroups,
-            filterValue: filterValue,
-            hasActiveFilters: hasActiveFilters,
-            onFilterChanged: onFilterChanged,
           ),
           rowColorBuilder: (BuildContext context, LabOrderItem item) {
             final bool selected = selectedItemIds.contains(
@@ -2194,7 +2168,12 @@ class _LabReportPreview extends StatelessWidget {
               title: item.displayTitle,
               meta: <AppListTableMobileMeta>[
                 AppListTableMobileMeta(
-                  label: item.displayResultValue ?? l10n.labStatusPendingResults,
+                  label:
+                      formatLabOrderItemResultDisplay(
+                        item,
+                        decimalPlaces: settings.decimalPlaces,
+                      ) ??
+                      l10n.labStatusPendingResults,
                   icon: _isAbnormalReportItem(item)
                       ? AppActionIcons.warning
                       : null,
@@ -2228,16 +2207,144 @@ class _LabReportPreview extends StatelessWidget {
   }
 }
 
+class _LabReportPreviewPatientDetails extends StatelessWidget {
+  const _LabReportPreviewPatientDetails({
+    required this.workflows,
+    required this.settings,
+  });
+
+  final List<LabOrderWorkflow> workflows;
+  final LabReportPreviewSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderSummary firstOrder = workflows.first.order;
+    final List<String> encounterIds = _uniqueNonEmpty(
+      workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
+    );
+    final String patientName =
+        firstOrder.patientDisplayName ?? l10n.profileUnknownValue;
+    final String patientNumber =
+        settings.showsMetadata(LabReportMetadataKeys.patientId)
+        ? (firstOrder.patientId ?? '').trim()
+        : '';
+    final AppWorkspaceStatus status = _aggregateOrderStatus(context, workflows);
+    final List<AppWorkspaceStatus> alerts = _aggregateOrderSubStatuses(
+      context,
+      workflows,
+    );
+    final String encounterValue = encounterIds.join(', ');
+    final List<String> orderIds = _uniqueNonEmpty(
+      workflows.map(
+        (LabOrderWorkflow workflow) =>
+            workflow.order.displayId ?? workflow.order.apiId,
+      ),
+    );
+    final DateTime? orderedAt = workflows
+        .map((LabOrderWorkflow workflow) => workflow.order.orderedAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (DateTime? earliest, DateTime next) {
+          if (earliest == null || next.isBefore(earliest)) {
+            return next;
+          }
+          return earliest;
+        });
+
+    final List<AppWorkspacePatientContextField> expandedFields =
+        <AppWorkspacePatientContextField>[
+          if (settings.showsMetadata(LabReportMetadataKeys.orderStatus))
+            AppWorkspacePatientContextField(
+              label: l10n.labOrderStatusFieldLabel,
+              value: status.label,
+              icon: status.icon ?? Icons.assignment_outlined,
+              tone: status.tone,
+            ),
+          if (settings.showsMetadata(LabReportMetadataKeys.encounter) &&
+              encounterValue.isNotEmpty)
+            AppWorkspacePatientContextField(
+              label: l10n.labEncounterFieldLabel,
+              value: encounterValue,
+              icon: Icons.badge_outlined,
+              copyable: encounterIds.length == 1,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
+            ),
+          if (settings.showsMetadata(LabReportMetadataKeys.orderIds) &&
+              orderIds.isNotEmpty)
+            AppWorkspacePatientContextField(
+              label: l10n.labOrderFieldLabel,
+              value: orderIds.length == 1 ? orderIds.single : orderIds.join(', '),
+              icon: Icons.tag_outlined,
+              copyable: orderIds.length == 1,
+            ),
+          if (settings.showsMetadata(LabReportMetadataKeys.orderedAt) &&
+              orderedAt != null)
+            AppWorkspacePatientContextField(
+              label: l10n.labOrderedAtFieldLabel,
+              value: AppFormatters.dateTime(
+                orderedAt,
+                Localizations.localeOf(context),
+              ),
+              icon: Icons.schedule_outlined,
+            ),
+          if (settings.showsMetadata(LabReportMetadataKeys.ordersIncluded))
+            AppWorkspacePatientContextField(
+              label: l10n.labOrdersIncludedLabel,
+              value: l10n.labActiveOrderCount(workflows.length),
+              icon: Icons.science_outlined,
+            ),
+        ];
+
+    final bool showGender = settings.showsMetadata(
+      LabReportMetadataKeys.patientGender,
+    );
+    final bool showAge = settings.showsMetadata(LabReportMetadataKeys.patientAge);
+    final String genderLabel = showGender
+        ? patientGenderLabel(l10n, firstOrder.patientGender)
+        : '';
+    final String? ageLabel = showAge && firstOrder.patientDateOfBirth != null
+        ? formatPatientAge(l10n, firstOrder.patientDateOfBirth)
+        : null;
+
+    return AppPatientDetails(
+      patientName: patientName,
+      patientNumber: patientNumber,
+      patientNumberLabel: l10n.labPatientIdFieldLabel,
+      ageLabel: ageLabel,
+      genderLabel: genderLabel.isEmpty ? null : genderLabel,
+      genderIcon: showGender
+          ? patientGenderIcon(firstOrder.patientGender)
+          : null,
+      copyPatientNumberTooltip: l10n.copyIdentifierAction,
+      copyPatientNumberMessage: l10n.identifierCopiedMessage,
+      semanticLabel: l10n.labPatientContextLabel,
+      showAvatar: false,
+      persistExpandPreference: false,
+      initiallyExpanded: expandedFields.isNotEmpty,
+      alerts: alerts,
+      expandedFields: expandedFields,
+    );
+  }
+}
+
 class _ReportPreviewResultCell extends StatelessWidget {
-  const _ReportPreviewResultCell({required this.item});
+  const _ReportPreviewResultCell({
+    required this.item,
+    required this.decimalPlaces,
+  });
 
   final LabOrderItem item;
+  final int decimalPlaces;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final String? value = item.displayResultValue;
+    final String? value = formatLabOrderItemResultDisplay(
+      item,
+      decimalPlaces: decimalPlaces,
+    );
 
     if (value == null || value.trim().isEmpty) {
       return Text(
@@ -2275,42 +2382,6 @@ class _ReportPreviewFlagCell extends StatelessWidget {
       label: display.label,
       tone: display.tone,
       icon: display.icon,
-    );
-  }
-}
-
-class _PreviewMeta extends StatelessWidget {
-  const _PreviewMeta({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 160),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -3512,6 +3583,7 @@ final class _LabPanelDraftGroup {
 PrintFormPatientContext _reportPatientContext(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
+  LabReportPreviewSettings settings,
 ) {
   final AppLocalizations l10n = context.l10n;
   final LabOrderSummary firstOrder = workflows.first.order;
@@ -3521,8 +3593,13 @@ PrintFormPatientContext _reportPatientContext(
   return buildPrintFormPatientContext(
     l10n,
     patientName: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
-    patientId: firstOrder.patientId,
-    encounterId: encounterIds.length == 1 ? encounterIds.single : null,
+    patientId: settings.showsMetadata(LabReportMetadataKeys.patientId)
+        ? firstOrder.patientId
+        : null,
+    encounterId: settings.showsMetadata(LabReportMetadataKeys.encounter) &&
+            encounterIds.length == 1
+        ? encounterIds.single
+        : null,
     patientNameLabel: l10n.labReportPatientLabel,
     patientIdLabel: l10n.labPatientIdFieldLabel,
     encounterIdLabel: l10n.labEncounterFieldLabel,
@@ -3532,7 +3609,11 @@ PrintFormPatientContext _reportPatientContext(
 PrintFormContextReference? _reportContextReference(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
+  LabReportPreviewSettings settings,
 ) {
+  if (!settings.showsMetadata(LabReportMetadataKeys.orderIds)) {
+    return null;
+  }
   final AppLocalizations l10n = context.l10n;
   final List<String> orderIds = _uniqueNonEmpty(
     workflows.map(
@@ -3549,11 +3630,95 @@ PrintFormContextReference? _reportContextReference(
   );
 }
 
+List<PrintFormMetadataItem> _reportMetadata(
+  BuildContext context,
+  List<LabOrderWorkflow> workflows,
+  LabReportPreviewSettings settings,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final LabOrderSummary firstOrder = workflows.first.order;
+  final List<PrintFormMetadataItem> items = <PrintFormMetadataItem>[];
+
+  if (settings.showsMetadata(LabReportMetadataKeys.patientGender)) {
+    final String gender = patientGenderLabel(l10n, firstOrder.patientGender);
+    if (gender.isNotEmpty) {
+      items.add(
+        PrintFormMetadataItem(
+          label: l10n.labReportPatientGenderLabel,
+          value: gender,
+        ),
+      );
+    }
+  }
+  if (settings.showsMetadata(LabReportMetadataKeys.patientAge) &&
+      firstOrder.patientDateOfBirth != null) {
+    items.add(
+      PrintFormMetadataItem(
+        label: l10n.labReportPatientAgeLabel,
+        value: formatPatientAge(l10n, firstOrder.patientDateOfBirth),
+      ),
+    );
+  }
+  if (settings.showsMetadata(LabReportMetadataKeys.orderStatus)) {
+    items.add(
+      PrintFormMetadataItem(
+        label: l10n.labOrderStatusFieldLabel,
+        value: _aggregateOrderStatus(context, workflows).label,
+      ),
+    );
+  }
+  if (settings.showsMetadata(LabReportMetadataKeys.orderedAt)) {
+    final DateTime? orderedAt = workflows
+        .map((LabOrderWorkflow workflow) => workflow.order.orderedAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (DateTime? earliest, DateTime next) {
+          if (earliest == null || next.isBefore(earliest)) {
+            return next;
+          }
+          return earliest;
+        });
+    if (orderedAt != null) {
+      items.add(
+        PrintFormMetadataItem(
+          label: l10n.labOrderedAtFieldLabel,
+          value: AppFormatters.dateTime(
+            orderedAt,
+            Localizations.localeOf(context),
+          ),
+        ),
+      );
+    }
+  }
+  if (settings.showsMetadata(LabReportMetadataKeys.ordersIncluded)) {
+    items.add(
+      PrintFormMetadataItem(
+        label: l10n.labOrdersIncludedLabel,
+        value: l10n.labActiveOrderCount(workflows.length),
+      ),
+    );
+  }
+  if (settings.showsMetadata(LabReportMetadataKeys.encounter)) {
+    final List<String> encounterIds = _uniqueNonEmpty(
+      workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
+    );
+    if (encounterIds.length > 1) {
+      items.add(
+        PrintFormMetadataItem(
+          label: l10n.labEncounterFieldLabel,
+          value: encounterIds.join(', '),
+        ),
+      );
+    }
+  }
+  return items;
+}
+
 List<PrintFormPage> _reportPages(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
   Set<String> selectedItemIds,
   List<String> visibleColumnKeys,
+  LabReportPreviewSettings settings,
 ) {
   final AppLocalizations l10n = context.l10n;
   return <PrintFormPage>[
@@ -3564,6 +3729,7 @@ List<PrintFormPage> _reportPages(
         workflows,
         selectedItemIds,
         visibleColumnKeys,
+        settings,
       ),
     ),
   ];
@@ -3574,11 +3740,13 @@ String _labReportHtml(
   List<LabOrderWorkflow> workflows,
   Set<String> selectedItemIds,
   List<String> visibleColumnKeys,
+  LabReportPreviewSettings settings,
 ) {
   final String table = _labReportTableHtml(
     context,
     _selectedReportItems(workflows, selectedItemIds),
     visibleColumnKeys,
+    settings,
   );
   return '''
 ${_labReportPrintStyle()}
@@ -3592,6 +3760,7 @@ String _labReportTableHtml(
   BuildContext context,
   List<LabOrderItem> items,
   List<String> visibleColumnKeys,
+  LabReportPreviewSettings settings,
 ) {
   final AppLocalizations l10n = context.l10n;
   if (visibleColumnKeys.isEmpty) {
@@ -3609,7 +3778,7 @@ String _labReportTableHtml(
     for (final LabOrderItem item in items)
       <String>[
         for (final String key in visibleColumnKeys)
-          _labReportColumnValue(context, item, key),
+          _labReportColumnValue(context, item, key, settings),
       ],
   ];
 
@@ -3655,15 +3824,53 @@ String _labReportColumnValue(
   BuildContext context,
   LabOrderItem item,
   String key,
+  LabReportPreviewSettings settings,
 ) {
   final AppLocalizations l10n = context.l10n;
+  final LabReferenceRangeDisplayOptions rangeOptions =
+      _rangeDisplayOptions(settings);
   return switch (key) {
     'tests' => item.displayTitle,
-    'reference_range' => item.displayReferenceRange ?? l10n.profileUnknownValue,
-    'result' => item.displayResultValue ?? l10n.labStatusPendingResults,
+    'reference_range' =>
+      _reportItemReferenceRange(
+            item,
+            options: rangeOptions,
+          ) ??
+          l10n.profileUnknownValue,
+    'result' =>
+      formatLabOrderItemResultDisplay(
+            item,
+            decimalPlaces: settings.decimalPlaces,
+          ) ??
+          l10n.labStatusPendingResults,
     'flag' => _resolveItemResultFlagLabel(context, item),
     _ => '',
   };
+}
+
+LabReferenceRangeDisplayOptions _rangeDisplayOptions(
+  LabReportPreviewSettings settings,
+) {
+  return LabReferenceRangeDisplayOptions(
+    includeLabel: settings.showRangeLabel,
+    includeMethod: settings.showRangeMethod,
+    includeGender: settings.showRangeGender,
+    includeAge: settings.showRangeAge,
+    decimalPlaces: settings.decimalPlaces,
+  );
+}
+
+String? _reportItemReferenceRange(
+  LabOrderItem item, {
+  String? patientGender,
+  required LabReferenceRangeDisplayOptions options,
+}) {
+  return resolveLabOrderItemDisplayReferenceRange(
+    item,
+    patientGender: patientGender,
+    resultUnit: item.resultUnit ?? item.unit,
+    options: options,
+  );
 }
 
 String _labReportPrintStyle() {
@@ -3766,111 +3973,6 @@ String _reportItemDisplayResult(BuildContext context, LabOrderItem item) {
     return l10n.labStatusPendingResults;
   }
   return value;
-}
-
-bool _matchesReportItemFilter(
-  BuildContext context,
-  LabOrderItem item,
-  AppSearchBarFilterValue filterValue,
-  Set<String> selectedItemIds,
-) {
-  if (!filterValue.isActive) {
-    return true;
-  }
-
-  final String? flagFilter = filterValue.option(_labReportFlagFilterKey);
-  if (flagFilter != null &&
-      !_matchesReportItemFlagFilter(context, item, flagFilter)) {
-    return false;
-  }
-
-  final String? selectionFilter = filterValue.option(
-    _labReportSelectionFilterKey,
-  );
-  if (selectionFilter != null) {
-    final bool isSelected = selectedItemIds.contains(_itemSelectionKey(item));
-    return switch (selectionFilter) {
-      'selected' => isSelected,
-      'unselected' => !isSelected,
-      _ => true,
-    };
-  }
-
-  return true;
-}
-
-bool _matchesReportItemFlagFilter(
-  BuildContext context,
-  LabOrderItem item,
-  String flagFilter,
-) {
-  final String token = _resolveReportItemFlagToken(context, item);
-  if (token == flagFilter) {
-    return true;
-  }
-  if (flagFilter == 'ABNORMAL') {
-    return <String>{'ABNORMAL', 'HIGH', 'LOW'}.contains(token);
-  }
-  if (flagFilter == 'CRITICAL') {
-    return <String>{
-      'CRITICAL',
-      'CRITICAL_LOW',
-      'CRITICAL_HIGH',
-    }.contains(token);
-  }
-  if (flagFilter == 'NEGATIVE') {
-    if (token == 'NEGATIVE' || token == 'NON_REACTIVE') {
-      return true;
-    }
-    final String label = _resolveItemResultFlagLabel(
-      context,
-      item,
-    ).trim().toLowerCase();
-    return label == context.l10n.labNegativeOption.trim().toLowerCase();
-  }
-  return false;
-}
-
-String _resolveReportItemFlagToken(BuildContext context, LabOrderItem item) {
-  if (item.isRejected || _isCancelledItem(item)) {
-    return 'CANCELLED';
-  }
-
-  final String? explicitFlag = item.resultFlag?.trim().toUpperCase();
-  if (explicitFlag != null && explicitFlag.isNotEmpty) {
-    return explicitFlag;
-  }
-
-  final String? optionFlag = _storedQualitativeOptionFlag(
-    item,
-  )?.trim().toUpperCase();
-  if (optionFlag != null && optionFlag.isNotEmpty) {
-    return optionFlag;
-  }
-
-  final String valueText = item.resultValue?.trim() ?? '';
-  if (valueText.isNotEmpty) {
-    final String? computed = _computedNumericFlagToken(
-      item,
-      valueText,
-      resultUnit: item.resultUnit ?? item.unit,
-    );
-    if (computed != null && computed.trim().isNotEmpty) {
-      return computed.trim().toUpperCase();
-    }
-  }
-
-  final String? displayResult = item.displayResultValue?.trim();
-  if (displayResult == null || displayResult.isEmpty) {
-    return 'PENDING';
-  }
-
-  final String? status = item.effectiveResultStatus?.trim().toUpperCase();
-  if (status != null && status.isNotEmpty) {
-    return status;
-  }
-
-  return 'PENDING';
 }
 
 bool _isAbnormalReportItem(LabOrderItem item) {

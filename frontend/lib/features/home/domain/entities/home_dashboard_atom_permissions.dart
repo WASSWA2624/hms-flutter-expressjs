@@ -66,12 +66,14 @@ abstract final class HomeDashboardAtomPermissions {
         'radiology_pending': <AppPermission>[AppPermissions.radiologyRead],
         // Gap: vitals_due / nursing_tasks / shift_schedule as named KPIs.
 
-        // Lab (Dashboard.md §6)
-        // Note: orders_today / in_process / completed_orders are shared ids across
-        // lab, radiology, and pharmacy packs — declare on profile templates.
-        'pending_results': <AppPermission>[AppPermissions.labWrite],
+        // Lab (Dashboard.md §6) — aligned with Lab desk tabs.
+        // Note: completed_orders is shared with radiology; declare on templates.
+        'lab_pending': <AppPermission>[AppPermissions.labRead],
+        'lab_all_patients': <AppPermission>[AppPermissions.labRead],
         'critical_results': <AppPermission>[AppPermissions.labRead],
-        // Gap: samples_awaiting_collection / equipment_alerts as named KPIs.
+        // Legacy ids retained for older API payloads / guided content.
+        'pending_results': <AppPermission>[AppPermissions.labRead],
+        // Gap: equipment_alerts as named KPI (needs biomed:read + live source).
 
         // Radiology (imaging worklist; not a Dashboard.md persona table, but live)
         'draft_reports': <AppPermission>[AppPermissions.radiologyRead],

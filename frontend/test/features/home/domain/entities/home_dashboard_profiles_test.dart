@@ -202,14 +202,30 @@ void main() {
       expect(profile.maxStatusCards, 4);
       expect(
         profile.statusCards.map((template) => template.id),
-        containsAll(<String>[
-          'orders_today',
-          'in_process',
-          'pending_results',
+        <String>[
+          'lab_pending',
           'critical_results',
-        ]),
+          'completed_orders',
+          'lab_all_patients',
+        ],
       );
-      expect(profile.metricRouteTargets.keys, contains('in_process'));
+      expect(profile.metricRouteTargets.keys, contains('lab_pending'));
+      expect(
+        profile.metricRouteTargets['lab_pending']!.queryParameters['section'],
+        'pending',
+      );
+      expect(
+        profile.metricRouteTargets['critical_results']!.queryParameters['section'],
+        'critical',
+      );
+      expect(
+        profile.metricRouteTargets['completed_orders']!.queryParameters['section'],
+        'completed-today',
+      );
+      expect(
+        profile.metricRouteTargets['lab_all_patients']!.queryParameters['section'],
+        'worklist',
+      );
     });
 
     test('doctor profile still exposes quick actions', () {
