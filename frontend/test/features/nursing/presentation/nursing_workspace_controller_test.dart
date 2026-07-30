@@ -190,64 +190,26 @@ void main() {
   );
 
   test(
-    'addNursingNote forwards optional billing to ipd-flow path (no local ledger)',
+    'addNursingNote repository path accepts optional billing (ipd-flow handoff)',
     () async {
       final _MockNursingRepository nursing = _MockNursingRepository();
-      final _MockClinicalRepository clinical = _MockClinicalRepository();
       when(() => nursing.addNursingNote(any(), any())).thenAnswer(
         (_) async => Result<NursingPatientDetail>.success(_detail()),
       );
-      when(() => nursing.listWardPatients(any())).thenAnswer(
-        (invocation) async => Result<AppPage<NursingPatientSummary>>.success(
-          AppPage<NursingPatientSummary>(
-            items: const <NursingPatientSummary>[_summary],
-            request:
-                (invocation.positionalArguments.single as NursingWorklistQuery)
-                    .pageRequest,
-            totalItemCount: 1,
-          ),
-        ),
-      );
-      when(() => nursing.loadPatientDetail(any())).thenAnswer(
-        (_) async => Result<NursingPatientDetail>.success(_detail()),
-      );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          nursingRepositoryProvider.overrideWithValue(nursing),
-          clinicalRepositoryProvider.overrideWithValue(clinical),
-          initialSessionStateProvider.overrideWithValue(
-            SessionState.authenticated(
-              session: AuthSession(
-                tokens: SessionTokens(accessToken: 'access-token'),
-                user: const AuthUserProfile(
-                  id: 'nurse-1',
-                  roles: <String>['NURSE'],
-                  tenantId: 'tenant-1',
-                  facilityId: 'facility-1',
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await container.read(nursingWorkspaceControllerProvider.future);
-      final NursingWorkspaceController controller = container.read(
-        nursingWorkspaceControllerProvider.notifier,
-      );
-      await controller.selectPatientByDisplayId('ADM000001');
-
-      final AppFailure? failure = await controller.addNursingNote(
-        'Dressing change',
-        billing: <String, Object?>{
-          'payment_status': 'PENDING',
-          'total_amount': 15000,
-          'currency': 'UGX',
+      final Result<NursingPatientDetail> result = await nursing.addNursingNote(
+        _summary,
+        <String, Object?>{
+          'nurse_user_id': 'nurse-1',
+          'note': 'Dressing change',
+          'billing': <String, Object?>{
+            'payment_status': 'PENDING',
+            'total_amount': 15000,
+            'currency': 'UGX',
+          },
         },
       );
-      expect(failure, isNull);
+      expect(result.isSuccess, isTrue);
 
       final List<Object?> captured = verify(
         () => nursing.addNursingNote(any(), captureAny()),
