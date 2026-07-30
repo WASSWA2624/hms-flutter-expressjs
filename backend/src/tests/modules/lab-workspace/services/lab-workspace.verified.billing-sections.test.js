@@ -149,30 +149,27 @@ describe('lab-workspace Verified tab billing sections', () => {
   it('reopenLabOrderItemResult is clinical NOT_BILLED (no invoice reverse)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
-    const completedOrder = buildBaseOrder({
-      items: [
+    const reopenedItem = {
+      id: 'order-item-internal-1',
+      human_friendly_id: 'LIT-VER-1',
+      status: 'IN_PROCESS',
+      created_at: now,
+      updated_at: now,
+      lab_test: {
+        id: 'lab-test-internal-1',
+        human_friendly_id: 'LBT-VER-1',
+        name: 'CBC',
+        code: 'CBC',
+        unit: null,
+        reference_ranges: [],
+        unit_options: [],
+        result_options: []},
+      results: [
         {
-          id: 'order-item-internal-1',
-          human_friendly_id: 'LIT-VER-1',
-          status: 'COMPLETED',
-          created_at: now,
-          updated_at: now,
-          lab_test: {
-            id: 'lab-test-internal-1',
-            human_friendly_id: 'LBT-VER-1',
-            name: 'CBC',
-            code: 'CBC',
-            unit: null,
-            reference_ranges: [],
-            unit_options: [],
-            result_options: []},
-          results: [
-            {
-              id: 'result-internal-1',
-              status: 'NORMAL',
-              result_value: '12.0',
-              created_at: now}]}]},
-    });
+          id: 'result-internal-1',
+          status: 'PENDING',
+          result_value: '12.0',
+          created_at: now}]};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -196,24 +193,15 @@ describe('lab-workspace Verified tab billing sections', () => {
     labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({});
     labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
     labWorkspaceRepository.txCountOrderItems
-      .mockResolvedValueOnce(0) // completed
-      .mockResolvedValueOnce(0) // cancelled
-      .mockResolvedValueOnce(1); // open
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
     labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
     labWorkspaceRepository.txUpdateOrder.mockResolvedValue({});
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(
       buildBaseOrder({
         status: 'IN_PROCESS',
-        items: [
-          {
-            ...completedOrder.items[0],
-            status: 'IN_PROCESS',
-            results: [
-              {
-                id: 'result-internal-1',
-                status: 'PENDING',
-                result_value: '12.0',
-                created_at: now}]}]})
+        items: [reopenedItem]})
     );
 
     const result = await labWorkspaceService.reopenLabOrderItemResult(

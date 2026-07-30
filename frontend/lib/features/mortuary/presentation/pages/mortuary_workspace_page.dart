@@ -1782,6 +1782,20 @@ String _nextActionLabel(AppLocalizations l10n, MortuaryWorkspaceItem item) {
   return l10n.mortuaryNextActionReview;
 }
 
+/// Opens Billing workspace for settle / invoice — never a local cashier.
+void _openMortuaryBillingWorkspace(
+  BuildContext context,
+  MortuaryWorkspaceItem item,
+) {
+  final String? patientId = item.patientId?.trim();
+  final String location = (patientId == null || patientId.isEmpty)
+      ? AppRoutes.billing.path
+      : AppRoutes.billing.location(
+          queryParameters: <String, String>{'patient_id': patientId},
+        );
+  GoRouter.of(context).go(location);
+}
+
 Future<void> _printItem(
   BuildContext context,
   WidgetRef ref,
