@@ -33,9 +33,9 @@ final class ClinicalFollowUpsFinancialAtom {
 
 /// Canonical inventory for `/clinical?section=follow-ups`.
 ///
-/// Scope: tab chrome, hospital-wide [FollowUpWorklistPanel], row → detail
-/// ([ReceptionFollowUpDetailDialog]), Mark completed, Reschedule / nested
-/// [ClinicalFollowUpActionDialog], search/columns/empty/loading/retry, and
+/// Scope: tab chrome, hospital-wide FollowUpWorklistPanel, row → detail
+/// (ReceptionFollowUpDetailDialog), Mark completed, Reschedule / nested
+/// ClinicalFollowUpActionDialog, search/columns/empty/loading/retry, and
 /// post-mutation list refresh. Callback complete and reschedule stay
 /// NOT_BILLED ops. Patient visit/consult charges, receive-payment, and invoice
 /// adjustments are not mounted here; if introduced they must post via Billing

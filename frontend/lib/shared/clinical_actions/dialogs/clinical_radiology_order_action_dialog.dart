@@ -217,7 +217,7 @@ class _RadiologyOrderDialogState
       },
       emptyLabel: l10n.clinicalRadiologyRequestSelectedTableEmptyLabel,
       enabled: !_isSaving,
-      billing: _billingSubmit,
+      billing: _pendingBillingSubmit(),
     );
   }
 
@@ -371,6 +371,22 @@ class _RadiologyOrderDialogState
     });
   }
 
+  ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
+    if (_billingSubmit != null) {
+      return _billingSubmit;
+    }
+    if (_requests.isEmpty) {
+      return null;
+    }
+    return buildPendingClinicalRequestBillingSubmit(
+      options: _requests
+          .map((_PendingRadiologyRequest request) => request.option)
+          .toList(growable: false),
+      catalogType: 'RADIOLOGY_TEST',
+      billingEntity: 'FACILITY',
+    );
+  }
+
   Future<void> _submit() async {
     if (_requests.isEmpty) {
       setState(() => _failure = AppFailure.validation());
@@ -392,7 +408,7 @@ class _RadiologyOrderDialogState
             modality: request.modality,
           ),
       ],
-      billing: _billingSubmit,
+      billing: _pendingBillingSubmit(),
     );
     _finishSubmit(failure);
   }

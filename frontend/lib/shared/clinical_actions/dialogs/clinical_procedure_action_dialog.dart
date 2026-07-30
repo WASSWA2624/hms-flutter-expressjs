@@ -6,6 +6,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_procedure_catalog_dialog.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -15,6 +17,7 @@ class ClinicalProcedureActionDialog extends StatefulWidget {
   const ClinicalProcedureActionDialog({
     required this.onSearchClinicalTerms,
     required this.onSubmit,
+    this.payerContext,
     super.key,
   });
 
@@ -25,9 +28,11 @@ class ClinicalProcedureActionDialog extends StatefulWidget {
     String source,
   })
   onSearchClinicalTerms;
+  final ClinicalRequestPayerContext? payerContext;
   final Future<AppFailure?> Function({
     required List<ClinicalActionCatalogOption> procedures,
     DateTime? performedAt,
+    ClinicalRequestBillingSubmit? billing,
   })
   onSubmit;
 
@@ -41,6 +46,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
   String? _focusedProcedureId;
   bool _isSaving = false;
   AppFailure? _failure;
+  ClinicalRequestBillingSubmit? _billingSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +78,10 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
             SizedBox(height: theme.spacing.md),
             ClinicalRequestFlowToolbar(
               enabled: !_isSaving,
-              showBillingAction: false,
               onAddItems: _openCatalogPicker,
+              onReviewBilling: _selectedProcedures.isEmpty
+                  ? null
+                  : _openBillingDialog,
             ),
             SizedBox(height: theme.spacing.md),
             Expanded(child: _buildSelectedPanel(context)),
@@ -165,6 +173,41 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
     );
   }
 
+  Future<void> _openBillingDialog() async {
+    final ClinicalRequestBillingSubmit? billing =
+        await showResolvedClinicalRequestBillingDialog(
+          context: context,
+          options: List<ClinicalActionCatalogOption>.unmodifiable(
+            _selectedProcedures,
+          ),
+          initialBilling: _billingSubmit,
+          catalogType: 'SERVICE',
+          billingEntity: 'FACILITY',
+          payerContext: widget.payerContext,
+          enabled: !_isSaving,
+        );
+    if (!mounted || billing == null) {
+      return;
+    }
+    setState(() => _billingSubmit = billing);
+  }
+
+  ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
+    if (_billingSubmit != null) {
+      return _billingSubmit;
+    }
+    if (_selectedProcedures.isEmpty) {
+      return null;
+    }
+    return buildPendingClinicalRequestBillingSubmit(
+      options: List<ClinicalActionCatalogOption>.unmodifiable(
+        _selectedProcedures,
+      ),
+      catalogType: 'SERVICE',
+      billingEntity: 'FACILITY',
+    );
+  }
+
   void _removeProcedure(int index) {
     if (index < 0 || index >= _selectedProcedures.length) {
       return;
@@ -193,6 +236,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
         _selectedProcedures,
       ),
       performedAt: DateTime.now(),
+      billing: _pendingBillingSubmit(),
     );
     _finishSubmit(failure);
   }

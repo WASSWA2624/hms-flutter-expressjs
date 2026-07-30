@@ -1999,7 +1999,7 @@ class _AuthorizationStatusDialogState
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             isRequired: true,
             validator: AppValidators.compose(<FormFieldValidator<String>>[
-              AppValidators.required(l10n.claimsStatusRequiredMessage),
+              AppValidators.requiredText(l10n.claimsStatusRequiredMessage),
               (String? value) {
                 final num? amount = num.tryParse(value?.trim() ?? '');
                 if (amount == null || amount < 0) {

@@ -180,6 +180,11 @@ void main() {
           'billing_status': 'ISSUED',
           'total_amount': '125000',
           'currency': 'UGX',
+          'balance_due': '25000.00',
+          'financials': <String, Object?>{
+            'balance_due': '25000.00',
+            'net_paid_total': '100000.00',
+          },
         },
       }).toEntity();
 
@@ -188,6 +193,9 @@ void main() {
       expect(coverage.coveragePercentage, 80);
       expect(invoice.patientDisplayId, 'PAT-001');
       expect(invoice.totalAmount, 125000);
+      expect(invoice.balanceDue, 25000);
+      expect(invoice.netPaidTotal, 100000);
+      expect(invoice.hasCollectibleBalance, isTrue);
     });
 
     test('decodes Billing financials balance_due for Settled parity', () {

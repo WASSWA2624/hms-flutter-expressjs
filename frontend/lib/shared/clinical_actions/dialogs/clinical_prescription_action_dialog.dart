@@ -863,12 +863,33 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         }),
     ];
 
-    // Bill-later by default; pass reviewed billing only when confirmed.
+    // Always attach request-time billing (bill-later when not reviewed).
+    final ClinicalRequestBillingSubmit? billing = _pendingBillingSubmit();
     final AppFailure? failure = await widget.onSubmit(
       items: items,
-      billing: _billingSubmit,
+      billing: billing,
     );
     _finishSubmit(failure);
+  }
+
+  ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
+    if (_billingSubmit != null) {
+      return _billingSubmit;
+    }
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        _prescriptionBillingLineItems();
+    if (lineItems.isEmpty) {
+      return null;
+    }
+    final num total = clinicalRequestBillingTotal(lineItems);
+    return ClinicalRequestBillingSubmit(
+      mode: ClinicalRequestPaymentMode.billLater,
+      totalAmount: total,
+      currency: resolveClinicalRequestBillingCurrency(lineItems),
+      paymentStatus: ClinicalRequestPaymentStatus.unpaid,
+      lineItems: lineItems,
+      billingEntity: 'FACILITY',
+    );
   }
 
   void _finishSubmit(AppFailure? failure) {

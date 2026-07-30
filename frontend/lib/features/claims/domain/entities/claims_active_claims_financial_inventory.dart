@@ -1,5 +1,4 @@
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 
 /// Financial action classification for the Claims **Active Claims** tab scan.
@@ -123,7 +122,7 @@ abstract final class ClaimsActiveClaimsFinancialInventory {
     id: 'collect_patient_share',
     label: 'Collect patient share',
     actionClass: ClaimsActiveClaimsActionClass.settle,
-    requirement: billingWorkspaceWriteRequirement,
+    requirement: ClaimsActiveClaimsAtomPermissions.collectPatientShare,
     repositoryMethod: 'receivePayment',
     auditNote:
         'Deep-links Billing receive-payment; never invents cashier logic here',

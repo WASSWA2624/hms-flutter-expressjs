@@ -892,3 +892,167 @@ abstract final class ClinicalCompletedAtomPermissions {
 bool canViewClinicalCompleted(AppAccessPolicy policy) {
   return ClinicalCompletedAtomPermissions.tab.isAllowed(policy);
 }
+
+/// Billing action classes for Clinical Completed tab inventory (Req 1).
+enum ClinicalCompletedFinancialClass {
+  createCharge,
+  settle,
+  adjust,
+  reverse,
+  defer,
+  notBillable,
+}
+
+/// Financial atom reachable from Clinical Completed (`?section=completed`).
+final class ClinicalCompletedFinancialAtom {
+  const ClinicalCompletedFinancialAtom({
+    required this.id,
+    required this.classification,
+    this.auditReason,
+    this.billingPath,
+  });
+
+  final String id;
+  final ClinicalCompletedFinancialClass classification;
+
+  /// Explicit not-billable protocol when [classification] is notBillable.
+  final String? auditReason;
+
+  /// Shared Billing / clinical-request path when billable.
+  final String? billingPath;
+}
+
+/// Canonical Completed-tab financial inventory (AC1). Billable atoms reuse
+/// clinical-request billing + Billing module; no parallel ledgers.
+const List<ClinicalCompletedFinancialAtom> clinicalCompletedFinancialInventory =
+    <ClinicalCompletedFinancialAtom>[
+      ClinicalCompletedFinancialAtom(
+        id: 'tab_chrome',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'search_filters_pagination',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'row_select_open_encounter',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'print_summary',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'add_note',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'add_diagnosis',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'refer',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'follow_up',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'record_vitals',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'disposition',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_lab',
+        classification: ClinicalCompletedFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/lab-order',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_lab_pay_now',
+        classification: ClinicalCompletedFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'cancel_lab_order',
+        classification: ClinicalCompletedFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_radiology',
+        classification: ClinicalCompletedFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/radiology-order',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_radiology_pay_now',
+        classification: ClinicalCompletedFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'cancel_radiology_order',
+        classification: ClinicalCompletedFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'prescribe',
+        classification: ClinicalCompletedFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/pharmacy-order',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'prescribe_pay_now',
+        classification: ClinicalCompletedFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'cancel_pharmacy_order',
+        classification: ClinicalCompletedFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_procedure',
+        classification: ClinicalCompletedFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/procedure',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_procedure_pay_now',
+        classification: ClinicalCompletedFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'request_admission',
+        classification: ClinicalCompletedFinancialClass.defer,
+        billingPath: 'clinical-request-billing/admission-on-start',
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalCompletedFinancialAtom(
+        id: 'discharge_open_billing',
+        classification: ClinicalCompletedFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+    ];
+
+bool clinicalCompletedBillableAtomsUseSharedBilling() {
+  return clinicalCompletedFinancialInventory
+      .where(
+        (ClinicalCompletedFinancialAtom atom) =>
+            atom.classification != ClinicalCompletedFinancialClass.notBillable,
+      )
+      .every(
+        (ClinicalCompletedFinancialAtom atom) =>
+            atom.billingPath != null &&
+            atom.billingPath!.startsWith('clinical-request-billing'),
+      );
+}

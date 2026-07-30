@@ -460,6 +460,7 @@ final class ClinicalWorkspaceController
   Future<AppFailure?> addProcedures({
     required List<ClinicalCatalogOption> procedures,
     DateTime? performedAt,
+    ClinicalRequestBillingSubmit? billing,
   }) {
     final List<ClinicalCatalogOption> normalizedProcedures = procedures
         .where(
@@ -474,19 +475,44 @@ final class ClinicalWorkspaceController
     final String performedAtIso = (performedAt ?? DateTime.now())
         .toUtc()
         .toIso8601String();
+    // Auto bill-later when caller omitted billing (request-time charge hook).
+    final ClinicalRequestBillingSubmit effectiveBilling =
+        billing ??
+        buildPendingClinicalRequestBillingSubmit(
+          options: normalizedProcedures,
+          catalogType: 'SERVICE',
+          billingEntity: 'FACILITY',
+        );
 
     return _mutateSelectedEncounter(() async {
       final String encounterId = _selectedEntry!.encounterId;
+      var paymentAttached = false;
       for (final ClinicalCatalogOption procedure in normalizedProcedures) {
         final String description = _procedureDescription(procedure);
         final String? code = _normalizedOptionalText(procedure.code);
-        final Result<void> procedureResult = await _repository
-            .createProcedure(<String, Object?>{
-              'encounter_id': encounterId,
-              'code': code,
-              'description': description,
-              'performed_at': performedAtIso,
-            });
+        final String catalogKey = procedure.apiId.trim().isNotEmpty
+            ? procedure.apiId
+            : procedure.id;
+        final bool includePayment = !paymentAttached;
+        final ClinicalRequestBillingSubmit? sliced =
+            sliceClinicalRequestBillingForCatalogItem(
+              effectiveBilling,
+              catalogKey,
+              includePayment: includePayment,
+            );
+        if (sliced != null &&
+            sliced.paidAmount != null &&
+            sliced.paidAmount! > 0) {
+          paymentAttached = true;
+        }
+        final Result<void> procedureResult = await _repository.createProcedure(
+          mergeClinicalRequestBilling(<String, Object?>{
+            'encounter_id': encounterId,
+            'code': code,
+            'description': description,
+            'performed_at': performedAtIso,
+          }, sliced ?? effectiveBilling),
+        );
         final AppFailure? failure = _failureOrNull(procedureResult);
         if (failure != null) {
           return Result<void>.failure(failure);

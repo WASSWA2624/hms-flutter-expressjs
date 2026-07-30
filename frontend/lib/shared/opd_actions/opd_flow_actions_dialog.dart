@@ -1010,7 +1010,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             ({
               required List<ClinicalActionCatalogOption> procedures,
               DateTime? performedAt,
+              ClinicalRequestBillingSubmit? billing,
             }) {
+              // Shared dialog always attaches request-time billing. OPD
+              // doctor-review still uses procedure createMany without ledger
+              // posts; clinical Completed uses createProcedure + Billing.
+              assert(billing == null || billing.lineItems.isNotEmpty || true);
               final String performedAtIso = (performedAt ?? DateTime.now())
                   .toUtc()
                   .toIso8601String();

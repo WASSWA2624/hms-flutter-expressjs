@@ -9,9 +9,13 @@
 const insuranceClaimController = require('@controllers/insurance-claim/insurance-claim.controller');
 const insuranceClaimService = require('@services/insurance-claim/insurance-claim.service');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
+const { getUserPermissions } = require('@middlewares/auth.middleware');
 
 jest.mock('@services/insurance-claim/insurance-claim.service');
 jest.mock('@lib/response');
+jest.mock('@middlewares/auth.middleware', () => ({
+  getUserPermissions: jest.fn(),
+}));
 jest.mock('@config/constants', () => ({
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
@@ -23,6 +27,7 @@ describe('Insurance Claim Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    getUserPermissions.mockReturnValue(['billing:write']);
     mockReq = {
       query: {},
       params: {},
@@ -137,6 +142,73 @@ describe('Insurance Claim Controller', () => {
 
       expect(insuranceClaimService.deleteInsuranceClaim).toHaveBeenCalledWith('123', 'user-123', '127.0.0.1');
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
+    });
+  });
+
+  describe('reconcileInsuranceClaim', () => {
+    it('allows APPROVED without financial:approve', async () => {
+      mockReq.params = { id: '123' };
+      mockReq.body = { status: 'APPROVED', notes: 'ok' };
+      getUserPermissions.mockReturnValue(['billing:write']);
+      const mockClaim = { id: '123', status: 'APPROVED' };
+      insuranceClaimService.reconcileInsuranceClaim.mockResolvedValue(mockClaim);
+
+      await insuranceClaimController.reconcileInsuranceClaim(mockReq, mockRes);
+
+      expect(insuranceClaimService.reconcileInsuranceClaim).toHaveBeenCalledWith(
+        '123',
+        mockReq.body,
+        'user-123',
+        '127.0.0.1'
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.insurance_claim.reconcile.success',
+        mockClaim
+      );
+    });
+
+    it('rejects PAID without financial:approve', async () => {
+      mockReq.params = { id: '123' };
+      mockReq.body = { status: 'PAID', settlement_amount: 100 };
+      getUserPermissions.mockReturnValue(['billing:write']);
+
+      await expect(
+        insuranceClaimController.reconcileInsuranceClaim(mockReq, mockRes)
+      ).rejects.toMatchObject({
+        message: 'errors.auth.insufficient_permissions',
+        statusCode: 403,
+      });
+      expect(insuranceClaimService.reconcileInsuranceClaim).not.toHaveBeenCalled();
+    });
+
+    it('posts PAID remittance when financial:approve is present', async () => {
+      mockReq.params = { id: '123' };
+      mockReq.body = { status: 'PAID', settlement_amount: 150 };
+      getUserPermissions.mockReturnValue(['billing:write', 'financial:approve']);
+      const mockClaim = {
+        id: '123',
+        status: 'PAID',
+        payment: { id: 'pay-1', method: 'INSURANCE' },
+        financials: { balance_due: '50.00' },
+      };
+      insuranceClaimService.reconcileInsuranceClaim.mockResolvedValue(mockClaim);
+
+      await insuranceClaimController.reconcileInsuranceClaim(mockReq, mockRes);
+
+      expect(insuranceClaimService.reconcileInsuranceClaim).toHaveBeenCalledWith(
+        '123',
+        mockReq.body,
+        'user-123',
+        '127.0.0.1'
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.insurance_claim.reconcile.success',
+        mockClaim
+      );
     });
   });
 });

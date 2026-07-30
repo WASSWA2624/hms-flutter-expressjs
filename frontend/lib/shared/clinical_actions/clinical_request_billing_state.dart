@@ -478,11 +478,19 @@ String clinicalRequestPaymentStatusDisplayLabel(
 
 ClinicalRequestBillingSubmit buildPendingClinicalRequestBillingSubmit({
   required List<ClinicalActionCatalogOption> options,
+  Map<String, num>? quantities,
   String? facilityCurrency,
   String? tenantCurrency,
+  String? catalogType,
+  String? billingEntity,
 }) {
   final List<ClinicalRequestBillingLineItem> lineItems =
-      clinicalRequestBillingLineItems(options: options);
+      clinicalRequestBillingLineItems(
+        options: options,
+        quantities: quantities,
+        catalogType: catalogType,
+        billingEntity: billingEntity,
+      );
   final num total = clinicalRequestBillingTotal(lineItems);
   return ClinicalRequestBillingSubmit(
     mode: ClinicalRequestPaymentMode.billLater,
@@ -494,6 +502,72 @@ ClinicalRequestBillingSubmit buildPendingClinicalRequestBillingSubmit({
     ),
     paymentStatus: ClinicalRequestPaymentStatus.unpaid,
     lineItems: lineItems,
+  );
+}
+
+/// Slice a multi-line billing submit to one catalog item (avoids double charge
+/// when each procedure/order line posts separately).
+ClinicalRequestBillingSubmit? sliceClinicalRequestBillingForCatalogItem(
+  ClinicalRequestBillingSubmit? billing,
+  String catalogItemId, {
+  bool includePayment = true,
+}) {
+  if (billing == null) {
+    return null;
+  }
+  final String needle = catalogItemId.trim();
+  if (needle.isEmpty) {
+    return billing;
+  }
+  final List<ClinicalRequestBillingLineItem> lines = billing.lineItems
+      .where((ClinicalRequestBillingLineItem item) => item.id == needle)
+      .toList(growable: false);
+  if (lines.isEmpty) {
+    if (billing.lineItems.isEmpty || billing.lineItems.length == 1) {
+      return includePayment
+          ? billing
+          : ClinicalRequestBillingSubmit(
+              mode: ClinicalRequestPaymentMode.billLater,
+              totalAmount: billing.totalAmount,
+              currency: billing.currency,
+              paymentStatus: ClinicalRequestPaymentStatus.unpaid,
+              lineItems: billing.lineItems,
+              billingEntity: billing.billingEntity,
+              paymentMode: billing.paymentMode,
+              coveragePlanId: billing.coveragePlanId,
+              insuranceCompanyId: billing.insuranceCompanyId,
+              coveragePercentage: billing.coveragePercentage,
+              copayType: billing.copayType,
+              copayValue: billing.copayValue,
+              patientShare: billing.patientShare,
+              insurerShare: billing.insurerShare,
+              copayAmount: billing.copayAmount,
+            );
+    }
+    return null;
+  }
+  final num total = clinicalRequestBillingTotal(lines);
+  return ClinicalRequestBillingSubmit(
+    mode: includePayment ? billing.mode : ClinicalRequestPaymentMode.billLater,
+    totalAmount: total,
+    currency: billing.currency,
+    paymentStatus: includePayment
+        ? billing.paymentStatus
+        : ClinicalRequestPaymentStatus.unpaid,
+    paidAmount: includePayment ? billing.paidAmount : null,
+    paymentMethod: includePayment ? billing.paymentMethod : null,
+    paymentReference: includePayment ? billing.paymentReference : null,
+    lineItems: lines,
+    billingEntity: billing.billingEntity,
+    paymentMode: billing.paymentMode,
+    coveragePlanId: billing.coveragePlanId,
+    insuranceCompanyId: billing.insuranceCompanyId,
+    coveragePercentage: billing.coveragePercentage,
+    copayType: billing.copayType,
+    copayValue: billing.copayValue,
+    patientShare: lines.first.patientShare ?? billing.patientShare,
+    insurerShare: lines.first.insurerShare ?? billing.insurerShare,
+    copayAmount: lines.first.copayAmount ?? billing.copayAmount,
   );
 }
 
