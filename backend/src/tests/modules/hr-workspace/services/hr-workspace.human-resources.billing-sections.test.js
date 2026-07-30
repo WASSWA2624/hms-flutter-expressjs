@@ -302,41 +302,36 @@ describe('hr-workspace Human resources (staff) billing-sections scan', () => {
     expectNoPatientBillingTouched();
   });
 
-  it('staff profile compensation + consultation_fee update is catalog-only', async () => {
-    const existing = {
+  it('staff profile compensation + consultation_fee create is catalog-only', async () => {
+    const createdProfile = {
       id: staffRecord.id,
       human_friendly_id: staffRecord.human_friendly_id,
       tenant_id: staffRecord.tenant_id,
-      consultation_fee: null,
-      consultation_currency: null,
-      compensations: [],
-    };
-    staffProfileRepository.findById.mockResolvedValue(existing);
-    staffProfileRepository.update.mockResolvedValue({
-      ...existing,
-      consultation_fee: '25000.00',
+      user_id: staffRecord.user_id,
+      staff_number: 'EMP-1',
+      position: 'Nurse',
+      practitioner_type: 'SPECIALIST',
+      consultation_fee: 25000,
       consultation_currency: 'UGX',
-      compensations: [
-        {
-          id: 'comp-1',
-          pay_type: 'SALARY',
-          rate: '1000.00',
-          currency: 'UGX',
-        },
-      ],
-    });
+    };
+    staffProfileRepository.create.mockResolvedValue(createdProfile);
+    staffProfileRepository.findById.mockResolvedValue(createdProfile);
 
-    const result = await staffProfileService.updateStaffProfile(
-      staffRecord.id,
+    const result = await staffProfileService.createStaffProfile(
       {
+        tenant_id: staffRecord.tenant_id,
+        user_id: staffRecord.user_id,
+        staff_number: 'EMP-1',
+        position: 'Nurse',
+        practitioner_type: 'SPECIALIST',
         consultation_fee: 25000,
         consultation_currency: 'UGX',
         compensations: [
           {
-            pay_type: 'SALARY',
+            pay_type: 'PER_MONTH',
             rate: 1000,
             currency: 'UGX',
-            effective_from: '2026-01-01T00:00:00.000Z',
+            effective_from: new Date('2026-01-01'),
           },
         ],
       },
@@ -344,7 +339,15 @@ describe('hr-workspace Human resources (staff) billing-sections scan', () => {
       '127.0.0.1'
     );
 
-    expect(result.consultation_fee || result.consultationFee || true).toBeTruthy();
+    expect(result).toEqual(
+      expect.objectContaining({
+        consultation_fee: 25000,
+        staff_number: 'EMP-1',
+      })
+    );
+    expect(result).not.toHaveProperty('payment_status');
+    expect(result).not.toHaveProperty('balance');
+    expect(result).not.toHaveProperty('paid');
     expectNoPatientBillingTouched();
   });
 
