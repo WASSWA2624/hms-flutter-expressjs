@@ -355,7 +355,7 @@ void main() {
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       // Schedules have no complementary write Quick actions section.
       expect(find.text('Quick actions'), findsNothing);
       expectFlatSections(tester);

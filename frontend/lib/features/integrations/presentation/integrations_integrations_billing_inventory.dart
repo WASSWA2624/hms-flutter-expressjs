@@ -126,19 +126,19 @@ abstract final class IntegrationsIntegrationsBillingInventory {
         ),
         IntegrationsIntegrationsFinancialAtom(
           id: 'detail_config_summary_panel',
-          label: 'Configuration AppWorkspaceDetailPanel (sibling)',
+          label: 'Configuration AppCollapsibleSection (sibling)',
           financialClass: IntegrationsIntegrationsFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),
         IntegrationsIntegrationsFinancialAtom(
           id: 'detail_related_webhooks_panel',
-          label: 'Related webhooks AppWorkspaceDetailPanel (read-only sibling)',
+          label: 'Related webhooks AppCollapsibleSection (read-only sibling)',
           financialClass: IntegrationsIntegrationsFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),
         IntegrationsIntegrationsFinancialAtom(
           id: 'detail_related_logs_panel',
-          label: 'Related logs AppWorkspaceDetailPanel (read-only sibling)',
+          label: 'Related logs AppCollapsibleSection (read-only sibling)',
           financialClass: IntegrationsIntegrationsFinancialClass.notBilled,
           auditCode: 'NOT_BILLED',
         ),

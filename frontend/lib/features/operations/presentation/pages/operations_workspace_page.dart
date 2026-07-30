@@ -817,7 +817,7 @@ class _OperationsAssetDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: asset.effectiveLabel,
       description: asset.effectiveDisplayId,
       child: AppInfoTileGrid(
@@ -917,7 +917,7 @@ class _OperationsDetailPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final OperationsWorkItem? item = state.selectedItem;
     if (item == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.operationsDetailTitle,
         child: AppStateView(
           title: l10n.operationsNoSelectionTitle,
@@ -1009,7 +1009,7 @@ class _OperationsDetailBody extends ConsumerWidget {
           ),
         ],
       ),
-      AppWorkspaceDetailPanel(
+      AppCollapsibleSection(
         title: l10n.operationsIssueTitle,
         titleIcon: Icons.report_problem_outlined,
         child: Column(
@@ -1175,7 +1175,7 @@ class _ServiceLogsPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     if (logs.items.isEmpty) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.operationsServiceLogsTitle,
         child: AppStateView(
           title: l10n.operationsNoServiceLogsTitle,
@@ -1185,7 +1185,7 @@ class _ServiceLogsPanel extends StatelessWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.operationsServiceLogsTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

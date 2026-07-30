@@ -1396,7 +1396,7 @@ class _PlanDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: _SubscriptionsText.includedModules,
           description: _SubscriptionsText.includedModulesAccessHint,
           titleIcon: Icons.extension_outlined,
@@ -1461,7 +1461,7 @@ class _PlanDetailContent extends ConsumerWidget {
             ],
           ),
           SizedBox(height: theme.spacing.md),
-          ...appWorkspaceDetailSectionSpacing(context, <Widget>[
+          ...appCollapsibleSectionSpacing(context, <Widget>[
             _PlanAccountsSection(
               title: _SubscriptionsText.linkedTenants,
               emptyLabel: _SubscriptionsText.noLinkedTenants,
@@ -1590,7 +1590,7 @@ class _PlanAccountsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       titleIcon: Icons.business_outlined,
       child: accounts.isEmpty

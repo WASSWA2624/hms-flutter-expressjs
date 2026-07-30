@@ -62,7 +62,7 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
 
   /// Sibling sections after admission details (e.g. embedded billing panel).
   ///
-  /// Keep flat: do not nest titled [AppWorkspaceDetailPanel] / [AppFormSection]
+  /// Keep flat: do not nest titled [AppCollapsibleSection] / [AppFormSection]
   /// chrome inside another titled section.
   final List<Widget> Function(BuildContext context, bool enabled)?
   trailingSectionsBuilder;

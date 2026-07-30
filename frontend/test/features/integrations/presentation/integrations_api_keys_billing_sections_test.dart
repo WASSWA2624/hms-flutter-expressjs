@@ -342,7 +342,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(3));
+        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(3));
         expect(find.textContaining('key_billing'), findsWidgets);
         expect(find.text('billing:read'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
@@ -406,7 +406,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(AppDialog).last,
-            matching: find.byType(AppWorkspaceDetailPanel),
+            matching: find.byType(AppCollapsibleSection),
           ),
           findsNothing,
         );
@@ -546,7 +546,7 @@ void main() {
         await tester.tap(find.text('Billing Export Key').first);
         await tester.pumpAndSettle();
 
-        expect(find.byType(AppWorkspaceDetailPanel), findsNWidgets(3));
+        expect(find.byType(AppCollapsibleSection), findsNWidgets(3));
         expectFlatTitledSectionLayout(
           tester,
           contextLabel: 'api key detail siblings',

@@ -2529,7 +2529,7 @@ class _PatientReportPrintPreviewDialogState
             },
           ),
           SizedBox(height: theme.spacing.lg),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.patientsReportPreviewSectionTitle,
             child: _PatientReportPreviewPages(document: document),
           ),

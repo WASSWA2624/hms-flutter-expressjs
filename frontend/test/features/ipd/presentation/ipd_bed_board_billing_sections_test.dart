@@ -24,7 +24,6 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/layout/app_screen_section.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -518,11 +517,10 @@ void main() {
       );
 
       expect(find.byType(IpdBedBoardPanel), findsOneWidget);
-      expect(find.byType(AppScreenSection), findsNothing);
       expect(
         find.byWidgetPredicate(
           (Widget widget) =>
-              widget is AppWorkspaceDetailPanel &&
+              widget is AppCollapsibleSection &&
               (widget.title?.trim().isNotEmpty ?? false),
         ),
         findsNothing,

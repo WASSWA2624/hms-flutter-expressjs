@@ -217,7 +217,7 @@ class _NursingPatientDetailContent extends ConsumerWidget {
         SizedBox(height: theme.spacing.md),
         _NursingHandoverPanel(detail: detail),
         SizedBox(height: theme.spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.nursingWardActivityTitle,
           child: AppWardActivityList(
             items: nursingActivityEntries(context, detail),
@@ -369,7 +369,7 @@ class _NursingRecordPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       child: AppNursingRecordList(items: records, emptyLabel: emptyLabel),
     );
@@ -384,7 +384,7 @@ class _NursingHandoverPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.nursingHandoversTitle,
       child: AppNursingRecordList(
         items: nursingHandoverRecords(context, detail),
@@ -419,7 +419,7 @@ class _NursingBillingClearancePanel extends StatelessWidget {
         ? discharge!.summary!.trim()
         : l10n.nursingChecklistDischargePendingBody;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargeBillingSectionTitle,
       child: AppNursingRecordList(
         items: <AppNursingRecordEntry>[
@@ -468,7 +468,7 @@ class _NursingAdmissionChecklistPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.nursingWardAdmissionChecklistTitle,
       description: l10n.nursingWardAdmissionChecklistDescription,
       child: AppCareTaskChecklist(

@@ -105,7 +105,7 @@ Future<void> showHrModuleAccessDialog(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.hrModuleAccessSectionTitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -134,7 +134,7 @@ Future<void> showHrModuleAccessDialog(
             ),
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.hrEffectivePermissionsTitle,
             child: access == null || access.effectivePermissions.isEmpty
                 ? Text(l10n.profileUnknownValue)

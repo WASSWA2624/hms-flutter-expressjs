@@ -360,7 +360,7 @@ class IcuAlertPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final IcuCriticalAlertSummary summary = detail.alertSummary;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.icuCriticalAlertsPanelTitle,
       description: summary.total == 0
           ? l10n.icuNoActiveAlertsLabel
@@ -392,7 +392,7 @@ class IcuObservationPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.icuObservationsPanelTitle,
       description: l10n.icuObservationsPanelDescription,
       child: _RecordList<IcuObservation>(
@@ -415,7 +415,7 @@ class IcuVitalTrendPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.icuVitalsTrendTitle,
       description: l10n.icuVitalsTrendDescription,
       child: _RecordList<IcuVitalSign>(
@@ -491,7 +491,7 @@ class IcuCarePanel extends StatelessWidget {
         ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.icuCarePanelTitle,
       description: l10n.icuCarePanelDescription,
       child: _RecordList<_CareItem>(
@@ -556,7 +556,7 @@ class IcuTransferPanel extends StatelessWidget {
         ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.icuTransferPanelTitle,
       description: l10n.icuTransferPanelDescription,
       child: _RecordList<_CareItem>(

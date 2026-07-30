@@ -159,7 +159,7 @@ class AppUserAccessPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.accessAdminAssignedRolesLabel,
           description: l10n.accessAdminUserDetailRolesSectionDescription,
           titleIcon: Icons.groups_outlined,
@@ -204,7 +204,7 @@ class AppUserAccessPanel extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.hrAccessDirectPermissionsLabel,
           description: l10n.accessAdminUserAccessDirectPermissionsDescription,
           titleIcon: Icons.key_outlined,
@@ -252,7 +252,7 @@ class AppUserAccessPanel extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.accessAdminEffectivePermissionsLabel,
           description: l10n.accessAdminUserDetailPermissionsSectionDescription,
           titleIcon: Icons.verified_user_outlined,

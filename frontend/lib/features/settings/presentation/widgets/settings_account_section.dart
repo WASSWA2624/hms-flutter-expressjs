@@ -497,9 +497,9 @@ class _ProfileDetailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScreenSection(
+    return AppCollapsibleSection(
       title: title,
-      body: body,
+      description: body,
       child: _ProfileDetailList(items: items),
     );
   }
@@ -515,9 +515,9 @@ class _ProfileRolesSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return AppScreenSection(
+    return AppCollapsibleSection(
       title: l10n.profileRolesSectionTitle,
-      body: l10n.profileRolesSectionBody,
+      description: l10n.profileRolesSectionBody,
       child: roles.isEmpty
           ? Text(
               l10n.profileRolesEmpty,
@@ -547,9 +547,9 @@ class _ProfilePermissionsSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return AppScreenSection(
+    return AppCollapsibleSection(
       title: l10n.profilePermissionsSectionTitle,
-      body: l10n.profilePermissionsSectionBody,
+      description: l10n.profilePermissionsSectionBody,
       child: permissions.isEmpty
           ? Text(
               l10n.profilePermissionsEmpty,

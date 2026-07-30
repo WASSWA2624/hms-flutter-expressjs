@@ -123,7 +123,7 @@ class RadiologyWorkflowProgressSection extends ConsumerWidget {
 
     final bool canCollapse = activeIndex >= 3;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyWorkflowProgressTitle,
       collapsible: false,
       actions: canCollapse

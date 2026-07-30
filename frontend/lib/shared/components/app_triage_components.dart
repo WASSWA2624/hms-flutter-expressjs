@@ -803,7 +803,7 @@ class AppTriageSummaryPanel extends StatelessWidget {
     );
 
     if (resolvedTitle != null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: resolvedTitle,
         description: description,
         actions: actions,
@@ -857,7 +857,7 @@ class AppVitalsSummaryPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool hasContent = items.isNotEmpty || alerts.isNotEmpty;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       actions: onEdit != null && editLabel != null
           ? <Widget>[

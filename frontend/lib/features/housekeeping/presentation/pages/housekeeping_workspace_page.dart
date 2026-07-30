@@ -1041,7 +1041,7 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final HousekeepingWorkItem? item = state.selectedItem;
     if (item == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.housekeepingNoSelectionTitle,
         description: l10n.housekeepingNoSelectionBody,
         child: AppStateView(
@@ -1062,8 +1062,8 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
           capabilities: capabilities,
         ),
         SizedBox(height: theme.spacing.md),
-        ...appWorkspaceDetailSectionSpacing(context, <Widget>[
-          AppWorkspaceDetailPanel(
+        ...appCollapsibleSectionSpacing(context, <Widget>[
+          AppCollapsibleSection(
             title: l10n.housekeepingDetailTitle,
             description: item.title,
             titleIcon: _resourceIcon(item.resource),

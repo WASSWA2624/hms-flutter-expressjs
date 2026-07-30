@@ -1035,11 +1035,11 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     );
 
     if (widget.framed) {
-      return AppScreenSection(
+      return AppCollapsibleSection(
         title: widget.isCreate
             ? l10n.tenantFacilityCreateTenantTitle
             : l10n.tenantFacilityTenantSectionTitle,
-        body: sectionBody,
+        description: sectionBody,
         child: form,
       );
     }
@@ -1959,11 +1959,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     );
 
     if (widget.framed) {
-      return AppScreenSection(
+      return AppCollapsibleSection(
         title: _isCreate
             ? l10n.tenantFacilityCreateFacilityTitle
             : l10n.tenantFacilityEditFacilityTitle,
-        body: l10n.tenantFacilityFacilitySectionBody,
+        description: l10n.tenantFacilityFacilitySectionBody,
         child: form,
       );
     }

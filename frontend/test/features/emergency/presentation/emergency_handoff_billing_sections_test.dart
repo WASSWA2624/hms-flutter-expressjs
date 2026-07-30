@@ -507,7 +507,7 @@ void main() {
         expect(find.text(EmergencyText.handoffOutcome), findsOneWidget);
         expect(find.text('Triage and response'), findsOneWidget);
         expect(find.text('Ambulance'), findsWidgets);
-        expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+        expect(find.byType(AppCollapsibleSection), findsWidgets);
         expectFlatSections(tester);
         expectFlatTitledSectionLayout(
           tester,

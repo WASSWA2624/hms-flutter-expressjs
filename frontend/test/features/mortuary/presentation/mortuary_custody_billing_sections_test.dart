@@ -481,7 +481,7 @@ void main() {
 
       await _openCustodyDetail(tester);
 
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       expectFlatSections(tester);
       expectFlatTitledSectionLayout(
         tester,
@@ -502,7 +502,7 @@ void main() {
 
       await _openCustodyDetail(tester);
 
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       expectFlatSections(tester);
       expectFlatTitledSectionLayout(
         tester,

@@ -861,7 +861,7 @@ class _DetailContent extends ConsumerWidget {
             value: '${item.userCount}',
           ),
           SizedBox(height: theme.spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.accessAdminRolePermissionsLabel,
             child: AppPermissionGroupedView(
               permissions: rolePermissionOptions,

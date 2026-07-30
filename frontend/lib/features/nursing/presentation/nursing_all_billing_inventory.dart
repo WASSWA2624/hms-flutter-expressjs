@@ -369,7 +369,7 @@ abstract final class NursingAllBillingInventory {
     };
   }
 
-  /// Section chrome on this tab: sibling [AppWorkspaceDetailPanel]s under a
+  /// Section chrome on this tab: sibling [AppCollapsibleSection]s under a
   /// Column in patient detail; worklist has no titled sections. Dialogs use
   /// single shells or embedded billing panels (not nested sections).
   static const List<String> titledSectionIds = <String>[

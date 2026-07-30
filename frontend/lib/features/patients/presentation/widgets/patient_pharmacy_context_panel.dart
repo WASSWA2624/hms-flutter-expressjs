@@ -27,7 +27,7 @@ class PatientPharmacyContextPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<PatientSummaryRecord> orders = detail.workspace.pharmacyOrders;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.patientsPharmacyOrdersSectionTitle,
       actions: <Widget>[
         AppAccessActionGate(

@@ -509,13 +509,13 @@ class _InvoiceLineItemsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.items.isEmpty) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.billingLineItemsTitle,
         child: Text(l10n.billingNoLineItems),
       );
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.billingLineItemsTitle,
       child: AppListTable<BillingInvoiceItem>(
         items: item.items,
@@ -643,13 +643,13 @@ class _PaymentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.payments.isEmpty) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.billingPaymentsTitle,
         child: Text(l10n.billingNoPayments),
       );
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.billingPaymentsTitle,
       child: Column(
         children: <Widget>[
@@ -681,13 +681,13 @@ class _AdjustmentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     if (item.adjustments.isEmpty) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.billingAdjustmentsTitle,
         child: Text(l10n.billingNoAdjustments),
       );
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.billingAdjustmentsTitle,
       child: Column(
         children: <Widget>[

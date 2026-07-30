@@ -23,7 +23,7 @@ class HrStaffDetailOverview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.hrStaffOverviewSectionTitle,
           child: AppInfoSheetGrid(
             emptyValue: emptyValue,
@@ -34,7 +34,7 @@ class HrStaffDetailOverview extends StatelessWidget {
         ),
         if (hasLinkedUser) ...<Widget>[
           SizedBox(height: theme.spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.hrLinkedUserLabel,
             titleIcon: Icons.link_outlined,
             child: AppInfoSheetGrid(

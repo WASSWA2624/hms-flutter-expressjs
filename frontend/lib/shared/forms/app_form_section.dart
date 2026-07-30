@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 
 enum AppFormSectionDensity { compact, regular, spacious }
 
 /// Form field groups that share the app's titled section chrome.
 ///
-/// When framed with a title, builds [AppWorkspaceDetailPanel] (collapsible by
-/// default). Untitled or explicitly unframed layouts stay as plain columns.
+/// When framed with a title, builds [AppCollapsibleSection] (collapsible by
+/// default). Untitled or explicitly unframed layouts stay as plain columns for
+/// form density spacing — use [AppCollapsibleSection] directly when you only
+/// need section chrome without form gaps.
 class AppFormSection extends StatelessWidget {
   const AppFormSection({
     required this.children,
@@ -30,7 +32,7 @@ class AppFormSection extends StatelessWidget {
   /// When null, titled sections are framed so adjacent blocks stay distinct.
   final bool? framed;
 
-  /// Forwarded to [AppWorkspaceDetailPanel] for framed titled sections.
+  /// Forwarded to [AppCollapsibleSection] for framed titled sections.
   final bool collapsible;
   final bool initiallyExpanded;
 
@@ -69,7 +71,7 @@ class AppFormSection extends StatelessWidget {
     }
 
     if (resolvedTitle != null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: resolvedTitle,
         description: description,
         collapsible: collapsible,

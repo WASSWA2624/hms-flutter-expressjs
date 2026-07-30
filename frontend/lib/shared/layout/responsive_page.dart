@@ -5,8 +5,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
 
-export 'package:hosspi_hms/shared/layout/app_screen_section.dart';
-
 enum PageMaxWidth {
   authForm(520),
   form(720),

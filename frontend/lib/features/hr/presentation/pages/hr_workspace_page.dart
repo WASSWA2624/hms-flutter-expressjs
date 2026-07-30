@@ -708,7 +708,7 @@ class _HrStaffDetailPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final HrStaffDetail? selected = state.selectedStaff;
     if (selected == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.hrStaffDetailTitle,
         child: AppStateView(
           title: l10n.hrNoStaffSelectedTitle,
@@ -1014,7 +1014,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.hrAvailabilitySectionTitle,
           titleIcon: Icons.schedule_outlined,
           child: HrAvailabilityCalendar(
@@ -1327,7 +1327,7 @@ class _SmallRecordSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       titleIcon: icon,
       child: Column(

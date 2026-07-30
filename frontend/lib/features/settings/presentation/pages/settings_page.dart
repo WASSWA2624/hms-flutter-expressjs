@@ -233,8 +233,9 @@ final class _AccordionEntry {
   final String body;
   final WidgetBuilder builder;
 
-  /// When false, the builder already provides its own [AppScreenSection]
-  /// wrapper (e.g. [SettingsConfigurationSection], [SettingsWorkspaceSection]).
+  /// When false, the builder already provides its own [AppCollapsibleSection]
+  /// (or equivalent framed chrome) and should not be wrapped again
+  /// (e.g. [SettingsConfigurationSection], [SettingsWorkspaceSection]).
   final bool wrapInSection;
 }
 
@@ -387,7 +388,11 @@ class _AccordionPanelContent extends StatelessWidget {
     final Widget content = entry.builder(context);
 
     final Widget sectionContent = entry.wrapInSection
-        ? AppScreenSection(title: entry.title, body: entry.body, child: content)
+        ? AppCollapsibleSection(
+            title: entry.title,
+            description: entry.body,
+            child: content,
+          )
         : content;
 
     return Padding(

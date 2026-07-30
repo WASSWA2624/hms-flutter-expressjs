@@ -1539,7 +1539,7 @@ class _BillingImpactPanel extends StatelessWidget {
             ),
           ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.claimsBillingImpactTitle,
       description: body,
       child: AppInfoTileGrid(items: tiles),
@@ -1585,7 +1585,7 @@ class _RequiredDocumentsPanel extends StatelessWidget {
       ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.claimsRequiredDocumentsTitle,
       description: l10n.claimsRequiredDocumentsBody,
       child: Wrap(

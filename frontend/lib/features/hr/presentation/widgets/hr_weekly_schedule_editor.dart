@@ -402,7 +402,7 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
       return days;
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: sectionTitle ?? l10n.hrWeeklyScheduleSectionTitle,
       child: days,
     );

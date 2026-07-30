@@ -56,7 +56,7 @@ abstract final class ClaimsInsuranceSetupBillingInventory {
         ),
         ClaimsInsuranceSetupFinancialAtom(
           id: 'quick_actions_chrome',
-          label: 'Quick actions titled panel (AppWorkspaceDetailPanel)',
+          label: 'Quick actions titled panel (AppCollapsibleSection)',
           financialClass: ClaimsInsuranceSetupFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
         ),

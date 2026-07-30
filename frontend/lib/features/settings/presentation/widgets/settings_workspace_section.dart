@@ -85,9 +85,9 @@ class _SettingsWorkspaceBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppScreenSection(
+    return AppCollapsibleSection(
       title: l10n.settingsWorkspaceSectionTitle,
-      body: l10n.settingsWorkspaceSectionBody,
+      description: l10n.settingsWorkspaceSectionBody,
       child: workspaceState.when(
         loading: () => AppStateView(
           variant: AppStateViewVariant.loading,

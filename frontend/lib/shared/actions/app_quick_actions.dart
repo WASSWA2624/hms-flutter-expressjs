@@ -24,7 +24,7 @@ enum AppQuickActionsPresentation {
   /// A lightweight title and action list for embedding in existing content.
   plain,
 
-  /// A titled collapsible section ([AppWorkspaceDetailPanel]) for workspace shortcuts.
+  /// A titled collapsible section ([AppCollapsibleSection]) for workspace shortcuts.
   section,
 
   /// A standard detail panel for record-specific actions.
@@ -68,7 +68,7 @@ class AppQuickActions extends ConsumerWidget {
   final String? overflowLabel;
   final bool hideWhenEmpty;
 
-  /// Forwarded to [AppWorkspaceDetailPanel] when [presentation] is
+  /// Forwarded to [AppCollapsibleSection] when [presentation] is
   /// [AppQuickActionsPresentation.detailPanel]. Defaults to collapsible.
   final bool collapsible;
   final bool initiallyExpanded;
@@ -173,7 +173,7 @@ class AppQuickActions extends ConsumerWidget {
         description: description,
         child: content,
       ),
-      AppQuickActionsPresentation.section => AppWorkspaceDetailPanel(
+      AppQuickActionsPresentation.section => AppCollapsibleSection(
         title: title!,
         description: description,
         titleIcon: leadingIcon,
@@ -181,7 +181,7 @@ class AppQuickActions extends ConsumerWidget {
         initiallyExpanded: initiallyExpanded,
         child: content,
       ),
-      AppQuickActionsPresentation.detailPanel => AppWorkspaceDetailPanel(
+      AppQuickActionsPresentation.detailPanel => AppCollapsibleSection(
         title: title!,
         description: description,
         titleIcon: leadingIcon,

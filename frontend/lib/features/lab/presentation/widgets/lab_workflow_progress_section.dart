@@ -142,7 +142,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           ),
         ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.labWorkflowProgressTitle,
       collapsible: false,
       child: AppWorkflowStepper(

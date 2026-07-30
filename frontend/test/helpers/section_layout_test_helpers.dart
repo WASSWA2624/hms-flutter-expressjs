@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
-import 'package:hosspi_hms/shared/layout/app_screen_section.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 
 /// Whether [widget] is titled section chrome per billing-and-sections rules.
 bool isTitledSectionWidget(Widget widget) {
-  if (widget is AppScreenSection) {
-    return true;
+  if (widget is AppCollapsibleSection) {
+    return widget.title?.trim().isNotEmpty == true ||
+        widget.titleWidget != null;
   }
-  if (widget is AppWorkspaceDetailPanel) {
-    return widget.title?.trim().isNotEmpty == true;
-  }
-  // Titled AppSectionPanel delegates to AppWorkspaceDetailPanel at build time.
+  // Convenience wrappers (AppFormSection / AppSectionPanel) build
+  // AppCollapsibleSection at runtime — count the built section only.
   return false;
 }
 

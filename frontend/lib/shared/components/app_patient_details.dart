@@ -67,7 +67,7 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
   }
 }
 
-/// Patient identity section built on [AppWorkspaceDetailPanel].
+/// Patient identity section built on [AppCollapsibleSection].
 ///
 /// Collapsed by default: header shows name · public ID (with copy).
 /// Expanded body is a horizontal overflow row:
@@ -157,7 +157,7 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
               ? ref.watch(appPatientDetailsExpandedProvider)
               : _localExpanded);
 
-    Widget panel = AppWorkspaceDetailPanel(
+    Widget panel = AppCollapsibleSection(
       titleWidget: _PatientDetailsTitle(
         patientName: widget.patientName,
         patientNumber: widget.patientNumber,

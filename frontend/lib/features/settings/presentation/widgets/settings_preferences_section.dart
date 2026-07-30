@@ -29,9 +29,9 @@ class SettingsPreferencesSection extends ConsumerWidget {
 
     return AppAccessGate(
       requirement: SettingsPreferencesAtomPermissions.tab,
-      child: AppScreenSection(
+      child: AppCollapsibleSection(
         title: l10n.settingsPreferencesSectionTitle,
-        body: l10n.settingsPreferencesSectionBody,
+        description: l10n.settingsPreferencesSectionBody,
         child: canUpdate
             ? _PreferencesUpdateControls(themeMode: themeMode)
             : _PreferencesReadOnlySummary(themeMode: themeMode),

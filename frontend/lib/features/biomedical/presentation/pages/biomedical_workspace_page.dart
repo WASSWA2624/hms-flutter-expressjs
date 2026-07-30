@@ -740,7 +740,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final BiomedicalAsset? asset = state.selectedAsset;
     if (asset == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.biomedicalDetailTitle,
         child: AppWorkspaceStatePanel.empty(
           title: l10n.biomedicalNoSelectionTitle,
@@ -788,8 +788,8 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
           asset: asset,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        ...appWorkspaceDetailSectionSpacing(context, <Widget>[
-          AppWorkspaceDetailPanel(
+        ...appCollapsibleSectionSpacing(context, <Widget>[
+          AppCollapsibleSection(
             title: l10n.biomedicalRegistrySectionTitle,
             titleIcon: Icons.badge_outlined,
             child: AppInfoTileGrid(
@@ -813,7 +813,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
               ],
             ),
           ),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.biomedicalReadinessSectionTitle,
             titleIcon: Icons.health_and_safety_outlined,
             child: AppInfoTileGrid(

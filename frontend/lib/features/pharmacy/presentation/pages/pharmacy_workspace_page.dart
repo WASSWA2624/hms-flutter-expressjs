@@ -929,7 +929,7 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
         ? workflow.order.items
         : workflow.items;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       child: AppListTable<PharmacyOrderItem>(
         items: items,
         shrinkWrap: true,
@@ -1281,7 +1281,7 @@ class _TimelinePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.pharmacyTimelinePanelTitle,
       description: l10n.pharmacyTimelinePanelDescription,
       child: AppTimeline(

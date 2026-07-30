@@ -127,7 +127,7 @@ class AppTimeline extends StatelessWidget {
           );
 
     if (resolvedTitle != null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: resolvedTitle,
         description: description,
         child: body,

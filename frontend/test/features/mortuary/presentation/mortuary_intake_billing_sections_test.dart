@@ -429,7 +429,7 @@ void main() {
       await tester.tap(find.text('Intake Deceased').first);
       await tester.pumpAndSettle();
       expectFlatSections(tester);
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
     });
 
     testWidgets('mobile Intake: flat sections', (WidgetTester tester) async {

@@ -663,7 +663,7 @@ class _TheaterCaseDetail extends ConsumerWidget {
     final TheaterCase? selected = theaterCase;
     if (selected == null) {
       final AppLocalizations l10n = context.l10n;
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.theaterCaseDetailTitle,
         child: AppStateView(
           title: l10n.theaterNoCaseSelectedTitle,
@@ -772,7 +772,7 @@ class _TheaterCaseDetailBody extends StatelessWidget {
     final bool hasSourceContext = _sourceContextLabel(l10n, theaterCase) != null;
     final List<Widget> detailSections = <Widget>[
       if (hasSourceContext)
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.theaterSourceContextLabel,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -807,7 +807,7 @@ class _TheaterCaseDetailBody extends StatelessWidget {
             ],
           ),
         ),
-      AppWorkspaceDetailPanel(
+      AppCollapsibleSection(
         title: l10n.theaterTeamTitle,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1003,7 +1003,7 @@ class _ChecklistSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<TheaterChecklistItem> items = theaterCase.checklistItems;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.theaterChecklistTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1043,7 +1043,7 @@ class _RecordsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.theaterRecordsTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1102,7 +1102,7 @@ class _ResourceSection extends StatelessWidget {
     final List<TheaterResourceAllocation> allocations =
         theaterCase.resourceAllocations;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.theaterResourcesTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1142,7 +1142,7 @@ class _TimelineSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.theaterTimelineTitle,
       child: AppTimeline(
         emptyTitle: l10n.theaterNoTimelineLabel,

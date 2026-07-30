@@ -99,9 +99,9 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
     final ColorScheme colorScheme = theme.colorScheme;
     final List<TenantFacilitySetupWizardStep> steps = _steps;
     if (steps.isEmpty) {
-      return AppScreenSection(
+      return AppCollapsibleSection(
         title: l10n.tenantFacilityWizardTitle,
-        body: l10n.tenantFacilityPermissionRequired,
+        description: l10n.tenantFacilityPermissionRequired,
         child: const SizedBox.shrink(),
       );
     }
@@ -134,9 +134,9 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
         ? null
         : () => _selectStep(navigateTarget);
 
-    return AppScreenSection(
+    return AppCollapsibleSection(
       title: l10n.tenantFacilityWizardTitle,
-      body: l10n.tenantFacilityWizardBody,
+      description: l10n.tenantFacilityWizardBody,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

@@ -774,7 +774,7 @@ class _LabOrderResultSection extends StatelessWidget {
 
     // Flat sections: item/panel groups only (no order meta / edit-delete chrome).
     if (drafts.isEmpty) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.labItemsSectionTitle,
         collapsible: false,
         child: AppWorkspaceStatePanel.empty(
@@ -968,7 +968,7 @@ class _LabResultEntryTable extends StatelessWidget {
             )
           else
             for (final _ResultDraft draft in group.drafts) ...<Widget>[
-              AppWorkspaceDetailPanel(
+              AppCollapsibleSection(
                 title: draft.item.displayTitle,
                 collapsible: true,
                 contentPadding: panelPadding,
@@ -1016,7 +1016,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
         orderId != null &&
         orderId!.trim().isNotEmpty;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       titleIcon: Icons.inventory_2_outlined,
       collapsible: true,

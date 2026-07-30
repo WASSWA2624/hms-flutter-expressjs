@@ -196,7 +196,7 @@ class _ClinicalLabOrdersTablePanelState
         )
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.clinicalLabOrdersTitle,
       description: l10n.clinicalLabOrdersBody,
       actions: canMutate
@@ -369,7 +369,7 @@ class _ClinicalRadiologyOrdersTablePanelState
         )
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.clinicalRadiologyOrdersTitle,
       actions: canMutate
           ? _clinicalBatchHeaderActions(
@@ -575,7 +575,7 @@ class _ClinicalPharmacyOrdersTablePanelState
         )
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.clinicalPharmacyOrdersTitle,
       actions: canMutate
           ? _clinicalBatchHeaderActions(
@@ -770,7 +770,7 @@ class _ClinicalDiagnosesTablePanelState
               .toList(growable: false)
         : const <ClinicalRelatedRecord>[];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.clinicalPatientDiagnosesTitle,
       actions: canMutate
           ? _clinicalBatchHeaderActions(

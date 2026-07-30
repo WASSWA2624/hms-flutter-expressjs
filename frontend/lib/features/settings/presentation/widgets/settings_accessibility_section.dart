@@ -32,9 +32,9 @@ class SettingsAccessibilitySection extends ConsumerWidget {
 
     return AppAccessGate(
       requirement: SettingsAccessibilityAtomPermissions.tab,
-      child: AppScreenSection(
+      child: AppCollapsibleSection(
         title: l10n.settingsAccessibilitySectionTitle,
-        body: l10n.settingsAccessibilitySectionBody,
+        description: l10n.settingsAccessibilitySectionBody,
         child: canUpdate
             ? _AccessibilityUpdateControls(accessibility: accessibility)
             : _AccessibilityReadOnlySummary(accessibility: accessibility),

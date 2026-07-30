@@ -44,9 +44,9 @@ class SettingsConfigurationSection extends ConsumerWidget {
 
     return AppAccessGate(
       requirement: SettingsConfigurationAtomPermissions.tab,
-      child: AppScreenSection(
+      child: AppCollapsibleSection(
         title: l10n.settingsConfigurationSectionTitle,
-        body: l10n.settingsConfigurationSectionBody,
+        description: l10n.settingsConfigurationSectionBody,
         child: setupAsync.when(
           loading: () => const Center(
             child: Padding(

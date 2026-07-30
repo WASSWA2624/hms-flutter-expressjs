@@ -375,7 +375,7 @@ void main() {
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
       expect(find.textContaining('Write off'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(2));
+      expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(2));
       expectFlatSections(tester);
     });
 

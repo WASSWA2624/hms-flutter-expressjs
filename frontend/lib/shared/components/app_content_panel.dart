@@ -49,11 +49,11 @@ class AppContentPanel extends StatelessWidget {
   }
 }
 
-/// Titled content sections for workspaces and dialogs.
+/// Convenience builder for titled or toned content blocks.
 ///
-/// When [title] is set, builds [AppWorkspaceDetailPanel] (collapsible by
-/// default) so all titled sections share one chrome. Untitled usage keeps
-/// compact [AppContentPanel] tone chrome.
+/// Titled usage builds [AppCollapsibleSection] — the app's only section chrome.
+/// Prefer [AppCollapsibleSection] directly when you do not need untitled
+/// [AppContentPanel] tone framing or child gap stacking.
 class AppSectionPanel extends StatelessWidget {
   const AppSectionPanel({
     required this.children,
@@ -84,7 +84,7 @@ class AppSectionPanel extends StatelessWidget {
   final Color? backgroundColor;
   final Color? borderColor;
 
-  /// Forwarded to [AppWorkspaceDetailPanel] for titled sections.
+  /// Forwarded to [AppCollapsibleSection] for titled sections.
   final bool collapsible;
   final bool initiallyExpanded;
 
@@ -106,9 +106,9 @@ class AppSectionPanel extends StatelessWidget {
       ],
     );
 
-    // Titled sections use the shared collapsible workspace panel.
+    // Titled sections use the shared collapsible section chrome.
     if (resolvedTitle != null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: resolvedTitle,
         description: description,
         titleIcon: leadingIcon,

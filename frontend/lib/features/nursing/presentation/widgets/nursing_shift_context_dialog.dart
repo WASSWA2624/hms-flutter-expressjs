@@ -56,7 +56,7 @@ class NursingShiftContextPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.nursingShiftContextTitle,
       description: l10n.nursingShiftContextDescription,
       child: Column(

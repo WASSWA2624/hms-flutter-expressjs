@@ -899,7 +899,7 @@ class _MortuaryDetailPanel extends ConsumerWidget {
         mortuaryPanelBillingRequirement(panel);
     final MortuaryWorkspaceItem? item = state.selectedItem;
     if (item == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.mortuaryDetailTitle,
         child: AppWorkspaceStatePanel.empty(
           title: l10n.mortuaryNoSelectionTitle,
@@ -1040,7 +1040,7 @@ class _SourceContextSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryIdentitySectionTitle,
       titleIcon: Icons.account_tree_outlined,
       initiallyExpanded: false,
@@ -1083,7 +1083,7 @@ class _StorageSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final MortuaryStorageAssignment? assignment = item.storageAssignment;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryStorageSectionTitle,
       titleIcon: Icons.inventory_2_outlined,
       child: AppInfoTileGrid(
@@ -1145,7 +1145,7 @@ class _CustodySection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryCustodySectionTitle,
       titleIcon: Icons.swap_horiz_outlined,
       child: AppWorkspaceActivityList(
@@ -1183,7 +1183,7 @@ class _ViewingSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryViewingSectionTitle,
       titleIcon: Icons.event_available_outlined,
       child: AppWorkspaceActivityList(
@@ -1223,7 +1223,7 @@ class _PostMortemSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryPostMortemSectionTitle,
       titleIcon: Icons.fact_check_outlined,
       child: AppWorkspaceActivityList(
@@ -1267,7 +1267,7 @@ class _ReleaseSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryReleaseSectionTitle,
       titleIcon: Icons.outbox_outlined,
       child: AppWorkspaceActivityList(
@@ -1306,7 +1306,7 @@ class _BillingSection extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryBillingSectionTitle,
       titleIcon: Icons.receipt_long_outlined,
       child: AppWorkspaceActivityList(
@@ -1326,7 +1326,7 @@ class _DocumentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.mortuaryDocumentsSectionTitle,
       titleIcon: Icons.description_outlined,
       child: AppInfoTileGrid(
@@ -2002,5 +2002,5 @@ List<Widget> _withMortuaryDetailSectionSpacing(
   BuildContext context,
   List<Widget> sections,
 ) {
-  return appWorkspaceDetailSectionSpacing(context, sections);
+  return appCollapsibleSectionSpacing(context, sections);
 }

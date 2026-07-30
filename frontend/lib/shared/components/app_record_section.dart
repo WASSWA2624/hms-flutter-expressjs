@@ -15,7 +15,7 @@ enum AppRecordActionVariant { add, edit, delete }
 
 /// CRUD record list section for detail dialogs.
 ///
-/// Uses [AppWorkspaceDetailPanel] chrome so patient and other detail modals
+/// Uses [AppCollapsibleSection] chrome so patient and other detail modals
 /// share the same collapsible section component as the rest of the app.
 class AppExpandableRecordSection<T> extends StatelessWidget {
   const AppExpandableRecordSection({
@@ -69,7 +69,7 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
         : items.take(maxItems!).toList(growable: false);
     final Widget? addButton = _addButton(context);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       initiallyExpanded: initiallyExpanded,
       actions: addButton == null ? const <Widget>[] : <Widget>[addButton],

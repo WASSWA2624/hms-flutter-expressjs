@@ -250,7 +250,7 @@ class _ReportItemsPanel extends ConsumerWidget {
     final bool canExport = canExportEvidence(policy);
     final String storageKey = 'reports_items_${state.query.panel.serverValue}';
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: _panelLabel(l10n, state.query.panel),
       description: l10n.reportsWorklistDescription,
       child: AppListTable<ReportsWorkspaceItem>(
@@ -449,7 +449,7 @@ class _ComplianceLogPanel extends ConsumerWidget {
     final String storageKey =
         'reports_compliance_${state.query.panel.serverValue}';
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: _panelLabel(l10n, state.query.panel),
       description: l10n.reportsComplianceDescription,
       child: AppListTable<ComplianceLogItem>(
@@ -605,7 +605,7 @@ class _ReportSchedulesPanel extends ConsumerWidget {
     );
     final bool canWrite = canWriteReports(policy);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.reportsSchedulesTitle,
       description: l10n.reportsSchedulesDescription,
       child: AppListTable<ReportsWorkspaceItem>(

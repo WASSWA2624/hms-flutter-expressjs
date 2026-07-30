@@ -68,7 +68,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.byType(AppCollapsibleSection), findsOneWidget);
     expect(find.text('Preview'), findsOneWidget);
     expect(find.text('Generated report body'), findsOneWidget);
     expect(find.byType(SelectionArea), findsOneWidget);

@@ -56,9 +56,9 @@ class SettingsAdministrationSection extends ConsumerWidget {
 
     return AppAccessGate(
       requirement: settingsAdministrationReadRequirement,
-      child: AppScreenSection(
+      child: AppCollapsibleSection(
         title: l10n.settingsAdministrationSectionTitle,
-        body: l10n.settingsAdministrationSectionBody,
+        description: l10n.settingsAdministrationSectionBody,
         child: _AdministrationActionList(actions: actions),
       ),
     );

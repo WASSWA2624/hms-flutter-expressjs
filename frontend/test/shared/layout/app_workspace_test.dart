@@ -538,12 +538,12 @@ void main() {
     },
   );
 
-  testWidgets('AppWorkspaceDetailPanel collapses to header by default', (
+  testWidgets('AppCollapsibleSection collapses to header by default', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
-      const AppWorkspaceDetailPanel(
+      const AppCollapsibleSection(
         title: 'Orders',
         child: Text('Panel body'),
       ),
@@ -562,12 +562,12 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
-  testWidgets('AppWorkspaceDetailPanel can opt out of collapsing', (
+  testWidgets('AppCollapsibleSection can opt out of collapsing', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
-      const AppWorkspaceDetailPanel(
+      const AppCollapsibleSection(
         title: 'Fixed panel',
         collapsible: false,
         child: Text('Always visible'),
@@ -580,7 +580,7 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsNothing);
   });
 
-  testWidgets('appWorkspaceDetailSectionSpacing inserts gaps between sections', (
+  testWidgets('appCollapsibleSectionSpacing inserts gaps between sections', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -588,9 +588,9 @@ void main() {
       Builder(
         builder: (BuildContext context) {
           return Column(
-            children: appWorkspaceDetailSectionSpacing(context, const <Widget>[
-              AppWorkspaceDetailPanel(title: 'One', child: Text('A')),
-              AppWorkspaceDetailPanel(title: 'Two', child: Text('B')),
+            children: appCollapsibleSectionSpacing(context, const <Widget>[
+              AppCollapsibleSection(title: 'One', child: Text('A')),
+              AppCollapsibleSection(title: 'Two', child: Text('B')),
             ]),
           );
         },
@@ -603,7 +603,7 @@ void main() {
     expect(find.byType(SizedBox), findsWidgets);
   });
 
-  testWidgets('AppSectionPanel with title uses collapsible AppWorkspaceDetailPanel', (
+  testWidgets('AppSectionPanel with title uses collapsible AppCollapsibleSection', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -615,7 +615,7 @@ void main() {
       size: const Size(800, 500),
     );
 
-    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.byType(AppCollapsibleSection), findsOneWidget);
     expect(find.text('Similarity matches'), findsOneWidget);
     expect(find.text('Match row'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
@@ -627,7 +627,7 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
-  testWidgets('AppFormSection with title uses collapsible AppWorkspaceDetailPanel', (
+  testWidgets('AppFormSection with title uses collapsible AppCollapsibleSection', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -639,7 +639,7 @@ void main() {
       size: const Size(800, 500),
     );
 
-    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.byType(AppCollapsibleSection), findsOneWidget);
     expect(find.text('Patient details'), findsOneWidget);
     expect(find.text('Form field'), findsOneWidget);
 
@@ -649,20 +649,20 @@ void main() {
     expect(find.text('Form field'), findsNothing);
   });
 
-  testWidgets('AppScreenSection uses collapsible AppWorkspaceDetailPanel', (
+  testWidgets('AppCollapsibleSection collapses description with body', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
-      const AppScreenSection(
+      const AppCollapsibleSection(
         title: 'Account',
-        body: 'Manage account settings',
+        description: 'Manage account settings',
         child: Text('Account body'),
       ),
       size: const Size(800, 500),
     );
 
-    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.byType(AppCollapsibleSection), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
     expect(find.text('Manage account settings'), findsOneWidget);
     expect(find.text('Account body'), findsOneWidget);

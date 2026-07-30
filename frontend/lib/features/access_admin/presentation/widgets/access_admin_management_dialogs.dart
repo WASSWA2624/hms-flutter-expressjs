@@ -2056,7 +2056,7 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
           ),
           if (description != '—') ...<Widget>[
             SizedBox(height: theme.spacing.md),
-            AppWorkspaceDetailPanel(
+            AppCollapsibleSection(
               title: l10n.accessAdminPermissionDescriptionColumnLabel,
               titleIcon: Icons.notes_outlined,
               child: Text(
@@ -2429,7 +2429,7 @@ class _AccessAdminRoleDetailDialogState
             permissionCount: permissionOptions.length,
           ),
           SizedBox(height: theme.spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
             titleIcon: Icons.lock_outline,
@@ -3523,7 +3523,7 @@ class _AccessAdminUserDetailDialogState
         children: <Widget>[
           _UserDetailSummaryCard(item: item),
           SizedBox(height: theme.spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.accessAdminUserDetailProfileSectionTitle,
             description: l10n.accessAdminUserDetailProfileSectionDescription,
             titleIcon: Icons.badge_outlined,

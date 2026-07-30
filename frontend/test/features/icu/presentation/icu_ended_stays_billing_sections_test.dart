@@ -439,7 +439,7 @@ void main() {
         tester,
         contextLabel: 'Ended detail desktop light',
       );
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
     });
 
     testWidgets('AC5: mobile dark — flat sections on Ended detail', (

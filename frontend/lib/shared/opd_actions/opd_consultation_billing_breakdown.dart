@@ -72,7 +72,7 @@ class OpdConsultationBillingBreakdownPanel extends StatelessWidget {
       allowZero: true,
     );
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.opdBillingSectionTitle,
       titleIcon: Icons.receipt_long_outlined,
       child: AppInfoTileGrid(

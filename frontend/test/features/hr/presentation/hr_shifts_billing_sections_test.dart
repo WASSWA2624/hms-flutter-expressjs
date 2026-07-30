@@ -458,7 +458,7 @@ void main() {
         expect(find.text('Publish roster'), findsWidgets);
         expect(find.text('Preview roster generation'), findsWidgets);
         _expectNoPatientBillingAffordances();
-        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(1));
+        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(1));
         expectFlatSections(tester);
         expectFlatTitledSectionLayout(
           tester,
@@ -494,7 +494,7 @@ void main() {
         await tester.tap(find.text('Day pattern'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(1));
+        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(1));
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);
         expectFlatTitledSectionLayout(

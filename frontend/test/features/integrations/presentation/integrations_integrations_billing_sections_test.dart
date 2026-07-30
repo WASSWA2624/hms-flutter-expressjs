@@ -432,7 +432,7 @@ void main() {
         expect(find.textContaining('Adjust'), findsNothing);
         // payment.completed is outbound webhook event label, not settlement UX.
         expect(find.text('payment.completed'), findsWidgets);
-        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(3));
+        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(3));
         expectFlatSections(tester);
       },
     );
@@ -519,7 +519,7 @@ void main() {
       expect(find.text('Configuration'), findsOneWidget);
       expect(find.text('Related webhooks'), findsOneWidget);
       expect(find.text('Related logs'), findsOneWidget);
-      expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(3));
+      expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(3));
       expectFlatSections(tester);
     });
 

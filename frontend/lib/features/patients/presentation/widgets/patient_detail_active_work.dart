@@ -46,7 +46,7 @@ class PatientDetailActiveWorkPanel extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.patientsActiveWorkTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

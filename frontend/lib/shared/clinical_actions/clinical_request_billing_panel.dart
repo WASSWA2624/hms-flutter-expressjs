@@ -21,7 +21,7 @@ class ClinicalRequestBillingPanel extends ConsumerStatefulWidget {
     this.billingEntity,
     this.enabled = true,
     this.onChanged,
-    /// When true, omit titled [AppWorkspaceDetailPanel] chrome so this panel
+    /// When true, omit titled [AppCollapsibleSection] chrome so this panel
     /// can sit inside a dialog/section parent without nested sections.
     this.embedded = false,
     super.key,
@@ -395,7 +395,7 @@ class _ClinicalRequestBillingPanelState
       return body;
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.clinicalRequestBillingSectionTitle,
       titleIcon: Icons.receipt_long_outlined,
       actions: widget.initialPaymentStatus == null

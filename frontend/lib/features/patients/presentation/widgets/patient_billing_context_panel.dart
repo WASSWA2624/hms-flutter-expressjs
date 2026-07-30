@@ -54,7 +54,7 @@ class PatientBillingContextPanel extends StatelessWidget {
           )
         : null;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.patientsBillingSectionTitle,
       actions: openBillingAction == null
           ? const <Widget>[]

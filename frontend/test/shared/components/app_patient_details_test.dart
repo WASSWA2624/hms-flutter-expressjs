@@ -42,7 +42,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.byType(AppCollapsibleSection), findsOneWidget);
     expect(find.text('Ada Lovelace'), findsOneWidget);
     expect(find.text('MRN-100'), findsOneWidget);
     expect(find.text('·'), findsOneWidget);

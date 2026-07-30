@@ -474,7 +474,7 @@ void main() {
       await tester.tap(find.text('Dana Discharge Billing'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       expect(find.byType(AppQuickActions), findsOneWidget);
       expectFlatSections(tester);
     });

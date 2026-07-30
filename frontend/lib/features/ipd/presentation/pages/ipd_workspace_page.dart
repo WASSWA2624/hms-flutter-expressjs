@@ -765,7 +765,7 @@ class _IpdDetailPanel extends ConsumerWidget {
     final IpdAdmissionDetail? admission = state.selectedAdmission;
 
     if (admission == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.ipdAdmissionDetailTitle,
         description: l10n.ipdAdmissionDetailDescription,
         child: AppWorkspaceStatePanel.empty(
@@ -1678,7 +1678,7 @@ class _IpdBedSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final IpdBedAssignment? assignment = admission.activeBedAssignment;
     final IpdBedOption? bed = assignment?.bed;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.ipdBedSectionTitle,
       titleIcon: Icons.bed_outlined,
       child: _IpdKeyValueGrid(
@@ -1709,7 +1709,7 @@ class _IpdDischargeSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final IpdDischargeSummary? discharge = admission.latestDischargeSummary;
     final IpdPharmacyClearance pharmacy = admission.pharmacyClearance;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.ipdDischargeSectionTitle,
       titleIcon: Icons.logout_outlined,
       child: Column(
@@ -1782,7 +1782,7 @@ class _IpdSourceContextSection extends StatelessWidget {
     if (source == null) {
       return const SizedBox.shrink();
     }
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.ipdSourceContextTitle,
       titleIcon: Icons.input_outlined,
       child: _IpdKeyValueGrid(
@@ -1827,7 +1827,7 @@ class _IpdTheatreHandoverSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.ipdTheatreHandoverTitle,
       titleIcon: Icons.event_seat_outlined,
       child: _IpdKeyValueGrid(
@@ -1862,7 +1862,7 @@ class _IpdTimelineSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.ipdTimelineSectionTitle,
       titleIcon: Icons.timeline_outlined,
       child: AppTimeline(
@@ -1899,7 +1899,7 @@ class _IpdRecordSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       titleIcon: icon,
       child: records.isEmpty

@@ -1577,7 +1577,7 @@ class _IntegrationDetailPanel extends ConsumerWidget {
     );
 
     if (item == null) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: l10n.integrationsNoSelectionTitle,
         description: l10n.integrationsNoSelectionBody,
         child: AppWorkspaceStatePanel.empty(
@@ -1846,12 +1846,12 @@ Widget _detailBody(
       if (key != null) {
         // Sibling titled sections under Column — never nest section chrome.
         children.addAll(<Widget>[
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.integrationsMaskedSecretTitle,
             titleIcon: Icons.visibility_off_outlined,
             child: Text(key.maskedValue),
           ),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: l10n.integrationsRotationGapTitle,
             titleIcon: Icons.info_outline,
             child: Text(l10n.integrationsRotationGapBody),
@@ -1951,7 +1951,7 @@ class _IntegrationConfigSummary extends StatelessWidget {
         })
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.integrationsConfigurationTitle,
       description: integration.hasConfig
           ? l10n.integrationsConfigurationMaskedBody
@@ -1979,7 +1979,7 @@ class _RelatedWebhooksPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.integrationsRelatedWebhooksTitle,
       titleIcon: Icons.webhook_outlined,
       child: webhooks.isEmpty
@@ -2007,7 +2007,7 @@ class _RelatedLogsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.integrationsRelatedLogsTitle,
       titleIcon: Icons.receipt_long_outlined,
       child: logs.isEmpty
@@ -2047,7 +2047,7 @@ class _ApiKeyPermissionsPanel extends ConsumerWidget {
       apiKey,
     );
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.integrationsPermissionsTitle,
       titleIcon: Icons.admin_panel_settings_outlined,
       child: permissions.isEmpty

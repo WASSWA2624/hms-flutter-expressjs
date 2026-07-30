@@ -20,7 +20,6 @@ import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.da
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/layout/app_screen_section.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -422,11 +421,10 @@ void main() {
       );
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
-      expect(find.byType(AppScreenSection), findsNothing);
       expect(
         find.byWidgetPredicate(
           (Widget widget) =>
-              widget is AppWorkspaceDetailPanel &&
+              widget is AppCollapsibleSection &&
               (widget.title?.trim().isNotEmpty ?? false),
         ),
         findsNothing,

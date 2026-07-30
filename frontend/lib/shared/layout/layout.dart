@@ -1,6 +1,7 @@
+export 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
+
 export 'app_connectivity_indicator.dart';
 export 'app_fullscreen_toggle.dart';
-export 'app_screen_section.dart';
 export 'app_shell_layout.dart';
 export 'app_shell_sidebar_preference.dart';
 export 'app_toolbar_overflow_section.dart';

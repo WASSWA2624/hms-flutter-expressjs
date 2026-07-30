@@ -401,7 +401,7 @@ class _ClearanceChecklist extends ConsumerWidget {
           item.state == DischargeClearanceState.pending,
     );
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
       child: AppWorkflowStepper(
@@ -452,7 +452,7 @@ class _PendingOrdersSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<IpdPendingOrder> orders = detail.ipd.pendingDischargeOrders;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargePendingOrdersTitle,
       description: l10n.dischargePendingOrdersBody,
       child: Column(
@@ -507,7 +507,7 @@ class _RelatedRecordsSection extends StatelessWidget {
         if (detail.hasOpenPharmacyOrders)
           AppAccessGate(
             requirement: dischargePharmacyClearanceReadRequirement,
-            child: AppWorkspaceDetailPanel(
+            child: AppCollapsibleSection(
               title: l10n.dischargeMedicinesSectionTitle,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -544,7 +544,7 @@ class _RelatedRecordsSection extends StatelessWidget {
         if (detail.hasOpenInvoices)
           AppAccessGate(
             requirement: dischargeBillingClearanceReadRequirement,
-            child: AppWorkspaceDetailPanel(
+            child: AppCollapsibleSection(
               title: l10n.dischargeBillingSectionTitle,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -667,7 +667,7 @@ class _ResolveLinksSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargeCrossModuleLinksTitle,
       child: Wrap(
         spacing: theme.spacing.sm,

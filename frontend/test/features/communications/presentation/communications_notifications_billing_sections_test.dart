@@ -410,7 +410,7 @@ void main() {
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
-        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(3));
+        expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(3));
         expectFlatSections(tester);
       },
     );
@@ -574,7 +574,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.byType(AppWorkspaceDetailPanel),
+          matching: find.byType(AppCollapsibleSection),
         ),
         findsAtLeastNWidgets(1),
       );

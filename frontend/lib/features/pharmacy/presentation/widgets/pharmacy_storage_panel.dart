@@ -187,7 +187,7 @@ class PharmacyStoragePanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.pharmacyStoragePanelTitle,
       description: l10n.pharmacyStoragePanelDescription,
       actions: showHeaderActions

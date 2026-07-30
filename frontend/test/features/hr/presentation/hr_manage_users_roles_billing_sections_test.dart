@@ -511,7 +511,7 @@ void main() {
       table.onRowSelected!(_accessUser);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       expectFlatTitledSectionLayout(
         tester,
         contextLabel: 'access user detail siblings',

@@ -464,7 +464,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+        expect(find.byType(AppCollapsibleSection), findsWidgets);
         expectFlatSections(tester);
         expectFlatTitledSectionLayout(
           tester,
@@ -493,7 +493,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
-        expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+        expect(find.byType(AppCollapsibleSection), findsWidgets);
         expectFlatSections(tester);
         expectFlatTitledSectionLayout(
           tester,

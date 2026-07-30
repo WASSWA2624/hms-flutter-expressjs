@@ -72,7 +72,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppWorkspaceDetailPanel(
+            AppCollapsibleSection(
               title: item.displayTitle,
               titleIcon: Icons.info_outline,
               headerActions: showMutateActions

@@ -785,7 +785,7 @@ class _PendingOrdersSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargePendingOrdersTitle,
       description: l10n.dischargePendingOrdersBody,
       child: Column(
@@ -898,7 +898,7 @@ class _ClearanceChecklist extends ConsumerWidget {
           item.state == DischargeClearanceState.pending,
     );
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
       child: AppWorkflowStepper(
@@ -938,7 +938,7 @@ class _SummarySection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final String? summary = detail.summaryText;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.dischargeSummarySectionTitle,
       description: l10n.dischargeSummarySectionBody,
       child: summary == null
@@ -949,7 +949,7 @@ class _SummarySection extends StatelessWidget {
               minHeight: 180,
             )
           // Untitled preview chrome — titled AppReportPreviewPanel would nest
-          // another AppWorkspaceDetailPanel inside this section.
+          // another AppCollapsibleSection inside this section.
           : AppReportPreviewPanel(
               selectable: true,
               child: Text(summary),
@@ -976,7 +976,7 @@ class _RelatedRecordsSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       child: records.isEmpty
           ? AppWorkspaceStatePanel.empty(

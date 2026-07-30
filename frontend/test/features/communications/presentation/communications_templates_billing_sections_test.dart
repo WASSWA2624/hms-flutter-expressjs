@@ -386,7 +386,7 @@ void main() {
       expect(find.text('Create'), findsNothing);
       expect(find.text('Edit'), findsNothing);
       expect(find.text('Delete'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(2));
+      expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(2));
       expectFlatSections(tester);
     });
 

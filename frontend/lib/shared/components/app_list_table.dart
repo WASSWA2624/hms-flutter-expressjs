@@ -851,11 +851,11 @@ class AppListTable<T> extends StatefulWidget {
     this.searchListenable,
     this.searchMatcher,
     @Deprecated(
-      'Section titles belong on AppWorkspace or AppWorkspaceDetailPanel only.',
+      'Section titles belong on AppWorkspace or AppCollapsibleSection only.',
     )
     this.title,
     @Deprecated(
-      'Section descriptions belong on AppWorkspace or AppWorkspaceDetailPanel only.',
+      'Section descriptions belong on AppWorkspace or AppCollapsibleSection only.',
     )
     this.description,
     this.columnVisibilityLabel,
@@ -1410,7 +1410,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           (widget.description?.trim().isNotEmpty ?? false)) {
         debugPrint(
           'AppListTable title/description are deprecated. '
-          'Move section copy to AppWorkspace or AppWorkspaceDetailPanel.',
+          'Move section copy to AppWorkspace or AppCollapsibleSection.',
         );
       }
       return true;

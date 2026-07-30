@@ -1760,7 +1760,7 @@ class _TenantDetailsSummary extends StatelessWidget {
       required List<AppInfoSheetItem> items,
       int maxColumns = 3,
     }) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: title,
         titleIcon: icon,
         child: AppInfoSheetGrid(
@@ -2037,7 +2037,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String showLabel = l10n.tenantFacilityTenantDetailsShowSummaryAction;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.tenantFacilityTenantDetailsFacilitiesHeading,
       actions: <Widget>[
         if (!summaryVisible)
@@ -3521,7 +3521,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
               value: statusLabel,
             ),
             SizedBox(height: theme.spacing.md),
-            AppWorkspaceDetailPanel(
+            AppCollapsibleSection(
               title: l10n.tenantFacilityFacilityDetailsStructureHeading,
               child: loading && snapshot == null
                   ? const Center(child: CircularProgressIndicator())
@@ -3606,7 +3606,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
                 email != null ||
                 address.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.md),
-              AppWorkspaceDetailPanel(
+              AppCollapsibleSection(
                 title: l10n.tenantFacilityFacilityDetailsContactHeading,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3832,7 +3832,7 @@ class _FacilityStructureCrudPanelState<T>
               .toList(growable: false);
     final bool canAdd = widget.canAdd ?? widget.canManage;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: widget.title,
       description: widget.blockedMessage,
       actions: <Widget>[
@@ -3999,7 +3999,7 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.tenantFacilityFacilityDetailsUsersHeading,
       actions: <Widget>[
         if (canManage)
@@ -5462,7 +5462,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
       required List<AppInfoSheetItem> items,
       int maxColumns = 3,
     }) {
-      return AppWorkspaceDetailPanel(
+      return AppCollapsibleSection(
         title: title,
         titleIcon: icon,
         child: AppInfoSheetGrid(

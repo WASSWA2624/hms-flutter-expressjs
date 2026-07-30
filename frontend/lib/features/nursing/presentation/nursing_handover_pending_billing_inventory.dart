@@ -360,7 +360,7 @@ abstract final class NursingHandoverPendingBillingInventory {
     return true;
   }
 
-  /// Section chrome on this tab: sibling [AppWorkspaceDetailPanel]s under a
+  /// Section chrome on this tab: sibling [AppCollapsibleSection]s under a
   /// Column in patient detail; worklist has no titled sections. Handover /
   /// note dialogs use single shells or embedded billing panels (not nested).
   static const List<String> titledSectionIds = <String>[

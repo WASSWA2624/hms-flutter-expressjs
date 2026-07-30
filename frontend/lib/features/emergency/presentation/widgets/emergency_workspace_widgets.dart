@@ -1611,7 +1611,7 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
         ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: EmergencyText.handoffOutcome,
       description: outcome.terminal
           ? EmergencyText.handoffTerminalDescription
@@ -1722,7 +1722,7 @@ class EmergencyTimelinePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: 'Triage and response',
       description: 'Clinical activity linked to this emergency case.',
       child: AppTimeline(
@@ -1774,7 +1774,7 @@ class AmbulancePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: 'Ambulance',
       description: 'Dispatch and trip activity for this emergency case.',
       child: AppTimeline(

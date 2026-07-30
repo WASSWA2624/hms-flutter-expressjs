@@ -1370,7 +1370,7 @@ class _HrAccessUserDetailContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.accessAdminUserDetailProfileSectionTitle,
           description: l10n.accessAdminUserDetailProfileSectionDescription,
           titleIcon: Icons.badge_outlined,

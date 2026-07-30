@@ -531,7 +531,7 @@ void main() {
       expect(find.text('Messages'), findsWidgets);
       expect(find.text('Conversation detail'), findsOneWidget);
       expect(find.text('Select a conversation'), findsOneWidget);
-      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      expect(find.byType(AppCollapsibleSection), findsWidgets);
       expectFlatSections(tester);
     });
 

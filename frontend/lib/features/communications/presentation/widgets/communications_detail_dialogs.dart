@@ -185,7 +185,7 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: context.l10n.communicationsDeliveryDetailsSectionTitle,
           titleIcon: Icons.info_outline,
           child: AppInfoTileGrid(
@@ -228,7 +228,7 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
         ),
         if (canOpenLinked) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: context.l10n.communicationsDeliveryLinkedSectionTitle,
             titleIcon: Icons.open_in_new_outlined,
             child: CommunicationsLinkedRecordAction(
@@ -275,7 +275,7 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
           status: communicationsDeliveryStatus(context, delivery.status),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: context.l10n.communicationsDeliveryDetailsSectionTitle,
           titleIcon: Icons.info_outline,
           child: AppInfoTileGrid(
@@ -335,7 +335,7 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
         ],
         if (canOpenLinked) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          AppWorkspaceDetailPanel(
+          AppCollapsibleSection(
             title: context.l10n.communicationsDeliveryLinkedSectionTitle,
             titleIcon: Icons.open_in_new_outlined,
             child: CommunicationsLinkedRecordAction(
@@ -380,7 +380,7 @@ class CommunicationsTemplateDetailContent extends ConsumerWidget {
           status: communicationsTemplateStatus(context, template),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: context.l10n.communicationsDeliveryDetailsSectionTitle,
           titleIcon: Icons.info_outline,
           child: AppInfoTileGrid(
@@ -410,7 +410,7 @@ class CommunicationsTemplateDetailContent extends ConsumerWidget {
           ),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: context.l10n.communicationsPreviewTitle,
           titleIcon: Icons.preview_outlined,
           child: Column(
@@ -464,7 +464,7 @@ class CommunicationsDeliveryHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: context.l10n.communicationsDeliveryHistoryTitle,
       titleIcon: Icons.mark_email_read_outlined,
       child: Column(

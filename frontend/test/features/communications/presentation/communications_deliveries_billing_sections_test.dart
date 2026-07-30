@@ -390,7 +390,7 @@ void main() {
       expect(find.textContaining('Refund'), findsNothing);
       expect(find.text('Archive'), findsNothing);
       expect(find.text('Delete'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(2));
+      expect(find.byType(AppCollapsibleSection), findsAtLeastNWidgets(2));
       expectFlatSections(tester);
     });
 
@@ -524,7 +524,7 @@ void main() {
 
       expect(find.text('Details'), findsOneWidget);
       expect(find.text('Linked record'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+      expect(find.byType(AppCollapsibleSection), findsOneWidget);
       expectFlatSections(tester);
     });
   });

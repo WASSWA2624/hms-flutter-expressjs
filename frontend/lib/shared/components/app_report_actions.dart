@@ -202,7 +202,7 @@ class AppReportPreviewPanel extends StatelessWidget {
       return Semantics(
         container: true,
         label: semanticLabel ?? resolvedTitle,
-        child: AppWorkspaceDetailPanel(
+        child: AppCollapsibleSection(
           title: resolvedTitle,
           collapsible: collapsible,
           initiallyExpanded: initiallyExpanded,

@@ -37,7 +37,7 @@ Future<void> showRadiologyCatalogProcedureDetailsDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppWorkspaceDetailPanel(
+            AppCollapsibleSection(
               title: procedure.name,
               titleIcon: Icons.info_outline,
               child: Wrap(

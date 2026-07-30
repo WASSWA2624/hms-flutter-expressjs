@@ -922,7 +922,7 @@ class _BedDetailContent extends ConsumerWidget {
                 ),
             ],
           ),
-        AppWorkspaceDetailPanel(
+        AppCollapsibleSection(
           title: l10n.roomsBedsAssignmentHistoryTitle,
           titleIcon: Icons.history_outlined,
           child: Column(

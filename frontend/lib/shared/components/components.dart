@@ -4,6 +4,7 @@ export 'app_button.dart';
 export '../icons/app_action_icons.dart';
 export 'app_checkbox_field.dart';
 export 'app_clinical_results_preview.dart';
+export 'app_collapsible_section.dart';
 export 'app_content_panel.dart';
 export 'app_country_field.dart';
 export 'app_copyable_identifier.dart';

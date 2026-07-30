@@ -1367,7 +1367,7 @@ class _OverviewPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final TherapyWorkItem item = detail.item;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.physiotherapyReferralPanelTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1414,7 +1414,7 @@ class _RecordsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: title,
       child: records.isEmpty
           ? Text(emptyLabel)
@@ -1450,7 +1450,7 @@ class _UnavailableWorkflowsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.physiotherapyBackendGapsPanelTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

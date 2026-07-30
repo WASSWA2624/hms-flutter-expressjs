@@ -1309,7 +1309,7 @@ class _WorkflowSummarySection extends StatelessWidget {
         ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyOrderMetadataTitle,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -1396,7 +1396,7 @@ class _RequestSection extends ConsumerWidget {
       ),
     ];
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyRequestDetailsTitle,
       actions: <Widget>[
         AppButton(
@@ -1695,7 +1695,7 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
         !showEmptyDraftCta &&
         !showInlineEditor;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyReportSectionTitle,
       description: widget.imagingView ? null : l10n.radiologyReportSectionBody,
       actions: <Widget>[
@@ -1921,7 +1921,7 @@ class _StudiesSection extends ConsumerWidget {
     final bool canPerform =
         canWork && !state.isMutating && workflow.nextActions.canCreateStudy;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyStudiesAssetsTitle,
       actions: canPerform && studies.isNotEmpty
           ? <Widget>[
@@ -1950,7 +1950,7 @@ class _StudiesSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 if (imagingView && latestReport != null) ...<Widget>[
-                  AppWorkspaceDetailPanel(
+                  AppCollapsibleSection(
                     title: l10n.radiologyStudiesReportPreviewTitle,
                     titleIcon: Icons.description_outlined,
                     initiallyExpanded: false,
@@ -2462,7 +2462,7 @@ class _DoctorReviewPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final bool released = order.hasFinalResult;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyDoctorReviewTitle,
       description: released
           ? l10n.radiologyDoctorReviewReleasedBody
@@ -2529,7 +2529,7 @@ class _TimelineSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspaceDetailPanel(
+    return AppCollapsibleSection(
       title: l10n.radiologyTimelineTitle,
       child: AppTimeline(
         emptyTitle: l10n.radiologyNoTimelineTitle,

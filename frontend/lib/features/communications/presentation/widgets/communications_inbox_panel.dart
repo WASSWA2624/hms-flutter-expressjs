@@ -59,7 +59,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
     // detail. Selected thread uses its own header chrome (not a second nested
     // section) so Conversation detail and Messages stay siblings only when
     // nothing is selected.
-    final Widget listSection = AppWorkspaceDetailPanel(
+    final Widget listSection = AppCollapsibleSection(
       title: context.l10n.communicationsInboxPanelLabel,
       collapsible: false,
       child: SizedBox(
@@ -83,7 +83,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
         Expanded(
           flex: 7,
           child: !canShowThread || selected == null
-              ? AppWorkspaceDetailPanel(
+              ? AppCollapsibleSection(
                   title: context.l10n.communicationsConversationDetailTitle,
                   collapsible: false,
                   child: AppWorkspaceStatePanel.empty(

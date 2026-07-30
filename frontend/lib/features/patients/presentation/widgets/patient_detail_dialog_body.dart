@@ -296,7 +296,7 @@ class PatientDetailDialog extends ConsumerWidget {
               ),
               SizedBox(height: Theme.of(context).spacing.md),
             ],
-            ...appWorkspaceDetailSectionSpacing(context, <Widget>[
+            ...appCollapsibleSectionSpacing(context, <Widget>[
               if (!billingReader)
                 AppExpandableRecordSection<PatientAllergy>(
                   title: l10n.patientsAllergiesSectionTitle,
