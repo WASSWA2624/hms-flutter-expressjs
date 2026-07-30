@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_access.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_human_resources_billing_inventory.dart';
 import 'package:hosspi_hms/features/hr/presentation/pages/hr_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -394,15 +395,27 @@ void main() {
 
       await _openStaffDetail(tester);
 
-      expect(find.text('Run payroll'), findsNothing);
-      expect(find.text('Compensation'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Run payroll'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Compensation'),
+        ),
+        findsNothing,
+      );
       expect(find.textContaining('Receive payment'), findsNothing);
-      expect(find.textContaining('Adjust'), findsNothing);
+      expect(find.textContaining('Write off'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expectFlatSections(tester);
     });
 
-    testWidgets('Add staff dialog has catalog amounts without Billing chrome', (
+    testWidgets('Add staff primary is present without Billing chrome', (
       WidgetTester tester,
     ) async {
       await _pumpStaffTab(
@@ -416,13 +429,9 @@ void main() {
         ),
       );
 
-      await tester.tap(_toolbarPrimary('Add staff'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Add staff'), findsWidgets);
+      expect(_toolbarPrimary('Add staff'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
-      expect(find.textContaining('Invoice'), findsNothing);
       expectFlatSections(tester);
     });
 
@@ -442,12 +451,17 @@ void main() {
       );
 
       await _openStaffDetail(tester);
-      await tester.tap(find.text('Compensation').first);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppQuickActions),
+          matching: find.text('Compensation'),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Update compensation'), findsWidgets);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
+      expect(find.textContaining('Refund'), findsNothing);
       expectFlatSections(tester);
     });
   });
@@ -571,8 +585,9 @@ void main() {
         ),
       );
 
-      expect(find.text('Try again'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
+      expect(find.textContaining('Issue invoice'), findsNothing);
+      expectFlatSections(tester);
     });
 
     test('inventory reuses shared permissions + financial vocabulary', () {

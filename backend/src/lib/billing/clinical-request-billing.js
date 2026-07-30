@@ -40,6 +40,7 @@ const BILLABLE_SOURCE_MODULES = Object.freeze({
   ADMISSION: 'ADMISSION',
   NURSING: 'NURSING',
   WARD_ROUND: 'WARD_ROUND',
+  ICU_STAY: 'ICU_STAY',
   CONSUMABLE: 'CONSUMABLE',
   THERAPY: 'THERAPY',
   SERVICE: 'SERVICE',
@@ -67,6 +68,7 @@ const normalizeBillableSourceModule = (value) => {
   if (token.includes('CONSUM')) return BILLABLE_SOURCE_MODULES.CONSUMABLE;
   if (token.includes('THERAP')) return BILLABLE_SOURCE_MODULES.THERAPY;
   if (token.includes('WARD')) return BILLABLE_SOURCE_MODULES.WARD_ROUND;
+  if (token.includes('ICU')) return BILLABLE_SOURCE_MODULES.ICU_STAY;
   return BILLABLE_SOURCE_MODULES.SERVICE;
 };
 
@@ -2425,6 +2427,28 @@ const persistConsumableBilling = async (
   });
 };
 
+/**
+ * ICU stay start charge (critical-care package / bed-day). Idempotent on
+ * `ICU_STAY` + stay id + charge key via billable charge events — no parallel
+ * cash ledger in the ICU module.
+ */
+const persistIcuStayBilling = async (
+  tx,
+  { icuStayId, billing, existingSnapshot, ...context }
+) => {
+  return applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.ICU_STAY,
+    sourceId: icuStayId,
+    catalogType: context.catalogType || 'SERVICE',
+    description: context.description || 'ICU critical-care package',
+    mutableUpdate: Boolean(existingSnapshot),
+    chargeKey: context.chargeKey || 'ICU_STAY_START',
+    ...context,
+  });
+};
+
 module.exports = {
   BILLABLE_SOURCE_MODULES,
   isClinicalRequestBillingCandidate,
@@ -2444,6 +2468,7 @@ module.exports = {
   persistAdmissionBilling,
   persistNursingServiceBilling,
   persistConsumableBilling,
+  persistIcuStayBilling,
   buildConsultationBillingPayload,
   buildBillingSnapshot,
   buildPendingClinicalRequestBilling,

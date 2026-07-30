@@ -291,28 +291,22 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
               context: context,
               failure: _failure!,
             ),
-          AppFormSection(
-            title: l10n.patientsVitalsSectionTitle,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppVitalsForm(
-                temperatureController: _temperatureController,
-                systolicController: _systolicController,
-                diastolicController: _diastolicController,
-                heartRateController: _heartRateController,
-                respiratoryRateController: _respiratoryRateController,
-                oxygenSaturationController: _oxygenController,
-                temperatureLabel: l10n.patientsTemperatureLabel,
-                systolicLabel: l10n.patientsSystolicLabel,
-                diastolicLabel: l10n.patientsDiastolicLabel,
-                heartRateLabel: l10n.patientsHeartRateLabel,
-                respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
-                oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
-                bloodPressureLabel: l10n.patientsBloodPressureLabel,
-                unitLabel: l10n.patientsVitalUnitLabel,
-                enabled: !_isSaving,
-              ),
-            ],
+          AppVitalsForm(
+            temperatureController: _temperatureController,
+            systolicController: _systolicController,
+            diastolicController: _diastolicController,
+            heartRateController: _heartRateController,
+            respiratoryRateController: _respiratoryRateController,
+            oxygenSaturationController: _oxygenController,
+            temperatureLabel: l10n.patientsTemperatureLabel,
+            systolicLabel: l10n.patientsSystolicLabel,
+            diastolicLabel: l10n.patientsDiastolicLabel,
+            heartRateLabel: l10n.patientsHeartRateLabel,
+            respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
+            oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
+            bloodPressureLabel: l10n.patientsBloodPressureLabel,
+            unitLabel: l10n.patientsVitalUnitLabel,
+            enabled: !_isSaving,
           ),
         ],
       ),
@@ -1106,24 +1100,23 @@ Future<void> openIcuAlertDialog(BuildContext context) {
 }
 
 Future<void> openIcuRoundDialog(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
   return _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ClinicalFreeTextActionDialog(
-        title: l10n.icuRoundDialogTitle,
-        label: l10n.icuRoundNoteLabel,
-        submitLabel: l10n.icuRoundAddActionLabel,
-        icon: const Icon(Icons.rate_review_outlined),
-        maxLines: 4,
-        onSubmit: (String note) {
-          return ProviderScope.containerOf(context, listen: false)
-              .read(icuWorkspaceControllerProvider.notifier)
-              .addRoundNote(notes: note);
-        },
-      ),
+      builder: (_) => const _IcuRoundActionDialog(),
+    ),
+  );
+}
+
+Future<void> openIcuStartStayDialog(BuildContext context) {
+  return _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _StartIcuStayDialog(),
     ),
   );
 }
@@ -1330,6 +1323,22 @@ void openIpdWorkspace(BuildContext context, IcuPatientSummary summary) {
           queryParameters: <String, String>{'id': displayId},
         );
   context.go(location);
+}
+
+/// Opens Billing for the patient — never an ICU-local cashier.
+void openIcuBillingWorkspace(BuildContext context, IcuPatientSummary summary) {
+  final String? patientId = summary.patientId?.trim();
+  final String location = (patientId == null || patientId.isEmpty)
+      ? AppRoutes.billing.path
+      : AppRoutes.billing.location(
+          queryParameters: <String, String>{'patient_id': patientId},
+        );
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+  }
+  if (context.mounted) {
+    context.go(location);
+  }
 }
 
 void openIpdDischargeClearance(

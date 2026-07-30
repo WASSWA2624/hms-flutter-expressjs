@@ -42,16 +42,13 @@ const billingService = require('@services/billing/billing.service');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { createAuditLog } = require('@lib/audit');
 const hrWorkspaceService = require('@services/hr-workspace/hr-workspace.service');
-const staffProfileService = require('@services/staff-profile/staff-profile.service');
-
-jest.mock('@repositories/staff-profile/staff-profile.repository');
-const staffProfileRepository = require('@repositories/staff-profile/staff-profile.repository');
 
 /**
  * Billing & sections scan for HR Human resources (staff directory) tab.
  * Staff directory, compensation, consultation-fee catalog, payroll wizard,
  * and offboard+final-payroll are staff ops / payroll SoR — never patient
- * Billing ledger posts.
+ * Billing ledger posts. Staff-profile fee catalog create is covered by
+ * hr-manage-users-roles.billing-sections.test.js (shared onboarding path).
  */
 describe('hr-workspace Human resources (staff) billing-sections scan', () => {
   const staffRecord = {
@@ -304,55 +301,6 @@ describe('hr-workspace Human resources (staff) billing-sections scan', () => {
     );
 
     expect(result.processed_summary.status).toBe('PROCESSED');
-    expectNoPatientBillingTouched();
-  });
-
-  it('staff profile compensation + consultation_fee create is catalog-only', async () => {
-    const createdProfile = {
-      id: staffRecord.id,
-      human_friendly_id: staffRecord.human_friendly_id,
-      tenant_id: staffRecord.tenant_id,
-      user_id: staffRecord.user_id,
-      staff_number: 'EMP-1',
-      position: 'Nurse',
-      practitioner_type: 'SPECIALIST',
-      consultation_fee: 25000,
-      consultation_currency: 'UGX',
-    };
-    staffProfileRepository.create.mockResolvedValue(createdProfile);
-    staffProfileRepository.findById.mockResolvedValue(createdProfile);
-
-    const result = await staffProfileService.createStaffProfile(
-      {
-        tenant_id: staffRecord.tenant_id,
-        user_id: staffRecord.user_id,
-        staff_number: 'EMP-1',
-        position: 'Nurse',
-        practitioner_type: 'SPECIALIST',
-        consultation_fee: 25000,
-        consultation_currency: 'UGX',
-        compensations: [
-          {
-            pay_type: 'PER_MONTH',
-            rate: 1000,
-            currency: 'UGX',
-            effective_from: new Date('2026-01-01'),
-          },
-        ],
-      },
-      'actor-1',
-      '127.0.0.1'
-    );
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        consultation_fee: 25000,
-        staff_number: 'EMP-1',
-      })
-    );
-    expect(result).not.toHaveProperty('payment_status');
-    expect(result).not.toHaveProperty('balance');
-    expect(result).not.toHaveProperty('paid');
     expectNoPatientBillingTouched();
   });
 

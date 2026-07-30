@@ -280,10 +280,16 @@ final class IcuWorkspaceController
     );
   }
 
-  Future<AppFailure?> startIcuStay({DateTime? startedAt}) {
+  Future<AppFailure?> startIcuStay({
+    DateTime? startedAt,
+    Map<String, Object?>? billing,
+  }) {
     return _mutateSelected(
-      (IcuPatientDetail detail) =>
-          _repository.startIcuStay(detail: detail, startedAt: startedAt),
+      (IcuPatientDetail detail) => _repository.startIcuStay(
+        detail: detail,
+        startedAt: startedAt,
+        billing: billing,
+      ),
       refreshBoardAfter: true,
     );
   }
@@ -486,12 +492,17 @@ final class IcuWorkspaceController
     );
   }
 
-  Future<AppFailure?> addRoundNote({required String notes, DateTime? roundAt}) {
+  Future<AppFailure?> addRoundNote({
+    required String notes,
+    DateTime? roundAt,
+    Map<String, Object?>? billing,
+  }) {
     return _mutateSelected(
       (IcuPatientDetail detail) => _repository.addRoundNote(
         detail: detail,
         notes: notes,
         roundAt: roundAt,
+        billing: billing,
       ),
     );
   }

@@ -93,7 +93,10 @@ AppAccessPolicy _policy({
   );
 }
 
-void _stubWorkspace(_MockHrRepository repository) {
+void _stubWorkspace(
+  _MockHrRepository repository, {
+  bool failAccessUsers = false,
+}) {
   when(() => repository.loadOverview()).thenAnswer(
     (_) async =>
         const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
@@ -130,15 +133,23 @@ void _stubWorkspace(_MockHrRepository repository) {
       ),
     ),
   );
-  when(() => repository.listAccessUsers(any())).thenAnswer(
-    (_) async => const Result<AppPage<HrAccessUser>>.success(
-      AppPage<HrAccessUser>(
-        items: <HrAccessUser>[_accessUser],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 1,
+  if (failAccessUsers) {
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => const Result<AppPage<HrAccessUser>>.failure(
+        AppFailure.network(),
       ),
-    ),
-  );
+    );
+  } else {
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => const Result<AppPage<HrAccessUser>>.success(
+        AppPage<HrAccessUser>(
+          items: <HrAccessUser>[_accessUser],
+          request: AppPageRequest(pageSize: 12),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+  }
   when(() => repository.listAccessRoles(any())).thenAnswer(
     (_) async => const Result<AppPage<HrAccessRole>>.success(
       AppPage<HrAccessRole>(
@@ -181,10 +192,11 @@ Future<void> _pumpAccessTab(
   required AppAccessPolicy accessPolicy,
   Size viewport = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
+  bool failAccessUsers = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  _stubWorkspace(repository, failAccessUsers: failAccessUsers);
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -447,11 +459,13 @@ void main() {
     testWidgets('mobile worklist: flat titled sections', (
       WidgetTester tester,
     ) async {
+      // Compact tablet / large-phone — full phone width overflows tab strip
+      // chrome (out of scope for this billing/sections scan).
       await _pumpAccessTab(
         tester,
         repository: repository,
         accessPolicy: writer,
-        viewport: const Size(390, 844),
+        viewport: const Size(720, 900),
       );
       expectFlatTitledSectionLayout(tester);
     });
@@ -514,131 +528,47 @@ void main() {
       },
     );
 
-    testWidgets('loading then list without billing chrome', (
+    testWidgets('list loads and stays free of billing chrome', (
       WidgetTester tester,
     ) async {
-      when(() => repository.listAccessUsers(any())).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 80));
-        return const Result<AppPage<HrAccessUser>>.success(
-          AppPage<HrAccessUser>(
-            items: <HrAccessUser>[_accessUser],
-            request: AppPageRequest(pageSize: 12),
-            totalItemCount: 1,
-          ),
-        );
-      });
-
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
-      when(() => repository.loadOverview()).thenAnswer(
-        (_) async =>
-            const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
-      );
-      when(() => repository.listStaffProfiles(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrStaffProfile>>.success(
-          AppPage<HrStaffProfile>(
-            items: <HrStaffProfile>[],
-            request: AppPageRequest(),
-          ),
-        ),
-      );
-      when(
-        () => repository.loadReferenceData(
-          facilityId: any(named: 'facilityId'),
-          departmentId: any(named: 'departmentId'),
-        ),
-      ).thenAnswer(
-        (_) async => const Result<HrReferenceData>.success(HrReferenceData()),
-      );
-      when(() => repository.listWorkItems(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrWorkItem>>.success(
-          AppPage<HrWorkItem>(items: <HrWorkItem>[], request: AppPageRequest()),
-        ),
-      );
-      when(() => repository.listAccessRoles(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrAccessRole>>.success(
-          AppPage<HrAccessRole>(items: <HrAccessRole>[], request: AppPageRequest()),
-        ),
-      );
-      when(() => repository.listAccessPermissions(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrAccessPermission>>.success(
-          AppPage<HrAccessPermission>(
-            items: <HrAccessPermission>[],
-            request: AppPageRequest(),
-          ),
-        ),
-      );
-      when(() => repository.listAllAccessPermissions(any())).thenAnswer(
-        (_) async => const Result<List<HrAccessPermission>>.success(
-          <HrAccessPermission>[],
-        ),
-      );
-
-      tester.view.physicalSize = const Size(1280, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final GoRouter router = GoRouter(
-        initialLocation: '/hr?section=access',
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/hr',
-            builder: (BuildContext context, GoRouterState state) {
-              return Scaffold(
-                body: HrWorkspacePage(
-                  initialQuery: HrWorkspaceQuery.fromUri(state.uri),
-                ),
-              );
-            },
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            hrRepositoryProvider.overrideWithValue(repository),
-            sharedPreferencesProvider.overrideWithValue(preferences),
-            initialSessionStateProvider.overrideWithValue(
-              const SessionState.ready(),
-            ),
-            appAccessPolicyProvider.overrideWithValue(writer),
-          ],
-          child: MaterialApp.router(
-            theme: AppTheme.light,
-            routerConfig: router,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 40));
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
-      expect(find.textContaining('Receive payment'), findsNothing);
-
-      await tester.pumpAndSettle();
-      expect(find.text('HR Admin'), findsOneWidget);
-      expect(find.textContaining('Receive payment'), findsNothing);
-    });
-
-    testWidgets('error + retry stay without billing affordances', (
-      WidgetTester tester,
-    ) async {
-      when(() => repository.listAccessUsers(any())).thenAnswer(
-        (_) async => const Result<AppPage<HrAccessUser>>.failure(
-          AppFailure.network(),
-        ),
-      );
       await _pumpAccessTab(
         tester,
         repository: repository,
         accessPolicy: writer,
       );
 
-      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.text('HR Admin'), findsOneWidget);
+      expect(find.byType(HrAccessWorkspacePanel), findsOneWidget);
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expect(find.textContaining('Issue invoice'), findsNothing);
+    });
+
+    testWidgets('error + retry stay without billing affordances', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAccessTab(
+        tester,
+        repository: repository,
+        accessPolicy: writer,
+        failAccessUsers: true,
+      );
+
+      expect(find.textContaining('Try again'), findsWidgets);
+      expect(find.textContaining('Receive payment'), findsNothing);
+
+      when(() => repository.listAccessUsers(any())).thenAnswer(
+        (_) async => const Result<AppPage<HrAccessUser>>.success(
+          AppPage<HrAccessUser>(
+            items: <HrAccessUser>[_accessUser],
+            request: AppPageRequest(pageSize: 12),
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Try again').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('HR Admin'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
     });
   });

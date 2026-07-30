@@ -1117,6 +1117,18 @@
   "@icuStartStayActionLabel": {
     "description": "Confirm label to start an ICU stay."
   },
+  "icuCriticalCarePackageFeeLabel": "ICU critical-care package",
+  "@icuCriticalCarePackageFeeLabel": {
+    "description": "Billing line for ICU stay start package charge."
+  },
+  "icuBedDayFeeLabel": "ICU bed / day",
+  "@icuBedDayFeeLabel": {
+    "description": "Billing line for ICU bed-day charge on stay start."
+  },
+  "icuRoundFeeLabel": "ICU intensivist review fee",
+  "@icuRoundFeeLabel": {
+    "description": "Billing line for ICU round / ward-round fee."
+  },
   "icuAcknowledgeTitle": "Acknowledge alert",
   "@icuAcknowledgeTitle": {
     "description": "Title for the acknowledge alert confirmation."

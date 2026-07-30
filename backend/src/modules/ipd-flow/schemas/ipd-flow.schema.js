@@ -255,7 +255,8 @@ const updateDischargeClearanceSchema = z.object({
   override_reason: z.string().trim().max(2000).optional().nullable()});
 
 const startIcuStaySchema = z.object({
-  started_at: z.string().datetime().optional()});
+  started_at: z.string().datetime().optional(),
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const endIcuStaySchema = z.object({
   icu_stay_id: optionalIdentifierSchema,

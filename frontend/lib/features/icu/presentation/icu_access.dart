@@ -63,8 +63,22 @@ const AccessRequirement icuWorkspaceDeleteRequirement =
 /// Alias used by tab atom maps / prompts.
 const AccessRequirement icuDeleteRequirement = icuWorkspaceDeleteRequirement;
 
-/// Navigation chrome (Open IPD / billing / discharge clearance) — no write.
+/// Navigation chrome (Open IPD / discharge clearance) — no write.
 const AccessRequirement icuNavigationRequirement = AccessRequirement();
+
+/// Nested billing panels (start stay / round) and Open billing navigation.
+///
+/// Prompt note: billing panels need `billing:read` (matrix nested rows _(n/a)_
+/// for other cross-module UI; this is the documented billing gate). Mirrors
+/// [ipdBillingPanelReadRequirement].
+const AccessRequirement icuBillingReadRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>['billing-payments'],
+);
+
+/// Alias used by Active ICU atom map / billing inventory.
+const AccessRequirement icuBillingPanelReadRequirement =
+    icuBillingReadRequirement;
 
 /// Follow-ups tab / panel read on ICU host (matrix ∪ board read).
 ///
@@ -359,7 +373,8 @@ abstract final class IcuActiveIcuAtomPermissions {
   static const AccessRequirement markReadiness = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
@@ -383,6 +398,7 @@ abstract final class IcuActiveIcuAtomPermissions {
 /// matrix ∩ `clinical:write` alone. Route entry ∪ is [routeEntry]. Tab chrome
 /// stays ∪ `clinical:read` | `emergency:read`. No row next-action / stay detail
 /// on this tab.
+/// Financial inventory: `icu_follow_ups_billing_inventory.dart`.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |

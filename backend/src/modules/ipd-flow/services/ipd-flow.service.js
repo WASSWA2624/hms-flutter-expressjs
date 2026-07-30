@@ -22,6 +22,7 @@ const {
   persistWardRoundBilling,
   persistAdmissionBilling,
   persistNursingServiceBilling,
+  persistIcuStayBilling,
   mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
 const { computeInvoiceFinancials } = require("@lib/billing/financials");
 
@@ -4129,10 +4130,23 @@ const startIcuStay = async (id, data, context = {}) => {
       throw new HttpError("errors.ipd_flow.icu_stay_already_active", 400);
     }
 
-    await tx.icu_stay.create({
+    const icuStay = await tx.icu_stay.create({
       data: {
         admission_id: admission.id,
         started_at: startedAt}});
+
+    if (data?.billing) {
+      await persistIcuStayBilling(tx, {
+        icuStayId: icuStay.id,
+        billing: data.billing,
+        tenantId: admission.tenant_id,
+        facilityId: admission.facility_id || null,
+        patientId: admission.patient_id,
+        encounterId: admission.encounter_id || null,
+        description: "ICU critical-care package",
+        chargeKey: "ICU_STAY_START",
+        actorUserId: context.user_id || null});
+    }
 
     return {
       admission_id: admission.id,

@@ -14,6 +14,7 @@ abstract interface class IcuRepository {
   Future<Result<IcuPatientDetail>> startIcuStay({
     required IcuPatientDetail detail,
     DateTime? startedAt,
+    Map<String, Object?>? billing,
   });
 
   Future<Result<IcuPatientDetail>> assignBed({
@@ -54,6 +55,7 @@ abstract interface class IcuRepository {
     required IcuPatientDetail detail,
     required String notes,
     DateTime? roundAt,
+    Map<String, Object?>? billing,
   });
 
   Future<Result<IcuPatientDetail>> requestTransfer({

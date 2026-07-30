@@ -131,11 +131,15 @@ final class IcuRepositoryImpl implements IcuRepository {
   Future<Result<IcuPatientDetail>> startIcuStay({
     required IcuPatientDetail detail,
     DateTime? startedAt,
+    Map<String, Object?>? billing,
   }) {
     return _postIpdAction(
       detail.summary,
       <String>['start-icu-stay'],
-      <String, Object?>{'started_at': startedAt?.toUtc().toIso8601String()},
+      <String, Object?>{
+        'started_at': startedAt?.toUtc().toIso8601String(),
+        if (billing != null) 'billing': billing,
+      },
     );
   }
 
@@ -270,6 +274,7 @@ final class IcuRepositoryImpl implements IcuRepository {
     required IcuPatientDetail detail,
     required String notes,
     DateTime? roundAt,
+    Map<String, Object?>? billing,
   }) {
     return _postIpdAction(
       detail.summary,
@@ -277,6 +282,7 @@ final class IcuRepositoryImpl implements IcuRepository {
       <String, Object?>{
         'round_at': roundAt?.toUtc().toIso8601String(),
         'notes': notes,
+        if (billing != null) 'billing': billing,
       },
     );
   }
