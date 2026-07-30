@@ -165,7 +165,6 @@ void main() {
             label: 'CBC',
             quantity: 1,
             unitPrice: 25000,
-            lineTotal: 25000,
           ),
         ],
       );

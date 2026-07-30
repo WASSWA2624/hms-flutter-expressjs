@@ -201,10 +201,7 @@ describe('ipd-flow Nursing Handover pending billing-sections scan', () => {
     const admission = buildAdmission();
     const tx = {
       admission: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce({ id: 'adm-hand-1' })
-          .mockResolvedValueOnce(admission)},
+        findFirst: jest.fn().mockResolvedValue(admission)},
       user: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'user-1',

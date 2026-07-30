@@ -194,14 +194,11 @@ describe('ipd-flow Nursing All billing-sections scan', () => {
     expect(mockPersistNursingServiceBilling).not.toHaveBeenCalled();
   });
 
-  it('AC3/AC6: idempotent charge keys are per nursing_note id', async () => {
+  it('AC3/AC6: billed notes key charges by nursing_note id (no orphan double charge on same note)', async () => {
     const admission = buildAdmission();
     const tx = {
       admission: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce({ id: 'adm-all-1' })
-          .mockResolvedValueOnce(admission)},
+        findFirst: jest.fn().mockResolvedValue({ id: 'adm-all-1' })},
       user: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'user-1',
@@ -209,6 +206,12 @@ describe('ipd-flow Nursing All billing-sections scan', () => {
       nursing_note: {
         create: jest.fn().mockResolvedValue({ id: 'nn-all-3' }),
         update: jest.fn()}};
+
+    tx.admission.findFirst
+      .mockResolvedValueOnce({ id: 'adm-all-1' })
+      .mockResolvedValueOnce(admission)
+      .mockResolvedValueOnce({ id: 'adm-all-1' })
+      .mockResolvedValueOnce(admission);
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: 'adm-all-1' });
@@ -222,13 +225,13 @@ describe('ipd-flow Nursing All billing-sections scan', () => {
 
     await ipdFlowService.addNursingNote('ADM-ALL-1', payload, context);
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledTimes(1);
+    expect(mockPersistNursingServiceBilling.mock.calls[0][1].nursingNoteId).toBe(
+      'nn-all-3',
+    );
 
     tx.nursing_note.create.mockResolvedValue({ id: 'nn-all-3b' });
     await ipdFlowService.addNursingNote('ADM-ALL-1', payload, context);
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledTimes(2);
-    expect(mockPersistNursingServiceBilling.mock.calls[0][1].nursingNoteId).toBe(
-      'nn-all-3',
-    );
     expect(mockPersistNursingServiceBilling.mock.calls[1][1].nursingNoteId).toBe(
       'nn-all-3b',
     );
@@ -248,9 +251,11 @@ describe('ipd-flow Nursing All billing-sections scan', () => {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'inv-open',
-            status: 'ISSUED',
-            balance_due: '5000.00',
-            deleted_at: null}])}};
+            total_amount: '2500.00',
+            status: 'SENT',
+            billing_status: 'ISSUED',
+            payments: [],
+            billing_adjustments: []}]})};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: 'adm-all-1' });
