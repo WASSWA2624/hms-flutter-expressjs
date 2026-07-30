@@ -781,16 +781,23 @@ List<Widget> _actionDialogButtons(
       fullWidth: compact,
       onPressed: isSaving ? null : () => Navigator.of(context).pop(false),
     ),
-    AppButton.primary(
-      label: submitLabel,
-      leadingIcon:
-          submitLeadingIcon ??
-          (destructive ? AppActionIcons.delete : null),
-      color: destructive ? colorScheme.error : null,
-      isLoading: isSaving,
-      fullWidth: compact,
-      onPressed: isSaving ? null : onSubmit,
-    ),
+    if (destructive)
+      AppButton.tertiary(
+        label: submitLabel,
+        leadingIcon: submitLeadingIcon ?? AppActionIcons.delete,
+        color: colorScheme.error,
+        isLoading: isSaving,
+        fullWidth: compact,
+        onPressed: isSaving ? null : onSubmit,
+      )
+    else
+      AppButton.primary(
+        label: submitLabel,
+        leadingIcon: submitLeadingIcon,
+        isLoading: isSaving,
+        fullWidth: compact,
+        onPressed: isSaving ? null : onSubmit,
+      ),
   ];
 }
 

@@ -1015,6 +1015,15 @@ class _LabResultEntryTable extends StatelessWidget {
               itemIds: group.drafts
                   .map((_ResultDraft draft) => draft.item.apiId)
                   .toList(growable: false),
+              deletesEntireOrder: _deletesEntireLabOrder(
+                drafts: drafts,
+                orderId: group.drafts.isNotEmpty
+                    ? group.drafts.first.item.labOrderId
+                    : null,
+                itemIds: group.drafts
+                    .map((_ResultDraft draft) => draft.item.apiId)
+                    .toList(growable: false),
+              ),
               contentPadding: panelPadding,
               child: _ResponsiveLabResultEntry(
                 drafts: group.drafts,
@@ -1032,6 +1041,11 @@ class _LabResultEntryTable extends StatelessWidget {
                 orderId: draft.item.labOrderId,
                 itemIds: <String>[draft.item.apiId],
                 isPanel: false,
+                deletesEntireOrder: _deletesEntireLabOrder(
+                  drafts: drafts,
+                  orderId: draft.item.labOrderId,
+                  itemIds: <String>[draft.item.apiId],
+                ),
                 contentPadding: panelPadding,
                 child: _ResponsiveLabResultEntry(
                   drafts: <_ResultDraft>[draft],
@@ -1058,6 +1072,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
     this.itemIds = const <String>[],
     this.canDelete = false,
     this.isPanel = true,
+    this.deletesEntireOrder = false,
     this.contentPadding,
   });
 
@@ -1067,6 +1082,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
   final List<String> itemIds;
   final bool canDelete;
   final bool isPanel;
+  final bool deletesEntireOrder;
   final EdgeInsetsGeometry? contentPadding;
 
   @override
@@ -1112,6 +1128,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
       return;
     }
 
+    final bool cascadeDeleteOrder = deletesEntireOrder;
     final bool? deleted = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -1119,31 +1136,87 @@ class _LabPanelResultBlock extends ConsumerWidget {
         title: isPanel
             ? l10n.labDeletePanelDialogTitle
             : l10n.labDeleteTestDialogTitle,
-        body: isPanel
-            ? l10n.labDeleteOrderPanelDialogBody(title)
-            : l10n.labDeleteOrderTestDialogBody(title),
+        body: cascadeDeleteOrder
+            ? (isPanel
+                  ? l10n.labDeleteLastPanelAndOrderDialogBody(title)
+                  : l10n.labDeleteLastTestAndOrderDialogBody(title))
+            : (isPanel
+                  ? l10n.labDeleteOrderPanelDialogBody(title)
+                  : l10n.labDeleteOrderTestDialogBody(title)),
         submitLabel: isPanel
             ? l10n.labDeletePanelAction
             : l10n.labDeleteTestAction,
         confirmationTitle: l10n.labDeleteOrderItemsConfirmTitle,
-        confirmationBody: isPanel
-            ? l10n.labDeleteOrderPanelConfirmBody(title)
-            : l10n.labDeleteOrderTestConfirmBody(title),
+        confirmationBody: cascadeDeleteOrder
+            ? (isPanel
+                  ? l10n.labDeleteLastPanelAndOrderConfirmBody(title)
+                  : l10n.labDeleteLastTestAndOrderConfirmBody(title))
+            : (isPanel
+                  ? l10n.labDeleteOrderPanelConfirmBody(title)
+                  : l10n.labDeleteOrderTestConfirmBody(title)),
         confirmationSubmitLabel: l10n.labConfirmPermanentDeleteAction,
-        onDelete: (String reason) => ref
-            .read(labWorkspaceControllerProvider.notifier)
-            .deleteOrderItems(targetOrderId, <String, Object?>{
-              'order_item_ids': itemIds,
-              'reason': reason,
-            }),
+        onDelete: (String reason) {
+          final LabWorkspaceController controller = ref.read(
+            labWorkspaceControllerProvider.notifier,
+          );
+          if (cascadeDeleteOrder) {
+            return controller.deleteOrder(targetOrderId, reason);
+          }
+          return controller.deleteOrderItems(targetOrderId, <String, Object?>{
+            'order_item_ids': itemIds,
+            'reason': reason,
+          });
+        },
       ),
     );
     if (deleted == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.labDeletedMessage)),
       );
+      if (cascadeDeleteOrder) {
+        final LabWorkspaceState? state = ref
+            .read(labWorkspaceControllerProvider)
+            .asData
+            ?.value
+            .when(
+              success: (LabWorkspaceState value) => value,
+              failure: (_) => null,
+            );
+        final List<LabOrderWorkflow> remaining = _selectedWorkflows(state);
+        if (remaining.isEmpty) {
+          await Navigator.of(context).maybePop();
+        }
+      }
     }
   }
+}
+
+/// True when [itemIds] covers every non-rejected item on [orderId].
+bool _deletesEntireLabOrder({
+  required List<_ResultDraft> drafts,
+  required String? orderId,
+  required List<String> itemIds,
+}) {
+  final String? normalizedOrderId = orderId?.trim();
+  if (normalizedOrderId == null ||
+      normalizedOrderId.isEmpty ||
+      itemIds.isEmpty) {
+    return false;
+  }
+  final Set<String> deletingIds = itemIds
+      .map((String id) => id.trim())
+      .where((String id) => id.isNotEmpty)
+      .toSet();
+  if (deletingIds.isEmpty) {
+    return false;
+  }
+  final Set<String> activeIds = <String>{
+    for (final _ResultDraft draft in drafts)
+      if ((draft.item.labOrderId ?? '').trim() == normalizedOrderId &&
+          !draft.item.isRejected)
+        draft.item.apiId,
+  };
+  return activeIds.isNotEmpty && activeIds.difference(deletingIds).isEmpty;
 }
 
 class _LabResultEntryRowsTable extends StatelessWidget {

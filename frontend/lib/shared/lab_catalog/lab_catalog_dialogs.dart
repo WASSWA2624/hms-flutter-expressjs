@@ -2998,7 +2998,7 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
             fullWidth: compact,
             onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
           ),
-        AppButton.primary(
+        AppButton.tertiary(
           label: widget.submitLabel,
           leadingIcon: Icons.delete_outline,
           color: widget.destructiveSubmit ? colorScheme.error : null,

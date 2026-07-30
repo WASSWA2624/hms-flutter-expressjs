@@ -25203,6 +25203,44 @@
       }
     }
   },
+  "labDeleteLastPanelAndOrderDialogBody": "Removing {panelName} will also permanently delete this lab order because it is the only remaining panel or test. Enter a deletion reason for audit.",
+  "@labDeleteLastPanelAndOrderDialogBody": {
+    "description": "Reason-form body when deleting the last panel also deletes the lab order.",
+    "placeholders": {
+      "panelName": {
+        "type": "String",
+        "example": "CBC PANEL | CBC_PANEL"
+      }
+    }
+  },
+  "labDeleteLastTestAndOrderDialogBody": "Removing {testName} will also permanently delete this lab order because it is the only remaining panel or test. Enter a deletion reason for audit.",
+  "@labDeleteLastTestAndOrderDialogBody": {
+    "description": "Reason-form body when deleting the last test also deletes the lab order.",
+    "placeholders": {
+      "testName": {
+        "type": "String",
+        "example": "Hemoglobin | HGB"
+      }
+    }
+  },
+  "labDeleteLastPanelAndOrderConfirmBody": "Final confirmation: permanently delete {panelName} and this lab order? This action is irreversible and cannot be undone.",
+  "@labDeleteLastPanelAndOrderConfirmBody": {
+    "description": "Final confirmation when deleting the last panel also deletes the lab order.",
+    "placeholders": {
+      "panelName": {
+        "type": "String"
+      }
+    }
+  },
+  "labDeleteLastTestAndOrderConfirmBody": "Final confirmation: permanently delete {testName} and this lab order? This action is irreversible and cannot be undone.",
+  "@labDeleteLastTestAndOrderConfirmBody": {
+    "description": "Final confirmation when deleting the last test also deletes the lab order.",
+    "placeholders": {
+      "testName": {
+        "type": "String"
+      }
+    }
+  },
   "labConfirmPermanentDeleteAction": "Delete permanently",
   "@labConfirmPermanentDeleteAction": {
     "description": "Submit label on the final irreversible lab order item delete confirmation."

@@ -36571,6 +36571,30 @@ abstract class AppLocalizations {
   /// **'Final confirmation: permanently delete {testName} from this order? This action is irreversible and cannot be undone.'**
   String labDeleteOrderTestConfirmBody(String testName);
 
+  /// Reason-form body when deleting the last panel also deletes the lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing {panelName} will also permanently delete this lab order because it is the only remaining panel or test. Enter a deletion reason for audit.'**
+  String labDeleteLastPanelAndOrderDialogBody(String panelName);
+
+  /// Reason-form body when deleting the last test also deletes the lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing {testName} will also permanently delete this lab order because it is the only remaining panel or test. Enter a deletion reason for audit.'**
+  String labDeleteLastTestAndOrderDialogBody(String testName);
+
+  /// Final confirmation when deleting the last panel also deletes the lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete {panelName} and this lab order? This action is irreversible and cannot be undone.'**
+  String labDeleteLastPanelAndOrderConfirmBody(String panelName);
+
+  /// Final confirmation when deleting the last test also deletes the lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete {testName} and this lab order? This action is irreversible and cannot be undone.'**
+  String labDeleteLastTestAndOrderConfirmBody(String testName);
+
   /// Submit label on the final irreversible lab order item delete confirmation.
   ///
   /// In en, this message translates to:
