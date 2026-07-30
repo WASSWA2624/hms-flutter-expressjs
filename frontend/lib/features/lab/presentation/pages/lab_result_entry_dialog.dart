@@ -950,14 +950,17 @@ class _LabResultEntryCards extends StatelessWidget {
                       draft: draft,
                       patientGender: patientGender,
                     ),
-                    if (canMutate && draft.item.canReopenResult) ...<Widget>[
+                    if (canMutate) ...<Widget>[
                       SizedBox(height: theme.spacing.sm),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: AppButton.tertiary(
                           label: l10n.labEditVerifiedResultAction,
                           leadingIcon: Icons.edit_outlined,
-                          onPressed: () => onEditSaved(draft),
+                          enabled: draft.item.canReopenResult,
+                          onPressed: draft.item.canReopenResult
+                              ? () => onEditSaved(draft)
+                              : null,
                         ),
                       ),
                     ],
@@ -1250,15 +1253,17 @@ class _LabResultEntryRowsTable extends StatelessWidget {
       verticalInside: BorderSide(color: borderColor),
     );
 
+    final bool showActionsColumn = canMutate;
     final Widget table = SizedBox(
       width: tableWidth,
       child: Table(
         border: tableBorder,
-        columnWidths: const <int, TableColumnWidth>{
-          0: FlexColumnWidth(2.2),
-          1: FlexColumnWidth(2.2),
-          2: FlexColumnWidth(2.6),
-          3: FlexColumnWidth(1.6),
+        columnWidths: <int, TableColumnWidth>{
+          0: const FlexColumnWidth(2.2),
+          1: const FlexColumnWidth(2.2),
+          2: const FlexColumnWidth(2.6),
+          3: const FlexColumnWidth(1.4),
+          if (showActionsColumn) 4: const FlexColumnWidth(1.2),
         },
         children: <TableRow>[
           TableRow(
@@ -1270,6 +1275,10 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
               _LabResultTableCell.header(label: l10n.labReportResultLabel),
               _LabResultTableCell.header(label: l10n.labResultFlagLabel),
+              if (showActionsColumn)
+                _LabResultTableCell.header(
+                  label: l10n.labResultActionsColumnLabel,
+                ),
             ],
           ),
           for (final _ResultDraft draft in drafts)
@@ -1277,6 +1286,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               context,
               draft: draft,
               canMutate: canMutate,
+              showActionsColumn: showActionsColumn,
               patientGender: patientGender,
               onEditSaved: () => onEditSaved(draft),
             ),
@@ -1343,13 +1353,14 @@ TableRow _labResultEntryTableRow(
   BuildContext context, {
   required _ResultDraft draft,
   required bool canMutate,
+  required bool showActionsColumn,
   required VoidCallback onEditSaved,
   String? patientGender,
 }) {
   final ThemeData theme = Theme.of(context);
   final LabOrderItem item = draft.item;
   final bool cancelled = _isCancelledItem(item);
-  final bool showEditAction = canMutate && item.canReopenResult;
+  final bool canEditSavedResult = item.canReopenResult;
 
   return TableRow(
     decoration: BoxDecoration(
@@ -1394,27 +1405,23 @@ TableRow _labResultEntryTableRow(
         ),
       ),
       _LabResultTableCell(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _LabResultFlagCell(
-              draft: draft,
-              patientGender: patientGender,
-            ),
-            if (showEditAction) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AppButton.tertiary(
-                  label: context.l10n.labEditVerifiedResultAction,
-                  leadingIcon: Icons.edit_outlined,
-                  onPressed: onEditSaved,
-                ),
-              ),
-            ],
-          ],
+        child: _LabResultFlagCell(
+          draft: draft,
+          patientGender: patientGender,
         ),
       ),
+      if (showActionsColumn)
+        _LabResultTableCell(
+          child: Align(
+            alignment: AlignmentDirectional.topEnd,
+            child: AppButton.tertiary(
+              label: context.l10n.labEditVerifiedResultAction,
+              leadingIcon: Icons.edit_outlined,
+              enabled: canEditSavedResult,
+              onPressed: canEditSavedResult ? onEditSaved : null,
+            ),
+          ),
+        ),
     ],
   );
 }
