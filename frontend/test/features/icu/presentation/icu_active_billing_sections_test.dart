@@ -45,17 +45,6 @@ const IcuPatientDetail _activeDetail = IcuPatientDetail(
   activeStay: IcuStaySummary(id: 'stay-active-1'),
 );
 
-const IcuPatientSummary _needsStay = IcuPatientSummary(
-  id: 'ADM-NEEDS-STAY-1',
-  admissionId: 'ADM-NEEDS-STAY-1',
-  displayId: 'ADM-NS1',
-  patientId: 'PAT-NEEDS-STAY-1',
-  patientDisplayName: 'Needs Stay Patient',
-  icuStatus: 'NONE',
-  hasActiveBed: true,
-  encounterId: 'ENC-NEEDS-STAY-1',
-);
-
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,

@@ -25,6 +25,7 @@ const {
   persistIcuStayBilling,
   mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
 const { buildIcuStayBilling } = require("@lib/billing/icu-billing");
+const { buildAdmissionBilling } = require("@lib/billing/admission-billing");
 const { computeInvoiceFinancials } = require("@lib/billing/financials");
 
 const UUID_LIKE_REGEX =
@@ -2689,16 +2690,29 @@ const startIpdFlow = async (data, context = {}) => {
       }
     }
 
-    if (data?.billing) {
+    let facility = null;
+    if (facilityId && tx.facility?.findFirst) {
+      facility = await tx.facility.findFirst({
+        where: {
+          id: facilityId,
+          deleted_at: null}});
+    }
+
+    // Prefer request billing; otherwise facility admission/deposit/bed-day fees.
+    const admissionBilling = buildAdmissionBilling({
+      billing: data?.billing || null,
+      facility});
+    if (admissionBilling) {
       await persistAdmissionBilling(tx, {
         admissionId: admission.id,
-        billing: data.billing,
+        billing: admissionBilling,
         existingSnapshot: existingAdmission?.billing_snapshot || null,
         tenantId,
         facilityId: facilityId || null,
         patientId: patient.id,
         encounterId: encounterId || null,
         description: "Admission fee",
+        chargeKey: "ADMISSION_START",
         actorUserId: context.user_id || null});
     }
 

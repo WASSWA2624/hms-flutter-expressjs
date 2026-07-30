@@ -27292,6 +27292,18 @@
   "@ipdWardRoundFeeLabel": {
     "description": "Default billing line label for an IPD ward round / doctor review."
   },
+  "ipdAdmissionFeeLabel": "Admission fee",
+  "@ipdAdmissionFeeLabel": {
+    "description": "Billing line for IPD admission start fee."
+  },
+  "ipdAdmissionDepositLabel": "Admission deposit",
+  "@ipdAdmissionDepositLabel": {
+    "description": "Billing line for IPD admission deposit / prepayment."
+  },
+  "ipdBedDayFeeLabel": "Bed / day",
+  "@ipdBedDayFeeLabel": {
+    "description": "Billing line for IPD bed-day rate at admission start."
+  },
   "theaterCaseFeeLabel": "Operation / procedure fee",
   "@theaterCaseFeeLabel": {
     "description": "Default billing line label for a theatre case / operation."

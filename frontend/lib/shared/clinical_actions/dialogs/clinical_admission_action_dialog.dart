@@ -33,6 +33,7 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
     this.showCancelButton = true,
     this.submitLeadingIcon,
     this.leadingSectionsBuilder,
+    this.trailingSectionsBuilder,
     super.key,
   });
 
@@ -58,6 +59,13 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
   final IconData? submitLeadingIcon;
   final List<Widget> Function(BuildContext context, bool enabled)?
   leadingSectionsBuilder;
+
+  /// Sibling sections after admission details (e.g. embedded billing panel).
+  ///
+  /// Keep flat: do not nest titled [AppWorkspaceDetailPanel] / [AppFormSection]
+  /// chrome inside another titled section.
+  final List<Widget> Function(BuildContext context, bool enabled)?
+  trailingSectionsBuilder;
 
   @override
   State<ClinicalAdmissionActionDialog> createState() =>
@@ -286,6 +294,7 @@ class _ClinicalAdmissionActionDialogState
               ],
             ],
           ),
+          ...?widget.trailingSectionsBuilder?.call(context, !_isSaving),
         ],
       ),
       actions: clinicalActionDialogActions(
@@ -350,6 +359,7 @@ class _ClinicalAdmissionActionDialogState
                   ),
               ],
             ),
+          ...?widget.trailingSectionsBuilder?.call(context, !_isSaving),
         ],
       ),
       actions: clinicalActionDialogActions(

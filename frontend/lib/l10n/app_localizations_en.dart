@@ -21273,6 +21273,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdWardRoundFeeLabel => 'Doctor review fee';
 
   @override
+  String get ipdAdmissionFeeLabel => 'Admission fee';
+
+  @override
+  String get ipdAdmissionDepositLabel => 'Admission deposit';
+
+  @override
+  String get ipdBedDayFeeLabel => 'Bed / day';
+
+  @override
   String get theaterCaseFeeLabel => 'Operation / procedure fee';
 
   @override

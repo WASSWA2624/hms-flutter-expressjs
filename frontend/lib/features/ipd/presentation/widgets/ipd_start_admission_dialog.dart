@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_access.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
@@ -39,6 +43,11 @@ Future<bool?> showIpdStartAdmissionDialog(
 /// Reuses [ClinicalAdmissionActionDialog] for shell, loading, footer, and
 /// failure presentation. Patient search and mutation stay on the workspace
 /// controller — the widget never calls repositories directly.
+///
+/// Admission deposit / fee / bed-day lines post through shared
+/// [ClinicalRequestBillingPanel] → `persistAdmissionBilling` (no parallel
+/// cashier). Billing chrome is a sibling trailing block (`embedded: true`) so
+/// titled sections stay flat.
 class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
   const IpdStartAdmissionDialog({required this.referenceData, super.key});
 
@@ -56,6 +65,7 @@ class _IpdStartAdmissionDialogState
   List<Patient> _results = <Patient>[];
   Patient? _selectedPatient;
   bool _isSearching = false;
+  ClinicalRequestBillingSubmit? _billing;
 
   @override
   void dispose() {
@@ -77,6 +87,7 @@ class _IpdStartAdmissionDialogState
       maxWidth: 560,
       initialMaximized: false,
       leadingSectionsBuilder: _patientSection,
+      trailingSectionsBuilder: _billingSection,
       onSubmit: _submit,
     );
   }
@@ -101,6 +112,40 @@ class _IpdStartAdmissionDialogState
             onChanged: _selectPatient,
           ),
         ],
+      ),
+    ];
+  }
+
+  List<Widget> _billingSection(BuildContext context, bool enabled) {
+    final AppLocalizations l10n = context.l10n;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'ADMISSION_FEE',
+            label: l10n.ipdAdmissionFeeLabel,
+          ),
+          ClinicalRequestBillingLineItem(
+            id: 'ADMISSION_DEPOSIT',
+            label: l10n.ipdAdmissionDepositLabel,
+          ),
+          ClinicalRequestBillingLineItem(
+            id: 'BED_DAY',
+            label: l10n.ipdBedDayFeeLabel,
+          ),
+        ];
+
+    return <Widget>[
+      AppAccessGate(
+        requirement: ipdBillingPanelReadRequirement,
+        child: ClinicalRequestBillingPanel(
+          lineItems: lineItems,
+          enabled: enabled,
+          // Dialog already provides titled chrome — keep sections flat.
+          embedded: true,
+          onChanged: (ClinicalRequestBillingSubmit value) {
+            _billing = value;
+          },
+        ),
       ),
     ];
   }
@@ -207,12 +252,18 @@ class _IpdStartAdmissionDialogState
     if (patient == null) {
       return AppFailure.validation();
     }
+    final ClinicalRequestBillingSubmit? billing = _billing;
+    final bool charge =
+        billing != null &&
+        billing.paymentStatus != ClinicalRequestPaymentStatus.notBilled &&
+        billing.totalAmount > 0;
     return ref.read(ipdWorkspaceControllerProvider.notifier).startAdmission(
       <String, Object?>{
         'patient_id': patient.id,
         'ward_id': ipdApiCatalogId(input.wardId),
         'room_id': ipdApiCatalogId(input.roomId),
         'bed_id': input.bed?.apiId,
+        if (charge) 'billing': billing!.toPayloadMap(),
       },
     );
   }

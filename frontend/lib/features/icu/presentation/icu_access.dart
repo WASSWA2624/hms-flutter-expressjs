@@ -307,6 +307,7 @@ IcuWorkspaceSection? icuFallbackSection(AppAccessPolicy policy) {
 /// only. Write keeps source ∪ `clinical:write` | `emergency:write` rather than
 /// matrix ∩ `clinical:write` alone. Route entry ∪ is [routeEntry]. Navigation
 /// (Open IPD / billing / discharge clearance) and print remain without write.
+/// Open billing requires `billing:read` + billing-payments ([openBilling]).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
