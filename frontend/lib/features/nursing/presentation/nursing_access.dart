@@ -872,12 +872,16 @@ abstract final class NursingTransferPendingAtomPermissions {
 /// | Detail Discharge clearance (when not next-action) | update | ([write]) |
 /// | Detail Administer medication | update | ([administerMedication]) |
 /// | Detail medications panel | nested read | ([medicationsPanel]) |
+/// | Detail Prescribe / Order lab / radiology | create | ([prescribe] / [orderLab] / [orderRadiology]) |
 /// | Detail billing clearance panel | nested read | ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Detail Print summary | export | ([printSummary]) |
 /// | Admission checklist write / clearance step | create / update | ([checklistWrite]) |
 /// | Discharge dialog / `panel=discharge` | update | ([panelDeepLink] / [write]) |
 /// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
+///
+/// Financial inventory: `nursing_discharge_pending_billing_inventory.dart`.
 abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -904,6 +908,9 @@ abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
   static const AccessRequirement recordVitals = nursingWriteRequirement;
   static const AccessRequirement addNote = nursingWriteRequirement;
+  static const AccessRequirement prescribe = nursingWriteRequirement;
+  static const AccessRequirement orderLab = nursingWriteRequirement;
+  static const AccessRequirement orderRadiology = nursingWriteRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
   static const AccessRequirement medicationsPanel =
       nursingMedicationsPanelRequirement;

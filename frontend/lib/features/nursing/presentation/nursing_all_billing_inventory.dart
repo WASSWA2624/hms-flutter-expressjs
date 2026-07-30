@@ -134,7 +134,7 @@ abstract final class NursingAllBillingInventory {
         financialClass: NursingAllFinancialClass.defer,
         requirement: NursingAllAtomPermissions.nextActionDischarge,
         billingPath:
-            'recordDischargeClearance note + Open billing → Billing ledger',
+            'updateDischargeClearance → isBillingSettledForPatient; Open billing',
         auditCode: 'NOT_BILLED',
       );
 
@@ -212,7 +212,8 @@ abstract final class NursingAllBillingInventory {
         financialClass: NursingAllFinancialClass.defer,
         requirement: NursingAllAtomPermissions.dischargeClearance,
         billingPath:
-            'DISCHARGE_CLEARANCE note; financial settle via Open billing',
+            'updateDischargeClearance → isBillingSettledForPatient '
+            '(billing_cleared from ledger)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -301,7 +302,7 @@ abstract final class NursingAllBillingInventory {
     mounted: false,
   );
 
-  static const List<NursingAllFinancialAtom> atoms = <NursingAllFinancialAtom>[
+  static const List<NursingAllFinancialAtom> all = <NursingAllFinancialAtom>[
     tab,
     shiftContext,
     listChrome,
@@ -333,22 +334,24 @@ abstract final class NursingAllBillingInventory {
     adjustRefund,
   ];
 
-  static List<NursingAllFinancialAtom> get billableAtoms => atoms
-      .where(
+  /// Alias for [all] — inventory completeness checks.
+  static List<NursingAllFinancialAtom> get atoms => all;
+
+  static Iterable<NursingAllFinancialAtom> get mountedAtoms =>
+      all.where((NursingAllFinancialAtom atom) => atom.mounted);
+
+  /// Mounted atoms that must post through shared Billing paths.
+  static Iterable<NursingAllFinancialAtom> get billableMounted =>
+      mountedAtoms.where(
         (NursingAllFinancialAtom atom) =>
             atom.financialClass == NursingAllFinancialClass.createCharge ||
             atom.financialClass == NursingAllFinancialClass.settle ||
             atom.financialClass == NursingAllFinancialClass.adjust ||
             atom.financialClass == NursingAllFinancialClass.reverse ||
             atom.financialClass == NursingAllFinancialClass.defer,
-      )
-      .toList(growable: false);
+      );
 
-  static List<NursingAllFinancialAtom> get mountedBillableAtoms => billableAtoms
-      .where((NursingAllFinancialAtom atom) => atom.mounted)
-      .toList(growable: false);
-
-  static List<NursingAllFinancialAtom> get explicitNotBillableAtoms => atoms
+  static List<NursingAllFinancialAtom> get explicitNotBillableAtoms => all
       .where(
         (NursingAllFinancialAtom atom) =>
             atom.auditCode == 'NOT_BILLED' ||
@@ -356,6 +359,15 @@ abstract final class NursingAllBillingInventory {
             atom.auditCode == 'NO_CHARGE',
       )
       .toList(growable: false);
+
+  static bool forbidsInlineCashier(NursingAllFinancialClass actionClass) {
+    return switch (actionClass) {
+      NursingAllFinancialClass.settle ||
+      NursingAllFinancialClass.adjust ||
+      NursingAllFinancialClass.reverse => true,
+      _ => false,
+    };
+  }
 
   /// Section chrome on this tab: sibling [AppWorkspaceDetailPanel]s under a
   /// Column in patient detail; worklist has no titled sections. Dialogs use
@@ -372,8 +384,16 @@ abstract final class NursingAllBillingInventory {
     'detail_ward_activity',
   ];
 
+  static String summary() => billingOwnershipSummary;
+
   static const String billingOwnershipSummary =
       'Nursing All posts optional nursing-service charges via IPD '
       'add-nursing-note → persistNursingServiceBilling and clinical orders via '
       'clinical-request-billing. Open billing navigates Billing. No module cashier.';
 }
+
+/// Scope note for Nursing All billing-and-sections scan.
+const String nursingAllBillingScopeNote =
+    'Full nursing worklist: optional nursing-service notes, prescribe/lab/'
+    'radiology via clinical-request-billing, MAR NOT_BILLED (charge on Rx), '
+    'discharge clearance defers settle to Billing via Open billing.';

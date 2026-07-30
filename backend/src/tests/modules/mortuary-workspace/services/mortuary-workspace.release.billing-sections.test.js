@@ -136,14 +136,17 @@ describe('mortuary-workspace Release billing-sections scan', () => {
     const item = data.items[0];
     expect(item.resource).toBe('mortuary-release-authorisations');
     expect(item.patient_id).toBe('PAT0001');
-    expect(item.billing_status).toBe('UNSETTLED');
+    expect(item.billing_status).toBe('PENDING');
     expect(item.billing_reference_id).toBe('inv-mort-rel-1');
     expect(item.billable_events).toHaveLength(1);
     expect(item.billable_events[0].billing_reference_id).toBe('inv-mort-rel-1');
     expect(item.billable_events[0].event_type).toBe('RELEASE_FEE');
-    expect(item.mortuary_case.billing_status).toBe('UNSETTLED');
+    expect(item.mortuary_case.billing_status).toBe('PENDING');
     expect(item.mortuary_case.patient_id).toBe('PAT0001');
     expect(item.recipient_name).toBe('Next of Kin');
+    expect(isMortuaryReleaseBlockedByOutstandingBilling(item.billing_status)).toBe(
+      true,
+    );
   });
 
   it('unsettled billing queue is scoped to release panel', async () => {

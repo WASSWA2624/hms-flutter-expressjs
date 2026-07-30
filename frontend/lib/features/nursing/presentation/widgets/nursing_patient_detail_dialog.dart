@@ -254,7 +254,7 @@ class _NursingActionBar extends ConsumerWidget {
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: NursingAssignedWardAtomPermissions.openBilling,
+          requirement: nursingBillingClearanceReadRequirement,
           label: l10n.dischargeOpenBillingAction,
           icon: Icons.receipt_long_outlined,
           onPressed: () => _openBillingWorkspace(context, summary),

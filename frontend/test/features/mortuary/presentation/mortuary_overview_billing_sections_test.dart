@@ -336,7 +336,8 @@ void main() {
 
         await _openDetail(tester);
 
-        expect(find.textContaining('Pending'), findsWidgets);
+        expect(find.text('Open billing'), findsWidgets);
+        expect(find.textContaining('Clear billing'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Waive'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);

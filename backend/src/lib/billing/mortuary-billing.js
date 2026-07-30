@@ -177,9 +177,7 @@ const persistMortuaryBillableEventBilling = async (
   }
 
   // Strip pay-now / PAID bypass — Billing office owns settlement.
-  const officeBilling =
-    normalizeBillingOfficeClinicalBilling(billing) ||
-    (billing && shouldApplyClinicalRequestBilling(billing) ? billing : null);
+  const officeBilling = normalizeBillingOfficeClinicalBilling(billing);
   if (!officeBilling || !shouldApplyClinicalRequestBilling(officeBilling)) {
     return null;
   }
