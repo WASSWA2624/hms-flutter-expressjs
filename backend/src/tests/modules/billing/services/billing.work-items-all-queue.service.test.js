@@ -27,18 +27,13 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(async () => {}),
 }));
 
-jest.mock('@lib/websocket', () => ({
-  publishDomainEvent: jest.fn(),
-  BILLING_EVENTS: {
-    BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
-    INVOICE_UPDATED: 'invoice.updated',
-    BILLING_BALANCE_UPDATED: 'billing.balance_updated',
-  },
+jest.mock('@lib/billing/realtime', () => ({
+  publishBillingRealtimeUpdate: jest.fn(async () => {}),
 }));
 
 const billingRepository = require('@repositories/billing/billing.repository');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
-const { publishDomainEvent } = require('@lib/websocket');
+const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
 const billingService = require('@services/billing/billing.service');
 
 describe('billing.service getWorkItems — All queue (no queue filter)', () => {
@@ -101,9 +96,9 @@ describe('billing.service getWorkItems — All queue (no queue filter)', () => {
     expect(needsIssue.total).toBe(1);
   });
 
-  it('rejects unauthorized users without billing:read', async () => {
+  it('rejects users without tenant scope', async () => {
     await expect(
-      billingService.getWorkItems({}, 1, 20, { id: 'user-1', tenant_id: 'tenant-1', permissions: [] })
+      billingService.getWorkItems({}, 1, 20, { id: 'user-1', permissions: [] })
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 });
@@ -161,6 +156,6 @@ describe('billing.service All-tab mutations post through Billing (no bypass)', (
       expect.objectContaining({ billing_status: 'ISSUED', status: 'SENT' })
     );
     expect(result.invoice.billing_status).toBe('ISSUED');
-    expect(publishDomainEvent).toHaveBeenCalled();
+    expect(publishBillingRealtimeUpdate).toHaveBeenCalled();
   });
 });

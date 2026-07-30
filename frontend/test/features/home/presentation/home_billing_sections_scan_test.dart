@@ -207,7 +207,10 @@ void main() {
 
       await _pumpHome(
         tester,
-        permissions: <AppPermission>[AppPermissions.profileRead],
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.billingRead,
+        ],
         repository: repo,
         settle: false,
       );

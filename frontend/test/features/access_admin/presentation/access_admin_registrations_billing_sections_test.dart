@@ -468,6 +468,47 @@ void main() {
       );
       final AppLocalizations l10n = context.l10n;
 
+      final Finder activateButton = find.widgetWithText(
+        AppButton,
+        l10n.accessAdminActivateRegistrationAction,
+      );
+      await tester.tap(activateButton.first);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.activateRegistration('REG-1')).called(1);
+      verify(() => repository.getWorkspace(any())).called(greaterThan(1));
+      expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
+    });
+
+    testWidgets('reject registration refreshes worklist', (
+      WidgetTester tester,
+    ) async {
+      var rejected = false;
+      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+        final List<AccessAdminItem> items = rejected
+            ? const <AccessAdminItem>[]
+            : const <AccessAdminItem>[_registration];
+        return Result<AccessAdminWorkspaceData>.success(
+          _registrationsData(items: items),
+        );
+      });
+      when(() => repository.rejectRegistration(any())).thenAnswer((_) async {
+        rejected = true;
+        return const Result<void>.success(null);
+      });
+
+      await _pumpRegistrations(
+        tester,
+        repository: repository,
+        policy: _elevatedPolicy(),
+        stubWorkspace: false,
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(AccessAdminWorkspacePage),
+      );
+      final AppLocalizations l10n = context.l10n;
+
       final AppListTable<AccessAdminItem> table = tester
           .widgetList<AppListTable<AccessAdminItem>>(
             find.byType(AppListTable<AccessAdminItem>),
@@ -496,6 +537,7 @@ void main() {
         tester,
         repository: repository,
         policy: _elevatedPolicy(),
+        stubWorkspace: false,
       );
       expect(callCount, greaterThan(0));
       expect(find.text('Pending Clinic'), findsWidgets);
@@ -525,7 +567,7 @@ void main() {
         tester,
         repository: repository,
         policy: _elevatedPolicy(),
-        viewport: const Size(390, 844),
+        viewport: const Size(480, 844),
         themeMode: ThemeMode.dark,
       );
       expectFlatTitledSectionLayout(
@@ -588,6 +630,7 @@ void main() {
         tester,
         repository: repository,
         policy: _elevatedPolicy(),
+        stubWorkspace: false,
       );
 
       final BuildContext context = tester.element(

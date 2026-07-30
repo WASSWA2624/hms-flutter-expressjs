@@ -175,7 +175,8 @@ class _BillingWorkspaceContentState
 
     if (target != null &&
         mounted &&
-        canWriteBilling(ref.read(appAccessPolicyProvider))) {
+        canWriteBilling(ref.read(appAccessPolicyProvider)) &&
+        target.canReceivePayment) {
       await _showPaymentDialog(context, ref, target);
     }
   }
