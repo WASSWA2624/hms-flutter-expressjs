@@ -14,9 +14,9 @@ import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_result_value_unit_fields.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -213,6 +213,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         .where(_canSaveResultDraft)
         .toList(growable: false);
     final bool hasSaveableDrafts = saveableDrafts.isNotEmpty;
+    final bool hasPreviewableResults = workflows.any(
+      (LabOrderWorkflow workflow) =>
+          workflow.order.items.any(_isPrintableReleasedReportItem),
+    );
 
     return AppActionLabelScope(
       showLabels: showActionLabels,
@@ -238,8 +242,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                 AppAccessActionGate(
                   requirement: labReportPreviewRequirement,
                   builder: (BuildContext context, bool isAllowed) {
-                    final bool canPreview =
-                        isAllowed && !_isSaving && hasSaveableDrafts;
+                    final bool canPreview = isAllowed &&
+                        !_isSaving &&
+                        (hasPreviewableResults || hasSaveableDrafts);
                     return AppReportActionButton.preview(
                       label: l10n.labPreviewReportAction,
                       enabled: canPreview,
@@ -739,7 +744,7 @@ class _LabResultValidationMessage extends StatelessWidget {
           : l10n.labResultEntryRequiredMessage,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.error,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w400,
       ),
     );
   }
@@ -931,10 +936,31 @@ class _LabResultEntryCards extends StatelessWidget {
                         : _CompletedResultReadout(
                             item: draft.item,
                             patientGender: patientGender,
-                            onEdit: canMutate && draft.item.canReopenResult
-                                ? () => onEditSaved(draft)
-                                : null,
                           ),
+                    SizedBox(height: theme.spacing.sm),
+                    Text(
+                      l10n.labResultFlagLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    _LabResultFlagCell(
+                      draft: draft,
+                      patientGender: patientGender,
+                    ),
+                    if (canMutate && draft.item.canReopenResult) ...<Widget>[
+                      SizedBox(height: theme.spacing.sm),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: AppButton.tertiary(
+                          label: l10n.labEditVerifiedResultAction,
+                          leadingIcon: Icons.edit_outlined,
+                          onPressed: () => onEditSaved(draft),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1000,9 +1026,12 @@ class _LabResultEntryTable extends StatelessWidget {
             )
           else
             for (final _ResultDraft draft in group.drafts) ...<Widget>[
-              AppCollapsibleSection(
+              _LabPanelResultBlock(
                 title: draft.item.displayTitle,
-                collapsible: true,
+                canDelete: canMutate,
+                orderId: draft.item.labOrderId,
+                itemIds: <String>[draft.item.apiId],
+                isPanel: false,
                 contentPadding: panelPadding,
                 child: _ResponsiveLabResultEntry(
                   drafts: <_ResultDraft>[draft],
@@ -1028,6 +1057,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
     this.orderId,
     this.itemIds = const <String>[],
     this.canDelete = false,
+    this.isPanel = true,
     this.contentPadding,
   });
 
@@ -1036,6 +1066,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
   final String? orderId;
   final List<String> itemIds;
   final bool canDelete;
+  final bool isPanel;
   final EdgeInsetsGeometry? contentPadding;
 
   @override
@@ -1047,22 +1078,25 @@ class _LabPanelResultBlock extends ConsumerWidget {
         itemIds.isNotEmpty &&
         orderId != null &&
         orderId!.trim().isNotEmpty;
+    final String deleteLabel = isPanel
+        ? l10n.labDeletePanelAction
+        : l10n.labDeleteTestAction;
 
     return AppCollapsibleSection(
       title: title,
-      titleIcon: Icons.inventory_2_outlined,
-      collapsible: true,
+      titleIcon: isPanel
+          ? Icons.inventory_2_outlined
+          : Icons.science_outlined,
       contentPadding: contentPadding,
       headerActions: showDelete
           ? <Widget>[
               AppButton(
-                iconOnly: true,
                 leadingIcon: Icons.delete_outline,
-                label: l10n.labDeletePanelAction,
-                semanticLabel: l10n.labDeletePanelAction,
-                tooltip: l10n.labDeletePanelAction,
+                label: deleteLabel,
+                semanticLabel: deleteLabel,
+                tooltip: deleteLabel,
                 color: theme.statusColors.danger,
-                onPressed: () => _deletePanel(context, ref),
+                onPressed: () => _deleteItems(context, ref),
               ),
             ]
           : const <Widget>[],
@@ -1070,26 +1104,44 @@ class _LabPanelResultBlock extends ConsumerWidget {
     );
   }
 
-  Future<void> _deletePanel(BuildContext context, WidgetRef ref) async {
+  Future<void> _deleteItems(BuildContext context, WidgetRef ref) async {
     final AppLocalizations l10n = context.l10n;
     final String? targetOrderId = orderId;
     if (targetOrderId == null || itemIds.isEmpty) {
       return;
     }
-    await showAppDialog<bool>(
+
+    final bool? deleted = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppConfirmActionDialog(
-        title: l10n.labDeletePanelDialogTitle,
-        body: l10n.labDeletePanelDialogBody(title),
-        submitLabel: l10n.labDeletePanelAction,
-        icon: const Icon(Icons.delete_outline),
-        onConfirm: () =>
-            ref.read(labWorkspaceControllerProvider.notifier).deleteOrderItems(
-              targetOrderId,
-              <String, Object?>{'order_item_ids': itemIds},
-            ),
+      barrierDismissible: false,
+      builder: (_) => LabDeleteReasonDialog(
+        title: isPanel
+            ? l10n.labDeletePanelDialogTitle
+            : l10n.labDeleteTestDialogTitle,
+        body: isPanel
+            ? l10n.labDeleteOrderPanelDialogBody(title)
+            : l10n.labDeleteOrderTestDialogBody(title),
+        submitLabel: isPanel
+            ? l10n.labDeletePanelAction
+            : l10n.labDeleteTestAction,
+        confirmationTitle: l10n.labDeleteOrderItemsConfirmTitle,
+        confirmationBody: isPanel
+            ? l10n.labDeleteOrderPanelConfirmBody(title)
+            : l10n.labDeleteOrderTestConfirmBody(title),
+        confirmationSubmitLabel: l10n.labConfirmPermanentDeleteAction,
+        onDelete: (String reason) => ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .deleteOrderItems(targetOrderId, <String, Object?>{
+              'order_item_ids': itemIds,
+              'reason': reason,
+            }),
       ),
     );
+    if (deleted == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.labDeletedMessage)),
+      );
+    }
   }
 }
 
@@ -1130,8 +1182,10 @@ class _LabResultEntryRowsTable extends StatelessWidget {
         border: tableBorder,
         columnWidths: const <int, TableColumnWidth>{
           0: FlexColumnWidth(2.0),
-          1: FlexColumnWidth(2.2),
-          2: FlexColumnWidth(3.6),
+          1: FlexColumnWidth(2.0),
+          2: FlexColumnWidth(2.4),
+          3: FlexColumnWidth(1.3),
+          4: FlexColumnWidth(1.1),
         },
         children: <TableRow>[
           TableRow(
@@ -1142,6 +1196,8 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               _LabResultTableCell.header(label: l10n.labTestsColumnLabel),
               _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
               _LabResultTableCell.header(label: l10n.labReportResultLabel),
+              _LabResultTableCell.header(label: l10n.labResultFlagLabel),
+              _LabResultTableCell.header(label: l10n.labResultActionsColumnLabel),
             ],
           ),
           for (final _ResultDraft draft in drafts)
@@ -1222,6 +1278,7 @@ TableRow _labResultEntryTableRow(
   final LabOrderItem item = draft.item;
   final bool canEdit = canMutate && item.canEnterResult;
   final bool cancelled = _isCancelledItem(item);
+  final bool showEditAction = canMutate && item.canReopenResult;
 
   return TableRow(
     decoration: BoxDecoration(
@@ -1261,9 +1318,6 @@ TableRow _labResultEntryTableRow(
                 : _CompletedResultReadout(
                     item: item,
                     patientGender: patientGender,
-                    onEdit: canMutate && item.canReopenResult
-                        ? onEditSaved
-                        : null,
                   ),
             if (draft.showValidationError && !item.canEnterResult) ...<Widget>[
               SizedBox(height: Theme.of(context).spacing.xs),
@@ -1271,6 +1325,24 @@ TableRow _labResultEntryTableRow(
             ],
           ],
         ),
+      ),
+      _LabResultTableCell(
+        child: _LabResultFlagCell(
+          draft: draft,
+          patientGender: patientGender,
+        ),
+      ),
+      _LabResultTableCell(
+        child: showEditAction
+            ? Align(
+                alignment: AlignmentDirectional.topEnd,
+                child: AppButton.tertiary(
+                  label: context.l10n.labEditVerifiedResultAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: onEditSaved,
+                ),
+              )
+            : const SizedBox.shrink(),
       ),
     ],
   );
@@ -1286,8 +1358,8 @@ class _LabResultTestCell extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
     final TextStyle titleStyle =
-        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
-        const TextStyle(fontWeight: FontWeight.w600);
+        theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400) ??
+        const TextStyle(fontWeight: FontWeight.w400);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1384,7 +1456,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
         ? null
         : TextStyle(
             color: _resultInterpretationForeground(theme, tone),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
           );
 
     // Keep field-affixed clear/dropdown controls icon-only so toolbar
@@ -1496,12 +1568,10 @@ class _CompletedResultReadout extends StatelessWidget {
   const _CompletedResultReadout({
     required this.item,
     this.patientGender,
-    this.onEdit,
   });
 
   final LabOrderItem item;
   final String? patientGender;
-  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1527,29 +1597,74 @@ class _CompletedResultReadout extends StatelessWidget {
         AppWorkspaceStatusTone.neutral;
     final Color valueColor = _resultInterpretationForeground(theme, tone);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: valueColor,
-            fontWeight: FontWeight.w600,
-          ),
-          softWrap: true,
+    return Text(
+      value,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: valueColor,
+        fontWeight: FontWeight.w400,
+      ),
+      softWrap: true,
+    );
+  }
+}
+
+class _LabResultFlagCell extends StatelessWidget {
+  const _LabResultFlagCell({
+    required this.draft,
+    this.patientGender,
+  });
+
+  final _ResultDraft draft;
+  final String? patientGender;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final LabOrderItem item = draft.item;
+    final bool hasValue = draft.hasEntry ||
+        ((item.displayResultValue ?? '').trim().isNotEmpty) ||
+        item.isRejected;
+    if (!hasValue) {
+      return Text(
+        context.l10n.profileUnknownValue,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w400,
         ),
-        if (onEdit != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AppButton.tertiary(
-              label: l10n.labEditVerifiedResultAction,
-              leadingIcon: Icons.edit_outlined,
-              onPressed: onEdit,
-            ),
-          ),
-        ],
-      ],
+      );
+    }
+
+    final String? token = _resultInterpretationFlagToken(
+      item,
+      draft,
+      patientGender: patientGender,
+    );
+    if (token == null || token.trim().isEmpty) {
+      return Text(
+        context.l10n.clinicalResultsFlagUnknownLabel,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w400,
+        ),
+      );
+    }
+
+    final String label = labStatusLabel(context, token);
+    final AppWorkspaceStatusTone tone =
+        _resultInterpretationTone(
+          item,
+          draft,
+          patientGender: patientGender,
+        ) ??
+        AppWorkspaceStatusTone.neutral;
+    final AppClinicalResultFlag flag = _clinicalResultFlagForToken(token);
+    final AppClinicalResultFlagDisplay display =
+        AppClinicalResultFlagDisplay.resolve(context.l10n, flag, customLabel: label);
+
+    return AppStatusBadge(
+      label: display.label,
+      tone: tone,
+      icon: display.icon,
     );
   }
 }
@@ -3485,13 +3600,23 @@ AppClinicalResultFlag _clinicalResultFlagForLabItem(LabOrderItem item) {
               '')
           .trim()
           .toUpperCase();
+  return _clinicalResultFlagForToken(token);
+}
+
+AppClinicalResultFlag _clinicalResultFlagForToken(String? rawToken) {
+  final String token = (rawToken ?? '').trim().toUpperCase();
   return switch (token) {
-    'CRITICAL' => AppClinicalResultFlag.critical,
-    'ABNORMAL' || 'HIGH' || 'LOW' => AppClinicalResultFlag.abnormal,
+    'CRITICAL' || 'CRITICAL_LOW' || 'CRITICAL_HIGH' =>
+      AppClinicalResultFlag.critical,
+    'ABNORMAL' ||
+    'HIGH' ||
+    'LOW' ||
+    'POSITIVE' ||
+    'REACTIVE' => AppClinicalResultFlag.abnormal,
     'NORMAL' ||
     'NEGATIVE' ||
     'NON_REACTIVE' ||
-    'POSITIVE' => AppClinicalResultFlag.normal,
+    'NOT_DETECTED' => AppClinicalResultFlag.normal,
     _ => AppClinicalResultFlag.unknown,
   };
 }

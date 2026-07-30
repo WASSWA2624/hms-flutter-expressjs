@@ -25161,6 +25161,52 @@
       }
     }
   },
+  "labDeleteOrderPanelDialogBody": "Remove {panelName} from this lab order? Enter a deletion reason for audit.",
+  "@labDeleteOrderPanelDialogBody": {
+    "description": "Reason-form body when deleting a panel from a lab order result entry.",
+    "placeholders": {
+      "panelName": {
+        "type": "String",
+        "example": "CBC PANEL | CBC_PANEL"
+      }
+    }
+  },
+  "labDeleteOrderTestDialogBody": "Remove {testName} from this lab order? Enter a deletion reason for audit.",
+  "@labDeleteOrderTestDialogBody": {
+    "description": "Reason-form body when deleting a test from a lab order result entry.",
+    "placeholders": {
+      "testName": {
+        "type": "String",
+        "example": "Hemoglobin | HGB"
+      }
+    }
+  },
+  "labDeleteOrderItemsConfirmTitle": "Confirm permanent delete",
+  "@labDeleteOrderItemsConfirmTitle": {
+    "description": "Final irreversible confirmation title for deleting lab order panel or test items."
+  },
+  "labDeleteOrderPanelConfirmBody": "Final confirmation: permanently delete {panelName} from this order? This action is irreversible and cannot be undone.",
+  "@labDeleteOrderPanelConfirmBody": {
+    "description": "Final irreversible confirmation body for deleting a panel from a lab order.",
+    "placeholders": {
+      "panelName": {
+        "type": "String"
+      }
+    }
+  },
+  "labDeleteOrderTestConfirmBody": "Final confirmation: permanently delete {testName} from this order? This action is irreversible and cannot be undone.",
+  "@labDeleteOrderTestConfirmBody": {
+    "description": "Final irreversible confirmation body for deleting a test from a lab order.",
+    "placeholders": {
+      "testName": {
+        "type": "String"
+      }
+    }
+  },
+  "labConfirmPermanentDeleteAction": "Delete permanently",
+  "@labConfirmPermanentDeleteAction": {
+    "description": "Submit label on the final irreversible lab order item delete confirmation."
+  },
   "labRejectOrderItemAction": "Reject test",
   "@labRejectOrderItemAction": {
     "description": "Localized text for labRejectOrderItemAction."
@@ -25168,6 +25214,10 @@
   "labResultFlagLabel": "Flag",
   "@labResultFlagLabel": {
     "description": "Localized text for labResultFlagLabel."
+  },
+  "labResultActionsColumnLabel": "Actions",
+  "@labResultActionsColumnLabel": {
+    "description": "Column header for lab result entry row actions such as Edit."
   },
   "labVerifyResultDialogTitle": "Enter Result",
   "@labVerifyResultDialogTitle": {

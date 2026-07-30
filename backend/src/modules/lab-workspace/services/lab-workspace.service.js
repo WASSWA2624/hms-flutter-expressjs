@@ -2182,6 +2182,11 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
     const requestedItemIds = Array.isArray(payload?.order_item_ids)
       ? payload.order_item_ids
       : [];
+    const deletionReason = String(payload?.reason || '').trim();
+    if (!deletionReason || deletionReason.length < 3) {
+      throw new HttpError('errors.validation.required', 400, [
+        { field: 'reason' }]);
+    }
 
     if (!panelId && requestedItemIds.length === 0) {
       throw new HttpError('errors.validation.field.required', 400, [
@@ -2268,7 +2273,7 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
           after_order_status: mutation.order?.status || null,
           panel_id: mutation.panelId,
           deleted_item_count: mutation.deletedItemIds.length,
-          reason: payload.reason || null,
+          reason: deletionReason,
           notes: payload.notes || null}},
       ip_address: ipAddress}).catch(() => {});
 

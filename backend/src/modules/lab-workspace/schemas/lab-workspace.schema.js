@@ -92,7 +92,7 @@ const deleteLabOrderItemsSchema = z
       .min(1)
       .max(100)
       .optional(),
-    reason: z.string().trim().max(65535).optional().nullable(),
+    reason: z.string().trim().min(3).max(65535),
     notes: z.string().trim().max(65535).optional().nullable()})
   .refine(
     (value) =>

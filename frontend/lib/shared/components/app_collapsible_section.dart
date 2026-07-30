@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 
@@ -34,6 +35,9 @@ class AppCollapsibleSection extends StatefulWidget {
   final List<Widget> actions;
 
   /// Actions rendered in the header row immediately left of the expand chevron.
+  ///
+  /// On phones, header actions stay icon-only. On larger screens they inherit
+  /// the ambient [AppActionLabelScope] so labels can show when space allows.
   final List<Widget> headerActions;
   final Widget child;
   final IconData? titleIcon;
@@ -152,19 +156,27 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                   if (widget.headerActions.isNotEmpty) ...<Widget>[
                     SizedBox(width: theme.spacing.sm),
                     // Header actions sit outside the collapse InkWell so they
-                    // do not toggle expand/collapse. Default to icon-only so
-                    // controls like delete read as plain icon buttons.
-                    // Order: actions, then chevron (extreme right) so chevrons
-                    // align across stacked sections (e.g. patient + panel).
-                    AppActionLabelScope(
-                      showLabels: false,
-                      forceIconOnly: true,
-                      child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: theme.spacing.xs,
-                        runSpacing: theme.spacing.xs,
-                        children: widget.headerActions,
-                      ),
+                    // do not toggle expand/collapse. Icon-only on phones;
+                    // larger screens inherit ambient label visibility.
+                    Builder(
+                      builder: (BuildContext context) {
+                        final bool compact =
+                            AppBreakpoints.of(context).isMobile;
+                        final AppActionLabelScope? ambient =
+                            AppActionLabelScope.maybeOf(context);
+                        return AppActionLabelScope(
+                          showLabels: compact
+                              ? false
+                              : (ambient?.showLabels ?? true),
+                          forceIconOnly: compact,
+                          child: Wrap(
+                            alignment: WrapAlignment.end,
+                            spacing: theme.spacing.xs,
+                            runSpacing: theme.spacing.xs,
+                            children: widget.headerActions,
+                          ),
+                        );
+                      },
                     ),
                   ],
                   if (widget.collapsible) ...<Widget>[

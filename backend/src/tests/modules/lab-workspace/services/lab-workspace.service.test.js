@@ -1086,7 +1086,7 @@ describe('lab-workspace.service', () => {
     await expect(
       labWorkspaceService.deleteLabOrderItems(
         'LAB0000001',
-        { panel_id: 'FBC' },
+        { panel_id: 'FBC', reason: 'Last active panel' },
         'actor-1',
         '127.0.0.1'
       )

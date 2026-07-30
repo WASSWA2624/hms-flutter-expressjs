@@ -19633,10 +19633,39 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String labDeleteOrderPanelDialogBody(String panelName) {
+    return 'Remove $panelName from this lab order? Enter a deletion reason for audit.';
+  }
+
+  @override
+  String labDeleteOrderTestDialogBody(String testName) {
+    return 'Remove $testName from this lab order? Enter a deletion reason for audit.';
+  }
+
+  @override
+  String get labDeleteOrderItemsConfirmTitle => 'Confirm permanent delete';
+
+  @override
+  String labDeleteOrderPanelConfirmBody(String panelName) {
+    return 'Final confirmation: permanently delete $panelName from this order? This action is irreversible and cannot be undone.';
+  }
+
+  @override
+  String labDeleteOrderTestConfirmBody(String testName) {
+    return 'Final confirmation: permanently delete $testName from this order? This action is irreversible and cannot be undone.';
+  }
+
+  @override
+  String get labConfirmPermanentDeleteAction => 'Delete permanently';
+
+  @override
   String get labRejectOrderItemAction => 'Reject test';
 
   @override
   String get labResultFlagLabel => 'Flag';
+
+  @override
+  String get labResultActionsColumnLabel => 'Actions';
 
   @override
   String get labVerifyResultDialogTitle => 'Enter Result';

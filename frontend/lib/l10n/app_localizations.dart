@@ -36541,6 +36541,42 @@ abstract class AppLocalizations {
   /// **'Remove {panelName} from the lab catalog? A reason is required for audit.'**
   String labDeletePanelDialogBody(String panelName);
 
+  /// Reason-form body when deleting a panel from a lab order result entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {panelName} from this lab order? Enter a deletion reason for audit.'**
+  String labDeleteOrderPanelDialogBody(String panelName);
+
+  /// Reason-form body when deleting a test from a lab order result entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {testName} from this lab order? Enter a deletion reason for audit.'**
+  String labDeleteOrderTestDialogBody(String testName);
+
+  /// Final irreversible confirmation title for deleting lab order panel or test items.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm permanent delete'**
+  String get labDeleteOrderItemsConfirmTitle;
+
+  /// Final irreversible confirmation body for deleting a panel from a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete {panelName} from this order? This action is irreversible and cannot be undone.'**
+  String labDeleteOrderPanelConfirmBody(String panelName);
+
+  /// Final irreversible confirmation body for deleting a test from a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete {testName} from this order? This action is irreversible and cannot be undone.'**
+  String labDeleteOrderTestConfirmBody(String testName);
+
+  /// Submit label on the final irreversible lab order item delete confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get labConfirmPermanentDeleteAction;
+
   /// Localized text for labRejectOrderItemAction.
   ///
   /// In en, this message translates to:
@@ -36552,6 +36588,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Flag'**
   String get labResultFlagLabel;
+
+  /// Column header for lab result entry row actions such as Edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get labResultActionsColumnLabel;
 
   /// Localized text for labVerifyResultDialogTitle.
   ///

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.da
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -2893,8 +2894,11 @@ class LabDeleteReasonDialog extends StatefulWidget {
     required this.submitLabel,
     required this.onDelete,
     this.icon = const Icon(Icons.delete_outline),
-    this.showCancelButton = false,
-    this.destructiveSubmit = false,
+    this.showCancelButton = true,
+    this.destructiveSubmit = true,
+    this.confirmationTitle,
+    this.confirmationBody,
+    this.confirmationSubmitLabel,
     super.key,
   });
 
@@ -2904,7 +2908,19 @@ class LabDeleteReasonDialog extends StatefulWidget {
   final Widget icon;
   final bool showCancelButton;
   final bool destructiveSubmit;
+
+  /// When set with [confirmationBody], submit opens a final irreversible
+  /// confirmation before calling [onDelete].
+  final String? confirmationTitle;
+  final String? confirmationBody;
+  final String? confirmationSubmitLabel;
   final Future<AppFailure?> Function(String reason) onDelete;
+
+  bool get _requiresFinalConfirmation =>
+      confirmationTitle != null &&
+      confirmationTitle!.trim().isNotEmpty &&
+      confirmationBody != null &&
+      confirmationBody!.trim().isNotEmpty;
 
   @override
   State<LabDeleteReasonDialog> createState() => _LabDeleteReasonDialogState();
@@ -2936,10 +2952,12 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool compact = AppBreakpoints.of(context).isMobile;
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
@@ -2963,6 +2981,7 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
               enabled: !_isSaving,
               isRequired: true,
               maxLines: 3,
+              autofocus: true,
               validator: AppValidators.requiredText(
                 l10n.labDeleteReasonValidationMessage,
               ),
@@ -2972,18 +2991,21 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
       ),
       actions: <Widget>[
         if (widget.showCancelButton)
-          AppButton.tertiary(
+          AppButton.secondary(
             label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
             enabled: !_isSaving,
-            onPressed: () => Navigator.of(context).pop(false),
+            fullWidth: compact,
+            onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
           ),
         AppButton.primary(
           label: widget.submitLabel,
           leadingIcon: Icons.delete_outline,
           color: widget.destructiveSubmit ? colorScheme.error : null,
-          isLoading: _isSaving,
+          isLoading: _isSaving && !widget._requiresFinalConfirmation,
           enabled: !_isSaving && _canSubmit,
-          onPressed: _submit,
+          fullWidth: compact,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
@@ -2997,13 +3019,40 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    final String reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      return;
+    }
+
+    if (widget._requiresFinalConfirmation) {
+      final bool? confirmed = await showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppConfirmActionDialog(
+          title: widget.confirmationTitle!,
+          body: widget.confirmationBody!,
+          submitLabel:
+              widget.confirmationSubmitLabel ?? widget.submitLabel,
+          icon: const Icon(Icons.warning_amber_rounded),
+          destructive: true,
+          submitLeadingIcon: Icons.delete_forever_outlined,
+          onConfirm: () => widget.onDelete(reason),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (confirmed == true) {
+        Navigator.of(context).pop(true);
+      }
+      return;
+    }
+
     setState(() {
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onDelete(
-      _reasonController.text.trim(),
-    );
+    final AppFailure? failure = await widget.onDelete(reason);
     if (!mounted) {
       return;
     }
