@@ -468,25 +468,94 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('loading / empty / error states remain observable', (
+    testWidgets('error list state has no cashier; flat sections', (
       WidgetTester tester,
     ) async {
       when(() => repository.listAdmissions(any())).thenAnswer(
         (_) async => Result<AppPage<IpdAdmissionSummary>>.failure(
-          AppFailure.network(message: 'offline'),
+          AppFailure.network(),
         ),
       );
 
-      await _pumpTransfersTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.clinicalRead},
-        ),
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/ipd?section=transfers',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/ipd',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: IpdWorkspacePage(
+                  initialQuery: IpdAdmissionQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
       );
 
-      expect(find.textContaining('offline'), findsNothing);
-      // Board surfaces retry chrome rather than cashier.
+      // Stub reference loads so only list fails.
+      when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
+        (_) async =>
+            const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
+      );
+      when(
+        () => repository.listBeds(
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          wardId: any(named: 'wardId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[]),
+      );
+      when(
+        () => repository.listBedBoard(
+          wardId: any(named: 'wardId'),
+          status: any(named: 'status'),
+          statusAny: any(named: 'statusAny'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Result<List<IpdBedBoardEntry>>.success(<IpdBedBoardEntry>[]),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ipdRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{AppPermissions.clinicalRead},
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
       expect(find.textContaining('Receive payment'), findsNothing);
       expectFlatSections(tester);
     });

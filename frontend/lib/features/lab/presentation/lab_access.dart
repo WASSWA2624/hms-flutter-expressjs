@@ -2,6 +2,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 
@@ -92,10 +93,8 @@ const AccessRequirement labFollowUpsWriteRequirement =
     labWorkspaceWriteRequirement;
 
 /// Open billing navigation from unpaid lab gates — Billing owns settle.
-const AccessRequirement labOpenBillingRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.billingRead],
-  activeModules: <String>['billing-payments'],
-);
+const AccessRequirement labOpenBillingRequirement =
+    billingWorkspaceReadRequirement;
 
 /// Per-section tab strip gate.
 ///

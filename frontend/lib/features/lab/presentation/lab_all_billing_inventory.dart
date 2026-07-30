@@ -190,14 +190,6 @@ abstract final class LabAllBillingInventory {
     billingPath: 'AppRoutes.billing?patient_id=… (no inline settle)',
   );
 
-  static const LabAllFinancialAtom previewReport = LabAllFinancialAtom(
-    id: 'preview_report',
-    label: 'Preview / print released report',
-    financialClass: LabAllFinancialClass.notRequired,
-    requirement: LabAllAtomPermissions.previewReport,
-    auditCode: 'NOT_REQUIRED',
-  );
-
   static const LabAllFinancialAtom collectPayment = LabAllFinancialAtom(
     id: 'collect_payment',
     label: 'Receive payment / cashier collect',
@@ -252,6 +244,13 @@ abstract final class LabAllBillingInventory {
             atom.financialClass == LabAllFinancialClass.reverse ||
             atom.financialClass == LabAllFinancialClass.defer,
       );
+
+  static bool get allBillableMountedUseSharedBilling {
+    return billableMounted.every(
+      (LabAllFinancialAtom atom) =>
+          atom.billingPath != null && atom.billingPath!.trim().isNotEmpty,
+    );
+  }
 
   static bool forbidsInlineCollection(LabAllFinancialClass actionClass) {
     return switch (actionClass) {
