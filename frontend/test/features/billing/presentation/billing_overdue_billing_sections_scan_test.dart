@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dar
 import 'package:hosspi_hms/features/billing/domain/entities/billing_overdue_financial_inventory.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
+import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_mutation_applier.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -227,6 +228,9 @@ void main() {
     registerFallbackValue(
       const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
     );
+    registerFallbackValue(
+      const BillingAdjustmentDraft(amount: '1.00', reason: 'test'),
+    );
     registerFallbackValue(const BillingLedgerQuery());
   });
 
@@ -299,12 +303,37 @@ void main() {
       }
     });
 
+    test('AC3: mutation applier removes cleared invoice from Overdue queue', () {
+      const BillingWorkspaceState state = BillingWorkspaceState(
+        query: BillingWorkspaceQuery(queue: BillingQueueType.overdue),
+        overview: BillingWorkspaceOverview(summary: _summary),
+        workItems: AppPage<BillingWorkItem>(
+          items: <BillingWorkItem>[_overdueInvoice],
+          request: AppPageRequest(pageSize: 20),
+          totalItemCount: 1,
+        ),
+        selectedItem: _overdueInvoice,
+      );
+
+      final BillingWorkspaceState next = BillingWorkspaceMutationApplier.apply(
+        state,
+        const BillingMutationResult(invoice: _clearedInvoice),
+      );
+
+      expect(next.workItems.items, isEmpty);
+      expect(next.overview.summary.overdue, 0);
+      expect(
+        BillingWorkspaceMutationApplier.isOverdueItem(_clearedInvoice),
+        isFalse,
+      );
+    });
+
     test('billing workspace subscribes to billing realtime events', () {
       expect(RealtimeEventGroups.billingWorkspace, isNotEmpty);
     });
 
     testWidgets(
-      'AC3: receive payment posts via repository with idempotency and leaves Overdue queue',
+      'AC3: receive payment posts via repository with idempotency and syncs UI',
       (WidgetTester tester) async {
         await _pumpOverdueTab(
           tester,
@@ -326,7 +355,8 @@ void main() {
             idempotencyKey: any(named: 'idempotencyKey', that: isNotEmpty),
           ),
         ).called(1);
-        expect(find.text('Omar Overdue Scan'), findsNothing);
+        // Cleared invoice loses collect affordance (status parity with Billing).
+        expect(find.byTooltip('Receive payment'), findsNothing);
       },
     );
 

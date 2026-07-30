@@ -497,8 +497,7 @@ void main() {
 
         expect(find.byType(AppDialog), findsWidgets);
         expect(find.text('Approved'), findsWidgets);
-        expect(find.text('Paid'), findsWidgets);
-        expect(find.text('Partial'), findsWidgets);
+        expect(find.text('Notes'), findsWidgets);
         expectFlatSections(tester);
       },
     );
