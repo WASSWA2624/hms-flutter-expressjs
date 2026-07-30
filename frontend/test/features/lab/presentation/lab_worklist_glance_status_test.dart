@@ -5,7 +5,7 @@ import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('partial results with abnormal flag show Partially Ready', (
+  testWidgets('partial results with abnormal flag show Pending', (
     WidgetTester tester,
   ) async {
     late BuildContext captured;
@@ -48,11 +48,11 @@ void main() {
 
     expect(
       labWorklistGlanceStatus(captured, order).label,
-      'Partially Ready - Abnormal',
+      'Pending - Abnormal',
     );
   });
 
-  testWidgets('partial results with critical flag show Partially Ready', (
+  testWidgets('partial results with critical flag show Pending', (
     WidgetTester tester,
   ) async {
     late BuildContext captured;
@@ -87,9 +87,49 @@ void main() {
 
     expect(
       labWorklistGlanceStatus(captured, order).label,
-      'Partially Ready - Critical',
+      'Pending - Critical',
     );
   });
+
+  testWidgets(
+    'partial abnormal patient group stays Pending even when status is CRITICAL',
+    (WidgetTester tester) async {
+      late BuildContext captured;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              captured = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      const LabOrderSummary order = LabOrderSummary(
+        id: 'LAB-2B',
+        status: 'CRITICAL',
+        itemCount: 2,
+        items: <LabOrderItem>[
+          LabOrderItem(
+            id: 'ITEM-1',
+            status: 'COMPLETED',
+            resultStatus: 'ABNORMAL',
+            resultValue: '12',
+            resultId: 'RES-1',
+          ),
+          LabOrderItem(id: 'ITEM-2', status: 'ORDERED'),
+        ],
+      );
+
+      expect(
+        labWorklistGlanceStatus(captured, order).label,
+        'Pending - Abnormal',
+      );
+    },
+  );
 
   testWidgets('all results entered keep Ready - Abnormal', (
     WidgetTester tester,

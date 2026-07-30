@@ -2157,17 +2157,18 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
   if ((order.status ?? '').toUpperCase() == 'CANCELLED') {
     return l10n.labNextActionCancelled;
   }
-  if (order.hasCriticalResult) {
-    return l10n.labNextActionReviewCritical;
-  }
   final bool awaitPayment =
       order.hasBillingGate && !order.isPaymentSatisfied;
-  final String status = (order.status ?? '').toUpperCase();
+  // Incomplete orders stay on Enter result; escalate only when entry is done.
   if (order.enterableItemCount > 0) {
     return awaitPayment
         ? l10n.labWorkflowNextAwaitPayment
         : l10n.labNextActionEnterResult;
   }
+  if (order.hasCriticalResult) {
+    return l10n.labNextActionReviewCritical;
+  }
+  final String status = (order.status ?? '').toUpperCase();
   return switch (status) {
     'ORDERED' || 'COLLECTED' => awaitPayment
         ? l10n.labWorkflowNextAwaitPayment

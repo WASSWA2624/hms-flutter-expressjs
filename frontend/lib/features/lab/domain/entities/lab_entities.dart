@@ -1308,11 +1308,29 @@ bool labOrderMatchesScope(LabOrderSummary order, LabQueueScope scope) {
   return switch (scope) {
     LabQueueScope.all => true,
     LabQueueScope.collection =>
-      status == 'ORDERED' || status == 'COLLECTED' || status == 'IN_PROCESS',
+      status == 'ORDERED' ||
+      status == 'COLLECTED' ||
+      status == 'IN_PROCESS' ||
+      _labOrderHasIncompleteActiveItems(order),
     LabQueueScope.critical => order.hasCriticalResult,
     LabQueueScope.completed => status == 'COMPLETED',
     LabQueueScope.cancelled => status == 'CANCELLED',
   };
+}
+
+bool _labOrderHasIncompleteActiveItems(LabOrderSummary order) {
+  if (order.items.isEmpty) {
+    return order.pendingItemCount > 0 || order.inProcessItemCount > 0;
+  }
+  return order.items.any((LabOrderItem item) {
+    if (item.isRejected) {
+      return false;
+    }
+    return switch (_normalize(item.status)) {
+      'ORDERED' || 'COLLECTED' || 'IN_PROCESS' => true,
+      _ => !item.hasResult,
+    };
+  });
 }
 
 bool _containsAny(String query, Iterable<String?> values) {

@@ -13496,12 +13496,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorklistStatusReadyAbnormal => 'Ready - Abnormal';
 
   @override
-  String get labWorklistStatusPartiallyReadyCritical =>
-      'Partially Ready - Critical';
+  String get labWorklistStatusPartiallyReadyCritical => 'Pending - Critical';
 
   @override
-  String get labWorklistStatusPartiallyReadyAbnormal =>
-      'Partially Ready - Abnormal';
+  String get labWorklistStatusPartiallyReadyAbnormal => 'Pending - Abnormal';
 
   @override
   String get labWorklistStatusReadyFilled => 'Ready - Filled';

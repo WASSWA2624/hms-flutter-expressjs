@@ -17310,11 +17310,11 @@
   "@labWorklistStatusReadyAbnormal": {
     "description": "Lab worklist status when an abnormal result needs review."
   },
-  "labWorklistStatusPartiallyReadyCritical": "Partially Ready - Critical",
+  "labWorklistStatusPartiallyReadyCritical": "Pending - Critical",
   "@labWorklistStatusPartiallyReadyCritical": {
     "description": "Lab worklist status when some results are pending and a critical flag is present."
   },
-  "labWorklistStatusPartiallyReadyAbnormal": "Partially Ready - Abnormal",
+  "labWorklistStatusPartiallyReadyAbnormal": "Pending - Abnormal",
   "@labWorklistStatusPartiallyReadyAbnormal": {
     "description": "Lab worklist status when some results are pending and an abnormal flag is present."
   },

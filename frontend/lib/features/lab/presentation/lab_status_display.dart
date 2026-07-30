@@ -4,7 +4,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-/// At-a-glance Status column: phase + result flag (e.g. Partially Ready - Abnormal).
+/// At-a-glance Status column: phase + result flag (e.g. Pending - Abnormal).
 AppWorkspaceStatus labWorklistGlanceStatus(
   BuildContext context,
   LabOrderSummary order,
@@ -25,21 +25,33 @@ AppWorkspaceStatus labWorklistGlanceStatus(
   final bool isPartiallyReady =
       activeItems > 0 && enteredItems > 0 && enteredItems < activeItems;
 
-  // Patient groups roll critical/abnormal into status CRITICAL.
+  // Incomplete orders stay in the Pending phase, even with abnormal/critical flags.
+  if (isPartiallyReady &&
+      (hasCriticalResult || hasAbnormalResult || raw == 'CRITICAL')) {
+    if (hasCriticalResult) {
+      return AppWorkspaceStatus(
+        label: l10n.labWorklistStatusPartiallyReadyCritical,
+        tone: AppWorkspaceStatusTone.error,
+        icon: Icons.priority_high_outlined,
+      );
+    }
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusPartiallyReadyAbnormal,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.warning_amber_outlined,
+    );
+  }
+  // Patient groups roll critical/abnormal into status CRITICAL once fully entered.
   if (raw == 'CRITICAL' || hasCriticalResult) {
     return AppWorkspaceStatus(
-      label: isPartiallyReady
-          ? l10n.labWorklistStatusPartiallyReadyCritical
-          : l10n.labWorklistStatusReadyCritical,
+      label: l10n.labWorklistStatusReadyCritical,
       tone: AppWorkspaceStatusTone.error,
       icon: Icons.priority_high_outlined,
     );
   }
   if (hasAbnormalResult) {
     return AppWorkspaceStatus(
-      label: isPartiallyReady
-          ? l10n.labWorklistStatusPartiallyReadyAbnormal
-          : l10n.labWorklistStatusReadyAbnormal,
+      label: l10n.labWorklistStatusReadyAbnormal,
       tone: AppWorkspaceStatusTone.warning,
       icon: Icons.warning_amber_outlined,
     );

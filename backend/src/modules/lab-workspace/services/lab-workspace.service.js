@@ -208,23 +208,32 @@ const mapLabPatientWorkItem = (records = []) => {
   const hasRejectedItem = items.some((item) => normalizeStatus(item?.status) === 'CANCELLED');
   const hasRejectedSample = samples.some((sample) => normalizeStatus(sample?.status) === 'REJECTED');
   const activeOrders = mapped.filter((order) => !labOrderIsTerminal(order));
-  const status = hasCritical
-    ? 'CRITICAL'
-    : hasRejectedItem
-      ? 'REJECTED'
-      : hasRejectedSample
-        ? 'REJECTED_SAMPLE'
-        : statuses.includes('IN_PROCESS')
-        ? 'IN_PROCESS'
-        : statuses.includes('COLLECTED')
-          ? 'COLLECTED'
-          : statuses.includes('ORDERED')
-            ? 'ORDERED'
-            : statuses.length && statuses.every((entry) => entry === 'COMPLETED')
-              ? 'COMPLETED'
-              : statuses.length && statuses.every((entry) => entry === 'CANCELLED')
-                ? 'CANCELLED'
-                : representative.status;
+  const activeItems = items.filter(
+    (item) => normalizeStatus(item?.status) !== 'CANCELLED'
+  );
+  const hasIncompleteActiveItems = activeItems.some((item) =>
+    PENDING_ORDER_STATUSES.includes(normalizeStatus(item?.status))
+  );
+  // Incomplete work stays Pending (ORDERED/COLLECTED/IN_PROCESS). Only promote to
+  // CRITICAL once every active item has results entered.
+  const status =
+    hasCritical && !hasIncompleteActiveItems
+      ? 'CRITICAL'
+      : hasRejectedItem
+        ? 'REJECTED'
+        : hasRejectedSample
+          ? 'REJECTED_SAMPLE'
+          : statuses.includes('IN_PROCESS')
+            ? 'IN_PROCESS'
+            : statuses.includes('COLLECTED')
+              ? 'COLLECTED'
+              : statuses.includes('ORDERED')
+                ? 'ORDERED'
+                : statuses.length && statuses.every((entry) => entry === 'COMPLETED')
+                  ? 'COMPLETED'
+                  : statuses.length && statuses.every((entry) => entry === 'CANCELLED')
+                    ? 'CANCELLED'
+                    : representative.status;
 
   const testNames = buildLabTestsSummaryLabels(items);
   const shownTests = testNames.slice(0, 3);
@@ -277,8 +286,15 @@ const summarizeLabPatientGroups = (groups = []) => {
   return {
     total_patients: patientItems.length,
     actionable_patients: patientItems.filter((item) => !hasStatus(item, new Set(['COMPLETED', 'CANCELLED']))).length,
-    // Pending badge: patients with not-yet-completed orders.
-    collection_patients: patientItems.filter((item) => isPendingPatientStatus(item.status)).length,
+    // Pending badge: patients with not-yet-completed orders (includes partial
+    // result entry even when some entered values are abnormal/critical).
+    collection_patients: patientItems.filter(
+      (item) =>
+        isPendingPatientStatus(item.status) ||
+        toSafeArray(item.items).some((entry) =>
+          PENDING_ORDER_STATUSES.includes(normalizeStatus(entry?.status))
+        )
+    ).length,
     processing_patients: 0,
     results_patients: patientItems.filter((item) => Number(item.in_process_item_count || 0) > 0).length,
     critical_patients: patientItems.filter((item) =>
