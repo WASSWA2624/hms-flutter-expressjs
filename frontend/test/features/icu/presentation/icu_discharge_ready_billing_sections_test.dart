@@ -344,8 +344,8 @@ void main() {
         same(icuBillingReadRequirement),
       );
       expect(
-        icuBillingReadRequirement,
-        same(billingReadRequirement),
+        IcuDischargeReadyAtomPermissions.openBilling.allPermissions,
+        billingReadRequirement.allPermissions,
       );
     });
   });

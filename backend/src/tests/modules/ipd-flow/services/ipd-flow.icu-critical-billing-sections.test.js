@@ -24,6 +24,19 @@ jest.mock('@lib/websocket', () => ({
   },
   NOTIFICATION_EVENTS: { NOTIFICATION_CREATED: 'notification.created' },
 }));
+jest.mock('@prisma/client', () => ({
+  $transaction: jest.fn(),
+  admission: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+  facility: { findFirst: jest.fn() },
+  tenant: { findFirst: jest.fn() },
+  patient: { findFirst: jest.fn() },
+  encounter: { findFirst: jest.fn() },
+  user_role: { findMany: jest.fn() },
+  notification: { create: jest.fn() },
+  follow_up: { create: jest.fn() },
+  icu_stay: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
+  critical_alert: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
+}));
 jest.mock('@lib/billing/clinical-request-billing', () => {
   const actual = jest.requireActual('@lib/billing/clinical-request-billing');
   return {
@@ -104,8 +117,8 @@ describe('IPD ICU Critical billing-sections (Critical alerts tab)', () => {
       );
       expect(billing.line_items).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'ICU_CRITICAL_CARE_PACKAGE' }),
-          expect.objectContaining({ id: 'ICU_BED_DAY' }),
+          expect.objectContaining({ id: 'icu-critical-care-package' }),
+          expect.objectContaining({ id: 'icu-bed-day' }),
         ])
       );
     });
@@ -349,9 +362,10 @@ describe('IPD ICU Critical billing-sections (Critical alerts tab)', () => {
       })
     );
 
+    // Empty body resolves the latest open alert on the active stay.
     await ipdFlowService.resolveCriticalAlert(
       'ADMCRIT1',
-      { critical_alert_id: 'alert-1' },
+      {},
       { tenant_id: 'tenant-1' }
     );
 

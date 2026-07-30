@@ -3,21 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
-import 'package:hosspi_hms/features/icu/presentation/icu_active_billing_inventory.dart';
+import 'package:hosspi_hms/features/icu/presentation/icu_critical_billing_inventory.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -28,33 +29,30 @@ import '../../../helpers/section_layout_test_helpers.dart';
 
 class _MockIcuRepository extends Mock implements IcuRepository {}
 
-const IcuPatientSummary _activePatient = IcuPatientSummary(
-  id: 'ADM-ACTIVE-BILL-1',
-  admissionId: 'ADM-ACTIVE-BILL-1',
-  displayId: 'ADM-AB1',
-  patientId: 'PAT-ACTIVE-BILL-1',
-  patientDisplayName: 'Active Billing Patient',
+const IcuPatientSummary _criticalPatient = IcuPatientSummary(
+  id: 'ADM-CRIT-BILL-1',
+  admissionId: 'ADM-CRIT-BILL-1',
+  displayId: 'ADMCRITBILL1',
+  patientId: 'patient-uuid-crit-bill',
+  patientDisplayName: 'Critical Billing Patient',
   icuStatus: 'ACTIVE',
-  bedLabel: 'ICU-1',
-  hasActiveBed: true,
-  encounterId: 'ENC-ACTIVE-BILL-1',
+  hasCriticalAlert: true,
+  criticalSeverity: 'HIGH',
+  bedLabel: 'ICU-2',
+  encounterId: 'ENC-CRIT-BILL-1',
   sourceKind: 'EMERGENCY',
 );
 
-const IcuPatientDetail _activeDetail = IcuPatientDetail(
-  summary: _activePatient,
-  activeStay: IcuStaySummary(id: 'stay-active-1'),
+const IcuCriticalAlert _latestAlert = IcuCriticalAlert(
+  id: 'ALERT-BILL-1',
+  severity: 'HIGH',
+  message: 'Hypotension',
 );
 
-const IcuPatientSummary _needsStay = IcuPatientSummary(
-  id: 'ADM-NEEDS-STAY-1',
-  admissionId: 'ADM-NEEDS-STAY-1',
-  displayId: 'ADM-NS1',
-  patientId: 'PAT-NEEDS-STAY-1',
-  patientDisplayName: 'Needs Stay Patient',
-  icuStatus: 'NONE',
-  hasActiveBed: true,
-  encounterId: 'ENC-NEEDS-STAY-1',
+const IcuPatientDetail _criticalDetail = IcuPatientDetail(
+  summary: _criticalPatient,
+  activeStay: IcuStaySummary(id: 'STAY-CRIT-BILL-1'),
+  alerts: <IcuCriticalAlert>[_latestAlert],
 );
 
 AppAccessPolicy _policy({
@@ -63,15 +61,25 @@ AppAccessPolicy _policy({
 }) {
   final bool needsClinical = permissions.any(
     (AppPermission permission) =>
-        permission == AppPermissions.clinicalRead ||
-        permission == AppPermissions.clinicalWrite,
+        permission == AppPermissions.clinicalWrite ||
+        permission == AppPermissions.clinicalRead,
   );
-  final bool needsBilling = permissions.contains(AppPermissions.billingRead);
+  final bool needsEmergency = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.emergencyWrite ||
+        permission == AppPermissions.emergencyRead,
+  );
+  final bool needsBilling = permissions.any(
+    (AppPermission permission) =>
+        permission == AppPermissions.billingRead ||
+        permission == AppPermissions.billingWrite,
+  );
+
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(
-        roles: <String>['DOCTOR'],
+        roles: <String>['NURSE'],
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
       ),
@@ -88,6 +96,11 @@ AppAccessPolicy _policy({
                 code: 'encounters-vitals',
                 licenseStatus: 'ACTIVE',
               ),
+            if (needsEmergency)
+              const AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
             if (needsBilling)
               const AppModuleEntitlement(
                 code: 'billing-payments',
@@ -101,25 +114,30 @@ AppAccessPolicy _policy({
 
 void _stubRepository(
   _MockIcuRepository repository, {
-  List<IcuPatientSummary> items = const <IcuPatientSummary>[_activePatient],
-  IcuPatientDetail detail = _activeDetail,
+  List<IcuPatientSummary> items = const <IcuPatientSummary>[_criticalPatient],
+  IcuPatientDetail detail = _criticalDetail,
 }) {
   when(() => repository.listIcuBoard(any())).thenAnswer((invocation) {
     final IcuBoardQuery query =
         invocation.positionalArguments.single as IcuBoardQuery;
+    List<IcuPatientSummary> filtered = items;
+    if (query.scope == IcuBoardScope.critical) {
+      filtered = items
+          .where((IcuPatientSummary item) => item.hasCriticalAlert)
+          .toList(growable: false);
+    }
     return Future<Result<AppPage<IcuPatientSummary>>>.value(
       Result<AppPage<IcuPatientSummary>>.success(
         AppPage<IcuPatientSummary>(
-          items: items,
+          items: filtered,
           request: query.pageRequest,
-          totalItemCount: items.length,
+          totalItemCount: filtered.length,
         ),
       ),
     );
   });
   when(repository.loadReferenceData).thenAnswer(
-    (_) async =>
-        const Result<IcuReferenceData>.success(IcuReferenceData()),
+    (_) async => const Result<IcuReferenceData>.success(IcuReferenceData()),
   );
   when(repository.loadBedBoard).thenAnswer(
     (_) async => const Result<IcuBedBoard>.success(IcuBedBoard()),
@@ -129,14 +147,14 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpActiveTab(
+Future<void> _pumpCriticalTab(
   WidgetTester tester, {
   required _MockIcuRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<IcuPatientSummary> items = const <IcuPatientSummary>[_activePatient],
-  IcuPatientDetail detail = _activeDetail,
+  List<IcuPatientSummary> items = const <IcuPatientSummary>[_criticalPatient],
+  IcuPatientDetail detail = _criticalDetail,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -148,7 +166,7 @@ Future<void> _pumpActiveTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/icu',
+    initialLocation: '/icu?section=critical',
     routes: <RouteBase>[
       GoRoute(
         path: '/icu',
@@ -163,14 +181,8 @@ Future<void> _pumpActiveTab(
       GoRoute(
         path: '/billing',
         builder: (BuildContext context, GoRouterState state) {
-          final String? patientId =
-              state.uri.queryParameters['patient_id'];
           return Scaffold(
-            body: Text(
-              patientId == null || patientId.isEmpty
-                  ? 'Billing workspace'
-                  : 'Billing workspace patient=$patientId',
-            ),
+            body: Text('Billing workspace ${state.uri.query}'),
           );
         },
       ),
@@ -199,8 +211,8 @@ Future<void> _pumpActiveTab(
     ),
   );
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
-  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -210,32 +222,54 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const IcuBoardQuery());
     registerFallbackValue(
-      const IcuPatientSummary(id: 'ADM-1', admissionId: 'ADM-1'),
+      const IcuPatientSummary(id: 'fallback', admissionId: 'fallback'),
     );
-    registerFallbackValue(
-      const IcuPatientDetail(
-        summary: IcuPatientSummary(id: 'ADM-1', admissionId: 'ADM-1'),
-      ),
-    );
+    registerFallbackValue(_criticalDetail);
   });
 
   setUp(() {
     repository = _MockIcuRepository();
   });
 
-  group('ICU Active billing inventory (AC1)', () {
+  group('ICU Critical billing inventory (AC1)', () {
     test('classifies every financially relevant atom', () {
-      expect(IcuActiveBillingInventory.all, isNotEmpty);
-      for (final IcuActiveFinancialAtom atom
-          in IcuActiveBillingInventory.all) {
+      expect(IcuCriticalBillingInventory.all, isNotEmpty);
+      expect(
+        IcuCriticalBillingInventory.all.map(
+          (IcuCriticalFinancialAtom a) => a.id,
+        ),
+        containsAll(<String>[
+          'tab',
+          'alert_column',
+          'next_action_acknowledge',
+          'acknowledge_alert',
+          'start_stay',
+          'round_note',
+          'order_lab',
+          'order_imaging',
+          'prescribe',
+          'mark_readiness',
+          'billing_deferred_badge',
+          'open_billing',
+          'collect_payment',
+          'adjust_refund',
+        ]),
+      );
+      expect(
+        IcuCriticalBillingInventory.scopeNote,
+        contains('persistIcuStayBilling'),
+      );
+
+      for (final IcuCriticalFinancialAtom atom
+          in IcuCriticalBillingInventory.all) {
         expect(atom.id, isNotEmpty);
         expect(atom.label, isNotEmpty);
         final bool billable =
-            atom.financialClass == IcuActiveFinancialClass.createCharge ||
-            atom.financialClass == IcuActiveFinancialClass.settle ||
-            atom.financialClass == IcuActiveFinancialClass.adjust ||
-            atom.financialClass == IcuActiveFinancialClass.reverse ||
-            atom.financialClass == IcuActiveFinancialClass.defer;
+            atom.financialClass == IcuCriticalFinancialClass.createCharge ||
+            atom.financialClass == IcuCriticalFinancialClass.settle ||
+            atom.financialClass == IcuCriticalFinancialClass.adjust ||
+            atom.financialClass == IcuCriticalFinancialClass.reverse ||
+            atom.financialClass == IcuCriticalFinancialClass.defer;
         if (billable && atom.mounted) {
           expect(
             atom.billingPath,
@@ -253,71 +287,74 @@ void main() {
       }
     });
 
-    test('billable mounted atoms reuse shared Billing paths', () {
-      for (final IcuActiveFinancialAtom atom
-          in IcuActiveBillingInventory.billableMounted) {
-        expect(atom.billingPath, isNotEmpty);
-        expect(
-          atom.billingPath!.toLowerCase(),
-          anyOf(
-            contains('billing'),
-            contains('persist'),
-            contains('lab'),
-            contains('radiology'),
-            contains('pharmacy'),
-            contains('ward-round'),
-            contains('icu'),
-            contains('discharge'),
-            contains('admission'),
-          ),
-        );
-      }
-    });
-
-    test('inline cashier settle/adjust atoms are not mounted', () {
-      expect(IcuActiveBillingInventory.collectPayment.mounted, isFalse);
-      expect(IcuActiveBillingInventory.adjustRefund.mounted, isFalse);
+    test('billable mounted atoms wire through shared Billing (no bypass)', () {
       expect(
-        IcuActiveBillingInventory.forbidsInlineCashier(
-          IcuActiveFinancialClass.settle,
-        ),
+        IcuCriticalBillingInventory.allBillableAtomsWireThroughBilling,
         isTrue,
+      );
+      expect(
+        IcuCriticalBillingInventory.startStay.billingPath,
+        contains('persistIcuStayBilling'),
+      );
+      expect(
+        IcuCriticalBillingInventory.acknowledgeAlert.financialClass,
+        IcuCriticalFinancialClass.notBilled,
+      );
+      expect(
+        IcuCriticalBillingInventory.nextActionAcknowledge.auditCode,
+        'NOT_BILLED',
       );
     });
 
-    test('Open billing gate requires billing:read', () {
+    test('cashier settle/adjust atoms are unmounted on Critical', () {
+      expect(IcuCriticalBillingInventory.collectPayment.mounted, isFalse);
+      expect(IcuCriticalBillingInventory.adjustRefund.mounted, isFalse);
       expect(
-        identical(
-          IcuActiveIcuAtomPermissions.openBilling,
-          icuBillingReadRequirement,
+        IcuCriticalBillingInventory.isInlineCollectionForbidden(
+          IcuCriticalFinancialClass.settle,
         ),
         isTrue,
+      );
+      expect(
+        IcuCriticalAtomPermissions.openBilling,
+        same(icuBillingReadRequirement),
       );
     });
   });
 
-  group('ICU Active billing UX (AC2-AC4)', () {
+  group('ICU Critical billing wiring (AC2-AC4)', () {
+    test('workspace realtime includes billing for status parity', () {
+      expect(
+        RealtimeEventGroups.icu,
+        containsAll(RealtimeEventGroups.billing),
+      );
+      expect(
+        RealtimeEventGroups.icu,
+        containsAll(RealtimeEventGroups.criticalAlerts),
+      );
+    });
+
     testWidgets(
-      'authorized reader has no collect/adjust; Open billing requires billing:read',
+      'unauthorized cannot Open billing or collect — mobile dark',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpCriticalTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
             permissions: <AppPermission>{AppPermissions.clinicalRead},
           ),
+          physicalSize: const Size(390, 844),
+          themeMode: ThemeMode.dark,
         );
 
-        expect(find.text('Active Billing Patient'), findsOneWidget);
+        expect(find.text('Critical Billing Patient'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
         expectFlatSections(tester);
 
-        await tester.tap(find.text('Active Billing Patient'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('Critical Billing Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Billing deferred'), findsWidgets);
@@ -328,41 +365,54 @@ void main() {
     );
 
     testWidgets(
-      'billing:read shows Open billing (patient-scoped) without cashier',
+      'Open billing navigates to Billing — desktop light',
       (WidgetTester tester) async {
-        await _pumpActiveTab(
+        await _pumpCriticalTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
             permissions: <AppPermission>{
               AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
               AppPermissions.billingRead,
             },
           ),
         );
 
-        await tester.tap(find.text('Active Billing Patient'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('Critical Billing Patient'));
         await tester.pumpAndSettle();
 
+        expect(find.text('Billing deferred'), findsWidgets);
         expect(find.text('Open billing'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
-        expectFlatSections(tester);
-
-        await tester.tap(find.text('Open billing'));
-        await tester.pumpAndSettle();
         expect(
-          find.text('Billing workspace patient=PAT-ACTIVE-BILL-1'),
+          IcuCriticalAtomPermissions.openBilling.isAllowed(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.billingRead,
+              },
+            ),
+          ),
+          isTrue,
+        );
+
+        await tester.tap(find.text('Open billing').first);
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Billing workspace'), findsOneWidget);
+        expect(
+          find.textContaining('patient_id=patient-uuid-crit-bill'),
           findsOneWidget,
         );
+        expectFlatSections(tester);
       },
     );
 
     testWidgets('list chrome has no redundant cashier entry points', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpCriticalTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -373,70 +423,18 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Active ICU'), findsWidgets);
+      expect(find.textContaining('Critical'), findsWidgets);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);
     });
-
-    testWidgets('start stay dialog posts billing payload when charged', (
-      WidgetTester tester,
-    ) async {
-      when(
-        () => repository.startIcuStay(
-          detail: any(named: 'detail'),
-          startedAt: any(named: 'startedAt'),
-          billing: any(named: 'billing'),
-        ),
-      ).thenAnswer((Invocation invocation) async {
-        final Map<String, Object?>? billing =
-            invocation.namedArguments[#billing] as Map<String, Object?>?;
-        expect(billing, isNotNull);
-        expect(billing!['payment_status'], isNotNull);
-        final IcuPatientDetail detail =
-            invocation.namedArguments[#detail] as IcuPatientDetail;
-        return Result<IcuPatientDetail>.success(
-          detail.copyWith(
-            summary: detail.summary.copyWith(icuStatus: 'ACTIVE'),
-            activeStay: const IcuStaySummary(id: 'stay-new'),
-          ),
-        );
-      });
-
-      await _pumpActiveTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-            AppPermissions.billingRead,
-          },
-        ),
-        items: const <IcuPatientSummary>[_needsStay],
-        detail: const IcuPatientDetail(summary: _needsStay),
-      );
-
-      await tester.tap(find.text('Needs Stay Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Start ICU stay'), findsWidgets);
-      await tester.tap(find.text('Start ICU stay').first);
-      await tester.pumpAndSettle();
-
-      expect(find.text('ICU critical-care package'), findsOneWidget);
-      expect(find.text('ICU bed / day'), findsOneWidget);
-      expectFlatSections(tester);
-    });
   });
 
-  group('ICU Active section layout (AC5)', () {
-    testWidgets('desktop Active: flat sections on list + detail', (
+  group('ICU Critical section layout (AC5)', () {
+    testWidgets('desktop Critical: flat sibling sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpCriticalTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -450,15 +448,14 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await tester.tap(find.text('Active Billing Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Critical Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
+      expect(find.textContaining('Critical alerts'), findsWidgets);
     });
 
-    testWidgets('mobile Active: flat sections', (WidgetTester tester) async {
-      await _pumpActiveTab(
+    testWidgets('mobile Critical: flat sections', (WidgetTester tester) async {
+      await _pumpCriticalTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -472,7 +469,7 @@ void main() {
     testWidgets('light theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpCriticalTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -483,9 +480,7 @@ void main() {
         ),
         themeMode: ThemeMode.light,
       );
-      await tester.tap(find.text('Active Billing Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Critical Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
@@ -493,7 +488,7 @@ void main() {
     testWidgets('dark theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpActiveTab(
+      await _pumpCriticalTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -504,11 +499,51 @@ void main() {
         ),
         themeMode: ThemeMode.dark,
       );
-      await tester.tap(find.text('Active Billing Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Critical Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
+    });
+  });
+
+  group('ICU Critical UI states (AC4, AC6)', () {
+    testWidgets('authorized empty state remains observable', (
+      WidgetTester tester,
+    ) async {
+      await _pumpCriticalTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        items: const <IcuPatientSummary>[],
+      );
+
+      expect(find.textContaining('Critical'), findsWidgets);
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expectFlatSections(tester);
+    });
+
+    test('unauthorized billing write requirement stays on Billing workspace', () {
+      final AppAccessPolicy clinicalOnly = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+        },
+      );
+      expect(
+        IcuCriticalAtomPermissions.openBilling.isAllowed(clinicalOnly),
+        isFalse,
+      );
+      expect(
+        billingWorkspaceWriteRequirement.isAllowed(clinicalOnly),
+        isFalse,
+      );
+      expect(
+        IcuCriticalBillingInventory.collectPayment.requirement.isAllowed(
+          clinicalOnly,
+        ),
+        isFalse,
+      );
     });
   });
 }

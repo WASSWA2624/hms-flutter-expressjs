@@ -1,5 +1,11 @@
 /**
  * Interop service
+ *
+ * Exchange / readiness stubs for FHIR, HL7, DICOM, and migration. These
+ * handlers must not post patient Billing ledger rows. If a payload later
+ * materializes clinical orders or settlements, invoke shared Billing
+ * (`clinical-request-billing` / receive-payment / adjustment) with
+ * idempotency keys — never a parallel cash ledger here.
  */
 
 const interopRepository = require('@repositories/interop/interop.repository');

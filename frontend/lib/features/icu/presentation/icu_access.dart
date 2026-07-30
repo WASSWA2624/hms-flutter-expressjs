@@ -642,7 +642,8 @@ abstract final class IcuDischargeReadyAtomPermissions {
 /// `clinical:write` alone (ineligible stay mutations stay absent via
 /// `canRecordIcuAction` / start-stay eligibility). Route entry ∪ is
 /// [routeEntry]. Tab chrome stays ∪ `clinical:read` | `emergency:read`.
-/// Open IPD / billing / clearance / print remain without write.
+/// Open IPD / clearance / print remain without write. Open billing needs
+/// `billing:read` + `billing-payments` ([openBilling] / [billingPanel]).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -653,7 +654,8 @@ abstract final class IcuDischargeReadyAtomPermissions {
 /// | Row select → stay detail | read | ([detail]) |
 /// | Next action Open IPD | navigate | [nextActionOpenIpd] (no write) |
 /// | Detail complementary writes (when eligible) | create / update | write ∪ |
-/// | Detail Open billing / Open IPD / clearance | navigate | [navigate] |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
+/// | Detail Open IPD / clearance | navigate | [navigate] |
 /// | Detail Print summary | export / read | read ∪ ([printSummary]) |
 /// | Nested mutation dialogs / `?panel=` | create / update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
@@ -803,7 +805,9 @@ abstract final class IcuCriticalAtomPermissions {
 /// ∪ `clinical:write` | `emergency:write` (matrix ∩ `clinical:write` alone —
 /// keep source). Route entry keeps AppRoutes ∪ ([routeEntry]). Tab chrome
 /// stays ∪ `clinical:read` | `emergency:read`. Transfer status column is read
-/// chrome. Open IPD / billing / clearance / print remain without write.
+/// chrome. Open IPD / clearance / print remain without write. Open billing
+/// needs `billing:read` + `billing-payments` ([openBilling] / [billingPanel]).
+/// Financial inventory: `icu_transfers_billing_inventory.dart`.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -817,7 +821,8 @@ abstract final class IcuCriticalAtomPermissions {
 /// | Next action Request transfer | create | write ∪ ([nextActionRequestTransfer]) |
 /// | Detail complementary writes (vitals / alert / round / orders / end stay / …) | create / update | write ∪ |
 /// | Detail Manage / Request transfer (when not row next-action) | create / update | write ∪ |
-/// | Detail Open billing / Open IPD / clearance | navigate | [navigate] |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
+/// | Detail Open IPD / clearance | navigate | [navigate] |
 /// | Detail Print summary | export / read | read ∪ ([printSummary]) |
 /// | Nested transfer / mutation dialogs | create / update | write ∪ |
 /// | Deep link `?panel=transfer` | create / update | write ∪ ([panelDeepLink]) |
