@@ -1485,36 +1485,64 @@ class _BillingImpactPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ClaimInvoiceOption? invoice = detail.invoice;
     final CoveragePlanOption? coverage = detail.coveragePlan;
+    final PreAuthorizationRecord? authorization = detail.authorization;
     final String body = detail.isAuthorization
         ? l10n.claimsAuthorizationBillingImpactBody
         : _claimBillingImpact(context, detail);
 
+    final List<AppInfoTileData> tiles = detail.isAuthorization
+        ? <AppInfoTileData>[
+            AppInfoTileData(
+              icon: Icons.verified_user_outlined,
+              label: l10n.claimsCoveragePercentLabel,
+              value: coverage?.coveragePercentage == null
+                  ? l10n.profileUnknownValue
+                  : l10n.claimsCoveragePercentValue(
+                      coverage!.coveragePercentage!.toString(),
+                    ),
+            ),
+            AppInfoTileData(
+              icon: Icons.check_circle_outline,
+              label: l10n.claimsApprovedAmountLabel,
+              value: _preAuthMoneyLabel(context, authorization?.approvedAmount),
+            ),
+            AppInfoTileData(
+              icon: Icons.payments_outlined,
+              label: l10n.claimsConsumedAmountLabel,
+              value: _preAuthMoneyLabel(context, authorization?.consumedAmount),
+            ),
+            AppInfoTileData(
+              icon: Icons.account_balance_wallet_outlined,
+              label: l10n.claimsRemainingAmountLabel,
+              value: _preAuthMoneyLabel(context, authorization?.remainingAmount),
+            ),
+          ]
+        : <AppInfoTileData>[
+            AppInfoTileData(
+              icon: Icons.verified_user_outlined,
+              label: l10n.claimsCoveragePercentLabel,
+              value: coverage?.coveragePercentage == null
+                  ? l10n.profileUnknownValue
+                  : l10n.claimsCoveragePercentValue(
+                      coverage!.coveragePercentage!.toString(),
+                    ),
+            ),
+            AppInfoTileData(
+              icon: Icons.receipt_long_outlined,
+              label: l10n.claimsInvoiceStatusLabel,
+              value: _invoiceStatusLabel(context, invoice),
+            ),
+            AppInfoTileData(
+              icon: Icons.payments_outlined,
+              label: l10n.claimsPatientBalanceLabel,
+              value: _patientBalanceLabel(context, detail),
+            ),
+          ];
+
     return AppWorkspaceDetailPanel(
       title: l10n.claimsBillingImpactTitle,
       description: body,
-      child: AppInfoTileGrid(
-        items: <AppInfoTileData>[
-          AppInfoTileData(
-            icon: Icons.verified_user_outlined,
-            label: l10n.claimsCoveragePercentLabel,
-            value: coverage?.coveragePercentage == null
-                ? l10n.profileUnknownValue
-                : l10n.claimsCoveragePercentValue(
-                    coverage!.coveragePercentage!.toString(),
-                  ),
-          ),
-          AppInfoTileData(
-            icon: Icons.receipt_long_outlined,
-            label: l10n.claimsInvoiceStatusLabel,
-            value: _invoiceStatusLabel(context, invoice),
-          ),
-          AppInfoTileData(
-            icon: Icons.payments_outlined,
-            label: l10n.claimsPatientBalanceLabel,
-            value: _patientBalanceLabel(context, detail),
-          ),
-        ],
-      ),
+      child: AppInfoTileGrid(items: tiles),
     );
   }
 }
@@ -1969,6 +1997,17 @@ class _AuthorizationStatusDialogState
             controller: _approvedAmountController,
             labelText: l10n.claimsApprovedAmountFieldLabel,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            isRequired: true,
+            validator: AppValidators.compose(<FormFieldValidator<String>>[
+              AppValidators.required(l10n.claimsStatusRequiredMessage),
+              (String? value) {
+                final num? amount = num.tryParse(value?.trim() ?? '');
+                if (amount == null || amount < 0) {
+                  return l10n.claimsStatusRequiredMessage;
+                }
+                return null;
+              },
+            ]),
           ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
@@ -2759,6 +2798,13 @@ String _patientBalanceLabel(BuildContext context, ClaimsQueueDetail detail) {
     Localizations.localeOf(context),
     currencyCode: invoice?.currency,
   );
+}
+
+String _preAuthMoneyLabel(BuildContext context, num? amount) {
+  if (amount == null) {
+    return context.l10n.billingNotRecorded;
+  }
+  return AppFormatters.currency(amount, Localizations.localeOf(context));
 }
 
 String _claimBillingImpact(BuildContext context, ClaimsQueueDetail detail) {
