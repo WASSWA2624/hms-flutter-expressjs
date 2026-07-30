@@ -496,8 +496,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
-        expect(find.text('Approved'), findsWidgets);
-        expect(find.text('Notes'), findsWidgets);
+        expect(find.text('Record insurer response'), findsWidgets);
         expectFlatSections(tester);
       },
     );

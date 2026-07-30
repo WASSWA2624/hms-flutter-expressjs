@@ -355,6 +355,7 @@ final class ClaimInvoiceDto {
         _string(json['human_friendly_id']) ??
         _string(json['id']) ??
         '';
+    final ClaimsJsonMap financials = _map(json['financials']);
     return ClaimInvoiceOption(
       id: _string(json['id']) ?? displayId,
       displayId: displayId,
@@ -365,6 +366,11 @@ final class ClaimInvoiceDto {
       status: _string(json['status']),
       billingStatus: _string(json['billing_status']),
       totalAmount: _number(json['total_amount']),
+      balanceDue:
+          _number(json['balance_due']) ?? _number(financials['balance_due']),
+      netPaidTotal:
+          _number(json['net_paid_total']) ??
+          _number(financials['net_paid_total']),
       currency: _string(json['currency']),
       issuedAt: _date(json['issued_at']) ?? _date(json['created_at']),
     );

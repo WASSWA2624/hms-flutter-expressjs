@@ -157,15 +157,9 @@ Future<void> openClaimsEnrollmentDialog({
             .read(insuranceCatalogRepositoryProvider)
             .createEnrollment(payload);
         return result.when(
-          success: (Map<String, Object?> enrollment) async {
-            final String? enrollmentId =
-                enrollment['display_id']?.toString() ??
-                enrollment['id']?.toString();
-            if (enrollmentId != null && enrollmentId.isNotEmpty) {
-              await ref
-                  .read(insuranceCatalogRepositoryProvider)
-                  .verifyEnrollment(enrollmentId);
-            }
+          success: (_) async {
+            // Keep PENDING — silent auto-verify to ACTIVE would seed wrong
+            // payer context at charge time. Explicit verify is a separate path.
             await ref
                 .read(claimsWorkspaceControllerProvider.notifier)
                 .refresh();

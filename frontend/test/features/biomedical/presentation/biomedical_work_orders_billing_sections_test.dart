@@ -423,9 +423,35 @@ void main() {
     );
 
     testWidgets(
-      'Create work order primary mutation stays NOT_BILLED',
+      'Create work order primary dialog has no billing affordances',
       (WidgetTester tester) async {
-        when(() => repository.createResource(any(), any())).thenAnswer(
+        await _pumpWorkOrders(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.biomedRead,
+              AppPermissions.biomedWrite,
+            },
+          ),
+        );
+
+        await tester.tap(find.byTooltip('Create work order'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('CREATE WORK ORDER'), findsOneWidget);
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.textContaining('Issue invoice'), findsNothing);
+        expect(find.textContaining('Balance due'), findsNothing);
+        expectFlatSections(tester);
+        verifyNever(() => repository.createResource(any(), any()));
+      },
+    );
+
+    testWidgets(
+      'Update work order mutation syncs without billing gate',
+      (WidgetTester tester) async {
+        when(() => repository.updateResource(any(), any(), any())).thenAnswer(
           (_) async => const Result<BiomedicalMutationResult>.success(
             BiomedicalMutationResult(asset: _openWorkOrder),
           ),
@@ -442,23 +468,18 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byTooltip('Create work order'));
+        await tester.tap(find.text('Pump repair'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Update work order'));
         await tester.pumpAndSettle();
 
-        final Finder formFields = find.descendant(
-          of: find.byType(AppDialog).last,
-          matching: find.byType(TextFormField),
-        );
-        for (int i = 0; i < formFields.evaluate().length; i++) {
-          await tester.enterText(formFields.at(i), 'New WO title');
-        }
-        await tester.pump();
         await tester.tap(find.text('Submit').last);
         await tester.pumpAndSettle();
 
         verify(
-          () => repository.createResource(
+          () => repository.updateResource(
             BiomedicalResources.workOrders,
+            any(),
             any(),
           ),
         ).called(1);

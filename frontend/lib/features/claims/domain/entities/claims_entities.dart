@@ -195,6 +195,8 @@ final class ClaimInvoiceOption {
     this.status,
     this.billingStatus,
     this.totalAmount,
+    this.balanceDue,
+    this.netPaidTotal,
     this.currency,
     this.issuedAt,
   });
@@ -205,6 +207,12 @@ final class ClaimInvoiceOption {
   final String? status;
   final String? billingStatus;
   final num? totalAmount;
+
+  /// Outstanding balance from Billing financials (ledger SoR).
+  final num? balanceDue;
+
+  /// Net paid total from Billing financials after remittance / payments.
+  final num? netPaidTotal;
   final String? currency;
   final DateTime? issuedAt;
 

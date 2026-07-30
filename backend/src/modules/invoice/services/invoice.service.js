@@ -10,6 +10,7 @@
 const invoiceRepository = require('@repositories/invoice/invoice.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { computeInvoiceFinancials } = require('@lib/billing/financials');
 const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
@@ -52,6 +53,14 @@ const mapInvoiceForDisplay = (record) => {
         )}))
     : record.payments;
 
+  // Attach Billing financials so Claims Settled (and other readers) show the
+  // same balance_due / net_paid as the ledger — never a module-local estimate.
+  const financials = computeInvoiceFinancials({
+    ...record,
+    items: mappedItems,
+    payments: mappedPayments,
+  });
+
   return {
     ...record,
     display_id: resolvePublicIdentifier(record?.display_id, record?.human_friendly_id, record?.id),
@@ -72,7 +81,11 @@ const mapInvoiceForDisplay = (record) => {
     ),
     timeline_at: record?.timeline_at || record?.issued_at || record?.created_at || null,
     items: mappedItems,
-    payments: mappedPayments};
+    payments: mappedPayments,
+    financials,
+    balance_due: financials.balance_due,
+    net_paid_total: financials.net_paid_total,
+  };
 };
 
 const resolveListFilters = async (filters = {}, page, limit) => {
@@ -177,8 +190,14 @@ const getInvoiceById = async (id, userId, ipAddress) => {
       model: 'invoice',
       identifier: id});
     const invoice = await invoiceRepository.findById(resolvedId, {
-      items: true,
-      payments: true,
+      items: { where: { deleted_at: null } },
+      payments: {
+        where: { deleted_at: null },
+        include: {
+          refunds: { where: { deleted_at: null } },
+        },
+      },
+      billing_adjustments: { where: { deleted_at: null } },
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
       patient: { select: { id: true, human_friendly_id: true } }

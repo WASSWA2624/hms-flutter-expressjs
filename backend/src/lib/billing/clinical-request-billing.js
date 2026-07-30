@@ -21,6 +21,12 @@ const {
   applyCoverageSplitToLineItems,
   summarizeCoverageShares,
 } = require('@lib/billing/coverage-split');
+const {
+  findActivePreAuthorizationLimit,
+  remainingAmount: preAuthRemainingAmount,
+  consumePreAuthorizationForBillingTx,
+  sumInsurerShareFromItems,
+} = require('@lib/billing/pre-authorization-billing');
 
 const SKIPPED_PAYMENT_STATUSES = new Set(['NOT_BILLED', 'NOT_REQUIRED', 'NO_CHARGE']);
 
@@ -427,6 +433,25 @@ const enrichBillingWithPriceEngine = async (billing = {}, options = {}) => {
   });
 
   if (paymentMode === 'INSURANCE') {
+    let preAuthRemaining = options.preAuthRemainingAmount;
+    if (
+      (preAuthRemaining === undefined || preAuthRemaining === null) &&
+      (options.patientId || options.encounterId || options.admissionId)
+    ) {
+      try {
+        const prisma = require('@prisma/client');
+        const activePreAuth = await findActivePreAuthorizationLimit(prisma, {
+          patientId: options.patientId || null,
+          encounterId: options.encounterId || null,
+          admissionId: options.admissionId || null,
+          coveragePlanId,
+        });
+        preAuthRemaining = preAuthRemainingAmount(activePreAuth);
+      } catch (_error) {
+        preAuthRemaining = null;
+      }
+    }
+
     enrichedLines = applyCoverageSplitToLineItems(enrichedLines, {
       insured: true,
       paymentMode,
@@ -436,6 +461,7 @@ const enrichBillingWithPriceEngine = async (billing = {}, options = {}) => {
         billing.coverage_percentage ?? options.coveragePercentage ?? null,
       copayType: billing.copay_type || options.copayType || null,
       copayValue: billing.copay_value ?? options.copayValue ?? null,
+      preAuthRemainingAmount: preAuthRemaining,
     });
   }
 
@@ -1513,58 +1539,61 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     catalogType: options.catalogType,
     catalogItemId: options.catalogItemId,
     currency: options.currency,
+    patientId,
+    encounterId: options.encounterId || null,
+    admissionId: options.admissionId || null,
   });
-
-  const invoiceItems = buildInvoiceLineItems(billing, {
-    description: options.description,
-    catalogItemId: options.catalogItemId,
-    catalogType: options.catalogType || billing.catalog_type,
-    billingEntity: options.billingEntity || billing.billing_entity,
-    paymentMode: options.paymentMode || billing.payment_mode,
-    coveragePlanId: options.coveragePlanId || billing.coverage_plan_id,
-    insuranceCompanyId: options.insuranceCompanyId || billing.insurance_company_id,
-  });
-  const invoiceTotal = roundMoney(
-    invoiceItems.reduce((sum, item) => sum + toDecimalNumber(item.total_price), 0)
-  );
-  if (invoiceTotal <= 0) {
-    if (existingInvoiceId) {
-      await cancelInvoiceIfReversible(tx, existingInvoiceId);
-    }
-    return null;
-  }
 
   const billingEntity = normalizeBillingEntity(
-    options.billingEntity ||
-      billing.billing_entity ||
-      invoiceItems[0]?.billing_entity ||
-      'FACILITY'
+    options.billingEntity || billing.billing_entity || 'FACILITY'
   );
   const paymentMode = normalizePaymentMode(
     options.paymentMode || billing.payment_mode || 'SELF_PAY'
   );
 
-  // Ensure shares exist on billing snapshot when insured.
+  let previousInsurerShare = 0;
+  if (existingInvoiceId && paymentMode === 'INSURANCE') {
+    const priorInvoice = await tx.invoice.findFirst({
+      where: { id: existingInvoiceId, deleted_at: null },
+      include: { items: { where: { deleted_at: null } } },
+    });
+    previousInsurerShare = sumInsurerShareFromItems(priorInvoice?.items);
+  }
+
   let enrichedBilling = {
     ...billing,
     billing_entity: billingEntity,
     payment_mode: paymentMode,
   };
+
+  // Re-apply coverage split with live pre-auth remaining so invoice lines are capped.
   if (
     paymentMode === 'INSURANCE' &&
     Array.isArray(billing.line_items) &&
-    billing.line_items.length &&
-    (billing.patient_share == null || billing.insurer_share == null)
+    billing.line_items.length
   ) {
+    let preAuthRemaining = options.preAuthRemainingAmount;
+    if (preAuthRemaining === undefined || preAuthRemaining === null) {
+      const activePreAuth = await findActivePreAuthorizationLimit(tx, {
+        patientId,
+        encounterId: options.encounterId || null,
+        admissionId: options.admissionId || null,
+        coveragePlanId: billing.coverage_plan_id || options.coveragePlanId,
+      });
+      preAuthRemaining = preAuthRemainingAmount(activePreAuth);
+    }
+
     const splitLines = applyCoverageSplitToLineItems(billing.line_items, {
       insured: true,
       paymentMode,
       coveragePlanId: billing.coverage_plan_id || options.coveragePlanId,
       insuranceCompanyId:
         billing.insurance_company_id || options.insuranceCompanyId,
-      coveragePercentage: billing.coverage_percentage ?? options.coveragePercentage,
+      coveragePercentage:
+        billing.coverage_percentage ?? options.coveragePercentage,
       copayType: billing.copay_type || options.copayType,
       copayValue: billing.copay_value ?? options.copayValue,
+      preAuthRemainingAmount: preAuthRemaining,
     });
     const summary = summarizeCoverageShares(splitLines);
     enrichedBilling = {
@@ -1574,6 +1603,26 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
       insurer_share: summary.insurerShare,
       copay_amount: summary.copayAmount,
     };
+  }
+
+  const invoiceItems = buildInvoiceLineItems(enrichedBilling, {
+    description: options.description,
+    catalogItemId: options.catalogItemId,
+    catalogType: options.catalogType || enrichedBilling.catalog_type,
+    billingEntity,
+    paymentMode,
+    coveragePlanId: options.coveragePlanId || enrichedBilling.coverage_plan_id,
+    insuranceCompanyId:
+      options.insuranceCompanyId || enrichedBilling.insurance_company_id,
+  });
+  const invoiceTotal = roundMoney(
+    invoiceItems.reduce((sum, item) => sum + toDecimalNumber(item.total_price), 0)
+  );
+  if (invoiceTotal <= 0) {
+    if (existingInvoiceId) {
+      await cancelInvoiceIfReversible(tx, existingInvoiceId);
+    }
+    return null;
   }
 
   const currency = resolveBillingCurrency(enrichedBilling, options.currency || 'USD');
@@ -1691,6 +1740,22 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     currency,
     existingEventId: postedEvent?.id || null,
   });
+
+  // Pre-auth consume: first post uses full insurer share; mutable updates adjust by delta.
+  // Idempotent retries that reused an existing invoice return earlier and skip this path.
+  if (paymentMode === 'INSURANCE') {
+    const nextInsurerShare = toDecimalNumber(
+      enrichedBilling.insurer_share ?? sumInsurerShareFromItems(invoiceItems)
+    );
+    await consumePreAuthorizationForBillingTx(tx, {
+      patientId,
+      encounterId: options.encounterId || null,
+      admissionId: options.admissionId || null,
+      coveragePlanId: enrichedBilling.coverage_plan_id || options.coveragePlanId,
+      insurerShare: nextInsurerShare,
+      previousInsurerShare,
+    });
+  }
 
   return snapshot;
 };

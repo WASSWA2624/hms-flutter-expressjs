@@ -1,5 +1,9 @@
 /**
- * Claim remittance → Billing ledger tests (Claims pending tab).
+ * Claim remittance → Billing ledger tests.
+ *
+ * Remittance posts when claims reconcile to PAID/PARTIAL (Active Claims /
+ * Billing claims-pending). Settled tab is review-only and must display the
+ * resulting invoice balance_due without re-posting receipts.
  *
  * @module tests/lib/billing/claim-remittance
  */

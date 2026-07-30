@@ -25,6 +25,7 @@ const normalizeCopayType = (value) => {
  * @param {'NONE'|'FIXED'|'PERCENT'} [options.copayType]
  * @param {number|string|null} [options.copayValue]
  * @param {boolean} [options.insured]
+ * @param {number|string|null} [options.preAuthRemainingAmount] - caps insurer share
  * @returns {{ lineTotal: string, patientShare: string, insurerShare: string, copayAmount: string }}
  */
 const splitLineCoverage = (options = {}) => {
@@ -57,8 +58,24 @@ const splitLineCoverage = (options = {}) => {
     );
   }
 
-  const insurerShare = roundMoney(Math.max(0, coveredBase - copayAmount));
-  const patientShare = roundMoney(uncovered + copayAmount);
+  let insurerShare = roundMoney(Math.max(0, coveredBase - copayAmount));
+  let patientShare = roundMoney(uncovered + copayAmount);
+
+  // Pre-auth approved remaining must constrain insurer share (excess → patient).
+  if (
+    options.preAuthRemainingAmount !== undefined &&
+    options.preAuthRemainingAmount !== null &&
+    options.preAuthRemainingAmount !== ''
+  ) {
+    const cap = roundMoney(
+      Math.max(0, toDecimalNumber(options.preAuthRemainingAmount))
+    );
+    if (insurerShare > cap) {
+      const excess = roundMoney(insurerShare - cap);
+      insurerShare = cap;
+      patientShare = roundMoney(patientShare + excess);
+    }
+  }
 
   return {
     lineTotal: toMoneyString(lineTotal),
@@ -71,6 +88,9 @@ const splitLineCoverage = (options = {}) => {
 /**
  * Apply coverage split across priced line items.
  *
+ * When `payerContext.preAuthRemainingAmount` is set, insurer share is capped
+ * sequentially across lines so the total never exceeds the pre-auth remaining.
+ *
  * @param {Array<Object>} lineItems
  * @param {Object} payerContext
  * @returns {Array<Object>}
@@ -79,6 +99,15 @@ const applyCoverageSplitToLineItems = (lineItems = [], payerContext = {}) => {
   const insured =
     Boolean(payerContext.insured) ||
     String(payerContext.paymentMode || '').toUpperCase() === 'INSURANCE';
+
+  let remainingCap =
+    payerContext.preAuthRemainingAmount === undefined ||
+    payerContext.preAuthRemainingAmount === null ||
+    payerContext.preAuthRemainingAmount === ''
+      ? null
+      : roundMoney(
+          Math.max(0, toDecimalNumber(payerContext.preAuthRemainingAmount))
+        );
 
   return (Array.isArray(lineItems) ? lineItems : []).map((item) => {
     const quantity = Math.max(1, Number(item.quantity) || 1);
@@ -104,7 +133,14 @@ const applyCoverageSplitToLineItems = (lineItems = [], payerContext = {}) => {
       coveragePercentage,
       copayType,
       copayValue,
+      preAuthRemainingAmount: remainingCap,
     });
+
+    if (remainingCap != null && insured && !isExcluded) {
+      remainingCap = roundMoney(
+        Math.max(0, remainingCap - toDecimalNumber(split.insurerShare))
+      );
+    }
 
     return {
       ...item,

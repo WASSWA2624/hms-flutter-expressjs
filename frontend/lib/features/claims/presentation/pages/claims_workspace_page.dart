@@ -2657,14 +2657,14 @@ String _invoiceStatusLabel(BuildContext context, ClaimInvoiceOption? invoice) {
 
 String _patientBalanceLabel(BuildContext context, ClaimsQueueDetail detail) {
   final ClaimInvoiceOption? invoice = detail.invoice;
-  final num? amount = invoice?.totalAmount;
-  final int? coverage = detail.coveragePlan?.coveragePercentage;
-  if (amount == null || coverage == null) {
+  // Prefer Billing ledger balance_due (posted remittances / payments). Do not
+  // invent patient responsibility from coverage % — that diverges after settle.
+  final num? balanceDue = invoice?.balanceDue;
+  if (balanceDue == null) {
     return context.l10n.profileUnknownValue;
   }
-  final num balance = amount * ((100 - coverage).clamp(0, 100) / 100);
   return AppFormatters.currency(
-    balance,
+    balanceDue,
     Localizations.localeOf(context),
     currencyCode: invoice?.currency,
   );

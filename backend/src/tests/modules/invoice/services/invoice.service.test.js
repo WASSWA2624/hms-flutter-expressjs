@@ -205,16 +205,56 @@ describe('Invoice Service', () => {
       const result = await invoiceService.getInvoiceById(invoiceId, 'requester-id', '127.0.0.1');
 
       expect(result).toEqual(expect.objectContaining(mockInvoice));
+      expect(result.financials).toMatchObject({
+        balance_due: expect.any(String),
+        net_paid_total: expect.any(String),
+      });
+      expect(result.balance_due).toBe(result.financials.balance_due);
       expect(invoiceRepository.findById).toHaveBeenCalledWith(
         invoiceId,
         expect.objectContaining({
-          items: true,
-          payments: true,
+          items: expect.any(Object),
+          payments: expect.any(Object),
+          billing_adjustments: expect.any(Object),
           tenant: expect.any(Object),
           facility: expect.any(Object),
           patient: expect.any(Object)
         })
       );
+    });
+
+    it('attaches Billing financials after remittance payments (Settled parity)', async () => {
+      const remittedInvoice = {
+        id: invoiceId,
+        tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+        status: 'SENT',
+        billing_status: 'PARTIAL',
+        total_amount: '200.00',
+        payments: [
+          {
+            id: 'pay-remit',
+            method: 'INSURANCE',
+            status: 'COMPLETED',
+            amount: '150.00',
+            transaction_ref: 'CLAIM-REMIT:claim-1',
+            deleted_at: null,
+            refunds: [],
+          },
+        ],
+        billing_adjustments: [],
+      };
+      invoiceRepository.findById.mockResolvedValue(remittedInvoice);
+
+      const result = await invoiceService.getInvoiceById(
+        invoiceId,
+        'requester-id',
+        '127.0.0.1'
+      );
+
+      expect(result.financials.balance_due).toBe('50.00');
+      expect(result.financials.net_paid_total).toBe('150.00');
+      expect(result.balance_due).toBe('50.00');
+      expect(result.net_paid_total).toBe('150.00');
     });
 
     it('should throw HttpError if invoice not found', async () => {
