@@ -7,7 +7,6 @@
  */
 
 const {
-  BILLABLE_SOURCE_MODULES,
   MORTUARY_CHARGE_KEYS,
   resolveMortuaryChargeKey,
   buildMortuaryBillableEventBilling,
@@ -29,6 +28,7 @@ jest.mock('@lib/billing/clinical-request-billing', () => {
 
 const {
   applyClinicalRequestBilling,
+  BILLABLE_SOURCE_MODULES,
 } = require('@lib/billing/clinical-request-billing');
 
 describe('mortuary-billing (Overview / AC posting + parity)', () => {

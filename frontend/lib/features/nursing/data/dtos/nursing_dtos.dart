@@ -390,11 +390,14 @@ final class NursingDischargeSummaryDto {
     if (id == null) {
       return null;
     }
+    final NursingJsonMap clearance = _map(json['clearance_snapshot']);
     return NursingDischargeSummary(
       id: id,
       status: _string(json['status']),
       summary: _string(json['summary']),
       dischargedAt: _date(json['discharged_at']),
+      billingCleared: _bool(clearance['billing_cleared']),
+      nursingCleared: _bool(clearance['nursing_cleared']),
     );
   }
 }

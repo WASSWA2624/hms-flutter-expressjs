@@ -353,7 +353,10 @@ final class NursingWorkspaceController
     );
   }
 
-  Future<AppFailure?> addNursingNote(String note) {
+  Future<AppFailure?> addNursingNote(
+    String note, {
+    Map<String, Object?>? billing,
+  }) {
     final String? currentUserId = _currentUserId;
     if (currentUserId == null) {
       return Future<AppFailure?>.value(AppFailure.validation());
@@ -361,8 +364,21 @@ final class NursingWorkspaceController
     return _mutateSelected(
       (NursingPatientSummary summary) => _repository.addNursingNote(
         summary,
-        <String, Object?>{'nurse_user_id': currentUserId, 'note': note},
+        <String, Object?>{
+          'nurse_user_id': currentUserId,
+          'note': note,
+          if (billing != null) 'billing': billing,
+        },
       ),
+    );
+  }
+
+  Future<AppFailure?> updateDischargeClearance(
+    Map<String, Object?> payload,
+  ) {
+    return _mutateSelected(
+      (NursingPatientSummary summary) =>
+          _repository.updateDischargeClearance(summary, payload),
     );
   }
 
@@ -616,7 +632,15 @@ final class NursingWorkspaceController
     return recordChecklistNote(tag: NursingNoteTags.doctorNotified, body: note);
   }
 
-  Future<AppFailure?> recordDischargeClearance(String note) {
+  Future<AppFailure?> recordDischargeClearance(String note) async {
+    // Nursing clinical clearance posts through ledger-aware ipd-flow first —
+    // billing_cleared is derived from Billing, never a nurse-local paid flag.
+    final AppFailure? clearanceFailure = await updateDischargeClearance(
+      <String, Object?>{'nursing_cleared': true},
+    );
+    if (clearanceFailure != null) {
+      return clearanceFailure;
+    }
     return recordChecklistNote(
       tag: NursingNoteTags.dischargeClearance,
       body: note,

@@ -366,6 +366,33 @@ const aggregateMortuaryCaseBillingStatus = (eventStatuses = [], fallback = 'PEND
 };
 
 /**
+ * True when body release must not proceed because required mortuary charges
+ * remain outstanding on the Billing ledger (Release tab unpaid gate).
+ *
+ * Empty / missing status does not block (parity with workspace next-action).
+ *
+ * @param {string|null|undefined} billingStatus
+ * @returns {boolean}
+ */
+const isMortuaryReleaseBlockedByOutstandingBilling = (billingStatus) => {
+  const token = String(billingStatus || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
+  if (!token) {
+    return false;
+  }
+  if (
+    token === 'NOT_BILLED' ||
+    token === 'NOT_REQUIRED' ||
+    token === 'NO_CHARGE'
+  ) {
+    return false;
+  }
+  return !(MORTUARY_SETTLED_STATUSES.has(token) || token === 'PAID');
+};
+
+/**
  * Post a mortuary fee through Billing and mirror invoice identity onto the
  * local billable event + case (idempotent). Custody logistics must not call this.
  *
@@ -504,6 +531,7 @@ module.exports = {
   mapLedgerPaymentStatusToMortuary,
   aggregateMortuaryCaseBillingStatus,
   isMortuaryCustodyLogisticsEvent,
+  isMortuaryReleaseBlockedByOutstandingBilling,
   shouldApplyClinicalRequestBilling,
   buildPendingClinicalRequestBilling,
   toMoneyString,

@@ -253,6 +253,12 @@ class _NursingActionBar extends ConsumerWidget {
       title: l10n.nursingActionsTitle,
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: <AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: NursingAssignedWardAtomPermissions.openBilling,
+          label: l10n.dischargeOpenBillingAction,
+          icon: Icons.receipt_long_outlined,
+          onPressed: () => _openBillingWorkspace(context, summary),
+        ),
         if (omit != NursingNextActionKind.handover)
           AppPermissionActionItem(
             requirement: NursingHandoverPendingAtomPermissions.createHandover,
@@ -398,6 +404,11 @@ class _NursingBillingClearancePanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final NursingPatientSummary summary = detail.enrichedSummary;
     final NursingDischargeSummary? discharge = detail.latestDischarge;
+    final bool billingCleared = discharge?.billingCleared == true;
+    final bool nursingCleared = discharge?.nursingCleared == true;
+    final String ledgerLabel = billingCleared
+        ? l10n.billingClearanceCleared
+        : l10n.patientsOutstandingBalanceFilterLabel;
     final String statusLabel = discharge?.status?.trim().isNotEmpty == true
         ? nursingApiLabel(discharge!.status!)
         : (summary.dischargeStatus == null ||
@@ -413,10 +424,24 @@ class _NursingBillingClearancePanel extends StatelessWidget {
       child: AppNursingRecordList(
         items: <AppNursingRecordEntry>[
           AppNursingRecordEntry(
-            title: statusLabel,
+            title: ledgerLabel,
             subtitle: nursingDateTimeLabel(context, discharge?.dischargedAt),
             body: body,
             icon: Icons.receipt_long_outlined,
+            status: AppWorkspaceStatus(
+              label: ledgerLabel,
+              tone: billingCleared
+                  ? AppWorkspaceStatusTone.success
+                  : AppWorkspaceStatusTone.warning,
+            ),
+          ),
+          AppNursingRecordEntry(
+            title: statusLabel,
+            subtitle: nursingCleared
+                ? l10n.billingClearanceCleared
+                : l10n.nursingActionDischargeClearance,
+            body: l10n.nursingChecklistDischargePendingBody,
+            icon: Icons.fact_check_outlined,
             status: AppWorkspaceStatus(
               label: statusLabel,
               tone: nursingStatusTone(
@@ -844,6 +869,24 @@ Future<void> _openCarePlanDialog(BuildContext context) async {
       ),
     ),
   );
+}
+
+void _openBillingWorkspace(
+  BuildContext context,
+  NursingPatientSummary summary,
+) {
+  final String? patientId = summary.patientId?.trim();
+  final String location = (patientId == null || patientId.isEmpty)
+      ? AppRoutes.billing.path
+      : AppRoutes.billing.location(
+          queryParameters: <String, String>{'patient_id': patientId},
+        );
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+  }
+  if (context.mounted) {
+    context.go(location);
+  }
 }
 
 void _openIcuWorkspace(BuildContext context, NursingPatientSummary summary) {

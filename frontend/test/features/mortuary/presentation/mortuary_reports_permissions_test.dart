@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/mortuary/data/repositories/mortuary_repository_impl.dart';
 import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
 import 'package:hosspi_hms/features/mortuary/domain/repositories/mortuary_repository.dart';
@@ -345,6 +346,13 @@ void main() {
         identical(
           MortuaryReportsAtomPermissions.billingPanel,
           mortuaryBillingPanelRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          MortuaryReportsAtomPermissions.openBilling,
+          billingReadRequirement,
         ),
         isTrue,
       );

@@ -1,7 +1,8 @@
 /**
- * Mortuary Custody tab billing-sections scan (`/mortuary?panel=custody`).
+ * Mortuary Storage tab billing-sections scan (`/mortuary?panel=storage`).
  *
- * Custody list/detail inherits case payer + billing_status (continuity).
+ * Storage assignments inherit case payer + billing_status (continuity).
+ * Assign storage is logistics (STORAGE_ASSIGNED / NOT_REQUIRED).
  * No module cashier; billable fees post via persistMortuaryBillableEventBilling.
  */
 
@@ -23,27 +24,39 @@ const mortuaryWorkspaceService = require('@services/mortuary-workspace/mortuary-
 const {
   isMortuaryCustodyLogisticsEvent,
   persistMortuaryBillableEventBilling,
+  aggregateMortuaryCaseBillingStatus,
+  resolveMortuaryChargeKey,
+  MORTUARY_CHARGE_KEYS,
 } = require('@lib/billing/mortuary-billing');
 
 const now = new Date('2026-07-30T10:00:00.000Z');
 
-const custodyRow = {
-  id: 'custody-uuid-1',
-  human_friendly_id: 'MCE0001',
+const storageAssignmentRow = {
+  id: 'assign-uuid-1',
+  human_friendly_id: 'MSA0001',
   facility_id: 'facility-1',
-  event_type: 'TRANSFER',
-  event_at: now,
-  actor_name: 'Officer A',
-  actor_role: 'MORTUARY_STAFF',
-  location_label: 'Cold Room A',
-  reason: 'Slot move',
-  notes: null,
+  assignment_status: 'ACTIVE',
+  assigned_at: now,
+  ended_at: null,
+  reason: null,
   created_at: now,
   updated_at: now,
   facility: {
     id: 'facility-1',
     human_friendly_id: 'FAC1',
     name: 'Demo Facility',
+  },
+  storage_unit: {
+    id: 'unit-1',
+    human_friendly_id: 'MSU0001',
+    name: 'Cold Unit A',
+  },
+  storage_slot: {
+    id: 'slot-1',
+    human_friendly_id: 'MSS0001',
+    label: 'Slot 12',
+    slot_code: 'A-12',
+    status: 'OCCUPIED',
   },
   mortuary_case: {
     id: 'case-uuid-1',
@@ -57,13 +70,13 @@ const custodyRow = {
     patient: {
       id: 'patient-uuid-1',
       human_friendly_id: 'PAT0001',
-      first_name: 'Custody',
+      first_name: 'Storage',
       last_name: 'Patient',
     },
     deceased_profile: {
       id: 'dec-1',
       human_friendly_id: 'DEC0001',
-      display_name: 'Custody Patient',
+      display_name: 'Storage Patient',
       external_reference: null,
     },
     billable_events: [
@@ -83,7 +96,7 @@ const custodyRow = {
   },
 };
 
-describe('mortuary-workspace Custody billing-sections scan', () => {
+describe('mortuary-workspace Storage billing-sections scan', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mortuaryWorkspaceRepository.findSummary.mockResolvedValue({
@@ -103,14 +116,14 @@ describe('mortuary-workspace Custody billing-sections scan', () => {
       sourceWorkflows: [],
     });
     mortuaryWorkspaceRepository.findItems.mockResolvedValue({
-      items: [custodyRow],
+      items: [storageAssignmentRow],
       total: 1,
     });
   });
 
-  it('custody panel maps patient_id + billing_status continuity (parity)', async () => {
+  it('storage panel maps patient_id + billing_status continuity (parity)', async () => {
     const data = await mortuaryWorkspaceService.getWorkspace(
-      { panel: 'custody' },
+      { panel: 'storage' },
       1,
       20,
       undefined,
@@ -118,10 +131,10 @@ describe('mortuary-workspace Custody billing-sections scan', () => {
       { tenant_id: 'tenant-1', facility_id: 'facility-1', user_id: 'user-1' },
     );
 
-    expect(data.filters.panel).toBe('custody');
+    expect(data.filters.panel).toBe('storage');
     expect(data.items).toHaveLength(1);
     const item = data.items[0];
-    expect(item.resource).toBe('mortuary-custody-events');
+    expect(item.resource).toBe('mortuary-storage-assignments');
     expect(item.patient_id).toBe('PAT0001');
     expect(item.billing_status).toBe('PENDING');
     expect(item.billing_reference_id).toBe('inv-mort-1');
@@ -131,14 +144,22 @@ describe('mortuary-workspace Custody billing-sections scan', () => {
     expect(item.mortuary_case.patient_id).toBe('PAT0001');
   });
 
-  it('TRANSFER custody event is logistics — no cash ledger helper required', () => {
-    expect(isMortuaryCustodyLogisticsEvent('TRANSFER')).toBe(true);
+  it('STORAGE_ASSIGNED is logistics — no cash ledger helper required', () => {
+    expect(isMortuaryCustodyLogisticsEvent('STORAGE_ASSIGNED')).toBe(true);
+    expect(isMortuaryCustodyLogisticsEvent('MOVED')).toBe(true);
+    expect(resolveMortuaryChargeKey('STORAGE_FEE')).toBe(
+      MORTUARY_CHARGE_KEYS.STORAGE,
+    );
     expect(typeof persistMortuaryBillableEventBilling).toBe('function');
+    expect(aggregateMortuaryCaseBillingStatus(['PENDING'], 'UNSETTLED')).toBe(
+      'PENDING',
+    );
   });
 
   it('unauthorized cashier paths are absent from workspace service exports', () => {
     expect(mortuaryWorkspaceService.receivePayment).toBeUndefined();
     expect(mortuaryWorkspaceService.collectPayment).toBeUndefined();
     expect(mortuaryWorkspaceService.issueInvoice).toBeUndefined();
+    expect(mortuaryWorkspaceService.applyDiscount).toBeUndefined();
   });
 });

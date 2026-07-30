@@ -319,6 +319,7 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
 /// | Detail complementary writes | create / update | write ∪ |
 /// | Detail administer medication | create / update | medication write ∩ |
 /// | Detail medications panel (data) | nested read | ([medicationsPanel]) |
+/// | Detail billing clearance panel / Open billing | nested read | ([billingPanel] / [openBilling]) |
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Admission checklist write steps | create / update | write ∪ |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
@@ -376,6 +377,11 @@ abstract final class NursingAllAtomPermissions {
   static const AccessRequirement medicationWrite =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
+  /// Billing clearance panel + Open billing — `billing:read` ∩ `billing-payments`.
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
   static const AccessRequirement openIcu = AccessRequirement();
   static const AccessRequirement navigation = AccessRequirement();
   /// Nested cross-module write — matrix _(n/a)_; medication uses [administerMedication].
@@ -413,6 +419,8 @@ abstract final class NursingAllAtomPermissions {
 /// | Detail administer medication | create / update | medication write ∩ |
 /// | Detail medications panel (data) | nested read | ([medicationsPanel]) |
 /// | Detail Open ICU | navigate | ([openIcu]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
+/// | Detail billing clearance panel | nested read | ([billingPanel]) |
 /// | Admission checklist write steps | create / update | write ∪ |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
 /// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read |
@@ -469,6 +477,10 @@ abstract final class NursingAssignedWardAtomPermissions {
   static const AccessRequirement medicationWrite =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
   static const AccessRequirement openIcu = AccessRequirement();
   static const AccessRequirement navigation = AccessRequirement();
   /// Nested cross-module write — matrix _(n/a)_; medication uses [administerMedication].
@@ -898,6 +910,8 @@ abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement administerMedication =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
       nursingBillingClearanceReadRequirement;
   static const AccessRequirement nestedBillingRead =
       nursingBillingClearanceReadRequirement;

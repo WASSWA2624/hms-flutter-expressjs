@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
@@ -102,6 +103,7 @@ AppAccessPolicy _policy({
 void _stubWorkspace(
   _MockLabRepository repository, {
   List<LabOrderSummary> items = const <LabOrderSummary>[_paidOrder],
+  LabOrderWorkflow? workflow,
 }) {
   when(() => repository.loadWorkbench(any())).thenAnswer((
     Invocation invocation,
@@ -132,17 +134,18 @@ void _stubWorkspace(
   when(
     () => repository.listQcLogs(search: any(named: 'search')),
   ).thenAnswer((_) async => const Result<List<LabQcLog>>.success(<LabQcLog>[]));
-  when(() => repository.loadOrderWorkflow(any())).thenAnswer((_) async {
-    return const Result<LabOrderWorkflow>.success(
-      LabOrderWorkflow(
+  final LabOrderWorkflow resolvedWorkflow =
+      workflow ??
+      const LabOrderWorkflow(
         order: _paidOrder,
         nextActions: LabWorkflowNextActions(
           canVerifyResult: true,
           canVerifyAll: true,
           paymentStatus: 'PAID',
         ),
-      ),
-    );
+      );
+  when(() => repository.loadOrderWorkflow(any())).thenAnswer((_) async {
+    return Result<LabOrderWorkflow>.success(resolvedWorkflow);
   });
 }
 
@@ -153,10 +156,11 @@ Future<void> _pumpPendingVerificationTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<LabOrderSummary> items = const <LabOrderSummary>[_paidOrder],
+  LabOrderWorkflow? workflow,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository, items: items);
+  _stubWorkspace(repository, items: items, workflow: workflow);
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -468,19 +472,6 @@ void main() {
         items: <LabOrderItem>[panelItem, loneItem],
       );
 
-      when(() => repository.loadOrderWorkflow(any())).thenAnswer((_) async {
-        return const Result<LabOrderWorkflow>.success(
-          LabOrderWorkflow(
-            order: orderWithItems,
-            nextActions: LabWorkflowNextActions(
-              canVerifyResult: true,
-              canVerifyAll: true,
-              paymentStatus: 'PAID',
-            ),
-          ),
-        );
-      });
-
       await _pumpPendingVerificationTab(
         tester,
         repository: repository,
@@ -491,6 +482,14 @@ void main() {
           },
         ),
         items: const <LabOrderSummary>[orderWithItems],
+        workflow: const LabOrderWorkflow(
+          order: orderWithItems,
+          nextActions: LabWorkflowNextActions(
+            canVerifyResult: true,
+            canVerifyAll: true,
+            paymentStatus: 'PAID',
+          ),
+        ),
       );
 
       final AppLocalizations l10n = AppLocalizations.of(
@@ -506,18 +505,6 @@ void main() {
     testWidgets(
       'unpaid result entry hides verify and shows open billing (no nest)',
       (WidgetTester tester) async {
-        when(() => repository.loadOrderWorkflow(any())).thenAnswer((_) async {
-          return const Result<LabOrderWorkflow>.success(
-            LabOrderWorkflow(
-              order: _pendingPaymentOrder,
-              nextActions: LabWorkflowNextActions(
-                billingGateBlocked: true,
-                paymentStatus: 'PENDING',
-              ),
-            ),
-          );
-        });
-
         await _pumpPendingVerificationTab(
           tester,
           repository: repository,
@@ -527,8 +514,25 @@ void main() {
               AppPermissions.labWrite,
               AppPermissions.billingRead,
             },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: labWorkflowsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: billingPaymentsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
           ),
           items: const <LabOrderSummary>[_pendingPaymentOrder],
+          workflow: const LabOrderWorkflow(
+            order: _pendingPaymentOrder,
+            nextActions: LabWorkflowNextActions(
+              billingGateBlocked: true,
+              paymentStatus: 'PENDING',
+            ),
+          ),
         );
 
         final AppLocalizations l10n = AppLocalizations.of(

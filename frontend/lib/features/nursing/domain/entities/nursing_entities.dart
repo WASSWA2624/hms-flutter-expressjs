@@ -1027,12 +1027,19 @@ final class NursingDischargeSummary {
     this.status,
     this.summary,
     this.dischargedAt,
+    this.billingCleared = false,
+    this.nursingCleared = false,
   });
 
   final String id;
   final String? status;
   final String? summary;
   final DateTime? dischargedAt;
+
+  /// Ledger-derived from Billing via `updateDischargeClearance` /
+  /// `isBillingSettledForPatient` — never a nurse-local paid flag.
+  final bool billingCleared;
+  final bool nursingCleared;
 }
 
 @immutable

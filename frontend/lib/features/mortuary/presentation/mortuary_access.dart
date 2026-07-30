@@ -237,15 +237,26 @@ AccessRequirement mortuaryPanelBillingRequirement(String panel) {
   };
 }
 
-/// Detail Open billing navigate gate (Billing read — never a module cashier).
-/// Custody and Release mount the control; other panels fall back to Billing
-/// read for helpers / future wiring.
-AccessRequirement mortuaryPanelOpenBillingRequirement(String panel) {
+/// Open Billing workspace (settle outstanding) — never a module cashier.
+/// Returns null when the panel does not mount Open billing.
+AccessRequirement? mortuaryPanelOpenBillingRequirement(String panel) {
   return switch (panel) {
+    mortuaryPanelOverview => MortuaryOverviewAtomPermissions.openBilling,
+    mortuaryPanelIntake => MortuaryIntakeAtomPermissions.openBilling,
+    mortuaryPanelStorage => MortuaryStorageAtomPermissions.openBilling,
     mortuaryPanelCustody => MortuaryCustodyAtomPermissions.openBilling,
     mortuaryPanelRelease => MortuaryReleaseAtomPermissions.openBilling,
-    _ => billingReadRequirement,
+    mortuaryPanelReporting => MortuaryReportsAtomPermissions.openBilling,
+    _ => null,
   };
+}
+
+/// True when [policy] may navigate to Billing from a mortuary panel.
+bool canOpenMortuaryBilling(AppAccessPolicy policy, [String? panel]) {
+  final AccessRequirement? requirement = panel == null
+      ? billingReadRequirement
+      : mortuaryPanelOpenBillingRequirement(panel);
+  return requirement?.isAllowed(policy) ?? false;
 }
 
 bool canViewMortuaryPanel(AppAccessPolicy policy, String panel) {
@@ -354,11 +365,12 @@ abstract final class MortuaryOverviewAtomPermissions {
 
 /// Atom → requirement map for Mortuary Intake (`/mortuary?panel=intake`).
 ///
-/// Inventory: `screens/mortuary.md` → Intake tab (cases worklist; receive-case
-/// create/update/delete ∩ `mortuary:write` — no-op mutation chrome removed).
-/// Read-only detail; Print documents when export ∪. Nested cross-module
-/// read/write matrix rows are n/a for this tab. Billing events use ∩
-/// `mortuary:billing_event` + `billing:read`. Route entry ∪ is [routeEntry].
+/// Inventory: cases worklist; receive-case create/update/delete ∩
+/// `mortuary:write` — no-op mutation chrome removed. Read-only detail; Print
+/// documents when export ∪. Billing events use ∩ `mortuary:billing_event` +
+/// `billing:read`. Open billing uses Billing read (`billing:read` ∩
+/// `billing-payments`) — never a module cashier. Financial inventory:
+/// `mortuary_intake_billing_inventory.dart`. Route entry ∪ is [routeEntry].
 /// Export keeps source ∪ `mortuary:export` | `reports:read`.
 ///
 /// | Atom | Kind | Gate |
@@ -368,9 +380,10 @@ abstract final class MortuaryOverviewAtomPermissions {
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → detail | read / navigate | read ∩ |
-/// | Next action (guidance text only) | read | read ∩ |
+/// | Next action (guidance; Clear billing → Open billing when allowed) | read | read ∩ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` ([openBilling]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
 /// | Receive case | create | write ∩ ([create] / [receiveCase]) — not mounted |
 /// | Update / delete mutations | update / delete | write ∩ — not mounted |
@@ -405,6 +418,9 @@ abstract final class MortuaryIntakeAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+
+  /// Navigate to Billing workspace to settle — never a module cashier.
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement audit = mortuaryAuditRequirement;
@@ -417,12 +433,13 @@ abstract final class MortuaryIntakeAtomPermissions {
 
 /// Atom → requirement map for Mortuary Storage (`/mortuary?panel=storage`).
 ///
-/// Inventory: `screens/mortuary.md` → Storage tab (storage-assignments
-/// worklist; assign-storage create/update ∩ `mortuary:manage_storage`; delete
-/// ∩ `mortuary:write` — no-op mutation chrome removed). Read-only detail;
-/// Print documents when export ∪. Nested cross-module read/write matrix rows
-/// are n/a for this tab. Billing events use ∩ `mortuary:billing_event` +
-/// `billing:read`. Route entry ∪ is [routeEntry]. Export keeps source ∪
+/// Storage-assignments worklist; assign-storage create/update ∩
+/// `mortuary:manage_storage`; delete ∩ `mortuary:write` — mutation chrome not
+/// mounted. Read-only detail; Print documents when export ∪. Billing events
+/// use ∩ `mortuary:billing_event` + `billing:read`. Open billing uses Billing
+/// read (`billing:read` ∩ `billing-payments`) — never a module cashier.
+/// Financial inventory: `mortuary_storage_billing_inventory.dart`.
+/// Route entry ∪ is [routeEntry]. Export keeps source ∪
 /// `mortuary:export` | `reports:read`.
 ///
 /// | Atom | Kind | Gate |
@@ -435,6 +452,7 @@ abstract final class MortuaryIntakeAtomPermissions {
 /// | Next action (guidance text only) | read | read ∩ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
 /// | Assign storage (create / update assignment) | create / update | manage_storage ∩ ([create] / [update]) — not mounted |
 /// | Delete / void assignment | delete | write ∩ ([delete]) — not mounted |
@@ -468,6 +486,9 @@ abstract final class MortuaryStorageAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+
+  /// Navigate to Billing workspace to settle — never a module cashier.
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement audit = mortuaryAuditRequirement;
@@ -632,6 +653,7 @@ abstract final class MortuaryReleaseAtomPermissions {
 /// | Next action (guidance text only) | read | read ∪ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∪ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` ([openBilling]) |
 /// | Detail Print documents | export | source export ∪ ([printDocuments]) |
 /// | Nested export write entry | export | matrix export ∪ ([nestedWrite]) — not mounted beyond print |
 /// | Create / update / delete mutations | create / update / delete | write ∩ — not mounted |
@@ -639,6 +661,9 @@ abstract final class MortuaryReleaseAtomPermissions {
 /// | Audit panel | read | audit ∩ ([audit]) — not mounted |
 /// | Nested cross-module read | — | n/a (matrix) |
 /// | Route entry (deep link) | navigate | ∪ read\|write\|approve\|release\|audit ([routeEntry]) |
+///
+/// Financial inventory: `mortuary_reports_billing_inventory.dart`. Open billing
+/// uses Billing read — never a module cashier.
 abstract final class MortuaryReportsAtomPermissions {
   static const AccessRequirement tab = mortuaryReportsTabReadRequirement;
   static const AccessRequirement listChrome = mortuaryReportsTabReadRequirement;
@@ -664,6 +689,7 @@ abstract final class MortuaryReportsAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement nestedWrite =

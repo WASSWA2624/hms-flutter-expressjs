@@ -591,8 +591,13 @@ final class MortuaryWorkspaceItem {
 
   String? get caseStatus => isCase ? status : mortuaryCase?.status;
 
+  /// Case ledger status for parity with Billing — case rows use
+  /// [billingStatus]; related rows prefer nested case then flattened mirror.
   String? get caseBillingStatus {
-    return isCase ? billingStatus : mortuaryCase?.billingStatus;
+    if (isCase) {
+      return billingStatus;
+    }
+    return mortuaryCase?.billingStatus.ifNotEmpty ?? billingStatus;
   }
 
   String? get caseIdentificationStatus {

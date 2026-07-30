@@ -543,7 +543,14 @@ void main() {
         _table(tester).columns.map(
           (AppListTableColumn<MortuaryWorkspaceItem> column) => column.id,
         ),
-        <String>['deceased', 'storage', 'status', 'date', 'next_action'],
+        <String>[
+          'deceased',
+          'storage',
+          'status',
+          'billing_status',
+          'date',
+          'next_action',
+        ],
       );
 
       await _openDetail(tester);

@@ -32,6 +32,13 @@ abstract interface class NursingRepository {
     Map<String, Object?> payload,
   );
 
+  /// Ledger-aware nursing discharge clearance via ipd-flow
+  /// `update-discharge-clearance` (`billing_cleared` from Billing).
+  Future<Result<NursingPatientDetail>> updateDischargeClearance(
+    NursingPatientSummary summary,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<NursingPatientDetail>> addMedicationAdministration(
     NursingPatientSummary summary,
     Map<String, Object?> payload,

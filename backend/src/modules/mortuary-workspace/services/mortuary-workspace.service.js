@@ -3,7 +3,9 @@ const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/bi
 const {
   aggregateMortuaryCaseBillingStatus,
   mapLedgerPaymentStatusToMortuary,
+  resolveMortuaryLedgerPaymentStatus,
 } = require('@lib/billing/mortuary-billing');
+const prisma = require('@prisma/client');
 
 const DEFAULT_PANEL = 'overview';
 const DEFAULT_RESOURCE_BY_PANEL = Object.freeze({
@@ -204,6 +206,14 @@ const mapCaseSummary = (mortuaryCase = {}) => {
   const patientLabel = [mortuaryCase.patient?.first_name, mortuaryCase.patient?.last_name]
     .filter(Boolean)
     .join(' ');
+  const billableEvents = (mortuaryCase.billable_events || []).map(mapBillableEvent);
+  const eventStatuses = billableEvents.map((entry) => entry.status);
+  const latestBillableEvent = billableEvents[0] || null;
+  // Storage / custody / release rows inherit aggregated case ledger parity.
+  const billingStatus = aggregateMortuaryCaseBillingStatus(
+    eventStatuses,
+    mortuaryCase.billing_status || latestBillableEvent?.status || null
+  );
   return {
     id: publicId,
     human_friendly_id: publicId,
@@ -212,7 +222,7 @@ const mapCaseSummary = (mortuaryCase = {}) => {
     received_at: mortuaryCase.received_at || null,
     release_ready_at: mortuaryCase.release_ready_at || null,
     released_at: mortuaryCase.released_at || null,
-    billing_status: mortuaryCase.billing_status || null,
+    billing_status: billingStatus,
     patient_id: safePublicId(
       mortuaryCase.patient?.human_friendly_id,
       mortuaryCase.patient?.id
@@ -223,7 +233,7 @@ const mapCaseSummary = (mortuaryCase = {}) => {
       mortuaryCase.deceased_profile?.id
     ),
     deceased_profile_label: mortuaryCase.deceased_profile?.display_name || null,
-    billable_events: (mortuaryCase.billable_events || []).map(mapBillableEvent)};
+    billable_events: billableEvents};
 };
 
 const mapStorageAssignment = (assignment = null) => {
@@ -511,6 +521,116 @@ const mapItem = (resource, item) => {
   return mapRelatedCaseResourceItem(resource, item);
 };
 
+/**
+ * Align case / event billing with Billing ledger before public-id mapping.
+ * Uses raw Prisma event `id` as billable_charge_event.source_id.
+ *
+ * @param {Object} item
+ * @param {string|null} tenantId
+ * @returns {Promise<Object>}
+ */
+const enrichRawItemBillingParity = async (item, tenantId) => {
+  if (!item || !tenantId) {
+    return item;
+  }
+
+  // Row is itself a mortuary_billable_event (billable-events resource).
+  if (item.event_type != null && item.amount !== undefined && !item.billable_events) {
+    const ledger = await resolveMortuaryLedgerPaymentStatus(prisma, {
+      tenantId,
+      billableEventId: item.id,
+      eventType: item.event_type,
+      localStatus: item.status,
+    });
+    const paymentStatus = mapLedgerPaymentStatusToMortuary(
+      ledger.payment_status || item.status
+    );
+    const patched = {
+      ...item,
+      status: paymentStatus,
+      billing_reference_id: ledger.invoice_id || item.billing_reference_id || null,
+    };
+    if (item.mortuary_case) {
+      return {
+        ...patched,
+        mortuary_case: {
+          ...item.mortuary_case,
+          billing_status: aggregateMortuaryCaseBillingStatus(
+            [paymentStatus],
+            item.mortuary_case.billing_status
+          ),
+        },
+      };
+    }
+    return patched;
+  }
+
+  const events = Array.isArray(item.billable_events)
+    ? item.billable_events
+    : Array.isArray(item.mortuary_case?.billable_events)
+      ? item.mortuary_case.billable_events
+      : [];
+
+  if (events.length === 0) {
+    const local = String(
+      item.billing_status || item.mortuary_case?.billing_status || ''
+    )
+      .trim()
+      .toUpperCase();
+    if (local === 'SETTLED' || local === 'PAID') {
+      if (item.mortuary_case) {
+        return {
+          ...item,
+          mortuary_case: { ...item.mortuary_case, billing_status: 'PENDING' },
+        };
+      }
+      return { ...item, billing_status: 'PENDING' };
+    }
+    return item;
+  }
+
+  const enrichedEvents = [];
+  for (const entry of events) {
+    const ledger = await resolveMortuaryLedgerPaymentStatus(prisma, {
+      tenantId,
+      billableEventId: entry.id,
+      eventType: entry.event_type,
+      localStatus: entry.status,
+    });
+    const paymentStatus = mapLedgerPaymentStatusToMortuary(
+      ledger.payment_status || entry.status
+    );
+    enrichedEvents.push({
+      ...entry,
+      status: paymentStatus,
+      billing_reference_id:
+        ledger.invoice_id || entry.billing_reference_id || null,
+    });
+  }
+
+  const caseStatus = aggregateMortuaryCaseBillingStatus(
+    enrichedEvents.map((entry) => entry.status),
+    item.billing_status || item.mortuary_case?.billing_status
+  );
+
+  if (item.mortuary_case) {
+    return {
+      ...item,
+      mortuary_case: {
+        ...item.mortuary_case,
+        billing_status: caseStatus,
+        billable_events: enrichedEvents,
+      },
+    };
+  }
+
+  return {
+    ...item,
+    billing_status: caseStatus,
+    billable_events: enrichedEvents,
+  };
+};
+
 const resolveScopedFilters = async (filters = {}, user = {}) => {
   const tenantId = user?.tenant_id || user?.tenantId || null;
   const tenantWhere = tenantId ? { tenant_id: tenantId } : {};
@@ -569,6 +689,27 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       orderBy}),
     mortuaryWorkspaceRepository.findLookups(scopedFilters)]);
 
+  const mappedItems = await Promise.all(
+    (listResult.items || []).map(async (item) => {
+      if (
+        resource === 'mortuary-cases' ||
+        resource === 'mortuary-billable-events' ||
+        resource === 'mortuary-custody-events' ||
+        resource === 'mortuary-storage-assignments' ||
+        resource === 'mortuary-viewings' ||
+        resource === 'mortuary-release-authorisations' ||
+        resource === 'mortuary-post-mortem-requests'
+      ) {
+        const enriched = await enrichRawItemBillingParity(
+          item,
+          scopedFilters.tenantId
+        );
+        return mapItem(resource, enriched);
+      }
+      return mapItem(resource, item);
+    })
+  );
+
   return {
     summary: mapSummaryCards(summary),
     queue_summaries: mapQueueSummaries(queueCounts),
@@ -587,7 +728,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       id: normalizeString(filters.id) || null,
       action: normalizeString(filters.action) || null},
     lookups: mapLookups(lookups),
-    items: (listResult.items || []).map((item) => mapItem(resource, item)),
+    items: mappedItems,
     pagination: buildPagination(page, limit, Number(listResult.total || 0)),
     spotlight: mapSpotlight(queueCounts),
     last_updated_at: new Date()};

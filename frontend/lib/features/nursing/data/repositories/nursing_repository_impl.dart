@@ -242,12 +242,32 @@ final class NursingRepositoryImpl implements NursingRepository {
     NursingPatientSummary summary,
     Map<String, Object?> payload,
   ) async {
+    // Prefer ipd-flow so optional `billing` posts via
+    // persistNursingServiceBilling (no parallel nursing cash ledger).
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.nursingNotes),
-      data: _withoutEmpty(<String, Object?>{
-        'admission_id': summary.apiAdmissionId,
-        ...payload,
-      }),
+      ApiEndpoints.nested(
+        HmsApiResource.ipdFlows,
+        summary.apiAdmissionId,
+        <String>['add-nursing-note'],
+      ),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+    return _reloadAfterMutation(result, summary);
+  }
+
+  @override
+  Future<Result<NursingPatientDetail>> updateDischargeClearance(
+    NursingPatientSummary summary,
+    Map<String, Object?> payload,
+  ) async {
+    final Result<void> result = await _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.ipdFlows,
+        summary.apiAdmissionId,
+        <String>['update-discharge-clearance'],
+      ),
+      data: _withoutEmpty(payload),
       decoder: (_) {},
     );
     return _reloadAfterMutation(result, summary);

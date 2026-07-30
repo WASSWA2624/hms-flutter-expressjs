@@ -405,6 +405,7 @@ List<_MortuaryTableColumnId> _mortuaryDefaultColumnsForPanel(String panel) {
       _MortuaryTableColumnId.deceased,
       _MortuaryTableColumnId.storage,
       _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.billingStatus,
       _MortuaryTableColumnId.date,
       _MortuaryTableColumnId.nextAction,
     ],
@@ -419,6 +420,7 @@ List<_MortuaryTableColumnId> _mortuaryDefaultColumnsForPanel(String panel) {
       _MortuaryTableColumnId.deceased,
       _MortuaryTableColumnId.recipient,
       _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.billingStatus,
       _MortuaryTableColumnId.date,
       _MortuaryTableColumnId.nextAction,
     ],
@@ -460,6 +462,7 @@ List<_MortuaryTableColumnId> _mortuaryAllColumnsForPanel(String panel) {
       _MortuaryTableColumnId.deceased,
       _MortuaryTableColumnId.recipient,
       _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.billingStatus,
       _MortuaryTableColumnId.date,
       _MortuaryTableColumnId.nextAction,
       _MortuaryTableColumnId.reference,
@@ -565,17 +568,30 @@ class _MortuaryWorklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ProviderScope.containerOf(
+      context,
+    ).read(appAccessPolicyProvider);
     final List<AppListTableColumn<MortuaryWorkspaceItem>> defaultColumns =
         <AppListTableColumn<MortuaryWorkspaceItem>>[
           for (final _MortuaryTableColumnId column
               in _mortuaryDefaultColumnsForPanel(panel))
-            _mortuaryDataColumn(context, panel: panel, column: column),
+            _mortuaryDataColumn(
+              context,
+              panel: panel,
+              column: column,
+              policy: policy,
+            ),
         ];
     final List<AppListTableColumn<MortuaryWorkspaceItem>> columnChoices =
         <AppListTableColumn<MortuaryWorkspaceItem>>[
           for (final _MortuaryTableColumnId column
               in _mortuaryAllColumnsForPanel(panel))
-            _mortuaryDataColumn(context, panel: panel, column: column),
+            _mortuaryDataColumn(
+              context,
+              panel: panel,
+              column: column,
+              policy: policy,
+            ),
         ];
 
     return AppListTable<MortuaryWorkspaceItem>(
@@ -696,6 +712,7 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
   BuildContext context, {
   required String panel,
   required _MortuaryTableColumnId column,
+  required AppAccessPolicy policy,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<MortuaryWorkspaceItem>(
@@ -705,7 +722,7 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
         column == _MortuaryTableColumnId.status ||
         column == _MortuaryTableColumnId.nextAction,
     sortComparator: _mortuarySortComparator(panel, column),
-    cellBuilder: (_, MortuaryWorkspaceItem item) {
+    cellBuilder: (BuildContext cellContext, MortuaryWorkspaceItem item) {
       return switch (column) {
         _MortuaryTableColumnId.deceased => AppListItemText(
           title:
@@ -733,7 +750,14 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
         ),
         _MortuaryTableColumnId.nextAction => GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () {},
+          onTap: () {
+            final String label = _nextActionLabel(l10n, item);
+            if (label == l10n.mortuaryNextActionClearBilling &&
+                canOpenMortuaryBilling(policy, panel) &&
+                (item.effectivePatientId?.trim().isNotEmpty ?? false)) {
+              _openMortuaryBillingWorkspace(cellContext, item);
+            }
+          },
           child: Text(
             _nextActionLabel(l10n, item),
             maxLines: 1,
@@ -884,11 +908,8 @@ class _MortuaryDetailPanel extends ConsumerWidget {
       );
     }
 
-    final AccessRequirement? openBillingRequirement = switch (panel) {
-      mortuaryPanelOverview => MortuaryOverviewAtomPermissions.openBilling,
-      mortuaryPanelCustody => MortuaryCustodyAtomPermissions.openBilling,
-      _ => null,
-    };
+    final AccessRequirement? openBillingRequirement =
+        mortuaryPanelOpenBillingRequirement(panel);
     final bool showOpenBilling =
         openBillingRequirement != null &&
         openBillingRequirement.isAllowed(policy) &&
@@ -942,10 +963,12 @@ class _MortuaryDetailPanel extends ConsumerWidget {
           AppWorkspacePatientContextField(
             label: l10n.mortuaryBillingFieldLabel,
             value:
-                _displayCode(item.caseBillingStatus) ??
+                _displayCode(
+                  item.caseBillingStatus ?? item.billingStatus,
+                ) ??
                 l10n.mortuaryUnknownValueLabel,
             icon: Icons.receipt_long_outlined,
-            tone: _billingTone(item.caseBillingStatus),
+            tone: _billingTone(item.caseBillingStatus ?? item.billingStatus),
           ),
           AppWorkspacePatientContextField(
             label: l10n.mortuaryStorageSlotFieldLabel,
@@ -1763,7 +1786,9 @@ AppWorkspaceStatusTone _billingTone(String? status) {
 
 String _nextActionLabel(AppLocalizations l10n, MortuaryWorkspaceItem item) {
   final String? status = _normalized(item.caseStatus ?? item.status);
-  final String? billingStatus = _normalized(item.caseBillingStatus);
+  final String? billingStatus = _normalized(
+    item.caseBillingStatus ?? item.billingStatus,
+  );
   final String? identification = _normalized(item.caseIdentificationStatus);
   if (identification != null && identification != 'VERIFIED') {
     return l10n.mortuaryNextActionVerifyIdentity;

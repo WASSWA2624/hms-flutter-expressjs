@@ -572,7 +572,14 @@ void main() {
         _table(tester).columns.map(
           (AppListTableColumn<MortuaryWorkspaceItem> column) => column.id,
         ),
-        <String>['deceased', 'recipient', 'status', 'date', 'next_action'],
+        <String>[
+          'deceased',
+          'recipient',
+          'status',
+          'billing_status',
+          'date',
+          'next_action',
+        ],
       );
       expect(find.text('Release Patient'), findsWidgets);
       expect(find.text('Next of Kin'), findsWidgets);
