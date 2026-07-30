@@ -509,6 +509,12 @@ describe("ipd-flow.service", () => {
       appointment: { updateMany: jest.fn() }};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({
+      id: "adm-1",
+      tenant_id: "tenant-1",
+      facility_id: "facility-1",
+      status: "ADMITTED",
+      patient_id: "pat-1"});
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({ status: "DISCHARGED", discharged_at: now }),
     );
@@ -575,6 +581,12 @@ describe("ipd-flow.service", () => {
       appointment: { updateMany: jest.fn() }};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({
+      id: "adm-1",
+      tenant_id: "tenant-1",
+      facility_id: "facility-1",
+      status: "DISCHARGED",
+      patient_id: "pat-1"});
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({ status: "DISCHARGED", discharged_at: now }),
     );
