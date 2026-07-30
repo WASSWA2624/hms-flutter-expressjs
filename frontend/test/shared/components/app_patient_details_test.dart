@@ -161,7 +161,7 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
-  testWidgets('expanding reveals age, gender, and workflow fields in the row', (
+  testWidgets('expanding reveals age, gender, phone, and email in the row', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -172,11 +172,13 @@ void main() {
         patientNumberLabel: 'MRN',
         ageLabel: '37y',
         genderLabel: 'Female',
+        phoneLabel: '+256700000000',
+        emailLabel: 'ada@example.com',
         persistExpandPreference: false,
         expandedFields: const <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
-            label: 'Phone',
-            value: '+256700000000',
+            label: 'Encounter',
+            value: 'ENC-9',
           ),
         ],
       ),
@@ -184,6 +186,8 @@ void main() {
 
     expect(find.textContaining('Phone'), findsNothing);
     expect(find.text('+256700000000'), findsNothing);
+    expect(find.textContaining('Email'), findsNothing);
+    expect(find.text('ada@example.com'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();
@@ -194,8 +198,51 @@ void main() {
     expect(find.text('Female'), findsOneWidget);
     expect(find.textContaining('Phone:'), findsOneWidget);
     expect(find.text('+256700000000'), findsOneWidget);
+    expect(find.textContaining('Email:'), findsOneWidget);
+    expect(find.text('ada@example.com'), findsOneWidget);
+    expect(find.textContaining('Encounter:'), findsOneWidget);
+    expect(find.text('ENC-9'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
   });
+
+  testWidgets(
+    'promotes phone and email from expandedFields without duplicating',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppPatientDetails(
+          patientName: 'Ada Lovelace',
+          patientNumber: 'MRN-100',
+          ageLabel: '37y',
+          genderLabel: 'Female',
+          persistExpandPreference: false,
+          initiallyExpanded: true,
+          expandedFields: const <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: 'Phone',
+              value: '+256700000000',
+            ),
+            AppWorkspacePatientContextField(
+              label: 'Email',
+              value: 'ada@example.com',
+            ),
+            AppWorkspacePatientContextField(
+              label: 'Encounter',
+              value: 'ENC-9',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.textContaining('Phone:'), findsOneWidget);
+      expect(find.text('+256700000000'), findsOneWidget);
+      expect(find.textContaining('Email:'), findsOneWidget);
+      expect(find.text('ada@example.com'), findsOneWidget);
+      expect(find.textContaining('Encounter:'), findsOneWidget);
+      expect(find.text('ENC-9'), findsOneWidget);
+      expect(find.text('+256700000000'), findsOneWidget);
+    },
+  );
 
   testWidgets('chevron collapses expanded workflow fields', (
     WidgetTester tester,

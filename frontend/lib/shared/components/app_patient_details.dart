@@ -74,6 +74,9 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
 /// Expanded body shows context facts responsively:
 /// desktop keeps an overflow row (`Icon Label: Value | …`);
 /// mobile stacks one wrapped `Label: Value` row per fact.
+///
+/// Body always leads with age, gender, phone, and email when known
+/// (dedicated props or matching [expandedFields]).
 class AppPatientDetails extends ConsumerStatefulWidget {
   const AppPatientDetails({
     required this.patientName,
@@ -82,6 +85,8 @@ class AppPatientDetails extends ConsumerStatefulWidget {
     this.ageLabel,
     this.genderLabel,
     this.genderIcon,
+    this.phoneLabel,
+    this.emailLabel,
     this.compactSupportingText,
     this.status,
     this.alerts = const <AppWorkspaceStatus>[],
@@ -109,6 +114,8 @@ class AppPatientDetails extends ConsumerStatefulWidget {
   final String? ageLabel;
   final String? genderLabel;
   final IconData? genderIcon;
+  final String? phoneLabel;
+  final String? emailLabel;
 
   /// Optional non-PHI compact line (workflow subtitle). Prefer age/gender when available.
   final String? compactSupportingText;
@@ -219,31 +226,79 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     final List<AppWorkspacePatientContextField> fields =
         <AppWorkspacePatientContextField>[];
 
-    final String? age = widget.ageLabel?.trim();
-    if (age != null && age.isNotEmpty) {
+    final String ageFieldLabel = l10n.patientsAgeColumnLabel;
+    final String genderFieldLabel = l10n.patientsGenderLabel;
+    final String phoneFieldLabel = l10n.patientsPhoneLabel;
+    final String emailFieldLabel = l10n.patientsEmailLabel;
+
+    final AppWorkspacePatientContextField? expandedAge = _expandedFieldFor(
+      ageFieldLabel,
+    );
+    final AppWorkspacePatientContextField? expandedGender = _expandedFieldFor(
+      genderFieldLabel,
+    );
+    final AppWorkspacePatientContextField? expandedPhone = _expandedFieldFor(
+      phoneFieldLabel,
+    );
+    final AppWorkspacePatientContextField? expandedEmail = _expandedFieldFor(
+      emailFieldLabel,
+    );
+
+    final String? age =
+        _nonEmpty(widget.ageLabel) ?? _nonEmpty(expandedAge?.value);
+    final String? gender =
+        _nonEmpty(widget.genderLabel) ?? _nonEmpty(expandedGender?.value);
+    final String? phone =
+        _nonEmpty(widget.phoneLabel) ?? _nonEmpty(expandedPhone?.value);
+    final String? email =
+        _nonEmpty(widget.emailLabel) ?? _nonEmpty(expandedEmail?.value);
+
+    if (age != null) {
       fields.add(
         AppWorkspacePatientContextField(
-          label: l10n.patientsAgeColumnLabel,
+          label: ageFieldLabel,
           value: age,
-          icon: Icons.cake_outlined,
+          icon: expandedAge?.icon ?? Icons.cake_outlined,
         ),
       );
     }
 
-    final String? gender = widget.genderLabel?.trim();
-    if (gender != null && gender.isNotEmpty) {
+    if (gender != null) {
       fields.add(
         AppWorkspacePatientContextField(
-          label: l10n.patientsGenderLabel,
+          label: genderFieldLabel,
           value: gender,
-          icon: widget.genderIcon ?? Icons.person_outline,
+          icon:
+              widget.genderIcon ??
+              expandedGender?.icon ??
+              Icons.person_outline,
+        ),
+      );
+    }
+
+    if (phone != null) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: phoneFieldLabel,
+          value: phone,
+          icon: expandedPhone?.icon ?? Icons.phone_outlined,
+        ),
+      );
+    }
+
+    if (email != null) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: emailFieldLabel,
+          value: email,
+          icon: expandedEmail?.icon ?? Icons.email_outlined,
         ),
       );
     }
 
     final String? supporting = widget.compactSupportingText?.trim();
-    if ((age == null || age.isEmpty) &&
-        (gender == null || gender.isEmpty) &&
+    if (age == null &&
+        gender == null &&
         supporting != null &&
         supporting.isNotEmpty) {
       fields.add(
@@ -281,13 +336,38 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
       );
     }
 
+    final Set<String> coreLabels = <String>{
+      ageFieldLabel,
+      genderFieldLabel,
+      phoneFieldLabel,
+      emailFieldLabel,
+    };
     fields.addAll(
       widget.expandedFields.where(
-        (AppWorkspacePatientContextField field) => field.hasValue,
+        (AppWorkspacePatientContextField field) =>
+            field.hasValue && !coreLabels.contains(field.label.trim()),
       ),
     );
 
     return fields;
+  }
+
+  AppWorkspacePatientContextField? _expandedFieldFor(String label) {
+    final String normalized = label.trim();
+    for (final AppWorkspacePatientContextField field in widget.expandedFields) {
+      if (!field.hasValue) {
+        continue;
+      }
+      if (field.label.trim() == normalized) {
+        return field;
+      }
+    }
+    return null;
+  }
+
+  static String? _nonEmpty(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
   }
 }
 
