@@ -13,15 +13,19 @@ abstract final class BillingWorkspaceMutationApplier {
 
     final BillingWorkItem? previous = _findExistingItem(
       state,
-      mutation.invoice ?? mutation.approval ?? mutation.claim,
+      mutation.claim ?? mutation.approval ?? mutation.invoice,
     );
+    // Prefer claim/pre-auth patch on claims queues so remittance invoice+payment
+    // siblings do not replace claim rows in the Claims pending list.
     BillingWorkItem? patchItem =
-        mutation.invoice ?? mutation.approval ?? mutation.claim;
+        mutation.claim ?? mutation.approval ?? mutation.invoice;
     if (patchItem == null) {
       return state;
     }
 
-    if (mutation.invoice != null && mutation.payment != null) {
+    if (mutation.invoice != null &&
+        mutation.payment != null &&
+        patchItem.isInvoice) {
       patchItem = _mergePaymentIntoInvoice(patchItem, mutation.payment!);
     }
 
@@ -34,6 +38,9 @@ abstract final class BillingWorkspaceMutationApplier {
     final bool isPendingApproval = isPendingApprovalItem(patchItem);
     final bool wasNeedsIssue = previous != null && isNeedsIssueItem(previous);
     final bool isNeedsIssue = isNeedsIssueItem(patchItem);
+    final bool wasClaimsPending =
+        previous != null && isClaimsPendingItem(previous);
+    final bool isClaimsPending = isClaimsPendingItem(patchItem);
 
     AppPage<BillingWorkItem> workItems = state.workItems;
     if (_shouldRemoveFromVisibleQueue(state.query.queue, patchItem)) {
@@ -61,6 +68,8 @@ abstract final class BillingWorkspaceMutationApplier {
       isOverdue: isOverdue,
       wasPendingApproval: wasPendingApproval,
       isPendingApproval: isPendingApproval,
+      wasClaimsPending: wasClaimsPending,
+      isClaimsPending: isClaimsPending,
       paymentAmount: mutation.payment?.amount,
     );
 
@@ -270,12 +279,15 @@ abstract final class BillingWorkspaceMutationApplier {
     required bool isOverdue,
     required bool wasPendingApproval,
     required bool isPendingApproval,
+    required bool wasClaimsPending,
+    required bool isClaimsPending,
     num? paymentAmount,
   }) {
     var needsIssue = summary.needsIssue;
     var pendingPayment = summary.pendingPayment;
     var overdue = summary.overdue;
     var approvalRequired = summary.approvalRequired;
+    var claimsPending = summary.claimsPending;
     var paymentsTodayTotal = summary.paymentsTodayTotal;
 
     if (wasNeedsIssue && !isNeedsIssue) {
@@ -302,6 +314,12 @@ abstract final class BillingWorkspaceMutationApplier {
       approvalRequired += 1;
     }
 
+    if (wasClaimsPending && !isClaimsPending) {
+      claimsPending = (claimsPending - 1).clamp(0, 1 << 30);
+    } else if (!wasClaimsPending && isClaimsPending) {
+      claimsPending += 1;
+    }
+
     if (paymentAmount != null && paymentAmount > 0) {
       paymentsTodayTotal += paymentAmount;
     }
@@ -311,6 +329,7 @@ abstract final class BillingWorkspaceMutationApplier {
       pendingPayment: pendingPayment,
       overdue: overdue,
       approvalRequired: approvalRequired,
+      claimsPending: claimsPending,
       paymentsTodayTotal: paymentsTodayTotal,
     );
   }

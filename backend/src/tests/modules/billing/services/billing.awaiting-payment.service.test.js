@@ -52,11 +52,17 @@ jest.mock('@lib/billing/financials', () => ({
       gross_paid_total: 100,
     },
   })),
-  computeInvoiceFinancials: jest.fn(() => ({
-    balance_due: 0,
-    net_paid_total: 100,
-    effective_total: 100,
-  })),
+  computeInvoiceFinancials: jest.fn((invoice = {}) => {
+    const total = Number(invoice.total_amount || 100);
+    const paid = (invoice.payments || [])
+      .filter((p) => String(p.status || '').toUpperCase() === 'COMPLETED')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    return {
+      balance_due: Math.max(0, total - paid),
+      net_paid_total: paid,
+      effective_total: total,
+    };
+  }),
 }));
 
 jest.mock('@services/lab-order/lab-order.service', () => ({
@@ -197,6 +203,18 @@ describe('billing.service Awaiting payment mutations post through Billing', () =
 
     billingRepository.withTransaction.mockImplementation(async (callback) => {
       const tx = {
+        invoice: {
+          findFirst: jest.fn(async () => ({
+            id: 'inv-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            billing_status: 'ISSUED',
+            status: 'SENT',
+            total_amount: '100.00',
+            payments: [],
+            billing_adjustments: [],
+          })),
+        },
         payment: {
           update: jest.fn(async () => ({
             id: 'pay-1',

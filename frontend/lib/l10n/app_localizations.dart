@@ -3298,6 +3298,12 @@ abstract class AppLocalizations {
   /// **'Paid'**
   String get billingClaimStatusPaid;
 
+  /// Insurance claim partially paid status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get billingClaimStatusPartial;
+
   /// Draft billing status label.
   ///
   /// In en, this message translates to:

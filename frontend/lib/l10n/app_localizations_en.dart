@@ -1685,6 +1685,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingClaimStatusPaid => 'Paid';
 
   @override
+  String get billingClaimStatusPartial => 'Partial';
+
+  @override
   String get billingStatusDraft => 'Draft';
 
   @override

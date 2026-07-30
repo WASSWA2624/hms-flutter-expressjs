@@ -667,8 +667,9 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.textContaining('Loading'), findsWidgets);
+      expect(find.text('Loading access workspace'), findsOneWidget);
 
       completer.complete(
         Result<AccessAdminWorkspaceData>.success(_registrationsData()),

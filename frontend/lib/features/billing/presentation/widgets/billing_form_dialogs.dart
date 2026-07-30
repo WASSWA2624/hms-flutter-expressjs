@@ -572,10 +572,25 @@ class _BillingClaimReconcileFormState extends State<BillingClaimReconcileForm> {
             },
           ),
           if (_requiresSettlement)
-            AppCurrencyAmountField(
+            AppTextField(
               controller: _settlementController,
-              amountLabelText: l10n.claimsSettlementAmountColumnLabel,
-              required: _status == 'PARTIAL',
+              labelText: l10n.claimsSettlementAmountColumnLabel,
+              isRequired: _status == 'PARTIAL',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (String? value) {
+                if (_status != 'PARTIAL') {
+                  return null;
+                }
+                final String normalized =
+                    value?.replaceAll(',', '').trim() ?? '';
+                if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(normalized) ||
+                    (num.tryParse(normalized) ?? 0) <= 0) {
+                  return l10n.billingAdjustmentAmountValidation;
+                }
+                return null;
+              },
             ),
           AppTextField(
             controller: _notesController,

@@ -36,10 +36,17 @@ jest.mock('@lib/billing/financials', () => ({
       net_paid_total: 100,
       effective_total: 100,
       gross_paid_total: 100}})),
-  computeInvoiceFinancials: jest.fn(() => ({
-    balance_due: 0,
-    net_paid_total: 100,
-    effective_total: 100}))}));
+  computeInvoiceFinancials: jest.fn((invoice = {}) => {
+    const total = Number(invoice.total_amount || 100);
+    const paid = (invoice.payments || [])
+      .filter((p) => String(p.status || '').toUpperCase() === 'COMPLETED')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    return {
+      balance_due: Math.max(0, total - paid),
+      net_paid_total: paid,
+      effective_total: total,
+    };
+  })}));
 
 jest.mock('@lib/billing/clinical-request-billing', () => ({
   resolveClinicalInvoiceContexts: jest.fn(async () => ({})),

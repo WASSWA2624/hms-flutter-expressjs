@@ -227,6 +227,9 @@ void main() {
     registerFallbackValue(
       const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
     );
+    registerFallbackValue(
+      const BillingAdjustmentDraft(amount: '1.00', reason: 'test'),
+    );
     registerFallbackValue(const BillingLedgerQuery());
   });
 
@@ -347,7 +350,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('No'), findsWidgets);
+        expect(find.text('No billing items'), findsOneWidget);
         expectFlatSections(tester);
       },
     );
