@@ -122,6 +122,23 @@ describe('ipd-flow.schema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('validates start ICU stay billing payload (Active ICU)', () => {
+    const result = startIcuStaySchema.safeParse({
+      started_at: '2026-01-01T10:00:00.000Z',
+      billing: {
+        payment_status: 'PENDING',
+        currency: 'UGX',
+        total_amount: '150000.00',
+        line_items: [
+          {
+            id: 'ICU_CRITICAL_CARE_PACKAGE',
+            label: 'ICU critical-care package',
+            quantity: 1,
+            unit_price: '100000.00',
+            line_total: '100000.00'}]}});
+    expect(result.success).toBe(true);
+  });
+
   it('validates end ICU stay payload', () => {
     const result = endIcuStaySchema.safeParse({
       icu_stay_id: 'ICU0000001',
