@@ -1727,10 +1727,7 @@ class _LabReportPreviewDialogState
       closeEnabled: !_isPrinting,
       content: AppClinicalResultsPreview(
         mode: AppClinicalResultsPreviewMode.modal,
-        title: l10n.labReportPreviewTitle,
-        status: printableItems.isEmpty
-            ? AppClinicalResultStatus.unavailable
-            : AppClinicalResultStatus.verified,
+        semanticLabel: l10n.labReportPreviewTitle,
         isEmpty: _allReportItems.isEmpty,
         emptyTitle: l10n.labNoOrderItemsEntryTitle,
         emptyBody: l10n.labNoOrderItemsEntryBody,
@@ -2108,13 +2105,6 @@ class _LabReportPreview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          l10n.labReportTitle,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
         _LabReportPreviewPatientDetails(
           workflows: workflows,
           settings: settings,
@@ -2321,7 +2311,8 @@ class _LabReportPreviewPatientDetails extends StatelessWidget {
       semanticLabel: l10n.labPatientContextLabel,
       showAvatar: false,
       persistExpandPreference: false,
-      initiallyExpanded: expandedFields.isNotEmpty,
+      collapsible: false,
+      initiallyExpanded: true,
       alerts: alerts,
       expandedFields: expandedFields,
     );

@@ -816,50 +816,60 @@ class AppClinicalResultsPreview extends StatelessWidget {
 
     final String? encounterId = encounterPublicId?.trim();
 
-    final Widget panel = AppReportPreviewPanel(
-      title: title,
-      semanticLabel: semanticLabel ?? title,
-      selectable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (encounterId != null && encounterId.isNotEmpty) ...<Widget>[
-            Text(
-              l10n.clinicalResultsEncounterScopeLabel(encounterId),
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    final Widget previewBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (encounterId != null && encounterId.isNotEmpty) ...<Widget>[
+          Text(
+            l10n.clinicalResultsEncounterScopeLabel(encounterId),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            SizedBox(height: theme.spacing.sm),
-          ],
-          if (statusDisplay != null || headerActions.isNotEmpty) ...<Widget>[
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: WrapAlignment.spaceBetween,
-              children: <Widget>[
-                if (statusDisplay != null)
-                  AppStatusBadge(
-                    label: statusDisplay.label,
-                    tone: statusDisplay.tone,
-                    icon: statusDisplay.icon,
-                  ),
-                if (headerActions.isNotEmpty)
-                  Wrap(
-                    spacing: theme.spacing.xs,
-                    runSpacing: theme.spacing.xs,
-                    children: headerActions,
-                  ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-          ],
-          body,
+          ),
+          SizedBox(height: theme.spacing.sm),
         ],
-      ),
+        if (statusDisplay != null || headerActions.isNotEmpty) ...<Widget>[
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: <Widget>[
+              if (statusDisplay != null)
+                AppStatusBadge(
+                  label: statusDisplay.label,
+                  tone: statusDisplay.tone,
+                  icon: statusDisplay.icon,
+                ),
+              if (headerActions.isNotEmpty)
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: headerActions,
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
+        body,
+      ],
     );
+
+    // Modal hosts (e.g. AppDialog) already provide titled chrome — avoid a
+    // nested AppReportPreviewPanel / collapsible section when [title] is unset.
+    final Widget panel = title == null || title!.trim().isEmpty
+        ? Semantics(
+            container: true,
+            label: semanticLabel,
+            child: SelectionArea(child: previewBody),
+          )
+        : AppReportPreviewPanel(
+            title: title,
+            semanticLabel: semanticLabel ?? title,
+            selectable: true,
+            child: previewBody,
+          );
 
     return switch (mode) {
       AppClinicalResultsPreviewMode.inline => panel,

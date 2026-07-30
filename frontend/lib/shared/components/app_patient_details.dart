@@ -105,6 +105,7 @@ class AppPatientDetails extends ConsumerStatefulWidget {
     this.fieldStyle = AppWorkspacePatientContextFieldStyle.inline,
     this.persistExpandPreference = true,
     this.initiallyExpanded,
+    this.collapsible = true,
     super.key,
   });
 
@@ -139,6 +140,9 @@ class AppPatientDetails extends ConsumerStatefulWidget {
   final bool persistExpandPreference;
   final bool? initiallyExpanded;
 
+  /// When false, identity chrome stays open with no expand chevron.
+  final bool collapsible;
+
   @override
   ConsumerState<AppPatientDetails> createState() => _AppPatientDetailsState();
 }
@@ -159,9 +163,11 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     final List<AppWorkspacePatientContextField> bodyFields = _bodyFields(l10n);
     final bool hasExpandableContent =
         bodyFields.isNotEmpty || widget.expandedChild != null;
+    final bool sectionCollapsible =
+        widget.collapsible && hasExpandableContent;
 
-    final bool expanded = !hasExpandableContent
-        ? false
+    final bool expanded = !sectionCollapsible
+        ? true
         : (widget.persistExpandPreference
               ? ref.watch(appPatientDetailsExpandedProvider)
               : _localExpanded);
@@ -179,12 +185,12 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
         copyPatientNumberSemanticLabel: widget.copyPatientNumberSemanticLabel,
       ),
       headerActions: widget.actions,
-      collapsible: hasExpandableContent,
-      expanded: hasExpandableContent ? expanded : null,
-      onExpandedChanged: hasExpandableContent
+      collapsible: sectionCollapsible,
+      expanded: sectionCollapsible ? expanded : null,
+      onExpandedChanged: sectionCollapsible
           ? (bool value) => _toggleExpanded(expanded: value)
           : null,
-      initiallyExpanded: false,
+      initiallyExpanded: !sectionCollapsible,
       contentPadding: EdgeInsets.symmetric(
         horizontal: theme.spacing.md,
         vertical: theme.spacing.sm,
