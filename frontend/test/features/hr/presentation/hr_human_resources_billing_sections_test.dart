@@ -26,7 +26,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../helpers/section_layout_test_helpers.dart';
+import '../../../helpers/section_layout_test_helpers.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
 
@@ -552,6 +552,17 @@ void main() {
     testWidgets('error/retry remains for authorized readers', (
       WidgetTester tester,
     ) async {
+      when(() => repository.loadOverview()).thenAnswer(
+        (_) async => const Result<HrWorkspaceOverview>.failure(
+          AppFailure.network(),
+        ),
+      );
+      when(() => repository.listStaffProfiles(any())).thenAnswer(
+        (_) async => const Result<AppPage<HrStaffProfile>>.failure(
+          AppFailure.network(),
+        ),
+      );
+
       await _pumpStaffTab(
         tester,
         repository: repository,
@@ -559,53 +570,8 @@ void main() {
           permissions: <AppPermission>{AppPermissions.hrRead},
         ),
       );
-      // Force failure path via overview override on a fresh pump.
-      _stubWorkspace(
-        repository,
-        overviewOverride: const Result<HrWorkspaceOverview>.failure(
-          AppFailure.network(),
-        ),
-      );
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            hrRepositoryProvider.overrideWithValue(repository),
-            sharedPreferencesProvider.overrideWithValue(
-              await SharedPreferences.getInstance(),
-            ),
-            initialSessionStateProvider.overrideWithValue(
-              const SessionState.ready(),
-            ),
-            appAccessPolicyProvider.overrideWithValue(
-              _policy(permissions: <AppPermission>{AppPermissions.hrRead}),
-            ),
-          ],
-          child: MaterialApp.router(
-            theme: AppTheme.light,
-            routerConfig: GoRouter(
-              initialLocation: '/hr?section=staff',
-              routes: <RouteBase>[
-                GoRoute(
-                  path: '/hr',
-                  builder: (BuildContext context, GoRouterState state) {
-                    return Scaffold(
-                      body: HrWorkspacePage(
-                        initialQuery: HrWorkspaceQuery.fromUri(state.uri),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
 
+      expect(find.text('Try again'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
     });
 
