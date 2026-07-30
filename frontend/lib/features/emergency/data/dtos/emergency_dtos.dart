@@ -134,6 +134,8 @@ EmergencyHandoffOutcome? _handoffOutcome(EmergencyJsonMap json) {
     icuStayDisplayId: _string(handoff['icu_stay_display_id']),
     stage: _string(handoff['stage']),
     billingDeferred: _bool(handoff['billing_deferred']),
+    billingPaymentStatus: _string(handoff['billing_payment_status']),
+    billingInvoiceId: _string(handoff['billing_invoice_id']),
     terminal: _bool(handoff['terminal']),
     notes: _string(handoff['notes']),
     handoffAt: _date(handoff['handoff_at']),

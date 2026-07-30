@@ -22,73 +22,6 @@ const {
   persistAmbulanceTripBilling,
 } = require('@lib/billing/emergency-billing');
 
-/**
- * Post a deferred ambulance transport charge when a trip is completed.
- * Idempotent via clinical-request-billing charge key AMBULANCE_TRIP.
- *
- * @param {Object} trip - Persisted trip (with emergency_case include when available)
- * @param {Object} context - Request context
- * @param {Object|null|undefined} [billingOverride] - Optional caller billing payload
- * @returns {Promise<Object|null>} Billing snapshot or null when not billable
- */
-const postAmbulanceTripChargeIfCompleted = async (
-  trip,
-  context = {},
-  billingOverride = null
-) => {
-  if (!trip?.ended_at || !trip?.id) {
-    return null;
-  }
-
-  let emergencyCase = trip.emergency_case || null;
-  if (!emergencyCase && trip.emergency_case_id) {
-    emergencyCase = await prisma.emergency_case.findFirst({
-      where: { id: trip.emergency_case_id, deleted_at: null },
-      select: {
-        id: true,
-        tenant_id: true,
-        facility_id: true,
-        patient_id: true,
-        facility: { select: { id: true, extension_json: true } },
-        patient: { select: { id: true } },
-      },
-    });
-  }
-
-  const patientId = emergencyCase?.patient_id || emergencyCase?.patient?.id || null;
-  const tenantId =
-    emergencyCase?.tenant_id || context.tenant_id || null;
-  const facilityId =
-    emergencyCase?.facility_id ||
-    emergencyCase?.facility?.id ||
-    context.facility_id ||
-    null;
-
-  if (!patientId || !tenantId) {
-    return null;
-  }
-
-  const billing = buildAmbulanceTripBilling({
-    billing: billingOverride,
-    facility: emergencyCase?.facility || null,
-  });
-  if (!billing) {
-    return null;
-  }
-
-  return prisma.$transaction(async (tx) =>
-    persistAmbulanceTripBilling(tx, {
-      tripId: trip.id,
-      billing,
-      tenantId,
-      facilityId,
-      patientId,
-      actorUserId: context.user_id || null,
-      currency: billing.currency || 'USD',
-    })
-  );
-};
-
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const toPublicIdentifier = (value) => {
   const normalized = sanitizeIdentifier(value);
@@ -454,9 +387,12 @@ const createAmbulanceTrip = async (data, context = {}) => {
     },
   });
 
-  // Deferred transport charge posts immediately as PENDING in Billing
-  // (idempotent on trip id). Settlement stays in the Billing workspace.
-  const billingSnapshot = await applyAmbulanceTripBilling(trip, billingInput, context);
+  // Transport charge posts as PENDING when the trip is already completed
+  // at create time (idempotent on trip id). Settlement stays in Billing.
+  let billingSnapshot = null;
+  if (trip.ended_at) {
+    billingSnapshot = await applyAmbulanceTripBilling(trip, billingInput, context);
+  }
 
   return {
     ...mapAmbulanceTripForDisplay(trip),

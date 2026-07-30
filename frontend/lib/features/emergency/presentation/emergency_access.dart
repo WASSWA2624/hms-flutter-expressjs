@@ -2,6 +2,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 
 /// Module entitlement for the emergency workspace route and board tabs.
@@ -753,6 +754,7 @@ abstract final class EmergencyHandoffAtomPermissions {
 /// | Detail complementary writes | create / update | write ∩ (absent when closed) |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Detail Open in {module} | navigate | read ∩ |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` |
 /// | Detail Ambulance / timeline panels | read | read ∩ |
 /// | Hard delete / void | delete | delete ∩ `emergency:delete` (no UI yet) |
 /// | Nested mutation / panel deep link | create / update | write ∩ (closed → detail) |
@@ -777,6 +779,8 @@ abstract final class EmergencyClosedAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement openReceivingModule =
       emergencyWorkspaceReadRequirement;
+  /// Settle deferred / outstanding via Billing workspace (no module cashier).
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement ambulancePanel =
       emergencyAmbulanceContextReadRequirement;
   static const AccessRequirement timelinePanel =

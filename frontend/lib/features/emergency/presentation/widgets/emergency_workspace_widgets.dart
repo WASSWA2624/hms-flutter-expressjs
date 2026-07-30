@@ -38,6 +38,8 @@ abstract final class EmergencyText {
   static const String billingDeferredMessage =
       'Stabilize first — billing for this admission can be completed later in '
       'the Billing workspace.';
+  static const String openBilling = 'Open billing';
+  static const String billingStatus = 'Billing status';
   static const String cancel = 'Cancel';
   static const String careBeforeBilling = 'Care before billing';
   static const String caseLabel = 'Case';
@@ -48,6 +50,7 @@ abstract final class EmergencyText {
   static const String completeTrip = 'Complete trip';
   static const String critical = 'Critical';
   static const String discharge = 'Discharge';
+  static const String openBilling = 'Open billing';
   static const String dispatch = 'Dispatch';
   static const String dispatchAmbulance = 'Dispatch ambulance';
   static const String dispatched = 'Dispatched';
@@ -1242,6 +1245,21 @@ class EmergencyActionPanel extends ConsumerWidget {
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: actions,
       extraActions: <Widget>[
+        if (!isOpen &&
+            (detail.summary.patientId ?? '').trim().isNotEmpty)
+          AppAccessActionGate(
+            requirement: EmergencyClosedAtomPermissions.openBilling,
+            builder: (BuildContext context, bool isAllowed) {
+              if (!isAllowed) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.secondary(
+                label: EmergencyText.openBilling,
+                leadingIcon: Icons.receipt_long_outlined,
+                onPressed: () => _openBillingWorkspace(context, detail.summary),
+              );
+            },
+          ),
         AppAccessActionGate(
           requirement: readRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -1274,6 +1292,26 @@ class EmergencyActionPanel extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Opens Billing workspace for deferred / outstanding settle — never a local
+  /// cashier dialog. Billing owns payment methods, idempotency, and ledger rows.
+  void _openBillingWorkspace(
+    BuildContext context,
+    EmergencyCaseSummary summary,
+  ) {
+    final String? patientId = summary.patientId?.trim();
+    final String location = (patientId == null || patientId.isEmpty)
+        ? AppRoutes.billing.path
+        : AppRoutes.billing.location(
+            queryParameters: <String, String>{'patient_id': patientId},
+          );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      context.go(location);
+    }
   }
 
   Future<void> _openPriorityDialog(BuildContext context) async {

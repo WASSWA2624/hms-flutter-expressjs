@@ -91,6 +91,8 @@ final class EmergencyHandoffOutcome {
     this.icuStayDisplayId,
     this.stage,
     this.billingDeferred = false,
+    this.billingPaymentStatus,
+    this.billingInvoiceId,
     this.terminal = false,
     this.notes,
     this.handoffAt,
@@ -104,6 +106,9 @@ final class EmergencyHandoffOutcome {
   final String? icuStayDisplayId;
   final String? stage;
   final bool billingDeferred;
+  /// Billing SoR payment status when a deferred invoice was posted.
+  final String? billingPaymentStatus;
+  final String? billingInvoiceId;
   final bool terminal;
   final String? notes;
   final DateTime? handoffAt;
