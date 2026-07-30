@@ -203,61 +203,6 @@ const persistMortuaryBillableEventBilling = async (
 };
 
 /**
- * Build + persist a mortuary fee through Billing (create-charge).
- * Prefer this over writing `mortuary_billable_event` paid flags alone.
- *
- * @param {import('@prisma/client').Prisma.TransactionClient} tx
- * @param {Object} options
- * @returns {Promise<Object|null>} Billing snapshot or null when NOT_BILLED
- */
-const applyMortuaryBillableEventBilling = async (
-  tx,
-  {
-    billableEventId,
-    tenantId,
-    facilityId = null,
-    patientId,
-    actorUserId = null,
-    eventType = null,
-    amount = null,
-    currency = 'USD',
-    description = null,
-    billing = null,
-    facility = null,
-    chargeKey = null,
-  } = {}
-) => {
-  if (isMortuaryCustodyLogisticsEvent(eventType) && !billing && amount == null) {
-    return null;
-  }
-
-  const payload = buildMortuaryBillableEventBilling({
-    billing,
-    facility,
-    eventType,
-    amount,
-    currency,
-    description,
-  });
-  if (!payload) {
-    return null;
-  }
-
-  return persistMortuaryBillableEventBilling(tx, {
-    billableEventId,
-    billing: payload,
-    tenantId,
-    facilityId,
-    patientId,
-    actorUserId,
-    currency: payload.currency || currency,
-    eventType,
-    description,
-    chargeKey,
-  });
-};
-
-/**
  * Resolve payment status from Billing ledger for a mortuary billable event.
  * Closes false PAID/SETTLED leakage when no billable_charge_event exists.
  *
@@ -297,7 +242,8 @@ const resolveMortuaryLedgerPaymentStatus = async (
     }
     if (!tx.invoice?.findFirst) {
       return {
-        payment_status: local && local !== 'SETTLED' && local !== 'PAID' ? local : 'PENDING',
+        payment_status:
+          local && local !== 'SETTLED' && local !== 'PAID' ? local : 'PENDING',
         invoice_id: event.invoice_id,
       };
     }
@@ -554,6 +500,7 @@ module.exports = {
   buildMortuaryBillableEventBilling,
   persistMortuaryBillableEventBilling,
   applyMortuaryBillableEventBilling,
+  resolveMortuaryLedgerPaymentStatus,
   mapLedgerPaymentStatusToMortuary,
   aggregateMortuaryCaseBillingStatus,
   isMortuaryCustodyLogisticsEvent,

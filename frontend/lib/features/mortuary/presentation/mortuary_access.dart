@@ -237,6 +237,17 @@ AccessRequirement mortuaryPanelBillingRequirement(String panel) {
   };
 }
 
+/// Detail Open billing navigate gate (Billing read — never a module cashier).
+/// Custody and Release mount the control; other panels fall back to Billing
+/// read for helpers / future wiring.
+AccessRequirement mortuaryPanelOpenBillingRequirement(String panel) {
+  return switch (panel) {
+    mortuaryPanelCustody => MortuaryCustodyAtomPermissions.openBilling,
+    mortuaryPanelRelease => MortuaryReleaseAtomPermissions.openBilling,
+    _ => billingReadRequirement,
+  };
+}
+
 bool canViewMortuaryPanel(AppAccessPolicy policy, String panel) {
   return mortuaryPanelTabRequirement(panel).isAllowed(policy);
 }
@@ -534,12 +545,13 @@ abstract final class MortuaryCustodyAtomPermissions {
 
 /// Atom → requirement map for Mortuary Release (`/mortuary?panel=release`).
 ///
-/// Inventory: `screens/mortuary.md` → Release tab (release-authorisations
-/// worklist; body release update ∩ `mortuary:release`; approve ∩
-/// `mortuary:approve` — no-op mutation chrome removed). Read-only detail;
-/// Print documents when export ∪. Nested cross-module read/write matrix rows
-/// are n/a for this tab. Billing events use ∩ `mortuary:billing_event` +
-/// `billing:read`. Route entry ∪ is [routeEntry]. Export keeps source ∪
+/// Release-authorisations worklist; body release update ∩ `mortuary:release`;
+/// approve ∩ `mortuary:approve` — no-op mutation chrome removed. Read-only
+/// detail; Print documents when export ∪. Billing events use ∩
+/// `mortuary:billing_event` + `billing:read`. Open billing uses Billing read
+/// (`billing:read` ∩ `billing-payments`) — never a module cashier.
+/// Financial inventory: `mortuary_release_billing_inventory.dart`.
+/// Route entry ∪ is [routeEntry]. Export keeps source ∪
 /// `mortuary:export` | `reports:read`. Matrix create/delete stay ∩ write;
 /// matrix update is ∩ `mortuary:release` ([update] / [release]).
 ///
@@ -550,9 +562,10 @@ abstract final class MortuaryCustodyAtomPermissions {
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized release) | visible feedback | release ∩ ([success]) |
 /// | Row select → detail | read / navigate | read ∩ |
-/// | Next action (guidance text only) | read | read ∩ |
+/// | Next action (Clear billing / release guidance) | read | read ∩ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
 /// | Create release authorisation / receive-adjacent create | create | write ∩ ([create]) — not mounted |
 /// | Record / approve body release | update / approve | release ∩ / approve ∩ — not mounted |
@@ -586,6 +599,7 @@ abstract final class MortuaryReleaseAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement audit = mortuaryAuditRequirement;

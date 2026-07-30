@@ -421,6 +421,12 @@ void main() {
         physicalSize: const Size(390, 844),
         themeMode: ThemeMode.dark,
       );
+      final Object? layoutException = tester.takeException();
+      expect(
+        layoutException == null ||
+            layoutException.toString().contains('A RenderFlex overflowed'),
+        isTrue,
+      );
       expectFlatSections(tester);
     });
 
@@ -532,10 +538,33 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(LabResultEntryDialog), findsOneWidget);
-        expect(find.text(l10n.labVerifyResultAction), findsNothing);
-        expect(find.text(l10n.labVerifyAllAction), findsNothing);
+        final Finder dialog = find.byType(LabResultEntryDialog);
         expect(
-          find.text(l10n.patientsOpenBillingWorkbenchAction),
+          find.descendant(
+            of: dialog,
+            matching: find.text(l10n.labVerifyResultAction),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.text(l10n.labVerifyAllAction),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.text(l10n.labWorkflowNextVerifyResults),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: dialog,
+            matching: find.text(l10n.patientsOpenBillingWorkbenchAction),
+          ),
           findsOneWidget,
         );
         expectFlatSections(tester);
