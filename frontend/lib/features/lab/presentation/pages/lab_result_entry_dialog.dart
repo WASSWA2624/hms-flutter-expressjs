@@ -2612,6 +2612,7 @@ class _ReopenSavedResultDialogState
               labelText: l10n.labReopenVerifiedReasonLabel,
               isRequired: true,
               enabled: !_isSaving,
+              allowClear: !_isSaving,
               maxLines: 3,
               minLines: 2,
               autofocus: true,
@@ -2626,6 +2627,7 @@ class _ReopenSavedResultDialogState
               controller: _notesController,
               labelText: l10n.labNotesLabel,
               enabled: !_isSaving,
+              allowClear: !_isSaving,
               maxLines: 3,
               minLines: 2,
             ),
@@ -2683,6 +2685,7 @@ class _ReopenSavedResultDialogState
           labelText: l10n.labResultValueLabel,
           isRequired: true,
           enabled: !_isSaving,
+          allowClear: !_isSaving,
           options: <AppSelectOption<String>>[
             for (final LabResultOption option in _item.resultOptions)
               AppSelectOption<String>(
@@ -2712,6 +2715,7 @@ class _ReopenSavedResultDialogState
             : l10n.labResultTextLabel,
         isRequired: true,
         enabled: !_isSaving,
+        allowClear: !_isSaving,
         maxLines: _item.isText ? 3 : 1,
         minLines: _item.isText ? 2 : 1,
         validator: AppValidators.minLength(

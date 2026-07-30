@@ -337,7 +337,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               horizontal: theme.spacing.sm,
               vertical: 10,
             ),
-            constraints: const BoxConstraints.tightFor(height: 40),
+            constraints: const BoxConstraints(minHeight: 40),
           ),
         ),
         child: field,

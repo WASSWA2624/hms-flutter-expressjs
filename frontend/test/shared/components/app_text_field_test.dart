@@ -64,18 +64,65 @@ void main() {
     expect(find.byTooltip('Hide password'), findsOneWidget);
   });
 
-  testWidgets('AppTextField shows tooltip when provided', (
+  testWidgets('AppTextField keeps usable height when dense validation fails', (
     WidgetTester tester,
   ) async {
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController controller = TextEditingController();
+
     await pumpComponent(
       tester,
-      const AppTextField(
-        labelText: 'Code',
-        enabled: false,
-        tooltip: 'Select a type first.',
+      Form(
+        key: formKey,
+        child: Column(
+          children: <Widget>[
+            AppTextField(
+              controller: controller,
+              labelText: 'Result value',
+              isDense: true,
+              isRequired: true,
+              validator: (String? value) {
+                return value == null || value.trim().isEmpty
+                    ? 'Required'
+                    : null;
+              },
+            ),
+            AppButton.primary(
+              label: 'Submit',
+              onPressed: () {
+                formKey.currentState!.validate();
+              },
+            ),
+          ],
+        ),
       ),
     );
 
-    expect(find.byTooltip('Select a type first.'), findsOneWidget);
+    await tester.tap(find.text('Submit'));
+    await tester.pump();
+
+    expect(find.text('Required'), findsOneWidget);
+    final Size inputSize = tester.getSize(find.byType(TextFormField));
+    expect(inputSize.height, greaterThanOrEqualTo(40));
+  });
+
+  testWidgets('AppTextField allowClear clears controller text', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController(text: '12');
+
+    await pumpComponent(
+      tester,
+      AppTextField(
+        controller: controller,
+        labelText: 'Result value',
+        allowClear: true,
+      ),
+    );
+
+    expect(controller.text, '12');
+    await tester.tap(find.byTooltip('Clear text'));
+    await tester.pump();
+    expect(controller.text, isEmpty);
   });
 }

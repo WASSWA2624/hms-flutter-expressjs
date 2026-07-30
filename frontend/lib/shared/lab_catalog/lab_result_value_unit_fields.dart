@@ -54,6 +54,7 @@ class LabResultValueUnitFields extends StatelessWidget {
           enabled: enabled,
           isRequired: valueRequired,
           isDense: true,
+          allowClear: enabled,
           style: valueStyle,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: enabled && onChanged != null
@@ -117,6 +118,7 @@ class LabResultUnitField extends StatelessWidget {
         labelText: l10n.labResultUnitLabel,
         enabled: enabled,
         isDense: true,
+        allowClear: enabled,
         onChanged: enabled && onChanged != null ? (_) => onChanged!() : null,
       );
     }
@@ -125,7 +127,7 @@ class LabResultUnitField extends StatelessWidget {
       value: controller.text.trim().isEmpty ? null : controller.text.trim(),
       labelText: l10n.labResultUnitLabel,
       enabled: enabled,
-      allowClear: false,
+      allowClear: enabled,
       isDense: true,
       options: <AppSelectOption<String>>[
         for (final LabUnitOption option in item.unitOptions)

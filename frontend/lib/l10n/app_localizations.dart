@@ -24914,6 +24914,18 @@ abstract class AppLocalizations {
   /// **'Ready - Abnormal'**
   String get labWorklistStatusReadyAbnormal;
 
+  /// Lab worklist status when some results are pending and a critical flag is present.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Ready - Critical'**
+  String get labWorklistStatusPartiallyReadyCritical;
+
+  /// Lab worklist status when some results are pending and an abnormal flag is present.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Ready - Abnormal'**
+  String get labWorklistStatusPartiallyReadyAbnormal;
+
   /// Lab worklist status when results are filled and ready.
   ///
   /// In en, this message translates to:

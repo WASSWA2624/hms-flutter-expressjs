@@ -43,6 +43,7 @@ class AppTextField extends StatefulWidget {
     this.enableSuggestions = true,
     this.useFloatingLabel = true,
     this.isDense = false,
+    this.allowClear = false,
     this.style,
     this.tooltip,
     super.key,
@@ -101,6 +102,9 @@ class AppTextField extends StatefulWidget {
   /// toolbar actions.
   final bool isDense;
 
+  /// When true and a [controller] has text, shows a clear (X) suffix action.
+  final bool allowClear;
+
   /// Optional input text style. Merged over the default field style so callers
   /// can tint the value (for example lab result interpretation colors).
   final TextStyle? style;
@@ -120,6 +124,7 @@ class _AppTextFieldState extends State<AppTextField> {
     super.initState();
     _obscureText = widget.obscureText;
     _attachFocusNode();
+    widget.controller?.addListener(_handleTextChanged);
   }
 
   @override
@@ -132,10 +137,15 @@ class _AppTextFieldState extends State<AppTextField> {
       _detachFocusNode();
       _attachFocusNode();
     }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_handleTextChanged);
+      widget.controller?.addListener(_handleTextChanged);
+    }
   }
 
   @override
   void dispose() {
+    widget.controller?.removeListener(_handleTextChanged);
     _detachFocusNode();
     super.dispose();
   }
@@ -155,6 +165,21 @@ class _AppTextFieldState extends State<AppTextField> {
 
   void _handleFocusChanged() {
     widget.onFocusChanged?.call(_focusNode.hasFocus);
+  }
+
+  void _handleTextChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _clearText() {
+    final TextEditingController? controller = widget.controller;
+    if (controller == null) {
+      return;
+    }
+    controller.clear();
+    widget.onChanged?.call('');
   }
 
   @override
@@ -238,8 +263,10 @@ class _AppTextFieldState extends State<AppTextField> {
                 vertical: 10,
               )
             : null,
+        // minHeight keeps dense fields aligned; avoid a fixed max height so
+        // helper/error text can expand without crushing the input.
         constraints: widget.isDense
-            ? const BoxConstraints.tightFor(height: 40)
+            ? const BoxConstraints(minHeight: 40)
             : null,
         label: floatingLabel,
         labelText: floatingLabel == null ? resolvedLabelText : null,
@@ -315,30 +342,59 @@ class _AppTextFieldState extends State<AppTextField> {
       );
     }
 
-    if (!widget.enableObscureTextToggle) {
-      return widget.suffixIcon;
+    final bool showClear =
+        widget.allowClear &&
+        canEdit &&
+        widget.controller != null &&
+        widget.controller!.text.isNotEmpty;
+    final Widget? clearButton = showClear
+        ? AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.close,
+            label: MaterialLocalizations.of(context).clearButtonTooltip,
+            semanticLabel: MaterialLocalizations.of(
+              context,
+            ).clearButtonTooltip,
+            tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+            onPressed: _clearText,
+          )
+        : null;
+
+    if (widget.enableObscureTextToggle) {
+      final String label = _obscureText
+          ? widget.showObscuredTextLabel!
+          : widget.hideObscuredTextLabel!;
+      final Widget toggle = AppButton(
+        iconOnly: true,
+        label: label,
+        semanticLabel: label,
+        tooltip: label,
+        onPressed: canEdit
+            ? () {
+                setState(() {
+                  _obscureText = !_obscureText;
+                });
+              }
+            : null,
+        icon: _obscureText
+            ? Icons.visibility_outlined
+            : Icons.visibility_off_outlined,
+      );
+      if (clearButton == null) {
+        return toggle;
+      }
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[clearButton, toggle],
+      );
     }
 
-    final String label = _obscureText
-        ? widget.showObscuredTextLabel!
-        : widget.hideObscuredTextLabel!;
-
-    return AppButton(
-      iconOnly: true,
-      label: label,
-
-      semanticLabel: label,
-      tooltip: label,
-      onPressed: canEdit
-          ? () {
-              setState(() {
-                _obscureText = !_obscureText;
-              });
-            }
-          : null,
-      icon: _obscureText
-          ? Icons.visibility_outlined
-          : Icons.visibility_off_outlined,
-    );
+    if (clearButton != null && widget.suffixIcon != null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[clearButton, widget.suffixIcon!],
+      );
+    }
+    return clearButton ?? widget.suffixIcon;
   }
 }

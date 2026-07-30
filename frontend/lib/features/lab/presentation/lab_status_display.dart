@@ -1,6 +1,127 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+
+/// At-a-glance Status column: phase + result flag (e.g. Partially Ready - Abnormal).
+AppWorkspaceStatus labWorklistGlanceStatus(
+  BuildContext context,
+  LabOrderSummary order,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String raw = (order.status ?? '').toUpperCase();
+  final bool hasCriticalResult = order.items.any((LabOrderItem item) {
+    final String status = (item.effectiveResultStatus ?? '').toUpperCase();
+    return status == 'CRITICAL' ||
+        status == 'CRITICAL_LOW' ||
+        status == 'CRITICAL_HIGH';
+  });
+  final bool hasAbnormalResult = order.items.any((LabOrderItem item) {
+    return (item.effectiveResultStatus ?? '').toUpperCase() == 'ABNORMAL';
+  });
+  final int activeItems = _worklistActiveResultItemCount(order);
+  final int enteredItems = _worklistEnteredResultItemCount(order);
+  final bool isPartiallyReady =
+      activeItems > 0 && enteredItems > 0 && enteredItems < activeItems;
+
+  // Patient groups roll critical/abnormal into status CRITICAL.
+  if (raw == 'CRITICAL' || hasCriticalResult) {
+    return AppWorkspaceStatus(
+      label: isPartiallyReady
+          ? l10n.labWorklistStatusPartiallyReadyCritical
+          : l10n.labWorklistStatusReadyCritical,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.priority_high_outlined,
+    );
+  }
+  if (hasAbnormalResult) {
+    return AppWorkspaceStatus(
+      label: isPartiallyReady
+          ? l10n.labWorklistStatusPartiallyReadyAbnormal
+          : l10n.labWorklistStatusReadyAbnormal,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.warning_amber_outlined,
+    );
+  }
+  if (raw == 'CANCELLED') {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusCancelled,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.block_outlined,
+    );
+  }
+  if (raw == 'REJECTED' ||
+      raw == 'REJECTED_SAMPLE' ||
+      order.hasRejectedItem) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusRejected,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.block_outlined,
+    );
+  }
+  if (raw == 'COMPLETED' ||
+      (activeItems > 0 && order.completedItemCount >= activeItems)) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusCompleted,
+      tone: AppWorkspaceStatusTone.success,
+      icon: Icons.task_alt_outlined,
+    );
+  }
+  if (activeItems > 0 && enteredItems >= activeItems) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusReadyFilled,
+      tone: AppWorkspaceStatusTone.info,
+      icon: Icons.fact_check_outlined,
+    );
+  }
+  if (enteredItems > 0 ||
+      order.inProcessItemCount > 0 ||
+      raw == 'IN_PROCESS') {
+    if (raw == 'IN_PROCESS' && enteredItems == 0) {
+      return AppWorkspaceStatus(
+        label: l10n.labWorklistStatusPendingInProcess,
+        tone: AppWorkspaceStatusTone.info,
+        icon: Icons.hourglass_top_outlined,
+      );
+    }
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusPendingPartial,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.pending_actions_outlined,
+    );
+  }
+  if (raw == 'COLLECTED') {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusPendingCollected,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.science_outlined,
+    );
+  }
+  return AppWorkspaceStatus(
+    label: l10n.labWorklistStatusPendingOrdered,
+    tone: AppWorkspaceStatusTone.warning,
+    icon: Icons.assignment_outlined,
+  );
+}
+
+int _worklistActiveResultItemCount(LabOrderSummary order) {
+  if (order.items.isNotEmpty) {
+    return order.items.where((LabOrderItem item) => !item.isRejected).length;
+  }
+  final int active = order.itemCount - order.rejectedItemCount;
+  return active < 0 ? 0 : active;
+}
+
+int _worklistEnteredResultItemCount(LabOrderSummary order) {
+  if (order.items.isNotEmpty) {
+    return order.items
+        .where((LabOrderItem item) => !item.isRejected && item.hasResult)
+        .length;
+  }
+  final int statusCount = order.completedItemCount + order.inProcessItemCount;
+  return statusCount;
+}
 
 AppWorkspaceStatus labStatusBadge(BuildContext context, String? value) {
   final String status = (value ?? '').toUpperCase();
