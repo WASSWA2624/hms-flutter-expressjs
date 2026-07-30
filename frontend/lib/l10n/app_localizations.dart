@@ -39346,6 +39346,24 @@ abstract class AppLocalizations {
   /// **'Doctor review fee'**
   String get ipdWardRoundFeeLabel;
 
+  /// Billing line for IPD admission start fee.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission fee'**
+  String get ipdAdmissionFeeLabel;
+
+  /// Billing line for IPD admission deposit / prepayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission deposit'**
+  String get ipdAdmissionDepositLabel;
+
+  /// Billing line for IPD bed-day rate at admission start.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed / day'**
+  String get ipdBedDayFeeLabel;
+
   /// Default billing line label for a theatre case / operation.
   ///
   /// In en, this message translates to:
