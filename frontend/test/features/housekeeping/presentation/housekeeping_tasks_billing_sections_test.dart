@@ -433,8 +433,8 @@ void main() {
         items: const <HousekeepingWorkItem>[_inProgress],
       );
 
-      expect(find.text('Complete'), findsWidgets);
-      await tester.tap(find.text('Complete').first);
+      expect(find.text('Complete cleaning'), findsWidgets);
+      await tester.tap(find.text('Complete cleaning').first);
       await tester.pumpAndSettle();
 
       verify(() => repository.updateTask(any(), any())).called(1);

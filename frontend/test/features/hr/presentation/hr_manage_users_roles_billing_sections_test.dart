@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -390,7 +388,7 @@ void main() {
             find.byType(AppListTable<HrAccessUser>),
           )
           .first;
-      unawaited(table.onRowSelected!(_accessUser));
+      table.onRowSelected!(_accessUser);
       await tester.pumpAndSettle();
 
       final BuildContext context = tester.element(find.byType(AppDialog).last);
@@ -496,7 +494,7 @@ void main() {
             find.byType(AppListTable<HrAccessUser>),
           )
           .first;
-      unawaited(table.onRowSelected!(_accessUser));
+      table.onRowSelected!(_accessUser);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);

@@ -94,6 +94,11 @@ describe('hr-workspace Human resources (staff) billing-sections scan', () => {
     stubWorkspaceRepo();
     prisma.user = {
       findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue({
+        id: staffRecord.user_id,
+        tenant_id: staffRecord.tenant_id,
+        deleted_at: null,
+      }),
       update: jest.fn().mockResolvedValue({}),
     };
     prisma.user_role = {
