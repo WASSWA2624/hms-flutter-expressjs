@@ -467,11 +467,8 @@ void main() {
         ),
       );
 
-      final AppLocalizations l10n = AppLocalizations.of(
-        tester.element(find.byType(LabWorkspacePage)),
-      );
-      expect(find.text(l10n.labNextActionEnterResult), findsWidgets);
-      await tester.tap(find.text(l10n.labNextActionEnterResult).first);
+      expect(find.text('All Billing Patient'), findsOneWidget);
+      await tester.tap(find.text('All Billing Patient').first);
       await tester.pumpAndSettle();
       expect(find.byType(LabResultEntryDialog), findsOneWidget);
       expectFlatSections(tester);

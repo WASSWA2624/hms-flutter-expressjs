@@ -1,5 +1,9 @@
 const mortuaryWorkspaceRepository = require('@repositories/mortuary-workspace/mortuary-workspace.repository');
 const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
+const {
+  aggregateMortuaryCaseBillingStatus,
+  mapLedgerPaymentStatusToMortuary,
+} = require('@lib/billing/mortuary-billing');
 
 const DEFAULT_PANEL = 'overview';
 const DEFAULT_RESOURCE_BY_PANEL = Object.freeze({
@@ -190,7 +194,7 @@ const mapBillableEvent = (entry = {}) => ({
   description: entry.description || null,
   amount: entry.amount == null ? null : String(entry.amount),
   currency: entry.currency || null,
-  status: entry.status || null,
+  status: mapLedgerPaymentStatusToMortuary(entry.status),
   billing_reference_id: entry.billing_reference_id || null,
   charged_at: entry.charged_at || null,
   settled_at: entry.settled_at || null});
@@ -270,6 +274,11 @@ const mapCaseItem = (resource, item = {}) => {
   const activeStorageAssignment = mapStorageAssignment(item.storage_assignments?.[0]);
   const latestRelease = item.release_authorisations?.[0] || null;
   const latestBillableEvent = item.billable_events?.[0] || null;
+  const eventStatuses = (item.billable_events || []).map((entry) => entry.status);
+  const billingStatus = aggregateMortuaryCaseBillingStatus(
+    eventStatuses,
+    item.billing_status || latestBillableEvent?.status || null
+  );
 
   return {
     id: publicId,
@@ -279,7 +288,7 @@ const mapCaseItem = (resource, item = {}) => {
     subtitle: item.source_workflow || item.received_from || item.status || null,
     status: item.status || null,
     identification_status: item.identification_status || null,
-    billing_status: item.billing_status || null,
+    billing_status: billingStatus,
     billing_reference_id: latestBillableEvent?.billing_reference_id || null,
     release_status: latestRelease?.status || null,
     facility_id: safePublicId(item.facility?.human_friendly_id, item.facility?.id),

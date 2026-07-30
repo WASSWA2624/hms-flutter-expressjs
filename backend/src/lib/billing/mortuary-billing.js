@@ -14,7 +14,9 @@ const {
   BILLABLE_SOURCE_MODULES,
   applyClinicalRequestBilling,
   buildPendingClinicalRequestBilling,
+  findPostedBillableChargeEvent,
   normalizeBillingOfficeClinicalBilling,
+  resolveInvoicePaymentStatus,
   shouldApplyClinicalRequestBilling,
 } = require('@lib/billing/clinical-request-billing');
 const { extractFacilityBillingFee } = require('@lib/billing/emergency-billing');
@@ -149,6 +151,7 @@ const buildMortuaryBillableEventBilling = ({
 /**
  * Persist a mortuary billable event through shared Billing (idempotent).
  * Custody transfers must not call this — they are NOT_REQUIRED logistics.
+ * Never accepts a local PAID/SETTLED bypass — payload is office PENDING.
  *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {Object} options
@@ -172,7 +175,12 @@ const persistMortuaryBillableEventBilling = async (
   if (!billableEventId || !tenantId || !patientId) {
     return null;
   }
-  if (!billing || !shouldApplyClinicalRequestBilling(billing)) {
+
+  // Strip pay-now / PAID bypass — Billing office owns settlement.
+  const officeBilling =
+    normalizeBillingOfficeClinicalBilling(billing) ||
+    (billing && shouldApplyClinicalRequestBilling(billing) ? billing : null);
+  if (!officeBilling || !shouldApplyClinicalRequestBilling(officeBilling)) {
     return null;
   }
 
@@ -180,7 +188,7 @@ const persistMortuaryBillableEventBilling = async (
     chargeKey || resolveMortuaryChargeKey(eventType) || MORTUARY_CHARGE_KEYS.PRIMARY;
 
   return applyClinicalRequestBilling(tx, {
-    billing,
+    billing: officeBilling,
     sourceModule: BILLABLE_SOURCE_MODULES.MORTUARY,
     sourceId: String(billableEventId),
     chargeKey: resolvedChargeKey,
@@ -190,8 +198,126 @@ const persistMortuaryBillableEventBilling = async (
     facilityId,
     patientId,
     actorUserId,
-    currency,
+    currency: officeBilling.currency || currency,
   });
+};
+
+/**
+ * Build + persist a mortuary fee through Billing (create-charge).
+ * Prefer this over writing `mortuary_billable_event` paid flags alone.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {Object} options
+ * @returns {Promise<Object|null>} Billing snapshot or null when NOT_BILLED
+ */
+const applyMortuaryBillableEventBilling = async (
+  tx,
+  {
+    billableEventId,
+    tenantId,
+    facilityId = null,
+    patientId,
+    actorUserId = null,
+    eventType = null,
+    amount = null,
+    currency = 'USD',
+    description = null,
+    billing = null,
+    facility = null,
+    chargeKey = null,
+  } = {}
+) => {
+  if (isMortuaryCustodyLogisticsEvent(eventType) && !billing && amount == null) {
+    return null;
+  }
+
+  const payload = buildMortuaryBillableEventBilling({
+    billing,
+    facility,
+    eventType,
+    amount,
+    currency,
+    description,
+  });
+  if (!payload) {
+    return null;
+  }
+
+  return persistMortuaryBillableEventBilling(tx, {
+    billableEventId,
+    billing: payload,
+    tenantId,
+    facilityId,
+    patientId,
+    actorUserId,
+    currency: payload.currency || currency,
+    eventType,
+    description,
+    chargeKey,
+  });
+};
+
+/**
+ * Resolve payment status from Billing ledger for a mortuary billable event.
+ * Closes false PAID/SETTLED leakage when no billable_charge_event exists.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient|Object} tx
+ * @param {Object} options
+ * @returns {Promise<{ payment_status: string|null, invoice_id: string|null }>}
+ */
+const resolveMortuaryLedgerPaymentStatus = async (
+  tx,
+  { tenantId, billableEventId, eventType = null, localStatus = null } = {}
+) => {
+  const local = String(localStatus || '')
+    .trim()
+    .toUpperCase();
+  if (!tenantId || !billableEventId || !tx?.billable_charge_event?.findFirst) {
+    // Without ledger access, never trust local SETTLED/PAID as authoritative.
+    if (local === 'SETTLED' || local === 'PAID') {
+      return { payment_status: 'PENDING', invoice_id: null };
+    }
+    return { payment_status: local || null, invoice_id: null };
+  }
+
+  const chargeKey = resolveMortuaryChargeKey(eventType);
+  const keys = [chargeKey, MORTUARY_CHARGE_KEYS.PRIMARY].filter(
+    (value, index, all) => value && all.indexOf(value) === index
+  );
+
+  for (const key of keys) {
+    const event = await findPostedBillableChargeEvent(tx, {
+      tenantId,
+      sourceModule: BILLABLE_SOURCE_MODULES.MORTUARY,
+      sourceId: String(billableEventId),
+      chargeKey: key,
+    });
+    if (!event?.invoice_id) {
+      continue;
+    }
+    if (!tx.invoice?.findFirst) {
+      return {
+        payment_status: local && local !== 'SETTLED' && local !== 'PAID' ? local : 'PENDING',
+        invoice_id: event.invoice_id,
+      };
+    }
+    const invoice = await tx.invoice.findFirst({
+      where: { id: event.invoice_id, deleted_at: null },
+      include: { payments: true },
+    });
+    if (!invoice) {
+      return { payment_status: 'PENDING', invoice_id: event.invoice_id };
+    }
+    return {
+      payment_status: resolveInvoicePaymentStatus(invoice),
+      invoice_id: event.invoice_id,
+    };
+  }
+
+  if (local === 'SETTLED' || local === 'PAID') {
+    return { payment_status: 'PENDING', invoice_id: null };
+  }
+  return { payment_status: local || null, invoice_id: null };
 };
 
 /**

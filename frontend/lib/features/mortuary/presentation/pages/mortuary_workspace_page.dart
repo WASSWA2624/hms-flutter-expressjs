@@ -884,15 +884,20 @@ class _MortuaryDetailPanel extends ConsumerWidget {
       );
     }
 
+    final AccessRequirement? openBillingRequirement = switch (panel) {
+      mortuaryPanelOverview => MortuaryOverviewAtomPermissions.openBilling,
+      mortuaryPanelCustody => MortuaryCustodyAtomPermissions.openBilling,
+      _ => null,
+    };
     final bool showOpenBilling =
-        panel == mortuaryPanelCustody &&
-        MortuaryCustodyAtomPermissions.openBilling.isAllowed(policy) &&
+        openBillingRequirement != null &&
+        openBillingRequirement.isAllowed(policy) &&
         (item.effectivePatientId?.trim().isNotEmpty ?? false);
 
     final List<Widget> actions = <Widget>[
       if (showOpenBilling)
         AppPermissionActionButton(
-          requirement: MortuaryCustodyAtomPermissions.openBilling,
+          requirement: openBillingRequirement,
           label: l10n.icuActionOpenBilling,
           icon: Icons.receipt_long_outlined,
           onPressed: () => _openMortuaryBillingWorkspace(context, item),
@@ -1780,20 +1785,6 @@ String _nextActionLabel(AppLocalizations l10n, MortuaryWorkspaceItem item) {
     return l10n.mortuaryNextActionReleased;
   }
   return l10n.mortuaryNextActionReview;
-}
-
-/// Opens Billing workspace for settle / invoice — never a local cashier.
-void _openMortuaryBillingWorkspace(
-  BuildContext context,
-  MortuaryWorkspaceItem item,
-) {
-  final String? patientId = item.patientId?.trim();
-  final String location = (patientId == null || patientId.isEmpty)
-      ? AppRoutes.billing.path
-      : AppRoutes.billing.location(
-          queryParameters: <String, String>{'patient_id': patientId},
-        );
-  GoRouter.of(context).go(location);
 }
 
 Future<void> _printItem(

@@ -6,6 +6,17 @@
  */
 
 jest.mock('@repositories/mortuary-workspace/mortuary-workspace.repository');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolvePublicIdentifier: (...values) => {
+    for (const value of values) {
+      if (typeof value === 'string' && value.trim() && !/^[0-9a-f-]{36}$/i.test(value.trim())) {
+        return value.trim();
+      }
+    }
+    return null;
+  },
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
+}));
 
 const mortuaryWorkspaceRepository = require('@repositories/mortuary-workspace/mortuary-workspace.repository');
 const mortuaryWorkspaceService = require('@services/mortuary-workspace/mortuary-workspace.service');
@@ -99,7 +110,11 @@ describe('mortuary-workspace Custody billing-sections scan', () => {
 
   it('custody panel maps patient_id + billing_status continuity (parity)', async () => {
     const data = await mortuaryWorkspaceService.getWorkspace(
-      { panel: 'custody', page: 1, limit: 20 },
+      { panel: 'custody' },
+      1,
+      20,
+      undefined,
+      'desc',
       { tenant_id: 'tenant-1', facility_id: 'facility-1', user_id: 'user-1' },
     );
 
