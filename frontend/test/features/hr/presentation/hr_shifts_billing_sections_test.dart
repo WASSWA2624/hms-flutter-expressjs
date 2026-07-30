@@ -456,7 +456,7 @@ void main() {
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
         expect(find.text('Publish roster'), findsWidgets);
-        expect(find.text('Preview roster'), findsWidgets);
+        expect(find.text('Preview roster generation'), findsWidgets);
         _expectNoPatientBillingAffordances();
         expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(1));
         expectFlatSections(tester);
