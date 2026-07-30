@@ -605,7 +605,7 @@ abstract final class DischargeCompletedAtomPermissions {
   static const AccessRequirement delete = dischargeClinicalWriteRequirement;
   static const AccessRequirement write = dischargeClinicalWriteRequirement;
   static const AccessRequirement requestBilling =
-      dischargeClinicalWriteRequirement;
+      dischargeBillingNavigateRequirement;
   static const AccessRequirement requestPharmacy =
       dischargeClinicalWriteRequirement;
   static const AccessRequirement printSummary =

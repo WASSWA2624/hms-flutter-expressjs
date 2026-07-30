@@ -305,6 +305,10 @@ void main() {
         DischargeAllPatientsAtomPermissions.requestBilling.isAllowed(reader),
         isFalse,
       );
+      expect(
+        DischargeAllPatientsAtomPermissions.openBilling.isAllowed(reader),
+        isFalse,
+      );
     });
 
     test('∪ allowance: last_office:read alone satisfies All tab read', () {
@@ -509,6 +513,7 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('Start discharge plan'), findsNothing);
       expect(find.text('Request final billing'), findsNothing);
+      expect(find.text('Open billing'), findsNothing);
       expect(find.text('Request medicines'), findsNothing);
       expect(find.text('Print discharge summary'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
@@ -838,6 +843,4 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Alice Planned'), findsOneWidget);
-  });
-}
+    expec

@@ -9,10 +9,14 @@
  * @module tests/modules/clinical/results-ready.billing-sections
  */
 
-jest.mock('@lib/billing/price-resolver', () => ({
-  resolveUnitPrice: jest.fn(),
-  resolveUnitPrices: jest.fn(),
-}));
+jest.mock('@lib/billing/price-resolver', () => {
+  const actual = jest.requireActual('@lib/billing/price-resolver');
+  return {
+    ...actual,
+    resolveUnitPrice: jest.fn(),
+    resolveUnitPrices: jest.fn(),
+  };
+});
 
 const {
   buildPendingClinicalRequestBilling,
@@ -22,6 +26,12 @@ const {
   normalizeBillingOfficeClinicalBilling,
 } = require('@lib/billing/clinical-request-billing');
 const { resolveUnitPrice } = require('@lib/billing/price-resolver');
+
+// Ensure prisma catalog models exist for resolveCatalogRecord.
+const prisma = require('@prisma/client');
+prisma.radiology_procedure = prisma.radiology_procedure || {};
+prisma.drug = prisma.drug || {};
+
 
 describe('clinical Results ready billing-sections scan', () => {
   beforeEach(() => {
