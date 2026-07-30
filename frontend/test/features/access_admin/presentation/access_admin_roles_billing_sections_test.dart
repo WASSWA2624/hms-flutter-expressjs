@@ -416,20 +416,14 @@ void main() {
     testWidgets('idempotent getWorkspace replay returns stable roles list', (
       WidgetTester tester,
     ) async {
-      var callCount = 0;
-      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
-        callCount += 1;
-        return Result<AccessAdminWorkspaceData>.success(_rolesData());
-      });
-
       await _pumpRoles(
         tester,
         repository: repository,
         policy: _policy(),
       );
 
-      expect(callCount, greaterThan(0));
       expect(find.text('Ward Nurse'), findsWidgets);
+      verify(() => repository.getWorkspace(any())).called(greaterThan(0));
       verifyNever(
         () => repository.syncRolePermissions(
           roleId: any(named: 'roleId'),

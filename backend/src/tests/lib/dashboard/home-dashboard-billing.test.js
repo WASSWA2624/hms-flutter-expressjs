@@ -79,7 +79,7 @@ describe('home dashboard billing metrics', () => {
   });
 
   it('patient portal open bills KPI reads live billing balance (no bypass)', () => {
-    const cards = metricsToRoleSummary(ROLE_PACKS.PATIENT, {
+    const cards = metricsToRoleSummary(ROLE_PACKS.PATIENT_SAFE, {
       myOpenBills: 3,
     });
 

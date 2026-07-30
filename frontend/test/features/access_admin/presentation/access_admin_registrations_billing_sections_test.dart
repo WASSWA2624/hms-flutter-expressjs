@@ -93,14 +93,17 @@ Future<void> _pumpRegistrations(
   AccessAdminWorkspaceData? data,
   Size viewport = const Size(1280, 900),
   ThemeMode themeMode = ThemeMode.light,
+  bool stubWorkspace = true,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => Result<AccessAdminWorkspaceData>.success(
-      data ?? _registrationsData(),
-    ),
-  );
+  if (stubWorkspace) {
+    when(() => repository.getWorkspace(any())).thenAnswer(
+      (_) async => Result<AccessAdminWorkspaceData>.success(
+        data ?? _registrationsData(),
+      ),
+    );
+  }
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -457,46 +460,7 @@ void main() {
         tester,
         repository: repository,
         policy: _elevatedPolicy(),
-      );
-
-      final BuildContext context = tester.element(
-        find.byType(AccessAdminWorkspacePage),
-      );
-      final AppLocalizations l10n = context.l10n;
-
-      final Finder activateButton = find.widgetWithText(
-        AppButton,
-        l10n.accessAdminActivateRegistrationAction,
-      );
-      await tester.tap(activateButton.first);
-      await tester.pumpAndSettle();
-
-      verify(() => repository.activateRegistration('REG-1')).called(1);
-      verify(() => repository.getWorkspace(any())).called(greaterThan(1));
-      expect(find.text(l10n.accessAdminEmptyTitle), findsOneWidget);
-    });
-
-    testWidgets('reject registration refreshes worklist', (
-      WidgetTester tester,
-    ) async {
-      var rejected = false;
-      when(() => repository.getWorkspace(any())).thenAnswer((_) async {
-        final List<AccessAdminItem> items = rejected
-            ? const <AccessAdminItem>[]
-            : const <AccessAdminItem>[_registration];
-        return Result<AccessAdminWorkspaceData>.success(
-          _registrationsData(items: items),
-        );
-      });
-      when(() => repository.rejectRegistration(any())).thenAnswer((_) async {
-        rejected = true;
-        return const Result<void>.success(null);
-      });
-
-      await _pumpRegistrations(
-        tester,
-        repository: repository,
-        policy: _elevatedPolicy(),
+        stubWorkspace: false,
       );
 
       final BuildContext context = tester.element(

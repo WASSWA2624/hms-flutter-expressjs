@@ -15,7 +15,7 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
-import 'package:hosspi_hms/features/billing/domain/entities/billing_all_financial_inventory.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_approval_required_financial_inventory.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
@@ -30,48 +30,39 @@ import '../../../support/section_layout_assertions.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
 
-const BillingWorkItem _issuedInvoice = BillingWorkItem(
-  id: 'inv-scan-pay',
-  displayId: 'INV-SCAN',
-  kind: BillingWorkItemKind.invoice,
-  tenantId: 'tenant-1',
-  patientId: 'patient-scan',
-  patientDisplayName: 'Scan Pay Patient',
-  patientDisplayId: 'PT-SCAN',
-  billingStatus: 'ISSUED',
-  status: 'SENT',
-  amount: 300,
-  financials: BillingFinancials(balanceDue: 300, effectiveTotal: 300),
+const BillingWorkItem _approvalItem = BillingWorkItem(
+  id: 'apr-scan-1',
+  displayId: 'APR-SCAN',
+  kind: BillingWorkItemKind.approval,
+  patientId: 'patient-apr-scan',
+  patientDisplayName: 'Scan Approval Patient',
+  patientDisplayId: 'PT-APR-SCAN',
+  status: 'PENDING',
+  amount: 250,
+  approvalType: 'ADJUSTMENT',
 );
 
-const BillingWorkItem _paidInvoice = BillingWorkItem(
-  id: 'inv-scan-pay',
-  displayId: 'INV-SCAN',
-  kind: BillingWorkItemKind.invoice,
-  tenantId: 'tenant-1',
-  patientId: 'patient-scan',
-  patientDisplayName: 'Scan Pay Patient',
-  patientDisplayId: 'PT-SCAN',
-  billingStatus: 'PAID',
-  status: 'SENT',
-  amount: 300,
-  financials: BillingFinancials(
-    balanceDue: 0,
-    effectiveTotal: 300,
-    netPaidTotal: 300,
-    grossPaidTotal: 300,
-  ),
+const BillingWorkItem _approvedItem = BillingWorkItem(
+  id: 'apr-scan-1',
+  displayId: 'APR-SCAN',
+  kind: BillingWorkItemKind.approval,
+  patientId: 'patient-apr-scan',
+  patientDisplayName: 'Scan Approval Patient',
+  patientDisplayId: 'PT-APR-SCAN',
+  status: 'APPROVED',
+  amount: 250,
+  approvalType: 'ADJUSTMENT',
 );
 
 const BillingSummary _summary = BillingSummary(
   needsIssue: 0,
-  pendingPayment: 1,
+  pendingPayment: 0,
   claimsPending: 0,
-  approvalRequired: 0,
+  approvalRequired: 1,
   overdue: 0,
 );
 
-AppAccessPolicy _writerPolicy() {
+AppAccessPolicy _approverPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -83,6 +74,7 @@ AppAccessPolicy _writerPolicy() {
       permissions: <AppPermission>{
         AppPermissions.billingRead,
         AppPermissions.billingWrite,
+        AppPermissions.financialApprove,
       },
       moduleEntitlements: <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
@@ -94,7 +86,7 @@ AppAccessPolicy _writerPolicy() {
 
 void _stubRepository(
   _MockBillingRepository repository, {
-  List<BillingWorkItem> items = const <BillingWorkItem>[_issuedInvoice],
+  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer(
     (_) async => const Result<BillingWorkspaceOverview>.success(
@@ -110,25 +102,31 @@ void _stubRepository(
       ),
     );
   });
-  when(
-    () => repository.receivePayment(
-      any(),
-      any(),
-      idempotencyKey: any(named: 'idempotencyKey'),
-    ),
-  ).thenAnswer(
+  when(() => repository.approveApproval(any(), any())).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(invoice: _paidInvoice),
+      BillingMutationResult(approval: _approvedItem),
+    ),
+  );
+  when(() => repository.rejectApproval(any(), any())).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(
+        approval: BillingWorkItem(
+          id: 'apr-scan-1',
+          displayId: 'APR-SCAN',
+          kind: BillingWorkItemKind.approval,
+          status: 'REJECTED',
+        ),
+      ),
     ),
   );
   when(() => repository.getPatientLedger(any(), any())).thenAnswer(
     (_) async => const Result<BillingPatientLedger>.success(
       BillingPatientLedger(
-        patientId: 'patient-scan',
+        patientId: 'patient-apr-scan',
         summary: BillingLedgerSummary(
-          totalInvoiced: 300,
-          netPaid: 300,
-          balanceDue: 0,
+          totalInvoiced: 250,
+          netPaid: 0,
+          balanceDue: 250,
         ),
         entries: <BillingLedgerEntry>[],
       ),
@@ -136,13 +134,13 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpAllTab(
+Future<void> _pumpApprovalTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<BillingWorkItem> items = const <BillingWorkItem>[_issuedInvoice],
+  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -154,7 +152,7 @@ Future<void> _pumpAllTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=all',
+    initialLocation: '/billing?queue=approval-required',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -194,39 +192,12 @@ Future<void> _pumpAllTab(
   await tester.pumpAndSettle();
 }
 
-Future<void> _waitForWorkItem(WidgetTester tester) async {
-  final Finder row = find.text('Scan Pay Patient');
-  if (row.evaluate().isEmpty) {
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
-  }
-  expect(row, findsOneWidget);
-}
-
-Future<void> _submitReceivePayment(WidgetTester tester) async {
-  final Finder filledSubmit =
-      find.widgetWithText(FilledButton, 'Receive payment');
-  if (filledSubmit.evaluate().isNotEmpty) {
-    await tester.tap(filledSubmit.last);
-  } else {
-    await tester.tap(find.text('Receive payment').last);
-  }
-  await tester.pumpAndSettle();
-}
-
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   late _MockBillingRepository repository;
 
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
-    registerFallbackValue(
-      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
-    );
-    registerFallbackValue(
-      const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
-    );
+    registerFallbackValue(const BillingApprovalDecisionDraft());
     registerFallbackValue(const BillingLedgerQuery());
   });
 
@@ -234,55 +205,48 @@ void main() {
     repository = _MockBillingRepository();
   });
 
-  group('Billing All tab billing & sections scan', () {
+  group('Approval required tab billing & sections scan', () {
     test('AC1: every financial atom is inventoried and classified', () {
-      expect(BillingAllFinancialInventory.all, isNotEmpty);
+      expect(BillingApprovalRequiredFinancialInventory.all, isNotEmpty);
       expect(
-        BillingAllFinancialInventory.all.map((BillingAllFinancialAtom a) => a.id),
-        containsAll(<String>[
-          'tab',
-          'receive_payment',
-          'issue',
-          'route_pay',
-          'claims_pending_tab',
-          'empty_state',
-          'error_retry',
-        ]),
+        BillingApprovalRequiredFinancialInventory.all.map(
+          (BillingApprovalRequiredFinancialAtom atom) => atom.id,
+        ),
+        containsAll(<String>['approve', 'reject', 'close_shift', 'close_day']),
       );
       expect(
-        BillingAllFinancialInventory.billableMutations.every(
-          (BillingAllFinancialAtom atom) => atom.repositoryMethod != null,
+        BillingApprovalRequiredFinancialInventory.billableMutations.every(
+          (BillingApprovalRequiredFinancialAtom atom) =>
+              atom.repositoryMethod != null,
         ),
         isTrue,
       );
       expect(
-        BillingAllFinancialInventory.receivePayment.actionClass,
-        BillingAllActionClass.settle,
+        BillingApprovalRequiredFinancialInventory.approve.actionClass,
+        BillingApprovalRequiredActionClass.adjust,
       );
       expect(
-        BillingAllFinancialInventory.issue.actionClass,
-        BillingAllActionClass.createCharge,
+        BillingApprovalRequiredFinancialInventory.reject.actionClass,
+        BillingApprovalRequiredActionClass.adjust,
       );
       expect(
-        BillingAllFinancialInventory.send.actionClass,
-        BillingAllActionClass.notBillable,
-      );
-      expect(
-        BillingAllFinancialInventory.routePayDeepLink.actionClass,
-        BillingAllActionClass.settle,
+        BillingApprovalRequiredFinancialInventory.viewLedger.actionClass,
+        BillingApprovalRequiredActionClass.notBillable,
       );
     });
 
     test('AC2: billable mutations map to BillingRepository (no bypass)', () {
-      for (final BillingAllFinancialAtom atom
-          in BillingAllFinancialInventory.billableMutations) {
+      for (final BillingApprovalRequiredFinancialAtom atom
+          in BillingApprovalRequiredFinancialInventory.billableMutations) {
         expect(
           atom.repositoryMethod,
           isNotNull,
           reason: '${atom.id} must post via BillingRepository',
         );
         expect(
-          BillingAllFinancialInventory.forbidsInlineCollection(atom.actionClass),
+          BillingApprovalRequiredFinancialInventory.forbidsInlineCollection(
+            atom.actionClass,
+          ),
           isTrue,
           reason: '${atom.id} must not use shadow ledgers',
         );
@@ -294,33 +258,27 @@ void main() {
     });
 
     testWidgets(
-      'AC3: receive payment posts via repository with idempotency and syncs UI',
+      'AC3: approve posts via repository and syncs Approval required queue',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpApprovalTab(
           tester,
           repository: repository,
-          accessPolicy: _writerPolicy(),
+          accessPolicy: _approverPolicy(),
         );
-        await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Receive payment').first);
+        await tester.tap(find.byTooltip('Approve').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Receive payment'), findsWidgets);
-        await _submitReceivePayment(tester);
+        final Finder submit = find.widgetWithText(FilledButton, 'Approve');
+        await tester.tap(submit.last);
+        await tester.pumpAndSettle();
 
-        verify(
-          () => repository.receivePayment(
-            any(),
-            any(),
-            idempotencyKey: any(named: 'idempotencyKey', that: isNotEmpty),
-          ),
-        ).called(1);
+        verify(() => repository.approveApproval(any(), any())).called(1);
       },
     );
 
     testWidgets(
-      'AC4: read-only user cannot collect payment (authorization)',
+      'AC4: read-only user cannot approve or reject (authorization)',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = AppAccessPolicy.fromSession(
           AuthSession(
@@ -341,57 +299,50 @@ void main() {
           ),
         );
         expect(
-          BillingAllAtomPermissions.receivePayment.isAllowed(reader),
+          BillingApprovalRequiredAtomPermissions.approve.isAllowed(reader),
           isFalse,
         );
 
-        await _pumpAllTab(
+        await _pumpApprovalTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
-        await _waitForWorkItem(tester);
 
-        expect(find.byTooltip('Receive payment'), findsNothing);
-        verifyNever(
-          () => repository.receivePayment(
-            any(),
-            any(),
-            idempotencyKey: any(named: 'idempotencyKey'),
-          ),
-        );
+        expect(find.byTooltip('Approve'), findsNothing);
+        verifyNever(() => repository.approveApproval(any(), any()));
+        verifyNever(() => repository.rejectApproval(any(), any()));
       },
     );
 
     testWidgets(
-      'AC5: All tab list chrome uses flat sections (desktop light)',
+      'AC5: Approval required list chrome uses flat sections (desktop light)',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpApprovalTab(
           tester,
           repository: repository,
-          accessPolicy: _writerPolicy(),
+          accessPolicy: _approverPolicy(),
           physicalSize: const Size(1440, 900),
           themeMode: ThemeMode.light,
         );
-        await _waitForWorkItem(tester);
 
+        expect(find.text('Scan Approval Patient'), findsOneWidget);
         expectFlatSections(tester);
       },
     );
 
     testWidgets(
-      'AC5: detail dialog from All tab keeps flat sections (mobile dark)',
+      'AC5: detail dialog from Approval required keeps flat sections (mobile dark)',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpApprovalTab(
           tester,
           repository: repository,
-          accessPolicy: _writerPolicy(),
+          accessPolicy: _approverPolicy(),
           physicalSize: const Size(390, 844),
           themeMode: ThemeMode.dark,
         );
-        await _waitForWorkItem(tester);
 
-        await tester.tap(find.text('Scan Pay Patient'));
+        await tester.tap(find.text('Scan Approval Patient'));
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
@@ -401,16 +352,32 @@ void main() {
     );
 
     testWidgets(
-      'AC5: ledger dialog opened from All detail stays flat',
+      'AC5: approve dialog from Approval required stays flat',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpApprovalTab(
           tester,
           repository: repository,
-          accessPolicy: _writerPolicy(),
+          accessPolicy: _approverPolicy(),
         );
-        await _waitForWorkItem(tester);
 
-        await tester.tap(find.text('Scan Pay Patient'));
+        await tester.tap(find.byTooltip('Approve').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsWidgets);
+        expectFlatSections(tester);
+      },
+    );
+
+    testWidgets(
+      'AC5: ledger dialog opened from Approval detail stays flat',
+      (WidgetTester tester) async {
+        await _pumpApprovalTab(
+          tester,
+          repository: repository,
+          accessPolicy: _approverPolicy(),
+        );
+
+        await tester.tap(find.text('Scan Approval Patient'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('View ledger'));
@@ -418,6 +385,27 @@ void main() {
 
         expect(find.text('View ledger'), findsWidgets);
         expectFlatSections(tester);
+      },
+    );
+
+    testWidgets(
+      'reject dialog requires reason before repository call (validation)',
+      (WidgetTester tester) async {
+        await _pumpApprovalTab(
+          tester,
+          repository: repository,
+          accessPolicy: _approverPolicy(),
+        );
+
+        await tester.tap(find.text('Scan Approval Patient'));
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(find.text('Reject'));
+        await tester.tap(find.text('Reject').last);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppTextField), findsWidgets);
+        verifyNever(() => repository.rejectApproval(any(), any()));
       },
     );
   });
