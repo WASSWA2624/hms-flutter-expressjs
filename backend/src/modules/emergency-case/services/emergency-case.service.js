@@ -147,6 +147,14 @@ const getOpdFlowService = () => require('@services/opd-flow/opd-flow.service');
 const getIpdFlowService = () => require('@services/ipd-flow/ipd-flow.service');
 const getEncounterService = () => require('@services/encounter/encounter.service');
 const getTheatreFlowService = () => require('@services/theatre-flow/theatre-flow.service');
+const {
+  buildEmergencyAdmissionBilling,
+  buildEmergencyTheatreBilling,
+  HANDOFF_ADMISSION_CHARGE_KEY,
+  HANDOFF_THEATRE_CHARGE_KEY,
+  persistEmergencyCaseServiceBilling,
+  shouldApplyClinicalRequestBilling,
+} = require('@lib/billing/emergency-billing');
 
 const buildEmptyListResult = (page, limit) => ({
   items: [],
@@ -338,6 +346,8 @@ const startEmergencyOpdFlow = async (emergencyCase, note, context) => {
   }
 
   const opdFlowService = getOpdFlowService();
+  // Care proceeds without payment gate, but consultation fee still posts a
+  // PENDING Billing invoice when a fee resolves (deferred settlement).
   return opdFlowService.startOpdFlow(
     {
       tenant_id: emergencyCase.tenant_id,
@@ -347,7 +357,7 @@ const startEmergencyOpdFlow = async (emergencyCase, note, context) => {
       emergency_case_id: emergencyCase.id,
       initial_stage: 'WAITING_VITALS',
       require_consultation_payment: false,
-      create_consultation_invoice: false,
+      create_consultation_invoice: true,
       reuse_open_encounter: true,
       queued_at: new Date().toISOString(),
       notes: note
@@ -356,25 +366,69 @@ const startEmergencyOpdFlow = async (emergencyCase, note, context) => {
   );
 };
 
-const startEmergencyIpdFlow = async (emergencyCase, context) => {
+const startEmergencyIpdFlow = async (emergencyCase, context, handoffData = {}) => {
   if (!emergencyCase.patient_id) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'patient_id' }]);
   }
 
+  const admissionBilling = buildEmergencyAdmissionBilling({
+    billing: handoffData.billing,
+    facility: emergencyCase.facility,
+  });
   const ipdFlowService = getIpdFlowService();
-  return ipdFlowService.startIpdFlow(
+  const snapshot = await ipdFlowService.startIpdFlow(
     {
       tenant_id: emergencyCase.tenant_id,
       facility_id: emergencyCase.facility_id || null,
-      patient_id: emergencyCase.patient_id
+      patient_id: emergencyCase.patient_id,
+      ...(admissionBilling ? { billing: admissionBilling } : {})
     },
     context
   );
+
+  // When IPD start accepted no billing payload (or fee unresolved), still try
+  // an idempotent SERVICE post keyed by emergency case so deferred care is
+  // traceable in Billing when a fee becomes available via handoff.billing.
+  if (
+    admissionBilling &&
+    shouldApplyClinicalRequestBilling(admissionBilling) &&
+    !snapshot?.billing &&
+    !snapshot?.admission?.billing_snapshot
+  ) {
+    const admissionId =
+      snapshot?.admission?.id ||
+      snapshot?.admission_id ||
+      null;
+    if (admissionId) {
+      await prisma.$transaction(async (tx) => {
+        await persistEmergencyCaseServiceBilling(tx, {
+          emergencyCaseId: emergencyCase.id,
+          chargeKey: HANDOFF_ADMISSION_CHARGE_KEY,
+          billing: admissionBilling,
+          tenantId: emergencyCase.tenant_id,
+          facilityId: emergencyCase.facility_id || null,
+          patientId: emergencyCase.patient_id,
+          description: 'Emergency admission fee',
+          actorUserId: context.user_id || null
+        });
+      });
+    }
+  }
+
+  return {
+    ...snapshot,
+    billing_deferred: true,
+    billing: admissionBilling || snapshot?.billing || null
+  };
 };
 
-const startEmergencyIcuFlow = async (emergencyCase, context) => {
+const startEmergencyIcuFlow = async (emergencyCase, context, handoffData = {}) => {
   const ipdFlowService = getIpdFlowService();
-  const admissionSnapshot = await startEmergencyIpdFlow(emergencyCase, context);
+  const admissionSnapshot = await startEmergencyIpdFlow(
+    emergencyCase,
+    context,
+    handoffData
+  );
   const admissionId = resolvePublicSnapshotId(
     admissionSnapshot?.id,
     admissionSnapshot?.human_friendly_id,
@@ -391,13 +445,18 @@ const startEmergencyIcuFlow = async (emergencyCase, context) => {
     context
   );
 
-  return { admission: admissionSnapshot, icuStay };
+  return { admission: admissionSnapshot, icuStay, billing: admissionSnapshot?.billing || null };
 };
 
-const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
+const startEmergencyTheatreFlow = async (emergencyCase, note, context, handoffData = {}) => {
   if (!emergencyCase.patient_id) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'patient_id' }]);
   }
+
+  const theatreBilling = buildEmergencyTheatreBilling({
+    billing: handoffData.billing,
+    facility: emergencyCase.facility,
+  });
 
   const encounterService = getEncounterService();
   const theatreEncounter = await encounterService.createEncounter(
@@ -435,24 +494,46 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
       scheduled_at: new Date().toISOString(),
       status: 'SCHEDULED',
       workflow_stage: 'PRE_OP',
-      stage_notes: note
+      stage_notes: note,
+      ...(theatreBilling ? { billing: theatreBilling } : {})
     },
     context
   );
 
-  return { theatre, encounterId };
+  if (theatreBilling && shouldApplyClinicalRequestBilling(theatreBilling) && !theatre?.billing) {
+    await prisma.$transaction(async (tx) => {
+      await persistEmergencyCaseServiceBilling(tx, {
+        emergencyCaseId: emergencyCase.id,
+        chargeKey: HANDOFF_THEATRE_CHARGE_KEY,
+        billing: theatreBilling,
+        tenantId: emergencyCase.tenant_id,
+        facilityId: emergencyCase.facility_id || null,
+        patientId: emergencyCase.patient_id,
+        description: 'Emergency theatre fee',
+        actorUserId: context.user_id || null
+      });
+    });
+  }
+
+  return { theatre, encounterId, billing: theatreBilling || null };
 };
 
-const startReceivingDepartmentWork = async (emergencyCase, destination, note, context) => {
+const startReceivingDepartmentWork = async (
+  emergencyCase,
+  destination,
+  note,
+  context,
+  handoffData = {}
+) => {
   switch (destination) {
     case 'OPD':
       return startEmergencyOpdFlow(emergencyCase, note, context);
     case 'IPD':
-      return startEmergencyIpdFlow(emergencyCase, context);
+      return startEmergencyIpdFlow(emergencyCase, context, handoffData);
     case 'ICU':
-      return startEmergencyIcuFlow(emergencyCase, context);
+      return startEmergencyIcuFlow(emergencyCase, context, handoffData);
     case 'THEATER':
-      return startEmergencyTheatreFlow(emergencyCase, note, context);
+      return startEmergencyTheatreFlow(emergencyCase, note, context, handoffData);
     case 'REFERRAL':
     case 'DISCHARGE':
       return null;

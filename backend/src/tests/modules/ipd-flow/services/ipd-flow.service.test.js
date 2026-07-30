@@ -640,6 +640,7 @@ describe("ipd-flow.service", () => {
             billing_adjustments: []}])}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.updateDischargeClearance(
@@ -687,6 +688,7 @@ describe("ipd-flow.service", () => {
         findMany: jest.fn().mockResolvedValue([])}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.updateDischargeClearance(

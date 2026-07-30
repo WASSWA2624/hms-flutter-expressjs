@@ -148,6 +148,7 @@ describe('ipd-flow Pending clearance billing-sections scan', () => {
       appointment: { updateMany: jest.fn() }};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-1' });
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({ status: 'DISCHARGED', discharged_at: now }),
     );
@@ -197,6 +198,7 @@ describe('ipd-flow Pending clearance billing-sections scan', () => {
       appointment: { updateMany: jest.fn() }};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-1' });
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({ status: 'DISCHARGED', discharged_at: now }),
     );
@@ -243,6 +245,7 @@ describe('ipd-flow Pending clearance billing-sections scan', () => {
             billing_adjustments: []}])}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-1' });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.updateDischargeClearance(
