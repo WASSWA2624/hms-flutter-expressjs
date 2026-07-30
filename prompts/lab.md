@@ -1,70 +1,50 @@
-# Improve Lab Result Entry Dialog
+# Polish Lab Result Entry Dialog UI
 
 ## Goal
 
-Redesign the lab result entry dialog so it is clean, full-width, and focused on entering/saving results. Remove cluttered chrome, unused columns, and workflow UI that does not belong in this screen.
-
-## Dialog chrome
-
-- **Restore** and **Close** must not show visible labels on both small and large screens (icon-only; tooltips/semantics keep accessible names).
-- Keep Preview report / Save (and Create when relevant) in the footer actions with clear labels.
+Tighten the lab result entry dialog: remove actions the lab technician cannot use, make result status visually obvious, and standardize the patient header on `AppWorkspaceDetailPanel`.
 
 ## Remove from this dialog
 
-1. **Workflow progress section** (`LabWorkflowProgressSection`) — remove entirely from result entry.
-2. **Bulk selection bar** — remove Select all, Clear selection, and Reject all. Bulk reject is not part of this flow.
-3. **Flag column** — remove. Reference ranges already convey abnormality; no separate Flag / Manual interpretation column is needed in the entry table.
-4. **Action column** — remove per-row action column (Reject test, etc.). Actions allowed in this dialog are only: enter/edit results, save, and delete panel (where allowed).
+1. **Lab order section** — Remove the “Lab order LAB…” block that shows ordered-at plus **Edit order** / **Delete order**. Lab technicians do not edit or delete orders from result entry. Keep panel/test entry content; do not require an order meta panel above the panels.
+2. **Create Lab Order** footer button — Remove it from this dialog. Result entry is not an order-creation surface.
 
-## Layout: one collapsible block per order unit
+## Footer actions
 
-Every lab order unit must live in its **own collapsible panel** that spans the **full dialog width** (no inset “nested card” feel):
+Keep only:
 
-| Order unit | Collapsible block |
+| Action | Behavior |
 |---|---|
-| Panel (e.g. CBC) | One collapsible for the whole panel |
-| Single test | One collapsible for that test |
+| **Preview report** | Unchanged |
+| **Save results** | Always visible. **Enabled** only when at least one result has been entered (and payment gate allows). **Disabled/inactive** when nothing is entered yet — do not hide the button. |
 
-Inside each collapsible:
+## Color-code entered results
 
-- Title for the panel/test.
-- **Delete panel** control on the panel header when the unit is a panel (allowed). Place it clearly in the header actions.
-- Result entry content that uses the full width of the panel.
+When a result value is entered (before and after save), style it for quick recognition against the applicable reference range:
 
-### Delete rules
+| Interpretation | Visual treatment |
+|---|---|
+| Normal / in range | Neutral / success tone |
+| Low / below range | Distinct “low” tone (e.g. warning/info) |
+| High / above range | Distinct “high” / abnormal tone |
+| Critical | Strong error / critical tone |
 
-- **Panels:** user may delete the **entire panel**.
-- **Panel child tests:** user must **not** delete individual tests from a panel.
-- **Results:** do not offer “delete result” as a primary destructive path for panel members; editing/clearing values before save is fine.
+Apply color to the result value display (and row accent if already used), not only after save. Reuse existing interpretation/flag logic where possible (`NORMAL` / `ABNORMAL` / `CRITICAL`, low/high flags).
 
-## Result entry fields
+## Patient header → `AppWorkspaceDetailPanel`
 
-Improve the Result area (value, unit, notes) so it is readable and not cramped/overlapping:
+Replace the current patient context header (with **Show less** / **Show more**) with `AppWorkspaceDetailPanel`:
 
-- Value, unit, and optional notes laid out cleanly (stack on narrow widths).
-- No overflow, no overlapping Clear/unit controls.
-- Keep dense but usable inputs suitable for table or stacked rows inside the full-width collapsible.
+- **Title:** patient display name + patient ID (e.g. `Wilson Wasswa · PAT0000001`).
+- **Body:** remaining context (encounter, status/order summary, etc.) — not crammed into the title.
+- **Not collapsible:** no Show less / Show more / expand chevron on this patient section (`collapsible: false`).
 
-## Reference ranges and patient gender
-
-When showing reference ranges for a test:
-
-- Use the **patient’s known gender** (and age if already available in context) to choose/filter the correct range.
-- Do not show an irrelevant gender’s range as the primary range when gender is known.
-- If no gender-matched range exists, fall back clearly (e.g. general/unspecified range) rather than inventing data.
-
-## Save behavior (partial saves allowed)
-
-- Primary action: **Save results**.
-- On save, saved values become **immediately visible** to the ordering clinician / patient record.
-- Saving must **not** require every test in a panel (or every item on the order) to be filled.
-- Partial panel saves are allowed: one or more results can be saved while others remain empty; empty items must not block publishing the ones that were entered.
+Keep panel and single-test blocks as collapsible `AppWorkspaceDetailPanel`s (unchanged from prior redesign).
 
 ## Acceptance criteria
 
-- No visible labels on Restore and Close buttons (all screen sizes).
-- No workflow stepper, Select all / Clear selection / Reject all, Flag column, or per-row Action column in result entry.
-- Each panel and each standalone test is its own full-width collapsible; panel header has Delete panel when allowed.
-- Individual tests inside a panel cannot be deleted from this dialog.
-- Reference ranges respect patient gender when available.
-- Save publishes entered results immediately, including partial panel results.
+- No Edit order / Delete order / Lab order meta section in result entry.
+- No Create Lab Order button in the dialog footer.
+- Save results is always shown; inactive until there is something to save.
+- Entered values are color-coded by normal / low / high / critical against the reference range.
+- Patient block uses `AppWorkspaceDetailPanel` with name + ID in the title, details in the body, and no collapse control.
