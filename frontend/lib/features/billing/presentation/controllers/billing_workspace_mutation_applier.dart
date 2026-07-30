@@ -119,6 +119,19 @@ abstract final class BillingWorkspaceMutationApplier {
     return (item.billingStatus ?? '').trim().toUpperCase() == 'DRAFT';
   }
 
+  /// Matches backend CLAIMS_PENDING queue: claims SUBMITTED|REJECTED and
+  /// pre-auths PENDING|DENIED.
+  static bool isClaimsPendingItem(BillingWorkItem item) {
+    final String status = (item.status ?? '').trim().toUpperCase();
+    if (item.isClaim) {
+      return status == 'SUBMITTED' || status == 'REJECTED';
+    }
+    if (item.isPreAuthorization) {
+      return status == 'PENDING' || status == 'DENIED';
+    }
+    return false;
+  }
+
   static bool _shouldRemoveFromVisibleQueue(
     BillingQueueType queue,
     BillingWorkItem item,
@@ -128,6 +141,7 @@ abstract final class BillingWorkspaceMutationApplier {
       BillingQueueType.overdue => !isOverdueItem(item),
       BillingQueueType.needsIssue => !isNeedsIssueItem(item),
       BillingQueueType.approvalRequired => !isPendingApprovalItem(item),
+      BillingQueueType.claimsPending => !isClaimsPendingItem(item),
       _ => false,
     };
   }
