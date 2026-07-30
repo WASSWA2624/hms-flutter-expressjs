@@ -916,21 +916,7 @@ final class LabOrderItem {
         _firstNonEmpty(<String?>[referenceRangeOverride]) != null) {
       return referenceRangeOverride;
     }
-    final String? applied = formatLabReferenceRangeFromMap(
-      appliedReferenceRange,
-    );
-    if (applied != null) {
-      return applied;
-    }
-    final String? fallback = _firstNonEmpty(<String?>[
-      referenceRangeSummary,
-      referenceRangeLabel,
-      referenceRange,
-    ]);
-    if (fallback == null) {
-      return null;
-    }
-    return rewriteLegacyLabReferenceRangeUnitSummary(fallback);
+    return resolveLabOrderItemDisplayReferenceRange(this);
   }
 
   bool get isNumeric => _normalize(resultKind) == 'NUMERIC';

@@ -19,15 +19,20 @@ String? formatLabReferenceRangeDisplay({
   String? normalMaxValue,
   String? referenceText,
   String? summary,
+  bool preferReferenceText = false,
 }) {
-  final String? trimmedUnit = _trimOrNull(unit);
+  final String? trimmedUnit = preferReferenceText ? null : _trimOrNull(unit);
   final String? trimmedText = _trimOrNull(referenceText);
   final String? bounds = formatLabReferenceRangeBounds(
     normalMinValue: normalMinValue,
     normalMaxValue: normalMaxValue,
   );
+  // Qualitative rows often carry reference_text plus placeholder 0/0 bounds.
+  // Prefer the textual expected result and drop meaningless numeric bounds.
+  final String? effectiveBounds =
+      trimmedText != null && preferReferenceText ? null : bounds;
   final bool hasStructuredRange =
-      trimmedText != null || (bounds != null && bounds.isNotEmpty);
+      trimmedText != null || (effectiveBounds != null && effectiveBounds.isNotEmpty);
 
   if (hasStructuredRange) {
     final List<String> parts = <String>[];
@@ -57,14 +62,20 @@ String? formatLabReferenceRangeDisplay({
       parts.add(ageSummary);
     }
 
-    final String rangeCore = trimmedText ?? bounds!;
-    parts.add(_appendUnitIfNeeded(rangeCore, trimmedUnit));
+    final String rangeCore = trimmedText ?? effectiveBounds!;
+    parts.add(
+      trimmedText != null
+          ? rangeCore
+          : _appendUnitIfNeeded(rangeCore, trimmedUnit),
+    );
     return parts.join(' | ');
   }
 
   final String? trimmedSummary = _trimOrNull(summary);
   if (trimmedSummary != null) {
-    return rewriteLegacyLabReferenceRangeUnitSummary(trimmedSummary);
+    return sanitizeLabReferenceRangeSummaryDisplay(
+      rewriteLegacyLabReferenceRangeUnitSummary(trimmedSummary),
+    );
   }
 
   final String? trimmedLabel = _trimOrNull(label);
@@ -309,6 +320,7 @@ String? formatLabReferenceRangeFromMap(
     normalMaxValue: normalMax,
     referenceText: applied['reference_text']?.toString(),
     summary: summary,
+    preferReferenceText: _trimOrNull(applied['reference_text']?.toString()) != null,
   );
 }
 
@@ -321,11 +333,18 @@ String? formatLabReferenceRangeBounds({
   if (min == null && max == null) {
     return null;
   }
+  // Catalog qualitative rows commonly default both bounds to 0.
+  if (_isZeroBoundToken(min) && _isZeroBoundToken(max)) {
+    return null;
+  }
   if (min != null && max != null) {
     return '$min - $max';
   }
   if (min != null) {
     return '≥ $min';
+  }
+  if (_isZeroBoundToken(max)) {
+    return null;
   }
   return '≤ $max';
 }
@@ -336,8 +355,18 @@ String? formatLabReferenceRangeAgeSummary({
   num? ageMaxValue,
   String? ageMaxUnit,
 }) {
-  final String? ageMin = _formatReferenceAge(ageMinValue, ageMinUnit);
-  final String? ageMax = _formatReferenceAge(ageMaxValue, ageMaxUnit);
+  // Catalog rows often store 0 as "unset". A max of 0 is never a real ceiling
+  // ("18 years to 0"); a lone min of 0 with no max means all ages.
+  final bool hasMax = ageMaxValue != null && ageMaxValue > 0;
+  final bool hasMin = ageMinValue != null && (ageMinValue > 0 || hasMax);
+  if (!hasMin && !hasMax) {
+    return null;
+  }
+
+  final String? ageMin =
+      hasMin ? _formatReferenceAge(ageMinValue, ageMinUnit) : null;
+  final String? ageMax =
+      hasMax ? _formatReferenceAge(ageMaxValue, ageMaxUnit) : null;
   if (ageMin != null && ageMax != null) {
     return '$ageMin to $ageMax';
   }
@@ -348,6 +377,18 @@ String? formatLabReferenceRangeAgeSummary({
     return 'up to $ageMax';
   }
   return null;
+}
+
+/// Drops placeholder age/bounds fragments from prebuilt summary strings.
+String sanitizeLabReferenceRangeSummaryDisplay(String summary) {
+  final List<String> kept = summary
+      .split(' | ')
+      .map((String part) => part.trim())
+      .where((String part) => part.isNotEmpty)
+      .where((String part) => !_isPlaceholderAgeFragment(part))
+      .where((String part) => !_isPlaceholderBoundsFragment(part))
+      .toList(growable: false);
+  return kept.isEmpty ? summary : kept.join(' | ');
 }
 
 /// Moves legacy `Unit g/dL` fragments after the numeric range and drops "Unit".
@@ -406,6 +447,16 @@ String? resolveLabOrderItemDisplayReferenceRange(
     }
   }
 
+  if (item.isQualitative) {
+    final String? qualitative = _formatQualitativeOrderItemReferenceRange(
+      item,
+      patientGender: patientGender,
+    );
+    if (qualitative != null) {
+      return qualitative;
+    }
+  }
+
   final LabReferenceRange? chosen = resolveLabReferenceRangeForPatient(
     item.referenceRanges,
     patientGender: patientGender,
@@ -436,7 +487,98 @@ String? resolveLabOrderItemDisplayReferenceRange(
   if (fallback == null) {
     return null;
   }
-  return rewriteLegacyLabReferenceRangeUnitSummary(fallback);
+  return sanitizeLabReferenceRangeSummaryDisplay(
+    rewriteLegacyLabReferenceRangeUnitSummary(fallback),
+  );
+}
+
+String? _formatQualitativeOrderItemReferenceRange(
+  LabOrderItem item, {
+  String? patientGender,
+}) {
+  final LabReferenceRange? chosen = resolveLabReferenceRangeForPatient(
+    item.referenceRanges,
+    patientGender: patientGender,
+  );
+  final String? expectedText = _trimOrNull(chosen?.referenceText) ??
+      _expectedQualitativeReferenceText(item) ??
+      _trimOrNull(item.appliedReferenceRange?['reference_text']?.toString());
+
+  if (chosen != null || expectedText != null) {
+    final String? built = formatLabReferenceRangeDisplay(
+      label: chosen?.label ??
+          item.appliedReferenceRange?['label']?.toString() ??
+          item.referenceRangeLabel,
+      method: chosen?.method ??
+          item.appliedReferenceRange?['method']?.toString(),
+      gender: chosen?.gender ??
+          item.appliedReferenceRange?['gender']?.toString(),
+      ageMinValue: chosen?.ageMinValue ??
+          _asNum(item.appliedReferenceRange?['age_min_value']),
+      ageMinUnit: chosen?.ageMinUnit ??
+          item.appliedReferenceRange?['age_min_unit']?.toString(),
+      ageMaxValue: chosen?.ageMaxValue ??
+          _asNum(item.appliedReferenceRange?['age_max_value']),
+      ageMaxUnit: chosen?.ageMaxUnit ??
+          item.appliedReferenceRange?['age_max_unit']?.toString(),
+      normalMinValue: chosen?.normalMinValue ??
+          item.appliedReferenceRange?['normal_min_value']?.toString(),
+      normalMaxValue: chosen?.normalMaxValue ??
+          item.appliedReferenceRange?['normal_max_value']?.toString(),
+      referenceText: expectedText,
+      summary: chosen?.summary ??
+          item.appliedReferenceRange?['summary']?.toString() ??
+          item.referenceRangeSummary,
+      preferReferenceText: true,
+    );
+    if (built != null) {
+      return built;
+    }
+  }
+
+  final String? fallback = _firstNonEmpty(<String?>[
+    item.referenceRangeSummary,
+    item.referenceRangeLabel,
+    item.referenceRange,
+    expectedText,
+  ]);
+  if (fallback == null) {
+    return null;
+  }
+  return sanitizeLabReferenceRangeSummaryDisplay(
+    rewriteLegacyLabReferenceRangeUnitSummary(fallback),
+  );
+}
+
+/// Expected / normal qualitative option used when range text is missing.
+String? _expectedQualitativeReferenceText(LabOrderItem item) {
+  if (item.resultOptions.isEmpty) {
+    return null;
+  }
+
+  String? optionText(LabResultOption option) {
+    return _trimOrNull(option.label) ??
+        _trimOrNull(option.value) ??
+        _trimOrNull(option.id);
+  }
+
+  for (final LabResultOption option in item.resultOptions) {
+    final String token =
+        (option.resultFlag ?? option.status ?? '').trim().toUpperCase();
+    if (token == 'NORMAL' ||
+        token == 'NEGATIVE' ||
+        token == 'NON_REACTIVE' ||
+        token == 'NOT_DETECTED') {
+      return optionText(option);
+    }
+  }
+
+  for (final LabResultOption option in item.resultOptions) {
+    if (!option.isPositive) {
+      return optionText(option);
+    }
+  }
+  return null;
 }
 
 LabReferenceRange? resolveLabReferenceRangeForPatient(
@@ -497,6 +639,29 @@ String _appendUnitIfNeeded(String rangeCore, String? unit) {
     return rangeCore;
   }
   return '$rangeCore $unit';
+}
+
+bool _isZeroBoundToken(String? value) {
+  if (value == null) {
+    return true;
+  }
+  final num? parsed = num.tryParse(value.trim());
+  return parsed != null && parsed == 0;
+}
+
+bool _isPlaceholderAgeFragment(String fragment) {
+  final String normalized = fragment.trim().toLowerCase();
+  return RegExp(
+        r'^0(?:\s+[a-z]+)?\s+to\s+0(?:\s+[a-z]+)?$',
+      ).hasMatch(normalized) ||
+      RegExp(r'^0(?:\s+[a-z]+)?\+$').hasMatch(normalized);
+}
+
+bool _isPlaceholderBoundsFragment(String fragment) {
+  final String normalized = fragment.trim().toLowerCase();
+  return RegExp(
+    r'^0(?:\.0+)?\s*-\s*0(?:\.0+)?(?:\s+\S+)?$',
+  ).hasMatch(normalized);
 }
 
 String? _trimOrNull(String? value) {

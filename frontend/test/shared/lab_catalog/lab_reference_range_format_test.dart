@@ -19,12 +19,52 @@ void main() {
       );
     });
 
+    test('omits unset age max of zero for open-ended adult ranges', () {
+      expect(
+        formatLabReferenceRangeDisplay(
+          label: 'Adult',
+          unit: 'x10^9/L',
+          ageMinValue: 18,
+          ageMinUnit: 'YEAR',
+          ageMaxValue: 0,
+          ageMaxUnit: 'YEAR',
+          normalMinValue: '4',
+          normalMaxValue: '11',
+        ),
+        'Adult | 18 years+ | 4 - 11 x10^9/L',
+      );
+    });
+
+    test('formats qualitative expected text without placeholder ages', () {
+      expect(
+        formatLabReferenceRangeDisplay(
+          label: 'Expected',
+          ageMinValue: 0,
+          ageMaxValue: 0,
+          normalMinValue: '0',
+          normalMaxValue: '0',
+          referenceText: 'Negative',
+          preferReferenceText: true,
+        ),
+        'Expected | Negative',
+      );
+    });
+
     test('rewrites legacy Unit fragments in summary fallbacks', () {
       expect(
         rewriteLegacyLabReferenceRangeUnitSummary(
           'Adult male | Unit g/dL | MALE | 18 years+ | 13.5 - 17.5',
         ),
         'Adult male | MALE | 18 years+ | 13.5 - 17.5 g/dL',
+      );
+    });
+
+    test('strips placeholder age fragments from legacy summaries', () {
+      expect(
+        sanitizeLabReferenceRangeSummaryDisplay(
+          'Expected | 0 to 0 | Negative',
+        ),
+        'Expected | Negative',
       );
     });
   });
@@ -123,6 +163,73 @@ void main() {
           resultUnit: '%',
         ),
         'Adult male | MALE | 13.5 - 17.5 g/dL',
+      );
+    });
+
+    test('formats qualitative malaria-style expected range cleanly', () {
+      const LabOrderItem item = LabOrderItem(
+        id: 'item-mal',
+        resultKind: 'QUALITATIVE',
+        referenceRanges: <LabReferenceRange>[
+          LabReferenceRange(
+            id: 'expected',
+            label: 'Expected',
+            ageMinValue: 0,
+            ageMaxValue: 0,
+            normalMinValue: '0',
+            normalMaxValue: '0',
+            referenceText: 'Negative',
+          ),
+        ],
+        resultOptions: <LabResultOption>[
+          LabResultOption(
+            id: 'neg',
+            value: 'NEGATIVE',
+            label: 'Negative',
+            status: 'NORMAL',
+            resultFlag: 'NEGATIVE',
+          ),
+          LabResultOption(
+            id: 'pos',
+            value: 'POSITIVE',
+            label: 'Positive',
+            status: 'ABNORMAL',
+            resultFlag: 'POSITIVE',
+            isPositive: true,
+          ),
+        ],
+      );
+
+      expect(
+        resolveLabOrderItemDisplayReferenceRange(item),
+        'Expected | Negative',
+      );
+    });
+
+    test('falls back to normal qualitative option when range text missing', () {
+      const LabOrderItem item = LabOrderItem(
+        id: 'item-qual',
+        resultKind: 'QUALITATIVE',
+        resultOptions: <LabResultOption>[
+          LabResultOption(
+            id: 'neg',
+            value: 'NEGATIVE',
+            label: 'Negative',
+            resultFlag: 'NEGATIVE',
+          ),
+          LabResultOption(
+            id: 'pos',
+            value: 'POSITIVE',
+            label: 'Positive',
+            resultFlag: 'POSITIVE',
+            isPositive: true,
+          ),
+        ],
+      );
+
+      expect(
+        resolveLabOrderItemDisplayReferenceRange(item),
+        'Negative',
       );
     });
   });
