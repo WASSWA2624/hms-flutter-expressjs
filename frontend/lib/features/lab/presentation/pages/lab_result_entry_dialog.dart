@@ -4164,18 +4164,23 @@ bool _isLabDraftPaymentBlocked(
   List<LabOrderWorkflow> workflows,
 ) {
   final String orderKey = (draft.item.labOrderId ?? '').trim();
+  final String itemKey = draft.item.apiId.trim();
   for (final LabOrderWorkflow workflow in workflows) {
     final LabOrderSummary order = workflow.order;
-    final bool matches =
+    final bool matchesOrder =
         orderKey.isNotEmpty &&
         (orderKey == order.id.trim() ||
             orderKey == order.apiId.trim() ||
             orderKey == (order.displayId ?? '').trim());
-    if (!matches && workflows.length == 1) {
-      return workflow.nextActions.billingGateBlocked ||
-          !order.isPaymentSatisfied;
-    }
-    if (!matches) {
+    final bool matchesItem = order.items.any(
+      (LabOrderItem item) =>
+          item.apiId.trim() == itemKey || item.id.trim() == draft.item.id.trim(),
+    );
+    if (!matchesOrder && !matchesItem) {
+      if (workflows.length == 1) {
+        return workflow.nextActions.billingGateBlocked ||
+            !order.isPaymentSatisfied;
+      }
       continue;
     }
     return workflow.nextActions.billingGateBlocked || !order.isPaymentSatisfied;

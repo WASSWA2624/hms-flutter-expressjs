@@ -98,14 +98,20 @@ abstract final class RouteAccessCatalog {
     requirement: emergencyEntry,
   );
 
+  /// Route entry ∪ matches [AppRoutes.ipd] / Admission Queue matrix:
+  /// `clinical:read` | `operations:read` | `billing:read`.
   static const AccessRequirement ipdEntry = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.ipdRead],
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.operationsRead,
+      AppPermissions.billingRead,
+    ],
     activeModules: <String>['inpatient-bed-management'],
   );
   static const RouteAccessAtom ipd = RouteAccessAtom(
     routeName: 'ipd',
     path: '/ipd',
-    entryPermission: AppPermissions.ipdRead,
+    entryPermission: AppPermissions.clinicalRead,
     requirement: ipdEntry,
   );
 

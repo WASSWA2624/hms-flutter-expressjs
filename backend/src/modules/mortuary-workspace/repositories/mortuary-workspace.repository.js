@@ -317,12 +317,33 @@ const CASE_SUMMARY_SELECT = Object.freeze({
   release_ready_at: true,
   released_at: true,
   billing_status: true,
+  patient: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      first_name: true,
+      last_name: true}},
   deceased_profile: {
     select: {
       id: true,
       human_friendly_id: true,
       display_name: true,
-      external_reference: true}}});
+      external_reference: true}},
+  billable_events: {
+    where: { deleted_at: null },
+    orderBy: { charged_at: 'desc' },
+    take: 8,
+    select: {
+      id: true,
+      human_friendly_id: true,
+      event_type: true,
+      description: true,
+      amount: true,
+      currency: true,
+      status: true,
+      billing_reference_id: true,
+      charged_at: true,
+      settled_at: true}}});
 
 const caseSelect = {
   id: true,

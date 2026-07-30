@@ -1,0 +1,344 @@
+/**
+ * Lab Processing tab (`/lab?section=processing`) billing & sections coverage:
+ * receive → IN_PROCESS and verify/release payment gates, no parallel cashier.
+ * Create/delete charge posts reuse
+ * `lab-order.service.billing-sections.test.js` (clinical-request-billing).
+ */
+
+const { HttpError } = require('@lib/errors');
+
+jest.mock('@repositories/lab-workspace/lab-workspace.repository');
+jest.mock('@lib/audit', () => ({
+  createAuditLog: jest.fn()}));
+jest.mock('@lib/websocket', () => ({
+  emitToUser: jest.fn(),
+  emitToUsers: jest.fn(),
+  DIAGNOSTIC_EVENTS: {
+    LAB_WORKFLOW_UPDATED: 'diagnostic.lab_workflow_updated',
+    LAB_RESULT_READY: 'diagnostic.lab_result_ready',
+    LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
+    LAB_RESULT_CRITICAL: 'diagnostic.lab_result_critical'},
+  NOTIFICATION_EVENTS: {
+    NOTIFICATION_CREATED: 'notification.created'}}));
+jest.mock('@services/opd-flow/opd-flow.service', () => ({
+  syncDiagnosticsStage: jest.fn().mockResolvedValue(null)}));
+jest.mock('@prisma/client', () => ({
+  user_role: {
+    findMany: jest.fn()},
+  notification: {
+    create: jest.fn()},
+  notification_delivery: {
+    create: jest.fn()}}));
+jest.mock('@services/lab-workspace/lab.shared', () => {
+  const actual = jest.requireActual('@services/lab-workspace/lab.shared');
+  return {
+    ...actual,
+    resolveModelIdOrThrow: jest.fn(),
+    resolveModelRecordOrThrow: jest.fn()};
+});
+
+const labWorkspaceRepository = require('@repositories/lab-workspace/lab-workspace.repository');
+const { createAuditLog } = require('@lib/audit');
+const opdFlowService = require('@services/opd-flow/opd-flow.service');
+const { resolveModelIdOrThrow } = require('@services/lab-workspace/lab.shared');
+const labWorkspaceService = require('@services/lab-workspace/lab-workspace.service');
+const {
+  isLabOrderPaymentSatisfied,
+  mapLabOrderWorkflowRecord} = require('@services/lab-workspace/lab.serializer');
+
+const now = new Date('2026-07-30T06:00:00.000Z');
+
+const buildBaseOrder = (overrides = {}) => ({
+  id: 'order-internal-proc-1',
+  human_friendly_id: 'LAB-PROC-1',
+  status: 'IN_PROCESS',
+  ordered_at: now,
+  created_at: now,
+  updated_at: now,
+  patient_id: 'patient-internal-1',
+  encounter_id: 'encounter-internal-1',
+  billing_snapshot: null,
+  patient: {
+    id: 'patient-internal-1',
+    human_friendly_id: 'PAT-PROC-1',
+    tenant_id: 'tenant-internal-1',
+    facility_id: 'facility-internal-1',
+    first_name: 'Processing',
+    last_name: 'Patient'},
+  encounter: {
+    id: 'encounter-internal-1',
+    human_friendly_id: 'ENC-PROC-1'},
+  items: [
+    {
+      id: 'item-internal-1',
+      human_friendly_id: 'LIT-PROC-1',
+      status: 'IN_PROCESS',
+      lab_order_id: 'order-internal-proc-1',
+      created_at: now,
+      updated_at: now,
+      lab_test: {
+        id: 'lab-test-internal-1',
+        human_friendly_id: 'LBT-PROC-1',
+        name: 'Glucose',
+        code: 'GLU',
+        unit: 'mg/dL',
+        result_kind: 'NUMERIC',
+        reference_ranges: [],
+        unit_options: [],
+        result_options: []},
+      results: []}],
+  samples: [
+    {
+      id: 'sample-internal-1',
+      human_friendly_id: 'S-PROC-1',
+      status: 'COLLECTED',
+      lab_order_id: 'order-internal-proc-1',
+      collected_at: now,
+      created_at: now,
+      updated_at: now}],
+  ...overrides});
+
+describe('lab-workspace Processing tab billing sections', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    createAuditLog.mockResolvedValue({});
+    opdFlowService.syncDiagnosticsStage.mockResolvedValue(null);
+  });
+
+  it('payment parity: PAID / NOT_* satisfied; PENDING blocks progression', () => {
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'PAID' } })
+      )
+    ).toBe(true);
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'NOT_REQUIRED' } })
+      )
+    ).toBe(true);
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'NO_CHARGE' } })
+      )
+    ).toBe(true);
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'NOT_BILLED' } })
+      )
+    ).toBe(true);
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'PENDING' } })
+      )
+    ).toBe(false);
+    expect(
+      isLabOrderPaymentSatisfied(
+        buildBaseOrder({ billing_snapshot: { payment_status: 'PARTIAL' } })
+      )
+    ).toBe(false);
+  });
+
+  it('receiveLabSample blocks unpaid required charges (no bypass into IN_PROCESS)', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('sample-internal-1');
+
+    const unpaidOrder = buildBaseOrder({
+      status: 'COLLECTED',
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        total_amount: '35.00',
+        currency: 'USD',
+        invoice_id: 'inv-proc-1'}});
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindSampleById.mockResolvedValue({
+      id: 'sample-internal-1',
+      status: 'COLLECTED',
+      lab_order_id: 'order-internal-proc-1'});
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+
+    await expect(
+      labWorkspaceService.receiveLabSample(
+        'S-PROC-1',
+        {},
+        'actor-1',
+        '127.0.0.1'
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
+
+    expect(labWorkspaceRepository.txUpdateSample).not.toHaveBeenCalled();
+    expect(labWorkspaceRepository.txUpdateOrder).not.toHaveBeenCalled();
+  });
+
+  it('releaseLabOrderItem blocks unpaid required charges on Processing path', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('item-internal-1');
+
+    const unpaidOrder = buildBaseOrder({
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        total_amount: '35.00',
+        currency: 'USD',
+        invoice_id: 'inv-proc-1'}});
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'item-internal-1',
+      lab_order_id: 'order-internal-proc-1',
+      status: 'IN_PROCESS',
+      lab_test: {
+        id: 'lab-test-internal-1',
+        unit: 'mg/dL',
+        reference_ranges: [],
+        unit_options: [],
+        result_options: []},
+      lab_order: unpaidOrder});
+
+    await expect(
+      labWorkspaceService.releaseLabOrderItem(
+        'LIT-PROC-1',
+        { result_value: '98' },
+        'actor-1',
+        '127.0.0.1'
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
+  });
+
+  it('verifyLabOrderResults blocks unpaid required charges (no bypass)', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-proc-1');
+
+    const unpaidOrder = buildBaseOrder({
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        total_amount: '35.00',
+        currency: 'USD'}});
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+
+    await expect(
+      labWorkspaceService.verifyLabOrderResults(
+        'LAB-PROC-1',
+        {
+          results: [
+            {
+              order_item_id: 'LIT-PROC-1',
+              result_value: '98'}]},
+        'actor-1',
+        '127.0.0.1'
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
+  });
+
+  it('collectLabOrder blocks unpaid required charges on Processing path', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-proc-1');
+
+    const unpaidOrder = buildBaseOrder({
+      status: 'ORDERED',
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        total_amount: '40.00',
+        currency: 'USD'},
+      items: [
+        {
+          id: 'item-internal-1',
+          human_friendly_id: 'LIT-PROC-1',
+          status: 'ORDERED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-1',
+            human_friendly_id: 'LBT-PROC-1',
+            name: 'Glucose',
+            code: 'GLU',
+            unit: null},
+          results: []}],
+      samples: []});
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+
+    await expect(
+      labWorkspaceService.collectLabOrder('LAB-PROC-1', {}, 'actor-1', '127.0.0.1')
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
+  });
+
+  it('idempotent gate: repeated unpaid verify attempts stay 402 without mutation', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-proc-1');
+
+    const unpaidOrder = buildBaseOrder({
+      billing_snapshot: { payment_status: 'PENDING', invoice_id: 'inv-1' }});
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+
+    for (let i = 0; i < 2; i += 1) {
+      await expect(
+        labWorkspaceService.verifyLabOrderResults(
+          'LAB-PROC-1',
+          {
+            results: [
+              {
+                order_item_id: 'LIT-PROC-1',
+                result_value: '98'}]},
+          'actor-1',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({ statusCode: 402 });
+    }
+
+    expect(labWorkspaceRepository.txUpdateOrderItem).not.toHaveBeenCalled();
+  });
+
+  it('serializer hides verify actions when billing gate blocked on IN_PROCESS', () => {
+    const workflow = mapLabOrderWorkflowRecord(
+      buildBaseOrder({
+        billing_snapshot: { payment_status: 'PENDING', invoice_id: 'inv-1' }})
+    );
+    expect(workflow.next_actions.billing_gate_blocked).toBe(true);
+    expect(workflow.next_actions.can_verify_result).toBe(false);
+    expect(workflow.next_actions.can_release_result).toBe(false);
+    expect(workflow.next_actions.payment_status).toBe('PENDING');
+  });
+
+  it('explicit NOT_REQUIRED / NO_CHARGE / NOT_BILLED satisfy the gate', () => {
+    for (const status of ['NOT_REQUIRED', 'NO_CHARGE', 'NOT_BILLED', 'PAID']) {
+      expect(
+        isLabOrderPaymentSatisfied({
+          billing_snapshot: { payment_status: status }})
+      ).toBe(true);
+    }
+  });
+
+  it('workspace service does not own cashier settle/adjust APIs', () => {
+    expect(labWorkspaceService.receivePayment).toBeUndefined();
+    expect(labWorkspaceService.adjustInvoice).toBeUndefined();
+    expect(labWorkspaceService.issueInvoice).toBeUndefined();
+    expect(labWorkspaceService.refundPayment).toBeUndefined();
+    expect(labWorkspaceService.receiveLabSample).toEqual(expect.any(Function));
+    expect(labWorkspaceService.verifyLabOrderResults).toEqual(expect.any(Function));
+  });
+
+  it('HttpError 402 is authoritative for unpaid progression', () => {
+    const err = new HttpError('errors.lab_order.payment_required', 402, [
+      { field: 'payment_status' }]);
+    expect(err.statusCode).toBe(402);
+    expect(err.message).toBe('errors.lab_order.payment_required');
+  });
+});

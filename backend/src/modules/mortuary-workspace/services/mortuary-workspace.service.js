@@ -183,8 +183,23 @@ const mapSpotlight = (queueCounts = {}) =>
     .sort((left, right) => right.count - left.count)
     .slice(0, 5);
 
+const mapBillableEvent = (entry = {}) => ({
+  id: safePublicId(entry.human_friendly_id, entry.id),
+  human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
+  event_type: entry.event_type || null,
+  description: entry.description || null,
+  amount: entry.amount == null ? null : String(entry.amount),
+  currency: entry.currency || null,
+  status: entry.status || null,
+  billing_reference_id: entry.billing_reference_id || null,
+  charged_at: entry.charged_at || null,
+  settled_at: entry.settled_at || null});
+
 const mapCaseSummary = (mortuaryCase = {}) => {
   const publicId = safePublicId(mortuaryCase.human_friendly_id, mortuaryCase.id);
+  const patientLabel = [mortuaryCase.patient?.first_name, mortuaryCase.patient?.last_name]
+    .filter(Boolean)
+    .join(' ');
   return {
     id: publicId,
     human_friendly_id: publicId,
@@ -194,11 +209,17 @@ const mapCaseSummary = (mortuaryCase = {}) => {
     release_ready_at: mortuaryCase.release_ready_at || null,
     released_at: mortuaryCase.released_at || null,
     billing_status: mortuaryCase.billing_status || null,
+    patient_id: safePublicId(
+      mortuaryCase.patient?.human_friendly_id,
+      mortuaryCase.patient?.id
+    ),
+    patient_label: patientLabel || null,
     deceased_profile_id: safePublicId(
       mortuaryCase.deceased_profile?.human_friendly_id,
       mortuaryCase.deceased_profile?.id
     ),
-    deceased_profile_label: mortuaryCase.deceased_profile?.display_name || null};
+    deceased_profile_label: mortuaryCase.deceased_profile?.display_name || null,
+    billable_events: (mortuaryCase.billable_events || []).map(mapBillableEvent)};
 };
 
 const mapStorageAssignment = (assignment = null) => {
@@ -314,17 +335,7 @@ const mapCaseItem = (resource, item = {}) => {
       approved_by_name: entry.approved_by_name || null,
       approved_at: entry.approved_at || null,
       released_at: entry.released_at || null})),
-    billable_events: (item.billable_events || []).map((entry) => ({
-      id: safePublicId(entry.human_friendly_id, entry.id),
-      human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
-      event_type: entry.event_type || null,
-      description: entry.description || null,
-      amount: entry.amount == null ? null : String(entry.amount),
-      currency: entry.currency || null,
-      status: entry.status || null,
-      billing_reference_id: entry.billing_reference_id || null,
-      charged_at: entry.charged_at || null,
-      settled_at: entry.settled_at || null})),
+    billable_events: (item.billable_events || []).map(mapBillableEvent),
     target_path: buildWorkspacePath({
       panel: 'overview',
       resource,
@@ -339,6 +350,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
   const publicId = safePublicId(item.human_friendly_id, item.id);
   const caseSummary = mapCaseSummary(item.mortuary_case || {});
   const storageAssignment = mapStorageAssignment(item);
+  const latestBillableEvent = caseSummary.billable_events?.[0] || null;
 
   const base = {
     id: publicId,
@@ -350,6 +362,12 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
     mortuary_case_id: caseSummary.id || null,
     case_status: caseSummary.status || null,
     identification_status: caseSummary.identification_status || null,
+    // Custody / related rows inherit case payer + billing status (continuity).
+    billing_status: caseSummary.billing_status || null,
+    billing_reference_id: latestBillableEvent?.billing_reference_id || null,
+    patient_id: caseSummary.patient_id || null,
+    patient_label: caseSummary.patient_label || null,
+    billable_events: caseSummary.billable_events || [],
     title: caseSummary.deceased_profile_label || caseSummary.human_friendly_id || publicId,
     target_path: buildWorkspacePath({
       resource,

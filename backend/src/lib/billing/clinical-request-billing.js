@@ -43,6 +43,7 @@ const BILLABLE_SOURCE_MODULES = Object.freeze({
   ICU_STAY: 'ICU_STAY',
   CONSUMABLE: 'CONSUMABLE',
   THERAPY: 'THERAPY',
+  MORTUARY: 'MORTUARY',
   SERVICE: 'SERVICE',
 });
 
@@ -69,6 +70,7 @@ const normalizeBillableSourceModule = (value) => {
   if (token.includes('THERAP')) return BILLABLE_SOURCE_MODULES.THERAPY;
   if (token.includes('WARD')) return BILLABLE_SOURCE_MODULES.WARD_ROUND;
   if (token.includes('ICU')) return BILLABLE_SOURCE_MODULES.ICU_STAY;
+  if (token.includes('MORTUARY')) return BILLABLE_SOURCE_MODULES.MORTUARY;
   return BILLABLE_SOURCE_MODULES.SERVICE;
 };
 
