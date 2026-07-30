@@ -189,5 +189,27 @@ void main() {
       expect(invoice.patientDisplayId, 'PAT-001');
       expect(invoice.totalAmount, 125000);
     });
+
+    test('decodes Billing financials balance_due for Settled parity', () {
+      final invoice = ClaimInvoiceDto.fromResponse(<String, Object?>{
+        'data': <String, Object?>{
+          'id': 'invoice-settled',
+          'display_id': 'INV-SETTLED',
+          'billing_status': 'PARTIAL',
+          'total_amount': '200.00',
+          'balance_due': '50.00',
+          'net_paid_total': '150.00',
+          'financials': <String, Object?>{
+            'balance_due': '50.00',
+            'net_paid_total': '150.00',
+          },
+          'currency': 'UGX',
+        },
+      }).toEntity();
+
+      expect(invoice.balanceDue, 50);
+      expect(invoice.netPaidTotal, 150);
+      expect(invoice.totalAmount, 200);
+    });
   });
 }

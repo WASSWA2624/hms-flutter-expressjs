@@ -389,6 +389,7 @@ final class ClaimsWorkspaceController
   Future<AppFailure?> reconcileClaim({
     required String status,
     required String notes,
+    num? settlementAmount,
   }) async {
     final ClaimsQueueDetail? detail = _currentState?.selectedDetail;
     final InsuranceClaimRecord? claim = detail?.claim;
@@ -401,6 +402,7 @@ final class ClaimsWorkspaceController
         .reconcileClaim(claim.apiId, <String, Object?>{
           'status': status,
           'notes': notes,
+          'settlement_amount': ?settlementAmount,
         });
 
     return result.when<Future<AppFailure?>>(

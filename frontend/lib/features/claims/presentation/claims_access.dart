@@ -245,6 +245,7 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 /// | Print statement | export / read | read ∩ |
 /// | Nested prepare / submit / record dialogs | create / update | write ∩ |
 /// | Nested close-as-paid dialog | approve | financial:approve ∩ |
+/// | Collect patient share (residual) | settle | Billing write ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
 /// | Next-action column chrome | progressive disclosure | write ∪ approve |
 ///
@@ -252,7 +253,8 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 /// on this tab. Settlement uses [claimsFinancialApproveRequirement] (source
 /// inventory), not write alone. Column chrome uses
 /// [claimsActiveClaimsNextActionColumnRequirement] (∪); per-row buttons still
-/// use [claimsNextActionRequirement].
+/// use [claimsNextActionRequirement]. Residual co-pay opens Billing
+/// receive-payment (never a claims-local cashier).
 abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
@@ -268,6 +270,8 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement sync = claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement closeAsPaid = claimsFinancialApproveRequirement;
+  static const AccessRequirement collectPatientShare =
+      claimsWorkspaceWriteRequirement;
   static const AccessRequirement nextActionColumn =
       claimsActiveClaimsNextActionColumnRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;

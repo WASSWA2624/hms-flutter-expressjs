@@ -44,7 +44,7 @@ const ClaimInvoiceOption _settledInvoice = ClaimInvoiceOption(
 const CoveragePlanOption _coverage = CoveragePlanOption(
   id: 'plan-1',
   displayId: 'PLAN-001',
-  title: 'Corporate 80',
+  name: 'Corporate 80',
   coveragePercentage: 80,
 );
 

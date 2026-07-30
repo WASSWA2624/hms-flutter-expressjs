@@ -13,6 +13,10 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId} = require('@lib/billing/identifiers');
+const { toDecimalNumber, toMoneyString, roundMoney } = require('@lib/billing/financials');
+const { remainingAmount } = require('@lib/billing/pre-authorization-billing');
+const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
+const { BILLING_EVENTS } = require('@lib/websocket');
 
 const PRE_AUTH_INCLUDE = {
   coverage_plan: { select: { id: true, human_friendly_id: true, tenant_id: true, name: true, provider_name: true } },
@@ -34,6 +38,16 @@ const resolveTenantIdFromPreAuthorization = (record) => record?.coverage_plan?.t
 
 const mapPreAuthorizationForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
+
+  const approved =
+    record.approved_amount === null || record.approved_amount === undefined
+      ? null
+      : toDecimalNumber(record.approved_amount);
+  const consumed =
+    record.consumed_amount === null || record.consumed_amount === undefined
+      ? null
+      : toDecimalNumber(record.consumed_amount);
+  const remaining = remainingAmount(record);
 
   return {
     ...record,
@@ -58,6 +72,9 @@ const mapPreAuthorizationForDisplay = (record) => {
       record?.admission?.human_friendly_id,
       record?.admission_id
     ),
+    approved_amount: approved === null ? null : toMoneyString(approved),
+    consumed_amount: consumed === null ? null : toMoneyString(consumed),
+    remaining_amount: remaining === null ? null : toMoneyString(remaining),
     timeline_at: record?.timeline_at || record?.approved_at || record?.requested_at || record?.created_at || null};
 };
 
@@ -65,6 +82,48 @@ const resolveOptionalIdentifier = async ({ value, field, model }) => {
   if (value === undefined) return undefined;
   if (value === null || String(value).trim() === '') return null;
   return resolveIdentifierForPayload({ value, field, model });
+};
+
+const assertApprovedAmountWhenRequired = (payload = {}, before = {}) => {
+  const nextStatus = String(payload.status || before.status || '')
+    .trim()
+    .toUpperCase();
+  if (nextStatus !== 'APPROVED' && nextStatus !== 'PARTIAL') {
+    return;
+  }
+  const amount =
+    payload.approved_amount !== undefined
+      ? payload.approved_amount
+      : before.approved_amount;
+  if (amount === null || amount === undefined || amount === '') {
+    throw new HttpError('errors.pre_authorization.approved_amount_required', 400);
+  }
+  if (roundMoney(toDecimalNumber(amount)) < 0) {
+    throw new HttpError('errors.pre_authorization.approved_amount_required', 400);
+  }
+};
+
+const publishPreAuthorizationBillingRealtime = async (record, userId) => {
+  const tenantId = resolveTenantIdFromPreAuthorization(record);
+  if (!tenantId) {
+    return;
+  }
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'PRE_AUTH_UPDATED',
+    invoice: {
+      id: record?.id || null,
+      human_friendly_id: record?.human_friendly_id || record?.display_id || null,
+      tenant_id: tenantId,
+      facility_id: null,
+      patient_id: record?.patient_id || null,
+      total_amount: record?.approved_amount ?? null,
+      billing_status: record?.status || null,
+      status: record?.status || null,
+      patient: record?.patient || null,
+    },
+    actorUserId: userId || null,
+  });
 };
 
 /**
@@ -264,6 +323,8 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       payload.status = 'PENDING';
     }
 
+    assertApprovedAmountWhenRequired(payload, {});
+
     const preAuthorization = await preAuthorizationRepository.create(payload);
 
     const createdRecord = await preAuthorizationRepository.findById(preAuthorization.id, PRE_AUTH_INCLUDE);
@@ -277,7 +338,9 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       diff: { after: preAuthorization, adapter: adapterResult },
       ip_address: ipAddress}).catch(() => {});
 
-    return mapPreAuthorizationForDisplay(createdRecord || preAuthorization);
+    const mapped = mapPreAuthorizationForDisplay(createdRecord || preAuthorization);
+    await publishPreAuthorizationBillingRealtime(createdRecord || mapped, userId);
+    return mapped;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -328,6 +391,11 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
     if (payload.status === 'APPROVED' && !payload.approved_at) {
       payload.approved_at = new Date();
     }
+    if (payload.status === 'PARTIAL' && !payload.approved_at && !before.approved_at) {
+      payload.approved_at = new Date();
+    }
+
+    assertApprovedAmountWhenRequired(payload, before);
 
     const preAuthorization = await preAuthorizationRepository.update(before.id, payload);
     const updatedRecord = await preAuthorizationRepository.findById(preAuthorization.id, PRE_AUTH_INCLUDE);
@@ -341,7 +409,9 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
       diff: { before, after: preAuthorization },
       ip_address: ipAddress}).catch(() => {});
 
-    return mapPreAuthorizationForDisplay(updatedRecord || preAuthorization);
+    const mapped = mapPreAuthorizationForDisplay(updatedRecord || preAuthorization);
+    await publishPreAuthorizationBillingRealtime(updatedRecord || mapped, userId);
+    return mapped;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
