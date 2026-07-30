@@ -596,13 +596,11 @@ const mapLabOrderWorkflowRecord = (record) => {
         && order.samples.some((sample) =>
           ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())
         ),
-      // Result entry blocked unless Billing payment is satisfied.
+      // Result entry/save is never blocked by Billing payment status.
       can_enter_result:
-        isLabOrderPaymentSatisfied(record)
-        && order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
+        order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_enter_all:
-        isLabOrderPaymentSatisfied(record)
-        && order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
+        order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
       can_reject_order_item: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_reverse_workflow: Boolean(resolveLatestReverseWorkflowTarget(record))}};
 };

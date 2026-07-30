@@ -391,9 +391,10 @@ void main() {
         LabProcessingBillingInventory.receiveSample.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
+      expect(LabProcessingBillingInventory.saveResults.billingPath, isNull);
       expect(
-        LabProcessingBillingInventory.saveResults.billingPath,
-        contains('assertLabOrderPaymentSatisfied'),
+        LabProcessingBillingInventory.saveResults.financialClass,
+        LabProcessingFinancialClass.notBilled,
       );
 
       await _pumpProcessingTab(

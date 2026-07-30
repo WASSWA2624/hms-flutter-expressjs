@@ -430,10 +430,11 @@ void main() {
         );
         await _openVerifiedDetail(tester);
 
-        expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-        expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+        expect(find.text(l10n.labEditOrderAction), findsNothing);
+        expect(find.text(l10n.labDeleteOrderAction), findsNothing);
         expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
         expect(find.text(l10n.labEditVerifiedResultAction), findsOneWidget);
+        expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
       },
     );
 
@@ -633,7 +634,7 @@ void main() {
           () => repository.loadWorkbench(any()),
         ).called(greaterThan(0));
       } else {
-        expect(find.text(l10n.labEditOrderAction), findsOneWidget);
+        expect(find.text(l10n.labEditOrderAction), findsNothing);
         expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
       }
     });

@@ -1,13 +1,15 @@
 /**
  * Lab Critical tab (`/lab?section=critical`) billing & sections coverage:
- * save-result payment gate, no parallel cashier, and clinical notify
- * remains NOT_BILLED. Create/delete charge posts reuse
+ * save-result is allowed unpaid; collect stays payment-gated; no parallel
+ * cashier; clinical notify remains NOT_BILLED. Create/delete charge posts reuse
  * `lab-order.service.billing-sections.test.js` (clinical-request-billing).
  */
 
 const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-workspace/lab-workspace.repository');
+jest.mock('@repositories/facility-lab-catalog/facility-lab-catalog.repository', () => ({
+  findTestOffering: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
@@ -72,6 +74,13 @@ const buildBaseOrder = (overrides = {}) => ({
   samples: [],
   ...overrides});
 
+const mockProgressCounts = () => {
+  labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+  labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
+  labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+  labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-crit-1' });
+};
+
 describe('lab-workspace Critical tab billing sections', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -120,16 +129,24 @@ describe('lab-workspace Critical tab billing sections', () => {
     ).toBe(false);
   });
 
-  it('saveLabOrderItemResult blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderItemResult allows unpaid required charges', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
-      status: 'RESULTS_ENTERED',
+      status: 'IN_PROCESS',
       billing_snapshot: {
         payment_status: 'PENDING',
         total_amount: '55.00',
         currency: 'USD',
         invoice_id: 'inv-crit-1'}});
+    const savedResult = {
+      id: 'result-crit-1',
+      human_friendly_id: 'LRS-CRIT-1',
+      status: 'CRITICAL',
+      result_value: '7.2',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'order-item-internal-1'};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -137,32 +154,53 @@ describe('lab-workspace Critical tab billing sections', () => {
     labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
       id: 'order-item-internal-1',
       lab_order_id: 'order-internal-crit-1',
-      status: 'RESULTS_ENTERED',
+      status: 'IN_PROCESS',
       lab_test: {
         id: 'lab-test-internal-1',
         unit: 'mmol/L',
         reference_ranges: [],
         unit_options: [],
         result_options: []},
-      lab_order: unpaidOrder});
+      lab_order: unpaidOrder,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'order-item-internal-1'});
+    mockProgressCounts();
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue({
+      ...unpaidOrder,
+      items: [
+        {
+          id: 'order-item-internal-1',
+          human_friendly_id: 'LIT-CRIT-1',
+          status: 'COMPLETED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-1',
+            name: 'Potassium',
+            code: 'K'},
+          results: [savedResult]}]});
 
-    await expect(
-      labWorkspaceService.saveLabOrderItemResult(
-        'LIT-CRIT-1',
-        { status: 'CRITICAL', result_value: '7.2' },
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderItemResult(
+      'LIT-CRIT-1',
+      { status: 'CRITICAL', result_value: '7.2' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
-  it('saveLabOrderResults blocks unpaid required charges (no bypass)', async () => {
-    resolveModelIdOrThrow.mockResolvedValue('order-internal-crit-1');
+  it('saveLabOrderResults allows unpaid required charges', async () => {
+    resolveModelIdOrThrow
+      .mockResolvedValueOnce('order-internal-crit-1')
+      .mockResolvedValueOnce('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
-      status: 'RESULTS_ENTERED',
+      status: 'IN_PROCESS',
       billing_snapshot: {
         payment_status: 'PENDING',
         total_amount: '55.00',
@@ -171,7 +209,7 @@ describe('lab-workspace Critical tab billing sections', () => {
         {
           id: 'order-item-internal-1',
           human_friendly_id: 'LIT-CRIT-1',
-          status: 'RESULTS_ENTERED',
+          status: 'IN_PROCESS',
           created_at: now,
           updated_at: now,
           lab_test: {
@@ -179,29 +217,59 @@ describe('lab-workspace Critical tab billing sections', () => {
             human_friendly_id: 'LBT-CRIT-1',
             name: 'Potassium',
             code: 'K',
-            unit: 'mmol/L'},
+            unit: 'mmol/L',
+            reference_ranges: [],
+            unit_options: [],
+            result_options: []},
           results: []}]});
+    const savedResult = {
+      id: 'result-crit-1',
+      human_friendly_id: 'LRS-CRIT-1',
+      status: 'CRITICAL',
+      result_value: '7.2',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'order-item-internal-1'};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
-    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+    labWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(unpaidOrder)
+      .mockResolvedValueOnce({
+        ...unpaidOrder,
+        items: [
+          {
+            ...unpaidOrder.items[0],
+            status: 'COMPLETED',
+            results: [savedResult]}]});
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'order-item-internal-1',
+      lab_order_id: 'order-internal-crit-1',
+      status: 'IN_PROCESS',
+      lab_test: unpaidOrder.items[0].lab_test,
+      lab_order: unpaidOrder,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'order-item-internal-1'});
+    mockProgressCounts();
 
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-CRIT-1',
-        {
-          results: [
-            {
-              order_item_id: 'LIT-CRIT-1',
-              status: 'CRITICAL',
-              result_value: '7.2'}]},
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderResults(
+      'LAB-CRIT-1',
+      {
+        results: [
+          {
+            order_item_id: 'LIT-CRIT-1',
+            status: 'CRITICAL',
+            result_value: '7.2'}]},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
   it('collectLabOrder blocks unpaid required charges on Critical path', async () => {
@@ -241,11 +309,20 @@ describe('lab-workspace Critical tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('idempotent gate: repeated unpaid save-result attempts stay 402 without mutation', async () => {
+  it('unpaid save-result persists on repeat (no payment gate)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
+      status: 'IN_PROCESS',
       billing_snapshot: { payment_status: 'PENDING', invoice_id: 'inv-1' }});
+    const savedResult = {
+      id: 'result-crit-1',
+      human_friendly_id: 'LRS-CRIT-1',
+      status: 'CRITICAL',
+      result_value: '7.2',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'order-item-internal-1'};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -253,28 +330,46 @@ describe('lab-workspace Critical tab billing sections', () => {
     labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
       id: 'order-item-internal-1',
       lab_order_id: 'order-internal-crit-1',
-      status: 'RESULTS_ENTERED',
+      status: 'IN_PROCESS',
       lab_test: {
         id: 'lab-test-internal-1',
         unit: 'mmol/L',
         reference_ranges: [],
         unit_options: [],
         result_options: []},
-      lab_order: unpaidOrder});
+      lab_order: unpaidOrder,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'order-item-internal-1'});
+    mockProgressCounts();
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue({
+      ...unpaidOrder,
+      items: [
+        {
+          id: 'order-item-internal-1',
+          human_friendly_id: 'LIT-CRIT-1',
+          status: 'COMPLETED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-1',
+            name: 'Potassium',
+            code: 'K'},
+          results: [savedResult]}]});
 
     for (let i = 0; i < 2; i += 1) {
-      await expect(
-        labWorkspaceService.saveLabOrderItemResult(
-          'LIT-CRIT-1',
-          { status: 'CRITICAL', result_value: '7.2' },
-          'actor-1',
-          '127.0.0.1'
-        )
-      ).rejects.toMatchObject({ statusCode: 402 });
+      await labWorkspaceService.saveLabOrderItemResult(
+        'LIT-CRIT-1',
+        { status: 'CRITICAL', result_value: '7.2' },
+        'actor-1',
+        '127.0.0.1'
+      );
     }
 
-    expect(labWorkspaceRepository.txUpdateResult).not.toHaveBeenCalled();
-    expect(labWorkspaceRepository.txUpdateOrderItem).not.toHaveBeenCalled();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
+    expect(labWorkspaceRepository.txUpdateOrderItem).toHaveBeenCalled();
   });
 
   it('workspace service does not own cashier settle/adjust APIs', () => {
@@ -284,7 +379,7 @@ describe('lab-workspace Critical tab billing sections', () => {
     expect(labWorkspaceService.refundPayment).toBeUndefined();
   });
 
-  it('HttpError 402 is authoritative for unpaid progression', () => {
+  it('HttpError 402 is authoritative for unpaid collect/receive', () => {
     const err = new HttpError('errors.lab_order.payment_required', 402, [
       { field: 'payment_status' }]);
     expect(err.statusCode).toBe(402);

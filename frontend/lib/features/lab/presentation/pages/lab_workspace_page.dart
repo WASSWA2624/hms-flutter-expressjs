@@ -1256,21 +1256,6 @@ Future<void> _openLabDetailDialog(
     context: context,
     builder: (_) => LabResultEntryDialog(
       canMutate: canMutate,
-      onCreateAdditionalOrder: canMutate
-          ? (BuildContext dialogContext, LabOrderWorkflow workflow) {
-              return _openAdditionalLabOrderDialog(
-                dialogContext,
-                state,
-                workflow.order,
-              );
-            }
-          : null,
-      onEditOrder: (BuildContext dialogContext, LabOrderWorkflow workflow) {
-        return _openEditLabOrderDialog(dialogContext, state, workflow);
-      },
-      onDeleteOrder: (BuildContext dialogContext, LabOrderWorkflow workflow) {
-        return _openDeleteLabOrderDialog(dialogContext, workflow);
-      },
     ),
   );
 }

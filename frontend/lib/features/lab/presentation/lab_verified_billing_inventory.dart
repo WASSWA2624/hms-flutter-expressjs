@@ -45,11 +45,10 @@ final class LabVerifiedFinancialAtom {
 ///
 /// Create / update / additional / delete orders post or reverse request-time
 /// charges via `clinical-request-billing` (`persistLabOrderBilling` /
-/// `reverseClinicalRequestBilling`). Re-save / enter results after reopen remains
-/// gated on Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE /
-/// NOT_BILLED). Edit / reopen saved is clinical (`NOT_BILLED`) and must not
-/// reverse invoices. Settle / adjust / refund stay on the Billing workspace —
-/// this tab never mounts a parallel cashier.
+/// `reverseClinicalRequestBilling`). Re-save / enter results after reopen is
+/// NOT payment-gated (`NOT_BILLED` clinical). Edit / reopen saved is clinical
+/// (`NOT_BILLED`) and must not reverse invoices. Settle / adjust / refund stay
+/// on the Billing workspace — this tab never mounts a parallel cashier.
 abstract final class LabVerifiedBillingInventory {
   static const LabVerifiedFinancialAtom tab = LabVerifiedFinancialAtom(
     id: 'tab_navigate',
@@ -178,11 +177,9 @@ abstract final class LabVerifiedBillingInventory {
   static const LabVerifiedFinancialAtom saveResults =
       LabVerifiedFinancialAtom(
         id: 'workflow_save_enter_results',
-        label: 'Save / enter results (payment-gated; incl. after reopen)',
-        financialClass: LabVerifiedFinancialClass.defer,
+        label: 'Save / enter results (clinical; not payment-gated; incl. reopen)',
+        financialClass: LabVerifiedFinancialClass.notBilled,
         requirement: LabVerifiedAtomPermissions.workflowMutate,
-        billingPath:
-            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -338,7 +335,7 @@ abstract final class LabVerifiedBillingInventory {
 const String labVerifiedBillingScopeNote =
     'Lab Completed is the saved / COMPLETED results queue (prefer read). '
     'Create and edit orders post charges via clinical-request-billing. '
-    'Save/enter-results (including after reopen) is gated on Billing payment '
-    'status. Edit/reopen saved results and reverse workflow are NOT_BILLED clinical '
+    'Save/enter-results (including after reopen) is NOT payment-gated. '
+    'Edit/reopen saved results and reverse workflow are NOT_BILLED clinical '
     'ops and must not reverse invoices. Settle/adjust/refund are not cashiered '
     'here. Result entry, receive, and reject stay NOT_BILLED clinical ops.';

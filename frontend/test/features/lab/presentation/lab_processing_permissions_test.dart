@@ -395,10 +395,11 @@ void main() {
         await tester.tap(find.text(l10n.labNextActionEnterResult).first);
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-        expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+        expect(find.text(l10n.labEditOrderAction), findsNothing);
+        expect(find.text(l10n.labDeleteOrderAction), findsNothing);
         expect(find.text(l10n.labReceiveSampleAction), findsNothing);
         expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
+        expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
       },
     );
 

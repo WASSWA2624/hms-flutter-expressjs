@@ -390,9 +390,10 @@ void main() {
         LabCriticalBillingInventory.collectSample.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
+      expect(LabCriticalBillingInventory.saveResults.billingPath, isNull);
       expect(
-        LabCriticalBillingInventory.saveResults.billingPath,
-        contains('assertLabOrderPaymentSatisfied'),
+        LabCriticalBillingInventory.saveResults.financialClass,
+        LabCriticalFinancialClass.notBilled,
       );
 
       await _pumpCriticalTab(

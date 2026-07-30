@@ -1,9 +1,12 @@
 /**
  * Lab workspace Pending verification (`/lab?section=pending-verification`)
- * billing gates: save-result must not bypass Billing payment status.
+ * billing: save-result is allowed unpaid; collect/receive stay payment-gated.
+ * `billing_gate_blocked` still reflects unpaid; `can_enter_result` does not.
  */
 
 jest.mock('@repositories/lab-workspace/lab-workspace.repository');
+jest.mock('@repositories/facility-lab-catalog/facility-lab-catalog.repository', () => ({
+  findTestOffering: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue(undefined)}));
 jest.mock('@lib/realtime', () => ({
@@ -90,37 +93,90 @@ const buildOrder = (overrides = {}) => ({
       updated_at: now}],
   ...overrides});
 
+const mockProgressCounts = () => {
+  labWorkspaceRepository.txCountSamples.mockResolvedValue(1);
+  labWorkspaceRepository.txCountOrderItems
+    .mockResolvedValueOnce(0)
+    .mockResolvedValueOnce(0)
+    .mockResolvedValueOnce(1);
+  labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+  labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-pv-1' });
+};
+
 describe('lab-workspace pending-verification billing gates', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('blocks save-results when Billing payment_status is PENDING', async () => {
+  it('allows save-results when Billing payment_status is PENDING', async () => {
+    const unpaidOrder = buildOrder();
+    const savedResult = {
+      id: 'result-pv-1',
+      human_friendly_id: 'LRS-PV-1',
+      status: 'NORMAL',
+      result_value: '5.4',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-pv-1'};
+
     resolveModelIdOrThrow
       .mockResolvedValueOnce('order-internal-pv-1')
       .mockResolvedValueOnce('item-internal-pv-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
-    labWorkspaceRepository.txFindOrderById.mockResolvedValue(buildOrder());
+    labWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(unpaidOrder)
+      .mockResolvedValueOnce({
+        ...unpaidOrder,
+        items: [
+          {
+            ...unpaidOrder.items[0],
+            status: 'COMPLETED',
+            results: [savedResult]}]});
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'item-internal-pv-1',
+      status: 'IN_PROCESS',
+      lab_order_id: 'order-internal-pv-1',
+      lab_order: unpaidOrder,
+      lab_test: unpaidOrder.items[0].lab_test,
+      results: unpaidOrder.items[0].results});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue({
+      id: 'result-pv-1',
+      status: 'ENTERED',
+      result_value: '5.4'});
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'item-internal-pv-1'});
+    mockProgressCounts();
 
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-PV-1',
-        {
-          results: [
-            {
-              order_item_id: 'LIT-PV-1',
-              result_value: '5.4'}]},
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderResults(
+      'LAB-PV-1',
+      {
+        results: [
+          {
+            order_item_id: 'LIT-PV-1',
+            result_value: '5.4'}]},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txUpdateResult).toHaveBeenCalled();
+    expect(labWorkspaceRepository.txUpdateOrderItem).toHaveBeenCalled();
   });
 
-  it('blocks saveLabOrderItemResult when Billing payment_status is PENDING', async () => {
+  it('allows saveLabOrderItemResult when Billing payment_status is PENDING', async () => {
+    const unpaidOrder = buildOrder();
+    const savedResult = {
+      id: 'result-pv-1',
+      human_friendly_id: 'LRS-PV-1',
+      status: 'NORMAL',
+      result_value: '5.4',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-pv-1'};
+
     resolveModelIdOrThrow.mockResolvedValue('item-internal-pv-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -129,30 +185,34 @@ describe('lab-workspace pending-verification billing gates', () => {
       id: 'item-internal-pv-1',
       status: 'IN_PROCESS',
       lab_order_id: 'order-internal-pv-1',
-      lab_order: buildOrder(),
-      lab_test: {
-        id: 'lab-test-1',
-        unit: 'mmol/L',
-        result_kind: 'NUMERIC',
-        reference_ranges: [],
-        unit_options: [],
-        result_options: []},
-      results: [
+      lab_order: unpaidOrder,
+      lab_test: unpaidOrder.items[0].lab_test,
+      results: unpaidOrder.items[0].results});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue({
+      id: 'result-pv-1',
+      status: 'ENTERED',
+      result_value: '5.4'});
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'item-internal-pv-1'});
+    mockProgressCounts();
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue({
+      ...unpaidOrder,
+      items: [
         {
-          id: 'result-pv-1',
-          result_value: '5.4',
-          status: 'ENTERED'}]});
+          ...unpaidOrder.items[0],
+          status: 'COMPLETED',
+          results: [savedResult]}]});
 
-    await expect(
-      labWorkspaceService.saveLabOrderItemResult(
-        'LIT-PV-1',
-        { result_value: '5.4' },
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderItemResult(
+      'LIT-PV-1',
+      { result_value: '5.4' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txUpdateResult).toHaveBeenCalled();
   });
 
   it('serializer enables result-entry when payment_status is PAID (Billing parity)', () => {
@@ -171,10 +231,10 @@ describe('lab-workspace pending-verification billing gates', () => {
     expect(workflow.next_actions.payment_status).toBe('PAID');
   });
 
-  it('serializer hides result-entry when billing gate blocked (results queue)', () => {
+  it('serializer keeps result-entry when billing gate blocked (open items)', () => {
     const workflow = mapLabOrderWorkflowRecord(buildOrder());
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
-    expect(workflow.next_actions.can_enter_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(true);
     expect(workflow.next_actions.can_enter_all).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
@@ -192,7 +252,17 @@ describe('lab-workspace pending-verification billing gates', () => {
     ).toBe(false);
   });
 
-  it('idempotent gate: unpaid save-results rejected twice without side effects', async () => {
+  it('unpaid save-results persists on repeat (no payment gate)', async () => {
+    const unpaidOrder = buildOrder();
+    const savedResult = {
+      id: 'result-pv-1',
+      human_friendly_id: 'LRS-PV-1',
+      status: 'NORMAL',
+      result_value: '5.4',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-pv-1'};
+
     resolveModelIdOrThrow
       .mockResolvedValueOnce('order-internal-pv-1')
       .mockResolvedValueOnce('item-internal-pv-1')
@@ -201,33 +271,43 @@ describe('lab-workspace pending-verification billing gates', () => {
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
-    labWorkspaceRepository.txFindOrderById.mockResolvedValue(buildOrder());
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'item-internal-pv-1',
+      status: 'IN_PROCESS',
+      lab_order_id: 'order-internal-pv-1',
+      lab_order: unpaidOrder,
+      lab_test: unpaidOrder.items[0].lab_test,
+      results: unpaidOrder.items[0].results});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue({
+      id: 'result-pv-1',
+      status: 'ENTERED',
+      result_value: '5.4'});
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'item-internal-pv-1'});
+    labWorkspaceRepository.txCountSamples.mockResolvedValue(1);
+    labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
+    labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-pv-1' });
 
     const payload = {
       results: [{ order_item_id: 'LIT-PV-1', result_value: '5.4' }]};
 
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-PV-1',
-        payload,
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-PV-1',
-        payload,
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    await labWorkspaceService.saveLabOrderResults(
+      'LAB-PV-1',
+      payload,
+      'actor-1',
+      '127.0.0.1'
+    );
+    await labWorkspaceService.saveLabOrderResults(
+      'LAB-PV-1',
+      payload,
+      'actor-1',
+      '127.0.0.1'
+    );
 
-    expect(labWorkspaceRepository.txUpdateOrderItem).not.toHaveBeenCalled();
+    expect(labWorkspaceRepository.txUpdateOrderItem).toHaveBeenCalled();
   });
 
   it('lab workspace does not own receive-payment / adjust (no bypass cashier)', () => {

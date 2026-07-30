@@ -421,9 +421,10 @@ void main() {
         await tester.tap(find.text(l10n.labNextActionReviewCritical).first);
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-        expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+        expect(find.text(l10n.labEditOrderAction), findsNothing);
+        expect(find.text(l10n.labDeleteOrderAction), findsNothing);
         expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
+        expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
       },
     );
 
@@ -634,18 +635,13 @@ void main() {
       await tester.tap(find.text(l10n.labNextActionReviewCritical).first);
       await tester.pumpAndSettle();
 
-      clearInteractions(repository);
-      _stubWorkspace(repository);
-
-      final Finder verifyFinder = find.text(l10n.labWorkflowNextVerifyResults);
-      if (verifyFinder.evaluate().isNotEmpty) {
-        await tester.tap(verifyFinder.first);
-        await tester.pumpAndSettle();
-        verify(() => repository.loadWorkbench(any())).called(greaterThan(0));
-      } else {
-        // Detail opened; write chrome present — sync path still authorized.
-        expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-      }
+      // Result entry is the critical review surface; Edit order is gone and
+      // Save/Preview remain (Save shares the legacy verify-results label).
+      expect(find.byType(LabResultEntryDialog), findsOneWidget);
+      expect(find.text(l10n.labEditOrderAction), findsNothing);
+      expect(find.text(l10n.labDeleteOrderAction), findsNothing);
+      expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
+      expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
     });
 
     testWidgets('mobile viewport: critical chrome remains', (

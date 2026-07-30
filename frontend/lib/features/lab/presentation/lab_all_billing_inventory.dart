@@ -43,10 +43,10 @@ final class LabAllFinancialAtom {
 /// Canonical inventory for Lab workspace **All** tab.
 ///
 /// Create / update lab orders post request-time charges via
-/// `clinical-request-billing` (persistLabOrderBilling). Collect / receive /
-/// save / enter results are gated on Billing payment satisfaction. Settle and
-/// adjust stay on the Billing workspace (Open billing navigation)—no lab
-/// cashier.
+/// `clinical-request-billing` (persistLabOrderBilling). Collect / receive are
+/// gated on Billing payment satisfaction. Save / enter results is NOT payment-
+/// gated. Settle and adjust stay on the Billing workspace (Open billing
+/// navigation)—no lab cashier.
 abstract final class LabAllBillingInventory {
   static const LabAllFinancialAtom tab = LabAllFinancialAtom(
     id: 'tab',
@@ -167,11 +167,10 @@ abstract final class LabAllBillingInventory {
 
   static const LabAllFinancialAtom saveEnterResults = LabAllFinancialAtom(
     id: 'save_enter_results',
-    label: 'Save / enter results (payment-gated)',
-    financialClass: LabAllFinancialClass.notRequired,
+    label: 'Save / enter results (clinical; not payment-gated)',
+    financialClass: LabAllFinancialClass.notBilled,
     requirement: LabAllAtomPermissions.resultEntry,
-    billingPath: 'assertLabOrderPaymentSatisfied before save/enter-results',
-    auditCode: 'NOT_REQUIRED',
+    auditCode: 'NOT_BILLED',
   );
 
   static const LabAllFinancialAtom resultEntryClinical = LabAllFinancialAtom(
@@ -275,8 +274,9 @@ abstract final class LabAllBillingInventory {
 const String labAllBillingScopeNote =
     'Lab All is the full lab worklist. Create / edit orders post charges via '
     'clinical-request-billing (pending bill-later when Review billing is '
-    'skipped). Delete reverses Billing snapshots. Collect, receive, and '
-    'save/enter-results are blocked when Billing shows unpaid required charges unless '
-    'PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED. Open billing navigates the '
-    'Billing module; settle/adjust/refund are not cashiered here. Catalog '
-    'configuration and clinical result entry stay NOT_BILLED.';
+    'skipped). Delete reverses Billing snapshots. Collect and receive are '
+    'blocked when Billing shows unpaid required charges unless '
+    'PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED. Save/enter-results is NOT '
+    'payment-gated. Open billing navigates the Billing module; settle/adjust/'
+    'refund are not cashiered here. Catalog configuration and clinical result '
+    'entry stay NOT_BILLED.';

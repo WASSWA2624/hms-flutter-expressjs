@@ -45,10 +45,10 @@ final class LabAwaitingResultsFinancialAtom {
 /// pending sample / result entry).
 ///
 /// Create / update / additional orders post request-time charges via
-/// `clinical-request-billing` (`persistLabOrderBilling`). Collect and
-/// save/enter-results are gated on Billing payment status (PAID / NOT_REQUIRED /
-/// NO_CHARGE / NOT_BILLED). Settle / adjust / refund stay on the Billing
-/// workspace — this tab never mounts a parallel cashier.
+/// `clinical-request-billing` (`persistLabOrderBilling`). Collect is gated on
+/// Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED). Save /
+/// enter-results is NOT payment-gated. Settle / adjust / refund stay on the
+/// Billing workspace — this tab never mounts a parallel cashier.
 abstract final class LabAwaitingResultsBillingInventory {
   static const LabAwaitingResultsFinancialAtom tab =
       LabAwaitingResultsFinancialAtom(
@@ -185,11 +185,9 @@ abstract final class LabAwaitingResultsBillingInventory {
   static const LabAwaitingResultsFinancialAtom saveResults =
       LabAwaitingResultsFinancialAtom(
         id: 'workflow_save_enter_results',
-        label: 'Save / enter results (payment-gated)',
-        financialClass: LabAwaitingResultsFinancialClass.defer,
+        label: 'Save / enter results (clinical; not payment-gated)',
+        financialClass: LabAwaitingResultsFinancialClass.notBilled,
         requirement: LabAwaitingResultsAtomPermissions.workflowMutate,
-        billingPath:
-            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -340,6 +338,6 @@ abstract final class LabAwaitingResultsBillingInventory {
 const String labAwaitingResultsBillingScopeNote =
     'Lab Awaiting results is the collection / pending result-entry queue. '
     'Create and edit orders post charges via clinical-request-billing. Collect '
-    'and save/enter-results are gated on Billing payment status. Settle/adjust/'
-    'refund are not cashiered here. Result entry, receive, reverse, and reject '
-    'stay NOT_BILLED clinical ops.';
+    'is gated on Billing payment status. Save/enter-results is NOT payment-'
+    'gated. Settle/adjust/refund are not cashiered here. Result entry, receive, '
+    'reverse, and reject stay NOT_BILLED clinical ops.';

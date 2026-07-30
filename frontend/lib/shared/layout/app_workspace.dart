@@ -484,6 +484,7 @@ class AppWorkspaceSplitContent extends StatelessWidget {
 class AppWorkspaceDetailPanel extends StatefulWidget {
   const AppWorkspaceDetailPanel({
     this.title,
+    this.titleWidget,
     required this.child,
     this.description,
     this.actions = const <Widget>[],
@@ -496,6 +497,9 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
   });
 
   final String? title;
+
+  /// Optional custom title row content. When set, takes precedence over [title].
+  final Widget? titleWidget;
   final String? description;
   final List<Widget> actions;
 
@@ -527,8 +531,9 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool hasTitle =
+    final bool hasStringTitle =
         widget.title != null && widget.title!.trim().isNotEmpty;
+    final bool hasTitle = widget.titleWidget != null || hasStringTitle;
     final bool showBody = !widget.collapsible || _expanded;
     final String? description =
         widget.description != null && widget.description!.trim().isNotEmpty
@@ -573,10 +578,11 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
                                 SizedBox(width: theme.spacing.sm),
                               ],
                               Expanded(
-                                child: Text(
-                                  widget.title!,
-                                  style: theme.textTheme.titleMedium,
-                                ),
+                                child: widget.titleWidget ??
+                                    Text(
+                                      widget.title!,
+                                      style: theme.textTheme.titleMedium,
+                                    ),
                               ),
                               if (widget.collapsible)
                                 Icon(

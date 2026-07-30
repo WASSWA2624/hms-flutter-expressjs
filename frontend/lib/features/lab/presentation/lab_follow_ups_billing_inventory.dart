@@ -47,7 +47,8 @@ final class LabFollowUpsFinancialAtom {
 /// completed and reschedule stay `NOT_BILLED` ops (status/schedule only). Create
 /// Lab Order primary, result-entry / save / enter results, and cashier settle are
 /// **not** mounted here — they post on All / Awaiting results / Processing /
-/// Completed / Critical / Billing. If visit charges or
+/// Completed / Critical / Billing. Result entry / save is clinical (not
+/// payment-gated) when mounted on those tabs. If visit charges or
 /// payment UX are introduced, they must post via Billing
 /// (`clinical-request-billing` / receive-payment / adjustment)—never a
 /// parallel cash ledger.
@@ -170,13 +171,10 @@ abstract final class LabFollowUpsBillingInventory {
   static const LabFollowUpsFinancialAtom resultEntrySave =
       LabFollowUpsFinancialAtom(
         id: 'result_entry_save',
-        label: 'Result entry / save / enter results (billing gate)',
-        financialClass: LabFollowUpsFinancialClass.defer,
+        label: 'Result entry / save / enter results (not payment-gated; not mounted)',
+        financialClass: LabFollowUpsFinancialClass.notBilled,
         requirement: LabFollowUpsAtomPermissions.write,
-        billingPath:
-            'Awaiting results / Processing → '
-            'Billing payment gate (PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED)',
-        auditCode: 'REQUIRES_BILLING',
+        auditCode: 'NOT_BILLED',
         mounted: false,
       );
 
@@ -270,8 +268,8 @@ const String labFollowUpsBillingScopeNote =
     'Lab Follow-ups is a hospital-wide scheduled callback worklist '
     '(FollowUpWorklistPanel, empty FollowUpWorklistScope). Mark completed and '
     'reschedule stay NOT_BILLED ops that update follow-up status/schedule only. '
-    'Create Lab Order, result-entry / save / enter results billing gates, and '
-    'payment collection are not mounted on this tab; they remain on All / '
+    'Create Lab Order and result-entry / save / enter results are not mounted on '
+    'this tab (save is not payment-gated elsewhere); they remain on All / '
     'Awaiting results / Processing / Completed / Critical '
     'and the Billing module. Visit charges must use clinical-request-billing / '
     'receive-payment when introduced. No Create Order primary on this tab.';

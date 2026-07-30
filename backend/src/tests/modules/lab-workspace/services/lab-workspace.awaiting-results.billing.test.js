@@ -1,9 +1,12 @@
 /**
- * Lab workspace Awaiting results (`/lab?section=awaiting-results`) billing
- * gates: collect + save-result must not bypass Billing payment status.
+ * Lab workspace Awaiting results (`/lab?section=awaiting-results`) billing:
+ * collect stays payment-gated; save-result is allowed unpaid.
+ * `billing_gate_blocked` still reflects unpaid; `can_enter_result` does not.
  */
 
 jest.mock('@repositories/lab-workspace/lab-workspace.repository');
+jest.mock('@repositories/facility-lab-catalog/facility-lab-catalog.repository', () => ({
+  findTestOffering: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue(undefined)}));
 jest.mock('@lib/realtime', () => ({
@@ -77,6 +80,13 @@ const buildOrder = (overrides = {}) => ({
   samples: [],
   ...overrides});
 
+const mockProgressCounts = () => {
+  labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+  labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
+  labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+  labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-await-1' });
+};
+
 describe('lab-workspace awaiting-results billing gates', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -96,34 +106,70 @@ describe('lab-workspace awaiting-results billing gates', () => {
       statusCode: 402});
   });
 
-  it('blocks save-results when Billing payment_status is PENDING', async () => {
+  it('allows save-results when Billing payment_status is PENDING', async () => {
+    const unpaidOrder = buildOrder({ status: 'IN_PROCESS' });
+    const savedResult = {
+      id: 'result-await-1',
+      human_friendly_id: 'LRS-AWAIT-1',
+      status: 'NORMAL',
+      result_value: '12.1',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-1'};
+
     resolveModelIdOrThrow
       .mockResolvedValueOnce('order-internal-await-1')
       .mockResolvedValueOnce('item-internal-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
-    labWorkspaceRepository.txFindOrderById.mockResolvedValue(
-      buildOrder({ status: 'IN_PROCESS' })
+    labWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(unpaidOrder)
+      .mockResolvedValueOnce({
+        ...unpaidOrder,
+        items: [
+          {
+            ...unpaidOrder.items[0],
+            status: 'COMPLETED',
+            results: [savedResult]}]});
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'item-internal-1',
+      status: 'IN_PROCESS',
+      lab_order_id: 'order-internal-await-1',
+      lab_order: unpaidOrder,
+      lab_test: unpaidOrder.items[0].lab_test,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({ id: 'item-internal-1' });
+    mockProgressCounts();
+
+    const result = await labWorkspaceService.saveLabOrderResults(
+      'LAB-AWAIT-1',
+      {
+        results: [
+          {
+            order_item_id: 'LIT-AWAIT-1',
+            result_value: '12.1'}]},
+      'actor-1',
+      '127.0.0.1'
     );
 
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-AWAIT-1',
-        {
-          results: [
-            {
-              order_item_id: 'LIT-AWAIT-1',
-              result_value: '12.1'}]},
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
-  it('blocks saveLabOrderItemResult when Billing payment_status is PENDING', async () => {
+  it('allows saveLabOrderItemResult when Billing payment_status is PENDING', async () => {
+    const unpaidOrder = buildOrder({ status: 'IN_PROCESS' });
+    const savedResult = {
+      id: 'result-await-1',
+      human_friendly_id: 'LRS-AWAIT-1',
+      status: 'NORMAL',
+      result_value: '12.1',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-1'};
+
     resolveModelIdOrThrow.mockResolvedValue('item-internal-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -132,26 +178,30 @@ describe('lab-workspace awaiting-results billing gates', () => {
       id: 'item-internal-1',
       status: 'IN_PROCESS',
       lab_order_id: 'order-internal-await-1',
-      lab_order: buildOrder({ status: 'IN_PROCESS' }),
-      lab_test: {
-        id: 'lab-test-1',
-        unit: null,
-        result_kind: 'NUMERIC',
-        reference_ranges: [],
-        unit_options: [],
-        result_options: []},
+      lab_order: unpaidOrder,
+      lab_test: unpaidOrder.items[0].lab_test,
       results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({ id: 'item-internal-1' });
+    mockProgressCounts();
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue({
+      ...unpaidOrder,
+      items: [
+        {
+          ...unpaidOrder.items[0],
+          status: 'COMPLETED',
+          results: [savedResult]}]});
 
-    await expect(
-      labWorkspaceService.saveLabOrderItemResult(
-        'LIT-AWAIT-1',
-        { result_value: '12.1' },
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderItemResult(
+      'LIT-AWAIT-1',
+      { result_value: '12.1' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
   it('allows collect when payment_status is PAID (Billing parity)', async () => {
@@ -197,14 +247,15 @@ describe('lab-workspace awaiting-results billing gates', () => {
     expect(result?.workflow?.order?.status || result?.order?.status).toBeTruthy();
   });
 
-  it('serializer hides result-entry actions when billing gate blocked', () => {
+  it('serializer allows result-entry while billing gate blocked', () => {
     const workflow = mapLabOrderWorkflowRecord(
       buildOrder({
         status: 'IN_PROCESS',
         billing_snapshot: { payment_status: 'PENDING', invoice_id: 'inv-1' }})
     );
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
-    expect(workflow.next_actions.can_enter_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(true);
+    expect(workflow.next_actions.can_collect).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
 

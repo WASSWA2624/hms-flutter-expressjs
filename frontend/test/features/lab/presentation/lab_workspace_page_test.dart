@@ -325,9 +325,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LabResultEntryDialog), findsOneWidget);
-    // Edit/Delete live only on the order section (not duplicated in the footer).
-    expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-    expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+    // Result entry no longer mounts Edit/Delete order chrome.
+    expect(find.text(l10n.labEditOrderAction), findsNothing);
+    expect(find.text(l10n.labDeleteOrderAction), findsNothing);
   });
 
   testWidgets('deep link orderId opens result entry dialog directly', (
@@ -446,7 +446,7 @@ void main() {
     expect(find.text(l10n.labCollectSampleAction), findsNothing);
   });
 
-  testWidgets('authorized write result entry keeps edit/delete', (
+  testWidgets('authorized write result entry omits edit/delete order chrome', (
     WidgetTester tester,
   ) async {
     await _pumpLabWorkspace(tester, repository: repository);
@@ -457,10 +457,11 @@ void main() {
     await tester.tap(find.text(l10n.labNextActionEnterResult).first);
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.labEditOrderAction), findsOneWidget);
-    expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
+    expect(find.text(l10n.labEditOrderAction), findsNothing);
+    expect(find.text(l10n.labDeleteOrderAction), findsNothing);
     expect(find.text(l10n.labCollectSampleAction), findsNothing);
     expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
+    expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
   });
 
   testWidgets('mobile viewport: All tab authorized chrome remains', (

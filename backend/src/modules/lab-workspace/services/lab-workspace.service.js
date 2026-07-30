@@ -303,9 +303,9 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
           gender: true}}}}});
 
 /**
- * Block collect / result save when Billing shows unpaid required
+ * Block collect / receive when Billing shows unpaid required
  * charges (PENDING / PARTIAL / etc.). Explicit NOT_REQUIRED / NO_CHARGE /
- * NOT_BILLED / PAID remain allowed.
+ * NOT_BILLED / PAID remain allowed. Result entry/save is not payment-gated.
  */
 const assertLabOrderPaymentSatisfied = (order) => {
   if (isLabOrderPaymentSatisfied(order)) {
@@ -1510,8 +1510,6 @@ const saveLabOrderItemResult = async (identifier, payload = {}, userId, ipAddres
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
 
-      assertLabOrderPaymentSatisfied(item.lab_order);
-
       const savedResult = await persistLabOrderItemResult(tx, item, payload);
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
@@ -1591,8 +1589,6 @@ const saveLabOrderResults = async (identifier, payload = {}, userId, ipAddress) 
       if (!order) {
         throw new HttpError('errors.lab_order.not_found', 404);
       }
-
-      assertLabOrderPaymentSatisfied(order);
 
       const savedResultIds = [];
       const itemTransitions = [];

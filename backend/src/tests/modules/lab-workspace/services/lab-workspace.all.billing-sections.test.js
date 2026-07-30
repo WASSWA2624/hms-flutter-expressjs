@@ -1,13 +1,15 @@
 /**
  * Lab All tab (`/lab?section=all|worklist`) billing & sections coverage:
  * create posts via clinical-request-billing (see lab-order billing-sections),
- * collect / receive / save-result gate on Billing payment status,
- * and lab-order service does not expose receive-payment / adjust APIs.
+ * collect / receive gate on Billing payment status; save-result is allowed unpaid.
+ * Lab-order service does not expose receive-payment / adjust APIs.
  */
 
 const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-workspace/lab-workspace.repository');
+jest.mock('@repositories/facility-lab-catalog/facility-lab-catalog.repository', () => ({
+  findTestOffering: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
@@ -93,6 +95,13 @@ const buildBaseOrder = (overrides = {}) => ({
       updated_at: now}],
   ...overrides});
 
+const mockProgressCounts = () => {
+  labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+  labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
+  labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+  labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-all-1' });
+};
+
 describe('lab-workspace All tab billing sections', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -133,7 +142,7 @@ describe('lab-workspace All tab billing sections', () => {
     ).toBe(false);
   });
 
-  it('serializer gates collect / receive / result-entry when unpaid', () => {
+  it('serializer gates collect / receive when unpaid; result-entry stays open', () => {
     const unpaid = buildBaseOrder({
       status: 'IN_PROCESS',
       billing_snapshot: {
@@ -163,7 +172,7 @@ describe('lab-workspace All tab billing sections', () => {
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
     expect(workflow.next_actions.can_collect).toBe(false);
     expect(workflow.next_actions.can_receive_sample).toBe(false);
-    expect(workflow.next_actions.can_enter_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(true);
     expect(workflow.next_actions.can_enter_all).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
@@ -213,8 +222,10 @@ describe('lab-workspace All tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('saveLabOrderResults blocks unpaid required charges (no bypass)', async () => {
-    resolveModelIdOrThrow.mockResolvedValue('order-internal-all-1');
+  it('saveLabOrderResults allows unpaid required charges', async () => {
+    resolveModelIdOrThrow
+      .mockResolvedValueOnce('order-internal-all-1')
+      .mockResolvedValueOnce('item-internal-1');
     const unpaidOrder = buildBaseOrder({
       status: 'IN_PROCESS',
       billing_snapshot: {
@@ -236,29 +247,55 @@ describe('lab-workspace All tab billing sections', () => {
             unit_options: [],
             result_options: []},
           results: []}]});
+    const savedResult = {
+      id: 'result-all-1',
+      human_friendly_id: 'LRS-ALL-1',
+      status: 'NORMAL',
+      result_value: '12.0',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-1'};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
-    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+    labWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(unpaidOrder)
+      .mockResolvedValueOnce({
+        ...unpaidOrder,
+        items: [
+          {
+            ...unpaidOrder.items[0],
+            status: 'COMPLETED',
+            results: [savedResult]}]});
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'item-internal-1',
+      lab_order_id: 'order-internal-all-1',
+      status: 'IN_PROCESS',
+      lab_test: unpaidOrder.items[0].lab_test,
+      lab_order: unpaidOrder,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({ id: 'item-internal-1' });
+    mockProgressCounts();
 
-    await expect(
-      labWorkspaceService.saveLabOrderResults(
-        'LAB-ALL-1',
-        {
-          results: [
-            {
-              order_item_id: 'LIT-ALL-1',
-              result_value: '12.0'}]},
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderResults(
+      'LAB-ALL-1',
+      {
+        results: [
+          {
+            order_item_id: 'LIT-ALL-1',
+            result_value: '12.0'}]},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
-  it('saveLabOrderItemResult blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderItemResult allows unpaid required charges', async () => {
     resolveModelIdOrThrow.mockResolvedValue('item-internal-1');
     const unpaidOrder = buildBaseOrder({
       status: 'IN_PROCESS',
@@ -266,6 +303,14 @@ describe('lab-workspace All tab billing sections', () => {
         payment_status: 'PARTIAL',
         total_amount: '40.00',
         currency: 'USD'}});
+    const savedResult = {
+      id: 'result-all-1',
+      human_friendly_id: 'LRS-ALL-1',
+      status: 'NORMAL',
+      result_value: '12.0',
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'item-internal-1'};
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -280,18 +325,33 @@ describe('lab-workspace All tab billing sections', () => {
         reference_ranges: [],
         unit_options: [],
         result_options: []},
-      lab_order: unpaidOrder});
+      lab_order: unpaidOrder,
+      results: []});
+    labWorkspaceRepository.txFindFirstResult.mockResolvedValue(null);
+    labWorkspaceRepository.txCreateResult.mockResolvedValue(savedResult);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({ id: 'item-internal-1' });
+    mockProgressCounts();
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue({
+      ...unpaidOrder,
+      items: [
+        {
+          id: 'item-internal-1',
+          human_friendly_id: 'LIT-ALL-1',
+          status: 'COMPLETED',
+          created_at: now,
+          updated_at: now,
+          lab_test: { id: 'lab-test-internal-1', name: 'CBC', code: 'CBC' },
+          results: [savedResult]}]});
 
-    await expect(
-      labWorkspaceService.saveLabOrderItemResult(
-        'LIT-ALL-1',
-        { result_value: '12.0' },
-        'actor-1',
-        '127.0.0.1'
-      )
-    ).rejects.toMatchObject({
-      message: 'errors.lab_order.payment_required',
-      statusCode: 402});
+    const result = await labWorkspaceService.saveLabOrderItemResult(
+      'LIT-ALL-1',
+      { result_value: '12.0' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result.workflow).toBeTruthy();
+    expect(labWorkspaceRepository.txCreateResult).toHaveBeenCalled();
   });
 
   it('lab modules do not expose inline receive-payment / adjust (authorization)', () => {
@@ -301,7 +361,7 @@ describe('lab-workspace All tab billing sections', () => {
     expect(labOrderService.adjustInvoice).toBeUndefined();
   });
 
-  it('HttpError payment_required remains 402 for unpaid gates', () => {
+  it('HttpError payment_required remains 402 for unpaid collect/receive', () => {
     const error = new HttpError('errors.lab_order.payment_required', 402, [
       { field: 'payment_status', payment_status: 'PENDING' }]);
     expect(error.statusCode).toBe(402);

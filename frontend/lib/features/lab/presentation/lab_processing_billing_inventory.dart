@@ -46,11 +46,11 @@ final class LabProcessingFinancialAtom {
 ///
 /// Create / update / additional / delete orders post or reverse request-time
 /// charges via `clinical-request-billing` (`persistLabOrderBilling` /
-/// `reverseClinicalRequestBilling`). Collect, receive, and save/enter-results are
-/// gated on Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE /
-/// NOT_BILLED). Result entry (save draft / submit) stays `NOT_BILLED` clinical
-/// ops. Settle / adjust / refund stay on the Billing workspace — this tab never
-/// mounts a parallel cashier. When the payment gate blocks progression,
+/// `reverseClinicalRequestBilling`). Collect and receive are gated on Billing
+/// payment status (PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED). Save /
+/// enter-results is NOT payment-gated (`NOT_BILLED` clinical). Settle / adjust /
+/// refund stay on the Billing workspace — this tab never mounts a parallel
+/// cashier. When the payment gate blocks collect/receive progression,
 /// [openBilling] navigates to Billing (mounted on workflow progress).
 abstract final class LabProcessingBillingInventory {
   static const LabProcessingFinancialAtom tab = LabProcessingFinancialAtom(
@@ -190,11 +190,9 @@ abstract final class LabProcessingBillingInventory {
   static const LabProcessingFinancialAtom saveResults =
       LabProcessingFinancialAtom(
         id: 'workflow_save_enter_results',
-        label: 'Save / enter results (payment-gated)',
-        financialClass: LabProcessingFinancialClass.defer,
+        label: 'Save / enter results (clinical; not payment-gated)',
+        financialClass: LabProcessingFinancialClass.notBilled,
         requirement: LabProcessingAtomPermissions.workflowMutate,
-        billingPath:
-            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -342,8 +340,8 @@ abstract final class LabProcessingBillingInventory {
 
 const String labProcessingBillingScopeNote =
     'Lab Processing is the in-lab processing queue (IN_PROCESS). Create and '
-    'edit orders post charges via clinical-request-billing. Collect, receive, '
-    'and save/enter-results are gated on Billing payment status. Open billing '
-    'navigates the Billing module when the gate blocks. Settle/adjust/refund '
-    'are not cashiered here. Result entry, reverse, and reject stay NOT_BILLED '
-    'clinical ops.';
+    'edit orders post charges via clinical-request-billing. Collect and receive '
+    'are gated on Billing payment status. Save/enter-results is NOT payment-'
+    'gated. Open billing navigates the Billing module when collect/receive is '
+    'blocked. Settle/adjust/refund are not cashiered here. Result entry, '
+    'reverse, and reject stay NOT_BILLED clinical ops.';

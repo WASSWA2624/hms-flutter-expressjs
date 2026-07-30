@@ -309,9 +309,10 @@ void main() {
         LabVerifiedBillingInventory.deleteOrder.billingPath,
         contains('reverseClinicalRequestBilling'),
       );
+      expect(LabVerifiedBillingInventory.saveResults.billingPath, isNull);
       expect(
-        LabVerifiedBillingInventory.saveResults.billingPath,
-        contains('assertLabOrderPaymentSatisfied'),
+        LabVerifiedBillingInventory.saveResults.financialClass,
+        LabVerifiedFinancialClass.notBilled,
       );
     });
   });
@@ -383,9 +384,10 @@ void main() {
         LabVerifiedBillingInventory.collectSample.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
+      expect(LabVerifiedBillingInventory.saveResults.billingPath, isNull);
       expect(
-        LabVerifiedBillingInventory.saveResults.billingPath,
-        contains('assertLabOrderPaymentSatisfied'),
+        LabVerifiedBillingInventory.saveResults.financialClass,
+        LabVerifiedFinancialClass.notBilled,
       );
 
       await _pumpVerifiedTab(
