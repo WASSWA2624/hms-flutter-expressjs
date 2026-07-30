@@ -140,9 +140,6 @@ void _stubWorkspace(
       ),
     );
   });
-  when(() => repository.deleteOrder(any(), any())).thenAnswer((_) async {
-    return const Result<void>.success(null);
-  });
   when(
     () => repository.reopenOrderItemResult(any(), any()),
   ).thenAnswer((_) async {

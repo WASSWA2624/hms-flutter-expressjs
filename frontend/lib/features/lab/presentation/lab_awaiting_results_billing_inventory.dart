@@ -148,10 +148,11 @@ abstract final class LabAwaitingResultsBillingInventory {
   static const LabAwaitingResultsFinancialAtom deleteOrder =
       LabAwaitingResultsFinancialAtom(
         id: 'detail_delete_order',
-        label: 'Detail Delete order',
+        label: 'Detail Delete order (removed from lab UI)',
         financialClass: LabAwaitingResultsFinancialClass.reverse,
         requirement: LabAwaitingResultsAtomPermissions.deleteOrder,
         billingPath: 'reverseClinicalRequestBilling (lab-order)',
+        mounted: false,
       );
 
   static const LabAwaitingResultsFinancialAtom collectSample =

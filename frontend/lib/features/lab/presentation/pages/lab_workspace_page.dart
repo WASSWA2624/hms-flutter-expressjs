@@ -1830,31 +1830,6 @@ LabWorkspaceState? _readLabStateFromContext(BuildContext context) {
       .when(success: (LabWorkspaceState state) => state, failure: (_) => null);
 }
 
-Future<void> _openDeleteLabOrderDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
-  final bool? deleted = await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => LabDeleteReasonDialog(
-      title: context.l10n.labDeleteOrderDialogTitle,
-      body: context.l10n.labDeleteOrderDialogBody(
-        workflow.order.displayId ?? workflow.order.apiId,
-      ),
-      submitLabel: context.l10n.labDeleteOrderAction,
-      onDelete: (String reason) =>
-          _readLabController(context).deleteOrder(workflow.order.apiId, reason),
-    ),
-  );
-  if (deleted == true && context.mounted) {
-    unawaited(Navigator.of(context).maybePop());
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.labDeletedMessage)));
-  }
-}
-
 Future<void> _showActionResult(
   BuildContext context,
   Future<bool?> result,

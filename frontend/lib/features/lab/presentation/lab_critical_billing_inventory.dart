@@ -141,10 +141,11 @@ abstract final class LabCriticalBillingInventory {
 
   static const LabCriticalFinancialAtom deleteOrder = LabCriticalFinancialAtom(
     id: 'detail_delete_order',
-    label: 'Detail Delete order',
+    label: 'Detail Delete order (removed from lab UI)',
     financialClass: LabCriticalFinancialClass.reverse,
     requirement: LabCriticalAtomPermissions.deleteOrder,
     billingPath: 'reverseClinicalRequestBilling (lab-order)',
+    mounted: false,
   );
 
   static const LabCriticalFinancialAtom collectSample =

@@ -428,49 +428,6 @@ final class LabWorkspaceController
     );
   }
 
-  Future<AppFailure?> deleteOrder(String orderId, String reason) async {
-    final LabWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<void> result = await _repository.deleteOrder(orderId, reason);
-    return result.when(
-      success: (_) async {
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final List<LabOrderWorkflow> remainingWorkflows = latest
-              .selectedWorkflows
-              .where(
-                (LabOrderWorkflow workflow) =>
-                    !_orderMatchesIdentifier(workflow.order, orderId),
-              )
-              .toList(growable: false);
-          _emit(
-            latest.copyWith(
-              worklist: _removeOrder(latest.worklist, orderId),
-              selectedWorkflow: remainingWorkflows.isEmpty
-                  ? null
-                  : remainingWorkflows.first,
-              selectedWorkflows: remainingWorkflows,
-              isSaving: false,
-              clearSelectedWorkflow: remainingWorkflows.isEmpty,
-            ),
-          );
-        }
-        return _refreshWorkbench(showLoading: false);
-      },
-      failure: (AppFailure failure) {
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
-        }
-        return failure;
-      },
-    );
-  }
-
   Future<AppFailure?> updateLabPanel(
     String panelId,
     Map<String, Object?> payload, {
@@ -695,15 +652,6 @@ final class LabWorkspaceController
     Map<String, Object?> payload,
   ) {
     return _mutateWorkflow(() => _repository.restoreOrderItem(itemId, payload));
-  }
-
-  Future<AppFailure?> deleteOrderItems(
-    String orderId,
-    Map<String, Object?> payload,
-  ) {
-    return _mutateWorkflow(
-      () => _repository.deleteOrderItems(orderId, payload),
-    );
   }
 
   Future<LabBatchPersistOutcome> _persistOrderItemResultEntries(
@@ -1566,39 +1514,10 @@ final class LabWorkspaceController
     );
   }
 
-  AppPage<LabOrderSummary> _removeOrder(
-    AppPage<LabOrderSummary> page,
-    String orderId,
-  ) {
-    final List<LabOrderSummary> items = page.items
-        .where(
-          (LabOrderSummary order) =>
-              order.id != orderId &&
-              order.apiId != orderId &&
-              order.displayId != orderId,
-        )
-        .toList(growable: false);
-    return AppPage<LabOrderSummary>(
-      items: items,
-      request: page.request,
-      totalItemCount: page.totalItemCount == null
-          ? null
-          : page.totalItemCount! - (page.items.length - items.length),
-    );
-  }
-
   bool _isSameOrder(LabOrderSummary left, LabOrderSummary right) {
     return left.id == right.id ||
         left.apiId == right.apiId ||
         (left.displayId != null && left.displayId == right.displayId);
-  }
-
-  bool _orderMatchesIdentifier(LabOrderSummary order, String identifier) {
-    return order.id == identifier ||
-        order.apiId == identifier ||
-        order.displayId == identifier ||
-        order.orderIds.contains(identifier) ||
-        order.orderDisplayIds.contains(identifier);
   }
 
   List<LabOrderWorkflow> _replaceSelectedWorkflow(

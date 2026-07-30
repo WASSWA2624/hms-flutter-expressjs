@@ -221,9 +221,10 @@ LabDeskSection? labFallbackSection(AppAccessPolicy policy) {
 /// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Detail Preview report | export / read | preview ∪ lab read\|write |
 /// | Detail Create additional order | create | write ∩ |
-/// | Detail Edit / Delete order | update / delete | write ∩ |
+/// | Detail Edit order | update | write ∩ |
+/// | Detail Delete order / panel / test (removed) | — | not mounted in lab UI |
 /// | Workflow Collect / Receive / Save results / Reverse | update | write ∩ |
-/// | Bulk / item result save / reject / delete | create / update / delete | write ∩ |
+/// | Bulk / item result save / reject | create / update | write ∩ |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
 /// | Critical notify (narrative ∩) | approve / update | lab:write ∩ clinical:read |
@@ -255,6 +256,7 @@ abstract final class LabAllAtomPermissions {
   static const AccessRequirement createAdditionalOrder =
       labWorkspaceWriteRequirement;
   static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
+  /// Historical billing atom only — order/panel/test delete is not mounted in lab.
   static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
   static const AccessRequirement workflowMutate = labWorkspaceWriteRequirement;
   static const AccessRequirement resultEntry = labWorkspaceWriteRequirement;
@@ -298,9 +300,10 @@ bool canViewLabAllTab(AppAccessPolicy policy) {
 /// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Detail Preview report | export / read | preview ∪ lab read\|write |
 /// | Detail Create additional order | create | write ∩ |
-/// | Detail Edit / Delete order | update / delete | write ∩ |
+/// | Detail Edit order | update | write ∩ |
+/// | Detail Delete order / panel / test (removed) | — | not mounted in lab UI |
 /// | Workflow Collect / Receive / Save results / Reverse | update | write ∩ |
-/// | Bulk / item result save / reject / delete | create / update / delete | write ∩ |
+/// | Bulk / item result save / reject | create / update | write ∩ |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
 /// | Critical notify (narrative ∩) | approve / update | lab:write ∩ clinical:read |
@@ -332,6 +335,7 @@ abstract final class LabAwaitingResultsAtomPermissions {
   static const AccessRequirement createAdditionalOrder =
       labWorkspaceWriteRequirement;
   static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
+  /// Historical billing atom only — order/panel/test delete is not mounted in lab.
   static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
   static const AccessRequirement workflowMutate = labWorkspaceWriteRequirement;
   static const AccessRequirement resultEntry = labWorkspaceWriteRequirement;
@@ -394,6 +398,7 @@ abstract final class LabCriticalAtomPermissions {
   static const AccessRequirement createAdditionalOrder =
       labWorkspaceWriteRequirement;
   static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
+  /// Historical billing atom only — order/panel/test delete is not mounted in lab.
   static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
   static const AccessRequirement workflowMutate = labWorkspaceWriteRequirement;
   static const AccessRequirement resultEntry = labWorkspaceWriteRequirement;
@@ -440,10 +445,11 @@ bool canViewLabCriticalTab(AppAccessPolicy policy) {
 /// | Next action (Completed label, text-only) | progressive disclosure | read ∩ |
 /// | Detail Preview report | export / read | preview ∪ lab read\|write |
 /// | Detail Create additional order | create | write ∩ |
-/// | Detail Edit / Delete order | update / delete | write ∩ |
+/// | Detail Edit order | update | write ∩ |
+/// | Detail Delete order / panel / test (removed) | — | not mounted in lab UI |
 /// | Edit / reopen saved result | update | write ∩ |
 /// | Workflow Collect / Receive / Save results / Reverse | update | write ∩ |
-/// | Bulk / item result save / reject / delete | create / update / delete | write ∩ |
+/// | Bulk / item result save / reject | create / update | write ∩ |
 /// | Open billing (payment gate CTA) | navigate | Billing read |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
@@ -476,6 +482,7 @@ abstract final class LabVerifiedAtomPermissions {
   static const AccessRequirement createAdditionalOrder =
       labWorkspaceWriteRequirement;
   static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
+  /// Historical billing atom only — order/panel/test delete is not mounted in lab.
   static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
   static const AccessRequirement editVerifiedResult =
       labWorkspaceWriteRequirement;
