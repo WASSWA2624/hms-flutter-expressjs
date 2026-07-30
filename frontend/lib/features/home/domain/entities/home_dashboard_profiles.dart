@@ -429,8 +429,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Laboratory technologist',
     homeTitle: 'Laboratory',
     emptyMessage: 'No lab work is pending.',
-    // Match Lab desk tabs: Pending → Critical → Completed → All patients.
-    maxStatusCards: 4,
+    // Match Lab desk tabs, plus week/month order volume KPIs.
+    maxStatusCards: 6,
+    suppressHomeQuickActions: true,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'lab_pending',
@@ -452,12 +453,18 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'All patients',
         requiredPermissions: <AppPermission>[AppPermissions.labRead],
       ),
+      HomeStatusCardTemplate(
+        id: 'lab_orders_week',
+        label: 'Orders this week',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'lab_orders_month',
+        label: 'Orders this month',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
     ],
-    quickActionIds: <String>[
-      'receive_sample',
-      'enter_lab_result',
-      'flag_critical_lab',
-    ],
+    quickActionIds: const <String>[],
     shortcutIds: <String>['lab', 'patients', 'communications', 'settings', 'reports'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
@@ -471,6 +478,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'completed-today'},
       ),
       'lab_all_patients': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'worklist'},
+      ),
+      'lab_orders_week': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'worklist'},
+      ),
+      'lab_orders_month': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'worklist'},
       ),
     },
@@ -1780,6 +1793,8 @@ List<HomeStatusCardTemplate> _prioritizeCrossDomainCards(
     'lab_pending': 12,
     'critical_results': 13,
     'lab_all_patients': 13,
+    'lab_orders_week': 13,
+    'lab_orders_month': 13,
     // Doctor secondary atoms when granted onto clinical bases (Dashboard.md §4).
     'radiology_pending': 14,
     'prescriptions_pending': 15,

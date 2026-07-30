@@ -303,6 +303,19 @@ final class HomeMetricAction {
   }
 }
 
+/// Maps home queue / alert route targets to module deep-link query parameters.
+Map<String, String> homeRouteQueryForTarget(HomeRouteTarget? target) {
+  if (target == null) {
+    return const <String, String>{};
+  }
+
+  final Map<String, String> hr = homeHrQueryForTarget(target);
+  if (hr.isNotEmpty) {
+    return hr;
+  }
+  return homeLabQueryForTarget(target);
+}
+
 /// Maps HR workspace queue row targets to `/hr` deep-link query parameters.
 Map<String, String> homeHrQueryForTarget(HomeRouteTarget? target) {
   if (target == null) {
@@ -324,6 +337,24 @@ Map<String, String> homeHrQueryForTarget(HomeRouteTarget? target) {
     return const <String, String>{};
   }
   return <String, String>{'queue': queue};
+}
+
+/// Maps lab queue row targets to `/lab` deep-link query parameters.
+Map<String, String> homeLabQueryForTarget(HomeRouteTarget? target) {
+  if (target == null) {
+    return const <String, String>{};
+  }
+  final String slug = target.moduleSlug.toLowerCase();
+  if (slug != 'lab' && slug != 'laboratory') {
+    return const <String, String>{};
+  }
+
+  final Map<String, String> query = <String, String>{'section': 'worklist'};
+  final String? orderId = target.publicId?.trim();
+  if (orderId != null && orderId.isNotEmpty) {
+    query['order'] = orderId;
+  }
+  return query;
 }
 
 /// Compact workforce metric labels for narrow dashboard layouts.

@@ -70,6 +70,8 @@ abstract final class HomeDashboardAtomPermissions {
         // Note: completed_orders is shared with radiology; declare on templates.
         'lab_pending': <AppPermission>[AppPermissions.labRead],
         'lab_all_patients': <AppPermission>[AppPermissions.labRead],
+        'lab_orders_week': <AppPermission>[AppPermissions.labRead],
+        'lab_orders_month': <AppPermission>[AppPermissions.labRead],
         'critical_results': <AppPermission>[AppPermissions.labRead],
         // Legacy ids retained for older API payloads / guided content.
         'pending_results': <AppPermission>[AppPermissions.labRead],

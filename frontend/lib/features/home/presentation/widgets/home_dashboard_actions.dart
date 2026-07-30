@@ -1334,6 +1334,19 @@ HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {
   return null;
 }
 
+/// Module list target for "View all" (no record id — avoids opening a dialog).
+HomeRouteTarget? homeQueueListTarget(List<HomeQueueItem> items) {
+  final HomeRouteTarget? target = homeFirstQueueTarget(items);
+  if (target == null) {
+    return null;
+  }
+  return HomeRouteTarget(
+    moduleSlug: target.moduleSlug,
+    resource: target.resource,
+    action: 'list',
+  );
+}
+
 AppRouteData? homeRouteForTarget(HomeRouteTarget? target) {
   final String moduleSlug = (target?.moduleSlug ?? '').trim().toLowerCase();
   if (moduleSlug.isEmpty) {
@@ -1449,7 +1462,7 @@ void homeNavigateRouteTarget(
     return;
   }
 
-  homeGoToRoute(context, route, queryParameters: homeHrQueryForTarget(target));
+  homeGoToRoute(context, route, queryParameters: homeRouteQueryForTarget(target));
 }
 
 VoidCallback? homeWorklistTap(

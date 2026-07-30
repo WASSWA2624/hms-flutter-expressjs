@@ -1124,6 +1124,12 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     if (packId === ROLE_PACKS.LAB_TECH) {
       // Match Lab desk summary: Pending / Critical today / Completed today / All.
       const endOfToday = shiftDays(todayStart, 1);
+      const weekStart = shiftDays(todayStart, -((todayStart.getDay() + 6) % 7));
+      const monthStart = new Date(
+        todayStart.getFullYear(),
+        todayStart.getMonth(),
+        1
+      );
       const pendingStatuses = ['ORDERED', 'COLLECTED', 'IN_PROCESS'];
       const abnormalStatuses = ['ABNORMAL', 'CRITICAL'];
       const resultEnteredToday = {
@@ -1135,7 +1141,15 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           }
         ]
       };
-      const [pending, critical, completed, totalOrders, patientGroups] = await Promise.all([
+      const [
+        pending,
+        critical,
+        completed,
+        totalOrders,
+        patientGroups,
+        ordersThisWeek,
+        ordersThisMonth
+      ] = await Promise.all([
         prisma.lab_order.count({
           where: { ...labOrderWhere, status: { in: pendingStatuses } }
         }),
@@ -1168,11 +1182,25 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           by: ['patient_id'],
           where: labOrderWhere,
           _count: { _all: true }
+        }),
+        prisma.lab_order.count({
+          where: { ...labOrderWhere, ordered_at: { gte: weekStart, lt: endOfToday } }
+        }),
+        prisma.lab_order.count({
+          where: { ...labOrderWhere, ordered_at: { gte: monthStart, lt: endOfToday } }
         })
       ]);
       const allPatients = Array.isArray(patientGroups) ? patientGroups.length : totalOrders;
       return {
-        metrics: { pending, critical, completed, totalOrders, allPatients },
+        metrics: {
+          pending,
+          critical,
+          completed,
+          totalOrders,
+          allPatients,
+          ordersThisWeek,
+          ordersThisMonth
+        },
         trendDates: await selectDateSeries(prisma.lab_order, { ...labOrderWhere, ordered_at: { gte: trendStart } }, 'ordered_at'),
         statusCounts: await countByStatuses(prisma.lab_result, labResultWhere, ['PENDING', 'NORMAL', 'ABNORMAL', 'CRITICAL']),
         activity: {

@@ -112,7 +112,9 @@ class AppSectionPanel extends StatelessWidget {
         title: resolvedTitle,
         description: description,
         titleIcon: leadingIcon,
-        actions: trailing == null ? const <Widget>[] : <Widget>[trailing!],
+        headerActions: trailing == null
+            ? const <Widget>[]
+            : <Widget>[trailing!],
         collapsible: collapsible,
         initiallyExpanded: initiallyExpanded,
         child: body,

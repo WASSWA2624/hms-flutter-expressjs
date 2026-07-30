@@ -278,34 +278,34 @@ DashboardPriorityPanelData homeDashboardPriorityData({
     showFollowUps: showFollowUps,
     showShortcuts: showShortcuts,
     viewAllLabel: l10n.homeViewAllAction,
-    onViewAll: homeFirstQueueTarget(dashboard.queuePreview) == null
+    onViewAll: homeQueueListTarget(dashboard.queuePreview) == null
         ? null
         : () {
             homeNavigateRouteTarget(
               context,
               ref,
               policy,
-              target: homeFirstQueueTarget(dashboard.queuePreview),
+              target: homeQueueListTarget(dashboard.queuePreview),
             );
           },
-    onViewAllResults: homeFirstQueueTarget(dashboard.resultsPreview) == null
+    onViewAllResults: homeQueueListTarget(dashboard.resultsPreview) == null
         ? null
         : () {
             homeNavigateRouteTarget(
               context,
               ref,
               policy,
-              target: homeFirstQueueTarget(dashboard.resultsPreview),
+              target: homeQueueListTarget(dashboard.resultsPreview),
             );
           },
-    onViewAllFollowUps: homeFirstQueueTarget(dashboard.followUpPreview) == null
+    onViewAllFollowUps: homeQueueListTarget(dashboard.followUpPreview) == null
         ? null
         : () {
             homeNavigateRouteTarget(
               context,
               ref,
               policy,
-              target: homeFirstQueueTarget(dashboard.followUpPreview),
+              target: homeQueueListTarget(dashboard.followUpPreview),
             );
           },
   );

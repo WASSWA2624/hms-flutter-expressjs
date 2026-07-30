@@ -330,7 +330,7 @@ const hiddenReasonForAction = (action, roles, permissions, user) => {
 };
 
 const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
-  if (packId === ROLE_PACKS.HR) {
+  if (packId === ROLE_PACKS.HR || packId === ROLE_PACKS.LAB_TECH) {
     return { quickActions: [], hiddenReasonMap: {} };
   }
   if (packId === ROLE_PACKS.TENANT_ADMIN) {
@@ -558,7 +558,20 @@ const activeQueueDefinitions = Object.freeze({
     model: 'lab_result',
     time_field: 'updated_at',
     default_sort: 'updated_at',
-    select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      updated_at: true,
+      created_at: true,
+      lab_order_item: {
+        select: {
+          lab_order: {
+            select: { id: true, human_friendly_id: true },
+          },
+        },
+      },
+    },
     buildWhere: (scope) => ({
       ...buildLabResultScopeWhere(scope),
       status: { in: ['PENDING', 'CRITICAL', 'ABNORMAL'] },
@@ -601,7 +614,20 @@ const activeQueueDefinitions = Object.freeze({
     model: 'lab_result',
     time_field: 'updated_at',
     default_sort: 'updated_at',
-    select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      updated_at: true,
+      created_at: true,
+      lab_order_item: {
+        select: {
+          lab_order: {
+            select: { id: true, human_friendly_id: true },
+          },
+        },
+      },
+    },
     buildWhere: (scope) => ({
       ...buildLabResultScopeWhere(scope),
       status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] },
@@ -1226,6 +1252,15 @@ const buildQueueItem = (definition, row = {}) => {
   const patientMrn = normalizeString(patient?.human_friendly_id);
   const itemCount = Number(row?._count?.items || 0);
   const isPharmacyOrder = definition.id === 'pharmacy_orders';
+  const labOrder = row?.lab_order_item?.lab_order || null;
+  const labOrderPublicId = dashboardWorkspaceRepository.safePublicId(
+    labOrder?.human_friendly_id,
+    labOrder?.id
+  );
+  const targetPublicId =
+    definition.module_slug === 'lab' && labOrderPublicId
+      ? labOrderPublicId
+      : publicId;
 
   let title = null;
   let subtitle = null;
@@ -1244,6 +1279,9 @@ const buildQueueItem = (definition, row = {}) => {
       subtitleParts.push('Awaiting dispense');
     }
     subtitle = subtitleParts.join(' · ');
+  } else if (definition.module_slug === 'lab' && labOrderPublicId) {
+    title = labOrderPublicId;
+    subtitle = publicId !== labOrderPublicId ? publicId : null;
   }
 
   return {
@@ -1251,7 +1289,7 @@ const buildQueueItem = (definition, row = {}) => {
     kind: definition.kind,
     queue: definition.queue_key,
     module_slug: definition.module_slug,
-    human_friendly_id: publicId,
+    human_friendly_id: title || publicId,
     title,
     subtitle,
     status: normalizeString(row.status || row.billing_status).toUpperCase() || null,
@@ -1260,12 +1298,14 @@ const buildQueueItem = (definition, row = {}) => {
     severity: definition.buildSeverity(row),
     occurred_at: row[definition.time_field] || row.updated_at || row.created_at || null,
     updated_at: row.updated_at || null,
-    target: routeTarget(definition.module_slug, definition.resource, publicId),
+    target: routeTarget(definition.module_slug, definition.resource, targetPublicId, 'enter'),
     meta: {
       total_amount: row.total_amount != null ? Number(row.total_amount) : null,
       currency: row.currency || null,
       patient_name: patientName || null,
       item_count: itemCount || null,
+      lab_order_id: labOrderPublicId || null,
+      lab_result_id: publicId,
     },
   };
 };

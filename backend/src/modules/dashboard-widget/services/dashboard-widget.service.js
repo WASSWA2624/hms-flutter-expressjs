@@ -315,12 +315,14 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
   }
 
   if (packId === ROLE_PACKS.LAB_TECH) {
-    // Align with Lab desk tabs: Pending → Critical → Completed → All patients.
+    // Align with Lab desk tabs + week/month volume KPIs.
     return [
       { id: 'lab_pending', label: 'Pending', value: metrics.pending || 0 },
       { id: 'critical_results', label: 'Critical', value: metrics.critical || 0 },
       { id: 'completed_orders', label: 'Completed', value: metrics.completed || 0 },
-      { id: 'lab_all_patients', label: 'All patients', value: metrics.allPatients || metrics.totalOrders || 0 }
+      { id: 'lab_all_patients', label: 'All patients', value: metrics.allPatients || metrics.totalOrders || 0 },
+      { id: 'lab_orders_week', label: 'Orders this week', value: metrics.ordersThisWeek || 0 },
+      { id: 'lab_orders_month', label: 'Orders this month', value: metrics.ordersThisMonth || 0 }
     ];
   }
 

@@ -77,6 +77,26 @@ void main() {
       );
     });
 
+    test('lab queue targets map to order deep links', () {
+      expect(
+        homeLabQueryForTarget(
+          const HomeRouteTarget(
+            moduleSlug: 'lab',
+            resource: 'results',
+            publicId: 'LAB0000010',
+            action: 'enter',
+          ),
+        ),
+        <String, String>{'section': 'worklist', 'order': 'LAB0000010'},
+      );
+      expect(
+        homeRouteQueryForTarget(
+          const HomeRouteTarget(moduleSlug: 'lab', resource: 'results'),
+        ),
+        <String, String>{'section': 'worklist'},
+      );
+    });
+
     test('doctor profile cards navigate to clinical and lab workspaces', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(

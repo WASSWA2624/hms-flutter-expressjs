@@ -600,7 +600,24 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
             .applySearch(query.search),
       );
     }
-    final LabOrderSummary? order = _findOrderByQuery(query);
+    if (query.orderId.isEmpty && query.encounterId.isEmpty) {
+      return;
+    }
+
+    LabOrderSummary? order = _findOrderByQuery(query);
+    if (order == null && query.orderId.isNotEmpty) {
+      final AppFailure? failure = await ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .selectOrderById(query.orderId);
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+      if (failure != null) {
+        return;
+      }
+      order = _readLabState(ref)?.selectedWorkflow?.order;
+    }
     if (order == null || !mounted) {
       return;
     }
