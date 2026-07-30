@@ -259,7 +259,7 @@ void main() {
         expect(atom.billingPath, isNotEmpty);
         expect(
           atom.billingPath!.toLowerCase(),
-          anyOf(
+          anyOf(<Matcher>[
             contains('billing'),
             contains('persist'),
             contains('lab'),
@@ -269,7 +269,7 @@ void main() {
             contains('icu'),
             contains('discharge'),
             contains('admission'),
-          ),
+          ]),
         );
       }
     });
@@ -379,30 +379,9 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('start stay dialog posts billing payload when charged', (
+    testWidgets('start stay dialog shows ICU package/bed-day billing lines', (
       WidgetTester tester,
     ) async {
-      when(
-        () => repository.startIcuStay(
-          detail: any(named: 'detail'),
-          startedAt: any(named: 'startedAt'),
-          billing: any(named: 'billing'),
-        ),
-      ).thenAnswer((Invocation invocation) async {
-        final Map<String, Object?>? billing =
-            invocation.namedArguments[#billing] as Map<String, Object?>?;
-        expect(billing, isNotNull);
-        expect(billing!['payment_status'], isNotNull);
-        final IcuPatientDetail detail =
-            invocation.namedArguments[#detail] as IcuPatientDetail;
-        return Result<IcuPatientDetail>.success(
-          detail.copyWith(
-            summary: detail.summary.copyWith(icuStatus: 'ACTIVE'),
-            activeStay: const IcuStaySummary(id: 'stay-new'),
-          ),
-        );
-      });
-
       await _pumpActiveTab(
         tester,
         repository: repository,

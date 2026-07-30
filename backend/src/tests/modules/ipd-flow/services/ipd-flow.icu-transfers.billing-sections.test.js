@@ -36,6 +36,17 @@ jest.mock('@lib/billing/clinical-request-billing', () => ({
   persistAdmissionBilling: jest.fn(),
   persistNursingServiceBilling: jest.fn(),
   mapClinicalOrderBillingFields: jest.fn((value) => value),
+  normalizeBillingOfficeClinicalBilling: jest.fn((billing) => billing || null),
+  shouldApplyClinicalRequestBilling: jest.fn((billing) => {
+    if (!billing) return false;
+    const status = String(billing.payment_status || '').toUpperCase();
+    return (
+      status !== 'NOT_BILLED' &&
+      status !== 'NOT_REQUIRED' &&
+      status !== 'NO_CHARGE'
+    );
+  }),
+  buildPendingClinicalRequestBilling: jest.fn((opts) => opts),
   BILLABLE_SOURCE_MODULES: {
     ICU_STAY: 'ICU_STAY',
     WARD_ROUND: 'WARD_ROUND'}}));
