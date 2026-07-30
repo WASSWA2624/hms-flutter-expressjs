@@ -525,9 +525,7 @@ void main() {
       },
     );
 
-    testWidgets('post-mutation detail refresh keeps payment status parity path', (
-      WidgetTester tester,
-    ) async {
+    test('post-mutation detail refresh keeps payment status parity path', () async {
       when(
         () => clinicalRepository.createProcedure(any()),
       ).thenAnswer((_) async => const Result<void>.success(null));

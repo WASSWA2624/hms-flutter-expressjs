@@ -693,7 +693,10 @@ class _ClinicalPharmacyOrdersTablePanelState
                         ),
                       ),
                       DataCell(
-                        _ClinicalStatusBadge(status: order.status ?? ''),
+                        _ClinicalOrderStatusWithPayment(
+                          status: order.status,
+                          paymentStatus: order.paymentStatus,
+                        ),
                       ),
                       DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
                       if (canMutate)
@@ -1132,7 +1135,12 @@ DataRow _clinicalLabOrderDataRow({
         ),
       ),
       DataCell(Text(_labOrderAggregateValue(context, order))),
-      DataCell(_ClinicalStatusBadge(status: status)),
+      DataCell(
+        _ClinicalOrderStatusWithPayment(
+          status: status,
+          paymentStatus: order.paymentStatus,
+        ),
+      ),
       DataCell(
         _labOrderAggregateResultFlag(order) == null
             ? Text(l10n.clinicalOrderEmptyValueLabel)
