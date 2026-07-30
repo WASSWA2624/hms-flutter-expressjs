@@ -92,4 +92,39 @@ describe('lab.interpretation', () => {
     );
     expect(matched).toBeNull();
   });
+
+  it('prefers result_text over a stale result_value for qualitative options', () => {
+    const malariaTest = {
+      result_options: [
+        {
+          value: 'POSITIVE',
+          label: 'Positive',
+          status: 'ABNORMAL',
+          result_flag: 'POSITIVE',
+          is_positive: true},
+        {
+          value: 'NEGATIVE',
+          label: 'Negative',
+          status: 'NORMAL',
+          result_flag: 'NEGATIVE',
+          is_positive: false},
+        {
+          value: 'INDETERMINATE',
+          label: 'Indeterminate',
+          status: 'ABNORMAL',
+          result_flag: 'INDETERMINATE',
+          is_positive: false}],
+      reference_ranges: [],
+      unit_options: []};
+
+    const interpretation = evaluateLabResult({
+      test: malariaTest,
+      patient: adultFemale,
+      resultValue: 'POSITIVE',
+      resultText: 'INDETERMINATE'});
+
+    expect(interpretation.status).toBe('ABNORMAL');
+    expect(interpretation.result_flag).toBe('INDETERMINATE');
+    expect(interpretation.source).toBe('QUALITATIVE_OPTION');
+  });
 });

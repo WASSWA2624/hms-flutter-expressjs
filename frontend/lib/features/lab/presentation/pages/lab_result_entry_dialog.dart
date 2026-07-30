@@ -2389,7 +2389,7 @@ final class _ResultDraft {
       resultFlagOverrideController = TextEditingController(
         text: item.resultFlagOverride ?? item.resultFlag ?? '',
       ),
-      selectedOption = item.resultText ?? item.resultValue,
+      selectedOption = _matchingResultOptionValue(item),
       interpretationOverride = item.interpretationOverride;
 
   LabOrderItem item;
@@ -2490,7 +2490,7 @@ final class _ResultDraft {
       serverItem.resultUnit ?? serverItem.unit ?? '',
     );
     _setControllerText(textController, serverItem.resultText ?? '');
-    selectedOption = serverItem.resultText ?? serverItem.resultValue;
+    selectedOption = _matchingResultOptionValue(serverItem);
     interpretationOverride = serverItem.interpretationOverride;
     _setControllerText(
       referenceRangeOverrideController,
@@ -2562,10 +2562,13 @@ final class _ResultDraft {
       return payload;
     }
     if (item.isQualitative) {
-      payload['result_text'] = option ?? text;
+      final String qualitative = (option ?? text).trim();
+      payload['result_text'] = qualitative;
+      payload['result_value'] = qualitative;
       return payload;
     }
     payload['result_text'] = text;
+    payload['result_value'] = text;
     return payload;
   }
 
@@ -2636,7 +2639,7 @@ class _ReopenSavedResultDialogState
       text: _item.resultUnit ?? _item.unit ?? '',
     );
     _textController = TextEditingController(text: _item.resultText ?? '');
-    _selectedOption = _item.resultText ?? _item.resultValue;
+    _selectedOption = _matchingResultOptionValue(_item);
     _reasonController = TextEditingController();
     _notesController = TextEditingController();
   }
@@ -2895,14 +2898,19 @@ class _ReopenSavedResultDialogState
       return payload;
     }
     if (_usesOptions) {
-      payload['result_text'] = _selectedOption?.trim();
+      final String? option = _selectedOption?.trim();
+      payload['result_text'] = option;
+      // Keep value in sync so stale POSITIVE/NEGATIVE tokens do not linger.
+      payload['result_value'] = option;
       final String? status = _resultStatusFromToken(_liveResultFlagToken());
       if (status != null) {
         payload['status'] = status;
       }
       return payload;
     }
-    payload['result_text'] = _textController.text.trim();
+    final String text = _textController.text.trim();
+    payload['result_text'] = text;
+    payload['result_value'] = text;
     payload['status'] =
         _resultStatusFromToken(_liveResultFlagToken()) ?? 'NORMAL';
     return payload;
@@ -3397,6 +3405,40 @@ String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {
     return 'ABNORMAL';
   }
   return 'NORMAL';
+}
+
+String? _matchingResultOptionValue(LabOrderItem item) {
+  if (item.resultOptions.isEmpty) {
+    return item.resultText ?? item.resultValue;
+  }
+  final List<String> candidates = <String>[
+    ?_trimOrNull(item.resultValue),
+    ?_trimOrNull(item.resultText),
+    ?_trimOrNull(item.resultFlag),
+  ];
+  for (final String candidate in candidates) {
+    final String normalizedCandidate = candidate.trim().toLowerCase();
+    for (final LabResultOption option in item.resultOptions) {
+      final Set<String> optionValues = <String>{
+        option.value ?? '',
+        option.label ?? '',
+        option.id,
+        option.resultFlag ?? '',
+        option.status ?? '',
+      }..removeWhere((String value) => value.trim().isEmpty);
+      for (final String optionValue in optionValues) {
+        if (optionValue.trim().toLowerCase() == normalizedCandidate) {
+          return option.value ?? option.label ?? option.id;
+        }
+      }
+    }
+  }
+  return item.resultValue ?? item.resultText;
+}
+
+String? _trimOrNull(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 String? _resultStatusFromToken(String? value) {

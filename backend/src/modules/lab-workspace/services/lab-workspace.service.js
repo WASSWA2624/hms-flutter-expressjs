@@ -850,17 +850,27 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
     targetResult?.status && targetResult.status !== 'PENDING'
       ? targetResult.status
       : 'NORMAL';
+  const hasResultText = payloadHasField(payload, 'result_text');
+  const hasResultValue = payloadHasField(payload, 'result_value');
+  // Qualitative option edits often send only result_text. Keep result_value in
+  // sync so a prior POSITIVE/NEGATIVE token cannot win interpretation/display.
+  let nextResultValue = hasResultValue
+    ? payload.result_value
+    : targetResult?.result_value || null;
+  let nextResultText = hasResultText
+    ? payload.result_text
+    : targetResult?.result_text || null;
+  if (hasResultText && !hasResultValue) {
+    nextResultValue = nextResultText;
+  }
+
   const resultData = {
     status: fallbackStatus,
-    result_value: payloadHasField(payload, 'result_value')
-      ? payload.result_value
-      : targetResult?.result_value || null,
+    result_value: nextResultValue,
     result_unit: payloadHasField(payload, 'result_unit')
       ? payload.result_unit
       : targetResult?.result_unit || item?.lab_test?.unit || null,
-    result_text: payloadHasField(payload, 'result_text')
-      ? payload.result_text
-      : targetResult?.result_text || null,
+    result_text: nextResultText,
     reported_at: toDateOrNull(payload.reported_at, new Date())};
 
   const patient = item?.lab_order?.patient || {};

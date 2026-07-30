@@ -68,20 +68,22 @@ const findQualitativeOption = (test = {}, resultValue, resultText) => {
   const options = Array.isArray(test?.result_options) ? test.result_options : [];
   if (!options.length) return null;
 
-  const candidates = [resultValue, resultText]
+  // Prefer result_text when both are present — edits update text first and a
+  // stale result_value (e.g. POSITIVE) must not keep matching the old option.
+  const candidates = [resultText, resultValue]
     .map((entry) => normalizeToken(entry))
     .filter(Boolean);
   if (!candidates.length) return null;
 
-  for (const option of options) {
-    const tokens = new Set([
-      normalizeToken(option?.value),
-      normalizeToken(option?.label),
-      ...normalizeAliases(option?.aliases_json || option?.aliases)]);
-    tokens.delete('');
-    if (!tokens.size) continue;
+  for (const candidate of candidates) {
+    for (const option of options) {
+      const tokens = new Set([
+        normalizeToken(option?.value),
+        normalizeToken(option?.label),
+        ...normalizeAliases(option?.aliases_json || option?.aliases)]);
+      tokens.delete('');
+      if (!tokens.size) continue;
 
-    for (const candidate of candidates) {
       for (const token of tokens) {
         if (!token) continue;
         if (candidate === token) return option;

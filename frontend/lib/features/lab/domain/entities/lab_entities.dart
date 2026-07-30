@@ -908,6 +908,9 @@ final class LabOrderItem {
   }
 
   String? get displayResultValue {
+    if (isQualitative || isText) {
+      return _firstNonEmpty(<String?>[resultText, resultValue]);
+    }
     return _joinDisplay(<String?>[resultValue, resultUnit]) ?? resultText;
   }
 

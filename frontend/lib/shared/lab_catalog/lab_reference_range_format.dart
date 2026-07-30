@@ -158,6 +158,13 @@ String? formatLabOrderItemResultDisplay(
   LabOrderItem item, {
   required int decimalPlaces,
 }) {
+  if (item.isQualitative || item.isText) {
+    final String? qualitative =
+        _trimOrNull(item.resultText) ?? _trimOrNull(item.resultValue);
+    if (qualitative != null) {
+      return qualitative;
+    }
+  }
   final String? rawValue = _trimOrNull(item.resultValue);
   final String? unit = _trimOrNull(item.resultUnit) ?? _trimOrNull(item.unit);
   if (rawValue != null) {
