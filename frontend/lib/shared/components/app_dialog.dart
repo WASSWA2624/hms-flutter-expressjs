@@ -609,17 +609,22 @@ class _DialogHeader extends StatelessWidget {
             ),
             if (showMaximizeButton || showCloseButton)
               AppActionLabelScope(
-                showLabels: true,
-                forceIconOnly: false,
+                // Dialog chrome stays icon-only on all breakpoints; tooltips
+                // and semantics keep the accessible names.
+                showLabels: false,
+                forceIconOnly: true,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     if (showMaximizeButton)
                       AppButton(
+                        iconOnly: true,
                         leadingIcon: isMaximized
                             ? Icons.fullscreen_exit
                             : Icons.fullscreen,
-                        label: isMaximized ? 'Restore' : 'Maximize',
+                        label: isMaximized
+                            ? 'Restore dialog'
+                            : 'Maximize dialog',
                         semanticLabel: isMaximized
                             ? 'Restore dialog'
                             : 'Maximize dialog',
@@ -632,10 +637,11 @@ class _DialogHeader extends StatelessWidget {
                       SizedBox(width: theme.spacing.sm),
                     if (showCloseButton)
                       AppButton(
+                        iconOnly: true,
                         leadingIcon: Icons.close,
                         label: MaterialLocalizations.of(
                           context,
-                        ).closeButtonLabel,
+                        ).closeButtonTooltip,
                         semanticLabel: MaterialLocalizations.of(
                           context,
                         ).closeButtonTooltip,

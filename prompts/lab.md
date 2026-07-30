@@ -6,7 +6,7 @@ Redesign the lab result entry dialog so it is clean, full-width, and focused on 
 
 ## Dialog chrome
 
-- **Restore** and **Close** must not show visible labels on both small and large screens.
+- **Restore** and **Close** must not show visible labels on both small and large screens (icon-only; tooltips/semantics keep accessible names).
 - Keep Preview report / Save (and Create when relevant) in the footer actions with clear labels.
 
 ## Remove from this dialog
@@ -62,7 +62,7 @@ When showing reference ranges for a test:
 
 ## Acceptance criteria
 
-- Restore and Close always show text labels.
+- No visible labels on Restore and Close buttons (all screen sizes).
 - No workflow stepper, Select all / Clear selection / Reject all, Flag column, or per-row Action column in result entry.
 - Each panel and each standalone test is its own full-width collapsible; panel header has Delete panel when allowed.
 - Individual tests inside a panel cannot be deleted from this dialog.
