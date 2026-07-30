@@ -4,8 +4,9 @@ const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/valida
 const stageFilterSchema = z.enum([
   'ALL',
   'COLLECTION',
-  'PROCESSING',
-  'RESULTS',
+  'PENDING',
+  'PROCESSING', // legacy alias → pending
+  'RESULTS', // legacy alias → pending
   'COMPLETED',
   'CANCELLED']);
 

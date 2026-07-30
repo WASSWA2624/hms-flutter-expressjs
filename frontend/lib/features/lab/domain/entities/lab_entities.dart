@@ -1,22 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
 
 enum LabQueueScope {
   all,
-  collection,
-  processing,
+  collection, // Pending (results not yet completed)
   critical,
-  completed,
+  completed, // Completed today
   cancelled,
 }
 
 enum LabDeskSection {
   worklist,
-  collection,
-  processing,
+  collection, // Pending
   critical,
-  completed,
+  completed, // Completed today
   followUps,
 }
 
@@ -24,13 +23,14 @@ extension LabDeskSectionX on LabDeskSection {
   bool get isFollowUps => this == LabDeskSection.followUps;
 }
 
+/// Worklist is always patient-grouped; orders view was removed from Lab UI.
 enum LabWorkbenchView { patients, orders }
 
 @immutable
 final class LabWorkbenchQuery {
   const LabWorkbenchQuery({
     this.search = '',
-    this.scope = LabQueueScope.all,
+    this.scope = LabQueueScope.collection,
     this.view = LabWorkbenchView.patients,
     this.pageRequest = const AppPageRequest(pageSize: 25),
   });
@@ -107,6 +107,7 @@ final class LabWorkbenchSummary {
         : collectionQueue;
   }
 
+  @Deprecated('Processing tab removed; kept for DTO compatibility')
   int processingForView(LabWorkbenchView view) {
     return view == LabWorkbenchView.patients
         ? processingPatients
@@ -449,9 +450,7 @@ final class LabReferenceRange {
   final int sortOrder;
   final String? summary;
 
-  String get displayLabel =>
-      _joinDisplay(<String?>[label, summary, referenceText, method, unit]) ??
-      id;
+  String get displayLabel => formatLabReferenceRange(this) ?? id;
 }
 
 @immutable
@@ -681,7 +680,8 @@ final class LabOrderSummary {
 
   bool get hasCriticalResult {
     return items.any((LabOrderItem item) {
-      return item.effectiveResultStatus == 'CRITICAL';
+      final String status = item.effectiveResultStatus ?? '';
+      return status == 'CRITICAL' || status == 'ABNORMAL';
     });
   }
 
@@ -861,25 +861,21 @@ final class LabOrderItem {
         _firstNonEmpty(<String?>[referenceRangeOverride]) != null) {
       return referenceRangeOverride;
     }
-    final String? appliedSummary = _appliedRangeDisplayLabel;
-    return _firstNonEmpty(<String?>[
-      appliedSummary,
+    final String? applied = formatLabReferenceRangeFromMap(
+      appliedReferenceRange,
+    );
+    if (applied != null) {
+      return applied;
+    }
+    final String? fallback = _firstNonEmpty(<String?>[
       referenceRangeSummary,
       referenceRangeLabel,
       referenceRange,
     ]);
-  }
-
-  String? get _appliedRangeDisplayLabel {
-    final Map<String, Object?>? applied = appliedReferenceRange;
-    if (applied == null || applied.isEmpty) {
+    if (fallback == null) {
       return null;
     }
-    return _firstNonEmpty(<String?>[
-      applied['summary']?.toString(),
-      applied['label']?.toString(),
-      applied['reference_text']?.toString(),
-    ]);
+    return rewriteLegacyLabReferenceRangeUnitSummary(fallback);
   }
 
   bool get isNumeric => _normalize(resultKind) == 'NUMERIC';
@@ -1257,8 +1253,8 @@ bool labOrderMatchesScope(LabOrderSummary order, LabQueueScope scope) {
   final String status = _normalize(order.status);
   return switch (scope) {
     LabQueueScope.all => true,
-    LabQueueScope.collection => status == 'ORDERED' || status == 'COLLECTED',
-    LabQueueScope.processing => status == 'IN_PROCESS',
+    LabQueueScope.collection =>
+      status == 'ORDERED' || status == 'COLLECTED' || status == 'IN_PROCESS',
     LabQueueScope.critical => order.hasCriticalResult,
     LabQueueScope.completed => status == 'COMPLETED',
     LabQueueScope.cancelled => status == 'CANCELLED',

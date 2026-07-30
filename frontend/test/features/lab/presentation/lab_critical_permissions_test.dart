@@ -315,13 +315,6 @@ void main() {
       );
       expect(
         identical(
-          labStripConfigureRequirement(LabDeskSection.critical),
-          LabCriticalAtomPermissions.configure,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
           LabCriticalAtomPermissions.write,
           labWorkspaceWriteRequirement,
         ),
@@ -370,7 +363,7 @@ void main() {
 
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
 
         final AppLocalizations l10n = AppLocalizations.of(
@@ -407,13 +400,13 @@ void main() {
     );
 
     testWidgets(
-      'full intersection set mounts create, config, and detail write',
+      'full intersection set mounts create in search bar and detail write',
       (WidgetTester tester) async {
         await _pumpCriticalTab(tester, repository: repository);
 
         expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-        expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Lab Configurations'), findsNothing);
+        expect(find.byTooltip('Orders view'), findsNothing);
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
@@ -439,7 +432,7 @@ void main() {
 
         expect(find.byType(AppTabStrip), findsOneWidget);
         expect(find.textContaining('Critical'), findsWidgets);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
@@ -582,7 +575,7 @@ void main() {
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Orders view'), findsNothing);
     });
 
     testWidgets('authorized loading path uses critical read chrome', (
@@ -677,7 +670,7 @@ void main() {
 
       expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
     });
 
     testWidgets('dark theme: critical write chrome remains', (
@@ -690,7 +683,7 @@ void main() {
       );
 
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
       expect(find.textContaining('Critical'), findsWidgets);
     });
 

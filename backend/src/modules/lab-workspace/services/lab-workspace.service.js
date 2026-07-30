@@ -171,7 +171,9 @@ const mapLabPatientWorkItem = (records = []) => {
   const items = uniqueByKey(mapped.flatMap((order) => order.items || []), (item) => item.id);
   const samples = uniqueByKey(mapped.flatMap((order) => order.samples || []), (sample) => sample.id);
   const statuses = mapped.map((order) => normalizeStatus(order.status)).filter(Boolean);
-  const hasCritical = items.some((item) => normalizeStatus(item?.result_status) === 'CRITICAL');
+  const hasCritical = items.some((item) =>
+    ABNORMAL_RESULT_STATUSES.includes(normalizeStatus(item?.result_status))
+  );
   const hasRejectedItem = items.some((item) => normalizeStatus(item?.status) === 'CANCELLED');
   const hasRejectedSample = samples.some((sample) => normalizeStatus(sample?.status) === 'REJECTED');
   const activeOrders = mapped.filter((order) => !labOrderIsTerminal(order));
@@ -222,17 +224,42 @@ const mapLabPatientWorkItem = (records = []) => {
     samples};
 };
 
+const isAbnormalResultStatus = (value) =>
+  ABNORMAL_RESULT_STATUSES.includes(normalizeStatus(value));
+
+const isPendingPatientStatus = (value) =>
+  PENDING_ORDER_STATUSES.includes(normalizeStatus(value));
+
 const summarizeLabPatientGroups = (groups = []) => {
   const patientItems = groups.map(mapLabPatientWorkItem).filter(Boolean);
   const hasStatus = (item, values) => values.has(normalizeStatus(item.status));
+  const dayStart = startOfLocalDay();
+  const dayEnd = endOfLocalDay();
+  const resultEnteredToday = (item) => {
+    const reportedAt = item?.reported_at ? new Date(item.reported_at) : null;
+    const updatedAt = item?.updated_at ? new Date(item.updated_at) : null;
+    const stamp = reportedAt || updatedAt;
+    return Boolean(stamp && stamp >= dayStart && stamp < dayEnd);
+  };
+  const orderCompletedToday = (item) => {
+    if (normalizeStatus(item.status) !== 'COMPLETED') return false;
+    const stamp = item?.updated_at ? new Date(item.updated_at) : null;
+    return Boolean(stamp && stamp >= dayStart && stamp < dayEnd);
+  };
   return {
     total_patients: patientItems.length,
     actionable_patients: patientItems.filter((item) => !hasStatus(item, new Set(['COMPLETED', 'CANCELLED']))).length,
-    collection_patients: patientItems.filter((item) => hasStatus(item, new Set(['ORDERED', 'COLLECTED']))).length,
-    processing_patients: patientItems.filter((item) => hasStatus(item, new Set(['IN_PROCESS']))).length,
+    // Pending badge: patients with not-yet-completed orders.
+    collection_patients: patientItems.filter((item) => isPendingPatientStatus(item.status)).length,
+    processing_patients: 0,
     results_patients: patientItems.filter((item) => Number(item.in_process_item_count || 0) > 0).length,
-    critical_patients: patientItems.filter((item) => item.items.some((entry) => normalizeStatus(entry?.result_status) === 'CRITICAL')).length,
-    completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
+    critical_patients: patientItems.filter((item) =>
+      item.items.some(
+        (entry) =>
+          isAbnormalResultStatus(entry?.result_status) && resultEnteredToday(entry)
+      )
+    ).length,
+    completed_patients: patientItems.filter((item) => orderCompletedToday(item)).length,
     cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length,
     rejected_sample_patients: patientItems.filter((item) => item.samples.some((entry) => normalizeStatus(entry?.status) === 'REJECTED')).length};
 };
@@ -453,8 +480,55 @@ const syncLabOrderProgress = async (tx, orderId) => {
 };
 
 
+const startOfLocalDay = (value = new Date()) => {
+  const day = new Date(value);
+  day.setHours(0, 0, 0, 0);
+  return day;
+};
+
+const endOfLocalDay = (value = new Date()) => {
+  const day = startOfLocalDay(value);
+  day.setDate(day.getDate() + 1);
+  return day;
+};
+
+const PENDING_ORDER_STATUSES = Object.freeze(['ORDERED', 'COLLECTED', 'IN_PROCESS']);
+const ABNORMAL_RESULT_STATUSES = Object.freeze(['ABNORMAL', 'CRITICAL']);
+
+const labResultEnteredTodayClause = (dayStart = startOfLocalDay(), dayEnd = endOfLocalDay()) => ({
+  OR: [
+    { reported_at: { gte: dayStart, lt: dayEnd } },
+    {
+      reported_at: null,
+      updated_at: { gte: dayStart, lt: dayEnd }}]});
+
+const pendingOrdersClause = () => ({
+  status: { in: [...PENDING_ORDER_STATUSES] }});
+
+const completedTodayOrdersClause = (
+  dayStart = startOfLocalDay(),
+  dayEnd = endOfLocalDay()
+) => ({
+  status: 'COMPLETED',
+  updated_at: { gte: dayStart, lt: dayEnd }});
+
+const abnormalResultsTodayClause = (
+  dayStart = startOfLocalDay(),
+  dayEnd = endOfLocalDay()
+) => ({
+  items: {
+    some: {
+      deleted_at: null,
+      results: {
+        some: {
+          deleted_at: null,
+          status: { in: [...ABNORMAL_RESULT_STATUSES] },
+          ...labResultEnteredTodayClause(dayStart, dayEnd)}}}}});
+
 const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   const includeSearch = options.includeSearch !== false;
+  const includeStage = options.includeStage !== false;
+  const includeCriticality = options.includeCriticality !== false;
   const where = {};
 
   appendAnd(where, buildWorkbenchPatientScope(options.user));
@@ -486,44 +560,33 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
 
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
 
-  const stage = normalizeEnumFilter(filters.stage, 'ALL');
-  if (stage === 'COLLECTION') {
-    appendAnd(where, { status: { in: ['ORDERED', 'COLLECTED'] } });
-  } else if (stage === 'PROCESSING') {
-    appendAnd(where, { status: 'IN_PROCESS' });
-  } else if (stage === 'RESULTS') {
-    appendAnd(where, {
-      items: {
-        some: {
-          deleted_at: null,
-          OR: [
-            { status: { in: ['COLLECTED', 'IN_PROCESS'] } },
-            { results: { some: { deleted_at: null, status: 'PENDING' } } }]}}});
-  } else if (stage === 'COMPLETED') {
-    appendAnd(where, { status: 'COMPLETED' });
-  } else if (stage === 'CANCELLED') {
-    appendAnd(where, { status: 'CANCELLED' });
+  if (includeStage) {
+    const stage = normalizeEnumFilter(filters.stage, 'ALL');
+    // Pending = results not yet completed (includes legacy PROCESSING/RESULTS).
+    if (stage === 'COLLECTION' || stage === 'PROCESSING' || stage === 'RESULTS' || stage === 'PENDING') {
+      appendAnd(where, pendingOrdersClause());
+    } else if (stage === 'COMPLETED') {
+      appendAnd(where, completedTodayOrdersClause());
+    } else if (stage === 'CANCELLED') {
+      appendAnd(where, { status: 'CANCELLED' });
+    }
   }
 
-  const criticality = normalizeEnumFilter(filters.criticality, 'ALL');
-  if (criticality === 'CRITICAL') {
-    appendAnd(where, {
-      items: {
-        some: {
-          deleted_at: null,
-          results: {
-            some: {
-              deleted_at: null,
-              status: 'CRITICAL'}}}}});
-  } else if (criticality === 'NON_CRITICAL') {
-    appendAnd(where, {
-      items: {
-        none: {
-          deleted_at: null,
-          results: {
-            some: {
-              deleted_at: null,
-              status: 'CRITICAL'}}}}});
+  if (includeCriticality) {
+    const criticality = normalizeEnumFilter(filters.criticality, 'ALL');
+    if (criticality === 'CRITICAL') {
+      // Critical tab: abnormal / out-of-range results entered today.
+      appendAnd(where, abnormalResultsTodayClause());
+    } else if (criticality === 'NON_CRITICAL') {
+      appendAnd(where, {
+        items: {
+          none: {
+            deleted_at: null,
+            results: {
+              some: {
+                deleted_at: null,
+                status: { in: [...ABNORMAL_RESULT_STATUSES] }}}}}});
+    }
   }
 
   const searchTerm = normalizeSearchTerm(filters.search);
@@ -1070,17 +1133,33 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
     const view = normalizeWorkbenchView(filters?.view);
     const skip = (page - 1) * limit;
     const orderBy = resolveWorkbenchOrderBy(sortBy, order);
+    const dayStart = startOfLocalDay();
+    const dayEnd = endOfLocalDay();
 
+    // List filters include stage/criticality; summary counts stay independent.
     const [where, summaryWhere] = await Promise.all([
       buildWorkbenchOrderWhere(filters, { includeSearch: true, user }),
-      buildWorkbenchOrderWhere(filters, { includeSearch: false, user })]);
+      buildWorkbenchOrderWhere(filters, {
+        includeSearch: false,
+        includeStage: false,
+        includeCriticality: false,
+        user})]);
+
+    const pendingWhere = {
+      ...summaryWhere,
+      ...pendingOrdersClause()};
+    const completedTodayWhere = {
+      ...summaryWhere,
+      ...completedTodayOrdersClause(dayStart, dayEnd)};
+    const criticalTodayWhere = {
+      ...summaryWhere,
+      ...abnormalResultsTodayClause(dayStart, dayEnd)};
 
     const [
       orderWorklistRecords,
       total,
       totalOrders,
       collectionQueue,
-      processingQueue,
       completedOrders,
       cancelledOrders,
       resultsQueue,
@@ -1106,15 +1185,8 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
         ? Promise.resolve(0)
         : labWorkspaceRepository.countOrders(where),
       labWorkspaceRepository.countOrders(summaryWhere),
-      labWorkspaceRepository.countOrders({
-        ...summaryWhere,
-        status: { in: ['ORDERED', 'COLLECTED'] }}),
-      labWorkspaceRepository.countOrders({
-        ...summaryWhere,
-        status: 'IN_PROCESS'}),
-      labWorkspaceRepository.countOrders({
-        ...summaryWhere,
-        status: 'COMPLETED'}),
+      labWorkspaceRepository.countOrders(pendingWhere),
+      labWorkspaceRepository.countOrders(completedTodayWhere),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
         status: 'CANCELLED'}),
@@ -1123,13 +1195,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
         lab_order: {
           deleted_at: null,
           ...summaryWhere}}),
-      labWorkspaceRepository.countResults({
-        status: 'CRITICAL',
-        lab_order_item: {
-          deleted_at: null,
-          lab_order: {
-            deleted_at: null,
-            ...summaryWhere}}}),
+      labWorkspaceRepository.countOrders(criticalTodayWhere),
       labWorkspaceRepository.countSamples({
         status: 'REJECTED',
         lab_order: {
@@ -1163,7 +1229,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
         view: view.toLowerCase(),
         total_orders: toSafeCount(totalOrders),
         collection_queue: toSafeCount(collectionQueue),
-        processing_queue: toSafeCount(processingQueue),
+        processing_queue: 0,
         results_queue: toSafeCount(resultsQueue),
         critical_results: toSafeCount(criticalResults),
         completed_orders: toSafeCount(completedOrders),

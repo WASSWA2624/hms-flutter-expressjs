@@ -273,7 +273,7 @@ void main() {
     });
   });
 
-  group('Awaiting results tab UI authorization (AC2-AC5)', () {
+  group('Pending tab UI authorization (AC2-AC5)', () {
     testWidgets('deep link section=awaiting-results selects collection scope', (
       WidgetTester tester,
     ) async {
@@ -282,7 +282,8 @@ void main() {
         repository: repository,
       );
 
-      expect(router.state.uri.queryParameters['section'], 'awaiting-results');
+      // Stale awaiting-results alias canonicalizes to pending.
+      expect(router.state.uri.queryParameters['section'], 'pending');
       final List<LabWorkbenchQuery> queries = verify(
         () => repository.loadWorkbench(captureAny()),
       ).captured.cast<LabWorkbenchQuery>();
@@ -292,7 +293,7 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.textContaining('Awaiting results'), findsWidgets);
+      expect(find.textContaining('Pending'), findsWidgets);
       expect(_table(tester).columnVisibilityStorageKey, 'lab_collection');
     });
 
@@ -307,7 +308,7 @@ void main() {
 
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
 
         final AppLocalizations l10n = AppLocalizations.of(
@@ -344,13 +345,13 @@ void main() {
     );
 
     testWidgets(
-      'full intersection set mounts create, config, and workflow mutate',
+      'full intersection set mounts create in search bar and workflow mutate',
       (WidgetTester tester) async {
         await _pumpAwaitingResultsTab(tester, repository: repository);
 
         expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-        expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Lab Configurations'), findsNothing);
+        expect(find.byTooltip('Orders view'), findsNothing);
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
@@ -389,8 +390,8 @@ void main() {
         );
 
         expect(find.byType(AppTabStrip), findsOneWidget);
-        expect(find.textContaining('Awaiting results'), findsWidgets);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.textContaining('Pending'), findsWidgets);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
@@ -521,7 +522,7 @@ void main() {
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Orders view'), findsNothing);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -572,12 +573,12 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('Awaiting results'), findsWidgets);
+      expect(find.textContaining('Pending'), findsWidgets);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
     });
 
-    testWidgets('desktop viewport: awaiting-results chrome remains', (
+    testWidgets('desktop viewport: pending chrome remains', (
       WidgetTester tester,
     ) async {
       await _pumpAwaitingResultsTab(
@@ -588,10 +589,10 @@ void main() {
 
       expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
     });
 
-    testWidgets('dark theme: awaiting-results write chrome remains', (
+    testWidgets('dark theme: pending write chrome remains', (
       WidgetTester tester,
     ) async {
       await _pumpAwaitingResultsTab(
@@ -601,11 +602,11 @@ void main() {
       );
 
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-      expect(find.textContaining('Awaiting results'), findsWidgets);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
+      expect(find.textContaining('Pending'), findsWidgets);
     });
 
-    testWidgets('light theme: awaiting-results write chrome remains', (
+    testWidgets('light theme: pending write chrome remains', (
       WidgetTester tester,
     ) async {
       await _pumpAwaitingResultsTab(
@@ -618,7 +619,7 @@ void main() {
       expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
     });
 
-    testWidgets('legacy section=collection alias still opens awaiting tab', (
+    testWidgets('legacy section=collection alias still opens Pending tab', (
       WidgetTester tester,
     ) async {
       await _pumpAwaitingResultsTab(
@@ -636,7 +637,7 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.textContaining('Awaiting results'), findsWidgets);
+      expect(find.textContaining('Pending'), findsWidgets);
     });
   });
 }

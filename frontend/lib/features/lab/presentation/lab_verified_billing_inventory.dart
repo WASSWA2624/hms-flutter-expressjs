@@ -95,10 +95,11 @@ abstract final class LabVerifiedBillingInventory {
 
   static const LabVerifiedFinancialAtom viewToggle = LabVerifiedFinancialAtom(
     id: 'orders_patients_view_toggle',
-    label: 'Orders / Patients view toggle',
+    label: 'Orders / Patients view toggle (removed — patients-only)',
     financialClass: LabVerifiedFinancialClass.notRequired,
     requirement: LabVerifiedAtomPermissions.viewToggle,
     auditCode: 'NOT_REQUIRED',
+    mounted: false,
   );
 
   static const LabVerifiedFinancialAtom rowSelect = LabVerifiedFinancialAtom(
@@ -222,10 +223,11 @@ abstract final class LabVerifiedBillingInventory {
   static const LabVerifiedFinancialAtom configureCatalog =
       LabVerifiedFinancialAtom(
         id: 'lab_configurations',
-        label: 'Lab Configurations / catalog enable',
+        label: 'Lab Configurations / catalog enable (removed from Lab strip)',
         financialClass: LabVerifiedFinancialClass.notRequired,
         requirement: LabVerifiedAtomPermissions.configure,
         auditCode: 'NOT_REQUIRED',
+        mounted: false,
       );
 
   static const LabVerifiedFinancialAtom qcLogs = LabVerifiedFinancialAtom(

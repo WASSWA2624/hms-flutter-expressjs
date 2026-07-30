@@ -213,7 +213,7 @@ void main() {
     repository = _MockLabRepository();
   });
 
-  testWidgets('renders AppTabStrip with six section tabs and worklist table', (
+  testWidgets('renders AppTabStrip with five section tabs and worklist table', (
     WidgetTester tester,
   ) async {
     await _pumpLabWorkspace(tester, repository: repository);
@@ -222,15 +222,15 @@ void main() {
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
     expect(find.textContaining('All'), findsWidgets);
-    expect(find.textContaining('Awaiting results'), findsWidgets);
-    expect(find.textContaining('Processing'), findsWidgets);
+    expect(find.textContaining('Pending'), findsWidgets);
     expect(find.textContaining('Critical'), findsWidgets);
     expect(find.textContaining('Completed'), findsWidgets);
+    expect(find.textContaining('Processing'), findsNothing);
     expect(find.textContaining('Pending verification'), findsNothing);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
-    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsNothing);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
@@ -254,38 +254,49 @@ void main() {
     expect(find.text(l10n.labTitle), findsNothing);
   });
 
-  testWidgets('keeps stable create primary and configurations secondary', (
-    WidgetTester tester,
-  ) async {
-    final GoRouter router = await _pumpLabWorkspace(
-      tester,
-      repository: repository,
-    );
+  testWidgets(
+    'section=processing redirects to Pending; create stays in search bar',
+    (WidgetTester tester) async {
+      final GoRouter router = await _pumpLabWorkspace(
+        tester,
+        repository: repository,
+      );
 
-    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsNothing);
+      expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
+      expect(find.byTooltip('Orders view'), findsNothing);
+      expect(find.byTooltip('Refresh'), findsNothing);
 
-    // Prefer deep links over tab taps: AppTheme tab widths can overflow later
-    // sections into the More menu (labels not mounted until opened).
-    router.go('/lab?section=processing');
-    await tester.pumpAndSettle();
+      // section=processing is a stale alias that must redirect to Pending.
+      router.go('/lab?section=processing');
+      await tester.pumpAndSettle();
 
-    expect(router.state.uri.queryParameters['section'], 'processing');
-    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsNothing);
-    expect(_table(tester).columnVisibilityStorageKey, 'lab_processing');
+      // After redirect the active section must be collection (Pending).
+      final String? section =
+          router.state.uri.queryParameters['section'];
+      expect(
+        section == null ||
+            section == 'pending' ||
+            section == 'collection' ||
+            section == 'awaiting-results',
+        isTrue,
+        reason: 'section=processing must resolve to Pending, got: $section',
+      );
+      expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
 
-    router.go('/lab?section=verified');
-    await tester.pumpAndSettle();
+      router.go('/lab?section=verified');
+      await tester.pumpAndSettle();
 
-    expect(router.state.uri.queryParameters['section'], 'verified');
-    expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsNothing);
-    expect(_table(tester).columnVisibilityStorageKey, 'lab_completed');
-  });
+      expect(
+        router.state.uri.queryParameters['section'],
+        'completed-today',
+      );
+      expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
+      expect(_table(tester).columnVisibilityStorageKey, 'lab_completed');
+    },
+  );
 
   testWidgets('deep link section=critical selects Critical tab', (
     WidgetTester tester,
@@ -307,7 +318,7 @@ void main() {
       isTrue,
     );
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'lab_critical');
   });
 
@@ -357,7 +368,7 @@ void main() {
 
     expect(find.byTooltip('Create Lab Order'), findsNothing);
     expect(find.byTooltip('Lab Configurations'), findsNothing);
-    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.textContaining('All'), findsWidgets);
     expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
@@ -408,20 +419,20 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.textContaining('All'), findsWidgets);
-      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Orders view'), findsNothing);
       expect(find.byTooltip('Create Lab Order'), findsNothing);
       expect(find.byTooltip('Lab Configurations'), findsNothing);
       expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
     },
   );
 
-  testWidgets('full write set mounts create and configurations on All', (
+  testWidgets('full write set mounts create in search bar on All', (
     WidgetTester tester,
   ) async {
     await _pumpLabWorkspace(tester, repository: repository);
 
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(find.textContaining('All'), findsWidgets);
   });
 
@@ -497,7 +508,7 @@ void main() {
 
     expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
   });
 
   testWidgets('dark theme: All tab write chrome remains', (
@@ -510,7 +521,7 @@ void main() {
     );
 
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-    expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+    expect(find.byTooltip('Lab Configurations'), findsNothing);
     expect(find.textContaining('All'), findsWidgets);
   });
 

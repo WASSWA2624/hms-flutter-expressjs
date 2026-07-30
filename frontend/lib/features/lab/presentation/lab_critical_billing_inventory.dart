@@ -96,10 +96,11 @@ abstract final class LabCriticalBillingInventory {
 
   static const LabCriticalFinancialAtom viewToggle = LabCriticalFinancialAtom(
     id: 'orders_patients_view_toggle',
-    label: 'Orders / Patients view toggle',
+    label: 'Orders / Patients view toggle (removed — patients-only)',
     financialClass: LabCriticalFinancialClass.notRequired,
     requirement: LabCriticalAtomPermissions.viewToggle,
     auditCode: 'NOT_REQUIRED',
+    mounted: false,
   );
 
   static const LabCriticalFinancialAtom rowSelect = LabCriticalFinancialAtom(
@@ -213,10 +214,11 @@ abstract final class LabCriticalBillingInventory {
   static const LabCriticalFinancialAtom configureCatalog =
       LabCriticalFinancialAtom(
         id: 'lab_configurations',
-        label: 'Lab Configurations / catalog enable',
+        label: 'Lab Configurations / catalog enable (removed from Lab strip)',
         financialClass: LabCriticalFinancialClass.notRequired,
         requirement: LabCriticalAtomPermissions.configure,
         auditCode: 'NOT_REQUIRED',
+        mounted: false,
       );
 
   static const LabCriticalFinancialAtom qcLogs = LabCriticalFinancialAtom(

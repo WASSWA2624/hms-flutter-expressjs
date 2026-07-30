@@ -12939,7 +12939,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeAll => 'All';
 
   @override
-  String get labScopeCollection => 'Awaiting results';
+  String get labScopeCollection => 'Pending';
 
   @override
   String get labScopeProcessing => 'Processing';
@@ -12951,7 +12951,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeCritical => 'Critical';
 
   @override
-  String get labScopeCompleted => 'Completed';
+  String get labScopeCompleted => 'Completed today';
 
   @override
   String get labScopeCancelled => 'Cancelled';

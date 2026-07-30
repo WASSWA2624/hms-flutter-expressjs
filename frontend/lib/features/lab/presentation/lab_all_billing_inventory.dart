@@ -74,10 +74,11 @@ abstract final class LabAllBillingInventory {
 
   static const LabAllFinancialAtom viewToggle = LabAllFinancialAtom(
     id: 'view_toggle',
-    label: 'Orders ↔ Patients view toggle',
+    label: 'Orders ↔ Patients view toggle (removed — patients-only worklist)',
     financialClass: LabAllFinancialClass.notRequired,
     requirement: LabAllAtomPermissions.viewToggle,
     auditCode: 'NOT_REQUIRED',
+    mounted: false,
   );
 
   static const LabAllFinancialAtom createOrder = LabAllFinancialAtom(
@@ -91,10 +92,11 @@ abstract final class LabAllBillingInventory {
 
   static const LabAllFinancialAtom configure = LabAllFinancialAtom(
     id: 'configure',
-    label: 'Lab Configurations / catalog unit prices',
+    label: 'Lab Configurations / catalog unit prices (removed from Lab strip)',
     financialClass: LabAllFinancialClass.notBilled,
     requirement: LabAllAtomPermissions.configure,
     auditCode: 'NOT_BILLED',
+    mounted: false,
   );
 
   static const LabAllFinancialAtom rowSelect = LabAllFinancialAtom(

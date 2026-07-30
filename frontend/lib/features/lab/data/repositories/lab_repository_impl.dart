@@ -608,7 +608,6 @@ final class LabRepositoryImpl implements LabRepository {
   String? _stageFor(LabQueueScope scope) {
     return switch (scope) {
       LabQueueScope.collection => 'COLLECTION',
-      LabQueueScope.processing => 'PROCESSING',
       LabQueueScope.completed => 'COMPLETED',
       LabQueueScope.cancelled => 'CANCELLED',
       LabQueueScope.all || LabQueueScope.critical => null,

@@ -576,7 +576,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
       result_flag: 'HIGH',
       is_positive: false,
       reference_range_label: 'Adult',
-      reference_range_summary: 'Adult | Unit x10^9/L | 4.0 - 11.0',
+      reference_range_summary: 'Adult | 4.0 - 11.0 x10^9/L',
       reported_at: ctx.date(-1, 90),
     },
     {
@@ -597,7 +597,7 @@ const seedClinicalPack = async (ctx, orgPack, accessPack, catalogPack = null) =>
       result_flag: 'HIGH',
       is_positive: false,
       reference_range_label: 'Adult',
-      reference_range_summary: 'Adult | Unit mg/L | < 10',
+      reference_range_summary: 'Adult | < 10 mg/L',
       reported_at: ctx.date(-1, 92),
     },
     {

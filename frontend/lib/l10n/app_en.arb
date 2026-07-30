@@ -16550,13 +16550,13 @@
   "@labScopeAll": {
     "description": "Localized text for labScopeAll."
   },
-  "labScopeCollection": "Awaiting results",
+  "labScopeCollection": "Pending",
   "@labScopeCollection": {
-    "description": "Localized text for labScopeCollection."
+    "description": "Lab queue tab for orders whose results are not yet completed."
   },
   "labScopeProcessing": "Processing",
   "@labScopeProcessing": {
-    "description": "Localized text for labScopeProcessing."
+    "description": "Deprecated lab queue label retained for localization compatibility."
   },
   "labScopeResults": "Enter results",
   "@labScopeResults": {
@@ -16566,9 +16566,9 @@
   "@labScopeCritical": {
     "description": "Localized text for labScopeCritical."
   },
-  "labScopeCompleted": "Completed",
+  "labScopeCompleted": "Completed today",
   "@labScopeCompleted": {
-    "description": "Localized text for labScopeCompleted."
+    "description": "Lab queue tab for results completed on the current facility day."
   },
   "labScopeCancelled": "Cancelled",
   "@labScopeCancelled": {

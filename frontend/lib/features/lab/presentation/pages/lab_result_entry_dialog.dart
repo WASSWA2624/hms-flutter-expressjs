@@ -17,6 +17,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_result_value_unit_fields.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
@@ -1422,6 +1424,7 @@ class _LabReferenceRangeCell extends StatelessWidget {
             controller: draft.referenceRangeOverrideController,
             labelText: l10n.labReferenceRangeOverrideLabel,
             enabled: draft.enabled,
+            isDense: true,
             onChanged: (_) => draft.notifyChanged(),
           ),
         ],
@@ -1474,59 +1477,25 @@ class _CompactResultInputState extends State<_CompactResultInput> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (item.isNumeric) ...<Widget>[
-              LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool stackFields = constraints.maxWidth < 420;
-                  final Widget valueField = AppTextField(
-                    controller: widget.draft.valueController,
-                    labelText: l10n.labResultValueLabel,
-                    enabled: enabled,
-                    isDense: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    onChanged: enabled
-                        ? (_) => widget.draft.notifyChanged()
-                        : null,
-                    validator: (String? value) {
-                      final String normalized = value?.trim() ?? '';
-                      if (normalized.isEmpty) {
-                        return null;
+              LabResultValueUnitFields(
+                valueController: widget.draft.valueController,
+                unitController: widget.draft.unitController,
+                item: item,
+                enabled: enabled,
+                onChanged: enabled
+                    ? () {
+                        setState(() {});
+                        widget.draft.notifyChanged();
                       }
-                      return num.tryParse(normalized) == null
-                          ? l10n.labNumericRangeValidationMessage
-                          : null;
-                    },
-                  );
-                  final Widget unitField = _ResultUnitInput(
-                    item: item,
-                    controller: widget.draft.unitController,
-                    enabled: enabled,
-                    onChanged: () {
-                      setState(() {});
-                      widget.draft.notifyChanged();
-                    },
-                  );
-
-                  if (stackFields) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        valueField,
-                        SizedBox(height: theme.spacing.xs),
-                        unitField,
-                      ],
-                    );
+                    : null,
+                valueValidator: (String? value) {
+                  final String normalized = value?.trim() ?? '';
+                  if (normalized.isEmpty) {
+                    return null;
                   }
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(flex: 3, child: valueField),
-                      SizedBox(width: theme.spacing.sm),
-                      Expanded(flex: 2, child: unitField),
-                    ],
-                  );
+                  return num.tryParse(normalized) == null
+                      ? l10n.labNumericRangeValidationMessage
+                      : null;
                 },
               ),
             ] else if (item.isQualitative && item.resultOptions.isNotEmpty)
@@ -1534,6 +1503,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                 value: widget.draft.selectedOption,
                 labelText: l10n.labResultValueLabel,
                 enabled: enabled,
+                isDense: true,
                 options: <AppSelectOption<String>>[
                   for (final LabResultOption option in item.resultOptions)
                     AppSelectOption<String>(
@@ -1599,55 +1569,6 @@ class _CompactResultInputState extends State<_CompactResultInput> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ResultUnitInput extends StatelessWidget {
-  const _ResultUnitInput({
-    required this.item,
-    required this.controller,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final LabOrderItem item;
-  final TextEditingController controller;
-  final bool enabled;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    if (item.unitOptions.isEmpty) {
-      return AppTextField(
-        controller: controller,
-        labelText: l10n.labResultUnitLabel,
-        enabled: enabled,
-        isDense: true,
-      );
-    }
-
-    return AppSelectField<String>(
-      value: controller.text.trim().isEmpty ? null : controller.text.trim(),
-      labelText: l10n.labResultUnitLabel,
-      enabled: enabled,
-      allowClear: false,
-      isDense: true,
-      options: <AppSelectOption<String>>[
-        for (final LabUnitOption option in item.unitOptions)
-          AppSelectOption<String>(
-            value: option.unit ?? option.label ?? option.id,
-            label: option.displayLabel,
-            leadingIcon: const Icon(Icons.straighten_outlined),
-            searchText:
-                '${option.id} ${option.label ?? ''} ${option.unit ?? ''}',
-          ),
-      ],
-      onChanged: (String? value) {
-        controller.text = value ?? '';
-        onChanged();
-      },
     );
   }
 }
@@ -2745,13 +2666,14 @@ class _ReopenSavedResultDialogState
   List<Widget> _buildValueEditor(AppLocalizations l10n) {
     if (_item.isNumeric) {
       return <Widget>[
-        AppTextField(
-          controller: _valueController,
-          labelText: l10n.labResultValueLabel,
-          isRequired: true,
+        LabResultValueUnitFields(
+          valueController: _valueController,
+          unitController: _unitController,
+          item: _item,
           enabled: !_isSaving,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          validator: (String? value) {
+          valueRequired: true,
+          onChanged: () => setState(() {}),
+          valueValidator: (String? value) {
             final String normalized = value?.trim() ?? '';
             if (normalized.isEmpty) {
               return l10n.validationRequired;
@@ -2760,13 +2682,6 @@ class _ReopenSavedResultDialogState
                 ? l10n.labNumericRangeValidationMessage
                 : null;
           },
-        ),
-        SizedBox(height: Theme.of(context).spacing.xs),
-        _ResultUnitInput(
-          item: _item,
-          controller: _unitController,
-          enabled: !_isSaving,
-          onChanged: () => setState(() {}),
         ),
       ];
     }
@@ -2777,6 +2692,7 @@ class _ReopenSavedResultDialogState
           labelText: l10n.labResultValueLabel,
           isRequired: true,
           enabled: !_isSaving,
+          isDense: true,
           options: <AppSelectOption<String>>[
             for (final LabResultOption option in _item.resultOptions)
               AppSelectOption<String>(
@@ -2806,6 +2722,7 @@ class _ReopenSavedResultDialogState
             : l10n.labResultTextLabel,
         isRequired: true,
         enabled: !_isSaving,
+        isDense: true,
         maxLines: _item.isText ? 3 : 1,
         validator: AppValidators.minLength(
           1,
@@ -2943,8 +2860,8 @@ String? _computedNumericFlagToken(
     return null;
   }
 
-  final LabReferenceRange? range = _resolveReferenceRange(
-    item,
+  final LabReferenceRange? range = resolveLabReferenceRangeForPatient(
+    item.referenceRanges,
     patientGender: patientGender,
   );
   if (range == null) {
@@ -3266,201 +3183,10 @@ String? resolveDisplayReferenceRange(
   LabOrderItem item, {
   String? patientGender,
 }) {
-  if (item.interpretationOverride) {
-    final String? overrideText = item.referenceRangeOverride?.trim();
-    if (overrideText != null && overrideText.isNotEmpty) {
-      return overrideText;
-    }
-  }
-
-  final LabReferenceRange? chosen = _resolveReferenceRange(
+  return resolveLabOrderItemDisplayReferenceRange(
     item,
     patientGender: patientGender,
   );
-  if (chosen != null) {
-    final String? built = _referenceRangeDisplayText(chosen);
-    if (built != null) {
-      return built;
-    }
-  }
-
-  final String? fallback = item.displayReferenceRange?.trim();
-  if (fallback == null || fallback.isEmpty) {
-    return null;
-  }
-  return _rewriteLegacyUnitInRangeSummary(fallback);
-}
-
-LabReferenceRange? _resolveReferenceRange(
-  LabOrderItem item, {
-  String? patientGender,
-}) {
-  final String? normalizedGender = _normalizeGenderToken(patientGender);
-  LabReferenceRange? exactMatch;
-  LabReferenceRange? unspecifiedMatch;
-  for (final LabReferenceRange range in item.referenceRanges) {
-    final String? rangeGender = _normalizeGenderToken(range.gender);
-    if (normalizedGender != null &&
-        rangeGender != null &&
-        rangeGender == normalizedGender) {
-      exactMatch ??= range;
-      continue;
-    }
-    if (rangeGender == null ||
-        rangeGender == 'ANY' ||
-        rangeGender == 'ALL' ||
-        rangeGender.isEmpty) {
-      unspecifiedMatch ??= range;
-    }
-  }
-  return exactMatch ?? unspecifiedMatch;
-}
-
-String? _normalizeGenderToken(String? value) {
-  final String normalized = (value ?? '').trim().toUpperCase();
-  if (normalized.isEmpty) {
-    return null;
-  }
-  return switch (normalized) {
-    'M' || 'MALE' || 'MAN' => 'MALE',
-    'F' || 'FEMALE' || 'WOMAN' => 'FEMALE',
-    'OTHER' || 'O' || 'UNKNOWN' || 'U' || 'ANY' || 'ALL' => normalized,
-    _ => normalized,
-  };
-}
-
-String? _referenceRangeDisplayText(LabReferenceRange range) {
-  final String? unit = range.unit?.trim();
-  final String? text = range.referenceText?.trim();
-  final String? bounds = _referenceRangeBoundsSummary(range);
-  final bool hasStructuredRange =
-      (text != null && text.isNotEmpty) ||
-      (bounds != null && bounds.isNotEmpty);
-
-  if (hasStructuredRange) {
-    final List<String> parts = <String>[];
-
-    final String? label = range.label?.trim();
-    if (label != null && label.isNotEmpty) {
-      parts.add(label);
-    }
-
-    final String? method = range.method?.trim();
-    if (method != null && method.isNotEmpty) {
-      parts.add('Method $method');
-    }
-
-    final String? gender = range.gender?.trim();
-    if (gender != null && gender.isNotEmpty) {
-      parts.add(gender);
-    }
-
-    final String? ageSummary = _referenceRangeAgeSummary(range);
-    if (ageSummary != null) {
-      parts.add(ageSummary);
-    }
-
-    final String rangeCore =
-        (text != null && text.isNotEmpty) ? text : bounds!;
-    final bool alreadyHasUnit =
-        unit != null && unit.isNotEmpty && rangeCore.contains(unit);
-    parts.add(
-      unit != null && unit.isNotEmpty && !alreadyHasUnit
-          ? '$rangeCore $unit'
-          : rangeCore,
-    );
-    return parts.join(' | ');
-  }
-
-  final String? summary = range.summary?.trim();
-  if (summary != null && summary.isNotEmpty) {
-    return _rewriteLegacyUnitInRangeSummary(summary);
-  }
-
-  final String? label = range.label?.trim();
-  if (label != null && label.isNotEmpty) {
-    return label;
-  }
-  if (unit != null && unit.isNotEmpty) {
-    return unit;
-  }
-  return null;
-}
-
-String? _referenceRangeAgeSummary(LabReferenceRange range) {
-  final String? ageMin = _formatReferenceAge(range.ageMinValue, range.ageMinUnit);
-  final String? ageMax = _formatReferenceAge(range.ageMaxValue, range.ageMaxUnit);
-  if (ageMin != null && ageMax != null) {
-    return '$ageMin to $ageMax';
-  }
-  if (ageMin != null) {
-    return '$ageMin+';
-  }
-  if (ageMax != null) {
-    return 'up to $ageMax';
-  }
-  return null;
-}
-
-String? _formatReferenceAge(num? value, String? unit) {
-  if (value == null) {
-    return null;
-  }
-  final String unitLabel = (unit ?? '').trim().toLowerCase();
-  final String amount = value % 1 == 0
-      ? value.toInt().toString()
-      : value.toString();
-  if (unitLabel.isEmpty) {
-    return amount;
-  }
-  final String plural = value == 1 ? unitLabel : '${unitLabel}s';
-  return '$amount $plural';
-}
-
-String? _referenceRangeBoundsSummary(LabReferenceRange range) {
-  final String? min = range.normalMinValue?.toString().trim();
-  final String? max = range.normalMaxValue?.toString().trim();
-  if ((min == null || min.isEmpty) && (max == null || max.isEmpty)) {
-    return null;
-  }
-  return switch ((min, max)) {
-    (final String lower, final String upper)
-        when lower.isNotEmpty && upper.isNotEmpty =>
-      '$lower - $upper',
-    (final String lower, _) when lower.isNotEmpty => '≥ $lower',
-    (_, final String upper) when upper.isNotEmpty => '≤ $upper',
-    _ => null,
-  };
-}
-
-/// Moves legacy `Unit g/dL` fragments after the numeric range and drops "Unit".
-String _rewriteLegacyUnitInRangeSummary(String summary) {
-  final List<String> fragments = summary
-      .split(' | ')
-      .map((String part) => part.trim())
-      .where((String part) => part.isNotEmpty)
-      .toList();
-  String? unit;
-  final List<String> kept = <String>[];
-  for (final String fragment in fragments) {
-    final String lower = fragment.toLowerCase();
-    if (lower.startsWith('unit ')) {
-      final String extracted = fragment.substring(5).trim();
-      if (extracted.isNotEmpty) {
-        unit = extracted;
-      }
-      continue;
-    }
-    kept.add(fragment);
-  }
-  if (unit == null || unit.isEmpty || kept.isEmpty) {
-    return kept.isEmpty ? summary : kept.join(' | ');
-  }
-  final String last = kept.last;
-  if (!last.contains(unit)) {
-    kept[kept.length - 1] = '$last $unit';
-  }
-  return kept.join(' | ');
 }
 
 String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {

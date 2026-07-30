@@ -157,6 +157,7 @@ class LabSearchableTextField extends StatefulWidget {
     required this.options,
     this.enabled = true,
     this.isRequired = false,
+    this.isDense = false,
     this.hintText,
     this.prefixIcon,
     this.suffixIcon,
@@ -172,6 +173,7 @@ class LabSearchableTextField extends StatefulWidget {
   final List<String> options;
   final bool enabled;
   final bool isRequired;
+  final bool isDense;
   final String? hintText;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
@@ -239,6 +241,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
               suffixIcon: widget.suffixIcon,
               enabled: widget.enabled,
               isRequired: widget.isRequired,
+              isDense: widget.isDense,
               validator: widget.validator,
               onChanged: widget.onChanged,
               onFieldSubmitted: (String value) {

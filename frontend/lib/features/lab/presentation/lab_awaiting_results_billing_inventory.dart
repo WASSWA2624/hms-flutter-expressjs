@@ -98,10 +98,11 @@ abstract final class LabAwaitingResultsBillingInventory {
   static const LabAwaitingResultsFinancialAtom viewToggle =
       LabAwaitingResultsFinancialAtom(
         id: 'orders_patients_view_toggle',
-        label: 'Orders / Patients view toggle',
+        label: 'Orders / Patients view toggle (removed — patients-only)',
         financialClass: LabAwaitingResultsFinancialClass.notRequired,
         requirement: LabAwaitingResultsAtomPermissions.viewToggle,
         auditCode: 'NOT_REQUIRED',
+        mounted: false,
       );
 
   static const LabAwaitingResultsFinancialAtom rowSelect =
@@ -221,10 +222,11 @@ abstract final class LabAwaitingResultsBillingInventory {
   static const LabAwaitingResultsFinancialAtom configureCatalog =
       LabAwaitingResultsFinancialAtom(
         id: 'lab_configurations',
-        label: 'Lab Configurations / catalog enable',
+        label: 'Lab Configurations / catalog enable (removed from Lab strip)',
         financialClass: LabAwaitingResultsFinancialClass.notRequired,
         requirement: LabAwaitingResultsAtomPermissions.configure,
         auditCode: 'NOT_REQUIRED',
+        mounted: false,
       );
 
   static const LabAwaitingResultsFinancialAtom qcLogs =

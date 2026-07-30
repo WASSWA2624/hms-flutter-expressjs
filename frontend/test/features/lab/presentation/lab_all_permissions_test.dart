@@ -279,13 +279,6 @@ void main() {
         ),
         isTrue,
       );
-      expect(
-        identical(
-          labStripConfigureRequirement(LabDeskSection.worklist),
-          LabAllAtomPermissions.configure,
-        ),
-        isTrue,
-      );
     });
   });
 
@@ -298,7 +291,7 @@ void main() {
         repository: repository,
       );
 
-      expect(router.state.uri.queryParameters['section'], 'all');
+      expect(router.state.uri.queryParameters['section'], 'worklist');
       final List<LabWorkbenchQuery> queries = verify(
         () => repository.loadWorkbench(captureAny()),
       ).captured.cast<LabWorkbenchQuery>();
@@ -321,7 +314,7 @@ void main() {
 
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
 
         final AppLocalizations l10n = AppLocalizations.of(
@@ -358,13 +351,13 @@ void main() {
     );
 
     testWidgets(
-      'full intersection set mounts create, config, and workflow mutate',
+      'full intersection set mounts create in search bar and workflow mutate',
       (WidgetTester tester) async {
         await _pumpAllTab(tester, repository: repository);
 
         expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-        expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Lab Configurations'), findsNothing);
+        expect(find.byTooltip('Orders view'), findsNothing);
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
@@ -404,7 +397,7 @@ void main() {
 
         expect(find.byType(AppTabStrip), findsOneWidget);
         expect(find.textContaining('All'), findsWidgets);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
         expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
@@ -529,7 +522,7 @@ void main() {
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Orders view'), findsNothing);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -596,7 +589,7 @@ void main() {
 
       expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
     });
 
     testWidgets('dark theme: All write chrome remains', (
@@ -609,7 +602,7 @@ void main() {
       );
 
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
-      expect(find.byTooltip('Lab Configurations'), findsOneWidget);
+      expect(find.byTooltip('Lab Configurations'), findsNothing);
       expect(find.textContaining('All'), findsWidgets);
     });
 

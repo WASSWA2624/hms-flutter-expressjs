@@ -1022,6 +1022,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   prefixIcon: const Icon(Icons.inventory_2_outlined),
                   enabled: enabled,
                   isRequired: true,
+                  isDense: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
                   validator: (String? value) =>
@@ -1031,6 +1032,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   value: line.quantityUnit,
                   labelText: l10n.clinicalPrescriptionQuantityUnitLabel,
                   enabled: enabled,
+                  isDense: true,
                   options: _unitOptions(_quantityUnits),
                   onChanged: (String? value) {
                     line.quantityUnit = value;
@@ -1048,6 +1050,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   prefixIcon: const Icon(Icons.science_outlined),
                   enabled: enabled,
                   isRequired: true,
+                  isDense: true,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -1059,6 +1062,7 @@ class _PrescriptionLineCard extends StatelessWidget {
                   value: line.doseUnit,
                   labelText: l10n.clinicalDoseUnitLabel,
                   enabled: enabled,
+                  isDense: true,
                   options: _unitOptions(_doseUnits),
                   onChanged: (String? value) {
                     line.doseUnit = value;
@@ -1260,6 +1264,7 @@ class _PrescriptionDurationField extends StatelessWidget {
                   labelText: l10n.clinicalDurationValueLabel,
                   prefixIcon: const Icon(Icons.timer_outlined),
                   enabled: enabled,
+                  isDense: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerFormatters,
                   validator: (String? value) =>
@@ -1269,6 +1274,7 @@ class _PrescriptionDurationField extends StatelessWidget {
                   value: line.durationUnit,
                   labelText: l10n.clinicalDurationUnitLabel,
                   enabled: enabled,
+                  isDense: true,
                   options: _durationUnitOptions(),
                   validator: (String? value) {
                     final bool hasDuration = line.durationController.text

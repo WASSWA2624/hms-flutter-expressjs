@@ -23906,13 +23906,13 @@ abstract class AppLocalizations {
   /// **'All'**
   String get labScopeAll;
 
-  /// Localized text for labScopeCollection.
+  /// Lab queue tab for orders whose results are not yet completed.
   ///
   /// In en, this message translates to:
-  /// **'Awaiting results'**
+  /// **'Pending'**
   String get labScopeCollection;
 
-  /// Localized text for labScopeProcessing.
+  /// Deprecated lab queue label retained for localization compatibility.
   ///
   /// In en, this message translates to:
   /// **'Processing'**
@@ -23930,10 +23930,10 @@ abstract class AppLocalizations {
   /// **'Critical'**
   String get labScopeCritical;
 
-  /// Localized text for labScopeCompleted.
+  /// Lab queue tab for results completed on the current facility day.
   ///
   /// In en, this message translates to:
-  /// **'Completed'**
+  /// **'Completed today'**
   String get labScopeCompleted;
 
   /// Localized text for labScopeCancelled.

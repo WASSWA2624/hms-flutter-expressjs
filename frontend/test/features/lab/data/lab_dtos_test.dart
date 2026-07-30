@@ -125,7 +125,10 @@ void main() {
         item.appliedReferenceRange?['summary'],
         'Adult ISE | Unit mg/dL | 3.6 - 5.2',
       );
-      expect(item.displayReferenceRange, 'Adult ISE | Unit mg/dL | 3.6 - 5.2');
+      expect(
+        item.displayReferenceRange,
+        'Adult ISE | 3.6000 - 5.2000 mg/dL',
+      );
     });
   });
 

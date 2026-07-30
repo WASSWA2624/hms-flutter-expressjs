@@ -917,6 +917,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
               controller: range.rangeUnitController,
               labelText: l10n.labResultUnitLabel,
               enabled: enabled,
+              isDense: true,
               prefixIcon: const Icon(Icons.straighten_outlined),
               options: labUniqueNonEmpty(<String?>[
                 ...unitSuggestions,
@@ -932,6 +933,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 controller: range.normalMinController,
                 labelText: l10n.labNormalMinLabel,
                 enabled: enabled,
+                isDense: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                   signed: true,
@@ -942,6 +944,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 controller: range.normalMaxController,
                 labelText: l10n.labNormalMaxLabel,
                 enabled: enabled,
+                isDense: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                   signed: true,
@@ -956,6 +959,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 controller: range.criticalMinController,
                 labelText: l10n.labCriticalMinLabel,
                 enabled: enabled,
+                isDense: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                   signed: true,
@@ -966,6 +970,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 controller: range.criticalMaxController,
                 labelText: l10n.labCriticalMaxLabel,
                 enabled: enabled,
+                isDense: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                   signed: true,
@@ -1191,6 +1196,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
             labelText: l10n.labAgeUnitLabel,
             enabled: boundsEnabled,
             allowClear: false,
+            isDense: true,
             options: <AppSelectOption<String>>[
               AppSelectOption<String>(
                 value: 'DAY',
@@ -1227,6 +1233,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
               controller: range.ageMinController,
               labelText: l10n.labAgeMinLabel,
               enabled: boundsEnabled,
+              isDense: true,
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.digitsOnly,
@@ -1243,6 +1250,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
               controller: range.ageMaxController,
               labelText: l10n.labAgeMaxLabel,
               enabled: boundsEnabled,
+              isDense: true,
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.digitsOnly,

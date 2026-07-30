@@ -98,42 +98,26 @@ const AccessRequirement labOpenBillingRequirement =
 
 /// Per-section tab strip gate.
 ///
-/// Worklist tabs (including All / Awaiting results / Processing / Critical /
-/// Completed) share ∩ `lab:read` + `lab-workflows`;
-/// Follow-ups uses [labFollowUpsRequirement].
+/// Worklist tabs (All / Pending / Critical / Completed today) share ∩ `lab:read`
+/// + `lab-workflows`; Follow-ups uses [labFollowUpsRequirement].
 AccessRequirement labSectionTabRequirement(LabDeskSection section) {
   return switch (section) {
     LabDeskSection.followUps => LabFollowUpsAtomPermissions.tab,
     LabDeskSection.worklist => LabAllAtomPermissions.tab,
     LabDeskSection.collection => LabAwaitingResultsAtomPermissions.tab,
-    LabDeskSection.processing => LabProcessingAtomPermissions.tab,
     LabDeskSection.critical => LabCriticalAtomPermissions.tab,
     LabDeskSection.completed => LabVerifiedAtomPermissions.tab,
   };
 }
 
-/// Strip **Create Lab Order** gate for the active worklist section.
+/// **Create Lab Order** gate for the active worklist section (search-bar action).
 AccessRequirement labStripCreateRequirement(LabDeskSection section) {
   return switch (section) {
     LabDeskSection.worklist => LabAllAtomPermissions.create,
     LabDeskSection.collection => LabAwaitingResultsAtomPermissions.create,
-    LabDeskSection.processing => LabProcessingAtomPermissions.create,
     LabDeskSection.critical => LabCriticalAtomPermissions.create,
     LabDeskSection.completed => LabVerifiedAtomPermissions.create,
     LabDeskSection.followUps => LabFollowUpsAtomPermissions.create,
-  };
-}
-
-/// Strip **Lab Configurations** gate for the active worklist section.
-AccessRequirement labStripConfigureRequirement(LabDeskSection section) {
-  return switch (section) {
-    LabDeskSection.worklist => LabAllAtomPermissions.configure,
-    LabDeskSection.collection => LabAwaitingResultsAtomPermissions.configure,
-    LabDeskSection.processing => LabProcessingAtomPermissions.configure,
-    LabDeskSection.critical => LabCriticalAtomPermissions.configure,
-    LabDeskSection.completed => LabVerifiedAtomPermissions.configure,
-    // Follow-ups mounts no Configurations chrome; keep write ∩ if ever reused.
-    LabDeskSection.followUps => LabFollowUpsAtomPermissions.write,
   };
 }
 
@@ -210,8 +194,9 @@ LabDeskSection? labFallbackSection(AppAccessPolicy policy) {
   if (allowed.isEmpty) {
     return null;
   }
-  if (allowed.contains(LabDeskSection.worklist)) {
-    return LabDeskSection.worklist;
+  // Default landing tab is Pending when available.
+  if (allowed.contains(LabDeskSection.collection)) {
+    return LabDeskSection.collection;
   }
   return allowed.first;
 }
@@ -368,109 +353,19 @@ bool canViewLabAwaitingResultsTab(AppAccessPolicy policy) {
   return LabAwaitingResultsAtomPermissions.tab.isAllowed(policy);
 }
 
-/// Atom → requirement map for Lab Processing (`/lab?section=processing`).
-///
-/// Inventory: `screens/lab.md` → Processing tab (in-lab processing queue;
-/// `IN_PROCESS` scope). Nested cross-module matrix rows are _(n/a)_;
-/// request-from-clinical ∪ is documented via [requestFromClinical] for reuse,
-/// not as a Processing strip control. Critical notify ∩ is [criticalNotify]
-/// (no dedicated chrome on this tab today). Result entry and verification need
-/// ∩ `lab:write`. Readers with only `clinical:read` must not see config/create.
-///
-/// | Atom | Kind | Gate |
-/// | --- | --- | --- |
-/// | Processing strip tab / count | navigate | read ∩ `lab:read` |
-/// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
-/// | Orders view / Patients view toggle | navigate | read ∩ |
-/// | Create Lab Order (primary) | create | write ∩ `lab:write` |
-/// | Lab Configurations (secondary) | update | write ∩ |
-/// | Row select / Next action → result entry | read / navigate | read ∩ |
-/// | Detail Preview report | export / read | preview ∪ lab read\|write |
-/// | Detail Create additional order | create | write ∩ |
-/// | Detail Edit / Delete order | update / delete | write ∩ |
-/// | Workflow Collect / Receive / Save results / Reverse | update | write ∩ |
-/// | Bulk / item result save / reject / delete | create / update / delete | write ∩ |
-/// | Nested configurations catalog enable | update | write ∩ |
-/// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
-/// | Critical notify (narrative ∩) | approve / update | lab:write ∩ clinical:read |
-/// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write |
-abstract final class LabProcessingAtomPermissions {
-  static const AccessRequirement tab = labWorkspaceReadRequirement;
-  static const AccessRequirement listChrome = labWorkspaceReadRequirement;
-  static const AccessRequirement search = labWorkspaceReadRequirement;
-  static const AccessRequirement filters = labWorkspaceReadRequirement;
-  static const AccessRequirement settings = labWorkspaceReadRequirement;
-  static const AccessRequirement pagination = labWorkspaceReadRequirement;
-  static const AccessRequirement empty = labWorkspaceReadRequirement;
-  static const AccessRequirement loading = labWorkspaceReadRequirement;
-  static const AccessRequirement retry = labWorkspaceReadRequirement;
-  /// Authorized success snackbar path (mutation entry already write-gated).
-  static const AccessRequirement success = labWorkspaceWriteRequirement;
-  /// Authorized form validation feedback (nested write dialogs).
-  static const AccessRequirement validation = labWorkspaceWriteRequirement;
-  static const AccessRequirement rowSelect = labWorkspaceReadRequirement;
-  static const AccessRequirement detail = labWorkspaceReadRequirement;
-  static const AccessRequirement nextAction = labWorkspaceReadRequirement;
-  static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
-  static const AccessRequirement create = labWorkspaceWriteRequirement;
-  static const AccessRequirement update = labWorkspaceWriteRequirement;
-  static const AccessRequirement delete = labWorkspaceWriteRequirement;
-  static const AccessRequirement write = labWorkspaceWriteRequirement;
-  static const AccessRequirement configure = labConfigurationsWriteRequirement;
-  static const AccessRequirement previewReport = labReportPreviewRequirement;
-  static const AccessRequirement createAdditionalOrder =
-      labWorkspaceWriteRequirement;
-  static const AccessRequirement editOrder = labWorkspaceWriteRequirement;
-  static const AccessRequirement deleteOrder = labWorkspaceWriteRequirement;
-  static const AccessRequirement workflowMutate = labWorkspaceWriteRequirement;
-  static const AccessRequirement resultEntry = labWorkspaceWriteRequirement;
-  static const AccessRequirement criticalNotify = labCriticalNotifyRequirement;
-  /// Nested cross-module write — matrix _(n/a)_ on Processing; reuse clinical ∪.
-  static const AccessRequirement requestFromClinical =
-      labRequestFromClinicalWriteRequirement;
-  static const AccessRequirement nestedWrite = labWorkspaceWriteRequirement;
-  static const AccessRequirement nestedRead = labWorkspaceReadRequirement;
-  static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;
-  static const AccessRequirement routeEntry = labWorkspaceRouteEntryRequirement;
-  static const AccessRequirement catalogEntry =
-      labWorkspaceCatalogEntryRequirement;
-  static const AccessRequirement read = labWorkspaceReadRequirement;
-}
-
-bool canViewLabProcessingTab(AppAccessPolicy policy) {
-  return LabProcessingAtomPermissions.tab.isAllowed(policy);
-}
-
 /// Atom → requirement map for Lab Critical (`/lab?section=critical`).
 ///
-/// Inventory: `screens/lab.md` → Critical tab (critical values; notify /
-/// acknowledge). Nested cross-module matrix rows are _(n/a)_; request-from-
-/// clinical ∪ is [requestFromClinical] for reuse (not strip chrome). Clinician
-/// notify / acknowledge ∩ is [criticalNotify] (`lab:write` ∩ `clinical:read`).
-/// Result save stays ∩ `lab:write` so LAB_TECH can save; notify
-/// side-effect chrome uses [criticalNotify]. Readers with only `clinical:read`
-/// must not see config/create.
+/// Inventory: Critical tab (abnormal / out-of-range results entered today).
+/// Create Lab Order lives in the search bar (not the tab strip). Lab
+/// Configurations and Orders↔Patients toggle are not mounted on Lab.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Critical strip tab / count | navigate | read ∩ `lab:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
-/// | Orders view / Patients view toggle | navigate | read ∩ |
-/// | Create Lab Order (primary) | create | write ∩ `lab:write` |
-/// | Lab Configurations (secondary) | update | write ∩ |
-/// | Row select / Next action (Review critical) → result entry | read / navigate | read ∩ |
-/// | Detail Preview report | export / read | preview ∪ lab read\|write |
-/// | Detail Create additional order | create | write ∩ |
-/// | Detail Edit / Delete order | update / delete | write ∩ |
-/// | Workflow Collect / Receive / Save results / Reverse | update | write ∩ |
-/// | Bulk / item result save / reject / delete | create / update / delete | write ∩ |
+/// | Create Lab Order (search trailing) | create | write ∩ `lab:write` |
+/// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Critical notify / acknowledge chrome | approve / update | lab:write ∩ clinical:read |
-/// | Nested configurations catalog enable | update | write ∩ |
-/// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
 /// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write |
 abstract final class LabCriticalAtomPermissions {
   static const AccessRequirement tab = labWorkspaceReadRequirement;

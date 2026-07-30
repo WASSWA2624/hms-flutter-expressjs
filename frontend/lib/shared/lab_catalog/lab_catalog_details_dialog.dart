@@ -75,6 +75,21 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
             AppWorkspaceDetailPanel(
               title: item.displayTitle,
               titleIcon: Icons.info_outline,
+              headerActions: showMutateActions
+                  ? <Widget>[
+                      AppButton(
+                        iconOnly: true,
+                        leadingIcon: Icons.delete_outline,
+                        label: l10n.tenantFacilityDeleteAction,
+                        semanticLabel: l10n.tenantFacilityDeleteAction,
+                        tooltip: l10n.tenantFacilityDeleteAction,
+                        color: theme.colorScheme.error,
+                        onPressed: () => Navigator.of(
+                          dialogContext,
+                        ).pop(LabCatalogItemDetailsAction.delete),
+                      ),
+                    ]
+                  : const <Widget>[],
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -218,15 +233,7 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
           ],
         ),
         actions: <Widget>[
-          if (showMutateActions) ...<Widget>[
-            AppButton.tertiary(
-              label: l10n.tenantFacilityDeleteAction,
-              leadingIcon: Icons.delete_outline,
-              color: theme.colorScheme.error,
-              onPressed: () => Navigator.of(
-                dialogContext,
-              ).pop(LabCatalogItemDetailsAction.delete),
-            ),
+          if (showMutateActions)
             AppButton.secondary(
               label: l10n.clinicalLabRequestEditSelectionAction,
               leadingIcon: Icons.edit_outlined,
@@ -234,7 +241,6 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                 dialogContext,
               ).pop(LabCatalogItemDetailsAction.edit),
             ),
-          ],
           AppButton.primary(
             label: l10n.commonCloseActionLabel,
             leadingIcon: Icons.check,
