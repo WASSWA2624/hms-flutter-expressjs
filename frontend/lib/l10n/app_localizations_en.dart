@@ -13054,11 +13054,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labBatchEntryValidationMessage =>
-      'Correct the highlighted value before continuing.';
+      'Enter a valid number or result value for this test.';
 
   @override
   String get labResultEntryRequiredMessage =>
       'Enter a result value before saving, submitting, or verifying.';
+
+  @override
+  String get labBatchPersistFailedMessage =>
+      'This result could not be saved. Try again or check the error above.';
 
   @override
   String labBatchValidationSummaryMessage(int count) {
@@ -13073,7 +13077,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labBatchValidationSummaryHint =>
-      'Check the highlighted tests below and complete any missing or invalid values.';
+      'Check the highlighted tests below. Empty tests can stay blank for a partial save; only entered values must be valid numbers or options.';
 
   @override
   String labBatchActionFailedMessage(String actionLabel) {

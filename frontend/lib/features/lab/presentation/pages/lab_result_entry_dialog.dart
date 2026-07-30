@@ -465,6 +465,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   }) async {
     for (final _ResultDraft draft in drafts) {
       draft.showValidationError = false;
+      draft.persistFailed = false;
     }
     final List<_ResultDraft> validDrafts = <_ResultDraft>[];
     var invalidCount = 0;
@@ -554,6 +555,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     for (final _ResultDraft draft in drafts) {
       if (failedIds.contains(draft.item.apiId)) {
         draft.showValidationError = true;
+        draft.persistFailed = true;
       }
     }
     _batchValidationIssueCount = failedIds.length;
@@ -738,10 +740,13 @@ class _LabResultValidationMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    final String message = draft.persistFailed
+        ? l10n.labBatchPersistFailedMessage
+        : draft.hasEntry
+        ? l10n.labBatchEntryValidationMessage
+        : l10n.labResultEntryRequiredMessage;
     return Text(
-      draft.hasEntry
-          ? l10n.labBatchEntryValidationMessage
-          : l10n.labResultEntryRequiredMessage,
+      message,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.error,
         fontWeight: FontWeight.w400,
@@ -926,17 +931,12 @@ class _LabResultEntryCards extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs),
-                    draft.item.canEnterResult
-                        ? _CompactResultInput(
-                            draft: draft,
-                            enabled: canMutate && draft.item.canEnterResult,
-                            patientGender: patientGender,
-                            stackValueUnit: true,
-                          )
-                        : _CompletedResultReadout(
-                            item: draft.item,
-                            patientGender: patientGender,
-                          ),
+                    _LabResultValueCell(
+                      draft: draft,
+                      canMutate: canMutate,
+                      patientGender: patientGender,
+                      stackValueUnit: true,
+                    ),
                     SizedBox(height: theme.spacing.sm),
                     Text(
                       l10n.labResultFlagLabel,
@@ -1348,7 +1348,6 @@ TableRow _labResultEntryTableRow(
 }) {
   final ThemeData theme = Theme.of(context);
   final LabOrderItem item = draft.item;
-  final bool canEdit = canMutate && item.canEnterResult;
   final bool cancelled = _isCancelledItem(item);
   final bool showEditAction = canMutate && item.canReopenResult;
 
@@ -1381,17 +1380,13 @@ TableRow _labResultEntryTableRow(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            item.canEnterResult
-                ? _CompactResultInput(
-                    draft: draft,
-                    enabled: canEdit,
-                    patientGender: patientGender,
-                  )
-                : _CompletedResultReadout(
-                    item: item,
-                    patientGender: patientGender,
-                  ),
-            if (draft.showValidationError && !item.canEnterResult) ...<Widget>[
+            _LabResultValueCell(
+              draft: draft,
+              canMutate: canMutate,
+              patientGender: patientGender,
+            ),
+            if (draft.showValidationError &&
+                !(canMutate && item.canEnterResult)) ...<Widget>[
               SizedBox(height: Theme.of(context).spacing.xs),
               _LabResultValidationMessage(draft: draft),
             ],
@@ -1493,6 +1488,38 @@ class _LabReferenceRangeCell extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _LabResultValueCell extends StatelessWidget {
+  const _LabResultValueCell({
+    required this.draft,
+    required this.canMutate,
+    this.patientGender,
+    this.stackValueUnit = false,
+  });
+
+  final _ResultDraft draft;
+  final bool canMutate;
+  final String? patientGender;
+  final bool stackValueUnit;
+
+  @override
+  Widget build(BuildContext context) {
+    final LabOrderItem item = draft.item;
+    // Read-only (lab:read): never show entry fields — pending/status readout.
+    if (canMutate && item.canEnterResult) {
+      return _CompactResultInput(
+        draft: draft,
+        enabled: true,
+        patientGender: patientGender,
+        stackValueUnit: stackValueUnit,
+      );
+    }
+    return _CompletedResultReadout(
+      item: item,
+      patientGender: patientGender,
     );
   }
 }
@@ -1623,7 +1650,9 @@ class _CompactResultInputState extends State<_CompactResultInput> {
             if (widget.draft.showValidationError) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
               Text(
-                widget.draft.hasEntry
+                widget.draft.persistFailed
+                    ? l10n.labBatchPersistFailedMessage
+                    : widget.draft.hasEntry
                     ? l10n.labBatchEntryValidationMessage
                     : l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -1657,7 +1686,7 @@ class _CompletedResultReadout extends StatelessWidget {
 
     if (value == null || value.trim().isEmpty) {
       return Text(
-        l10n.labStatusPendingResults,
+        l10n.labStatusPending,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -1702,7 +1731,7 @@ class _LabResultFlagCell extends StatelessWidget {
         item.isRejected;
     if (!hasValue) {
       return Text(
-        context.l10n.profileUnknownValue,
+        context.l10n.labStatusPending,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w400,
@@ -2436,6 +2465,7 @@ final class _ResultDraft {
   String? selectedOption;
   bool interpretationOverride;
   bool showValidationError = false;
+  bool persistFailed = false;
 
   bool get enabled => item.canEnterResult;
 
@@ -2506,6 +2536,7 @@ final class _ResultDraft {
   }) {
     item = serverItem;
     showValidationError = false;
+    persistFailed = false;
     if (preserveUserEntry) {
       return;
     }
@@ -2599,18 +2630,24 @@ final class _ResultDraft {
   }
 
   Map<String, Object?> toSubmittedPayload() {
+    // Draft upsert allows PENDING for numeric in-progress entry.
     final Map<String, Object?> payload = toPayload(
-      status: _submittedResultStatus(item, this),
+      status: item.isNumeric
+          ? 'PENDING'
+          : _submittedResultStatus(item, this),
     );
     payload.remove('notes');
     return payload;
   }
 
   Map<String, Object?> toSaveResultPayload({bool includeOrderItemId = false}) {
+    // save-result accepts only NORMAL|ABNORMAL|CRITICAL. Omit status for
+    // numeric rows so the backend interpretation engine sets the flag
+    // (including out-of-range / critical values).
     return toPayload(
       includeOrderItemId: includeOrderItemId,
       includeResultId: true,
-      status: _submittedResultStatus(item, this),
+      status: item.isNumeric ? null : _submittedResultStatus(item, this),
     );
   }
 
@@ -2677,15 +2714,20 @@ class _ReopenSavedResultDialogState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
+    final bool compact = AppBreakpoints.of(context).isMobile;
+
     return AppDialog(
       title: Text(l10n.labReopenVerifiedResultDialogTitle),
       icon: const Icon(Icons.edit_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
+      closeEnabled: !_isSaving,
+      maxWidth: compact ? double.infinity : 560,
       content: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: AppFormSection(
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -2694,43 +2736,32 @@ class _ReopenSavedResultDialogState
               ),
             Text(
               l10n.labReopenVerifiedResultDialogBody,
-              style: theme.textTheme.bodyMedium,
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              _item.displayTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.45,
               ),
             ),
-            if (_item.displayReferenceRange != null) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                _item.displayReferenceRange!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            SizedBox(height: theme.spacing.sm),
+            _EditResultTestContext(
+              title: _item.displayTitle,
+              referenceRange: _item.displayReferenceRange,
+            ),
             ..._buildValueEditor(l10n),
-            if (_valueError) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
+            if (_valueError)
               Text(
                 l10n.labResultEntryRequiredMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
+                  color: colorScheme.error,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
-            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: _reasonController,
               labelText: l10n.labReopenVerifiedReasonLabel,
               isRequired: true,
               enabled: !_isSaving,
-              maxLines: 2,
+              maxLines: 3,
+              minLines: 2,
+              autofocus: true,
               validator: AppValidators.minLength(
                 2,
                 l10n.validationRequired,
@@ -2743,20 +2774,27 @@ class _ReopenSavedResultDialogState
               labelText: l10n.labNotesLabel,
               enabled: !_isSaving,
               maxLines: 3,
+              minLines: 2,
             ),
           ],
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          fullWidth: compact,
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.labEditVerifiedResultAction,
+          leadingIcon: Icons.save_outlined,
           isLoading: _isSaving,
-          onPressed: _submit,
+          fullWidth: compact,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
@@ -2771,6 +2809,7 @@ class _ReopenSavedResultDialogState
           item: _item,
           enabled: !_isSaving,
           valueRequired: true,
+          stackBelowWidth: double.infinity,
           onChanged: () => setState(() {}),
           valueValidator: (String? value) {
             final String normalized = value?.trim() ?? '';
@@ -2791,7 +2830,6 @@ class _ReopenSavedResultDialogState
           labelText: l10n.labResultValueLabel,
           isRequired: true,
           enabled: !_isSaving,
-          isDense: true,
           options: <AppSelectOption<String>>[
             for (final LabResultOption option in _item.resultOptions)
               AppSelectOption<String>(
@@ -2821,8 +2859,8 @@ class _ReopenSavedResultDialogState
             : l10n.labResultTextLabel,
         isRequired: true,
         enabled: !_isSaving,
-        isDense: true,
         maxLines: _item.isText ? 3 : 1,
+        minLines: _item.isText ? 2 : 1,
         validator: AppValidators.minLength(
           1,
           l10n.validationRequired,
@@ -2917,6 +2955,61 @@ class _ReopenSavedResultDialogState
       _failure = verifyFailure;
       _isSaving = false;
     });
+  }
+}
+
+/// Compact test identity block for the edit-result dialog.
+class _EditResultTestContext extends StatelessWidget {
+  const _EditResultTestContext({
+    required this.title,
+    this.referenceRange,
+  });
+
+  final String title;
+  final String? referenceRange;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? range = referenceRange?.trim();
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+        borderRadius: BorderRadius.circular(
+          context.responsiveRadius(theme.radius.sm),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            if (range != null && range.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                range,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -3216,18 +3309,22 @@ bool _canSaveResultDraft(_ResultDraft draft) {
 bool _validateDraftForPersist(_ResultDraft draft, {required bool forFinalize}) {
   if (forFinalize && _hasSavedResult(draft.item) && !draft.hasChangedEntry) {
     draft.showValidationError = false;
+    draft.persistFailed = false;
     return true;
   }
   if (!draft.hasEntry) {
     draft.showValidationError = true;
+    draft.persistFailed = false;
     return false;
   }
   if (!draft.item.canEnterResult) {
     draft.showValidationError = false;
+    draft.persistFailed = false;
     return _hasSavedResult(draft.item);
   }
   final bool isValid = draft.formKey.currentState?.validate() ?? true;
   draft.showValidationError = !isValid;
+  draft.persistFailed = false;
   return isValid;
 }
 
@@ -3284,9 +3381,11 @@ String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {
     }
   }
 
-  // Numeric status is determined by the backend interpretation engine on release.
-  if (item.isNumeric) {
-    return 'PENDING';
+  // Live flag → release status. Out-of-range values are valid to save.
+  final String? liveToken = _resultInterpretationFlagToken(item, draft);
+  final String? liveStatus = _resultStatusFromToken(liveToken);
+  if (liveStatus != null) {
+    return liveStatus;
   }
 
   if (_isAbnormalEntry(item, draft)) {

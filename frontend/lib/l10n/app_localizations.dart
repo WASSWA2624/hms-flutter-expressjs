@@ -24110,10 +24110,10 @@ abstract class AppLocalizations {
   /// **'Saved {savedCount} results. {skippedCount} entries need attention.'**
   String labBatchPartialVerifyMessage(int savedCount, int skippedCount);
 
-  /// Inline validation message for invalid lab result rows during batch operations.
+  /// Inline validation when a lab result entry value is malformed (not a reference-range guard).
   ///
   /// In en, this message translates to:
-  /// **'Correct the highlighted value before continuing.'**
+  /// **'Enter a valid number or result value for this test.'**
   String get labBatchEntryValidationMessage;
 
   /// Inline validation message when a lab result row is missing a required value.
@@ -24121,6 +24121,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a result value before saving, submitting, or verifying.'**
   String get labResultEntryRequiredMessage;
+
+  /// Inline message when a lab result row failed to persist on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'This result could not be saved. Try again or check the error above.'**
+  String get labBatchPersistFailedMessage;
 
   /// Summary shown when batch lab result actions fail validation.
   ///
@@ -24131,7 +24137,7 @@ abstract class AppLocalizations {
   /// Hint shown under the batch lab validation summary banner.
   ///
   /// In en, this message translates to:
-  /// **'Check the highlighted tests below and complete any missing or invalid values.'**
+  /// **'Check the highlighted tests below. Empty tests can stay blank for a partial save; only entered values must be valid numbers or options.'**
   String get labBatchValidationSummaryHint;
 
   /// Generic failure message for a lab batch action.

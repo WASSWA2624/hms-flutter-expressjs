@@ -384,6 +384,8 @@ void main() {
         expect(find.text(l10n.labEditOrderAction), findsNothing);
         expect(find.text(l10n.labDeleteOrderAction), findsNothing);
         expect(find.text(l10n.labEditVerifiedResultAction), findsNothing);
+        expect(find.text(l10n.labSaveResultsAction), findsNothing);
+        expect(find.text(l10n.labResultValueLabel), findsNothing);
         // Prefer read: preview ∪ still mounts for lab:read.
         expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
       },
