@@ -48,6 +48,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   int? _batchValidationIssueCount;
   String? _labActionFailureMessage;
   bool _isSaving = false;
+  /// While the edit-saved-result dialog is open, skip draft sync so the
+  /// intermediate reopen (IN_PROCESS) does not flip rows to editable inputs.
+  bool _suspendDraftSync = false;
 
   @override
   void dispose() {
@@ -196,18 +199,19 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     final List<LabCatalogItem> catalogPanels =
         state?.catalogPanels ?? const <LabCatalogItem>[];
 
-    if (workflows.isNotEmpty) {
+    if (workflows.isNotEmpty && !_suspendDraftSync) {
       _syncDrafts(workflows);
-    } else {
+    } else if (workflows.isEmpty) {
       _disposeDrafts();
     }
 
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
     final bool compact = AppBreakpoints.of(context).isMobile;
-    final bool showActionLabels = AppBreakpoints.of(
-      context,
-    ).showsToolbarActionLabels;
+    // Keep Preview / Save / Edit labels visible on phones (toolbar chrome
+    // otherwise forces icon-only actions).
+    final bool showActionLabels =
+        compact || AppBreakpoints.of(context).showsToolbarActionLabels;
     final List<_ResultDraft> saveableDrafts = drafts
         .where(_canSaveResultDraft)
         .toList(growable: false);
@@ -225,6 +229,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         icon: const Icon(Icons.biotech_outlined),
         scrollable: true,
         pinActionsToBottom: true,
+        stackActionsWhenCompact: false,
         maxWidth: compact ? double.infinity : 1600,
         closeEnabled: !_isSaving,
         content: _buildContent(
@@ -247,7 +252,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                     return AppReportActionButton.preview(
                       label: l10n.labPreviewReportAction,
                       enabled: canPreview,
-                      fullWidth: compact,
                       onPressed: canPreview
                           ? () => _openPrintPreview(context, workflows)
                           : null,
@@ -264,7 +268,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                       leadingIcon: Icons.save_outlined,
                       isLoading: _isSaving,
                       enabled: canSave,
-                      fullWidth: compact,
                       onPressed: canSave
                           ? () => _saveResultsDrafts(saveableDrafts)
                           : null,
@@ -595,25 +598,30 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   }
 
   Future<void> _editSavedResult(_ResultDraft draft) async {
-    final bool? reopened = await showAppDialog<bool>(
-      context: context,
-      builder: (_) => _ReopenSavedResultDialog(item: draft.item),
-    );
-    if (reopened != true || !mounted) {
-      return;
-    }
     setState(() {
-      _isSaving = true;
+      _suspendDraftSync = true;
       _clearLabActionFeedback();
     });
-    _applyWorkflowUpdates(affectedItemIds: <String>{draft.item.apiId});
-    if (!mounted) {
-      return;
+    bool? reopened;
+    try {
+      reopened = await showAppDialog<bool>(
+        context: context,
+        builder: (_) => _ReopenSavedResultDialog(item: draft.item),
+      );
+    } finally {
+      if (mounted) {
+        // Always re-sync after the dialog: reopen may have left the item
+        // IN_PROCESS if save failed, or COMPLETED with new values on success.
+        _applyWorkflowUpdates();
+        setState(() {
+          _suspendDraftSync = false;
+          _isSaving = false;
+        });
+        if (reopened == true) {
+          _showSuccessMessage(context.l10n.labVerifiedResultReopenedMessage);
+        }
+      }
     }
-    setState(() {
-      _isSaving = false;
-    });
-    _showSuccessMessage(context.l10n.labVerifiedResultReopenedMessage);
   }
 
   Future<void> _openPrintPreview(
@@ -909,50 +917,35 @@ class _LabResultEntryCards extends StatelessWidget {
                   children: <Widget>[
                     _LabResultTestCell(draft: draft),
                     SizedBox(height: theme.spacing.sm),
-                    Text(
-                      l10n.labReferenceRangeLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                    _MobileResultParameterRow(
+                      parameter: l10n.labReferenceRangeLabel,
+                      value: _LabReferenceRangeCell(
+                        draft: draft,
+                        patientGender: patientGender,
                       ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    _LabReferenceRangeCell(
-                      draft: draft,
-                      patientGender: patientGender,
                     ),
                     SizedBox(height: theme.spacing.sm),
-                    Text(
-                      l10n.labReportResultLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                    _MobileResultParameterRow(
+                      parameter: l10n.labReportResultLabel,
+                      value: _LabResultValueCell(
+                        draft: draft,
+                        canMutate: canMutate,
+                        patientGender: patientGender,
+                        stackValueUnit: true,
                       ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    _LabResultValueCell(
-                      draft: draft,
-                      canMutate: canMutate,
-                      patientGender: patientGender,
-                      stackValueUnit: true,
                     ),
                     SizedBox(height: theme.spacing.sm),
-                    Text(
-                      l10n.labResultFlagLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                    _MobileResultParameterRow(
+                      parameter: l10n.labResultFlagLabel,
+                      value: _LabResultFlagCell(
+                        draft: draft,
+                        patientGender: patientGender,
                       ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    _LabResultFlagCell(
-                      draft: draft,
-                      patientGender: patientGender,
                     ),
                     if (canMutate) ...<Widget>[
                       SizedBox(height: theme.spacing.sm),
                       Align(
-                        alignment: AlignmentDirectional.centerStart,
+                        alignment: AlignmentDirectional.centerEnd,
                         child: AppButton.tertiary(
                           label: l10n.labEditVerifiedResultAction,
                           leadingIcon: Icons.edit_outlined,
@@ -970,6 +963,40 @@ class _LabResultEntryCards extends StatelessWidget {
           ),
           SizedBox(height: theme.spacing.sm),
         ],
+      ],
+    );
+  }
+}
+
+/// Mobile result card row: "Parameter: value" on a single line.
+class _MobileResultParameterRow extends StatelessWidget {
+  const _MobileResultParameterRow({
+    required this.parameter,
+    required this.value,
+  });
+
+  final String parameter;
+  final Widget value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String label = parameter.trim().endsWith(':')
+        ? parameter.trim()
+        : '${parameter.trim()}:';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(child: value),
       ],
     );
   }
@@ -2570,6 +2597,10 @@ class _ReopenSavedResultDialogState
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final bool compact = AppBreakpoints.of(context).isMobile;
+    final String? liveFlag = _liveResultFlagToken();
+    final AppWorkspaceStatus? liveStatus = liveFlag == null
+        ? null
+        : labStatusBadge(context, liveFlag);
 
     return AppDialog(
       title: Text(l10n.labReopenVerifiedResultDialogTitle),
@@ -2596,9 +2627,19 @@ class _ReopenSavedResultDialogState
             ),
             _EditResultTestContext(
               title: _item.displayTitle,
-              referenceRange: _item.displayReferenceRange,
+              referenceRange: resolveDisplayReferenceRange(
+                _item,
+                resultUnit: _unitController.text.trim().isEmpty
+                    ? null
+                    : _unitController.text.trim(),
+              ),
             ),
             ..._buildValueEditor(l10n),
+            if (liveStatus != null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppWorkspaceStatusBadge(status: liveStatus),
+              ),
             if (_valueError)
               Text(
                 l10n.labResultEntryRequiredMessage,
@@ -2718,6 +2759,7 @@ class _ReopenSavedResultDialogState
         allowClear: !_isSaving,
         maxLines: _item.isText ? 3 : 1,
         minLines: _item.isText ? 2 : 1,
+        onChanged: (_) => setState(() {}),
         validator: AppValidators.minLength(
           1,
           l10n.validationRequired,
@@ -2726,6 +2768,43 @@ class _ReopenSavedResultDialogState
         ),
       ),
     ];
+  }
+
+  String? _liveResultFlagToken() {
+    if (_item.isNumeric) {
+      final String value = _valueController.text.trim();
+      if (value.isEmpty) {
+        return null;
+      }
+      return _computedNumericFlagToken(
+        _item,
+        value,
+        resultUnit: _unitController.text.trim(),
+      );
+    }
+    if (_usesOptions) {
+      final String selected = (_selectedOption ?? '').trim();
+      if (selected.isEmpty) {
+        return null;
+      }
+      for (final LabResultOption option in _item.resultOptions) {
+        final Set<String> optionValues = <String>{
+          option.value ?? '',
+          option.label ?? '',
+          option.id,
+        }..removeWhere((String value) => value.trim().isEmpty);
+        if (!optionValues.contains(selected)) {
+          continue;
+        }
+        return option.resultFlag ?? option.status;
+      }
+      return null;
+    }
+    final String text = _textController.text.trim();
+    if (text.isEmpty) {
+      return null;
+    }
+    return _resultStatusFromToken(text) == null ? null : text.toUpperCase();
   }
 
   bool _hasValueEntry() {
@@ -2741,6 +2820,8 @@ class _ReopenSavedResultDialogState
   Map<String, Object?> _buildSaveResultPayload() {
     final Map<String, Object?> payload = <String, Object?>{
       'reported_at': DateTime.now().toUtc().toIso8601String(),
+      if (_item.resultId != null && _item.resultId!.trim().isNotEmpty)
+        'result_id': _item.resultId,
       if (_notesController.text.trim().isNotEmpty)
         'notes': _notesController.text.trim(),
     };
@@ -2750,13 +2831,20 @@ class _ReopenSavedResultDialogState
       if (unit.isNotEmpty) {
         payload['result_unit'] = unit;
       }
+      // Omit status — backend interpretation sets NORMAL|ABNORMAL|CRITICAL.
       return payload;
     }
     if (_usesOptions) {
       payload['result_text'] = _selectedOption?.trim();
+      final String? status = _resultStatusFromToken(_liveResultFlagToken());
+      if (status != null) {
+        payload['status'] = status;
+      }
       return payload;
     }
     payload['result_text'] = _textController.text.trim();
+    payload['status'] =
+        _resultStatusFromToken(_liveResultFlagToken()) ?? 'NORMAL';
     return payload;
   }
 

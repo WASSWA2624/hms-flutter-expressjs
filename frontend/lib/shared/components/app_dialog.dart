@@ -19,6 +19,7 @@ class AppDialog extends StatefulWidget {
     this.semanticLabel,
     this.scrollable = false,
     this.pinActionsToBottom = false,
+    this.stackActionsWhenCompact = true,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
     this.resizable = true,
@@ -39,6 +40,10 @@ class AppDialog extends StatefulWidget {
   final String? semanticLabel;
   final bool scrollable;
   final bool pinActionsToBottom;
+
+  /// When true (default), compact/mobile footers stack actions full-width.
+  /// Set false to keep a horizontal action row on phones (e.g. Preview + Save).
+  final bool stackActionsWhenCompact;
   final bool showCloseButton;
   final bool showMaximizeButton;
   final bool resizable;
@@ -132,6 +137,7 @@ class _AppDialogState extends State<AppDialog> {
         scrollable: widget.scrollable,
         fillHeight: fillShellHeight,
         compact: compact,
+        stackActionsWhenCompact: widget.stackActionsWhenCompact,
         showCloseButton: widget.showCloseButton,
         showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
         isMaximized: _isMaximized,
@@ -447,6 +453,7 @@ class _DialogBody extends StatelessWidget {
     required this.scrollable,
     required this.fillHeight,
     required this.compact,
+    required this.stackActionsWhenCompact,
     required this.showCloseButton,
     required this.showMaximizeButton,
     required this.isMaximized,
@@ -465,6 +472,7 @@ class _DialogBody extends StatelessWidget {
   final bool scrollable;
   final bool fillHeight;
   final bool compact;
+  final bool stackActionsWhenCompact;
   final bool showCloseButton;
   final bool showMaximizeButton;
   final bool isMaximized;
@@ -536,7 +544,11 @@ class _DialogBody extends StatelessWidget {
                       : dialogContent,
                 ),
         if (actions.isNotEmpty)
-          _DialogActions(actions: actions, compact: compact),
+          _DialogActions(
+            actions: actions,
+            compact: compact,
+            stackWhenCompact: stackActionsWhenCompact,
+          ),
       ],
     );
   }
@@ -731,10 +743,15 @@ class _DialogResizeHandle extends StatelessWidget {
 }
 
 class _DialogActions extends StatelessWidget {
-  const _DialogActions({required this.actions, required this.compact});
+  const _DialogActions({
+    required this.actions,
+    required this.compact,
+    required this.stackWhenCompact,
+  });
 
   final List<Widget> actions;
   final bool compact;
+  final bool stackWhenCompact;
 
   @override
   Widget build(BuildContext context) {
@@ -745,8 +762,8 @@ class _DialogActions extends StatelessWidget {
     ).copyWith(top: theme.spacing.sm);
 
     final Widget actionRow;
-    if (compact) {
-      // Stack full-width actions on phones so Preview/Save stay tappable
+    if (compact && stackWhenCompact) {
+      // Stack full-width actions on phones so long action sets stay tappable
       // without horizontal squeeze or unreadably scaled labels.
       actionRow = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

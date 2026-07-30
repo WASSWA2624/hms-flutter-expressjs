@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
@@ -70,8 +71,9 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
 /// Patient identity section built on [AppCollapsibleSection].
 ///
 /// Collapsed by default: header shows name · public ID (with copy).
-/// Expanded body is a horizontal overflow row:
-/// `Icon Parameter name: Parameter value | …`
+/// Expanded body shows context facts responsively:
+/// desktop keeps an overflow row (`Icon Label: Value | …`);
+/// mobile stacks one wrapped `Label: Value` row per fact.
 class AppPatientDetails extends ConsumerStatefulWidget {
   const AppPatientDetails({
     required this.patientName,
@@ -315,6 +317,7 @@ class _PatientDetailsTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool compact = AppBreakpoints.of(context).isMobile;
     final TextStyle? nameStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
     );
@@ -323,41 +326,57 @@ class _PatientDetailsTitle extends StatelessWidget {
         '${showPatientName ? patientName : ''} ${normalizedId.isEmpty ? '' : normalizedId}'
             .trim();
 
+    final Widget? name = showPatientName
+        ? Text(
+            patientName,
+            style: nameStyle,
+            softWrap: true,
+          )
+        : null;
+    final Widget? id = normalizedId.isEmpty
+        ? null
+        : AppCopyableIdentifier(
+            value: normalizedId,
+            tooltip: copyPatientNumberTooltip ?? patientNumberLabel,
+            copiedMessage: copyPatientNumberMessage,
+            semanticLabel: copyPatientNumberSemanticLabel,
+            showCopyIcon: showPatientNumberCopyIcon,
+            onCopied: onCopyPatientNumber,
+            textStyle: nameStyle?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+
     return Semantics(
       label: semanticsLabel,
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs / 2,
-        children: <Widget>[
-          if (showPatientName)
-            Text(
-              patientName,
-              style: nameStyle,
-              softWrap: true,
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ?name,
+                if (name != null && id != null)
+                  SizedBox(height: theme.spacing.xs / 2),
+                ?id,
+              ],
+            )
+          : Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs / 2,
+              children: <Widget>[
+                ?name,
+                if (name != null && id != null)
+                  Text(
+                    '·',
+                    style: nameStyle?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ?id,
+              ],
             ),
-          if (showPatientName && normalizedId.isNotEmpty)
-            Text(
-              '·',
-              style: nameStyle?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          if (normalizedId.isNotEmpty)
-            AppCopyableIdentifier(
-              value: normalizedId,
-              tooltip: copyPatientNumberTooltip ?? patientNumberLabel,
-              copiedMessage: copyPatientNumberMessage,
-              semanticLabel: copyPatientNumberSemanticLabel,
-              showCopyIcon: showPatientNumberCopyIcon,
-              onCopied: onCopyPatientNumber,
-              textStyle: nameStyle?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

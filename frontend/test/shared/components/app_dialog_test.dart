@@ -491,6 +491,7 @@ void main() {
         content: SizedBox(height: 200, child: Text('Filter body')),
         showMaximizeButton: false,
         resizable: false,
+        stackActionsWhenCompact: false,
         actions: <Widget>[
           AppButton.tertiary(label: 'Clear filters', onPressed: null),
           AppButton.primary(label: 'Apply filters', onPressed: null),
@@ -540,6 +541,36 @@ void main() {
     final Offset preview = tester.getCenter(find.text('Preview report'));
     final Offset save = tester.getCenter(find.text('Save results'));
     expect(save.dy, greaterThan(preview.dy));
+  });
+
+  testWidgets('mobile AppDialog can keep footer actions horizontal', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Lab result entry'),
+        content: const Text('Body'),
+        pinActionsToBottom: true,
+        stackActionsWhenCompact: false,
+        actions: <Widget>[
+          AppButton.secondary(
+            label: 'Preview report',
+            onPressed: () {},
+          ),
+          AppButton.primary(
+            label: 'Save results',
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    final Offset preview = tester.getCenter(find.text('Preview report'));
+    final Offset save = tester.getCenter(find.text('Save results'));
+    expect(preview.dy, closeTo(save.dy, 1));
+    expect(save.dx, greaterThan(preview.dx));
   });
 }
 

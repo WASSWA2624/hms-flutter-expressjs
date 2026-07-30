@@ -73,7 +73,7 @@ void main() {
           ),
         ],
       ),
-      size: const Size(360, 800),
+      size: const Size(900, 800),
     );
 
     expect(find.textContaining('Encounter:'), findsOneWidget);
@@ -90,6 +90,47 @@ void main() {
         .getTopLeft(find.textContaining('Orders included:'))
         .dy;
     expect(ordersY, closeTo(encounterY, 1));
+  });
+
+  testWidgets('mobile expanded body stacks facts so values stay visible', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppPatientDetails(
+        patientName: 'Samuel Demo-Bravo',
+        patientNumber: 'PAT-9456CE18C9',
+        persistExpandPreference: false,
+        initiallyExpanded: true,
+        expandedFields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Order status',
+            value: 'Critical',
+            icon: Icons.priority_high_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Encounter',
+            value: 'ENC-D261234567890',
+            icon: Icons.badge_outlined,
+          ),
+        ],
+      ),
+      size: const Size(380, 800),
+    );
+
+    expect(find.textContaining('Order status:'), findsOneWidget);
+    expect(find.textContaining('Critical'), findsOneWidget);
+    expect(find.textContaining('Encounter:'), findsOneWidget);
+    expect(find.textContaining('ENC-D261234567890'), findsOneWidget);
+    expect(find.text('|'), findsNothing);
+
+    final double statusY = tester
+        .getTopLeft(find.textContaining('Order status:'))
+        .dy;
+    final double encounterY = tester
+        .getTopLeft(find.textContaining('Encounter:'))
+        .dy;
+    expect(encounterY, greaterThan(statusY));
   });
 
   testWidgets('defaults to collapsed with only the header visible', (
@@ -345,7 +386,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();
-    expect(find.text('+256700000000'), findsOneWidget);
+    expect(find.textContaining('+256700000000'), findsOneWidget);
   });
 
   testWidgets('supports enlarged text scale without losing header identity', (

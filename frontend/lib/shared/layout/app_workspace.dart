@@ -1306,8 +1306,12 @@ class _PatientContextAlerts extends StatelessWidget {
   }
 }
 
-/// Horizontal overflow row of patient context facts:
+/// Responsive patient context facts.
+///
+/// Desktop/tablet: horizontal overflow row
 /// `Icon Label: Value | Icon Label: Value | …`
+///
+/// Mobile: one wrapped row per fact so values are never clipped off-screen.
 class AppPatientContextFactsRow extends StatelessWidget {
   const AppPatientContextFactsRow({required this.fields, super.key});
 
@@ -1329,23 +1333,52 @@ class AppPatientContextFactsRow extends StatelessWidget {
       fontWeight: FontWeight.w500,
     );
 
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: <Widget>[
-            for (var index = 0; index < visibleFields.length; index += 1) ...<Widget>[
-              if (index > 0) ...<Widget>[
-                SizedBox(width: theme.spacing.sm),
-                Text('|', style: separatorStyle),
-                SizedBox(width: theme.spacing.sm),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool stackFacts =
+            !constraints.hasBoundedWidth ||
+            constraints.maxWidth < AppBreakpoints.md;
+
+        if (stackFacts) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (var index = 0; index < visibleFields.length; index += 1) ...<
+                Widget
+              >[
+                if (index > 0) SizedBox(height: theme.spacing.xs),
+                _PatientContextInlineFact(
+                  field: visibleFields[index],
+                  expand: true,
+                ),
               ],
-              _PatientContextInlineFact(field: visibleFields[index]),
             ],
-          ],
-        ),
-      ),
+          );
+        }
+
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                for (
+                  var index = 0;
+                  index < visibleFields.length;
+                  index += 1
+                ) ...<Widget>[
+                  if (index > 0) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    Text('|', style: separatorStyle),
+                    SizedBox(width: theme.spacing.sm),
+                  ],
+                  _PatientContextInlineFact(field: visibleFields[index]),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1362,9 +1395,13 @@ class _PatientContextInlineFacts extends StatelessWidget {
 }
 
 class _PatientContextInlineFact extends StatelessWidget {
-  const _PatientContextInlineFact({required this.field});
+  const _PatientContextInlineFact({
+    required this.field,
+    this.expand = false,
+  });
 
   final AppWorkspacePatientContextField field;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -1383,10 +1420,29 @@ class _PatientContextInlineFact extends StatelessWidget {
       fontWeight: FontWeight.w500,
     );
 
+    final Widget value = field.copyable
+        ? AppCopyableIdentifier(
+            value: field.value,
+            tooltip: field.copyTooltip,
+            copiedMessage: field.copiedMessage,
+            semanticLabel: field.copySemanticLabel,
+            showCopyIcon: field.showCopyIcon,
+            placeholderValues: field.copyPlaceholderValues,
+            textStyle: valueStyle,
+          )
+        : Text(
+            field.value,
+            maxLines: expand ? null : 1,
+            softWrap: expand,
+            overflow: expand ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: valueStyle,
+          );
+
     return Semantics(
       label: '${field.label}: ${field.value}',
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           if (field.icon != null) ...<Widget>[
             Icon(
@@ -1396,18 +1452,28 @@ class _PatientContextInlineFact extends StatelessWidget {
             ),
             SizedBox(width: theme.spacing.xs),
           ],
-          Text('${field.label}: ', style: labelStyle),
-          field.copyable
-              ? AppCopyableIdentifier(
-                  value: field.value,
-                  tooltip: field.copyTooltip,
-                  copiedMessage: field.copiedMessage,
-                  semanticLabel: field.copySemanticLabel,
-                  showCopyIcon: field.showCopyIcon,
-                  placeholderValues: field.copyPlaceholderValues,
-                  textStyle: valueStyle,
-                )
-              : Text(field.value, maxLines: 1, style: valueStyle),
+          if (expand)
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(text: '${field.label}: ', style: labelStyle),
+                    if (field.copyable)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: value,
+                      )
+                    else
+                      TextSpan(text: field.value, style: valueStyle),
+                  ],
+                ),
+                softWrap: true,
+              ),
+            )
+          else ...<Widget>[
+            Text('${field.label}: ', style: labelStyle),
+            value,
+          ],
         ],
       ),
     );

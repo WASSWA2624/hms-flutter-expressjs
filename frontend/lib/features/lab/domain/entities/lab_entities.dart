@@ -932,8 +932,21 @@ final class LabOrderItem {
     if (isRejected || !isCompleted || !hasResult) {
       return false;
     }
-    return switch (_normalize(resultStatus)) {
-      'NORMAL' || 'ABNORMAL' || 'CRITICAL' => true,
+    // Backend reopen accepts NORMAL|ABNORMAL|CRITICAL; map finer flags too so
+    // qualitative / directional results remain editable.
+    return switch (_normalize(effectiveResultStatus)) {
+      'NORMAL' ||
+      'ABNORMAL' ||
+      'CRITICAL' ||
+      'CRITICAL_LOW' ||
+      'CRITICAL_HIGH' ||
+      'LOW' ||
+      'HIGH' ||
+      'POSITIVE' ||
+      'NEGATIVE' ||
+      'REACTIVE' ||
+      'NON_REACTIVE' ||
+      'NOT_DETECTED' => true,
       _ => false,
     };
   }

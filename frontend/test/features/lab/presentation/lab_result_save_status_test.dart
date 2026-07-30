@@ -25,6 +25,57 @@ void main() {
       expect(resultStatusFromToken('PENDING'), isNull);
     });
 
+    test('canReopenResult allows finer flags for all result kinds', () {
+      const LabOrderItem numericLow = LabOrderItem(
+        id: 'n1',
+        status: 'COMPLETED',
+        resultKind: 'NUMERIC',
+        resultStatus: 'ABNORMAL',
+        resultFlag: 'LOW',
+        resultValue: '10',
+        resultId: 'r1',
+      );
+      const LabOrderItem qualitativePositive = LabOrderItem(
+        id: 'q1',
+        status: 'COMPLETED',
+        resultKind: 'QUALITATIVE',
+        resultStatus: 'ABNORMAL',
+        resultFlag: 'POSITIVE',
+        resultText: 'Positive',
+        resultId: 'r2',
+      );
+      const LabOrderItem textNormal = LabOrderItem(
+        id: 't1',
+        status: 'COMPLETED',
+        resultKind: 'TEXT',
+        resultStatus: 'NORMAL',
+        resultText: 'Seen',
+        resultId: 'r3',
+      );
+      const LabOrderItem criticalHighOnlyFlag = LabOrderItem(
+        id: 'c1',
+        status: 'COMPLETED',
+        resultKind: 'NUMERIC',
+        resultFlag: 'CRITICAL_HIGH',
+        resultValue: '99',
+        resultId: 'r4',
+      );
+      const LabOrderItem pending = LabOrderItem(
+        id: 'p1',
+        status: 'IN_PROCESS',
+        resultKind: 'NUMERIC',
+        resultStatus: 'PENDING',
+        resultValue: '12',
+        resultId: 'r5',
+      );
+
+      expect(numericLow.canReopenResult, isTrue);
+      expect(qualitativePositive.canReopenResult, isTrue);
+      expect(textNormal.canReopenResult, isTrue);
+      expect(criticalHighOnlyFlag.canReopenResult, isTrue);
+      expect(pending.canReopenResult, isFalse);
+    });
+
     test('numeric out-of-range entries remain saveable drafts', () {
       const LabOrderItem item = LabOrderItem(
         id: 'item-1',
