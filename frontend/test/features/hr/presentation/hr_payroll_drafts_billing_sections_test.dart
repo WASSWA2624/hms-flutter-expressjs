@@ -383,7 +383,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Preview payroll'), findsOneWidget);
-        expect(find.text('Process payroll'), findsOneWidget);
+        expect(find.text('Process payroll'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
@@ -429,14 +429,11 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('run-1').first);
-        await tester.pumpAndSettle();
+        // Next-action opens process dialog without the detail Quick actions shell.
+        expect(find.text('Process payroll'), findsOneWidget);
         await tester.tap(find.text('Process payroll'));
         await tester.pumpAndSettle();
-
-        expect(find.text('Process payroll'), findsWidgets);
-        final Finder submit = find.text('Process payroll').last;
-        await tester.tap(submit);
+        await tester.tap(find.text('Process payroll').last);
         await tester.pumpAndSettle();
 
         verify(
@@ -446,6 +443,7 @@ void main() {
             notes: any(named: 'notes'),
           ),
         ).called(1);
+        expect(find.text('HR changes saved.'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
       },
@@ -494,17 +492,11 @@ void main() {
       );
 
       for (int i = 0; i < 2; i++) {
-        await tester.tap(find.text('run-1').first);
-        await tester.pumpAndSettle();
+        expect(find.text('Process payroll'), findsOneWidget);
         await tester.tap(find.text('Process payroll'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Process payroll').last);
         await tester.pumpAndSettle();
-        // Dismiss leftover dialog if still open after success snackbar.
-        if (find.byType(AppDialog).evaluate().isNotEmpty) {
-          await tester.tap(find.text('Cancel').last);
-          await tester.pumpAndSettle();
-        }
       }
 
       verify(
@@ -606,8 +598,6 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('run-1').first);
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Process payroll'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
@@ -622,7 +612,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Activity'));
+      await tester.tap(find.text('HR activity'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });

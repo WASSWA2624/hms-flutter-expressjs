@@ -389,7 +389,7 @@ void main() {
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
       expect(find.text('Quick actions'), findsOneWidget);
-      expect(find.textContaining('Task details'), findsWidgets);
+      expect(find.textContaining('Housekeeping detail'), findsWidgets);
       expectFlatSections(tester);
     });
 
