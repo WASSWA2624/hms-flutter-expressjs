@@ -130,11 +130,27 @@ void _stubRepository(
   });
   when(
     () => repository.issueInvoice(any(), notes: any(named: 'notes')),
-  ).thenAnswer(
-    (_) async => const Result<BillingMutationResult>.success(
+  ).thenAnswer((_) async {
+    when(() => repository.listWorkItems(any())).thenAnswer(
+      (_) async => Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: const <BillingWorkItem>[],
+          request: const AppPageRequest(pageSize: 20),
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => repository.getWorkspace(any())).thenAnswer(
+      (_) async => const Result<BillingWorkspaceOverview>.success(
+        BillingWorkspaceOverview(
+          summary: BillingSummary(needsIssue: 0),
+        ),
+      ),
+    );
+    return const Result<BillingMutationResult>.success(
       BillingMutationResult(invoice: _issuedFromDraft),
-    ),
-  );
+    );
+  });
   when(() => repository.sendInvoice(any(), recipientEmail: any(named: 'recipientEmail'))).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
       BillingMutationResult(invoice: _issuedFromDraft),

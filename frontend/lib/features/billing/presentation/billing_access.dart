@@ -37,10 +37,8 @@ const AccessRequirement billingWriteRequirement = billingWorkspaceWriteRequireme
 /// Approve / reject financial holds (matrix create/update ∩):
 /// `billing:write` ∩ `financial:approve` when both apply.
 ///
-/// Source inventory (`screens/billing.md`) historically documented
-/// facility-manage for detail approve/reject; matrix + BILLING role pack use
-/// `financial:approve` ∩ `billing:write`. Prefer this requirement; backend
-/// remains authoritative if scopes differ.
+/// Matrix + BILLING role pack use `financial:approve` ∩ `billing:write`.
+/// Backend approval routes authorize `financial:approve` (plus admin scopes).
 const AccessRequirement billingApprovalDecisionRequirement = AccessRequirement(
   allPermissions: <AppPermission>[
     AppPermissions.billingWrite,
