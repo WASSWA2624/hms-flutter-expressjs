@@ -24872,6 +24872,66 @@ abstract class AppLocalizations {
   /// **'Ordered'**
   String get labStatusOrdered;
 
+  /// Lab worklist status when an order is awaiting result entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending - Ordered'**
+  String get labWorklistStatusPendingOrdered;
+
+  /// Lab worklist status when specimens are collected and awaiting processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending - Collected'**
+  String get labWorklistStatusPendingCollected;
+
+  /// Lab worklist status when tests are in process.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending - In process'**
+  String get labWorklistStatusPendingInProcess;
+
+  /// Lab worklist status when some results are entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending - Partially entered'**
+  String get labWorklistStatusPendingPartial;
+
+  /// Lab worklist status when a critical result needs action.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready - Critical'**
+  String get labWorklistStatusReadyCritical;
+
+  /// Lab worklist status when an abnormal result needs review.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready - Abnormal'**
+  String get labWorklistStatusReadyAbnormal;
+
+  /// Lab worklist status when results are filled and ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready - Filled'**
+  String get labWorklistStatusReadyFilled;
+
+  /// Lab worklist status when the order is completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get labWorklistStatusCompleted;
+
+  /// Lab worklist status when the order is cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get labWorklistStatusCancelled;
+
+  /// Lab worklist status when items were rejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get labWorklistStatusRejected;
+
   /// Localized text for labStatusCollected.
   ///
   /// In en, this message translates to:

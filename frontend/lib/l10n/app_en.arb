@@ -17282,6 +17282,46 @@
   "@labStatusOrdered": {
     "description": "Localized text for labStatusOrdered."
   },
+  "labWorklistStatusPendingOrdered": "Pending - Ordered",
+  "@labWorklistStatusPendingOrdered": {
+    "description": "Lab worklist status when an order is awaiting result entry."
+  },
+  "labWorklistStatusPendingCollected": "Pending - Collected",
+  "@labWorklistStatusPendingCollected": {
+    "description": "Lab worklist status when specimens are collected and awaiting processing."
+  },
+  "labWorklistStatusPendingInProcess": "Pending - In process",
+  "@labWorklistStatusPendingInProcess": {
+    "description": "Lab worklist status when tests are in process."
+  },
+  "labWorklistStatusPendingPartial": "Pending - Partially entered",
+  "@labWorklistStatusPendingPartial": {
+    "description": "Lab worklist status when some results are entered."
+  },
+  "labWorklistStatusReadyCritical": "Ready - Critical",
+  "@labWorklistStatusReadyCritical": {
+    "description": "Lab worklist status when a critical result needs action."
+  },
+  "labWorklistStatusReadyAbnormal": "Ready - Abnormal",
+  "@labWorklistStatusReadyAbnormal": {
+    "description": "Lab worklist status when an abnormal result needs review."
+  },
+  "labWorklistStatusReadyFilled": "Ready - Filled",
+  "@labWorklistStatusReadyFilled": {
+    "description": "Lab worklist status when results are filled and ready."
+  },
+  "labWorklistStatusCompleted": "Completed",
+  "@labWorklistStatusCompleted": {
+    "description": "Lab worklist status when the order is completed."
+  },
+  "labWorklistStatusCancelled": "Cancelled",
+  "@labWorklistStatusCancelled": {
+    "description": "Lab worklist status when the order is cancelled."
+  },
+  "labWorklistStatusRejected": "Rejected",
+  "@labWorklistStatusRejected": {
+    "description": "Lab worklist status when items were rejected."
+  },
   "labStatusCollected": "Collected",
   "@labStatusCollected": {
     "description": "Localized text for labStatusCollected."

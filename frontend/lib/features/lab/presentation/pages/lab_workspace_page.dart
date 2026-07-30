@@ -374,9 +374,14 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       setState(() => _filterValue = value);
       return;
     }
-    final LabDeskSection matched = _sectionFromFilterValue(value) ?? _section;
+    // Clearing advanced filters resets the desk to All patients.
+    final LabDeskSection matched = value.isActive
+        ? (_sectionFromFilterValue(value) ?? _section)
+        : LabDeskSection.worklist;
     setState(() {
-      _filterValue = value;
+      _filterValue = value.isActive
+          ? value
+          : _filterValueForSection(LabDeskSection.worklist);
       _section = matched;
     });
     _updateUrlForSection(matched);
@@ -702,6 +707,7 @@ class _LabWorklistPanel extends ConsumerWidget {
             advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
             advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            advancedFilterResetAppliesImmediately: true,
             enableDateFilter: true,
             dateFilterLabel: l10n.labOrderedDateFilterLabel,
             dateFromLabel: l10n.opdDateFromLabel,
@@ -847,8 +853,10 @@ bool Function(LabOrderSummary, String) _labWorklistSearchMatcher(
 
     return <String?>[
       labStatusLabel(context, item.status),
+      _worklistGlanceStatus(context, item).label,
       _entryStatus(context, item).label,
       _resultStatus(context, item).label,
+      _orderIdsCellLabel(item),
       _labBillingGateLabel(context, item),
       _nextActionLabel(context, item),
       clinicalRequestPaymentStatusDisplayLabel(
@@ -1132,7 +1140,7 @@ List<AppSearchBarFilterChoice> _statusFilterChoices(
     choices.add(
       AppSearchBarFilterChoice(
         value: value,
-        label: labStatusLabel(context, value),
+        label: _worklistStatusFilterLabel(context, value),
       ),
     );
   }
@@ -1141,6 +1149,21 @@ List<AppSearchBarFilterChoice> _statusFilterChoices(
         a.label.compareTo(b.label),
   );
   return choices;
+}
+
+String _worklistStatusFilterLabel(BuildContext context, String value) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (value.toUpperCase()) {
+    'ORDERED' || 'PENDING' => l10n.labWorklistStatusPendingOrdered,
+    'COLLECTED' => l10n.labWorklistStatusPendingCollected,
+    'IN_PROCESS' => l10n.labWorklistStatusPendingInProcess,
+    'CRITICAL' => l10n.labWorklistStatusReadyCritical,
+    'ABNORMAL' => l10n.labWorklistStatusReadyAbnormal,
+    'COMPLETED' => l10n.labWorklistStatusCompleted,
+    'CANCELLED' => l10n.labWorklistStatusCancelled,
+    'REJECTED' || 'REJECTED_SAMPLE' => l10n.labWorklistStatusRejected,
+    _ => labStatusLabel(context, value),
+  };
 }
 
 List<AppListTableColumn<LabOrderSummary>> _patientViewWorklistColumns(
@@ -1213,10 +1236,13 @@ AppListTableColumn<LabOrderSummary> _labWorkflowStatusColumn(
     id: 'workflow_status',
     label: l10n.labEntryStatusColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-        appListTableCompareText(left.status, right.status),
+        appListTableCompareText(
+          _worklistGlanceStatus(context, left).label,
+          _worklistGlanceStatus(context, right).label,
+        ),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return AppWorkspaceStatusBadge(
-        status: _orderStatus(context, item.status),
+        status: _worklistGlanceStatus(context, item),
       );
     },
   );
@@ -1516,12 +1542,38 @@ String _patientSortKey(LabOrderSummary order) {
 
 String _orderSortKey(LabOrderSummary order) {
   if (order.isPatientGroup) {
-    final int activeOrders = order.activeOrderCount > 0
-        ? order.activeOrderCount
-        : order.orderCount;
-    return activeOrders.toString().padLeft(4, '0');
+    final List<String> ids = _orderDisplayIds(order);
+    if (ids.isNotEmpty) {
+      return ids.first;
+    }
   }
-  return order.apiId;
+  return order.displayId ?? order.apiId;
+}
+
+List<String> _orderDisplayIds(LabOrderSummary order) {
+  if (order.isPatientGroup) {
+    final List<String> ids = order.orderDisplayIds.isNotEmpty
+        ? order.orderDisplayIds
+        : order.orderIds;
+    return ids
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+  final String single = (order.displayId ?? order.apiId).trim();
+  return single.isEmpty ? const <String>[] : <String>[single];
+}
+
+/// Orders column: first lab order ID, or `ID +N` when more than one.
+String _orderIdsCellLabel(LabOrderSummary order) {
+  final List<String> ids = _orderDisplayIds(order);
+  if (ids.isEmpty) {
+    return order.apiId;
+  }
+  if (ids.length == 1) {
+    return ids.first;
+  }
+  return '${ids.first} +${ids.length - 1}';
 }
 
 class _LabOrderIdentifier extends StatelessWidget {
@@ -1531,21 +1583,7 @@ class _LabOrderIdentifier extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    if (order.isPatientGroup) {
-      final int activeOrders = order.activeOrderCount > 0
-          ? order.activeOrderCount
-          : order.orderCount;
-      final List<String> ids = order.orderDisplayIds.isNotEmpty
-          ? order.orderDisplayIds
-          : order.orderIds;
-      final String summary = ids.isEmpty
-          ? l10n.labActiveOrderCount(activeOrders)
-          : '${l10n.labActiveOrderCount(activeOrders)} · ${ids.take(3).join(', ')}';
-      return _labWorklistTextCell(context, summary);
-    }
-
-    return _labWorklistTextCell(context, order.displayId ?? order.apiId);
+    return _labWorklistTextCell(context, _orderIdsCellLabel(order));
   }
 }
 
@@ -2006,6 +2044,98 @@ String _pageLabel(BuildContext context, AppPage<LabOrderSummary> page) {
 
 AppWorkspaceStatus _orderStatus(BuildContext context, String? value) {
   return labStatusBadge(context, value);
+}
+
+/// At-a-glance Status column: phase + detail (e.g. Pending - Ordered).
+AppWorkspaceStatus _worklistGlanceStatus(
+  BuildContext context,
+  LabOrderSummary order,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String raw = (order.status ?? '').toUpperCase();
+  final bool hasCriticalResult = order.items.any((LabOrderItem item) {
+    return (item.effectiveResultStatus ?? '').toUpperCase() == 'CRITICAL';
+  });
+  final bool hasAbnormalResult = order.items.any((LabOrderItem item) {
+    return (item.effectiveResultStatus ?? '').toUpperCase() == 'ABNORMAL';
+  });
+  final int activeItems = _activeResultItemCount(order);
+  final int enteredItems = _enteredResultItemCount(order);
+
+  // Patient groups roll critical/abnormal into status CRITICAL.
+  if (raw == 'CRITICAL' || hasCriticalResult) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusReadyCritical,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.priority_high_outlined,
+    );
+  }
+  if (hasAbnormalResult) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusReadyAbnormal,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.warning_amber_outlined,
+    );
+  }
+  if (raw == 'CANCELLED') {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusCancelled,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.block_outlined,
+    );
+  }
+  if (raw == 'REJECTED' ||
+      raw == 'REJECTED_SAMPLE' ||
+      order.hasRejectedItem) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusRejected,
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.block_outlined,
+    );
+  }
+  if (raw == 'COMPLETED' ||
+      (activeItems > 0 && order.completedItemCount >= activeItems)) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusCompleted,
+      tone: AppWorkspaceStatusTone.success,
+      icon: Icons.task_alt_outlined,
+    );
+  }
+  if (activeItems > 0 && enteredItems >= activeItems) {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusReadyFilled,
+      tone: AppWorkspaceStatusTone.info,
+      icon: Icons.fact_check_outlined,
+    );
+  }
+  if (enteredItems > 0 ||
+      order.inProcessItemCount > 0 ||
+      raw == 'IN_PROCESS') {
+    if (raw == 'IN_PROCESS' && enteredItems == 0) {
+      return AppWorkspaceStatus(
+        label: l10n.labWorklistStatusPendingInProcess,
+        tone: AppWorkspaceStatusTone.info,
+        icon: Icons.hourglass_top_outlined,
+      );
+    }
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusPendingPartial,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.pending_actions_outlined,
+    );
+  }
+  if (raw == 'COLLECTED') {
+    return AppWorkspaceStatus(
+      label: l10n.labWorklistStatusPendingCollected,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.science_outlined,
+    );
+  }
+  return AppWorkspaceStatus(
+    label: l10n.labWorklistStatusPendingOrdered,
+    tone: AppWorkspaceStatusTone.warning,
+    icon: Icons.assignment_outlined,
+  );
 }
 
 AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {

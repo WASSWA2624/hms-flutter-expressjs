@@ -13474,6 +13474,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusOrdered => 'Ordered';
 
   @override
+  String get labWorklistStatusPendingOrdered => 'Pending - Ordered';
+
+  @override
+  String get labWorklistStatusPendingCollected => 'Pending - Collected';
+
+  @override
+  String get labWorklistStatusPendingInProcess => 'Pending - In process';
+
+  @override
+  String get labWorklistStatusPendingPartial => 'Pending - Partially entered';
+
+  @override
+  String get labWorklistStatusReadyCritical => 'Ready - Critical';
+
+  @override
+  String get labWorklistStatusReadyAbnormal => 'Ready - Abnormal';
+
+  @override
+  String get labWorklistStatusReadyFilled => 'Ready - Filled';
+
+  @override
+  String get labWorklistStatusCompleted => 'Completed';
+
+  @override
+  String get labWorklistStatusCancelled => 'Cancelled';
+
+  @override
+  String get labWorklistStatusRejected => 'Rejected';
+
+  @override
   String get labStatusCollected => 'Collected';
 
   @override
