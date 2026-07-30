@@ -453,7 +453,11 @@ abstract final class IcuFollowUpsAtomPermissions {
 /// _(n/a)_. Route entry keeps AppRoutes ∪ `clinical:read` | `emergency:read` |
 /// `operations:read` ([routeEntry]). Tab chrome stays ∪ `clinical:read` |
 /// `emergency:read`. Open IPD / discharge clearance / print remain without
-/// write. Bed board manage follows rooms-beds admin gates elsewhere.
+/// write. Open billing / start-stay & round billing panels need
+/// `billing:read` + `billing-payments` ([openBilling] / [billingPanel]).
+/// Bed board manage follows rooms-beds admin gates elsewhere.
+///
+/// Financial inventory: `icu_all_billing_inventory.dart`.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -465,7 +469,9 @@ abstract final class IcuFollowUpsAtomPermissions {
 /// | Next action start stay / acknowledge / transfer / bed / observation / readiness | create / update | write ∪ |
 /// | Next action Open IPD / discharge clearance | navigate | [navigation] |
 /// | Detail complementary writes (vitals / alert / round / orders / end stay / …) | create / update | write ∪ |
-/// | Detail Open billing / Open IPD / clearance | navigate | [navigation] |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
+/// | Start stay / round billing panel | nested read | billing:read ([billingPanel]) |
+/// | Detail Open IPD / clearance | navigate | [navigation] |
 /// | Detail Print summary | export / read | read ∪ ([printSummary]) |
 /// | Nested mutation dialogs | create / update | write ∪ |
 /// | Panel deep link `?panel=` | create / update | write ∪ ([panelDeepLink]) |
@@ -526,6 +532,7 @@ abstract final class IcuAllAtomPermissions {
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
@@ -548,8 +555,8 @@ abstract final class IcuAllAtomPermissions {
 /// _(n/a)_ — [nestedWrite] / [nestedRead] reuse ICU write/read only. Write
 /// keeps source ∪ `clinical:write` | `emergency:write` rather than matrix ∩
 /// `clinical:write` alone. Route entry ∪ is [routeEntry]. Tab chrome stays ∪
-/// `clinical:read` | `emergency:read`. Open clearance / IPD / billing / print
-/// remain without write.
+/// `clinical:read` | `emergency:read`. Open clearance / IPD / print remain
+/// without write; Open billing and nested billing panels need billing:read.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -562,7 +569,8 @@ abstract final class IcuAllAtomPermissions {
 /// | Next action Open discharge clearance | navigate | [navigate] (no write) |
 /// | Detail complementary writes (vitals, alert, round, orders, transfer, end stay, …) | create / update | write ∪ |
 /// | Detail Mark readiness (when not row next-action) | update | write ∪ ([markReadiness]) |
-/// | Detail Open clearance / Open IPD / Open billing | navigate | [navigate] |
+/// | Detail Open clearance / Open IPD | navigate | [navigate] |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Print summary | export / read | read ∪ ([printSummary]) |
 /// | Nested readiness / mutation dialogs | create / update | write ∪ |
 /// | Deep link `?panel=discharge` | update | write ∪ ([panelDeepLink]) |
@@ -611,6 +619,7 @@ abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -689,6 +698,7 @@ abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -770,6 +780,7 @@ abstract final class IcuCriticalAtomPermissions {
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -855,6 +866,7 @@ abstract final class IcuTransfersAtomPermissions {
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openBilling = icuBillingReadRequirement;
+  static const AccessRequirement billingPanel = icuBillingPanelReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.

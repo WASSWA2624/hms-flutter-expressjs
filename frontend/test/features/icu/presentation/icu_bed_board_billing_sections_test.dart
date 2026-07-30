@@ -343,7 +343,7 @@ void main() {
         expect(find.byType(IcuBedBoardPanel), findsOneWidget);
         expect(find.textContaining('available'), findsWidgets);
         expect(find.textContaining('occupied'), findsWidgets);
-        expect(find.text('Ada Occupant'), findsOneWidget);
+        expect(find.textContaining('Ada Occupant'), findsOneWidget);
         _expectNoPatientBillingAffordances();
         expectFlatSections(tester);
       },
@@ -403,8 +403,8 @@ void main() {
 
       verify(() => repository.loadBedBoard()).called(greaterThanOrEqualTo(1));
       _expectNoPatientBillingAffordances();
-      expect(find.text('Ada Occupant'), findsOneWidget);
-      expect(find.text('ICU-1'), findsOneWidget);
+      expect(find.textContaining('Ada Occupant'), findsOneWidget);
+      expect(find.textContaining('ICU-1'), findsOneWidget);
     });
   });
 

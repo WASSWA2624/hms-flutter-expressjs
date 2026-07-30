@@ -286,7 +286,7 @@ class IcuActionPanel extends ConsumerWidget {
                 openIpdDischargeClearance(context, detail.summary),
           ),
         AppPermissionActionItem(
-          requirement: IcuActiveIcuAtomPermissions.openBilling,
+          requirement: icuBillingReadRequirement,
           label: l10n.icuActionOpenBilling,
           icon: Icons.receipt_long_outlined,
           onPressed: () => openIcuBillingWorkspace(context, detail.summary),

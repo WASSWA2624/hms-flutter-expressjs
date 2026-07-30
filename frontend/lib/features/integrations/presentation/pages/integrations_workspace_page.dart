@@ -1844,17 +1844,17 @@ Widget _detailBody(
     case IntegrationWorkItemKind.apiKey:
       final ApiKeyRecord? key = item.apiKey;
       if (key != null) {
+        // Sibling titled sections under Column — never nest section chrome.
         children.addAll(<Widget>[
-          AppMessagePanel(
+          AppWorkspaceDetailPanel(
             title: l10n.integrationsMaskedSecretTitle,
-            message: key.maskedValue,
-            icon: Icons.visibility_off_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
+            titleIcon: Icons.visibility_off_outlined,
+            child: Text(key.maskedValue),
           ),
-          AppMessagePanel(
+          AppWorkspaceDetailPanel(
             title: l10n.integrationsRotationGapTitle,
-            message: l10n.integrationsRotationGapBody,
-            icon: Icons.info_outline,
+            titleIcon: Icons.info_outline,
+            child: Text(l10n.integrationsRotationGapBody),
           ),
           _ApiKeyPermissionsPanel(
             apiKey: key,
@@ -2801,15 +2801,25 @@ Future<void> _showCreatedSecretDialog(
   final AppLocalizations l10n = context.l10n;
   final String secret = record.oneTimeSecret ?? l10n.integrationsSecretMissing;
 
+  final ThemeData theme = Theme.of(context);
   await showAppWorkspaceActionDialog<void>(
     context: context,
     title: Text(l10n.integrationsApiKeyCreatedDialogTitle),
     icon: const Icon(Icons.key_outlined),
-    content: AppSectionPanel(
-      title: l10n.integrationsApiKeyCreatedSecretTitle,
-      description: l10n.integrationsApiKeyCreatedSecretBody,
-      leadingIcon: Icons.visibility_outlined,
-      children: <Widget>[SelectableText(secret)],
+    // Dialog chrome is the titled surface — keep secret body non-section so
+    // this flow never nests titled section chrome (billing-and-sections AC5).
+    content: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.integrationsApiKeyCreatedSecretTitle,
+          style: theme.textTheme.titleSmall,
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(l10n.integrationsApiKeyCreatedSecretBody),
+        SizedBox(height: theme.spacing.md),
+        SelectableText(secret),
+      ],
     ),
     actions: <Widget>[
       AppButton.secondary(

@@ -1,48 +1,52 @@
 /**
  * ICU stay charge helpers (critical-care package / bed-day).
  *
- * ICU clinical actions must not invent a cashier. Stay-start charges post
- * through shared clinical-request billing (ICU_STAY) so Billing remains the
- * system of record. Settlement stays on the Billing workspace.
+ * Start-stay charges must post through shared clinical-request billing
+ * (`persistIcuStayBilling` / ICU_STAY) so Billing remains the system of
+ * record. Prefer an explicit request payload; otherwise fall back to
+ * facility billing extension fees.
  *
  * @module lib/billing/icu-billing
  */
 
+const { toMoneyString, toDecimalNumber } = require('@lib/billing/financials');
 const {
-  applyClinicalRequestBilling,
   buildPendingClinicalRequestBilling,
   normalizeBillingOfficeClinicalBilling,
   shouldApplyClinicalRequestBilling,
-  BILLABLE_SOURCE_MODULES,
 } = require('@lib/billing/clinical-request-billing');
 const { extractFacilityBillingFee } = require('@lib/billing/emergency-billing');
 
 const ICU_STAY_START_CHARGE_KEY = 'ICU_STAY_START';
 
 const ICU_PACKAGE_FEE_KEYS = [
+  'icu_critical_care_package_fee',
   'critical_care_package_fee',
   'icu_package_fee',
-  'icu_critical_care_fee',
-  'icu_fee',
+  'icu_admission_fee',
 ];
 
 const ICU_BED_DAY_FEE_KEYS = [
   'icu_bed_day_fee',
-  'icu_daily_fee',
+  'icu_daily_rate',
+  'icu_bed_fee',
   'critical_care_bed_day_fee',
 ];
 
 /**
- * Prefer explicit caller billing (normalized PENDING when billable); else
- * build from facility ICU package / bed-day fees.
+ * Build PENDING ICU stay start billing from request payload and/or facility.
  *
  * @param {Object} options
  * @returns {Object|null}
  */
-const buildIcuStayBilling = ({ billing = null, facility = null, currency = 'USD' } = {}) => {
-  const normalized = normalizeBillingOfficeClinicalBilling(billing);
-  if (normalized && shouldApplyClinicalRequestBilling(normalized)) {
-    return normalized;
+const buildIcuStayBilling = ({
+  billing = null,
+  facility = null,
+  currency = 'USD',
+} = {}) => {
+  const fromInput = normalizeBillingOfficeClinicalBilling(billing);
+  if (fromInput && shouldApplyClinicalRequestBilling(fromInput)) {
+    return fromInput;
   }
   if (billing && shouldApplyClinicalRequestBilling(billing)) {
     return normalizeBillingOfficeClinicalBilling(billing) || billing;
@@ -50,14 +54,11 @@ const buildIcuStayBilling = ({ billing = null, facility = null, currency = 'USD'
 
   const packageFee = extractFacilityBillingFee(facility, ICU_PACKAGE_FEE_KEYS);
   const bedDayFee = extractFacilityBillingFee(facility, ICU_BED_DAY_FEE_KEYS);
-  if (!packageFee && !bedDayFee) {
-    return null;
-  }
-
   const lineItems = [];
+
   if (packageFee) {
     lineItems.push({
-      id: 'ICU_CRITICAL_CARE_PACKAGE',
+      id: 'icu-critical-care-package',
       label: 'ICU critical-care package',
       quantity: 1,
       unit_price: packageFee.amount,
@@ -67,8 +68,8 @@ const buildIcuStayBilling = ({ billing = null, facility = null, currency = 'USD'
   }
   if (bedDayFee) {
     lineItems.push({
-      id: 'ICU_BED_DAY',
-      label: 'ICU bed / day',
+      id: 'icu-bed-day',
+      label: 'ICU bed/day',
       quantity: 1,
       unit_price: bedDayFee.amount,
       line_total: bedDayFee.amount,
@@ -76,8 +77,12 @@ const buildIcuStayBilling = ({ billing = null, facility = null, currency = 'USD'
     });
   }
 
+  if (lineItems.length === 0) {
+    return null;
+  }
+
   const resolvedCurrency =
-    packageFee?.currency || bedDayFee?.currency || currency || 'USD';
+    packageFee?.currency || bedDayFee?.currency || currency;
 
   return buildPendingClinicalRequestBilling({
     lineItems,
@@ -86,48 +91,23 @@ const buildIcuStayBilling = ({ billing = null, facility = null, currency = 'USD'
 };
 
 /**
- * Persist ICU stay-start billing via clinical-request-billing (idempotent).
+ * Sum line totals for diagnostics / tests.
  *
- * @param {import('@prisma/client').Prisma.TransactionClient} tx
- * @param {Object} options
- * @returns {Promise<Object|null>}
+ * @param {Object|null|undefined} billing
+ * @returns {number}
  */
-const persistIcuStayStartBilling = async (
-  tx,
-  {
-    icuStayId,
-    billing,
-    facility = null,
-    tenantId,
-    facilityId = null,
-    patientId,
-    encounterId = null,
-    actorUserId = null,
-    description = 'ICU critical-care package',
-  } = {}
-) => {
-  if (!icuStayId || !tenantId || !patientId) {
-    return null;
+const icuStayBillingTotal = (billing) => {
+  if (!billing) {
+    return 0;
   }
-
-  const resolved = buildIcuStayBilling({ billing, facility });
-  if (!resolved || !shouldApplyClinicalRequestBilling(resolved)) {
-    return null;
+  if (billing.total_amount != null) {
+    return toDecimalNumber(billing.total_amount);
   }
-
-  return applyClinicalRequestBilling(tx, {
-    billing: resolved,
-    sourceModule: BILLABLE_SOURCE_MODULES.ICU_STAY,
-    sourceId: String(icuStayId),
-    chargeKey: ICU_STAY_START_CHARGE_KEY,
-    catalogType: 'SERVICE',
-    description,
-    tenantId,
-    facilityId,
-    patientId,
-    encounterId,
-    actorUserId,
-  });
+  const items = Array.isArray(billing.line_items) ? billing.line_items : [];
+  return items.reduce(
+    (sum, item) => sum + toDecimalNumber(item?.line_total || item?.unit_price),
+    0
+  );
 };
 
 module.exports = {
@@ -135,5 +115,6 @@ module.exports = {
   ICU_PACKAGE_FEE_KEYS,
   ICU_BED_DAY_FEE_KEYS,
   buildIcuStayBilling,
-  persistIcuStayStartBilling,
+  icuStayBillingTotal,
+  toMoneyString,
 };
