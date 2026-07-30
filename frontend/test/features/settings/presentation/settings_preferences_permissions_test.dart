@@ -28,19 +28,19 @@ void main() {
       );
       expect(
         SettingsPreferencesAtomPermissions.update,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsPreferencesAtomPermissions.themeMode,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsPreferencesAtomPermissions.success,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsPreferencesAtomPermissions.validation,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsPreferencesAtomPermissions.routeEntry,
@@ -98,18 +98,18 @@ void main() {
       );
     });
 
-    test('update ∩ requires profile:update', () {
+    test('local display prefs update with profile:read', () {
       expect(
         SettingsPreferencesAtomPermissions.update.isAllowed(
           _policy(<AppPermission>[AppPermissions.profileRead]),
         ),
-        isFalse,
+        isTrue,
       );
       expect(
         SettingsPreferencesAtomPermissions.themeMode.isAllowed(
           _policy(<AppPermission>[AppPermissions.profileRead]),
         ),
-        isFalse,
+        isTrue,
       );
       expect(
         SettingsPreferencesAtomPermissions.update.isAllowed(
@@ -172,7 +172,7 @@ void main() {
       );
       expect(
         SettingsPreferencesAtomPermissions.nestedWrite,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
     });
 
@@ -184,7 +184,6 @@ void main() {
             tokens: SessionTokens(accessToken: 'access-token'),
             permissions: <AppPermission>{
               AppPermissions.profileRead,
-              AppPermissions.profileUpdate,
             },
             isAuthorizationHydrated: true,
             user: const AuthUserProfile(

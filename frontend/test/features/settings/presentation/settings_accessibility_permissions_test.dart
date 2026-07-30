@@ -24,19 +24,19 @@ void main() {
       );
       expect(
         SettingsAccessibilityAtomPermissions.update,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsAccessibilityAtomPermissions.reduceMotion,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsAccessibilityAtomPermissions.boldText,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsAccessibilityAtomPermissions.textScale,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsAccessibilityAtomPermissions.routeEntry,
@@ -74,12 +74,12 @@ void main() {
       );
     });
 
-    test('update ∩ requires profile:update', () {
+    test('local accessibility prefs update with profile:read', () {
       expect(
         SettingsAccessibilityAtomPermissions.update.isAllowed(
           _policy(<AppPermission>[AppPermissions.profileRead]),
         ),
-        isFalse,
+        isTrue,
       );
       expect(
         SettingsAccessibilityAtomPermissions.update.isAllowed(
@@ -123,7 +123,7 @@ void main() {
       );
       expect(
         SettingsAccessibilityAtomPermissions.nestedWrite,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
     });
 
@@ -135,7 +135,6 @@ void main() {
             tokens: SessionTokens(accessToken: 'access-token'),
             permissions: <AppPermission>{
               AppPermissions.profileRead,
-              AppPermissions.profileUpdate,
             },
             isAuthorizationHydrated: true,
             user: const AuthUserProfile(

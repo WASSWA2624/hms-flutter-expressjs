@@ -60,7 +60,7 @@ void main() {
   );
 
   testWidgets(
-    'profile:read shows read atoms and hides update controls',
+    'profile:read mounts theme update controls',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -70,25 +70,21 @@ void main() {
       );
 
       expect(find.text('Preferences'), findsWidgets);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
       expect(find.text('App theme'), findsOneWidget);
+      expect(find.text('System'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
-      expect(find.text('Use the dark color scheme.'), findsOneWidget);
-      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
-      expect(find.text('System'), findsNothing);
-      expect(find.text('Light'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'full intersection set mounts theme update controls',
+    'profile:read mounts theme update controls without profile:update',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
-        permissions: <AppPermission>[
-          AppPermissions.profileRead,
-          AppPermissions.profileUpdate,
-        ],
+        permissions: <AppPermission>[AppPermissions.profileRead],
         tab: 'preferences',
       );
 
@@ -204,7 +200,7 @@ void main() {
   );
 
   testWidgets(
-    'desktop dark theme shows authorized preferences read atoms',
+    'desktop dark theme shows authorized preferences update atoms',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -216,7 +212,7 @@ void main() {
 
       expect(find.text('App theme'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
-      expect(find.byType(AppRadioGroup<ThemeMode>), findsNothing);
+      expect(find.byType(AppRadioGroup<ThemeMode>), findsOneWidget);
     },
   );
 
@@ -241,7 +237,7 @@ void main() {
     );
     expect(
       SettingsPreferencesAtomPermissions.update,
-      same(profileUpdateRequirement),
+      same(profileReadRequirement),
     );
     expect(
       SettingsPreferencesAtomPermissions.tab.allPermissions,
@@ -250,7 +246,7 @@ void main() {
     expect(SettingsPreferencesAtomPermissions.tab.anyPermissions, isEmpty);
     expect(
       SettingsPreferencesAtomPermissions.update.allPermissions,
-      <AppPermission>[AppPermissions.profileUpdate],
+      <AppPermission>[AppPermissions.profileRead],
     );
     expect(SettingsPreferencesAtomPermissions.update.anyPermissions, isEmpty);
     expect(
@@ -268,7 +264,7 @@ void main() {
     );
     expect(
       SettingsPreferencesAtomPermissions.nestedWrite,
-      same(profileUpdateRequirement),
+      same(profileReadRequirement),
     );
     // profile:* keys are core/platform (not plan-module mapped).
   });

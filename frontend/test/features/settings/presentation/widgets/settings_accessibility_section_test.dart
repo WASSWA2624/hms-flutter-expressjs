@@ -58,7 +58,7 @@ void main() {
   );
 
   testWidgets(
-    'profile:read shows read atoms and hides update controls',
+    'profile:read mounts accessibility update controls',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -72,27 +72,23 @@ void main() {
       );
 
       expect(find.text('Accessibility'), findsWidgets);
+      expect(find.byType(AppCheckboxField), findsNWidgets(2));
+      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsOneWidget);
       expect(find.text('Reduce motion'), findsOneWidget);
       expect(find.text('Bold text'), findsOneWidget);
       expect(find.text('Text size'), findsOneWidget);
-      expect(find.text('Yes'), findsOneWidget);
-      expect(find.text('No'), findsOneWidget);
-      expect(find.text('Large'), findsOneWidget);
-      expect(find.byType(AppCheckboxField), findsNothing);
-      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsNothing);
+      expect(find.text('Yes'), findsNothing);
+      expect(find.text('No'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'full intersection set mounts update controls',
+    'profile:read mounts update controls without profile:update',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
-        permissions: <AppPermission>[
-          AppPermissions.profileRead,
-          AppPermissions.profileUpdate,
-        ],
+        permissions: <AppPermission>[AppPermissions.profileRead],
         tab: 'accessibility',
       );
 
@@ -218,7 +214,7 @@ void main() {
   );
 
   testWidgets(
-    'desktop dark theme shows authorized accessibility read atoms',
+    'desktop dark theme shows authorized accessibility update atoms',
     (WidgetTester tester) async {
       await _pumpSettings(
         tester,
@@ -234,10 +230,10 @@ void main() {
       );
 
       expect(find.text('Reduce motion'), findsOneWidget);
-      expect(find.text('Yes'), findsOneWidget);
-      expect(find.text('No'), findsOneWidget);
-      expect(find.text('Extra large'), findsOneWidget);
-      expect(find.byType(AppCheckboxField), findsNothing);
+      expect(find.byType(AppCheckboxField), findsNWidgets(2));
+      expect(find.byType(AppSelectField<AppTextScaleLevel>), findsOneWidget);
+      expect(find.text('Yes'), findsNothing);
+      expect(find.text('No'), findsNothing);
     },
   );
 

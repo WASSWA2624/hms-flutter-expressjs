@@ -23,18 +23,19 @@ const AccessRequirement settingsFacilityAdminRequirement = AccessRequirement(
 
 /// Preferences tab (`/settings?tab=preferences`) atom → permission map.
 ///
-/// Authenticated profile prefs. Reuses [profileReadRequirement] /
-/// [profileUpdateRequirement]. No nested dialogs. Create/delete ∩
-/// `facility:admin` are documented but **not mounted**. View ∪ / nested
-/// cross-module rows are _(n/a)_. Profile rights are core/platform (not
-/// plan-module mapped); subscription stripping does not apply. Own-scoped
-/// via local theme prefs for the current user.
+/// Authenticated local display prefs (theme). Reuses
+/// [profileReadRequirement] for both view and edit — these values live on the
+/// device for the current user and are not server profile mutations. Account
+/// profile edits still use [profileUpdateRequirement] on the Account tab.
+/// Create/delete ∩ `facility:admin` are documented but **not mounted**. View ∪
+/// / nested cross-module rows are _(n/a)_. Profile rights are core/platform
+/// (not plan-module mapped); subscription stripping does not apply.
 ///
 /// | Atom | Intent | Gate |
 /// | --- | --- | --- |
 /// | Tab strip / section chrome | read | `profile:read` ∩ ([tab]) |
 /// | App theme current value | read | `profile:read` ∩ ([themeModeValue]) |
-/// | App theme radio group | update | `profile:update` ∩ ([themeMode]) |
+/// | App theme radio group | update | `profile:read` ∩ ([themeMode]) |
 /// | Save-error snackbar | visible feedback | update path ([success]/[validation]) |
 /// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
 /// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
@@ -46,14 +47,14 @@ abstract final class SettingsPreferencesAtomPermissions {
   static const AccessRequirement loading = profileReadRequirement;
   static const AccessRequirement empty = profileReadRequirement;
   static const AccessRequirement retry = profileReadRequirement;
-  static const AccessRequirement update = profileUpdateRequirement;
-  static const AccessRequirement themeMode = profileUpdateRequirement;
-  static const AccessRequirement success = profileUpdateRequirement;
-  static const AccessRequirement validation = profileUpdateRequirement;
+  static const AccessRequirement update = profileReadRequirement;
+  static const AccessRequirement themeMode = profileReadRequirement;
+  static const AccessRequirement success = profileReadRequirement;
+  static const AccessRequirement validation = profileReadRequirement;
   static const AccessRequirement create = settingsFacilityAdminRequirement;
   static const AccessRequirement delete = settingsFacilityAdminRequirement;
   static const AccessRequirement nestedRead = profileReadRequirement;
-  static const AccessRequirement nestedWrite = profileUpdateRequirement;
+  static const AccessRequirement nestedWrite = profileReadRequirement;
   static const AccessRequirement routeEntry =
       RouteAccessCatalog.authenticatedCore;
 }
@@ -139,19 +140,19 @@ const AccessRequirement settingsAccountDeleteRequirement =
 
 /// Accessibility tab (`/settings?tab=accessibility`) atom → permission map.
 ///
-/// Authenticated profile prefs. Reuses [profileReadRequirement] /
-/// [profileUpdateRequirement]. No nested dialogs. Create/delete ∩
+/// Authenticated local accessibility prefs. Reuses [profileReadRequirement]
+/// for both view and edit — motion / text prefs are device-local for the
+/// current user (not server profile mutations). Create/delete ∩
 /// `facility:admin` are documented but **not mounted**. View ∪ / nested
 /// cross-module rows are _(n/a)_. Profile rights are core/platform (not
-/// plan-module mapped); subscription stripping does not apply. Own-scoped
-/// via local accessibility prefs for the current user.
+/// plan-module mapped); subscription stripping does not apply.
 ///
 /// | Atom | Intent | Gate |
 /// | --- | --- | --- |
 /// | Tab strip / section chrome | read | `profile:read` ∩ ([tab] / [listChrome]) |
 /// | Reduce motion / Bold text / Text size values | read | `profile:read` ∩ |
-/// | Reduce motion / Bold text checkboxes | update | `profile:update` ∩ |
-/// | Text size select | update | `profile:update` ∩ |
+/// | Reduce motion / Bold text checkboxes | update | `profile:read` ∩ |
+/// | Text size select | update | `profile:read` ∩ |
 /// | Save-error snackbar | visible feedback | update path ([success]/[validation]) |
 /// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
 /// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
@@ -165,16 +166,16 @@ abstract final class SettingsAccessibilityAtomPermissions {
   static const AccessRequirement loading = profileReadRequirement;
   static const AccessRequirement empty = profileReadRequirement;
   static const AccessRequirement retry = profileReadRequirement;
-  static const AccessRequirement update = profileUpdateRequirement;
-  static const AccessRequirement reduceMotion = profileUpdateRequirement;
-  static const AccessRequirement boldText = profileUpdateRequirement;
-  static const AccessRequirement textScale = profileUpdateRequirement;
-  static const AccessRequirement success = profileUpdateRequirement;
-  static const AccessRequirement validation = profileUpdateRequirement;
+  static const AccessRequirement update = profileReadRequirement;
+  static const AccessRequirement reduceMotion = profileReadRequirement;
+  static const AccessRequirement boldText = profileReadRequirement;
+  static const AccessRequirement textScale = profileReadRequirement;
+  static const AccessRequirement success = profileReadRequirement;
+  static const AccessRequirement validation = profileReadRequirement;
   static const AccessRequirement create = settingsFacilityAdminRequirement;
   static const AccessRequirement delete = settingsFacilityAdminRequirement;
   static const AccessRequirement nestedRead = profileReadRequirement;
-  static const AccessRequirement nestedWrite = profileUpdateRequirement;
+  static const AccessRequirement nestedWrite = profileReadRequirement;
   static const AccessRequirement routeEntry =
       RouteAccessCatalog.authenticatedCore;
 }
