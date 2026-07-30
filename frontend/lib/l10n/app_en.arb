@@ -2190,6 +2190,10 @@
   "@billingClaimStatusPaid": {
     "description": "Insurance claim paid status label."
   },
+  "billingClaimStatusPartial": "Partial",
+  "@billingClaimStatusPartial": {
+    "description": "Insurance claim partially paid status label."
+  },
   "billingStatusDraft": "Draft",
   "@billingStatusDraft": {
     "description": "Draft billing status label."

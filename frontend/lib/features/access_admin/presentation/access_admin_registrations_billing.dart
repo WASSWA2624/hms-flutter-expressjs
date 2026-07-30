@@ -159,7 +159,29 @@ const String accessAdminRegistrationsBillingScopeNote =
     'Pending tenant registrations are elevated-only access-administration '
     'workflows. Activate provisions a SaaS trial via the subscriptions '
     'onboarding path; reject updates user status only. No patient invoice, '
-    'payment, or adjustment is collected on this tab.';
+    'payment, or adjustment is collected on this tab. Activation must not '
+    'alter historical patient Billing ledger rows; demo/seed financial data '
+    'belongs in Billing factories, not orphan amounts on this queue.';
+
+/// Titled section chrome reachable from Registrations (worklist + detail).
+///
+/// Worklist is [AppListTable] under a non-section [Column]; registration detail
+/// is flat `_DetailRow` fields inside [AppDialog] (no titled section wrappers).
+/// No titled section contains another — sibling-only under layout parents.
+abstract final class AccessAdminRegistrationsSectionInventory {
+  static const List<String> titledSectionIds = <String>[];
+
+  static const List<String> untitledContentGroups = <String>[
+    'panel_tab_strip',
+    'registrations_worklist_table',
+    'registration_detail_fields',
+    'registration_detail_reject_actions',
+  ];
+
+  static bool get hasNoTitledSections => titledSectionIds.isEmpty;
+
+  static bool get isFlat => true;
+}
 
 /// True when Registrations tab has no patient-ledger billable actions.
 bool accessAdminRegistrationsTabHasNoPatientBillableActions() {

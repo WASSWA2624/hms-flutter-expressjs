@@ -145,6 +145,16 @@ const getPermissionSet = (user = {}) => new Set(getUserPermissions(user));
 
 const hasPermission = (user, permission) => getPermissionSet(user).has(permission);
 
+const assertBillingRead = (user = {}) => {
+  if (hasPermission(user, PERMISSIONS.BILLING_READ)) return;
+  throw new HttpError('errors.auth.insufficient_permissions', 403);
+};
+
+const assertBillingWrite = (user = {}) => {
+  if (hasPermission(user, PERMISSIONS.BILLING_WRITE)) return;
+  throw new HttpError('errors.auth.insufficient_permissions', 403);
+};
+
 const auditCreate = (user, ip, entity, entityId, after) =>
   createAuditLog({
     tenant_id: user?.tenant_id || null,
@@ -590,6 +600,7 @@ const runQueue = async (queue, scope, page, limit, filters = {}) => {
 
 const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
   assertEnabled();
+  assertBillingRead(user);
   const scope = await resolveScope(filters, user);
   const invoiceWhere = await buildInvoiceWhere(scope, filters);
   const paymentWhere = { tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}), ...(scope.patient_id ? { patient_id: scope.patient_id } : {}) };
@@ -657,6 +668,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
 
 const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
   assertEnabled();
+  assertBillingRead(user);
   const scope = await resolveScope(filters, user);
   const queue = normalizeQueue(filters.queue);
   if (queue) {
@@ -760,6 +772,7 @@ const getPatientLedger = async (patientIdentifier, filters = {}, page = 1, limit
 
 const issueInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   const scope = await resolveScope({}, user);
   const invoice = await resolveScopedByIdentifier({
     model: 'invoice',
@@ -801,6 +814,7 @@ const issueInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = nul
 
 const sendInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   await issueInvoice(invoiceIdentifier, {}, user, ip);
   const scope = await resolveScope({}, user);
   const invoice = await resolveScopedByIdentifier({
@@ -834,6 +848,7 @@ const sendInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = null
 
 const requestInvoiceVoid = async (invoiceIdentifier, payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   const scope = await resolveScope({}, user);
   const invoice = await resolveScopedByIdentifier({
     model: 'invoice',
@@ -867,6 +882,7 @@ const requestInvoiceVoid = async (invoiceIdentifier, payload = {}, user = {}, ip
 
 const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   const scope = await resolveScope({}, user);
   const payment = await resolveScopedByIdentifier({
     model: 'payment',
@@ -876,10 +892,52 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     errorKey: 'errors.payment.not_found',
   });
 
+  const targetStatus = clean(payload.status || 'COMPLETED').toUpperCase() || 'COMPLETED';
+  // Idempotent replay: already-reconciled payments must not create orphan
+  // ledger side effects or duplicate settlement posts.
+  if (clean(payment.status).toUpperCase() === targetStatus && targetStatus === 'COMPLETED') {
+    const [existingPayment, existingInvoice] = await Promise.all([
+      billingRepository.findPaymentById(payment.id, PAYMENT_INCLUDE),
+      payment.invoice_id
+        ? billingRepository.findInvoiceById(payment.invoice_id, INVOICE_INCLUDE)
+        : Promise.resolve(null),
+    ]);
+    return {
+      payment: mapPayment(existingPayment || payment),
+      invoice: existingInvoice ? mapInvoice(existingInvoice, true) : null,
+      financials: existingInvoice ? computeInvoiceFinancials(existingInvoice) : null,
+    };
+  }
+
   const mutation = await billingRepository.withTransaction(async (tx) => {
+    if (targetStatus === 'COMPLETED') {
+      const invoice = await tx.invoice.findFirst({
+        where: { id: payment.invoice_id, deleted_at: null },
+        include: {
+          payments: { where: { deleted_at: null }, include: { refunds: { where: { deleted_at: null } } } },
+          billing_adjustments: { where: { deleted_at: null } },
+        },
+      });
+      if (!invoice) throw new HttpError('errors.invoice.not_found', 404);
+      if (
+        ['CANCELLED'].includes(clean(invoice.status).toUpperCase()) ||
+        ['CANCELLED'].includes(clean(invoice.billing_status).toUpperCase())
+      ) {
+        throw new HttpError('errors.invoice.invalid_status', 400);
+      }
+      if (['DRAFT'].includes(clean(invoice.billing_status).toUpperCase())) {
+        throw new HttpError('errors.invoice.invalid_status', 400);
+      }
+      const financials = computeInvoiceFinancials(invoice);
+      const paymentAmount = toDecimalNumber(payment.amount);
+      if (paymentAmount > toDecimalNumber(financials.balance_due) + 0.009) {
+        throw new HttpError('errors.payment.amount_exceeds_balance', 400);
+      }
+    }
+
     const updatedPayment = await tx.payment.update({
       where: { id: payment.id },
-      data: { status: payload.status || 'COMPLETED', paid_at: payment.paid_at || new Date() },
+      data: { status: targetStatus, paid_at: payment.paid_at || new Date() },
     });
     const invoiceState = await recalculateInvoiceStateTx(tx, payment.invoice_id);
     const clinicalSync = await syncClinicalOrderBillingSnapshotsFromInvoiceTx(
@@ -889,7 +947,7 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     return { payment: updatedPayment, invoiceState, clinicalSync };
   });
 
-  auditUpdate(user, ip, 'payment', payment.id, { transition: 'RECONCILE', status: payload.status || 'COMPLETED', notes: payload.notes || null });
+  auditUpdate(user, ip, 'payment', payment.id, { transition: 'RECONCILE', status: targetStatus, notes: payload.notes || null });
   const [updatedPayment, updatedInvoice] = await Promise.all([
     billingRepository.findPaymentById(payment.id, PAYMENT_INCLUDE),
     mutation.invoiceState?.invoice ? billingRepository.findInvoiceById(mutation.invoiceState.invoice.id, INVOICE_INCLUDE) : Promise.resolve(null),
@@ -947,6 +1005,7 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
 
 const requestPaymentRefund = async (paymentIdentifier, payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   const scope = await resolveScope({}, user);
   const payment = await resolveScopedByIdentifier({
     model: 'payment',
@@ -989,6 +1048,7 @@ const requestPaymentRefund = async (paymentIdentifier, payload = {}, user = {}, 
 
 const requestAdjustment = async (payload = {}, user = {}, ip = null) => {
   assertEnabled();
+  assertBillingWrite(user);
   const scope = await resolveScope({}, user);
   const invoice = await resolveScopedByIdentifier({
     model: 'invoice',
@@ -1147,13 +1207,32 @@ const approveApproval = async (approvalIdentifier, payload = {}, user = {}, ip =
   if (clean(approval.status).toUpperCase() !== 'PENDING') throw new HttpError('errors.billing_approval.invalid_status', 400);
   if (clean(approval.requested_by_user_id) === clean(user.id)) throw new HttpError('errors.billing_approval.separation_of_duties', 400);
 
+  // Execute then claim PENDING→APPROVED via updateMany so concurrent replays
+  // roll back duplicate refund/adjustment/void rows when the claim loses.
   const mutation = await billingRepository.withTransaction(async (tx) => {
-    const execution = await executeApproval(tx, approval);
-    const updatedApproval = await tx.billing_approval.update({
-      where: { id: approval.id },
-      data: { status: 'APPROVED', approved_by_user_id: user.id, decided_at: new Date(), decision_notes: payload.decision_notes || null },
+    const current = await tx.billing_approval.findFirst({
+      where: { id: approval.id, deleted_at: null },
     });
-    return { execution, approval: updatedApproval };
+    if (!current || clean(current.status).toUpperCase() !== 'PENDING') {
+      throw new HttpError('errors.billing_approval.invalid_status', 400);
+    }
+    const execution = await executeApproval(tx, current);
+    const claimed = await tx.billing_approval.updateMany({
+      where: { id: approval.id, status: 'PENDING' },
+      data: {
+        status: 'APPROVED',
+        approved_by_user_id: user.id,
+        decided_at: new Date(),
+        decision_notes: payload.decision_notes || null,
+      },
+    });
+    if (claimed.count !== 1) {
+      throw new HttpError('errors.billing_approval.invalid_status', 400);
+    }
+    const updatedApproval = await tx.billing_approval.findFirst({
+      where: { id: approval.id },
+    });
+    return { execution, approval: updatedApproval || { ...current, status: 'APPROVED' } };
   });
 
   auditUpdate(user, ip, 'billing_approval', approval.id, { transition: 'APPROVE', approval_type: approval.approval_type });
@@ -1174,29 +1253,30 @@ const approveApproval = async (approvalIdentifier, payload = {}, user = {}, ip =
     );
   }
 
+  const decidedApproval = mutation.approval || approval;
   if (mutation.execution?.type === 'REFUND' && mutation.execution?.refund?.id) {
     await publishBillingRealtimeUpdate({
       event: BILLING_EVENTS.BILLING_REFUND_PROCESSED,
       action: 'REFUND_PROCESSED',
       refund: mutation.execution.refund,
       invoice: approvalUpdatedInvoice,
-      approval: mutation.approval || approval,
+      approval: decidedApproval,
       actorUserId: user?.id || null,
     });
   }
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: `${mutation.execution?.type || 'APPROVAL'}_APPROVED`,
+    invoice: approvalUpdatedInvoice,
+    approval: decidedApproval,
+    actorUserId: user?.id || null,
+  });
   if (approvalUpdatedInvoice) {
-    await publishBillingRealtimeUpdate({
-      event: BILLING_EVENTS.INVOICE_UPDATED,
-      action: `${mutation.execution?.type || 'APPROVAL'}_APPROVED`,
-      invoice: approvalUpdatedInvoice,
-      approval: mutation.approval || approval,
-      actorUserId: user?.id || null,
-    });
     await publishBillingRealtimeUpdate({
       event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
       action: 'BALANCE_UPDATED',
       invoice: approvalUpdatedInvoice,
-      approval: mutation.approval || approval,
+      approval: decidedApproval,
       actorUserId: user?.id || null,
     });
   }
@@ -1222,16 +1302,33 @@ const rejectApproval = async (approvalIdentifier, payload = {}, user = {}, ip = 
   if (clean(approval.status).toUpperCase() !== 'PENDING') throw new HttpError('errors.billing_approval.invalid_status', 400);
   if (clean(approval.requested_by_user_id) === clean(user.id)) throw new HttpError('errors.billing_approval.separation_of_duties', 400);
 
-  const updated = await billingRepository.updateApproval(approval.id, {
-    status: 'REJECTED',
-    approved_by_user_id: user.id,
-    reason: payload.reason || approval.reason,
-    decision_notes: payload.decision_notes || null,
-    decided_at: new Date(),
+  const updated = await billingRepository.withTransaction(async (tx) => {
+    const claimed = await tx.billing_approval.updateMany({
+      where: { id: approval.id, status: 'PENDING' },
+      data: {
+        status: 'REJECTED',
+        approved_by_user_id: user.id,
+        reason: payload.reason || approval.reason,
+        decision_notes: payload.decision_notes || null,
+        decided_at: new Date(),
+      },
+    });
+    if (claimed.count !== 1) {
+      throw new HttpError('errors.billing_approval.invalid_status', 400);
+    }
+    return tx.billing_approval.findFirst({ where: { id: approval.id } });
   });
+
   auditUpdate(user, ip, 'billing_approval', updated.id, { transition: 'REJECT', reason: payload.reason || null });
   const fullApproval = await billingRepository.findApprovalById(updated.id, APPROVAL_INCLUDE);
-  return { approval: mapApproval(fullApproval || updated) };
+  const mappedApproval = mapApproval(fullApproval || updated);
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'APPROVAL_REJECTED',
+    approval: fullApproval || updated,
+    actorUserId: user?.id || null,
+  });
+  return { approval: mappedApproval };
 };
 
 const getInvoiceDocument = async (invoiceIdentifier, user = {}) => {

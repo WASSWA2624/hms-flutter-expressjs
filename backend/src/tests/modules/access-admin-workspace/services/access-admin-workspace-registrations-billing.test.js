@@ -196,4 +196,18 @@ describe('access-admin-workspace registrations billing scan', () => {
     expect(item).not.toHaveProperty('amount');
     expect(item).not.toHaveProperty('invoice_id');
   });
+
+  it('activate audit documents NOT_BILLED SaaS path without patient ledger mutation', async () => {
+    const { createAuditLog } = require('@lib/audit');
+    await service.activateRegistration('USR0001', superAdmin, '127.0.0.1');
+
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'TENANT_REGISTRATION_ACTIVATED',
+        entity: 'user',
+      })
+    );
+    expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
+    expect(provisionTrialSubscription).toHaveBeenCalledWith('tenant-uuid');
+  });
 });

@@ -4,6 +4,7 @@ import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 /// Financial action classification for the Billing **Needs issue** tab scan.
 enum BillingNeedsIssueActionClass {
   /// Draft invoice issuance (DRAFT → ISSUED) with line provenance preserved.
+  /// Includes Send, which issues first via Billing then delivers the PDF.
   createCharge,
 
   /// Shift/day close reconciles Billing ledger totals.
@@ -15,7 +16,7 @@ enum BillingNeedsIssueActionClass {
   /// Void invoice request from detail.
   reverse,
 
-  /// Read chrome, navigation, print/export, send notification (balance unchanged).
+  /// Read chrome, navigation, print/export, ledger (balance unchanged).
   notBillable,
 }
 
@@ -123,10 +124,11 @@ abstract final class BillingNeedsIssueFinancialInventory {
       BillingNeedsIssueFinancialAtom(
     id: 'send',
     label: 'Send invoice',
-    actionClass: BillingNeedsIssueActionClass.notBillable,
+    actionClass: BillingNeedsIssueActionClass.createCharge,
     requirement: BillingNeedsIssueAtomPermissions.write,
     repositoryMethod: 'sendInvoice',
-    auditNote: 'Notification only — issues first if still DRAFT',
+    auditNote:
+        'Backend sendInvoice calls issueInvoice first (DRAFT → ISSUED), then emails PDF',
   );
 
   static const BillingNeedsIssueFinancialAtom viewLedger =

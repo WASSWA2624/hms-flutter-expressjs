@@ -85,6 +85,30 @@ void main() {
       expect(revenue?.route.path, AppRoutes.billing.path);
     });
 
+    test('billing collections KPI does not deep-link to pendingPayment queue', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.billing);
+      final AppAccessPolicy policy = _policy(
+        permissions: <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.billingRead,
+        ],
+      );
+
+      final HomeMetricNavigation? collections = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'collections_today',
+          label: 'Collected today',
+          value: 1200,
+          requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+        ),
+        policy: policy,
+      );
+
+      expect(collections?.route.path, AppRoutes.billing.path);
+      expect(collections?.queryParameters['queue'], isNull);
+    });
+
     test('patient open bills KPI navigates to Billing pending queue', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.patient);
       final AppAccessPolicy policy = _policy(
@@ -128,6 +152,34 @@ void main() {
 
     test('home dashboard subscribes to billing realtime event group', () {
       expect(RealtimeEventGroups.billing, isNotEmpty);
+      expect(
+        RealtimeEventGroups.billing.any(
+          (String event) => event.toLowerCase().contains('billing') ||
+              event.toLowerCase().contains('invoice') ||
+              event.toLowerCase().contains('payment'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('idempotent inventory: settle actions only navigate to Billing', () {
+      // Replaying home receive_payment / refund never posts locally — Billing owns collection.
+      for (final String id in <String>[
+        'receive_payment',
+        'process_refund',
+        'close_shift',
+      ]) {
+        final HomeDashboardBillingAtom atom =
+            HomeDashboardBillingInventory.quickActions[id]!;
+        expect(
+          HomeDashboardBillingInventory.isInlineCollectionForbidden(
+            atom.actionClass,
+          ),
+          isTrue,
+        );
+        expect(atom.billingRoute.path, AppRoutes.billing.path);
+        expect(homeActionLibrary[id]!.route.path, AppRoutes.billing.path);
+      }
     });
 
     testWidgets(

@@ -30,10 +30,11 @@ class AccessAdminRolesFinancialAtom {
 /// Canonical inventory for `/admin/access?panel=roles`.
 ///
 /// Scope: tab chrome, worklist, create/edit/delete dialogs, similarity review,
-/// and read-only role detail on this tab. Permission sync/editor and lifecycle
-/// restore/purge live on [ManageRolesPermissionsPanel] (other entry points).
-/// Granting `billing:*` permissions adjusts access only — it must not mutate
-/// patient Billing ledgers.
+/// and read-only role detail on this tab. Create/edit open with
+/// `includePermissions: false` (identity/scope only). Permission sync/editor
+/// and lifecycle restore/purge live on [ManageRolesPermissionsPanel] (other
+/// entry points). Displaying assigned `billing:*` rights is metadata only —
+/// it must not mutate patient Billing ledgers.
 abstract final class AccessAdminRolesBillingInventory {
   static const List<AccessAdminRolesFinancialAtom> atoms =
       <AccessAdminRolesFinancialAtom>[

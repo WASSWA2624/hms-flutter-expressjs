@@ -3,8 +3,11 @@ import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 
 /// Financial action classification for the Billing **Approval required** tab scan.
 enum BillingApprovalRequiredActionClass {
-  /// Executes held adjustment / refund / void through Billing on approve.
+  /// Executes held adjustment (write-off / discount / credit) through Billing.
   adjust,
+
+  /// Executes held refund or void through Billing on approve.
+  reverse,
 
   /// Shift/day close reconciles Billing ledger totals.
   settle,
@@ -36,8 +39,8 @@ final class BillingApprovalRequiredFinancialAtom {
 
 /// Canonical inventory of Approval required tab financially relevant atoms (AC1).
 ///
-/// Approve executes the held mutation (adjustment, refund, void) via Billing;
-/// reject records an audited decision without posting a parallel ledger.
+/// Approve executes the held mutation (ADJUSTMENT / REFUND / VOID) via Billing;
+/// reject records an audited decision without posting a ledger row.
 abstract final class BillingApprovalRequiredFinancialInventory {
   static const BillingApprovalRequiredFinancialAtom tab =
       BillingApprovalRequiredFinancialAtom(
@@ -90,17 +93,29 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     actionClass: BillingApprovalRequiredActionClass.adjust,
     requirement: BillingApprovalRequiredAtomPermissions.approve,
     repositoryMethod: 'approveApproval',
-    auditNote: 'Executes held adjustment/refund/void in Billing',
+    auditNote:
+        'Executes held ADJUSTMENT (or REFUND/VOID reverse) in Billing; '
+        'claim uses PENDING→APPROVED to block duplicate posts',
+  );
+
+  static const BillingApprovalRequiredFinancialAtom approveRefundOrVoid =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'approve_refund_or_void',
+    label: 'Approve refund / void hold',
+    actionClass: BillingApprovalRequiredActionClass.reverse,
+    requirement: BillingApprovalRequiredAtomPermissions.approve,
+    repositoryMethod: 'approveApproval',
+    auditNote: 'Same approveApproval path — REFUND creates refund row; VOID cancels invoice',
   );
 
   static const BillingApprovalRequiredFinancialAtom reject =
       BillingApprovalRequiredFinancialAtom(
     id: 'reject',
     label: 'Reject financial hold',
-    actionClass: BillingApprovalRequiredActionClass.adjust,
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
     requirement: BillingApprovalRequiredAtomPermissions.approve,
     repositoryMethod: 'rejectApproval',
-    auditNote: 'Audited rejection — no parallel ledger',
+    auditNote: 'Audited REJECTED — no ledger post; realtime refreshes queue',
   );
 
   static const BillingApprovalRequiredFinancialAtom viewLedger =
@@ -112,6 +127,50 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     repositoryMethod: 'getPatientLedger',
   );
 
+  /// Print/download mount only for invoice kinds — absent on approval rows.
+  static const BillingApprovalRequiredFinancialAtom printInvoice =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'print_invoice',
+    label: 'Print invoice (invoice kinds only)',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.document,
+    auditNote: 'NOT_REQUIRED on approval work items — control not mounted',
+  );
+
+  static const BillingApprovalRequiredFinancialAtom downloadInvoice =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'download_invoice',
+    label: 'Download invoice PDF (invoice kinds only)',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.document,
+    repositoryMethod: 'getInvoiceDocument',
+    auditNote: 'NOT_REQUIRED on approval work items — control not mounted',
+  );
+
+  static const BillingApprovalRequiredFinancialAtom claimsPendingTab =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'claims_pending_tab',
+    label: 'Claims pending tab strip navigation',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.claimsPendingTab,
+  );
+
+  static const BillingApprovalRequiredFinancialAtom emptyState =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'empty_state',
+    label: 'Empty queue state',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.listChrome,
+  );
+
+  static const BillingApprovalRequiredFinancialAtom errorRetry =
+      BillingApprovalRequiredFinancialAtom(
+    id: 'error_retry',
+    label: 'Error / retry surface',
+    actionClass: BillingApprovalRequiredActionClass.notBillable,
+    requirement: BillingApprovalRequiredAtomPermissions.listChrome,
+  );
+
   /// Every atom inventoried for the Approval required tab scan.
   static const List<BillingApprovalRequiredFinancialAtom> all =
       <BillingApprovalRequiredFinancialAtom>[
@@ -121,8 +180,14 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     closeShift,
     closeDay,
     approve,
+    approveRefundOrVoid,
     reject,
     viewLedger,
+    printInvoice,
+    downloadInvoice,
+    claimsPendingTab,
+    emptyState,
+    errorRetry,
   ];
 
   /// Billable mutations that must post through Billing (no inline bypass).
@@ -139,7 +204,8 @@ abstract final class BillingApprovalRequiredFinancialInventory {
   ) {
     return switch (actionClass) {
       BillingApprovalRequiredActionClass.settle ||
-      BillingApprovalRequiredActionClass.adjust => true,
+      BillingApprovalRequiredActionClass.adjust ||
+      BillingApprovalRequiredActionClass.reverse => true,
       _ => false,
     };
   }

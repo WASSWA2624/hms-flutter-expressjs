@@ -126,6 +126,27 @@ void _stubRepository(
       BillingMutationResult(invoice: _issuedFromDraft),
     ),
   );
+  when(() => repository.sendInvoice(any(), recipientEmail: any(named: 'recipientEmail'))).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(invoice: _issuedFromDraft),
+    ),
+  );
+  when(() => repository.requestAdjustment(any(), any())).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(approvalRequired: true),
+    ),
+  );
+  when(
+    () => repository.requestInvoiceVoid(
+      any(),
+      reason: any(named: 'reason'),
+      notes: any(named: 'notes'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(approvalRequired: true),
+    ),
+  );
   when(() => repository.getPatientLedger(any(), any())).thenAnswer(
     (_) async => const Result<BillingPatientLedger>.success(
       BillingPatientLedger(
@@ -205,6 +226,12 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
     registerFallbackValue(const BillingLedgerQuery());
+    registerFallbackValue(
+      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
+    );
+    registerFallbackValue(
+      const BillingAdjustmentDraft(amount: '-10.00', reason: 'Goodwill'),
+    );
   });
 
   setUp(() {
@@ -220,9 +247,18 @@ void main() {
         ),
         containsAll(<String>[
           'tab',
+          'list_chrome',
+          'detail',
           'issue',
+          'send',
+          'adjust',
+          'void_invoice',
           'close_shift',
           'close_day',
+          'view_ledger',
+          'print_invoice',
+          'download_invoice',
+          'claims_pending_tab',
           'empty_state',
           'error_retry',
         ]),
@@ -240,11 +276,32 @@ void main() {
       );
       expect(
         BillingNeedsIssueFinancialInventory.send.actionClass,
-        BillingNeedsIssueActionClass.notBillable,
+        BillingNeedsIssueActionClass.createCharge,
+      );
+      expect(
+        BillingNeedsIssueFinancialInventory.adjust.actionClass,
+        BillingNeedsIssueActionClass.adjust,
+      );
+      expect(
+        BillingNeedsIssueFinancialInventory.voidInvoice.actionClass,
+        BillingNeedsIssueActionClass.reverse,
       );
       expect(
         BillingNeedsIssueFinancialInventory.viewLedger.actionClass,
         BillingNeedsIssueActionClass.notBillable,
+      );
+      expect(
+        BillingNeedsIssueFinancialInventory.billableMutations.map(
+          (BillingNeedsIssueFinancialAtom atom) => atom.id,
+        ),
+        containsAll(<String>[
+          'issue',
+          'send',
+          'adjust',
+          'void_invoice',
+          'close_shift',
+          'close_day',
+        ]),
       );
     });
 
@@ -293,6 +350,77 @@ void main() {
           () => repository.issueInvoice(any(), notes: any(named: 'notes')),
         ).called(1);
         expect(find.text('Scan Draft Patient'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'AC3: adjust from draft detail posts via BillingRepository',
+      (WidgetTester tester) async {
+        await _pumpNeedsIssueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Scan Draft Patient'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Adjust'));
+        await tester.pumpAndSettle();
+
+        final Finder amountField = find.descendant(
+          of: find.byType(AppTextField).first,
+          matching: find.byType(EditableText),
+        );
+        await tester.enterText(amountField, '-10.00');
+        final Finder reasonField = find.descendant(
+          of: find.byType(AppTextField).at(1),
+          matching: find.byType(EditableText),
+        );
+        await tester.enterText(reasonField, 'Needs issue waive');
+        await tester.pump();
+
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Request adjustment').last,
+        );
+        await tester.pumpAndSettle();
+
+        verify(() => repository.requestAdjustment(any(), any())).called(1);
+      },
+    );
+
+    testWidgets(
+      'AC3: void from draft detail posts via BillingRepository',
+      (WidgetTester tester) async {
+        await _pumpNeedsIssueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        await tester.tap(find.text('Scan Draft Patient'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Void'));
+        await tester.pumpAndSettle();
+
+        final Finder reasonField = find.descendant(
+          of: find.byType(AppTextField).first,
+          matching: find.byType(EditableText),
+        );
+        await tester.enterText(reasonField, 'Duplicate draft charge');
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Request void').last);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => repository.requestInvoiceVoid(
+            any(),
+            reason: any(named: 'reason'),
+            notes: any(named: 'notes'),
+          ),
+        ).called(1);
       },
     );
 
@@ -461,6 +589,26 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('View ledger'), findsWidgets);
+        expectFlatSections(tester);
+      },
+    );
+
+    testWidgets(
+      'AC5: adjust dialog from Needs issue detail stays flat',
+      (WidgetTester tester) async {
+        await _pumpNeedsIssueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+          physicalSize: const Size(390, 844),
+          themeMode: ThemeMode.dark,
+        );
+
+        await tester.tap(find.text('Scan Draft Patient'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Adjust'));
+        await tester.pumpAndSettle();
+
         expectFlatSections(tester);
       },
     );

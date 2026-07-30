@@ -355,6 +355,7 @@ final class BillingRepositoryImpl implements BillingRepository {
       data: _withoutEmpty(<String, Object?>{
         'status': draft.status,
         'notes': draft.notes,
+        'settlement_amount': draft.settlementAmount,
       }),
       decoder: (Object? data) => BillingMutationResultDto.fromResponse(
         data,

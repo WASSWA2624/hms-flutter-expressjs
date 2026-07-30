@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -257,6 +259,16 @@ void main() {
         ),
         isFalse,
       );
+    });
+
+    test('section inventory is flat with no titled chrome on this tab', () {
+      expect(AccessAdminRegistrationsSectionInventory.hasNoTitledSections, isTrue);
+      expect(AccessAdminRegistrationsSectionInventory.isFlat, isTrue);
+      expect(
+        AccessAdminRegistrationsSectionInventory.untitledContentGroups,
+        isNotEmpty,
+      );
+      expect(accessAdminRegistrationsBillingScopeNote, contains('Billing'));
     });
   });
 
@@ -603,6 +615,68 @@ void main() {
   });
 
   group('Authorized UI states (AC4, AC6)', () {
+    testWidgets('loading state remains observable for authorized readers', (
+      WidgetTester tester,
+    ) async {
+      final Completer<Result<AccessAdminWorkspaceData>> completer =
+          Completer<Result<AccessAdminWorkspaceData>>();
+      when(() => repository.getWorkspace(any())).thenAnswer(
+        (_) => completer.future,
+      );
+
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/admin/access?panel=registrations',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/admin/access',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: AccessAdminWorkspacePage(
+                  initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            accessAdminRepositoryProvider.overrideWithValue(repository),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_elevatedPolicy()),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('Loading'), findsWidgets);
+
+      completer.complete(
+        Result<AccessAdminWorkspaceData>.success(_registrationsData()),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Pending Clinic'), findsWidgets);
+    });
+
     testWidgets('empty state remains observable', (WidgetTester tester) async {
       await _pumpRegistrations(
         tester,

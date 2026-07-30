@@ -447,6 +447,12 @@ abstract final class AccessAdminPermissionsAtomPermissions {
 
 /// Registrations tab atom → permission mapping (inventory + matrix).
 ///
+/// Financial classifications: [AccessAdminRegistrationsBillingInventory]
+/// (`access_admin_registrations_billing.dart`). All mounted atoms are
+/// `NOT_REQUIRED` / `NOT_BILLED` / `NO_CHARGE`; no patient Billing posts.
+/// Activate provisions a SaaS trial via subscriptions onboarding and must not
+/// mutate historical patient ledgers.
+///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Registrations tab | navigate / progressive-disclosure | elevated (source); matrix ∩ `system:admin` |

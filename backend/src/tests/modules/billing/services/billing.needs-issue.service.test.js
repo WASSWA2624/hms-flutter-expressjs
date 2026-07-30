@@ -147,6 +147,9 @@ describe('billing.service Needs issue tab mutations post through Billing', () =>
       expect.objectContaining({ billing_status: 'ISSUED', status: 'SENT' })
     );
     expect(result.invoice.billing_status).toBe('ISSUED');
+    expect(result.invoice.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'line-1', description: 'Lab' })])
+    );
     expect(publishBillingRealtimeUpdate).toHaveBeenCalled();
   });
 
@@ -179,18 +182,26 @@ describe('billing.service Needs issue tab mutations post through Billing', () =>
       adjustments: [],
     });
 
-    const result = await billingService.issueInvoice(
+    const first = await billingService.issueInvoice(
+      'INV-ISSUED',
+      {},
+      writer,
+      '127.0.0.1'
+    );
+    const second = await billingService.issueInvoice(
       'INV-ISSUED',
       {},
       writer,
       '127.0.0.1'
     );
 
+    expect(billingRepository.updateInvoice).toHaveBeenCalledTimes(2);
     expect(billingRepository.updateInvoice).toHaveBeenCalledWith(
       'inv-issued',
       expect.objectContaining({ billing_status: 'ISSUED', status: 'SENT' })
     );
-    expect(result.invoice.billing_status).toBe('ISSUED');
+    expect(first.invoice.billing_status).toBe('ISSUED');
+    expect(second.invoice.billing_status).toBe('ISSUED');
   });
 
   it('issueInvoice rejects cancelled invoices', async () => {
@@ -217,5 +228,65 @@ describe('billing.service Needs issue tab mutations post through Billing', () =>
     });
 
     expect(billingRepository.updateInvoice).not.toHaveBeenCalled();
+  });
+
+  it('issueInvoice does not invent parallel line amounts (preserves existing item totals)', async () => {
+    resolveModelRecordByIdentifier.mockImplementation(async ({ model }) => {
+      if (model === 'invoice') {
+        return {
+          id: 'inv-draft-lines',
+          human_friendly_id: 'INV-LINES',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          status: 'DRAFT',
+          billing_status: 'DRAFT',
+          total_amount: '200.00',
+          items: [
+            {
+              id: 'line-lab',
+              description: 'CBC',
+              quantity: 1,
+              unit_price: '200.00',
+              total_price: '200.00',
+              metadata_json: { source_module: 'Laboratory' },
+            },
+          ],
+        };
+      }
+      return null;
+    });
+    billingRepository.updateInvoice.mockResolvedValue({});
+    billingRepository.findInvoiceById.mockResolvedValue({
+      id: 'inv-draft-lines',
+      human_friendly_id: 'INV-LINES',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      status: 'SENT',
+      billing_status: 'ISSUED',
+      total_amount: '200.00',
+      items: [
+        {
+          id: 'line-lab',
+          description: 'CBC',
+          quantity: 1,
+          unit_price: '200.00',
+          total_price: '200.00',
+          metadata_json: { source_module: 'Laboratory' },
+        },
+      ],
+      payments: [],
+      adjustments: [],
+    });
+
+    const result = await billingService.issueInvoice('INV-LINES', {}, writer, '127.0.0.1');
+
+    expect(billingRepository.updateInvoice).toHaveBeenCalledWith(
+      'inv-draft-lines',
+      expect.not.objectContaining({ items: expect.anything() })
+    );
+    expect(result.invoice.items).toHaveLength(1);
+    expect(result.invoice.items[0]).toEqual(
+      expect.objectContaining({ id: 'line-lab', description: 'CBC' })
+    );
   });
 });

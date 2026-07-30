@@ -122,5 +122,29 @@ void main() {
         );
       }
     });
+
+    test('not-billable atoms declare explicit audit codes', () {
+      for (final HomeDashboardBillingAtom atom
+          in HomeDashboardBillingInventory.allAtoms) {
+        expect(
+          HomeDashboardBillingInventory.hasExplicitNotBillableAudit(atom),
+          isTrue,
+          reason: '${atom.id} missing NOT_BILLED / NOT_REQUIRED / NO_CHARGE',
+        );
+      }
+    });
+
+    test('settle/reverse home actions never open module-private cash routes', () {
+      for (final String id in <String>[
+        'receive_payment',
+        'process_refund',
+        'close_shift',
+        'create_invoice',
+      ]) {
+        final HomeActionDefinition action = homeActionLibrary[id]!;
+        expect(action.route.path, AppRoutes.billing.path);
+        expect(action.requiredPermissions, contains(AppPermissions.billingWrite));
+      }
+    });
   });
 }

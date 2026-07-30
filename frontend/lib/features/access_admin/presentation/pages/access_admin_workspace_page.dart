@@ -1011,7 +1011,20 @@ class _DetailContent extends ConsumerWidget {
       actions.add(
         AppButton.secondary(
           label: context.l10n.accessAdminRejectRegistrationAction,
-          onPressed: () => unawaited(controller.rejectRegistration(item)),
+          onPressed: () async {
+            final AppFailure? failure = await controller.rejectRegistration(
+              item,
+            );
+            if (failure == null && context.mounted) {
+              Navigator.of(context).maybePop();
+            } else if (failure != null && context.mounted) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(content: Text(context.l10n.failureMessage(failure))),
+                );
+            }
+          },
         ),
       );
     }

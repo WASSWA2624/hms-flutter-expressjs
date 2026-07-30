@@ -104,6 +104,16 @@ describe('billing.service reconcilePayment', () => {
 
     billingRepository.withTransaction.mockImplementation(async (callback) => {
       const tx = {
+        invoice: {
+          findFirst: jest.fn(async () => ({
+            id: 'inv-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            billing_status: 'ISSUED',
+            status: 'SENT',
+            total_amount: '100.00',
+            payments: [],
+            billing_adjustments: []}))},
         payment: {
           update: jest.fn(async () => ({
             id: 'pay-1',
@@ -151,7 +161,12 @@ describe('billing.service reconcilePayment', () => {
     const result = await billingService.reconcilePayment(
       'PAY0001',
       { status: 'COMPLETED' },
-      { id: 'user-billing', tenant_id: 'tenant-1', facility_id: 'facility-1' },
+      {
+        id: 'user-billing',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        permissions: ['billing:read', 'billing:write'],
+      },
       '127.0.0.1'
     );
 

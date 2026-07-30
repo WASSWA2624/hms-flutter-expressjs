@@ -1,4 +1,5 @@
 const { ROLE_PACKS, metricsToRoleSummary } = require('@lib/dashboard/summary');
+const { sumBalancesDue } = require('@lib/billing/financials');
 
 describe('home dashboard billing metrics', () => {
   it('surfaces live billing pack KPIs from invoice/payment aggregates', () => {
@@ -37,6 +38,29 @@ describe('home dashboard billing metrics', () => {
       ])
     );
   });
+
+  it('pendingBalanceAmount metric value is Billing balance_due (status parity)', () => {
+    const ledgerBalance = sumBalancesDue([
+      {
+        total_amount: 1000,
+        payments: [{ status: 'COMPLETED', amount: 250, refunds: [] }],
+        billing_adjustments: [],
+      },
+    ]);
+    const cards = metricsToRoleSummary(ROLE_PACKS.BILLING, {
+      pendingBalanceAmount: ledgerBalance,
+    });
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'pending_balance_amount',
+          value: 750,
+          required_permissions: ['billing:read'],
+        }),
+      ])
+    );
+  });
+
 
   it('gates pharmacy billing_pending on billing:read (status parity)', () => {
     const cards = metricsToRoleSummary(ROLE_PACKS.PHARMACIST, {

@@ -204,4 +204,69 @@ describe('role service billing-sections scan (Roles tab)', () => {
     expect(result).not.toHaveProperty('amount');
     expect(result).not.toHaveProperty('paid');
   });
+
+  it('unauthorized clinical actor cannot create role or collect/adjust billing', async () => {
+    await expect(
+      createRole(
+        {
+          name: 'CASHIER',
+          display_name: 'Cashier',
+          tenant_id: 'tenant-1',
+          permission_ids: billingPermissionIds,
+        },
+        'user-clinical',
+        '127.0.0.1',
+        {
+          id: 'user-clinical',
+          roles: ['DOCTOR'],
+          tenant_id: 'tenant-1',
+          permissions: ['clinical:read'],
+        }
+      )
+    ).rejects.toMatchObject({ statusCode: 403 });
+
+    expect(roleRepository.create).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();
+  });
+
+  it('unauthorized clinical actor cannot update role above ceiling or settle billing', async () => {
+    roleRepository.findById.mockResolvedValue({
+      id: 'role-123',
+      human_friendly_id: 'ROL0001',
+      name: 'CUSTOM CLERK',
+      display_name: 'Custom Clerk',
+      tenant_id: 'tenant-1',
+      facility_id: null,
+      permissions: [
+        {
+          permission: {
+            id: 'perm-billing-write',
+            name: 'billing:write',
+          },
+        },
+      ],
+    });
+
+    await expect(
+      updateRole(
+        'role-123',
+        { display_name: 'Senior Custom Clerk' },
+        'user-clinical',
+        '127.0.0.1',
+        {
+          id: 'user-clinical',
+          roles: ['DOCTOR'],
+          tenant_id: 'tenant-1',
+          permissions: ['clinical:read'],
+        }
+      )
+    ).rejects.toMatchObject({ statusCode: 403 });
+
+    expect(roleRepository.update).not.toHaveBeenCalled();
+    expect(roleRepository.syncPermissions).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();
+  });
 });

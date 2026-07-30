@@ -34,6 +34,7 @@ final class HomeDashboardBillingAtom {
     this.billingRoute = AppRoutes.billing,
     this.routeQuery = const <String, String>{},
     this.auditNote,
+    this.auditCode,
     this.delegatesToModule,
   });
 
@@ -44,6 +45,9 @@ final class HomeDashboardBillingAtom {
   final AppRouteData billingRoute;
   final Map<String, String> routeQuery;
   final String? auditNote;
+
+  /// Explicit not-billable protocol when [actionClass] is [HomeBillingActionClass.notBillable].
+  final String? auditCode;
   final String? delegatesToModule;
 }
 
@@ -97,6 +101,8 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'overdue'},
+          auditCode: 'NOT_REQUIRED',
+          auditNote: 'Read-only Billing worklist navigation',
         ),
         'review_pending_payments': HomeDashboardBillingAtom(
           id: 'review_pending_payments',
@@ -104,6 +110,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'pendingPayment'},
+          auditCode: 'NOT_REQUIRED',
         ),
         'review_claims_pending': HomeDashboardBillingAtom(
           id: 'review_claims_pending',
@@ -119,6 +126,7 @@ abstract final class HomeDashboardBillingInventory {
           requiredPermissions: <AppPermission>[AppPermissions.patientRead],
           billingRoute: AppRoutes.patients,
           routeQuery: <String, String>{'has_outstanding_balance': 'true'},
+          auditCode: 'NOT_REQUIRED',
           auditNote: 'Patient list filtered by live Billing balance',
         ),
         'add_mortuary_billable_event': HomeDashboardBillingAtom(
@@ -173,6 +181,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
           billingRoute: AppRoutes.subscriptions,
+          auditCode: 'NOT_BILLED',
           auditNote: 'SaaS subscription path — not patient ledger',
         ),
       };
@@ -185,6 +194,8 @@ abstract final class HomeDashboardBillingInventory {
           label: 'Collections today',
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
+          auditCode: 'NOT_REQUIRED',
+          auditNote: 'Live Billing payment aggregate — navigate only',
         ),
         'billing_exceptions': HomeDashboardBillingAtom(
           id: 'billing_exceptions',
@@ -192,6 +203,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'overdue'},
+          auditCode: 'NOT_REQUIRED',
         ),
         'billing_pending': HomeDashboardBillingAtom(
           id: 'billing_pending',
@@ -206,6 +218,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.defer,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'pendingPayment'},
+          auditNote: 'Value = Billing balance_due aggregate',
         ),
         'pending_payments': HomeDashboardBillingAtom(
           id: 'pending_payments',
@@ -220,6 +233,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.defer,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'overdue'},
+          auditNote: 'Value = Billing balance_due for OVERDUE invoices',
         ),
         'overdue_invoices': HomeDashboardBillingAtom(
           id: 'overdue_invoices',
@@ -241,12 +255,14 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
           routeQuery: <String, String>{'queue': 'needsIssue'},
+          auditCode: 'NOT_REQUIRED',
         ),
         'refunds_today': HomeDashboardBillingAtom(
           id: 'refunds_today',
           label: 'Refunds today',
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingWrite,
+          auditCode: 'NOT_REQUIRED',
         ),
         'pending_approvals': HomeDashboardBillingAtom(
           id: 'pending_approvals',
@@ -281,6 +297,7 @@ abstract final class HomeDashboardBillingInventory {
           label: 'Payments today',
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
+          auditCode: 'NOT_REQUIRED',
         ),
         'billable_events_to_capture': HomeDashboardBillingAtom(
           id: 'billable_events_to_capture',
@@ -302,6 +319,7 @@ abstract final class HomeDashboardBillingInventory {
           label: 'Billing',
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
+          auditCode: 'NOT_REQUIRED',
         ),
         'claims': HomeDashboardBillingAtom(
           id: 'claims',
@@ -309,6 +327,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: billingRead,
           billingRoute: AppRoutes.claims,
+          auditCode: 'NOT_REQUIRED',
         ),
         'discharge': HomeDashboardBillingAtom(
           id: 'discharge',
@@ -324,6 +343,7 @@ abstract final class HomeDashboardBillingInventory {
           actionClass: HomeBillingActionClass.notBillable,
           requiredPermissions: <AppPermission>[AppPermissions.subscriptionsRead],
           billingRoute: AppRoutes.subscriptions,
+          auditCode: 'NOT_BILLED',
           auditNote: 'Commercial SaaS billing — not patient ledger',
         ),
       };
@@ -380,5 +400,24 @@ abstract final class HomeDashboardBillingInventory {
       HomeBillingActionClass.reverse => true,
       _ => false,
     };
+  }
+
+  /// Every inventoried atom across quick actions, KPIs, shortcuts, and worklists.
+  static Iterable<HomeDashboardBillingAtom> get allAtoms sync* {
+    yield* quickActions.values;
+    yield* statusCards.values;
+    yield* shortcuts.values;
+    yield* worklistItems.values;
+  }
+
+  /// Not-billable atoms must declare an explicit audit protocol code.
+  static bool hasExplicitNotBillableAudit(HomeDashboardBillingAtom atom) {
+    if (atom.actionClass != HomeBillingActionClass.notBillable) {
+      return true;
+    }
+    final String? code = atom.auditCode?.trim().toUpperCase();
+    return code == 'NOT_BILLED' ||
+        code == 'NOT_REQUIRED' ||
+        code == 'NO_CHARGE';
   }
 }

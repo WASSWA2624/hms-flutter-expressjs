@@ -29,4 +29,27 @@ describe('billing.routes', () => {
     expect(hasReject).toBe(true);
     expect(hasDocument).toBe(true);
   });
+
+  it('registers Needs issue write endpoints (issue, send, void)', () => {
+    const routes = subject.stack.filter((layer) => layer.route);
+    const hasIssue = routes.some(
+      (layer) =>
+        layer.route.path === '/invoices/:invoiceIdentifier/issue' &&
+        layer.route.methods.post
+    );
+    const hasSend = routes.some(
+      (layer) =>
+        layer.route.path === '/invoices/:invoiceIdentifier/send' &&
+        layer.route.methods.post
+    );
+    const hasVoid = routes.some(
+      (layer) =>
+        layer.route.path === '/invoices/:invoiceIdentifier/void-request' &&
+        layer.route.methods.post
+    );
+
+    expect(hasIssue).toBe(true);
+    expect(hasSend).toBe(true);
+    expect(hasVoid).toBe(true);
+  });
 });

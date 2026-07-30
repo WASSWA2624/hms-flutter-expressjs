@@ -13,6 +13,8 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId} = require('@lib/billing/identifiers');
+const { applyClaimRemittance } = require('@lib/billing/claim-remittance');
+const { toMoneyString } = require('@lib/billing/financials');
 
 const CLAIM_INCLUDE = {
   coverage_plan: {
@@ -35,8 +37,11 @@ const CLAIM_INCLUDE = {
       id: true,
       human_friendly_id: true,
       tenant_id: true,
+      facility_id: true,
       patient_id: true,
       billing_entity: true,
+      billing_status: true,
+      status: true,
       total_amount: true,
       currency: true,
       patient: { select: { id: true, human_friendly_id: true } },
@@ -412,8 +417,39 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
   }
 };
 
+const mapRemittanceInvoice = (invoice = {}) => {
+  if (!invoice || !invoice.id) return null;
+  return {
+    ...invoice,
+    display_id: resolvePublicIdentifier(
+      invoice.display_id,
+      invoice.human_friendly_id,
+      invoice.id
+    ),
+    patient_display_id: resolvePublicIdentifier(
+      invoice.patient_display_id,
+      invoice.patient?.human_friendly_id,
+      invoice.patient_id
+    ),
+  };
+};
+
+const mapRemittancePayment = (payment = {}) => {
+  if (!payment || !payment.id) return null;
+  return {
+    ...payment,
+    amount:
+      payment.amount == null ? payment.amount : toMoneyString(payment.amount),
+    display_id: resolvePublicIdentifier(
+      payment.display_id,
+      payment.human_friendly_id,
+      payment.id
+    ),
+  };
+};
+
 /**
- * Reconcile insurance claim
+ * Reconcile insurance claim and post remittance into Billing when settled.
  */
 const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
   try {
@@ -431,13 +467,24 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
       throw new HttpError('errors.insurance_claim.cannot_reconcile_cancelled', 400);
     }
 
+    const nextStatus = data.status || 'PAID';
     const insuranceClaim = await insuranceClaimRepository.update(before.id, {
-      status: data.status || 'PAID',
+      status: nextStatus,
       ...(data.settlement_amount !== undefined ? { settlement_amount: data.settlement_amount } : {}),
       ...(data.payer_reference !== undefined ? { payer_reference: data.payer_reference } : {}),
       ...(data.notes !== undefined ? { notes: data.notes } : {}),
       ...(before.status === 'REJECTED' && data.status === 'SUBMITTED' ? { resubmitted_at: new Date() } : {})});
     const updatedRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
+
+    const remittance = await applyClaimRemittance({
+      claim: updatedRecord || { ...insuranceClaim, invoice: before.invoice },
+      status: nextStatus,
+      settlementAmount:
+        data.settlement_amount !== undefined
+          ? data.settlement_amount
+          : insuranceClaim.settlement_amount,
+      actorUserId: userId,
+    });
 
     createAuditLog({
       tenant_id: resolveTenantIdFromClaim(updatedRecord) || resolveTenantIdFromClaim(before),
@@ -449,10 +496,23 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
         before,
         after: insuranceClaim,
         metadata: {
-          notes: data.notes || null}},
+          notes: data.notes || null,
+          remittance_payment_id: remittance.payment?.id || null,
+          remittance_created: Boolean(remittance.created),
+        }},
       ip_address: ipAddress}).catch(() => {});
 
-    return mapInsuranceClaimForDisplay(updatedRecord || insuranceClaim);
+    const mappedClaim = mapInsuranceClaimForDisplay(updatedRecord || insuranceClaim);
+    const mappedInvoice = mapRemittanceInvoice(remittance.invoice);
+    const mappedPayment = mapRemittancePayment(remittance.payment);
+
+    return {
+      ...mappedClaim,
+      type: 'CLAIM',
+      ...(mappedInvoice ? { invoice: mappedInvoice } : {}),
+      ...(mappedPayment ? { payment: mappedPayment } : {}),
+      ...(remittance.financials ? { financials: remittance.financials } : {}),
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

@@ -506,11 +506,16 @@ class BillingClaimReconcileForm extends StatefulWidget {
 class _BillingClaimReconcileFormState extends State<BillingClaimReconcileForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _settlementController = TextEditingController();
   String _status = 'APPROVED';
+
+  bool get _requiresSettlement =>
+      _status == 'PAID' || _status == 'PARTIAL';
 
   @override
   void dispose() {
     _notesController.dispose();
+    _settlementController.dispose();
     super.dispose();
   }
 
@@ -522,6 +527,9 @@ class _BillingClaimReconcileFormState extends State<BillingClaimReconcileForm> {
       BillingClaimActionDraft(
         status: _status,
         notes: billingEmptyToNull(_notesController.text),
+        settlementAmount: _requiresSettlement
+            ? billingEmptyToNull(_settlementController.text)
+            : null,
       ),
     );
   }
@@ -549,6 +557,10 @@ class _BillingClaimReconcileFormState extends State<BillingClaimReconcileForm> {
                 label: l10n.billingClaimStatusRejected,
               ),
               AppSelectOption<String>(
+                value: 'PARTIAL',
+                label: l10n.billingClaimStatusPartial,
+              ),
+              AppSelectOption<String>(
                 value: 'PAID',
                 label: l10n.billingClaimStatusPaid,
               ),
@@ -559,6 +571,12 @@ class _BillingClaimReconcileFormState extends State<BillingClaimReconcileForm> {
               }
             },
           ),
+          if (_requiresSettlement)
+            AppCurrencyAmountField(
+              controller: _settlementController,
+              amountLabelText: l10n.claimsSettlementAmountColumnLabel,
+              required: _status == 'PARTIAL',
+            ),
           AppTextField(
             controller: _notesController,
             labelText: l10n.billingNotesLabel,

@@ -89,6 +89,19 @@ const deriveInvoiceState = (invoiceRecord = {}, financials = {}) => {
   };
 };
 
+/**
+ * Sum patient-responsibility balances for a set of invoice records using the
+ * same rules as Billing (`computeInvoiceFinancials`). Negative balances are
+ * clamped to zero so home KPIs never invent credits outside the ledger.
+ */
+const sumBalancesDue = (invoiceRecords = []) =>
+  roundMoney(
+    (invoiceRecords || []).reduce((sum, invoice) => {
+      const balanceDue = toDecimalNumber(computeInvoiceFinancials(invoice).balance_due);
+      return sum + Math.max(0, balanceDue);
+    }, 0)
+  );
+
 const recalculateInvoiceStateTx = async (tx, invoiceId) => {
   const invoiceRecord = await tx.invoice.findFirst({
     where: {
@@ -139,6 +152,7 @@ module.exports = {
   roundMoney,
   toMoneyString,
   computeInvoiceFinancials,
+  sumBalancesDue,
   deriveInvoiceState,
   recalculateInvoiceStateTx,
 };

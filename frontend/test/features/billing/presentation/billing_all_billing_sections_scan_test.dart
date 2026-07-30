@@ -243,10 +243,15 @@ void main() {
           'tab',
           'receive_payment',
           'issue',
+          'adjust',
+          'waive',
+          'credit_note',
           'route_pay',
           'claims_pending_tab',
+          'loading',
           'empty_state',
           'error_retry',
+          'success_feedback',
         ]),
       );
       expect(
@@ -262,6 +267,14 @@ void main() {
       expect(
         BillingAllFinancialInventory.issue.actionClass,
         BillingAllActionClass.createCharge,
+      );
+      expect(
+        BillingAllFinancialInventory.waive.actionClass,
+        BillingAllActionClass.adjust,
+      );
+      expect(
+        BillingAllFinancialInventory.creditNote.repositoryMethod,
+        'requestAdjustment',
       );
       expect(
         BillingAllFinancialInventory.send.actionClass,
@@ -307,6 +320,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Receive payment'), findsWidgets);
+        expectFlatSections(tester);
         await _submitReceivePayment(tester);
 
         verify(
@@ -316,11 +330,30 @@ void main() {
             idempotencyKey: any(named: 'idempotencyKey', that: isNotEmpty),
           ),
         ).called(1);
+
+        // Mutation applier syncs paid balance without manual refresh.
+        expect(find.byTooltip('Receive payment'), findsNothing);
       },
     );
 
     testWidgets(
-      'AC4: read-only user cannot collect payment (authorization)',
+      'AC4: empty All queue shows empty state (authorized UI)',
+      (WidgetTester tester) async {
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+          items: const <BillingWorkItem>[],
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('No'), findsWidgets);
+        expectFlatSections(tester);
+      },
+    );
+
+    testWidgets(
+      'AC4: read-only user cannot collect or adjust (authorization)',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = AppAccessPolicy.fromSession(
           AuthSession(
@@ -344,6 +377,10 @@ void main() {
           BillingAllAtomPermissions.receivePayment.isAllowed(reader),
           isFalse,
         );
+        expect(
+          BillingAllAtomPermissions.adjust.isAllowed(reader),
+          isFalse,
+        );
 
         await _pumpAllTab(
           tester,
@@ -353,12 +390,16 @@ void main() {
         await _waitForWorkItem(tester);
 
         expect(find.byTooltip('Receive payment'), findsNothing);
+        expect(find.byTooltip('Request adjustment'), findsNothing);
         verifyNever(
           () => repository.receivePayment(
             any(),
             any(),
             idempotencyKey: any(named: 'idempotencyKey'),
           ),
+        );
+        verifyNever(
+          () => repository.requestAdjustment(any(), any()),
         );
       },
     );

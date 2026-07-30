@@ -160,4 +160,105 @@ void main() {
     expect(patched.selectedItem?.status, 'APPROVED');
     expect(patched.selectedItem?.canApproveOrReject, isFalse);
   });
+
+  test('clears needs-issue counts and removes issued drafts from that queue', () {
+    const BillingWorkItem draft = BillingWorkItem(
+      id: 'invoice-draft',
+      displayId: 'INV-DRAFT',
+      kind: BillingWorkItemKind.invoice,
+      tenantId: 'tenant-1',
+      billingStatus: 'DRAFT',
+      status: 'DRAFT',
+      amount: 120,
+      financials: BillingFinancials(
+        effectiveTotal: 120,
+        balanceDue: 120,
+      ),
+      items: <BillingInvoiceItem>[
+        BillingInvoiceItem(
+          id: 'line-1',
+          description: 'Consult',
+          quantity: 1,
+          unitPrice: 120,
+          totalPrice: 120,
+          sourceModule: 'OPD',
+        ),
+      ],
+    );
+    final BillingWorkspaceState state = BillingWorkspaceState(
+      query: const BillingWorkspaceQuery(queue: BillingQueueType.needsIssue),
+      overview: const BillingWorkspaceOverview(
+        summary: BillingSummary(needsIssue: 1, pendingPayment: 0),
+        queues: <BillingQueueSummary>[
+          BillingQueueSummary(
+            queue: BillingQueueType.needsIssue,
+            label: 'Needs issue',
+            count: 1,
+          ),
+        ],
+      ),
+      workItems: const AppPage<BillingWorkItem>(
+        items: <BillingWorkItem>[draft],
+        request: AppPageRequest(),
+        totalItemCount: 1,
+      ),
+      selectedItem: draft,
+    );
+
+    final BillingWorkItem issued = draft.copyWith(
+      billingStatus: 'ISSUED',
+      status: 'SENT',
+    );
+    final BillingWorkspaceState patched = BillingWorkspaceMutationApplier.apply(
+      state,
+      BillingMutationResult(invoice: issued),
+    );
+
+    expect(patched.overview.summary.needsIssue, 0);
+    expect(patched.overview.queues.single.count, 0);
+    expect(patched.workItems.items, isEmpty);
+    expect(patched.selectedItem?.billingStatus, 'ISSUED');
+    expect(patched.selectedItem?.canIssue, isFalse);
+    expect(patched.selectedItem?.items.single.sourceModule, 'OPD');
+  });
+
+  test('idempotent re-issue patch does not double-decrement needsIssue', () {
+    const BillingWorkItem issued = BillingWorkItem(
+      id: 'invoice-issued',
+      displayId: 'INV-ISSUED',
+      kind: BillingWorkItemKind.invoice,
+      tenantId: 'tenant-1',
+      billingStatus: 'ISSUED',
+      status: 'SENT',
+      amount: 80,
+      financials: BillingFinancials(effectiveTotal: 80, balanceDue: 80),
+    );
+    final BillingWorkspaceState state = BillingWorkspaceState(
+      query: const BillingWorkspaceQuery(queue: BillingQueueType.needsIssue),
+      overview: const BillingWorkspaceOverview(
+        summary: BillingSummary(needsIssue: 0),
+        queues: <BillingQueueSummary>[
+          BillingQueueSummary(
+            queue: BillingQueueType.needsIssue,
+            label: 'Needs issue',
+            count: 0,
+          ),
+        ],
+      ),
+      workItems: const AppPage<BillingWorkItem>(
+        items: <BillingWorkItem>[],
+        request: AppPageRequest(),
+        totalItemCount: 0,
+      ),
+      selectedItem: issued,
+    );
+
+    final BillingWorkspaceState patched = BillingWorkspaceMutationApplier.apply(
+      state,
+      const BillingMutationResult(invoice: issued),
+    );
+
+    expect(patched.overview.summary.needsIssue, 0);
+    expect(patched.overview.queues.single.count, 0);
+  });
 }

@@ -972,10 +972,17 @@ final class BillingApprovalDecisionDraft {
 
 @immutable
 final class BillingClaimActionDraft {
-  const BillingClaimActionDraft({this.notes, this.status});
+  const BillingClaimActionDraft({
+    this.notes,
+    this.status,
+    this.settlementAmount,
+  });
 
   final String? notes;
   final String? status;
+
+  /// Insurer remittance amount posted as INSURANCE payment on PAID/PARTIAL.
+  final String? settlementAmount;
 }
 
 @immutable
@@ -993,10 +1000,17 @@ final class BillingCloseDraft {
   final bool submit;
 }
 
+/// Facility-facing payment methods for receive-payment UI.
+/// Matches shared/backend validators (`PAYMENT_METHOD_VALUES`); facilities may
+/// further narrow at settings — do not invent a parallel cash-method enum.
 const List<String> billingPaymentMethods = <String>[
   'CASH',
   'CREDIT_CARD',
   'DEBIT_CARD',
+  'PREPAID_CARD',
+  'GIFT_CARD',
+  'VOUCHER',
+  'BANK_CHECK',
   'MOBILE_MONEY',
   'BANK_TRANSFER',
   'INSURANCE',

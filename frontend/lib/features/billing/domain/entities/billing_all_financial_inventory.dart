@@ -117,6 +117,27 @@ abstract final class BillingAllFinancialInventory {
     actionClass: BillingAllActionClass.adjust,
     requirement: BillingAllAtomPermissions.adjust,
     repositoryMethod: 'requestAdjustment',
+    auditNote: 'Covers discount / price correction via Billing adjustment',
+  );
+
+  /// Waive / write-off — same [requestAdjustment] path (reason-driven).
+  static const BillingAllFinancialAtom waive = BillingAllFinancialAtom(
+    id: 'waive',
+    label: 'Waive / write-off',
+    actionClass: BillingAllActionClass.adjust,
+    requirement: BillingAllAtomPermissions.adjust,
+    repositoryMethod: 'requestAdjustment',
+    auditNote: 'Alias of adjust — no parallel waive ledger',
+  );
+
+  /// Credit note — same [requestAdjustment] path (negative / credit amount).
+  static const BillingAllFinancialAtom creditNote = BillingAllFinancialAtom(
+    id: 'credit_note',
+    label: 'Credit note',
+    actionClass: BillingAllActionClass.adjust,
+    requirement: BillingAllAtomPermissions.adjust,
+    repositoryMethod: 'requestAdjustment',
+    auditNote: 'Alias of adjust — posts Billing adjustment row',
   );
 
   static const BillingAllFinancialAtom voidInvoice = BillingAllFinancialAtom(
@@ -224,6 +245,13 @@ abstract final class BillingAllFinancialInventory {
     requirement: BillingAllAtomPermissions.claimsPendingTab,
   );
 
+  static const BillingAllFinancialAtom loading = BillingAllFinancialAtom(
+    id: 'loading',
+    label: 'Loading / refreshing queue',
+    actionClass: BillingAllActionClass.notBillable,
+    requirement: BillingAllAtomPermissions.listChrome,
+  );
+
   static const BillingAllFinancialAtom emptyState = BillingAllFinancialAtom(
     id: 'empty_state',
     label: 'Empty queue state',
@@ -238,6 +266,14 @@ abstract final class BillingAllFinancialInventory {
     requirement: BillingAllAtomPermissions.listChrome,
   );
 
+  static const BillingAllFinancialAtom successFeedback = BillingAllFinancialAtom(
+    id: 'success_feedback',
+    label: 'Mutation success / pending-approval feedback',
+    actionClass: BillingAllActionClass.notBillable,
+    requirement: BillingAllAtomPermissions.listChrome,
+    auditNote: 'Snackbars / live detail patch — balance from Billing only',
+  );
+
   /// Every atom inventoried for the All tab scan.
   static const List<BillingAllFinancialAtom> all = <BillingAllFinancialAtom>[
     tab,
@@ -249,6 +285,8 @@ abstract final class BillingAllFinancialInventory {
     receivePayment,
     refund,
     adjust,
+    waive,
+    creditNote,
     voidInvoice,
     send,
     approve,
@@ -262,8 +300,10 @@ abstract final class BillingAllFinancialInventory {
     downloadInvoice,
     routePayDeepLink,
     claimsPendingTab,
+    loading,
     emptyState,
     errorRetry,
+    successFeedback,
   ];
 
   /// Billable mutations that must post through Billing (no inline bypass).

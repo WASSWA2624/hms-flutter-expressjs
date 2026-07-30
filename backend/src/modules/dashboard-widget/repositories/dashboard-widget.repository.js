@@ -9,6 +9,43 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { sumBalancesDue } = require('@lib/billing/financials');
+
+/** Include graph required to compute live Billing balance_due (parity with ledger). */
+const INVOICE_BALANCE_INCLUDE = Object.freeze({
+  total_amount: true,
+  status: true,
+  billing_status: true,
+  payments: {
+    where: { deleted_at: null },
+    select: {
+      amount: true,
+      status: true,
+      deleted_at: true,
+      refunds: {
+        where: { deleted_at: null },
+        select: { amount: true, deleted_at: true }
+      }
+    }
+  },
+  billing_adjustments: {
+    where: { deleted_at: null },
+    select: { amount: true, status: true, deleted_at: true }
+  }
+});
+
+/**
+ * Outstanding patient responsibility for invoices matching [where].
+ * Must use Billing financials — never raw invoice.total_amount alone
+ * (partial payments would overstate home KPI balances).
+ */
+const sumOutstandingBalance = async (where) => {
+  const invoices = await prisma.invoice.findMany({
+    where,
+    select: INVOICE_BALANCE_INCLUDE
+  });
+  return sumBalancesDue(invoices);
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -1141,7 +1178,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
         countLowStock(inventoryStockWhere, 0.5),
-        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
+        sumOutstandingBalance(openBalanceWhere)
       ]);
       return {
         metrics: {
@@ -1186,7 +1223,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         prisma.appointment.count({ where: { ...appointmentWhere, status: 'NO_SHOW' } }),
         prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
         prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } }),
-        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
+        sumOutstandingBalance(openBalanceWhere)
       ]);
       return {
         metrics: {
@@ -1238,8 +1275,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         prisma.invoice.count({ where: openBalanceWhere }),
         sumField(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }, 'amount'),
         sumField(prisma.refund, { deleted_at: null, refunded_at: { gte: todayStart }, payment: paymentWhere }, 'amount'),
-        sumField(prisma.invoice, { ...invoiceWhere, status: 'OVERDUE' }, 'total_amount'),
-        sumField(prisma.invoice, openBalanceWhere, 'total_amount'),
+        sumOutstandingBalance({ ...invoiceWhere, status: 'OVERDUE' }),
+        sumOutstandingBalance(openBalanceWhere),
         prisma.insurance_claim.count({
           where: { ...claimWhere, status: { in: ['SUBMITTED', 'REJECTED'] } }
         }),

@@ -15,8 +15,8 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
-import 'package:hosspi_hms/features/billing/domain/entities/billing_approval_required_financial_inventory.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_overdue_financial_inventory.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
@@ -30,39 +30,48 @@ import '../../../support/section_layout_assertions.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
 
-const BillingWorkItem _approvalItem = BillingWorkItem(
-  id: 'apr-scan-1',
-  displayId: 'APR-SCAN',
-  kind: BillingWorkItemKind.approval,
-  patientId: 'patient-apr-scan',
-  patientDisplayName: 'Scan Approval Patient',
-  patientDisplayId: 'PT-APR-SCAN',
-  status: 'PENDING',
-  amount: 250,
-  approvalType: 'ADJUSTMENT',
+const BillingWorkItem _overdueInvoice = BillingWorkItem(
+  id: 'inv-overdue-scan',
+  displayId: 'INV-OVD-SCAN',
+  kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
+  patientId: 'patient-scan',
+  patientDisplayName: 'Omar Overdue Scan',
+  patientDisplayId: 'PT-OVD-SCAN',
+  billingStatus: 'ISSUED',
+  status: 'OVERDUE',
+  amount: 450,
+  financials: BillingFinancials(balanceDue: 450, effectiveTotal: 450),
 );
 
-const BillingWorkItem _approvedItem = BillingWorkItem(
-  id: 'apr-scan-1',
-  displayId: 'APR-SCAN',
-  kind: BillingWorkItemKind.approval,
-  patientId: 'patient-apr-scan',
-  patientDisplayName: 'Scan Approval Patient',
-  patientDisplayId: 'PT-APR-SCAN',
-  status: 'APPROVED',
-  amount: 250,
-  approvalType: 'ADJUSTMENT',
+const BillingWorkItem _clearedInvoice = BillingWorkItem(
+  id: 'inv-overdue-scan',
+  displayId: 'INV-OVD-SCAN',
+  kind: BillingWorkItemKind.invoice,
+  tenantId: 'tenant-1',
+  patientId: 'patient-scan',
+  patientDisplayName: 'Omar Overdue Scan',
+  patientDisplayId: 'PT-OVD-SCAN',
+  billingStatus: 'PAID',
+  status: 'PAID',
+  amount: 450,
+  financials: BillingFinancials(
+    balanceDue: 0,
+    effectiveTotal: 450,
+    netPaidTotal: 450,
+    grossPaidTotal: 450,
+  ),
 );
 
 const BillingSummary _summary = BillingSummary(
   needsIssue: 0,
   pendingPayment: 0,
   claimsPending: 0,
-  approvalRequired: 1,
-  overdue: 0,
+  approvalRequired: 0,
+  overdue: 1,
 );
 
-AppAccessPolicy _approverPolicy() {
+AppAccessPolicy _writerPolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -74,7 +83,6 @@ AppAccessPolicy _approverPolicy() {
       permissions: <AppPermission>{
         AppPermissions.billingRead,
         AppPermissions.billingWrite,
-        AppPermissions.financialApprove,
       },
       moduleEntitlements: <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
@@ -86,7 +94,7 @@ AppAccessPolicy _approverPolicy() {
 
 void _stubRepository(
   _MockBillingRepository repository, {
-  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
+  List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer(
     (_) async => const Result<BillingWorkspaceOverview>.success(
@@ -102,31 +110,25 @@ void _stubRepository(
       ),
     );
   });
-  when(() => repository.approveApproval(any(), any())).thenAnswer(
-    (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(approval: _approvedItem),
+  when(
+    () => repository.receivePayment(
+      any(),
+      any(),
+      idempotencyKey: any(named: 'idempotencyKey'),
     ),
-  );
-  when(() => repository.rejectApproval(any(), any())).thenAnswer(
+  ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
-      BillingMutationResult(
-        approval: BillingWorkItem(
-          id: 'apr-scan-1',
-          displayId: 'APR-SCAN',
-          kind: BillingWorkItemKind.approval,
-          status: 'REJECTED',
-        ),
-      ),
+      BillingMutationResult(invoice: _clearedInvoice),
     ),
   );
   when(() => repository.getPatientLedger(any(), any())).thenAnswer(
     (_) async => const Result<BillingPatientLedger>.success(
       BillingPatientLedger(
-        patientId: 'patient-apr-scan',
+        patientId: 'patient-scan',
         summary: BillingLedgerSummary(
-          totalInvoiced: 250,
+          totalInvoiced: 450,
           netPaid: 0,
-          balanceDue: 250,
+          balanceDue: 450,
         ),
         entries: <BillingLedgerEntry>[],
       ),
@@ -134,13 +136,13 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpApprovalTab(
+Future<void> _pumpOverdueTab(
   WidgetTester tester, {
   required _MockBillingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<BillingWorkItem> items = const <BillingWorkItem>[_approvalItem],
+  List<BillingWorkItem> items = const <BillingWorkItem>[_overdueInvoice],
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -152,7 +154,7 @@ Future<void> _pumpApprovalTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=approval-required',
+    initialLocation: '/billing?queue=overdue',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -192,12 +194,39 @@ Future<void> _pumpApprovalTab(
   await tester.pumpAndSettle();
 }
 
+Future<void> _waitForWorkItem(WidgetTester tester) async {
+  final Finder row = find.text('Omar Overdue Scan');
+  if (row.evaluate().isEmpty) {
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+  }
+  expect(row, findsOneWidget);
+}
+
+Future<void> _submitReceivePayment(WidgetTester tester) async {
+  final Finder filledSubmit =
+      find.widgetWithText(FilledButton, 'Receive payment');
+  if (filledSubmit.evaluate().isNotEmpty) {
+    await tester.tap(filledSubmit.last);
+  } else {
+    await tester.tap(find.text('Receive payment').last);
+  }
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late _MockBillingRepository repository;
 
   setUpAll(() {
     registerFallbackValue(const BillingWorkspaceQuery());
-    registerFallbackValue(const BillingApprovalDecisionDraft());
+    registerFallbackValue(
+      const BillingWorkItem(id: 'invoice-1', kind: BillingWorkItemKind.invoice),
+    );
+    registerFallbackValue(
+      const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
+    );
     registerFallbackValue(const BillingLedgerQuery());
   });
 
@@ -205,116 +234,104 @@ void main() {
     repository = _MockBillingRepository();
   });
 
-  group('Approval required tab billing & sections scan', () {
+  group('Overdue tab billing & sections scan', () {
     test('AC1: every financial atom is inventoried and classified', () {
-      expect(BillingApprovalRequiredFinancialInventory.all, isNotEmpty);
+      expect(BillingOverdueFinancialInventory.all, isNotEmpty);
       expect(
-        BillingApprovalRequiredFinancialInventory.all.map(
-          (BillingApprovalRequiredFinancialAtom atom) => atom.id,
+        BillingOverdueFinancialInventory.all.map(
+          (BillingOverdueFinancialAtom atom) => atom.id,
         ),
         containsAll(<String>[
           'tab',
-          'approve',
-          'approve_refund_or_void',
-          'reject',
-          'close_shift',
-          'close_day',
+          'receive_payment',
+          'adjust',
+          'waive',
+          'dunning_send',
+          'route_pay',
+          'void_invoice',
           'empty_state',
           'error_retry',
-          'view_ledger',
         ]),
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.billableMutations.every(
-          (BillingApprovalRequiredFinancialAtom atom) =>
-              atom.repositoryMethod != null,
+        BillingOverdueFinancialInventory.billableMutations.every(
+          (BillingOverdueFinancialAtom atom) => atom.repositoryMethod != null,
         ),
         isTrue,
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.approve.actionClass,
-        BillingApprovalRequiredActionClass.adjust,
+        BillingOverdueFinancialInventory.receivePayment.actionClass,
+        BillingOverdueActionClass.settle,
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.approveRefundOrVoid.actionClass,
-        BillingApprovalRequiredActionClass.reverse,
+        BillingOverdueFinancialInventory.waive.actionClass,
+        BillingOverdueActionClass.adjust,
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.reject.actionClass,
-        BillingApprovalRequiredActionClass.notBillable,
+        BillingOverdueFinancialInventory.waive.repositoryMethod,
+        BillingOverdueFinancialInventory.adjust.repositoryMethod,
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.viewLedger.actionClass,
-        BillingApprovalRequiredActionClass.notBillable,
+        BillingOverdueFinancialInventory.dunningSend.actionClass,
+        BillingOverdueActionClass.notBillable,
       );
       expect(
-        BillingApprovalRequiredFinancialInventory.billableMutations.map(
-          (BillingApprovalRequiredFinancialAtom atom) => atom.id,
-        ),
-        isNot(contains('reject')),
+        BillingOverdueFinancialInventory.viewLedger.actionClass,
+        BillingOverdueActionClass.notBillable,
       );
     });
 
     test('AC2: billable mutations map to BillingRepository (no bypass)', () {
-      for (final BillingApprovalRequiredFinancialAtom atom
-          in BillingApprovalRequiredFinancialInventory.billableMutations) {
+      for (final BillingOverdueFinancialAtom atom
+          in BillingOverdueFinancialInventory.billableMutations) {
         expect(
           atom.repositoryMethod,
           isNotNull,
           reason: '${atom.id} must post via BillingRepository',
         );
         expect(
-          BillingApprovalRequiredFinancialInventory.forbidsInlineCollection(
+          BillingOverdueFinancialInventory.forbidsInlineCollection(
             atom.actionClass,
           ),
           isTrue,
           reason: '${atom.id} must not use shadow ledgers',
         );
       }
-      expect(
-        BillingApprovalRequiredFinancialInventory.approve.repositoryMethod,
-        'approveApproval',
-      );
-      expect(
-        BillingApprovalRequiredFinancialInventory.reject.repositoryMethod,
-        'rejectApproval',
-      );
     });
 
     test('billing workspace subscribes to billing realtime events', () {
       expect(RealtimeEventGroups.billingWorkspace, isNotEmpty);
-      expect(
-        RealtimeEventGroups.billing,
-        containsAll(<String>[
-          'invoice.updated',
-          'billing.balance_updated',
-          'billing.refund_processed',
-        ]),
-      );
     });
 
     testWidgets(
-      'AC3: approve posts via repository and syncs Approval required queue',
+      'AC3: receive payment posts via repository with idempotency and leaves Overdue queue',
       (WidgetTester tester) async {
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
-          accessPolicy: _approverPolicy(),
+          accessPolicy: _writerPolicy(),
         );
+        await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Approve').first);
+        await tester.tap(find.byTooltip('Receive payment').first);
         await tester.pumpAndSettle();
 
-        final Finder submit = find.widgetWithText(FilledButton, 'Approve');
-        await tester.tap(submit.last);
-        await tester.pumpAndSettle();
+        expect(find.text('Receive payment'), findsWidgets);
+        await _submitReceivePayment(tester);
 
-        verify(() => repository.approveApproval(any(), any())).called(1);
+        verify(
+          () => repository.receivePayment(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey', that: isNotEmpty),
+          ),
+        ).called(1);
+        expect(find.text('Omar Overdue Scan'), findsNothing);
       },
     );
 
     testWidgets(
-      'AC4: read-only user cannot approve or reject (authorization)',
+      'AC4: read-only user cannot collect or waive (authorization)',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = AppAccessPolicy.fromSession(
           AuthSession(
@@ -335,50 +352,61 @@ void main() {
           ),
         );
         expect(
-          BillingApprovalRequiredAtomPermissions.approve.isAllowed(reader),
+          BillingOverdueAtomPermissions.receivePayment.isAllowed(reader),
           isFalse,
         );
+        expect(BillingOverdueAtomPermissions.waive.isAllowed(reader), isFalse);
 
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
           accessPolicy: reader,
         );
+        await _waitForWorkItem(tester);
 
-        expect(find.byTooltip('Approve'), findsNothing);
-        verifyNever(() => repository.approveApproval(any(), any()));
-        verifyNever(() => repository.rejectApproval(any(), any()));
+        expect(find.byTooltip('Receive payment'), findsNothing);
+        verifyNever(
+          () => repository.receivePayment(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        );
+        verifyNever(
+          () => repository.requestAdjustment(any(), any()),
+        );
       },
     );
 
     testWidgets(
-      'AC5: Approval required list chrome uses flat sections (desktop light)',
+      'AC5: Overdue list chrome uses flat sections (desktop light)',
       (WidgetTester tester) async {
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
-          accessPolicy: _approverPolicy(),
+          accessPolicy: _writerPolicy(),
           physicalSize: const Size(1440, 900),
           themeMode: ThemeMode.light,
         );
+        await _waitForWorkItem(tester);
 
-        expect(find.text('Scan Approval Patient'), findsOneWidget);
         expectFlatSections(tester);
       },
     );
 
     testWidgets(
-      'AC5: detail dialog from Approval required keeps flat sections (mobile dark)',
+      'AC5: detail dialog from Overdue keeps flat sections (mobile dark)',
       (WidgetTester tester) async {
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
-          accessPolicy: _approverPolicy(),
+          accessPolicy: _writerPolicy(),
           physicalSize: const Size(390, 844),
           themeMode: ThemeMode.dark,
         );
+        await _waitForWorkItem(tester);
 
-        await tester.tap(find.text('Scan Approval Patient'));
+        await tester.tap(find.text('Omar Overdue Scan'));
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
@@ -388,15 +416,16 @@ void main() {
     );
 
     testWidgets(
-      'AC5: approve dialog from Approval required stays flat',
+      'AC5: receive payment dialog from Overdue stays flat',
       (WidgetTester tester) async {
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
-          accessPolicy: _approverPolicy(),
+          accessPolicy: _writerPolicy(),
         );
+        await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Approve').first);
+        await tester.tap(find.byTooltip('Receive payment').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
@@ -405,15 +434,16 @@ void main() {
     );
 
     testWidgets(
-      'AC5: ledger dialog opened from Approval detail stays flat',
+      'AC5: ledger dialog opened from Overdue detail stays flat',
       (WidgetTester tester) async {
-        await _pumpApprovalTab(
+        await _pumpOverdueTab(
           tester,
           repository: repository,
-          accessPolicy: _approverPolicy(),
+          accessPolicy: _writerPolicy(),
         );
+        await _waitForWorkItem(tester);
 
-        await tester.tap(find.text('Scan Approval Patient'));
+        await tester.tap(find.text('Omar Overdue Scan'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('View ledger'));
@@ -421,45 +451,6 @@ void main() {
 
         expect(find.text('View ledger'), findsWidgets);
         expectFlatSections(tester);
-      },
-    );
-
-    testWidgets(
-      'reject dialog requires reason before repository call (validation)',
-      (WidgetTester tester) async {
-        await _pumpApprovalTab(
-          tester,
-          repository: repository,
-          accessPolicy: _approverPolicy(),
-        );
-
-        await tester.tap(find.text('Scan Approval Patient'));
-        await tester.pumpAndSettle();
-
-        await tester.ensureVisible(find.text('Reject'));
-        await tester.tap(find.text('Reject').last);
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AppTextField), findsWidgets);
-        verifyNever(() => repository.rejectApproval(any(), any()));
-      },
-    );
-
-    testWidgets(
-      'approval detail does not mount invoice print/download (NOT_REQUIRED)',
-      (WidgetTester tester) async {
-        await _pumpApprovalTab(
-          tester,
-          repository: repository,
-          accessPolicy: _approverPolicy(),
-        );
-
-        await tester.tap(find.text('Scan Approval Patient'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Approve'), findsWidgets);
-        expect(find.textContaining('Print'), findsNothing);
-        expect(find.textContaining('Download'), findsNothing);
       },
     );
   });

@@ -771,9 +771,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
-      'collections_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
-      ),
+      // Collections KPI opens Billing workspace (live payments) — not pending queue.
+      'collections_today': HomeMetricRouteTarget(),
       'overdue_balance_amount': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'overdue'},
       ),

@@ -23,7 +23,9 @@ import 'package:hosspi_hms/features/access_admin/presentation/access_admin_roles
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/role_similarity.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -212,6 +214,29 @@ void main() {
       expect(accessAdminRolesBillingScopeNote, contains('Billing'));
       expect(accessAdminRolesBillingScopeNote, contains('historical'));
     });
+
+    test('mutate gate intersects workspace canWrite', () {
+      expect(
+        AccessAdminRolesBillingInventory.canMutateRoles(
+          workspaceCanWrite: true,
+          policyAllowsWrite: canMutateAccessAdminRoles(
+            _policy(),
+            workspaceCanWrite: true,
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        AccessAdminRolesBillingInventory.canMutateRoles(
+          workspaceCanWrite: false,
+          policyAllowsWrite: canMutateAccessAdminRoles(
+            _policy(),
+            workspaceCanWrite: true,
+          ),
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('Roles billing bypass + authorization (AC2–AC5)', () {
@@ -384,6 +409,55 @@ void main() {
       expectFlatTitledSectionLayout(
         tester,
         contextLabel: 'create role tenant scope',
+      );
+    });
+
+    testWidgets('similarity review dialog: flat titled sections', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  unawaited(
+                    showRoleSimilarityDialog(
+                      context,
+                      proposed: const RoleSimilarityProposedValues(
+                        name: 'WARD NURSE',
+                        displayName: 'Ward Nurse',
+                        description: 'Unit nursing',
+                        scope: 'tenant',
+                        tenantId: 'tenant-1',
+                      ),
+                      matches: const <RoleSimilarityMatch>[
+                        RoleSimilarityMatch(
+                          role: _roleItem,
+                          score: 88,
+                          reasons: <String>['name'],
+                          isExact: false,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('Open similarity'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open similarity'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expectFlatTitledSectionLayout(
+        tester,
+        contextLabel: 'role similarity review',
       );
     });
 

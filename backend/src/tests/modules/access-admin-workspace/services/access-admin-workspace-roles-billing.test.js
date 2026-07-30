@@ -151,13 +151,22 @@ describe('access-admin-workspace roles billing scan', () => {
     expect(item.is_system_critical).toBe(false);
   });
 
-  it('denies billing collection for unauthorized clinical actor', async () => {
-    await expect(
-      service.resetDemoUserPassword('USR0001', {
+  it('roles panel for clinical actor is read-only without billing side effects', async () => {
+    const data = await service.getWorkspace(
+      { panel: 'roles', resource: 'roles' },
+      1,
+      20,
+      {
         roles: ['DOCTOR'],
         permissions: ['clinical:read'],
-      })
-    ).rejects.toMatchObject({ statusCode: 403 });
+        tenant_id: 'tenant-uuid',
+      }
+    );
+
+    expect(data.state).toBe('ready');
+    expect(data.permissions.can_write).toBe(false);
+    expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
+    expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();
   });
 });

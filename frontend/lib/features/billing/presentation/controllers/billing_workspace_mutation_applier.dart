@@ -32,6 +32,8 @@ abstract final class BillingWorkspaceMutationApplier {
     final bool wasPendingApproval =
         previous != null && isPendingApprovalItem(previous);
     final bool isPendingApproval = isPendingApprovalItem(patchItem);
+    final bool wasNeedsIssue = previous != null && isNeedsIssueItem(previous);
+    final bool isNeedsIssue = isNeedsIssueItem(patchItem);
 
     AppPage<BillingWorkItem> workItems = state.workItems;
     if (_shouldRemoveFromVisibleQueue(state.query.queue, patchItem)) {
@@ -51,6 +53,8 @@ abstract final class BillingWorkspaceMutationApplier {
 
     final BillingSummary summary = _adjustSummary(
       state.overview.summary,
+      wasNeedsIssue: wasNeedsIssue,
+      isNeedsIssue: isNeedsIssue,
       wasPendingPayment: wasPendingPayment,
       isPendingPayment: isPendingPayment,
       wasOverdue: wasOverdue,
@@ -98,6 +102,14 @@ abstract final class BillingWorkspaceMutationApplier {
     return item.isApproval && item.canApproveOrReject;
   }
 
+  /// Matches `NEEDS_ISSUE` queue membership (DRAFT invoices only).
+  static bool isNeedsIssueItem(BillingWorkItem item) {
+    if (!item.isInvoice) {
+      return false;
+    }
+    return (item.billingStatus ?? '').trim().toUpperCase() == 'DRAFT';
+  }
+
   static bool _shouldRemoveFromVisibleQueue(
     BillingQueueType queue,
     BillingWorkItem item,
@@ -105,8 +117,7 @@ abstract final class BillingWorkspaceMutationApplier {
     return switch (queue) {
       BillingQueueType.pendingPayment => !isPendingPaymentItem(item),
       BillingQueueType.overdue => !isOverdueItem(item),
-      BillingQueueType.needsIssue =>
-        (item.billingStatus ?? '').trim().toUpperCase() != 'DRAFT',
+      BillingQueueType.needsIssue => !isNeedsIssueItem(item),
       BillingQueueType.approvalRequired => !isPendingApprovalItem(item),
       _ => false,
     };
@@ -251,6 +262,8 @@ abstract final class BillingWorkspaceMutationApplier {
 
   static BillingSummary _adjustSummary(
     BillingSummary summary, {
+    required bool wasNeedsIssue,
+    required bool isNeedsIssue,
     required bool wasPendingPayment,
     required bool isPendingPayment,
     required bool wasOverdue,
@@ -259,10 +272,17 @@ abstract final class BillingWorkspaceMutationApplier {
     required bool isPendingApproval,
     num? paymentAmount,
   }) {
+    var needsIssue = summary.needsIssue;
     var pendingPayment = summary.pendingPayment;
     var overdue = summary.overdue;
     var approvalRequired = summary.approvalRequired;
     var paymentsTodayTotal = summary.paymentsTodayTotal;
+
+    if (wasNeedsIssue && !isNeedsIssue) {
+      needsIssue = (needsIssue - 1).clamp(0, 1 << 30);
+    } else if (!wasNeedsIssue && isNeedsIssue) {
+      needsIssue += 1;
+    }
 
     if (wasPendingPayment && !isPendingPayment) {
       pendingPayment = (pendingPayment - 1).clamp(0, 1 << 30);
@@ -287,6 +307,7 @@ abstract final class BillingWorkspaceMutationApplier {
     }
 
     return summary.copyWith(
+      needsIssue: needsIssue,
       pendingPayment: pendingPayment,
       overdue: overdue,
       approvalRequired: approvalRequired,
