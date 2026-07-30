@@ -444,6 +444,30 @@ const patientRelationScope = (scope = {}) => {
   return where;
 };
 
+const LAB_QUEUE_PATIENT_SELECT = Object.freeze({
+  first_name: true,
+  last_name: true,
+  human_friendly_id: true,
+  contacts: {
+    where: { deleted_at: null, contact_type: 'PHONE' },
+    orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
+    take: 3,
+    select: {
+      contact_type: true,
+      value: true,
+      is_primary: true,
+    },
+  },
+});
+
+const LAB_QUEUE_ORDER_SELECT = Object.freeze({
+  id: true,
+  human_friendly_id: true,
+  patient: {
+    select: LAB_QUEUE_PATIENT_SELECT,
+  },
+});
+
 const buildLabResultScopeWhere = (scope = {}) => ({
   deleted_at: null,
   lab_order_item: {
@@ -567,7 +591,7 @@ const activeQueueDefinitions = Object.freeze({
       lab_order_item: {
         select: {
           lab_order: {
-            select: { id: true, human_friendly_id: true },
+            select: LAB_QUEUE_ORDER_SELECT,
           },
         },
       },
@@ -623,7 +647,7 @@ const activeQueueDefinitions = Object.freeze({
       lab_order_item: {
         select: {
           lab_order: {
-            select: { id: true, human_friendly_id: true },
+            select: LAB_QUEUE_ORDER_SELECT,
           },
         },
       },
@@ -1239,20 +1263,30 @@ const resolveActivitySortValue = (item = {}, sortBy = 'occurred_at') => {
   }
 };
 
+const primaryPhoneFromPatient = (patient) => {
+  const contacts = Array.isArray(patient?.contacts) ? patient.contacts : [];
+  const preferred = contacts.find(
+    (entry) => entry?.is_primary && normalizeString(entry?.value)
+  );
+  const fallback = contacts.find((entry) => normalizeString(entry?.value));
+  return normalizeString(preferred?.value) || normalizeString(fallback?.value) || null;
+};
+
 const buildQueueItem = (definition, row = {}) => {
   const publicId = dashboardWorkspaceRepository.safePublicId(row.human_friendly_id, row.id);
   if (!publicId) return null;
 
-  const patient = row.patient || null;
+  const labOrder = row?.lab_order_item?.lab_order || null;
+  const patient = row.patient || labOrder?.patient || null;
   const patientName = [patient?.first_name, patient?.last_name]
     .map((part) => normalizeString(part))
     .filter(Boolean)
     .join(' ')
     .trim();
   const patientMrn = normalizeString(patient?.human_friendly_id);
+  const patientPhone = primaryPhoneFromPatient(patient);
   const itemCount = Number(row?._count?.items || 0);
   const isPharmacyOrder = definition.id === 'pharmacy_orders';
-  const labOrder = row?.lab_order_item?.lab_order || null;
   const labOrderPublicId = dashboardWorkspaceRepository.safePublicId(
     labOrder?.human_friendly_id,
     labOrder?.id
@@ -1280,8 +1314,15 @@ const buildQueueItem = (definition, row = {}) => {
     }
     subtitle = subtitleParts.join(' · ');
   } else if (definition.module_slug === 'lab' && labOrderPublicId) {
-    title = labOrderPublicId;
-    subtitle = publicId !== labOrderPublicId ? publicId : null;
+    title = patientName || labOrderPublicId;
+    const subtitleParts = [];
+    if (patientPhone) subtitleParts.push(patientPhone);
+    if (patientName) {
+      subtitleParts.push(labOrderPublicId);
+    } else if (publicId !== labOrderPublicId) {
+      subtitleParts.push(publicId);
+    }
+    subtitle = subtitleParts.length ? subtitleParts.join(' · ') : null;
   }
 
   return {
@@ -1303,6 +1344,7 @@ const buildQueueItem = (definition, row = {}) => {
       total_amount: row.total_amount != null ? Number(row.total_amount) : null,
       currency: row.currency || null,
       patient_name: patientName || null,
+      patient_phone: patientPhone || null,
       item_count: itemCount || null,
       lab_order_id: labOrderPublicId || null,
       lab_result_id: publicId,
