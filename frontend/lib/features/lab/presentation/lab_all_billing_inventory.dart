@@ -44,7 +44,7 @@ final class LabAllFinancialAtom {
 ///
 /// Create / update lab orders post request-time charges via
 /// `clinical-request-billing` (persistLabOrderBilling). Collect / receive /
-/// verify / release are gated on Billing payment satisfaction. Settle and
+/// save / enter results are gated on Billing payment satisfaction. Settle and
 /// adjust stay on the Billing workspace (Open billing navigation)—no lab
 /// cashier.
 abstract final class LabAllBillingInventory {
@@ -165,12 +165,12 @@ abstract final class LabAllBillingInventory {
     auditCode: 'NOT_REQUIRED',
   );
 
-  static const LabAllFinancialAtom verifyRelease = LabAllFinancialAtom(
-    id: 'verify_release',
-    label: 'Verify / release results (payment-gated)',
+  static const LabAllFinancialAtom saveEnterResults = LabAllFinancialAtom(
+    id: 'save_enter_results',
+    label: 'Save / enter results (payment-gated)',
     financialClass: LabAllFinancialClass.notRequired,
     requirement: LabAllAtomPermissions.resultEntry,
-    billingPath: 'assertLabOrderPaymentSatisfied before verify/release',
+    billingPath: 'assertLabOrderPaymentSatisfied before save/enter-results',
     auditCode: 'NOT_REQUIRED',
   );
 
@@ -231,7 +231,7 @@ abstract final class LabAllBillingInventory {
     billLater,
     collectSample,
     receiveSample,
-    verifyRelease,
+    saveEnterResults,
     resultEntryClinical,
     openBilling,
     previewReport,
@@ -275,8 +275,8 @@ abstract final class LabAllBillingInventory {
 const String labAllBillingScopeNote =
     'Lab All is the full lab worklist. Create / edit orders post charges via '
     'clinical-request-billing (pending bill-later when Review billing is '
-    'skipped). Delete reverses Billing snapshots. Collect, receive, verify, '
-    'and release are blocked when Billing shows unpaid required charges unless '
+    'skipped). Delete reverses Billing snapshots. Collect, receive, and '
+    'save/enter-results are blocked when Billing shows unpaid required charges unless '
     'PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED. Open billing navigates the '
     'Billing module; settle/adjust/refund are not cashiered here. Catalog '
     'configuration and clinical result entry stay NOT_BILLED.';

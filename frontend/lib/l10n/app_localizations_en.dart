@@ -12912,13 +12912,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labProcessingSummaryLabel => 'Processing';
 
   @override
-  String get labResultPendingSummaryLabel => 'Pending verification';
+  String get labResultPendingSummaryLabel => 'Awaiting results';
 
   @override
   String get labCriticalSummaryLabel => 'Critical';
 
   @override
-  String get labCompletedSummaryLabel => 'Verified';
+  String get labCompletedSummaryLabel => 'Completed';
 
   @override
   String get labFiltersLabel => 'Laboratory filters';
@@ -12945,13 +12945,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeProcessing => 'Processing';
 
   @override
-  String get labScopeResults => 'Pending verification';
+  String get labScopeResults => 'Enter results';
 
   @override
   String get labScopeCritical => 'Critical';
 
   @override
-  String get labScopeCompleted => 'Verified';
+  String get labScopeCompleted => 'Completed';
 
   @override
   String get labScopeCancelled => 'Cancelled';
@@ -13032,7 +13032,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labSaveDraftAction => 'Save draft';
 
   @override
-  String get labSubmitResultsAction => 'Submit results';
+  String get labSubmitResultsAction => 'Save results';
 
   @override
   String get labDraftSavedMessage => 'Draft results saved.';
@@ -13049,7 +13049,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String labBatchPartialVerifyMessage(int savedCount, int skippedCount) {
-    return 'Verified $savedCount results. $skippedCount entries need attention.';
+    return 'Saved $savedCount results. $skippedCount entries need attention.';
   }
 
   @override
@@ -13133,7 +13133,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorkflowStepResultsEntered => 'Results entered';
 
   @override
-  String get labWorkflowStepVerified => 'Verified';
+  String get labWorkflowStepVerified => 'Completed';
 
   @override
   String get labWorkflowNextCollectSample => 'Collect sample';
@@ -13151,7 +13151,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorkflowNextEnterResults => 'Enter results';
 
   @override
-  String get labWorkflowNextVerifyResults => 'Verify results';
+  String get labWorkflowNextVerifyResults => 'Save results';
 
   @override
   String get labWorkflowNextReviewItems => 'Review pending items';
@@ -13208,7 +13208,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labResultsSubmittedMessage => 'Results submitted.';
 
   @override
-  String get labResultsVerifiedMessage => 'Results verified.';
+  String get labResultsVerifiedMessage => 'Results saved.';
 
   @override
   String get labSelectAllTestsAction => 'Select all';
@@ -13264,7 +13264,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labNoSelectionBody =>
-      'Select a lab order to enter, verify, or report.';
+      'Select a lab order to enter results or report.';
 
   @override
   String get labPatientContextLabel => 'Lab patient context';
@@ -13480,7 +13480,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusInProcess => 'In process';
 
   @override
-  String get labStatusCompleted => 'Verified';
+  String get labStatusCompleted => 'Completed';
 
   @override
   String get labStatusCancelled => 'Cancelled';
@@ -13595,7 +13595,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printFormPrintedByLabel => 'Printed by';
 
   @override
-  String get printFormVerifiedByLabel => 'Verified by';
+  String get printFormVerifiedByLabel => 'Entered by';
 
   @override
   String get printFormSignatureStampLabel => 'Signature / stamp';
@@ -19496,7 +19496,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labPatientsPendingVerificationSummaryLabel =>
-      'Patients pending verification';
+      'Patients awaiting results';
 
   @override
   String get labPatientsCriticalSummaryLabel =>
@@ -19526,7 +19526,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPatientIdFieldLabel => 'Patient ID';
 
   @override
-  String get labVerifyAllAction => 'Verify all';
+  String get labVerifyAllAction => 'Save all';
 
   @override
   String get labEntryStatusColumnLabel => 'Entry status';
@@ -19548,23 +19548,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labTestCodeLabel => 'Test code';
 
   @override
-  String get labVerifyResultAction => 'Verify result';
+  String get labVerifyResultAction => 'Save result';
 
   @override
-  String get labEditVerifiedResultAction => 'Edit';
+  String get labEditVerifiedResultAction => 'Edit result';
 
   @override
-  String get labReopenVerifiedResultDialogTitle => 'Edit Verified Result';
+  String get labReopenVerifiedResultDialogTitle => 'Edit Result';
 
   @override
   String get labReopenVerifiedResultDialogBody =>
-      'Update the value and reason. Saving re-verifies the corrected result.';
+      'Update the value and reason. Saving finalizes the corrected result.';
 
   @override
   String get labReopenVerifiedReasonLabel => 'Reason for edit';
 
   @override
-  String get labVerifiedResultReopenedMessage => 'Result reopened for editing.';
+  String get labVerifiedResultReopenedMessage => 'Result opened for editing.';
 
   @override
   String get labRestoreOrderItemAction => 'Restore test';
@@ -19606,13 +19606,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labResultFlagLabel => 'Flag';
 
   @override
-  String get labVerifyResultDialogTitle => 'Enter and Verify Result';
+  String get labVerifyResultDialogTitle => 'Enter Result';
 
   @override
   String get labNumericRangeValidationMessage => 'Enter a valid number.';
 
   @override
-  String get labVerifyAllDialogTitle => 'Verify Entered Results';
+  String get labVerifyAllDialogTitle => 'Save Entered Results';
 
   @override
   String get labRejectOrderItemDialogTitle => 'Reject Requested Test';
@@ -19861,7 +19861,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusPendingResults => 'Pending results';
 
   @override
-  String get labStatusVerified => 'Verified';
+  String get labStatusVerified => 'Saved';
 
   @override
   String get labStatusLow => 'Low';
@@ -19870,7 +19870,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusHigh => 'High';
 
   @override
-  String get labNextActionVerify => 'Verify result';
+  String get labNextActionVerify => 'Enter results';
 
   @override
   String get labNextActionEnterResult => 'Enter result';
@@ -20241,7 +20241,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusPartiallyRejected => 'Partially rejected';
 
   @override
-  String get labStatusPartiallyVerified => 'Partially verified';
+  String get labStatusPartiallyVerified => 'Partially saved';
 
   @override
   String labRejectedItemCount(int count) {

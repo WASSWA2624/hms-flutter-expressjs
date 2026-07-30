@@ -10,8 +10,8 @@ const {
 const toText = (value) => (value == null ? '' : String(value).trim());
 
 /**
- * Payment statuses that allow lab sample collection and result
- * release/verification to proceed.
+ * Payment statuses that allow lab sample collection and result entry
+ * to proceed.
  */
 const LAB_PAYMENT_SATISFIED_STATUSES = new Set([
   'PAID',
@@ -68,7 +68,7 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
   COLLECT: 1,
   REJECT: 2,
   RECEIVE: 3,
-  RELEASE: 4});
+  SAVE: 4});
 
 const toTimestampValue = (...candidates) => {
   for (const candidate of candidates) {
@@ -100,7 +100,7 @@ const resolveLatestReverseWorkflowTarget = (record) => {
     (item?.results || []).forEach((result) => {
       if (!RESULT_REOPENABLE_STATES.has(toText(result?.status).toUpperCase())) return;
       latest = selectLatestReverseCandidate(latest, {
-        kind: 'RELEASE',
+        kind: 'SAVE',
         atMs: toTimestampValue(result?.reported_at, result?.updated_at)});
     });
   });
@@ -594,14 +594,11 @@ const mapLabOrderWorkflowRecord = (record) => {
         && order.samples.some((sample) =>
           ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())
         ),
-      // Verify / release blocked unless Billing payment is satisfied.
-      can_release_result:
+      // Result entry blocked unless Billing payment is satisfied.
+      can_enter_result:
         isLabOrderPaymentSatisfied(record)
         && order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
-      can_verify_result:
-        isLabOrderPaymentSatisfied(record)
-        && order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
-      can_verify_all:
+      can_enter_all:
         isLabOrderPaymentSatisfied(record)
         && order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
       can_reject_order_item: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),

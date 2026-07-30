@@ -345,7 +345,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => LabQueueScope.all,
       LabDeskSection.collection => LabQueueScope.collection,
       LabDeskSection.processing => LabQueueScope.processing,
-      LabDeskSection.verification => LabQueueScope.results,
       LabDeskSection.critical => LabQueueScope.critical,
       LabDeskSection.completed => LabQueueScope.completed,
       LabDeskSection.followUps => LabQueueScope.all,
@@ -372,7 +371,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       case 'pending-verification':
       case 'pending_verification':
       case 'pendingverification':
-        return LabDeskSection.verification;
+        // Legacy deep links → processing / awaiting-results work queue.
+        return LabDeskSection.processing;
       case 'critical':
         return LabDeskSection.critical;
       case 'verified':
@@ -393,9 +393,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => 'worklist',
       LabDeskSection.collection => 'awaiting-results',
       LabDeskSection.processing => 'processing',
-      LabDeskSection.verification => 'pending-verification',
       LabDeskSection.critical => 'critical',
-      LabDeskSection.completed => 'verified',
+      LabDeskSection.completed => 'completed',
       LabDeskSection.followUps => 'follow-ups',
     };
   }
@@ -414,7 +413,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => l10n.labScopeAll,
       LabDeskSection.collection => l10n.labScopeCollection,
       LabDeskSection.processing => l10n.labScopeProcessing,
-      LabDeskSection.verification => l10n.labScopeResults,
       LabDeskSection.critical => l10n.labScopeCritical,
       LabDeskSection.completed => l10n.labScopeCompleted,
       LabDeskSection.followUps => l10n.opdFollowUpsTitle,
@@ -426,9 +424,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => Icons.assignment_outlined,
       LabDeskSection.collection => Icons.biotech_outlined,
       LabDeskSection.processing => Icons.sync_outlined,
-      LabDeskSection.verification => Icons.pending_actions_outlined,
       LabDeskSection.critical => Icons.priority_high_outlined,
-      LabDeskSection.completed => Icons.verified_outlined,
+      LabDeskSection.completed => Icons.task_alt_outlined,
       LabDeskSection.followUps => Icons.phone_callback_outlined,
     };
   }
@@ -442,7 +439,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.worklist => state.summary.totalForView(view),
       LabDeskSection.collection => state.summary.collectionForView(view),
       LabDeskSection.processing => state.summary.processingForView(view),
-      LabDeskSection.verification => state.summary.resultsForView(view),
       LabDeskSection.critical => state.summary.criticalForView(view),
       LabDeskSection.completed => state.summary.completedForView(view),
       LabDeskSection.followUps => null,
@@ -455,7 +451,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.collection ||
       LabDeskSection.processing => AppTabCountTone.warning,
       LabDeskSection.worklist ||
-      LabDeskSection.verification ||
       LabDeskSection.completed ||
       LabDeskSection.followUps => AppTabCountTone.info,
     };
@@ -2954,9 +2949,9 @@ AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
   }
   if (activeItems > 0 && order.completedItemCount >= activeItems) {
     return AppWorkspaceStatus(
-      label: l10n.labStatusVerified,
+      label: l10n.labStatusCompleted,
       tone: AppWorkspaceStatusTone.success,
-      icon: Icons.verified_outlined,
+      icon: Icons.task_alt_outlined,
     );
   }
   if (activeItems > 0 && enteredItems >= activeItems) {
@@ -3067,10 +3062,10 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
   final bool awaitPayment =
       order.hasBillingGate && !order.isPaymentSatisfied;
   final String status = (order.status ?? '').toUpperCase();
-  if (order.verifiableItemCount > 0) {
+  if (order.enterableItemCount > 0) {
     return awaitPayment
         ? l10n.labWorkflowNextAwaitPayment
-        : l10n.labNextActionVerify;
+        : l10n.labNextActionEnterResult;
   }
   return switch (status) {
     'ORDERED' || 'COLLECTED' => awaitPayment
@@ -3078,7 +3073,7 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
         : l10n.labNextActionEnterResult,
     'IN_PROCESS' => awaitPayment
         ? l10n.labWorkflowNextAwaitPayment
-        : l10n.labNextActionVerify,
+        : l10n.labNextActionEnterResult,
     'COMPLETED' => l10n.labNextActionCompleted,
     _ => l10n.labNextActionWatch,
   };

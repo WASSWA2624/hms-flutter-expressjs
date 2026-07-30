@@ -324,7 +324,7 @@ void main() {
         contains('assertLabOrderPaymentSatisfied'),
       );
       expect(
-        LabAwaitingResultsBillingInventory.verifyResults.billingPath,
+        LabAwaitingResultsBillingInventory.saveResults.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
 

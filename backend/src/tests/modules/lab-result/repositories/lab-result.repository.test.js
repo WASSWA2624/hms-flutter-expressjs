@@ -30,7 +30,7 @@ describe('Lab Result Repository', () => {
       expect(result).toEqual(mockLabResult);
       expect(prisma.lab_result.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: undefined
+        include: {}
       });
     });
 

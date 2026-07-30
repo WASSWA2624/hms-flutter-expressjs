@@ -1,6 +1,6 @@
 /**
  * Lab workspace Pending verification (`/lab?section=pending-verification`)
- * billing gates: verify/release must not bypass Billing payment status.
+ * billing gates: save-result must not bypass Billing payment status.
  */
 
 jest.mock('@repositories/lab-workspace/lab-workspace.repository');
@@ -95,7 +95,7 @@ describe('lab-workspace pending-verification billing gates', () => {
     jest.clearAllMocks();
   });
 
-  it('blocks verify-results when Billing payment_status is PENDING', async () => {
+  it('blocks save-results when Billing payment_status is PENDING', async () => {
     resolveModelIdOrThrow
       .mockResolvedValueOnce('order-internal-pv-1')
       .mockResolvedValueOnce('item-internal-pv-1');
@@ -105,7 +105,7 @@ describe('lab-workspace pending-verification billing gates', () => {
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(buildOrder());
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-PV-1',
         {
           results: [
@@ -120,7 +120,7 @@ describe('lab-workspace pending-verification billing gates', () => {
       statusCode: 402});
   });
 
-  it('blocks releaseLabOrderItem when Billing payment_status is PENDING', async () => {
+  it('blocks saveLabOrderItemResult when Billing payment_status is PENDING', async () => {
     resolveModelIdOrThrow.mockResolvedValue('item-internal-pv-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -144,7 +144,7 @@ describe('lab-workspace pending-verification billing gates', () => {
           status: 'ENTERED'}]});
 
     await expect(
-      labWorkspaceService.releaseLabOrderItem(
+      labWorkspaceService.saveLabOrderItemResult(
         'LIT-PV-1',
         { result_value: '5.4' },
         'actor-1',
@@ -155,7 +155,7 @@ describe('lab-workspace pending-verification billing gates', () => {
       statusCode: 402});
   });
 
-  it('serializer enables verify/release when payment_status is PAID (Billing parity)', () => {
+  it('serializer enables result-entry when payment_status is PAID (Billing parity)', () => {
     const paidOrder = buildOrder({
       billing_snapshot: {
         payment_status: 'PAID',
@@ -166,17 +166,16 @@ describe('lab-workspace pending-verification billing gates', () => {
 
     const workflow = mapLabOrderWorkflowRecord(paidOrder);
     expect(workflow.next_actions.billing_gate_blocked).toBe(false);
-    expect(workflow.next_actions.can_verify_result).toBe(true);
-    expect(workflow.next_actions.can_release_result).toBe(true);
+    expect(workflow.next_actions.can_enter_result).toBe(true);
+    expect(workflow.next_actions.can_enter_all).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PAID');
   });
 
-  it('serializer hides verify/release when billing gate blocked (results queue)', () => {
+  it('serializer hides result-entry when billing gate blocked (results queue)', () => {
     const workflow = mapLabOrderWorkflowRecord(buildOrder());
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
-    expect(workflow.next_actions.can_verify_result).toBe(false);
-    expect(workflow.next_actions.can_release_result).toBe(false);
-    expect(workflow.next_actions.can_verify_all).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(false);
+    expect(workflow.next_actions.can_enter_all).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
 
@@ -193,7 +192,7 @@ describe('lab-workspace pending-verification billing gates', () => {
     ).toBe(false);
   });
 
-  it('idempotent gate: unpaid verify rejected twice without side effects', async () => {
+  it('idempotent gate: unpaid save-results rejected twice without side effects', async () => {
     resolveModelIdOrThrow
       .mockResolvedValueOnce('order-internal-pv-1')
       .mockResolvedValueOnce('item-internal-pv-1')
@@ -208,7 +207,7 @@ describe('lab-workspace pending-verification billing gates', () => {
       results: [{ order_item_id: 'LIT-PV-1', result_value: '5.4' }]};
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-PV-1',
         payload,
         'actor-1',
@@ -218,7 +217,7 @@ describe('lab-workspace pending-verification billing gates', () => {
       message: 'errors.lab_order.payment_required',
       statusCode: 402});
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-PV-1',
         payload,
         'actor-1',
@@ -234,7 +233,7 @@ describe('lab-workspace pending-verification billing gates', () => {
   it('lab workspace does not own receive-payment / adjust (no bypass cashier)', () => {
     expect(labWorkspaceService.receivePayment).toBeUndefined();
     expect(labWorkspaceService.adjustInvoice).toBeUndefined();
-    expect(labWorkspaceService.verifyLabOrderResults).toEqual(expect.any(Function));
-    expect(labWorkspaceService.releaseLabOrderItem).toEqual(expect.any(Function));
+    expect(labWorkspaceService.saveLabOrderResults).toEqual(expect.any(Function));
+    expect(labWorkspaceService.saveLabOrderItemResult).toEqual(expect.any(Function));
   });
 });

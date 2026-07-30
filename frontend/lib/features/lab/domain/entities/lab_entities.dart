@@ -6,7 +6,6 @@ enum LabQueueScope {
   all,
   collection,
   processing,
-  results,
   critical,
   completed,
   cancelled,
@@ -16,7 +15,6 @@ enum LabDeskSection {
   worklist,
   collection,
   processing,
-  verification,
   critical,
   completed,
   followUps,
@@ -694,8 +692,8 @@ final class LabOrderSummary {
         items.any((LabOrderItem item) => item.isRejected);
   }
 
-  int get verifiableItemCount {
-    return items.where((LabOrderItem item) => item.canVerify).length;
+  int get enterableItemCount {
+    return items.where((LabOrderItem item) => item.canEnterResult).length;
   }
 
   bool get hasReceivableSample {
@@ -889,13 +887,6 @@ final class LabOrderItem {
       _normalize(status) == 'CANCELLED' &&
       _firstNonEmpty(<String?>[rejectionReason, rejectionNotes]) != null;
 
-  bool get canVerify {
-    return switch (_normalize(status)) {
-      'ORDERED' || 'COLLECTED' || 'IN_PROCESS' => true,
-      _ => false,
-    };
-  }
-
   bool get canReopenResult {
     if (isRejected || !isCompleted || !hasResult) {
       return false;
@@ -910,16 +901,23 @@ final class LabOrderItem {
     if (isRejected) {
       return false;
     }
-    if (canVerify) {
-      return true;
-    }
-    return hasResult && _normalize(effectiveResultStatus) == 'PENDING';
+    return switch (_normalize(status)) {
+      'ORDERED' || 'COLLECTED' || 'IN_PROCESS' => true,
+      _ => hasResult && _normalize(effectiveResultStatus) == 'PENDING',
+    };
   }
 
   bool get isCompleted => _normalize(status) == 'COMPLETED';
 
-  bool get canReject => canVerify;
-  bool get canRelease => canVerify;
+  bool get canReject {
+    if (isRejected) {
+      return false;
+    }
+    return switch (_normalize(status)) {
+      'ORDERED' || 'COLLECTED' || 'IN_PROCESS' => true,
+      _ => false,
+    };
+  }
 }
 
 @immutable
@@ -1090,9 +1088,8 @@ final class LabWorkflowNextActions {
     this.billingGateBlocked = false,
     this.paymentStatus,
     this.canReceiveSample = false,
-    this.canReleaseResult = false,
-    this.canVerifyResult = false,
-    this.canVerifyAll = false,
+    this.canEnterResult = false,
+    this.canEnterAll = false,
     this.canRejectOrderItem = false,
     this.canReverseWorkflow = false,
   });
@@ -1101,9 +1098,8 @@ final class LabWorkflowNextActions {
   final bool billingGateBlocked;
   final String? paymentStatus;
   final bool canReceiveSample;
-  final bool canReleaseResult;
-  final bool canVerifyResult;
-  final bool canVerifyAll;
+  final bool canEnterResult;
+  final bool canEnterAll;
   final bool canRejectOrderItem;
   final bool canReverseWorkflow;
 }
@@ -1122,19 +1118,17 @@ final class LabOrderWorkflow {
   final List<LabWorkflowTimelineItem> timeline;
   final LabWorkflowNextActions nextActions;
 
-  LabOrderItem? get firstVerifiableItem {
+  LabOrderItem? get firstEnterableItem {
     for (final LabOrderItem item in order.items) {
-      if (item.canVerify) {
+      if (item.canEnterResult) {
         return item;
       }
     }
     return null;
   }
 
-  LabOrderItem? get firstReleasableItem => firstVerifiableItem;
-
-  List<LabOrderItem> get verifiableItems => order.items
-      .where((LabOrderItem item) => item.canVerify)
+  List<LabOrderItem> get enterableItems => order.items
+      .where((LabOrderItem item) => item.canEnterResult)
       .toList(growable: false);
 
   LabSample? get firstReceivableSample {
@@ -1261,9 +1255,6 @@ bool labOrderMatchesScope(LabOrderSummary order, LabQueueScope scope) {
     LabQueueScope.all => true,
     LabQueueScope.collection => status == 'ORDERED' || status == 'COLLECTED',
     LabQueueScope.processing => status == 'IN_PROCESS',
-    LabQueueScope.results => order.items.any(
-      (LabOrderItem item) => item.canVerify,
-    ),
     LabQueueScope.critical => order.hasCriticalResult,
     LabQueueScope.completed => status == 'COMPLETED',
     LabQueueScope.cancelled => status == 'CANCELLED',

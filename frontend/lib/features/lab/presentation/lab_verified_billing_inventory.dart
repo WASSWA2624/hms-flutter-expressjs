@@ -16,7 +16,7 @@ enum LabVerifiedFinancialClass {
   noCharge,
 }
 
-/// One financially relevant atom on Lab Verified (`/lab?section=verified`).
+/// One financially relevant atom on Lab Completed (`/lab?section=completed|verified`).
 @immutable
 final class LabVerifiedFinancialAtom {
   const LabVerifiedFinancialAtom({
@@ -40,20 +40,20 @@ final class LabVerifiedFinancialAtom {
   final bool mounted;
 }
 
-/// Canonical inventory for `/lab?section=verified|completed` (released /
-/// COMPLETED results; prefer read — Preview report; reopen / edit verified).
+/// Canonical inventory for `/lab?section=completed|verified` (saved /
+/// COMPLETED results; prefer read — Preview report; reopen / edit saved).
 ///
 /// Create / update / additional / delete orders post or reverse request-time
 /// charges via `clinical-request-billing` (`persistLabOrderBilling` /
-/// `reverseClinicalRequestBilling`). Re-verify / release after reopen remains
+/// `reverseClinicalRequestBilling`). Re-save / enter results after reopen remains
 /// gated on Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE /
-/// NOT_BILLED). Edit / reopen verified is clinical (`NOT_BILLED`) and must not
+/// NOT_BILLED). Edit / reopen saved is clinical (`NOT_BILLED`) and must not
 /// reverse invoices. Settle / adjust / refund stay on the Billing workspace —
 /// this tab never mounts a parallel cashier.
 abstract final class LabVerifiedBillingInventory {
   static const LabVerifiedFinancialAtom tab = LabVerifiedFinancialAtom(
     id: 'tab_navigate',
-    label: 'Verified tab / count badge',
+    label: 'Completed tab / count badge',
     financialClass: LabVerifiedFinancialClass.notRequired,
     requirement: LabVerifiedAtomPermissions.tab,
     auditCode: 'NOT_REQUIRED',
@@ -175,14 +175,14 @@ abstract final class LabVerifiedBillingInventory {
         auditCode: 'NOT_BILLED',
       );
 
-  static const LabVerifiedFinancialAtom verifyResults =
+  static const LabVerifiedFinancialAtom saveResults =
       LabVerifiedFinancialAtom(
-        id: 'workflow_verify_release_results',
-        label: 'Verify / release results (payment-gated; incl. after reopen)',
+        id: 'workflow_save_enter_results',
+        label: 'Save / enter results (payment-gated; incl. after reopen)',
         financialClass: LabVerifiedFinancialClass.defer,
         requirement: LabVerifiedAtomPermissions.workflowMutate,
         billingPath:
-            'assertLabOrderPaymentSatisfied on verify/release (Billing gate)',
+            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -190,7 +190,7 @@ abstract final class LabVerifiedBillingInventory {
   static const LabVerifiedFinancialAtom editReopenVerified =
       LabVerifiedFinancialAtom(
         id: 'edit_reopen_verified_result',
-        label: 'Edit / reopen verified result (clinical; not invoice reverse)',
+        label: 'Edit / reopen saved result (clinical; not invoice reverse)',
         financialClass: LabVerifiedFinancialClass.notBilled,
         requirement: LabVerifiedAtomPermissions.reopenVerifiedResult,
         auditCode: 'NOT_BILLED',
@@ -265,7 +265,7 @@ abstract final class LabVerifiedBillingInventory {
         label: 'Receive payment / cashier collect',
         financialClass: LabVerifiedFinancialClass.settle,
         requirement: billingWorkspaceWriteRequirement,
-        billingPath: 'Billing receive-payment (not mounted on Verified)',
+        billingPath: 'Billing receive-payment (not mounted on Completed)',
         mounted: false,
       );
 
@@ -293,7 +293,7 @@ abstract final class LabVerifiedBillingInventory {
     collectSample,
     receiveSample,
     enterResults,
-    verifyResults,
+    saveResults,
     editReopenVerified,
     reverseWorkflow,
     rejectItem,
@@ -336,9 +336,9 @@ abstract final class LabVerifiedBillingInventory {
 }
 
 const String labVerifiedBillingScopeNote =
-    'Lab Verified is the released / COMPLETED results queue (prefer read). '
+    'Lab Completed is the saved / COMPLETED results queue (prefer read). '
     'Create and edit orders post charges via clinical-request-billing. '
-    'Verify/release (including after reopen) is gated on Billing payment '
-    'status. Edit/reopen verified and reverse workflow are NOT_BILLED clinical '
+    'Save/enter-results (including after reopen) is gated on Billing payment '
+    'status. Edit/reopen saved results and reverse workflow are NOT_BILLED clinical '
     'ops and must not reverse invoices. Settle/adjust/refund are not cashiered '
     'here. Result entry, receive, and reject stay NOT_BILLED clinical ops.';

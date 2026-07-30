@@ -20,9 +20,9 @@ const {
   orderWorkflowParamsSchema,
   receiveLabSampleSchema,
   rejectLabSampleSchema,
-  releaseLabOrderItemSchema,
+  saveLabOrderItemResultSchema,
   searchLabOrderContextPatientsQuerySchema,
-  verifyLabOrderResultsSchema,
+  saveLabOrderResultsSchema,
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   reopenLabOrderItemResultSchema,
@@ -112,23 +112,23 @@ router.post(
 );
 
 router.post(
-  '/order-items/:id/release',
+  '/order-items/:id/save-result',
   validateRequest({
     params: orderItemWorkflowParamsSchema,
-    body: releaseLabOrderItemSchema}),
+    body: saveLabOrderItemResultSchema}),
   authenticate(),
   authorize(LAB_WRITE_SCOPES, 'permission'),
-  labWorkspaceController.releaseLabOrderItem
+  labWorkspaceController.saveLabOrderItemResult
 );
 
 router.post(
-  '/orders/:id/verify-results',
+  '/orders/:id/save-results',
   validateRequest({
     params: orderWorkflowParamsSchema,
-    body: verifyLabOrderResultsSchema}),
+    body: saveLabOrderResultsSchema}),
   authenticate(),
   authorize(LAB_WRITE_SCOPES, 'permission'),
-  labWorkspaceController.verifyLabOrderResults
+  labWorkspaceController.saveLabOrderResults
 );
 
 router.post(

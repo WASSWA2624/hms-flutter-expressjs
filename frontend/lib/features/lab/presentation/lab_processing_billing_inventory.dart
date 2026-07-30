@@ -46,7 +46,7 @@ final class LabProcessingFinancialAtom {
 ///
 /// Create / update / additional / delete orders post or reverse request-time
 /// charges via `clinical-request-billing` (`persistLabOrderBilling` /
-/// `reverseClinicalRequestBilling`). Collect, receive, and verify/release are
+/// `reverseClinicalRequestBilling`). Collect, receive, and save/enter-results are
 /// gated on Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE /
 /// NOT_BILLED). Result entry (save draft / submit) stays `NOT_BILLED` clinical
 /// ops. Settle / adjust / refund stay on the Billing workspace — this tab never
@@ -187,14 +187,14 @@ abstract final class LabProcessingBillingInventory {
         auditCode: 'NOT_BILLED',
       );
 
-  static const LabProcessingFinancialAtom verifyResults =
+  static const LabProcessingFinancialAtom saveResults =
       LabProcessingFinancialAtom(
-        id: 'workflow_verify_release_results',
-        label: 'Verify / release results (payment-gated)',
+        id: 'workflow_save_enter_results',
+        label: 'Save / enter results (payment-gated)',
         financialClass: LabProcessingFinancialClass.defer,
         requirement: LabProcessingAtomPermissions.workflowMutate,
         billingPath:
-            'assertLabOrderPaymentSatisfied on verify/release (Billing gate)',
+            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -299,7 +299,7 @@ abstract final class LabProcessingBillingInventory {
         collectSample,
         receiveSample,
         enterResults,
-        verifyResults,
+        saveResults,
         reverseWorkflow,
         rejectItem,
         previewReport,
@@ -343,7 +343,7 @@ abstract final class LabProcessingBillingInventory {
 const String labProcessingBillingScopeNote =
     'Lab Processing is the in-lab processing queue (IN_PROCESS). Create and '
     'edit orders post charges via clinical-request-billing. Collect, receive, '
-    'and verify/release are gated on Billing payment status. Open billing '
+    'and save/enter-results are gated on Billing payment status. Open billing '
     'navigates the Billing module when the gate blocks. Settle/adjust/refund '
     'are not cashiered here. Result entry, reverse, and reject stay NOT_BILLED '
     'clinical ops.';

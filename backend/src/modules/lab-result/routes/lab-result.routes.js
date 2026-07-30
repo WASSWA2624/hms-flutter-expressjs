@@ -13,7 +13,6 @@ const { PERMISSIONS } = require('@config/permissions');
 const {
   createLabResultSchema,
   updateLabResultSchema,
-  releaseLabResultSchema,
   labResultIdParamsSchema,
   listLabResultsQuerySchema} = require('@validations/lab-result/lab-result.schema');
 
@@ -61,14 +60,6 @@ router.delete(
   authenticate(),
   authorize(LAB_WRITE_SCOPES, 'permission'),
   labResultController.deleteLabResult
-);
-
-router.post(
-  '/:id/release',
-  validateRequest({ params: labResultIdParamsSchema, body: releaseLabResultSchema }),
-  authenticate(),
-  authorize(LAB_WRITE_SCOPES, 'permission'),
-  labResultController.releaseLabResult
 );
 
 module.exports = router;

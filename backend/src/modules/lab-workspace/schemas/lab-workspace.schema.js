@@ -52,7 +52,7 @@ const rejectLabSampleSchema = z.object({
   rejected_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable()});
 
-const releaseLabOrderItemSchema = z.object({
+const saveLabOrderItemResultSchema = z.object({
   result_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(['NORMAL', 'ABNORMAL', 'CRITICAL']).optional(),
   result_value: z.string().trim().max(120).optional().nullable(),
@@ -61,11 +61,11 @@ const releaseLabOrderItemSchema = z.object({
   reported_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable()});
 
-const verifyLabOrderResultItemSchema = releaseLabOrderItemSchema.extend({
+const saveLabOrderResultItemSchema = saveLabOrderItemResultSchema.extend({
   order_item_id: uuidOrFriendlyIdentifierSchema});
 
-const verifyLabOrderResultsSchema = z.object({
-  results: z.array(verifyLabOrderResultItemSchema).min(1).max(100)});
+const saveLabOrderResultsSchema = z.object({
+  results: z.array(saveLabOrderResultItemSchema).min(1).max(100)});
 
 const rejectLabOrderItemSchema = z.object({
   reason: z.string().trim().min(2).max(255),
@@ -112,8 +112,8 @@ module.exports = {
   collectLabOrderSchema,
   receiveLabSampleSchema,
   rejectLabSampleSchema,
-  releaseLabOrderItemSchema,
-  verifyLabOrderResultsSchema,
+  saveLabOrderItemResultSchema,
+  saveLabOrderResultsSchema,
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   reopenLabOrderItemResultSchema,

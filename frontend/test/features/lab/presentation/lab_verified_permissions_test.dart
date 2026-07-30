@@ -358,7 +358,7 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.textContaining('Verified'), findsWidgets);
+      expect(find.textContaining('Completed'), findsWidgets);
       expect(_table(tester).columnVisibilityStorageKey, 'lab_completed');
 
       final AppLocalizations l10n = AppLocalizations.of(
@@ -447,7 +447,7 @@ void main() {
         );
 
         expect(find.byType(AppTabStrip), findsOneWidget);
-        expect(find.textContaining('Verified'), findsWidgets);
+        expect(find.textContaining('Completed'), findsWidgets);
         expect(find.byTooltip('Orders view'), findsOneWidget);
         expect(find.byTooltip('Create Lab Order'), findsNothing);
         expect(find.byTooltip('Lab Configurations'), findsNothing);
@@ -655,7 +655,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('Verified'), findsWidgets);
+      expect(find.textContaining('Completed'), findsWidgets);
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
     });
@@ -685,7 +685,7 @@ void main() {
 
       expect(find.byTooltip('Create Lab Order'), findsOneWidget);
       expect(find.byTooltip('Lab Configurations'), findsOneWidget);
-      expect(find.textContaining('Verified'), findsWidgets);
+      expect(find.textContaining('Completed'), findsWidgets);
     });
 
     testWidgets('light theme: verified write chrome remains', (
@@ -719,7 +719,7 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.textContaining('Verified'), findsWidgets);
+      expect(find.textContaining('Completed'), findsWidgets);
       expect(_table(tester).columnVisibilityStorageKey, 'lab_completed');
     });
   });

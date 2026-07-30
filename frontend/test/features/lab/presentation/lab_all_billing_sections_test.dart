@@ -210,7 +210,7 @@ void main() {
           'delete_order',
           'review_billing',
           'bill_later_pending',
-          'verify_release',
+          'save_enter_results',
           'open_billing',
           'collect_payment',
           'adjust_refund',

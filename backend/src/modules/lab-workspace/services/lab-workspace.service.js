@@ -65,7 +65,7 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
   COLLECT: 1,
   REJECT: 2,
   RECEIVE: 3,
-  RELEASE: 4});
+  SAVE: 4});
 
 const LAB_ORDER_CONTEXT_PATIENT_INCLUDE = {
   contacts: {
@@ -303,7 +303,7 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
           gender: true}}}}});
 
 /**
- * Block collect / result release / verify when Billing shows unpaid required
+ * Block collect / result save when Billing shows unpaid required
  * charges (PENDING / PARTIAL / etc.). Explicit NOT_REQUIRED / NO_CHARGE /
  * NOT_BILLED / PAID remain allowed.
  */
@@ -362,7 +362,7 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
       if (!RESULT_REOPENABLE_STATES.has(resultStatus)) return;
 
       latest = selectLatestReverseCandidate(latest, {
-        kind: 'RELEASE',
+        kind: 'SAVE',
         atMs: toTimestampValue(result?.reported_at, result?.updated_at),
         orderItemId: item?.id || null,
         resultId: result?.id || null});
@@ -1492,7 +1492,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
   }
 };
 
-const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) => {
+const saveLabOrderItemResult = async (identifier, payload = {}, userId, ipAddress) => {
   try {
     const orderItemId = await resolveModelIdOrThrow({
       identifier,
@@ -1512,7 +1512,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
 
       assertLabOrderPaymentSatisfied(item.lab_order);
 
-      const releasedResult = await persistLabOrderItemResult(tx, item, payload);
+      const savedResult = await persistLabOrderItemResult(tx, item, payload);
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
         tx,
@@ -1525,13 +1525,13 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
         progress,
-        releasedResultId: releasedResult.id};
+        savedResultId: savedResult.id};
     });
 
     createAuditLog({
       tenant_id: resolveAuditTenantId(mutation.order),
       user_id: userId,
-      action: 'VERIFY_RESULT',
+      action: 'SAVE_RESULT',
       entity: 'lab_order_item',
       entity_id: orderItemId,
       diff: {
@@ -1539,37 +1539,37 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
           before_item_status: mutation.beforeItemStatus,
           after_order_status: mutation.order?.status || null,
           before_order_status: mutation.beforeOrderStatus,
-          released_result_id: mutation.releasedResultId,
+          saved_result_id: mutation.savedResultId,
           notes: payload.notes || null}},
       ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
-    const releasedResult = mapReleasedResultFromOrder(
+    const savedResult = mapReleasedResultFromOrder(
       mutation.order,
-      mutation.releasedResultId
+      mutation.savedResultId
     );
     publishLabRealtimeUpdates({
       workflow,
       orderRecord: mutation.order,
       actorUserId: userId || null,
-      action: 'VERIFY_RESULT',
+      action: 'SAVE_RESULT',
       resourceType: 'order-item',
       resourceId: identifier,
-      releasedResult}).catch(() => {});
+      releasedResult: savedResult}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_RESULT_RELEASED'});
+      trigger: 'LAB_RESULT_SAVED'});
 
     return {
       workflow,
-      released_result: releasedResult};
+      saved_result: savedResult};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
   }
 };
 
-const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress) => {
+const saveLabOrderResults = async (identifier, payload = {}, userId, ipAddress) => {
   try {
     const orderId = await resolveModelIdOrThrow({
       identifier,
@@ -1594,7 +1594,7 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
 
       assertLabOrderPaymentSatisfied(order);
 
-      const releasedResultIds = [];
+      const savedResultIds = [];
       const itemTransitions = [];
       for (const entry of resultPayloads) {
         const orderItemId = await resolveModelIdOrThrow({
@@ -1611,12 +1611,12 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
           throw new HttpError('errors.lab_order_item.not_found', 404);
         }
 
-        const releasedResult = await persistLabOrderItemResult(tx, item, entry);
-        releasedResultIds.push(releasedResult.id);
+        const savedResult = await persistLabOrderItemResult(tx, item, entry);
+        savedResultIds.push(savedResult.id);
         itemTransitions.push({
           order_item_id: item.id,
           before_status: item.status,
-          released_result_id: releasedResult.id});
+          saved_result_id: savedResult.id});
       }
 
       const progress = await syncLabOrderProgress(tx, order.id);
@@ -1630,14 +1630,14 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
         beforeOrderStatus: order.status,
         order: refreshedOrder,
         progress,
-        releasedResultIds,
+        savedResultIds,
         itemTransitions};
     });
 
     createAuditLog({
       tenant_id: resolveAuditTenantId(mutation.order),
       user_id: userId,
-      action: 'VERIFY_RESULTS',
+      action: 'SAVE_RESULTS',
       entity: 'lab_order',
       entity_id: orderId,
       diff: {
@@ -1648,26 +1648,26 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
       ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
-    const releasedResults = mapReleasedResultsFromOrder(
+    const savedResults = mapReleasedResultsFromOrder(
       mutation.order,
-      mutation.releasedResultIds
+      mutation.savedResultIds
     );
     publishLabRealtimeUpdates({
       workflow,
       orderRecord: mutation.order,
       actorUserId: userId || null,
-      action: 'VERIFY_RESULTS',
+      action: 'SAVE_RESULTS',
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
-      releasedResult: releasedResults[0] || null,
-      releasedResults}).catch(() => {});
+      releasedResult: savedResults[0] || null,
+      releasedResults: savedResults}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_RESULTS_VERIFIED'});
+      trigger: 'LAB_RESULT_SAVED'});
 
     return {
       workflow,
-      released_results: releasedResults};
+      saved_results: savedResults};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1884,7 +1884,7 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
         from: order.status,
         to: 'REVERSED'});
 
-      if (reverseTarget.kind === 'RELEASE') {
+      if (reverseTarget.kind === 'SAVE') {
         const item = await labWorkspaceRepository.txFindOrderItemById(
           tx,
           reverseTarget.orderItemId
@@ -2261,8 +2261,8 @@ module.exports = {
   collectLabOrder,
   receiveLabSample,
   rejectLabSample,
-  releaseLabOrderItem,
-  verifyLabOrderResults,
+  saveLabOrderItemResult,
+  saveLabOrderResults,
   rejectLabOrderItem,
   reopenLabOrderItemResult,
   reverseLabOrderWorkflow,

@@ -266,6 +266,8 @@ void main() {
         () => repository.listFacilityLabTests(
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
+          search: 'LFT',
+          page: any<int>(named: 'page'),
           offeredOnly: true,
           limit: any<int>(named: 'limit'),
         ),

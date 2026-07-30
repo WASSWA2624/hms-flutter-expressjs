@@ -1,6 +1,6 @@
 /**
  * Lab Processing tab (`/lab?section=processing`) billing & sections coverage:
- * receive → IN_PROCESS and verify/release payment gates, no parallel cashier.
+ * receive → IN_PROCESS and save-result payment gates, no parallel cashier.
  * Create/delete charge posts reuse
  * `lab-order.service.billing-sections.test.js` (clinical-request-billing).
  */
@@ -173,7 +173,7 @@ describe('lab-workspace Processing tab billing sections', () => {
     expect(labWorkspaceRepository.txUpdateOrder).not.toHaveBeenCalled();
   });
 
-  it('releaseLabOrderItem blocks unpaid required charges on Processing path', async () => {
+  it('saveLabOrderItemResult blocks unpaid required charges on Processing path', async () => {
     resolveModelIdOrThrow.mockResolvedValue('item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -199,7 +199,7 @@ describe('lab-workspace Processing tab billing sections', () => {
       lab_order: unpaidOrder});
 
     await expect(
-      labWorkspaceService.releaseLabOrderItem(
+      labWorkspaceService.saveLabOrderItemResult(
         'LIT-PROC-1',
         { result_value: '98' },
         'actor-1',
@@ -210,7 +210,7 @@ describe('lab-workspace Processing tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('verifyLabOrderResults blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderResults blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-proc-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -225,7 +225,7 @@ describe('lab-workspace Processing tab billing sections', () => {
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-PROC-1',
         {
           results: [
@@ -277,7 +277,7 @@ describe('lab-workspace Processing tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('idempotent gate: repeated unpaid verify attempts stay 402 without mutation', async () => {
+  it('idempotent gate: repeated unpaid save-results attempts stay 402 without mutation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-proc-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -290,7 +290,7 @@ describe('lab-workspace Processing tab billing sections', () => {
 
     for (let i = 0; i < 2; i += 1) {
       await expect(
-        labWorkspaceService.verifyLabOrderResults(
+        labWorkspaceService.saveLabOrderResults(
           'LAB-PROC-1',
           {
             results: [
@@ -306,14 +306,13 @@ describe('lab-workspace Processing tab billing sections', () => {
     expect(labWorkspaceRepository.txUpdateOrderItem).not.toHaveBeenCalled();
   });
 
-  it('serializer hides verify actions when billing gate blocked on IN_PROCESS', () => {
+  it('serializer hides result-entry actions when billing gate blocked on IN_PROCESS', () => {
     const workflow = mapLabOrderWorkflowRecord(
       buildBaseOrder({
         billing_snapshot: { payment_status: 'PENDING', invoice_id: 'inv-1' }})
     );
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
-    expect(workflow.next_actions.can_verify_result).toBe(false);
-    expect(workflow.next_actions.can_release_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
 
@@ -332,7 +331,7 @@ describe('lab-workspace Processing tab billing sections', () => {
     expect(labWorkspaceService.issueInvoice).toBeUndefined();
     expect(labWorkspaceService.refundPayment).toBeUndefined();
     expect(labWorkspaceService.receiveLabSample).toEqual(expect.any(Function));
-    expect(labWorkspaceService.verifyLabOrderResults).toEqual(expect.any(Function));
+    expect(labWorkspaceService.saveLabOrderResults).toEqual(expect.any(Function));
   });
 
   it('HttpError 402 is authoritative for unpaid progression', () => {

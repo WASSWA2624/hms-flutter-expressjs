@@ -1,6 +1,6 @@
 /**
  * Lab Critical tab (`/lab?section=critical`) billing & sections coverage:
- * verify/release payment gate, no parallel cashier, and clinical notify
+ * save-result payment gate, no parallel cashier, and clinical notify
  * remains NOT_BILLED. Create/delete charge posts reuse
  * `lab-order.service.billing-sections.test.js` (clinical-request-billing).
  */
@@ -120,7 +120,7 @@ describe('lab-workspace Critical tab billing sections', () => {
     ).toBe(false);
   });
 
-  it('releaseLabOrderItem blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderItemResult blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -147,7 +147,7 @@ describe('lab-workspace Critical tab billing sections', () => {
       lab_order: unpaidOrder});
 
     await expect(
-      labWorkspaceService.releaseLabOrderItem(
+      labWorkspaceService.saveLabOrderItemResult(
         'LIT-CRIT-1',
         { status: 'CRITICAL', result_value: '7.2' },
         'actor-1',
@@ -158,7 +158,7 @@ describe('lab-workspace Critical tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('verifyLabOrderResults blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderResults blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-crit-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -188,7 +188,7 @@ describe('lab-workspace Critical tab billing sections', () => {
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-CRIT-1',
         {
           results: [
@@ -241,7 +241,7 @@ describe('lab-workspace Critical tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('idempotent gate: repeated unpaid release attempts stay 402 without mutation', async () => {
+  it('idempotent gate: repeated unpaid save-result attempts stay 402 without mutation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -264,7 +264,7 @@ describe('lab-workspace Critical tab billing sections', () => {
 
     for (let i = 0; i < 2; i += 1) {
       await expect(
-        labWorkspaceService.releaseLabOrderItem(
+        labWorkspaceService.saveLabOrderItemResult(
           'LIT-CRIT-1',
           { status: 'CRITICAL', result_value: '7.2' },
           'actor-1',

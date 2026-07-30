@@ -522,10 +522,10 @@ describe('lab-workspace.service', () => {
       statusCode: 402});
   });
 
-  it('releaseLabOrderItem emits workflow and compatibility result realtime events', async () => {
+  it('saveLabOrderItemResult emits workflow and compatibility result realtime events', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
-    const releasedResultInternal = {
+    const savedResultInternal = {
       id: 'result-internal-1',
       human_friendly_id: 'LRS0000001',
       status: 'CRITICAL',
@@ -556,7 +556,7 @@ describe('lab-workspace.service', () => {
             name: 'Potassium',
             code: 'K',
             unit: 'mg/dL'},
-          results: [releasedResultInternal]}],
+          results: [savedResultInternal]}],
       samples: []});
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
@@ -597,14 +597,14 @@ describe('lab-workspace.service', () => {
         result_text: null,
         reported_at: null})
       .mockResolvedValueOnce(null);
-    labWorkspaceRepository.txUpdateResult.mockResolvedValue(releasedResultInternal);
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(savedResultInternal);
     labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
       id: 'order-item-internal-1'});
     labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
     labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(refreshedOrder);
 
-    const result = await labWorkspaceService.releaseLabOrderItem(
+    const result = await labWorkspaceService.saveLabOrderItemResult(
       'LIT0000002',
       {
         status: 'CRITICAL',
@@ -615,7 +615,7 @@ describe('lab-workspace.service', () => {
       '127.0.0.1'
     );
 
-    expect(result?.released_result?.id).toBe('LRS0000001');
+    expect(result?.saved_result?.id).toBe('LRS0000001');
     expect(labWorkspaceRepository.txUpdateResult).toHaveBeenCalledWith(
       {},
       'result-internal-1',
@@ -646,14 +646,15 @@ describe('lab-workspace.service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-internal-1',
+        action: 'SAVE_RESULT',
         entity: 'lab_order_item'})
     );
   });
 
-  it('releaseLabOrderItem escalates a critical result and syncs the OPD flow stage', async () => {
+  it('saveLabOrderItemResult escalates a critical result and syncs the OPD flow stage', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
-    const releasedResultInternal = {
+    const savedResultInternal = {
       id: 'result-internal-9',
       human_friendly_id: 'LRS0000009',
       status: 'CRITICAL',
@@ -688,7 +689,7 @@ describe('lab-workspace.service', () => {
             name: 'Potassium',
             code: 'K',
             unit: 'mg/dL'},
-          results: [releasedResultInternal]}],
+          results: [savedResultInternal]}],
       samples: []});
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
@@ -714,14 +715,14 @@ describe('lab-workspace.service', () => {
         result_text: null,
         reported_at: null})
       .mockResolvedValueOnce(null);
-    labWorkspaceRepository.txUpdateResult.mockResolvedValue(releasedResultInternal);
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(savedResultInternal);
     labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
       id: 'order-item-internal-1'});
     labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
     labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(refreshedOrder);
 
-    await labWorkspaceService.releaseLabOrderItem(
+    await labWorkspaceService.saveLabOrderItemResult(
       'LIT0000009',
       { status: 'CRITICAL', result_value: '12.8', result_unit: 'mg/dL' },
       'actor-1',
@@ -758,14 +759,14 @@ describe('lab-workspace.service', () => {
 
     expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
       'encounter-internal-1',
-      expect.objectContaining({ trigger: 'LAB_RESULT_RELEASED' })
+      expect.objectContaining({ trigger: 'LAB_RESULT_SAVED' })
     );
   });
 
-  it('reverseLabOrderWorkflow reopens the latest released result and emits realtime updates', async () => {
+  it('reverseLabOrderWorkflow reopens the latest saved result and emits realtime updates', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
 
-    const releaseTimestamp = new Date('2026-02-27T10:45:00.000Z');
+    const saveTimestamp = new Date('2026-02-27T10:45:00.000Z');
     const currentOrder = buildBaseOrder({
       status: 'COMPLETED',
       samples: [
@@ -783,7 +784,7 @@ describe('lab-workspace.service', () => {
           human_friendly_id: 'LIT0000003',
           status: 'COMPLETED',
           created_at: now,
-          updated_at: releaseTimestamp,
+          updated_at: saveTimestamp,
           lab_test: {
             id: 'lab-test-internal-3',
             human_friendly_id: 'LBT0000003',
@@ -802,9 +803,9 @@ describe('lab-workspace.service', () => {
               is_positive: false,
               reference_range_label: 'Adult',
               reference_range_summary: 'Adult | Unit g/dL | 11.5 - 15.5',
-              reported_at: releaseTimestamp,
+              reported_at: saveTimestamp,
               created_at: now,
-              updated_at: releaseTimestamp,
+              updated_at: saveTimestamp,
               lab_order_item_id: 'order-item-internal-3'}]}]});
 
     const reopenedOrder = buildBaseOrder({
@@ -824,7 +825,7 @@ describe('lab-workspace.service', () => {
           human_friendly_id: 'LIT0000003',
           status: 'IN_PROCESS',
           created_at: now,
-          updated_at: releaseTimestamp,
+          updated_at: saveTimestamp,
           lab_test: {
             id: 'lab-test-internal-3',
             human_friendly_id: 'LBT0000003',
@@ -845,7 +846,7 @@ describe('lab-workspace.service', () => {
               reference_range_summary: 'Adult | Unit g/dL | 11.5 - 15.5',
               reported_at: null,
               created_at: now,
-              updated_at: releaseTimestamp,
+              updated_at: saveTimestamp,
               lab_order_item_id: 'order-item-internal-3'}]}]});
 
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
@@ -860,7 +861,7 @@ describe('lab-workspace.service', () => {
     labWorkspaceRepository.txFindResultById.mockResolvedValue({
       id: 'result-internal-3',
       status: 'NORMAL',
-      reported_at: releaseTimestamp});
+      reported_at: saveTimestamp});
     labWorkspaceRepository.txUpdateResult.mockResolvedValue({
       id: 'result-internal-3'});
     labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
@@ -877,7 +878,7 @@ describe('lab-workspace.service', () => {
 
     const result = await labWorkspaceService.reverseLabOrderWorkflow(
       'LAB0000001',
-      { reason: 'Released by mistake' },
+      { reason: 'Saved by mistake' },
       'actor-1',
       '127.0.0.1'
     );

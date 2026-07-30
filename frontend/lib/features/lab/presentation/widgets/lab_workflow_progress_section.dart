@@ -18,14 +18,14 @@ class LabWorkflowProgressSection extends ConsumerWidget {
     required this.workflow,
     required this.canMutate,
     this.isSaving = false,
-    this.onVerifyResults,
+    this.onSaveResults,
     super.key,
   });
 
   final LabOrderWorkflow workflow;
   final bool canMutate;
   final bool isSaving;
-  final VoidCallback? onVerifyResults;
+  final VoidCallback? onSaveResults;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,18 +80,18 @@ class LabWorkflowProgressSection extends ConsumerWidget {
     }
     if (canMutate &&
         paymentOpen &&
-        (next.canVerifyResult || next.canVerifyAll) &&
-        onVerifyResults != null) {
+        (next.canEnterResult || next.canEnterAll) &&
+        onSaveResults != null) {
       currentActions.add(
         AppWorkflowStepAction(
-          id: 'verify',
-          label: l10n.labWorkflowNextVerifyResults,
-          icon: Icons.verified_outlined,
+          id: 'save_results',
+          label: l10n.labWorkflowNextEnterResults,
+          icon: Icons.save_outlined,
           requirement: labWorkspaceWriteRequirement,
-          capabilityAllowed: next.canVerifyResult || next.canVerifyAll,
+          capabilityAllowed: next.canEnterResult || next.canEnterAll,
           variant: AppButtonVariant.primary,
           isLoading: isSaving,
-          onPressed: isSaving ? null : onVerifyResults,
+          onPressed: isSaving ? null : onSaveResults,
         ),
       );
     }
@@ -136,13 +136,10 @@ class LabWorkflowProgressSection extends ConsumerWidget {
                 : l10n.labWorkflowNextEnterResults,
           ),
           (
-            id: 'results_entered',
-            label: l10n.labWorkflowStepResultsEntered,
-            help: next.billingGateBlocked
-                ? l10n.labWorkflowNextAwaitPayment
-                : l10n.labWorkflowNextVerifyResults,
+            id: 'completed',
+            label: l10n.labWorkflowStepVerified,
+            help: null,
           ),
-          (id: 'verified', label: l10n.labWorkflowStepVerified, help: null),
         ];
 
     return AppWorkspaceDetailPanel(
@@ -255,17 +252,10 @@ class LabWorkflowProgressSection extends ConsumerWidget {
 int labWorkflowStepIndex(LabOrderWorkflow workflow) {
   final String status = (workflow.order.status ?? '').toUpperCase();
   if (status == 'COMPLETED') {
-    return 4;
+    return 3;
   }
   if (status == 'IN_PROCESS') {
-    final bool allEntered =
-        workflow.order.items.isNotEmpty &&
-        workflow.order.items.every(
-          (LabOrderItem item) =>
-              item.isCompleted ||
-              (item.resultId != null && item.resultId!.trim().isNotEmpty),
-        );
-    return allEntered ? 3 : 2;
+    return 2;
   }
   if (status == 'COLLECTED') {
     return workflow.nextActions.canReceiveSample ? 1 : 2;
@@ -273,8 +263,8 @@ int labWorkflowStepIndex(LabOrderWorkflow workflow) {
   if (status == 'ORDERED') {
     return 0;
   }
-  if (workflow.order.verifiableItemCount > 0) {
-    return 3;
+  if (workflow.order.enterableItemCount > 0) {
+    return 2;
   }
   return 0;
 }

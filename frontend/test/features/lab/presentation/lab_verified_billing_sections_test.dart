@@ -224,7 +224,7 @@ void main() {
           'create_lab_order',
           'detail_delete_order',
           'workflow_collect_sample',
-          'workflow_verify_release_results',
+          'workflow_save_enter_results',
           'edit_reopen_verified_result',
           'collect_payment',
           'adjust_refund',
@@ -310,7 +310,7 @@ void main() {
         contains('reverseClinicalRequestBilling'),
       );
       expect(
-        LabVerifiedBillingInventory.verifyResults.billingPath,
+        LabVerifiedBillingInventory.saveResults.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
     });
@@ -384,7 +384,7 @@ void main() {
         contains('assertLabOrderPaymentSatisfied'),
       );
       expect(
-        LabVerifiedBillingInventory.verifyResults.billingPath,
+        LabVerifiedBillingInventory.saveResults.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
 

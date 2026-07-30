@@ -33,7 +33,7 @@ const LabOrderSummary _orderedOrder = LabOrderSummary(
   status: 'ORDERED',
   patientDisplayName: 'Ann Ordered',
   patientId: 'PAT-1',
-  paymentStatus: 'UNPAID',
+  paymentStatus: 'PAID',
 );
 
 const LabOrderSummary _completedOrder = LabOrderSummary(
@@ -224,9 +224,9 @@ void main() {
     expect(find.textContaining('All'), findsWidgets);
     expect(find.textContaining('Awaiting results'), findsWidgets);
     expect(find.textContaining('Processing'), findsWidgets);
-    expect(find.textContaining('Pending verification'), findsWidgets);
     expect(find.textContaining('Critical'), findsWidgets);
-    expect(find.textContaining('Verified'), findsWidgets);
+    expect(find.textContaining('Completed'), findsWidgets);
+    expect(find.textContaining('Pending verification'), findsNothing);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
     expect(find.byTooltip('Lab Configurations'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);

@@ -404,15 +404,7 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
-  Future<Result<LabOrderWorkflow>> releaseOrderItem(
-    String itemId,
-    Map<String, Object?> payload,
-  ) {
-    return verifyOrderItem(itemId, payload);
-  }
-
-  @override
-  Future<Result<LabOrderWorkflow>> verifyOrderItem(
+  Future<Result<LabOrderWorkflow>> saveOrderItemResult(
     String itemId,
     Map<String, Object?> payload,
   ) {
@@ -420,17 +412,17 @@ final class LabRepositoryImpl implements LabRepository {
       HmsApiResource.lab.path,
       'order-items',
       itemId,
-      'release',
+      'save-result',
     ], payload);
   }
 
   @override
-  Future<Result<LabOrderWorkflow>> verifyOrderResults(
+  Future<Result<LabOrderWorkflow>> saveOrderResults(
     String orderId,
     List<Map<String, Object?>> results,
   ) {
     return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'orders', orderId, 'verify-results'],
+      <String>[HmsApiResource.lab.path, 'orders', orderId, 'save-results'],
       <String, Object?>{'results': results},
     );
   }
@@ -617,7 +609,6 @@ final class LabRepositoryImpl implements LabRepository {
     return switch (scope) {
       LabQueueScope.collection => 'COLLECTION',
       LabQueueScope.processing => 'PROCESSING',
-      LabQueueScope.results => 'RESULTS',
       LabQueueScope.completed => 'COMPLETED',
       LabQueueScope.cancelled => 'CANCELLED',
       LabQueueScope.all || LabQueueScope.critical => null,

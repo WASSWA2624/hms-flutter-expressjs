@@ -129,7 +129,7 @@ void _stubWorkspace(
     return const Result<LabOrderWorkflow>.success(
       LabOrderWorkflow(
         order: _processingOrder,
-        nextActions: LabWorkflowNextActions(canVerifyResult: true),
+        nextActions: LabWorkflowNextActions(canEnterResult: true),
       ),
     );
   });
@@ -348,7 +348,7 @@ void main() {
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
         );
-        await tester.tap(find.text(l10n.labNextActionVerify).first);
+        await tester.tap(find.text(l10n.labNextActionEnterResult).first);
         await tester.pumpAndSettle();
 
         expect(find.byType(LabResultEntryDialog), findsOneWidget);
@@ -392,7 +392,7 @@ void main() {
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
         );
-        await tester.tap(find.text(l10n.labNextActionVerify).first);
+        await tester.tap(find.text(l10n.labNextActionEnterResult).first);
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.labEditOrderAction), findsOneWidget);
@@ -581,7 +581,7 @@ void main() {
       final AppLocalizations l10n = AppLocalizations.of(
         tester.element(find.byType(AppTabStrip)),
       );
-      await tester.tap(find.text(l10n.labNextActionVerify).first);
+      await tester.tap(find.text(l10n.labNextActionEnterResult).first);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l10n.labReceiveSampleAction));

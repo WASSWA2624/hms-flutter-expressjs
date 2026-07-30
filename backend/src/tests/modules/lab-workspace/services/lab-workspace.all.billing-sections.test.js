@@ -1,7 +1,7 @@
 /**
  * Lab All tab (`/lab?section=all|worklist`) billing & sections coverage:
  * create posts via clinical-request-billing (see lab-order billing-sections),
- * collect / receive / verify / release gate on Billing payment status,
+ * collect / receive / save-result gate on Billing payment status,
  * and lab-order service does not expose receive-payment / adjust APIs.
  */
 
@@ -133,7 +133,7 @@ describe('lab-workspace All tab billing sections', () => {
     ).toBe(false);
   });
 
-  it('serializer gates collect / receive / verify / release when unpaid', () => {
+  it('serializer gates collect / receive / result-entry when unpaid', () => {
     const unpaid = buildBaseOrder({
       status: 'IN_PROCESS',
       billing_snapshot: {
@@ -163,9 +163,8 @@ describe('lab-workspace All tab billing sections', () => {
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
     expect(workflow.next_actions.can_collect).toBe(false);
     expect(workflow.next_actions.can_receive_sample).toBe(false);
-    expect(workflow.next_actions.can_verify_result).toBe(false);
-    expect(workflow.next_actions.can_verify_all).toBe(false);
-    expect(workflow.next_actions.can_release_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(false);
+    expect(workflow.next_actions.can_enter_all).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
 
@@ -214,7 +213,7 @@ describe('lab-workspace All tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('verifyLabOrderResults blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderResults blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-all-1');
     const unpaidOrder = buildBaseOrder({
       status: 'IN_PROCESS',
@@ -244,7 +243,7 @@ describe('lab-workspace All tab billing sections', () => {
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-ALL-1',
         {
           results: [
@@ -259,7 +258,7 @@ describe('lab-workspace All tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('releaseLabOrderItem blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderItemResult blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('item-internal-1');
     const unpaidOrder = buildBaseOrder({
       status: 'IN_PROCESS',
@@ -284,7 +283,7 @@ describe('lab-workspace All tab billing sections', () => {
       lab_order: unpaidOrder});
 
     await expect(
-      labWorkspaceService.releaseLabOrderItem(
+      labWorkspaceService.saveLabOrderItemResult(
         'LIT-ALL-1',
         { result_value: '12.0' },
         'actor-1',

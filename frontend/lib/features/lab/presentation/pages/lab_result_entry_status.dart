@@ -23,7 +23,7 @@ int _completedResultItemCount(LabOrderSummary order) {
       .length;
 }
 
-bool _isVerifiedOrder(LabOrderSummary order) {
+bool _isSavedOrder(LabOrderSummary order) {
   final active = _activeResultItemCount(order);
   return active > 0 && _completedResultItemCount(order) >= active;
 }
@@ -85,11 +85,11 @@ AppWorkspaceStatus _aggregateOrderStatus(
   final anyRejected = workflows.any(
     (workflow) => workflow.order.hasRejectedItem,
   );
-  final allVerified = workflows.every(
-    (workflow) => _isVerifiedOrder(workflow.order),
+  final allSaved = workflows.every(
+    (workflow) => _isSavedOrder(workflow.order),
   );
-  final anyVerified = workflows.any(
-    (workflow) => _isVerifiedOrder(workflow.order),
+  final anySaved = workflows.any(
+    (workflow) => _isSavedOrder(workflow.order),
   );
   final allCancelled = workflows.every(
     (workflow) => (workflow.order.status ?? '').toUpperCase() == 'CANCELLED',
@@ -102,32 +102,32 @@ AppWorkspaceStatus _aggregateOrderStatus(
       icon: Icons.block_outlined,
     );
   }
-  if (anyRejected && !anyVerified) {
+  if (anyRejected && !anySaved) {
     return AppWorkspaceStatus(
       label: l10n.labStatusRejected,
       tone: AppWorkspaceStatusTone.error,
       icon: Icons.block_outlined,
     );
   }
-  if (anyRejected && anyVerified) {
+  if (anyRejected && anySaved) {
     return AppWorkspaceStatus(
       label: l10n.labStatusPartiallyRejected,
       tone: AppWorkspaceStatusTone.warning,
       icon: Icons.block_outlined,
     );
   }
-  if (allVerified) {
+  if (allSaved) {
     return AppWorkspaceStatus(
-      label: l10n.labStatusVerified,
+      label: l10n.labStatusCompleted,
       tone: AppWorkspaceStatusTone.success,
-      icon: Icons.verified_outlined,
+      icon: Icons.task_alt_outlined,
     );
   }
-  if (anyVerified) {
+  if (anySaved) {
     return AppWorkspaceStatus(
       label: l10n.labStatusPartiallyVerified,
       tone: AppWorkspaceStatusTone.info,
-      icon: Icons.verified_outlined,
+      icon: Icons.task_alt_outlined,
     );
   }
 

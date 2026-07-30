@@ -367,69 +367,10 @@ const deleteLabResult = async (id, userId, ipAddress) => {
   }
 };
 
-const releaseLabResult = async (id, data = {}, userId, ipAddress) => {
-  try {
-    const before = await resolveModelRecordOrThrow({
-      identifier: id,
-      model: 'lab_result',
-      where: { deleted_at: null },
-      include: LAB_RESULT_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_result.not_found'});
-
-    if (before.status !== 'PENDING') {
-      throw new HttpError('errors.lab_result.already_released', 400);
-    }
-
-    const itemContext = await resolveInterpretationContext(before.lab_order_item_id);
-    const basePayload = {
-      status: data.status || before.status || 'NORMAL',
-      result_value:
-        Object.prototype.hasOwnProperty.call(data, 'result_value') ? data.result_value : before.result_value,
-      result_unit:
-        Object.prototype.hasOwnProperty.call(data, 'result_unit')
-          ? data.result_unit
-          : (before.result_unit || before?.lab_order_item?.lab_test?.unit || null),
-      result_text:
-        Object.prototype.hasOwnProperty.call(data, 'result_text') ? data.result_text : before.result_text,
-      reported_at: toDateOrNull(data.reported_at, new Date())};
-
-    const updateData = applyInterpretationIfNeeded({
-      payload: basePayload,
-      itemContext,
-      shouldInterpret: true,
-      fallbackStatus: basePayload.status || 'NORMAL'});
-
-    const updated = await labResultRepository.update(before.id, updateData);
-    const labResult = await labResultRepository.findById(updated.id, LAB_RESULT_WITH_RELATIONS_INCLUDE);
-
-    createAuditLog({
-      user_id: userId,
-      action: 'RELEASE',
-      entity: 'lab_result',
-      entity_id: updated.id,
-      diff: {
-        before,
-        after: labResult,
-        metadata: {
-          notes: data.notes || null}},
-      ip_address: ipAddress}).catch(() => {});
-    publishLabResultRealtimeUpdate({
-      resultRecord: labResult || updated,
-      action: 'RELEASED',
-      actorUserId: userId});
-
-    return mapLabResultRecord(labResult || updated);
-  } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
-
 module.exports = {
   listLabResults,
   getLabResultById,
   createLabResult,
   updateLabResult,
-  deleteLabResult,
-  releaseLabResult
+  deleteLabResult
 };

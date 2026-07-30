@@ -45,16 +45,6 @@ const updateLabResultSchema = z.object({
   reference_range_override: z.string().trim().max(255).optional().nullable(),
   result_flag_override: z.string().trim().max(40).optional().nullable()});
 
-/**
- * Release lab result body validation
- * Used for POST /lab-results/:id/release endpoint
- */
-const releaseLabResultSchema = z.object({
-  status: z.enum(['NORMAL', 'ABNORMAL', 'CRITICAL']).optional(),
-  reported_at: z.string().datetime().optional().nullable(),
-  notes: z.string().trim().max(10000).optional().nullable()
-});
-
 // ==================== URL Params ====================
 
 /**
@@ -81,7 +71,6 @@ const listLabResultsQuerySchema = listQuerySchema.extend({
 module.exports = {
   createLabResultSchema,
   updateLabResultSchema,
-  releaseLabResultSchema,
   labResultIdParamsSchema,
   listLabResultsQuerySchema
 };

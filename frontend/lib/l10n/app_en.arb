@@ -16514,7 +16514,7 @@
   "@labProcessingSummaryLabel": {
     "description": "Localized text for labProcessingSummaryLabel."
   },
-  "labResultPendingSummaryLabel": "Pending verification",
+  "labResultPendingSummaryLabel": "Awaiting results",
   "@labResultPendingSummaryLabel": {
     "description": "Localized text for labResultPendingSummaryLabel."
   },
@@ -16522,7 +16522,7 @@
   "@labCriticalSummaryLabel": {
     "description": "Localized text for labCriticalSummaryLabel."
   },
-  "labCompletedSummaryLabel": "Verified",
+  "labCompletedSummaryLabel": "Completed",
   "@labCompletedSummaryLabel": {
     "description": "Localized text for labCompletedSummaryLabel."
   },
@@ -16558,7 +16558,7 @@
   "@labScopeProcessing": {
     "description": "Localized text for labScopeProcessing."
   },
-  "labScopeResults": "Pending verification",
+  "labScopeResults": "Enter results",
   "@labScopeResults": {
     "description": "Localized text for labScopeResults."
   },
@@ -16566,7 +16566,7 @@
   "@labScopeCritical": {
     "description": "Localized text for labScopeCritical."
   },
-  "labScopeCompleted": "Verified",
+  "labScopeCompleted": "Completed",
   "@labScopeCompleted": {
     "description": "Localized text for labScopeCompleted."
   },
@@ -16684,7 +16684,7 @@
   "@labSaveDraftAction": {
     "description": "Action label for saving pending lab results without verification."
   },
-  "labSubmitResultsAction": "Submit results",
+  "labSubmitResultsAction": "Save results",
   "@labSubmitResultsAction": {
     "description": "Action label for submitting and verifying entered lab results."
   },
@@ -16716,7 +16716,7 @@
       }
     }
   },
-  "labBatchPartialVerifyMessage": "Verified {savedCount} results. {skippedCount} entries need attention.",
+  "labBatchPartialVerifyMessage": "Saved {savedCount} results. {skippedCount} entries need attention.",
   "@labBatchPartialVerifyMessage": {
     "description": "Shown when a batch verify completes with some invalid or failed entries.",
     "placeholders": {
@@ -16831,7 +16831,7 @@
   "@labWorkflowStepResultsEntered": {
     "description": "Workflow step label when results have been entered."
   },
-  "labWorkflowStepVerified": "Verified",
+  "labWorkflowStepVerified": "Completed",
   "@labWorkflowStepVerified": {
     "description": "Workflow step label when results are verified."
   },
@@ -16855,7 +16855,7 @@
   "@labWorkflowNextEnterResults": {
     "description": "Next workflow action to enter lab results."
   },
-  "labWorkflowNextVerifyResults": "Verify results",
+  "labWorkflowNextVerifyResults": "Save results",
   "@labWorkflowNextVerifyResults": {
     "description": "Next workflow action to verify lab results."
   },
@@ -16934,7 +16934,7 @@
   "@labResultsSubmittedMessage": {
     "description": "Confirmation shown after submitting lab results."
   },
-  "labResultsVerifiedMessage": "Results verified.",
+  "labResultsVerifiedMessage": "Results saved.",
   "@labResultsVerifiedMessage": {
     "description": "Confirmation shown after verifying lab results."
   },
@@ -17010,7 +17010,7 @@
   "@labNoSelectionTitle": {
     "description": "Localized text for labNoSelectionTitle."
   },
-  "labNoSelectionBody": "Select a lab order to enter, verify, or report.",
+  "labNoSelectionBody": "Select a lab order to enter results or report.",
   "@labNoSelectionBody": {
     "description": "Localized text for labNoSelectionBody."
   },
@@ -17290,7 +17290,7 @@
   "@labStatusInProcess": {
     "description": "Localized text for labStatusInProcess."
   },
-  "labStatusCompleted": "Verified",
+  "labStatusCompleted": "Completed",
   "@labStatusCompleted": {
     "description": "Localized text for labStatusCompleted."
   },
@@ -17442,7 +17442,7 @@
   "@printFormPrintedByLabel": {
     "description": "Signature label for the user who printed a report."
   },
-  "printFormVerifiedByLabel": "Verified by",
+  "printFormVerifiedByLabel": "Entered by",
   "@printFormVerifiedByLabel": {
     "description": "Signature label for the user who verified a report."
   },
@@ -24977,7 +24977,7 @@
   "@labPatientsProcessingSummaryLabel": {
     "description": "Localized text for labPatientsProcessingSummaryLabel."
   },
-  "labPatientsPendingVerificationSummaryLabel": "Patients pending verification",
+  "labPatientsPendingVerificationSummaryLabel": "Patients awaiting results",
   "@labPatientsPendingVerificationSummaryLabel": {
     "description": "Localized text for labPatientsPendingVerificationSummaryLabel."
   },
@@ -25013,7 +25013,7 @@
   "@labPatientIdFieldLabel": {
     "description": "Localized text for labPatientIdFieldLabel."
   },
-  "labVerifyAllAction": "Verify all",
+  "labVerifyAllAction": "Save all",
   "@labVerifyAllAction": {
     "description": "Localized text for labVerifyAllAction."
   },
@@ -25041,19 +25041,19 @@
   "@labTestCodeLabel": {
     "description": "Localized text for labTestCodeLabel."
   },
-  "labVerifyResultAction": "Verify result",
+  "labVerifyResultAction": "Save result",
   "@labVerifyResultAction": {
     "description": "Localized text for labVerifyResultAction."
   },
-  "labEditVerifiedResultAction": "Edit",
+  "labEditVerifiedResultAction": "Edit result",
   "@labEditVerifiedResultAction": {
     "description": "Action label to reopen a verified lab result for correction."
   },
-  "labReopenVerifiedResultDialogTitle": "Edit Verified Result",
+  "labReopenVerifiedResultDialogTitle": "Edit Result",
   "@labReopenVerifiedResultDialogTitle": {
     "description": "Title for the dialog that reopens a verified lab result."
   },
-  "labReopenVerifiedResultDialogBody": "Update the value and reason. Saving re-verifies the corrected result.",
+  "labReopenVerifiedResultDialogBody": "Update the value and reason. Saving finalizes the corrected result.",
   "@labReopenVerifiedResultDialogBody": {
     "description": "Body text for the verified result reopen dialog."
   },
@@ -25061,7 +25061,7 @@
   "@labReopenVerifiedReasonLabel": {
     "description": "Label for the required reason when reopening a verified lab result."
   },
-  "labVerifiedResultReopenedMessage": "Result reopened for editing.",
+  "labVerifiedResultReopenedMessage": "Result opened for editing.",
   "@labVerifiedResultReopenedMessage": {
     "description": "Success message after a verified lab result is reopened."
   },
@@ -25125,7 +25125,7 @@
   "@labResultFlagLabel": {
     "description": "Localized text for labResultFlagLabel."
   },
-  "labVerifyResultDialogTitle": "Enter and Verify Result",
+  "labVerifyResultDialogTitle": "Enter Result",
   "@labVerifyResultDialogTitle": {
     "description": "Localized text for labVerifyResultDialogTitle."
   },
@@ -25133,7 +25133,7 @@
   "@labNumericRangeValidationMessage": {
     "description": "Localized text for labNumericRangeValidationMessage."
   },
-  "labVerifyAllDialogTitle": "Verify Entered Results",
+  "labVerifyAllDialogTitle": "Save Entered Results",
   "@labVerifyAllDialogTitle": {
     "description": "Localized text for labVerifyAllDialogTitle."
   },
@@ -25444,7 +25444,7 @@
   "@labStatusPendingResults": {
     "description": "Localized text for labStatusPendingResults."
   },
-  "labStatusVerified": "Verified",
+  "labStatusVerified": "Saved",
   "@labStatusVerified": {
     "description": "Localized text for labStatusVerified."
   },
@@ -25456,7 +25456,7 @@
   "@labStatusHigh": {
     "description": "Localized text for labStatusHigh."
   },
-  "labNextActionVerify": "Verify result",
+  "labNextActionVerify": "Enter results",
   "@labNextActionVerify": {
     "description": "Localized text for labNextActionVerify."
   },
@@ -25936,7 +25936,7 @@
   "@labStatusPartiallyRejected": {
     "description": "Lab status label for orders with some rejected items."
   },
-  "labStatusPartiallyVerified": "Partially verified",
+  "labStatusPartiallyVerified": "Partially saved",
   "@labStatusPartiallyVerified": {
     "description": "Lab status label for orders with some verified items."
   },

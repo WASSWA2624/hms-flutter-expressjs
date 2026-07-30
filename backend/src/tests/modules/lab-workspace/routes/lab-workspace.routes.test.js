@@ -19,7 +19,8 @@ describe('lab-workspace.routes contract', () => {
         { path: '/orders/:id/reverse', methods: ['post'] },
         { path: '/samples/:id/receive', methods: ['post'] },
         { path: '/samples/:id/reject', methods: ['post'] },
-        { path: '/order-items/:id/release', methods: ['post'] }])
+        { path: '/order-items/:id/save-result', methods: ['post'] },
+        { path: '/orders/:id/save-results', methods: ['post'] }])
     );
   });
 });

@@ -157,12 +157,28 @@ void main() {
             'billing_gate_blocked': true,
             'payment_status': 'PENDING',
             'can_receive_sample': false,
+            'can_enter_result': true,
+            'can_enter_all': true,
           });
 
       final LabWorkflowNextActions actions = dto.toEntity();
       expect(actions.canCollect, isFalse);
       expect(actions.billingGateBlocked, isTrue);
       expect(actions.paymentStatus, 'PENDING');
+      expect(actions.canEnterResult, isTrue);
+      expect(actions.canEnterAll, isTrue);
+    });
+
+    test('falls back from legacy verify/release keys to canEnter*', () {
+      const LabWorkflowNextActionsDto dto =
+          LabWorkflowNextActionsDto(<String, Object?>{
+            'can_verify_result': true,
+            'can_verify_all': true,
+          });
+
+      final LabWorkflowNextActions actions = dto.toEntity();
+      expect(actions.canEnterResult, isTrue);
+      expect(actions.canEnterAll, isTrue);
     });
   });
 

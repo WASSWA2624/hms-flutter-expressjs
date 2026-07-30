@@ -78,21 +78,10 @@ const deleteLabResult = asyncHandler(async (req, res) => {
   sendNoContent(res);
 });
 
-const releaseLabResult = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const userId = req.user?.id;
-  const ipAddress = req.ip;
-
-  const labResult = await labResultService.releaseLabResult(id, req.body, userId, ipAddress);
-
-  sendSuccess(res, 200, 'messages.lab_result.release.success', labResult);
-});
-
 module.exports = {
   listLabResults,
   getLabResultById,
   createLabResult,
   updateLabResult,
-  deleteLabResult,
-  releaseLabResult
+  deleteLabResult
 };

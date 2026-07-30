@@ -23855,7 +23855,7 @@ abstract class AppLocalizations {
   /// Localized text for labResultPendingSummaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pending verification'**
+  /// **'Awaiting results'**
   String get labResultPendingSummaryLabel;
 
   /// Localized text for labCriticalSummaryLabel.
@@ -23867,7 +23867,7 @@ abstract class AppLocalizations {
   /// Localized text for labCompletedSummaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Verified'**
+  /// **'Completed'**
   String get labCompletedSummaryLabel;
 
   /// Localized text for labFiltersLabel.
@@ -23921,7 +23921,7 @@ abstract class AppLocalizations {
   /// Localized text for labScopeResults.
   ///
   /// In en, this message translates to:
-  /// **'Pending verification'**
+  /// **'Enter results'**
   String get labScopeResults;
 
   /// Localized text for labScopeCritical.
@@ -23933,7 +23933,7 @@ abstract class AppLocalizations {
   /// Localized text for labScopeCompleted.
   ///
   /// In en, this message translates to:
-  /// **'Verified'**
+  /// **'Completed'**
   String get labScopeCompleted;
 
   /// Localized text for labScopeCancelled.
@@ -24083,7 +24083,7 @@ abstract class AppLocalizations {
   /// Action label for submitting and verifying entered lab results.
   ///
   /// In en, this message translates to:
-  /// **'Submit results'**
+  /// **'Save results'**
   String get labSubmitResultsAction;
 
   /// Confirmation shown after saving draft lab results.
@@ -24107,7 +24107,7 @@ abstract class AppLocalizations {
   /// Shown when a batch verify completes with some invalid or failed entries.
   ///
   /// In en, this message translates to:
-  /// **'Verified {savedCount} results. {skippedCount} entries need attention.'**
+  /// **'Saved {savedCount} results. {skippedCount} entries need attention.'**
   String labBatchPartialVerifyMessage(int savedCount, int skippedCount);
 
   /// Inline validation message for invalid lab result rows during batch operations.
@@ -24233,7 +24233,7 @@ abstract class AppLocalizations {
   /// Workflow step label when results are verified.
   ///
   /// In en, this message translates to:
-  /// **'Verified'**
+  /// **'Completed'**
   String get labWorkflowStepVerified;
 
   /// Next workflow action to collect a sample.
@@ -24269,7 +24269,7 @@ abstract class AppLocalizations {
   /// Next workflow action to verify lab results.
   ///
   /// In en, this message translates to:
-  /// **'Verify results'**
+  /// **'Save results'**
   String get labWorkflowNextVerifyResults;
 
   /// Next workflow action to review pending lab order items.
@@ -24365,7 +24365,7 @@ abstract class AppLocalizations {
   /// Confirmation shown after verifying lab results.
   ///
   /// In en, this message translates to:
-  /// **'Results verified.'**
+  /// **'Results saved.'**
   String get labResultsVerifiedMessage;
 
   /// Action label for selecting all lab tests in result entry.
@@ -24467,7 +24467,7 @@ abstract class AppLocalizations {
   /// Localized text for labNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Select a lab order to enter, verify, or report.'**
+  /// **'Select a lab order to enter results or report.'**
   String get labNoSelectionBody;
 
   /// Localized text for labPatientContextLabel.
@@ -24887,7 +24887,7 @@ abstract class AppLocalizations {
   /// Localized text for labStatusCompleted.
   ///
   /// In en, this message translates to:
-  /// **'Verified'**
+  /// **'Completed'**
   String get labStatusCompleted;
 
   /// Localized text for labStatusCancelled.
@@ -25115,7 +25115,7 @@ abstract class AppLocalizations {
   /// Signature label for the user who verified a report.
   ///
   /// In en, this message translates to:
-  /// **'Verified by'**
+  /// **'Entered by'**
   String get printFormVerifiedByLabel;
 
   /// Placeholder line beneath printed-by and verified-by names.
@@ -36292,7 +36292,7 @@ abstract class AppLocalizations {
   /// Localized text for labPatientsPendingVerificationSummaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Patients pending verification'**
+  /// **'Patients awaiting results'**
   String get labPatientsPendingVerificationSummaryLabel;
 
   /// Localized text for labPatientsCriticalSummaryLabel.
@@ -36346,7 +36346,7 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyAllAction.
   ///
   /// In en, this message translates to:
-  /// **'Verify all'**
+  /// **'Save all'**
   String get labVerifyAllAction;
 
   /// Localized text for labEntryStatusColumnLabel.
@@ -36388,25 +36388,25 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyResultAction.
   ///
   /// In en, this message translates to:
-  /// **'Verify result'**
+  /// **'Save result'**
   String get labVerifyResultAction;
 
   /// Action label to reopen a verified lab result for correction.
   ///
   /// In en, this message translates to:
-  /// **'Edit'**
+  /// **'Edit result'**
   String get labEditVerifiedResultAction;
 
   /// Title for the dialog that reopens a verified lab result.
   ///
   /// In en, this message translates to:
-  /// **'Edit Verified Result'**
+  /// **'Edit Result'**
   String get labReopenVerifiedResultDialogTitle;
 
   /// Body text for the verified result reopen dialog.
   ///
   /// In en, this message translates to:
-  /// **'Update the value and reason. Saving re-verifies the corrected result.'**
+  /// **'Update the value and reason. Saving finalizes the corrected result.'**
   String get labReopenVerifiedResultDialogBody;
 
   /// Label for the required reason when reopening a verified lab result.
@@ -36418,7 +36418,7 @@ abstract class AppLocalizations {
   /// Success message after a verified lab result is reopened.
   ///
   /// In en, this message translates to:
-  /// **'Result reopened for editing.'**
+  /// **'Result opened for editing.'**
   String get labVerifiedResultReopenedMessage;
 
   /// Action label to restore a cancelled lab test.
@@ -36490,7 +36490,7 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyResultDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter and Verify Result'**
+  /// **'Enter Result'**
   String get labVerifyResultDialogTitle;
 
   /// Localized text for labNumericRangeValidationMessage.
@@ -36502,7 +36502,7 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyAllDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Verify Entered Results'**
+  /// **'Save Entered Results'**
   String get labVerifyAllDialogTitle;
 
   /// Localized text for labRejectOrderItemDialogTitle.
@@ -36946,7 +36946,7 @@ abstract class AppLocalizations {
   /// Localized text for labStatusVerified.
   ///
   /// In en, this message translates to:
-  /// **'Verified'**
+  /// **'Saved'**
   String get labStatusVerified;
 
   /// Localized text for labStatusLow.
@@ -36964,7 +36964,7 @@ abstract class AppLocalizations {
   /// Localized text for labNextActionVerify.
   ///
   /// In en, this message translates to:
-  /// **'Verify result'**
+  /// **'Enter results'**
   String get labNextActionVerify;
 
   /// Localized text for labNextActionEnterResult.
@@ -37618,7 +37618,7 @@ abstract class AppLocalizations {
   /// Lab status label for orders with some verified items.
   ///
   /// In en, this message translates to:
-  /// **'Partially verified'**
+  /// **'Partially saved'**
   String get labStatusPartiallyVerified;
 
   /// Sub-badge label for rejected lab order items.

@@ -150,7 +150,7 @@ void main() {
       expect(LabFollowUpsBillingInventory.followUpVisitCharge.mounted, isFalse);
       expect(LabFollowUpsBillingInventory.createLabOrderCharge.mounted, isFalse);
       expect(
-        LabFollowUpsBillingInventory.resultEntryVerifyRelease.mounted,
+        LabFollowUpsBillingInventory.resultEntrySave.mounted,
         isFalse,
       );
       expect(LabFollowUpsBillingInventory.collectPayment.mounted, isFalse);

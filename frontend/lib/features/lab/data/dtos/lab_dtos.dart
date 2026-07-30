@@ -529,12 +529,17 @@ final class LabWorkflowNextActionsDto {
       billingGateBlocked: _bool(json['billing_gate_blocked']),
       paymentStatus: _string(json['payment_status']),
       canReceiveSample: _bool(json['can_receive_sample']),
-      canReleaseResult: _bool(json['can_release_result']),
-      canVerifyResult: _bool(
-        json['can_verify_result'],
-        fallback: _bool(json['can_release_result']),
+      canEnterResult: _bool(
+        json['can_enter_result'],
+        fallback: _bool(
+          json['can_verify_result'],
+          fallback: _bool(json['can_release_result']),
+        ),
       ),
-      canVerifyAll: _bool(json['can_verify_all']),
+      canEnterAll: _bool(
+        json['can_enter_all'],
+        fallback: _bool(json['can_verify_all']),
+      ),
       canRejectOrderItem: _bool(json['can_reject_order_item']),
       canReverseWorkflow: _bool(json['can_reverse_workflow']),
     );

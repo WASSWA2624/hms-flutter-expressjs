@@ -221,7 +221,7 @@ void main() {
           'detail_delete_order',
           'workflow_collect_sample',
           'workflow_receive_sample',
-          'workflow_verify_release_results',
+          'workflow_save_enter_results',
           'result_entry_save_submit',
           'open_billing',
           'collect_payment',
@@ -392,7 +392,7 @@ void main() {
         contains('assertLabOrderPaymentSatisfied'),
       );
       expect(
-        LabProcessingBillingInventory.verifyResults.billingPath,
+        LabProcessingBillingInventory.saveResults.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
 

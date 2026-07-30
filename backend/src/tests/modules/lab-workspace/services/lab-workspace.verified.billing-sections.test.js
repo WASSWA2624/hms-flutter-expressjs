@@ -1,6 +1,6 @@
 /**
  * Lab Verified tab (`/lab?section=verified|completed`) billing & sections:
- * re-verify/release after reopen stays payment-gated; reopen is NOT_BILLED
+ * re-save after reopen stays payment-gated; reopen is NOT_BILLED
  * clinical (no invoice reverse); no parallel cashier. Create/delete charge
  * posts reuse `lab-order.service.billing-sections.test.js`.
  */
@@ -223,7 +223,7 @@ describe('lab-workspace Verified tab billing sections', () => {
     expect(labWorkspaceService.reverseInvoice).toBeUndefined();
   });
 
-  it('verifyLabOrderResults blocks unpaid required charges after reopen path', async () => {
+  it('saveLabOrderResults blocks unpaid re-save after reopen path', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-ver-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -258,7 +258,7 @@ describe('lab-workspace Verified tab billing sections', () => {
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
 
     await expect(
-      labWorkspaceService.verifyLabOrderResults(
+      labWorkspaceService.saveLabOrderResults(
         'LAB-VER-1',
         {
           results: [
@@ -274,7 +274,7 @@ describe('lab-workspace Verified tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('releaseLabOrderItem blocks unpaid required charges (no bypass)', async () => {
+  it('saveLabOrderItemResult blocks unpaid required charges (no bypass)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -301,7 +301,7 @@ describe('lab-workspace Verified tab billing sections', () => {
       lab_order: unpaidOrder});
 
     await expect(
-      labWorkspaceService.releaseLabOrderItem(
+      labWorkspaceService.saveLabOrderItemResult(
         'LIT-VER-1',
         { status: 'NORMAL', result_value: '12.0' },
         'actor-1',
@@ -312,7 +312,7 @@ describe('lab-workspace Verified tab billing sections', () => {
       statusCode: 402});
   });
 
-  it('idempotent gate: repeated unpaid verify attempts stay 402 without mutation', async () => {
+  it('idempotent gate: repeated unpaid save-results attempts stay 402 without mutation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-ver-1');
 
     const unpaidOrder = buildBaseOrder({
@@ -340,7 +340,7 @@ describe('lab-workspace Verified tab billing sections', () => {
 
     for (let i = 0; i < 2; i += 1) {
       await expect(
-        labWorkspaceService.verifyLabOrderResults(
+        labWorkspaceService.saveLabOrderResults(
           'LAB-VER-1',
           {
             results: [
@@ -383,7 +383,7 @@ describe('lab-workspace Verified tab billing sections', () => {
                 created_at: now}]}]})
     );
     expect(workflow.next_actions.billing_gate_blocked).toBe(true);
-    expect(workflow.next_actions.can_verify_result).toBe(false);
+    expect(workflow.next_actions.can_enter_result).toBe(false);
     expect(workflow.next_actions.payment_status).toBe('PENDING');
   });
 

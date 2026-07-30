@@ -516,37 +516,33 @@ final class LabWorkspaceController
     return _mutateWorkflow(() => _repository.rejectSample(sampleId, payload));
   }
 
-  Future<AppFailure?> releaseOrderItem(
+  Future<AppFailure?> saveOrderItemResult(
     String itemId,
     Map<String, Object?> payload,
   ) {
-    return verifyOrderItem(itemId, payload);
+    return _mutateWorkflow(
+      () => _repository.saveOrderItemResult(itemId, payload),
+    );
   }
 
-  Future<AppFailure?> verifyOrderItem(
-    String itemId,
-    Map<String, Object?> payload,
-  ) {
-    return _mutateWorkflow(() => _repository.verifyOrderItem(itemId, payload));
-  }
-
-  Future<AppFailure?> verifyAllResults(
+  Future<AppFailure?> saveOrderResults(
     String orderId,
     List<Map<String, Object?>> results,
   ) {
     return _mutateWorkflow(
-      () => _repository.verifyOrderResults(orderId, results),
+      () => _repository.saveOrderResults(orderId, results),
     );
   }
 
-  Future<LabBatchPersistOutcome> submitOrderItemResults(
+  Future<LabBatchPersistOutcome> saveOrderItemResults(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
     return _persistOrderItemResultEntries(entries, (
       LabOrderItem item,
       Map<String, Object?> payload,
     ) async {
-      final Result<LabOrderWorkflow> result = await _repository.verifyOrderItem(
+      final Result<LabOrderWorkflow> result =
+          await _repository.saveOrderItemResult(
         item.apiId,
         payload,
       );

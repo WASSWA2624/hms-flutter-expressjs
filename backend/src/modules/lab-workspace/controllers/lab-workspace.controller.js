@@ -91,24 +91,24 @@ const rejectLabSample = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.lab_workspace.reject.success', data);
 });
 
-const releaseLabOrderItem = asyncHandler(async (req, res) => {
-  const data = await labWorkspaceService.releaseLabOrderItem(
+const saveLabOrderItemResult = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.saveLabOrderItemResult(
     req.params.id,
     req.body,
     req.user?.id,
     req.ip
   );
-  return sendSuccess(res, 200, 'messages.lab_workspace.release.success', data);
+  return sendSuccess(res, 200, 'messages.lab_workspace.save_result.success', data);
 });
 
-const verifyLabOrderResults = asyncHandler(async (req, res) => {
-  const data = await labWorkspaceService.verifyLabOrderResults(
+const saveLabOrderResults = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.saveLabOrderResults(
     req.params.id,
     req.body,
     req.user?.id,
     req.ip
   );
-  return sendSuccess(res, 200, 'messages.lab_workspace.verify_all.success', data);
+  return sendSuccess(res, 200, 'messages.lab_workspace.save_results.success', data);
 });
 
 const rejectLabOrderItem = asyncHandler(async (req, res) => {
@@ -177,8 +177,8 @@ module.exports = {
   collectLabOrder,
   receiveLabSample,
   rejectLabSample,
-  releaseLabOrderItem,
-  verifyLabOrderResults,
+  saveLabOrderItemResult,
+  saveLabOrderResults,
   rejectLabOrderItem,
   reopenLabOrderItemResult,
   reverseLabOrderWorkflow,

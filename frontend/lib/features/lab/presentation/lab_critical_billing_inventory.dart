@@ -45,7 +45,7 @@ final class LabCriticalFinancialAtom {
 ///
 /// Create / update / additional / delete orders post or reverse request-time
 /// charges via `clinical-request-billing` (`persistLabOrderBilling` /
-/// `reverseClinicalRequestBilling`). Collect and verify/release are gated on
+/// `reverseClinicalRequestBilling`). Collect and save/enter-results are gated on
 /// Billing payment status (PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED).
 /// Critical notify is clinical escalation (`NOT_BILLED`); settle / adjust /
 /// refund stay on the Billing workspace — this tab never mounts a parallel
@@ -175,14 +175,14 @@ abstract final class LabCriticalBillingInventory {
         auditCode: 'NOT_BILLED',
       );
 
-  static const LabCriticalFinancialAtom verifyResults =
+  static const LabCriticalFinancialAtom saveResults =
       LabCriticalFinancialAtom(
-        id: 'workflow_verify_release_results',
-        label: 'Verify / release results (payment-gated)',
+        id: 'workflow_save_enter_results',
+        label: 'Save / enter results (payment-gated)',
         financialClass: LabCriticalFinancialClass.defer,
         requirement: LabCriticalAtomPermissions.workflowMutate,
         billingPath:
-            'assertLabOrderPaymentSatisfied on verify/release (Billing gate)',
+            'assertLabOrderPaymentSatisfied on save/enter-results (Billing gate)',
         auditCode: 'NOT_BILLED',
       );
 
@@ -305,7 +305,7 @@ abstract final class LabCriticalBillingInventory {
     collectSample,
     receiveSample,
     enterResults,
-    verifyResults,
+    saveResults,
     reverseWorkflow,
     rejectItem,
     previewReport,
@@ -351,7 +351,7 @@ abstract final class LabCriticalBillingInventory {
 const String labCriticalBillingScopeNote =
     'Lab Critical is the critical-values queue (notify / acknowledge). '
     'Create and edit orders post charges via clinical-request-billing. Collect '
-    'and verify/release are gated on Billing payment status. Critical notify is '
+    'and save/enter-results are gated on Billing payment status. Critical notify is '
     'NOT_BILLED clinical escalation. Settle/adjust/refund are not cashiered '
     'here. Result entry, receive, reverse, and reject stay NOT_BILLED clinical '
     'ops.';

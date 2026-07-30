@@ -45,9 +45,9 @@ final class LabFollowUpsFinancialAtom {
 /// Tab role: hospital-wide scheduled callback worklist (`FollowUpWorklistPanel`
 /// with empty scope — not encounter-filtered to lab). Mark
 /// completed and reschedule stay `NOT_BILLED` ops (status/schedule only). Create
-/// Lab Order primary, result-entry / verify / release, and cashier settle are
+/// Lab Order primary, result-entry / save / enter results, and cashier settle are
 /// **not** mounted here — they post on All / Awaiting results / Processing /
-/// Pending verification / Verified / Critical / Billing. If visit charges or
+/// Completed / Critical / Billing. If visit charges or
 /// payment UX are introduced, they must post via Billing
 /// (`clinical-request-billing` / receive-payment / adjustment)—never a
 /// parallel cash ledger.
@@ -166,15 +166,15 @@ abstract final class LabFollowUpsBillingInventory {
         mounted: false,
       );
 
-  /// Result entry / verify / release — not reachable from Follow-ups.
-  static const LabFollowUpsFinancialAtom resultEntryVerifyRelease =
+  /// Result entry / save — not reachable from Follow-ups.
+  static const LabFollowUpsFinancialAtom resultEntrySave =
       LabFollowUpsFinancialAtom(
-        id: 'result_entry_verify_release',
-        label: 'Result entry / verify / release (billing gate)',
+        id: 'result_entry_save',
+        label: 'Result entry / save / enter results (billing gate)',
         financialClass: LabFollowUpsFinancialClass.defer,
         requirement: LabFollowUpsAtomPermissions.write,
         billingPath:
-            'Awaiting results / Processing / Pending verification → '
+            'Awaiting results / Processing → '
             'Billing payment gate (PAID / NOT_REQUIRED / NO_CHARGE / NOT_BILLED)',
         auditCode: 'REQUIRES_BILLING',
         mounted: false,
@@ -216,7 +216,7 @@ abstract final class LabFollowUpsBillingInventory {
         openBilling,
         followUpVisitCharge,
         createLabOrderCharge,
-        resultEntryVerifyRelease,
+        resultEntrySave,
         collectPayment,
         issueInvoiceAdjustRefund,
       ];
@@ -261,7 +261,7 @@ abstract final class LabFollowUpsBillingInventory {
 
   static String summary() =>
       'Lab Follow-ups is a hospital-wide callback worklist. Mark completed and '
-      'reschedule stay NOT_BILLED. Create Order, result entry / verify / release, '
+      'reschedule stay NOT_BILLED. Create Order, result entry / save / enter results, '
       'and cashier settle live on other Lab tabs / Billing — never duplicated here.';
 }
 
@@ -270,8 +270,8 @@ const String labFollowUpsBillingScopeNote =
     'Lab Follow-ups is a hospital-wide scheduled callback worklist '
     '(FollowUpWorklistPanel, empty FollowUpWorklistScope). Mark completed and '
     'reschedule stay NOT_BILLED ops that update follow-up status/schedule only. '
-    'Create Lab Order, result-entry / verify / release billing gates, and '
+    'Create Lab Order, result-entry / save / enter results billing gates, and '
     'payment collection are not mounted on this tab; they remain on All / '
-    'Awaiting results / Processing / Pending verification / Verified / Critical '
+    'Awaiting results / Processing / Completed / Critical '
     'and the Billing module. Visit charges must use clinical-request-billing / '
     'receive-payment when introduced. No Create Order primary on this tab.';

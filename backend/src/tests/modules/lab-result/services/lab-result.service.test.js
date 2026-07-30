@@ -252,7 +252,7 @@ describe('lab-result.service', () => {
     );
   });
 
-  it('updates and releases lab results through resolved records', async () => {
+  it('updates lab results through resolved records', async () => {
     const before = buildLabResultRecord();
     const interpretationContext = {
       id: 'order-item-internal-1',
@@ -268,23 +268,13 @@ describe('lab-result.service', () => {
     const afterUpdate = buildLabResultRecord({
       status: 'PENDING',
       result_text: 'Updated notes'});
-    const afterRelease = buildLabResultRecord({
-      status: 'CRITICAL',
-      result_value: '12.8',
-      result_text: 'Critical potassium level'});
 
     resolveModelRecordOrThrow
       .mockResolvedValueOnce(before)
-      .mockResolvedValueOnce(interpretationContext)
-      .mockResolvedValueOnce(before)
       .mockResolvedValueOnce(interpretationContext);
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
-    labResultRepository.update
-      .mockResolvedValueOnce({ id: 'result-internal-1' })
-      .mockResolvedValueOnce({ id: 'result-internal-1' });
-    labResultRepository.findById
-      .mockResolvedValueOnce(afterUpdate)
-      .mockResolvedValueOnce(afterRelease);
+    labResultRepository.update.mockResolvedValueOnce({ id: 'result-internal-1' });
+    labResultRepository.findById.mockResolvedValueOnce(afterUpdate);
 
     const updated = await labResultService.updateLabResult(
       'LRS0000001',
@@ -294,47 +284,23 @@ describe('lab-result.service', () => {
       mockUserId,
       mockIpAddress
     );
-    const released = await labResultService.releaseLabResult(
-      'LRS0000001',
-      {
-        status: 'CRITICAL',
-        result_value: '12.8',
-        result_text: 'Critical potassium level'},
-      mockUserId,
-      mockIpAddress
-    );
 
-    expect(labResultRepository.update).toHaveBeenNthCalledWith(1, 'result-internal-1', {
-      lab_order_item_id: 'order-item-internal-1',
-      result_value: null,
-      result_unit: 'g/dL',
-      result_text: 'Updated notes',
-      status: 'PENDING',
-      result_flag: null,
-      is_positive: false,
-      reference_range_label: null,
-      reference_range_summary: null});
-    expect(labResultRepository.update).toHaveBeenNthCalledWith(
-      2,
+    expect(labResultRepository.update).toHaveBeenCalledWith(
       'result-internal-1',
       expect.objectContaining({
-        status: 'CRITICAL',
-        result_value: '12.8',
+        lab_order_item_id: 'order-item-internal-1',
+        result_value: null,
         result_unit: 'g/dL',
-        result_text: 'Critical potassium level',
+        result_text: 'Updated notes',
+        status: 'PENDING',
         result_flag: null,
         is_positive: false,
         reference_range_label: null,
         reference_range_summary: null,
-        reported_at: expect.any(Date)})
+        applied_reference_range_id: null,
+        applied_reference_range_json: null})
     );
     expect(updated).toEqual(expect.objectContaining({ result_text: 'Updated notes' }));
-    expect(released).toEqual(
-      expect.objectContaining({
-        id: 'LRS0000001',
-        status: 'CRITICAL',
-        result_value: '12.8'})
-    );
   });
 
   it('soft deletes lab results and rethrows HttpError instances', async () => {

@@ -4,7 +4,7 @@
  * Lab workspace `/lab?section=follow-ups` hosts the shared hospital-wide
  * follow-up worklist (no encounter_type filter). Proves list / update /
  * complete never post to patient Billing. Mutations stay NOT_BILLED.
- * Create Lab Order, result-entry / verify / release gates, and cashier
+ * Create Lab Order, result-entry / save-result gates, and cashier
  * settle remain on other Lab tabs / Billing — not duplicated here.
  *
  * @module tests/modules/follow-up/services

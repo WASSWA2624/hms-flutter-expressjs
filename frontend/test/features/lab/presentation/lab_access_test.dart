@@ -510,86 +510,6 @@ void main() {
       );
     });
 
-    test('Pending verification atom map reuses feature *Requirement helpers', () {
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.tab,
-          labWorkspaceReadRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.create,
-          labWorkspaceWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.configure,
-          labConfigurationsWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.verify,
-          labWorkspaceWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.routeEntry,
-          labWorkspaceRouteEntryRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.requestFromClinical,
-          clinicalLabOrderWriteRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.criticalNotify,
-          labCriticalNotifyRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          LabPendingVerificationAtomPermissions.previewReport,
-          labReportPreviewRequirement,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          labSectionTabRequirement(LabDeskSection.verification),
-          LabPendingVerificationAtomPermissions.tab,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          labStripCreateRequirement(LabDeskSection.verification),
-          LabPendingVerificationAtomPermissions.create,
-        ),
-        isTrue,
-      );
-      expect(
-        identical(
-          labStripConfigureRequirement(LabDeskSection.verification),
-          LabPendingVerificationAtomPermissions.configure,
-        ),
-        isTrue,
-      );
-    });
-
     test('Verified atom map reuses feature *Requirement helpers', () {
       expect(
         identical(LabVerifiedAtomPermissions.tab, labWorkspaceReadRequirement),
@@ -682,13 +602,11 @@ void main() {
       expect(canViewLabAllTab(labReader), isTrue);
       expect(canViewLabAwaitingResultsTab(labReader), isTrue);
       expect(canViewLabProcessingTab(labReader), isTrue);
-      expect(canViewLabPendingVerificationTab(labReader), isTrue);
       expect(canViewLabCriticalTab(labReader), isTrue);
       expect(canViewLabVerifiedTab(labReader), isTrue);
       expect(canViewLabAllTab(clinicalReader), isFalse);
       expect(canViewLabAwaitingResultsTab(clinicalReader), isFalse);
       expect(canViewLabProcessingTab(clinicalReader), isFalse);
-      expect(canViewLabPendingVerificationTab(clinicalReader), isFalse);
       expect(canViewLabCriticalTab(clinicalReader), isFalse);
       expect(canViewLabVerifiedTab(clinicalReader), isFalse);
       expect(
@@ -702,10 +620,6 @@ void main() {
       expect(
         labAllowedSections(labReader),
         contains(LabDeskSection.processing),
-      );
-      expect(
-        labAllowedSections(labReader),
-        contains(LabDeskSection.verification),
       );
       expect(
         labAllowedSections(labReader),
@@ -726,10 +640,6 @@ void main() {
       expect(
         labAllowedSections(clinicalReader),
         contains(LabDeskSection.processing),
-      );
-      expect(
-        labAllowedSections(clinicalReader),
-        contains(LabDeskSection.verification),
       );
       expect(
         labAllowedSections(clinicalReader),

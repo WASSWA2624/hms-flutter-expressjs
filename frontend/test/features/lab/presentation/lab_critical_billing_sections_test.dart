@@ -137,8 +137,8 @@ void _stubWorkspace(
       LabOrderWorkflow(
         order: _criticalPaidOrder,
         nextActions: LabWorkflowNextActions(
-          canVerifyResult: true,
-          canVerifyAll: true,
+          canEnterResult: true,
+          canEnterAll: true,
           paymentStatus: 'PAID',
         ),
       ),
@@ -228,7 +228,7 @@ void main() {
           'create_lab_order',
           'detail_delete_order',
           'workflow_collect_sample',
-          'workflow_verify_release_results',
+          'workflow_save_enter_results',
           'critical_notify',
           'acknowledge_critical',
           'collect_payment',
@@ -391,7 +391,7 @@ void main() {
         contains('assertLabOrderPaymentSatisfied'),
       );
       expect(
-        LabCriticalBillingInventory.verifyResults.billingPath,
+        LabCriticalBillingInventory.saveResults.billingPath,
         contains('assertLabOrderPaymentSatisfied'),
       );
 
@@ -476,8 +476,8 @@ void main() {
           LabOrderWorkflow(
             order: _criticalPaidOrder,
             nextActions: LabWorkflowNextActions(
-              canVerifyResult: true,
-              canVerifyAll: true,
+              canEnterResult: true,
+              canEnterAll: true,
               paymentStatus: 'PAID',
             ),
           ),

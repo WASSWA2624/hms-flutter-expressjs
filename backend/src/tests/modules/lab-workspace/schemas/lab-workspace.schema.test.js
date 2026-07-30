@@ -6,7 +6,7 @@ const {
   orderWorkflowParamsSchema,
   receiveLabSampleSchema,
   rejectLabSampleSchema,
-  releaseLabOrderItemSchema,
+  saveLabOrderItemResultSchema,
   reverseLabOrderWorkflowSchema,
   sampleWorkflowParamsSchema,
   searchLabOrderContextPatientsQuerySchema} = require('@validations/lab-workspace/lab-workspace.schema');
@@ -73,7 +73,7 @@ describe('lab-workspace schemas', () => {
     ).toBe(true);
 
     expect(
-      releaseLabOrderItemSchema.safeParse({
+      saveLabOrderItemResultSchema.safeParse({
         result_id: 'LRS000001',
         status: 'CRITICAL',
         result_value: '12.8',

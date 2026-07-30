@@ -117,7 +117,7 @@ describe('opd-flow syncDiagnosticsStage', () => {
       .mockResolvedValue(null);
 
     await opdFlowService.syncDiagnosticsStage('ENC0000001', {
-      trigger: 'LAB_RESULTS_VERIFIED'});
+      trigger: 'LAB_RESULT_SAVED'});
 
     expect(txEncounter.update).toHaveBeenCalledTimes(1);
     const updateArg = txEncounter.update.mock.calls[0][0];
@@ -133,7 +133,7 @@ describe('opd-flow syncDiagnosticsStage', () => {
       .mockResolvedValue(null);
 
     await opdFlowService.syncDiagnosticsStage('ENC0000001', {
-      trigger: 'LAB_RESULTS_VERIFIED'});
+      trigger: 'LAB_RESULT_SAVED'});
 
     expect(txEncounter.update).toHaveBeenCalledTimes(1);
     const updateArg = txEncounter.update.mock.calls[0][0];

@@ -137,13 +137,13 @@ void _stubWorkspace(
       LabOrderWorkflow(
         order: _criticalOrder,
         nextActions: LabWorkflowNextActions(
-          canVerifyResult: true,
-          canVerifyAll: true,
+          canEnterResult: true,
+          canEnterAll: true,
         ),
       ),
     );
   });
-  when(() => repository.verifyOrderItem(any(), any())).thenAnswer((_) async {
+  when(() => repository.saveOrderItemResult(any(), any())).thenAnswer((_) async {
     return const Result<LabOrderWorkflow>.success(
       LabOrderWorkflow(
         order: _criticalOrder,

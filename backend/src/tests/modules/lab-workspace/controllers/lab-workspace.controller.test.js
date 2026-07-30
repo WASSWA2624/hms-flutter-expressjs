@@ -130,11 +130,11 @@ describe('lab-workspace.controller', () => {
     );
   });
 
-  it('submits reject and release workflow actions', async () => {
+  it('submits reject and save-result workflow actions', async () => {
     service.rejectLabSample.mockResolvedValue({ workflow: { order: { id: 'LAB000001' } } });
-    service.releaseLabOrderItem.mockResolvedValue({
+    service.saveLabOrderItemResult.mockResolvedValue({
       workflow: { order: { id: 'LAB000001' } },
-      released_result: { id: 'LRS000001' }});
+      saved_result: { id: 'LRS000001' }});
 
     req.params = { id: 'LSP000001' };
     req.body = { reason: 'Hemolysed specimen' };
@@ -149,13 +149,19 @@ describe('lab-workspace.controller', () => {
 
     req.params = { id: 'LIT000001' };
     req.body = { result_id: 'LRS000001', status: 'NORMAL' };
-    await subject.releaseLabOrderItem(req, res);
+    await subject.saveLabOrderItemResult(req, res);
 
-    expect(service.releaseLabOrderItem).toHaveBeenCalledWith(
+    expect(service.saveLabOrderItemResult).toHaveBeenCalledWith(
       'LIT000001',
       { result_id: 'LRS000001', status: 'NORMAL' },
       'user-1',
       '127.0.0.1'
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      'messages.lab_workspace.save_result.success',
+      expect.any(Object)
     );
   });
 
