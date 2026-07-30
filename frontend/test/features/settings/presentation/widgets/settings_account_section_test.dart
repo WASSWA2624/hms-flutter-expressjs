@@ -66,7 +66,7 @@ void main() {
   );
 
   testWidgets(
-    'read-only profile:read shows view atoms and hides update mutations',
+    'profile:read shows Change password and hides Edit profile',
     (WidgetTester tester) async {
       await _pumpAccountSection(
         tester,
@@ -76,19 +76,16 @@ void main() {
       expect(find.text('Alex Demo'), findsWidgets);
       expect(find.text('Assigned roles'), findsOneWidget);
       expect(find.text('Edit profile'), findsNothing);
-      expect(find.text('Change password'), findsNothing);
+      expect(find.text('Change password'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'Change password opens the dialog directly without an intermediate panel',
+    'Change password opens the dialog with profile:read only',
     (WidgetTester tester) async {
       await _pumpAccountSection(
         tester,
-        permissions: <AppPermission>[
-          AppPermissions.profileRead,
-          AppPermissions.profileUpdate,
-        ],
+        permissions: <AppPermission>[AppPermissions.profileRead],
       );
 
       await tester.tap(find.text('Change password'));
@@ -109,15 +106,12 @@ void main() {
   );
 
   testWidgets(
-    'panel=change-password deep link opens the dialog when update granted',
+    'panel=change-password deep link opens the dialog when profile:read granted',
     (WidgetTester tester) async {
       String? clearedPanel;
       await _pumpAccountSection(
         tester,
-        permissions: <AppPermission>[
-          AppPermissions.profileRead,
-          AppPermissions.profileUpdate,
-        ],
+        permissions: <AppPermission>[AppPermissions.profileRead],
         initialPanel: SettingsAccountSection.changePasswordPanel,
         onPanelChanged: (String panel) => clearedPanel = panel,
       );
@@ -130,12 +124,12 @@ void main() {
   );
 
   testWidgets(
-    'panel=change-password deep link without update shows forbidden feedback',
+    'panel=change-password deep link without profile:read shows forbidden feedback',
     (WidgetTester tester) async {
       String? clearedPanel;
       await _pumpAccountSection(
         tester,
-        permissions: <AppPermission>[AppPermissions.profileRead],
+        permissions: <AppPermission>[AppPermissions.profileUpdate],
         initialPanel: SettingsAccountSection.changePasswordPanel,
         onPanelChanged: (String panel) => clearedPanel = panel,
       );
@@ -157,7 +151,7 @@ void main() {
     );
 
     expect(find.text('Edit profile'), findsNothing);
-    expect(find.text('Change password'), findsNothing);
+    expect(find.text('Change password'), findsOneWidget);
   });
 
   testWidgets('Edit profile opens the edit dialog when authorized', (
@@ -301,7 +295,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Edit profile'), findsNothing);
-      expect(find.text('Change password'), findsNothing);
+      expect(find.text('Change password'), findsOneWidget);
     },
   );
 
@@ -310,10 +304,7 @@ void main() {
     (WidgetTester tester) async {
       await _pumpAccountSection(
         tester,
-        permissions: <AppPermission>[
-          AppPermissions.profileRead,
-          AppPermissions.profileUpdate,
-        ],
+        permissions: <AppPermission>[AppPermissions.profileRead],
       );
 
       await tester.tap(find.text('Change password'));
@@ -345,7 +336,7 @@ void main() {
 
       expect(find.text('Alex Demo'), findsWidgets);
       expect(find.text('Edit profile'), findsNothing);
-      expect(find.text('Change password'), findsNothing);
+      expect(find.text('Change password'), findsOneWidget);
       expect(find.textContaining('Create'), findsNothing);
       expect(find.textContaining('Delete'), findsNothing);
       expect(find.textContaining('Void'), findsNothing);

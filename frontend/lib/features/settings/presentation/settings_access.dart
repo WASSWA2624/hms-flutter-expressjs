@@ -83,10 +83,10 @@ abstract final class SettingsPreferencesAtomPermissions {
 /// | Empty roles / permissions copy | read chrome | ([empty]) |
 /// | Loading / error / retry | read chrome | ([loading] / [retry]) |
 /// | Copy user id / staff number | read chrome | ([copyIdentifier]) |
-/// | Change password (toolbar + dialog) | update | ∩ profile:update ([changePassword]) |
+/// | Change password (toolbar + dialog) | update | ∩ profile:read ([changePassword]) |
 /// | Edit profile (toolbar + dialog) | update | ∩ profile:update ([editProfile]) |
 /// | Success / validation snackbars | visible feedback | update ∩ (authorized) |
-/// | Deep link `panel=change-password` | update | ∩ profile:update; forbidden when denied |
+/// | Deep link `panel=change-password` | update | ∩ profile:read; forbidden when denied |
 /// | Create / delete affordances | create/delete | ∩ facility:admin — **not mounted** |
 /// | Nested cross-module panels | nested | _(n/a)_ ([nestedRead] / [nestedWrite]) |
 /// | Settings route entry | navigate | authenticated core ([routeEntry]) |
@@ -103,9 +103,9 @@ abstract final class SettingsAccountAtomPermissions {
   static const AccessRequirement copyIdentifier = profileReadRequirement;
   static const AccessRequirement read = profileReadRequirement;
 
-  /// Matrix ∩ `profile:update`.
+  /// Matrix ∩ `profile:update` for profile edits; own password uses read ∩.
   static const AccessRequirement update = profileUpdateRequirement;
-  static const AccessRequirement changePassword = profileUpdateRequirement;
+  static const AccessRequirement changePassword = profileReadRequirement;
   static const AccessRequirement editProfile = profileUpdateRequirement;
   static const AccessRequirement success = profileUpdateRequirement;
   static const AccessRequirement validation = profileUpdateRequirement;

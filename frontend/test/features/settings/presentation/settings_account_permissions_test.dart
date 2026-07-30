@@ -21,7 +21,7 @@ void main() {
       );
       expect(
         SettingsAccountAtomPermissions.changePassword,
-        same(profileUpdateRequirement),
+        same(profileReadRequirement),
       );
       expect(
         SettingsAccountAtomPermissions.editProfile,
@@ -63,7 +63,7 @@ void main() {
       );
     });
 
-    test('update ∩ requires profile:update', () {
+    test('update ∩ requires profile:update; change password uses profile:read', () {
       expect(
         SettingsAccountAtomPermissions.update.isAllowed(
           _policy(<AppPermission>[AppPermissions.profileRead]),
@@ -71,7 +71,22 @@ void main() {
         isFalse,
       );
       expect(
+        SettingsAccountAtomPermissions.changePassword.isAllowed(
+          _policy(<AppPermission>[AppPermissions.profileRead]),
+        ),
+        isTrue,
+      );
+      expect(
         SettingsAccountAtomPermissions.update.isAllowed(
+          _policy(<AppPermission>[
+            AppPermissions.profileRead,
+            AppPermissions.profileUpdate,
+          ]),
+        ),
+        isTrue,
+      );
+      expect(
+        SettingsAccountAtomPermissions.changePassword.isAllowed(
           _policy(<AppPermission>[
             AppPermissions.profileRead,
             AppPermissions.profileUpdate,

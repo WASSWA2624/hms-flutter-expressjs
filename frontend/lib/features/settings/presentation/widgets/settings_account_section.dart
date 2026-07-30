@@ -21,7 +21,6 @@ import 'package:hosspi_hms/features/settings/presentation/settings_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Account and security tab (`/settings?tab=account`).
 ///
@@ -170,14 +169,17 @@ class _SettingsAccountSectionState
 
     final bool canUpdate =
         SettingsAccountAtomPermissions.update.isAllowed(accessPolicy);
+    final bool canChangePassword =
+        SettingsAccountAtomPermissions.changePassword.isAllowed(accessPolicy);
     final UserProfileRecord? editableRecord = canUpdate ? record : null;
+    final bool showToolbar = canChangePassword || editableRecord != null;
 
     return AppAccessGate(
       requirement: SettingsAccountAtomPermissions.tab,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (canUpdate)
+          if (showToolbar)
             Align(
               alignment: Alignment.centerRight,
               child: Wrap(
@@ -185,16 +187,17 @@ class _SettingsAccountSectionState
                 runSpacing: theme.spacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
-                  AppAccessActionGate(
-                    requirement: SettingsAccountAtomPermissions.changePassword,
-                    builder: (BuildContext context, bool _) {
-                      return AppTabToolbarAction(
-                        label: l10n.settingsChangePasswordActionTitle,
-                        icon: Icons.lock_reset_outlined,
-                        onPressed: () => unawaited(_changePassword(context)),
-                      );
-                    },
-                  ),
+                  if (canChangePassword)
+                    AppAccessActionGate(
+                      requirement: SettingsAccountAtomPermissions.changePassword,
+                      builder: (BuildContext context, bool _) {
+                        return AppTabToolbarAction(
+                          label: l10n.settingsChangePasswordActionTitle,
+                          icon: Icons.lock_reset_outlined,
+                          onPressed: () => unawaited(_changePassword(context)),
+                        );
+                      },
+                    ),
                   if (editableRecord != null)
                     AppAccessActionGate(
                       requirement: SettingsAccountAtomPermissions.editProfile,
@@ -214,7 +217,7 @@ class _SettingsAccountSectionState
                 ],
               ),
             ),
-          if (canUpdate) SizedBox(height: theme.spacing.sm),
+          if (showToolbar) SizedBox(height: theme.spacing.sm),
           const _ProfilePanel(),
         ],
       ),
@@ -285,86 +288,96 @@ class _ProfilePanelContent extends ConsumerWidget {
 
     final List<String> roles = view.roles;
     final List<AppPermission> permissions = view.permissions;
+    final List<AppInfoSheetItem> accountItems = <AppInfoSheetItem>[
+      AppInfoSheetItem(
+        label: l10n.profilePhoneLabel,
+        value: _value(profile.phone, l10n),
+      ),
+      AppInfoSheetItem(
+        label: l10n.profileUserIdLabel,
+        value: _value(profile.displayId ?? profile.id, l10n),
+        copyable: true,
+        copyTooltip: l10n.copyUserIdAction,
+        copiedMessage: l10n.userIdCopiedMessage,
+      ),
+    ];
+    final List<AppInfoSheetItem> professionalItems = <AppInfoSheetItem>[
+      AppInfoSheetItem(
+        label: l10n.profileOverallRoleLabel,
+        value: _value(profile.overallRole, l10n),
+      ),
+      AppInfoSheetItem(
+        label: l10n.profileUserTypeLabel,
+        value: _value(profile.userType, l10n),
+      ),
+      AppInfoSheetItem(
+        label: l10n.profileTenantLabel,
+        value: _value(profile.tenantName, l10n),
+      ),
+      AppInfoSheetItem(
+        label: l10n.profileFacilityTypeLabel,
+        value: _value(_formatProfileToken(profile.facilityType), l10n),
+      ),
+      AppInfoSheetItem(
+        label: l10n.profileStaffNumberLabel,
+        value: _value(profile.staffNumber, l10n),
+        copyable: true,
+        copyTooltip: l10n.copyIdentifierAction,
+        copiedMessage: l10n.identifierCopiedMessage,
+      ),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _ProfileSummary(profile: profile),
         SizedBox(height: theme.spacing.lg),
-        _ProfileSectionGrid(
-          sections: <Widget>[
-            _ProfileDetailSection(
-              title: l10n.profileAccountSectionTitle,
-              body: l10n.profileAccountSectionBody,
-              items: <_ProfileDetailItem>[
-                _ProfileDetailItem(
-                  label: l10n.profileNameLabel,
-                  value: _value(profile.displayName, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileEmailLabel,
-                  value: _value(profile.email ?? session.subject, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profilePhoneLabel,
-                  value: _value(profile.phone, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileStatusLabel,
-                  value: _value(_formatProfileToken(profile.status), l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileUserIdLabel,
-                  value: _value(profile.displayId ?? profile.id, l10n),
-                  selectable: true,
-                  copyTooltip: l10n.copyUserIdAction,
-                  copiedMessage: l10n.userIdCopiedMessage,
-                ),
+        _ProfileSectionPair(
+          leading: _ProfileBlock(
+            title: l10n.profileAccountSectionTitle,
+            description: l10n.profileAccountSectionBody,
+            child: AppInfoSheetGrid(
+              items: accountItems,
+              emptyValue: l10n.profileUnknownValue,
+              maxColumns: 2,
+              minItemWidth: 140,
+            ),
+          ),
+          trailing: _ProfileBlock(
+            title: l10n.profileProfessionalSectionTitle,
+            description: l10n.profileProfessionalSectionBody,
+            child: AppInfoSheetGrid(
+              items: professionalItems,
+              emptyValue: l10n.profileUnknownValue,
+              maxColumns: 2,
+              minItemWidth: 140,
+            ),
+          ),
+        ),
+        SizedBox(height: theme.spacing.lg),
+        _ProfileSectionPair(
+          leading: _ProfileBlock(
+            title: l10n.profileRolesSectionTitle,
+            description: l10n.profileRolesSectionBody,
+            child: _ProfileChipGroup(
+              emptyLabel: l10n.profileRolesEmpty,
+              labels: <String>[
+                for (final String role in roles)
+                  _formatProfileToken(role) ?? role,
               ],
             ),
-            _ProfileDetailSection(
-              title: l10n.profileProfessionalSectionTitle,
-              body: l10n.profileProfessionalSectionBody,
-              items: <_ProfileDetailItem>[
-                _ProfileDetailItem(
-                  label: l10n.profileTitleLabel,
-                  value: _value(profile.effectiveTitle, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileOverallRoleLabel,
-                  value: _value(profile.overallRole, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileUserTypeLabel,
-                  value: _value(profile.userType, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileTenantLabel,
-                  value: _value(profile.tenantName, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileFacilityLabel,
-                  value: _value(profile.facilityName, l10n),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileFacilityTypeLabel,
-                  value: _value(
-                    _formatProfileToken(profile.facilityType),
-                    l10n,
-                  ),
-                ),
-                _ProfileDetailItem(
-                  label: l10n.profileStaffNumberLabel,
-                  value: _value(profile.staffNumber, l10n),
-                  selectable: true,
-                  copyTooltip: l10n.copyIdentifierAction,
-                  copiedMessage: l10n.identifierCopiedMessage,
-                ),
+          ),
+          trailing: _ProfileBlock(
+            title: l10n.profilePermissionsSectionTitle,
+            description: l10n.profilePermissionsSectionBody,
+            child: _ProfileChipGroup(
+              emptyLabel: l10n.profilePermissionsEmpty,
+              labels: <String>[
+                for (final AppPermission permission in permissions)
+                  permission.value,
               ],
             ),
-            _ProfileRolesSection(roles: roles),
-            _ProfilePermissionsSection(permissions: permissions),
-          ],
+          ),
         ),
       ],
     );
@@ -386,50 +399,65 @@ class _ProfileSummary extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final String displayName = _value(profile.displayName, l10n);
-    final String supportingLine = <String>[
-      if (profile.email != null) profile.email!,
-      if (profile.effectiveTitle != null) profile.effectiveTitle!,
-    ].join(' | ');
+    final String? statusLabel = _formatProfileToken(profile.status);
+    final List<String> metaParts = <String>[
+      if ((profile.email ?? '').trim().isNotEmpty) profile.email!.trim(),
+      if ((profile.effectiveTitle ?? '').trim().isNotEmpty)
+        profile.effectiveTitle!.trim(),
+      if ((profile.facilityName ?? '').trim().isNotEmpty)
+        profile.facilityName!.trim(),
+    ];
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(theme.radius.md),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
+        padding: EdgeInsets.all(theme.spacing.md),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             CircleAvatar(
-              radius: 32,
+              radius: 28,
               backgroundColor: colorScheme.primaryContainer,
               foregroundColor: colorScheme.onPrimaryContainer,
               child: Text(
                 profile.initials,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            SizedBox(width: theme.spacing.lg),
+            SizedBox(width: theme.spacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    displayName,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      Text(
+                        displayName,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (statusLabel != null)
+                        _ProfileBadge(
+                          label: statusLabel,
+                          tone: _statusTone(profile.status),
+                        ),
+                    ],
                   ),
-                  if (supportingLine.isNotEmpty) ...<Widget>[
+                  if (metaParts.isNotEmpty) ...<Widget>[
                     SizedBox(height: theme.spacing.xs),
                     Text(
-                      supportingLine,
+                      metaParts.join(' · '),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -443,16 +471,83 @@ class _ProfileSummary extends StatelessWidget {
       ),
     );
   }
+
+  _ProfileBadgeTone _statusTone(String? status) {
+    final String normalized = (status ?? '').trim().toUpperCase();
+    if (normalized == 'ACTIVE') {
+      return _ProfileBadgeTone.success;
+    }
+    if (normalized == 'INACTIVE' || normalized == 'SUSPENDED') {
+      return _ProfileBadgeTone.warning;
+    }
+    return _ProfileBadgeTone.neutral;
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Profile detail widgets
-// ---------------------------------------------------------------------------
+enum _ProfileBadgeTone { neutral, success, warning }
 
 class _ProfileBadge extends StatelessWidget {
-  const _ProfileBadge({required this.label});
+  const _ProfileBadge({
+    required this.label,
+    this.tone = _ProfileBadgeTone.neutral,
+  });
 
   final String label;
+  final _ProfileBadgeTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color background;
+    final Color foreground;
+    switch (tone) {
+      case _ProfileBadgeTone.success:
+        background = colorScheme.primaryContainer.withValues(alpha: 0.7);
+        foreground = colorScheme.onPrimaryContainer;
+      case _ProfileBadgeTone.warning:
+        background = colorScheme.tertiaryContainer.withValues(alpha: 0.7);
+        foreground = colorScheme.onTertiaryContainer;
+      case _ProfileBadgeTone.neutral:
+        background = colorScheme.secondaryContainer.withValues(alpha: 0.55);
+        foreground = colorScheme.onSecondaryContainer;
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs / 2,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileBlock extends StatelessWidget {
+  const _ProfileBlock({
+    required this.title,
+    required this.child,
+    this.description,
+  });
+
+  final String title;
+  final String? description;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -461,176 +556,100 @@ class _ProfileBadge extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(6),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(theme.radius.md),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w500,
-          ),
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (description != null &&
+                description!.trim().isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                description!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.md),
+            child,
+          ],
         ),
       ),
     );
   }
 }
 
-class _ProfileDetailSection extends StatelessWidget {
-  const _ProfileDetailSection({
-    required this.title,
-    required this.body,
-    required this.items,
+class _ProfileChipGroup extends StatelessWidget {
+  const _ProfileChipGroup({
+    required this.labels,
+    required this.emptyLabel,
   });
 
-  final String title;
-  final String body;
-  final List<_ProfileDetailItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCollapsibleSection(
-      title: title,
-      description: body,
-      child: _ProfileDetailList(items: items),
-    );
-  }
-}
-
-class _ProfileRolesSection extends StatelessWidget {
-  const _ProfileRolesSection({required this.roles});
-
-  final List<String> roles;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return AppCollapsibleSection(
-      title: l10n.profileRolesSectionTitle,
-      description: l10n.profileRolesSectionBody,
-      child: roles.isEmpty
-          ? Text(
-              l10n.profileRolesEmpty,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: <Widget>[
-                for (final String role in roles)
-                  _ProfileBadge(label: _formatProfileToken(role) ?? role),
-              ],
-            ),
-    );
-  }
-}
-
-class _ProfilePermissionsSection extends StatelessWidget {
-  const _ProfilePermissionsSection({required this.permissions});
-
-  final List<AppPermission> permissions;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return AppCollapsibleSection(
-      title: l10n.profilePermissionsSectionTitle,
-      description: l10n.profilePermissionsSectionBody,
-      child: permissions.isEmpty
-          ? Text(
-              l10n.profilePermissionsEmpty,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: <Widget>[
-                for (final AppPermission permission in permissions)
-                  _ProfileBadge(label: permission.value),
-              ],
-            ),
-    );
-  }
-}
-
-class _ProfileDetailList extends StatelessWidget {
-  const _ProfileDetailList({required this.items});
-
-  final List<_ProfileDetailItem> items;
+  final List<String> labels;
+  final String emptyLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
-    return Column(
+    if (labels.isEmpty) {
+      return Text(
+        emptyLabel,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.sm,
       children: <Widget>[
-        for (var index = 0; index < items.length; index += 1) ...<Widget>[
-          if (index > 0)
-            Divider(
-              height: theme.spacing.lg,
-              color: colorScheme.outlineVariant,
-            ),
-          _ProfileDetailRow(item: items[index]),
-        ],
+        for (final String label in labels) _ProfileBadge(label: label),
       ],
     );
   }
 }
 
-class _ProfileDetailRow extends StatelessWidget {
-  const _ProfileDetailRow({required this.item});
+class _ProfileSectionPair extends StatelessWidget {
+  const _ProfileSectionPair({
+    required this.leading,
+    required this.trailing,
+  });
 
-  final _ProfileDetailItem item;
+  final Widget leading;
+  final Widget trailing;
+
+  static const double _sideBySideBreakpoint = 760;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextStyle? valueStyle = theme.textTheme.bodyLarge?.copyWith(
-      fontWeight: FontWeight.w500,
-    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final Widget label = Text(
-          item.label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        );
-        final Widget value = item.selectable
-            ? AppCopyableIdentifier(
-                value: item.value,
-                tooltip: item.copyTooltip,
-                copiedMessage: item.copiedMessage,
-                textStyle: valueStyle,
-              )
-            : Text(item.value, style: valueStyle);
-
-        if (constraints.maxWidth < 520) {
+        final bool sideBySide = constraints.maxWidth >= _sideBySideBreakpoint;
+        if (!sideBySide) {
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              label,
-              SizedBox(height: theme.spacing.xs),
-              value,
+              leading,
+              SizedBox(height: theme.spacing.md),
+              trailing,
             ],
           );
         }
@@ -638,54 +657,9 @@ class _ProfileDetailRow extends StatelessWidget {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            SizedBox(width: 150, child: label),
+            Expanded(child: leading),
             SizedBox(width: theme.spacing.md),
-            Expanded(child: value),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ProfileDetailItem {
-  const _ProfileDetailItem({
-    required this.label,
-    required this.value,
-    this.selectable = false,
-    this.copyTooltip,
-    this.copiedMessage,
-  });
-
-  final String label;
-  final String value;
-  final bool selectable;
-  final String? copyTooltip;
-  final String? copiedMessage;
-}
-
-class _ProfileSectionGrid extends StatelessWidget {
-  const _ProfileSectionGrid({required this.sections});
-
-  final List<Widget> sections;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool useTwoColumns = constraints.maxWidth >= 920;
-        final double itemWidth = useTwoColumns
-            ? (constraints.maxWidth - theme.spacing.lg) / 2
-            : constraints.maxWidth;
-
-        return Wrap(
-          spacing: theme.spacing.lg,
-          runSpacing: theme.spacing.lg,
-          children: <Widget>[
-            for (final Widget section in sections)
-              SizedBox(width: itemWidth, child: section),
+            Expanded(child: trailing),
           ],
         );
       },

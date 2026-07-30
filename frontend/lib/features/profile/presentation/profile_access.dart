@@ -13,7 +13,8 @@ const AccessRequirement profileReadRequirement = AccessRequirement(
 );
 
 /// Update mutations on the Profile account surface (`profile:update` ∩):
-/// edit profile and change password.
+/// edit profile. Own-password change uses [profileReadRequirement] (any
+/// authenticated user who can view Account may rotate their password).
 const AccessRequirement profileUpdateRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.profileUpdate],
 );
