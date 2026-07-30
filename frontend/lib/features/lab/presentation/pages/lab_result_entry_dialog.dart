@@ -2619,7 +2619,6 @@ class _ReopenSavedResultDialogState
   late final TextEditingController _valueController;
   late final TextEditingController _unitController;
   late final TextEditingController _textController;
-  late final TextEditingController _reasonController;
   late final TextEditingController _notesController;
   String? _selectedOption;
   bool _valueError = false;
@@ -2640,7 +2639,6 @@ class _ReopenSavedResultDialogState
     );
     _textController = TextEditingController(text: _item.resultText ?? '');
     _selectedOption = _matchingResultOptionValue(_item);
-    _reasonController = TextEditingController();
     _notesController = TextEditingController();
   }
 
@@ -2649,7 +2647,6 @@ class _ReopenSavedResultDialogState
     _valueController.dispose();
     _unitController.dispose();
     _textController.dispose();
-    _reasonController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -2711,22 +2708,6 @@ class _ReopenSavedResultDialogState
                   fontWeight: FontWeight.w500,
                 ),
               ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.labReopenVerifiedReasonLabel,
-              isRequired: true,
-              enabled: !_isSaving,
-              allowClear: !_isSaving,
-              maxLines: 3,
-              minLines: 2,
-              autofocus: true,
-              validator: AppValidators.minLength(
-                2,
-                l10n.validationRequired,
-                allowEmpty: false,
-                trim: true,
-              ),
-            ),
             AppTextField(
               controller: _notesController,
               labelText: l10n.labNotesLabel,
@@ -2938,7 +2919,6 @@ class _ReopenSavedResultDialogState
 
     final AppFailure? reopenFailure = await controller
         .reopenOrderItemResult(_item.apiId, <String, Object?>{
-          'reason': _reasonController.text.trim(),
           if (_notesController.text.trim().isNotEmpty)
             'notes': _notesController.text.trim(),
         });

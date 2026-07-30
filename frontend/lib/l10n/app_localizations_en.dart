@@ -19637,7 +19637,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReopenVerifiedResultDialogBody =>
-      'Update the value and reason. Saving finalizes the corrected result.';
+      'Update the value. Saving finalizes the corrected result.';
 
   @override
   String get labReopenVerifiedReasonLabel => 'Reason for edit';

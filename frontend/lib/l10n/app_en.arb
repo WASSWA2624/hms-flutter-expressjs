@@ -25157,13 +25157,13 @@
   "@labReopenVerifiedResultDialogTitle": {
     "description": "Title for the dialog that reopens a verified lab result."
   },
-  "labReopenVerifiedResultDialogBody": "Update the value and reason. Saving finalizes the corrected result.",
+  "labReopenVerifiedResultDialogBody": "Update the value. Saving finalizes the corrected result.",
   "@labReopenVerifiedResultDialogBody": {
     "description": "Body text for the verified result reopen dialog."
   },
   "labReopenVerifiedReasonLabel": "Reason for edit",
   "@labReopenVerifiedReasonLabel": {
-    "description": "Label for the required reason when reopening a verified lab result."
+    "description": "Unused legacy label formerly required when reopening a verified lab result."
   },
   "labVerifiedResultReopenedMessage": "Result opened for editing.",
   "@labVerifiedResultReopenedMessage": {

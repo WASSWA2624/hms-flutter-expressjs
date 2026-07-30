@@ -1877,10 +1877,7 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
 
 const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddress) => {
   try {
-    const reason = String(payload?.reason || '').trim();
-    if (!reason) {
-      throw new HttpError('errors.validation.field.required', 400, [{ field: 'reason' }]);
-    }
+    const reason = String(payload?.reason || '').trim() || null;
 
     const orderItemId = await resolveModelIdOrThrow({
       identifier,

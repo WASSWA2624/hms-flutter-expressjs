@@ -36562,10 +36562,10 @@ abstract class AppLocalizations {
   /// Body text for the verified result reopen dialog.
   ///
   /// In en, this message translates to:
-  /// **'Update the value and reason. Saving finalizes the corrected result.'**
+  /// **'Update the value. Saving finalizes the corrected result.'**
   String get labReopenVerifiedResultDialogBody;
 
-  /// Label for the required reason when reopening a verified lab result.
+  /// Unused legacy label formerly required when reopening a verified lab result.
   ///
   /// In en, this message translates to:
   /// **'Reason for edit'**

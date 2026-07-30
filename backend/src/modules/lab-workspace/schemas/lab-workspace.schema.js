@@ -77,7 +77,7 @@ const reverseLabOrderWorkflowSchema = z.object({
   reason: z.string().trim().min(2).max(65535)});
 
 const reopenLabOrderItemResultSchema = z.object({
-  reason: z.string().trim().min(2).max(65535),
+  reason: z.string().trim().max(65535).optional().nullable(),
   notes: z.string().trim().max(65535).optional().nullable()});
 
 const restoreLabOrderItemSchema = z.object({
