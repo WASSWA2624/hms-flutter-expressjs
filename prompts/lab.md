@@ -6,7 +6,7 @@ Redesign the lab result entry dialog so it is clean, full-width, and focused on 
 
 ## Dialog chrome
 
-- **Restore** and **Close** must always show visible labels on both small and large screens (today they are often icon-only).
+- **Restore** and **Close** must not show visible labels on both small and large screens.
 - Keep Preview report / Save (and Create when relevant) in the footer actions with clear labels.
 
 ## Remove from this dialog
