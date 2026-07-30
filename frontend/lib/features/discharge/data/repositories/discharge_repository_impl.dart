@@ -167,15 +167,6 @@ final class DischargeRepositoryImpl implements DischargeRepository {
   }
 
   @override
-  Future<Result<void>> createFinalInvoice(Map<String, Object?> payload) {
-    return _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.invoices),
-      data: _withoutEmpty(payload),
-      decoder: (_) {},
-    );
-  }
-
-  @override
   Future<Result<void>> createPharmacyOrder(Map<String, Object?> payload) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.pharmacyOrders),

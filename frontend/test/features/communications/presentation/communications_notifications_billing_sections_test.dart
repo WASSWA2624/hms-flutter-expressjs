@@ -17,7 +17,7 @@ import 'package:hosspi_hms/features/communications/data/repositories/communicati
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/domain/repositories/communications_repository.dart';
 import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
-import 'package:hosspi_hms/features/communications/presentation/communications_deliveries_billing_inventory.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_notifications_billing_inventory.dart';
 import 'package:hosspi_hms/features/communications/presentation/pages/communications_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -31,24 +31,44 @@ import '../../../helpers/section_layout_test_helpers.dart';
 class _MockCommunicationsRepository extends Mock
     implements CommunicationsRepository {}
 
-const NotificationDelivery _delivery = NotificationDelivery(
-  id: 'delivery-1',
-  status: 'FAILED',
-  channel: 'EMAIL',
-  notificationTitle: 'Critical lab result',
-  recipientTarget: 'nurse@example.com',
-  attemptCount: 2,
-  errorMessage: 'Mailbox full',
-  targetPath: '/patients/patient-1',
+Finder _tableRowInkWell() => find.byWidgetPredicate(
+  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
 );
 
-const NotificationDelivery _deliveryNoPath = NotificationDelivery(
-  id: 'delivery-2',
-  status: 'SENT',
-  channel: 'SMS',
-  notificationTitle: 'Appointment reminder',
-  recipientTarget: '+256700000000',
-  attemptCount: 1,
+const NotificationItem _notification = NotificationItem(
+  id: 'notification-1',
+  title: 'Critical lab result',
+  message: 'Potassium critically high',
+  priority: 'HIGH',
+  notificationType: 'LAB_ALERT',
+  targetPath: '/patients/patient-1',
+  deliveries: <NotificationDelivery>[
+    NotificationDelivery(
+      id: 'delivery-1',
+      status: 'DELIVERED',
+      channel: 'IN_APP',
+      notificationTitle: 'Critical lab result',
+      attemptCount: 1,
+    ),
+  ],
+);
+
+const NotificationItem _notificationNoPath = NotificationItem(
+  id: 'notification-2',
+  title: 'System maintenance',
+  message: 'Brief downtime tonight',
+  priority: 'LOW',
+  notificationType: 'SYSTEM',
+);
+
+final NotificationItem _readNotification = NotificationItem(
+  id: 'notification-1',
+  title: 'Critical lab result',
+  message: 'Potassium critically high',
+  priority: 'HIGH',
+  notificationType: 'LAB_ALERT',
+  readAt: DateTime.utc(2026, 5, 20, 9),
+  targetPath: '/patients/patient-1',
 );
 
 AppAccessPolicy _policy({
@@ -77,8 +97,8 @@ AppAccessPolicy _policy({
 
 void _stubWorkspace(
   _MockCommunicationsRepository repository, {
-  List<NotificationDelivery> deliveries = const <NotificationDelivery>[
-    _delivery,
+  List<NotificationItem> notifications = const <NotificationItem>[
+    _notification,
   ],
   Result<CommunicationsWorkspaceState>? workspaceOverride,
 }) {
@@ -95,66 +115,50 @@ void _stubWorkspace(
         query: query,
         summary: CommunicationsSummary(
           unreadThreads: 0,
-          notifications: 0,
-          failedDeliveries: deliveries.length,
-          templates: 0,
+          notifications: notifications.length,
         ),
-        metrics: NotificationMetrics(
-          total: 0,
-          unread: 0,
-          attentionRequired: 0,
-          failedDeliveries: deliveries.length,
-        ),
-        conversations: AppPage<CommunicationsConversation>(
-          items: const <CommunicationsConversation>[],
-          request: query.pageRequest,
+        metrics: NotificationMetrics(total: notifications.length),
+        conversations: const AppPage<CommunicationsConversation>(
+          items: <CommunicationsConversation>[],
+          request: AppPageRequest(pageSize: 30),
           totalItemCount: 0,
         ),
         notifications: AppPage<NotificationItem>(
-          items: const <NotificationItem>[],
+          items: notifications,
           request: query.pageRequest,
+          totalItemCount: notifications.length,
+        ),
+        deliveries: const AppPage<NotificationDelivery>(
+          items: <NotificationDelivery>[],
+          request: AppPageRequest(pageSize: 30),
           totalItemCount: 0,
         ),
-        deliveries: AppPage<NotificationDelivery>(
-          items: deliveries,
-          request: query.pageRequest,
-          totalItemCount: deliveries.length,
-        ),
-        templates: AppPage<CommunicationTemplate>(
-          items: const <CommunicationTemplate>[],
-          request: query.pageRequest,
+        templates: const AppPage<CommunicationTemplate>(
+          items: <CommunicationTemplate>[],
+          request: AppPageRequest(pageSize: 30),
           totalItemCount: 0,
         ),
-        selectedDelivery: query.panel == CommunicationsPanel.deliveries
-            ? deliveries.firstOrNull
+        selectedNotification:
+            query.panel == CommunicationsPanel.notifications &&
+                query.notificationId != null
+            ? notifications.cast<NotificationItem?>().firstWhere(
+                (NotificationItem? item) => item?.id == query.notificationId,
+                orElse: () => null,
+              )
             : null,
       ),
     );
   });
 }
 
-Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
-);
-
-Future<void> _openDeliveryDetail(WidgetTester tester) async {
-  final Finder row = _tableRowInkWell();
-  if (row.evaluate().isNotEmpty) {
-    await tester.tap(row.first);
-  } else {
-    await tester.tap(find.textContaining('Critical lab').first);
-  }
-  await tester.pumpAndSettle();
-}
-
-Future<void> _pumpDeliveries(
+Future<void> _pumpNotifications(
   WidgetTester tester, {
   required _MockCommunicationsRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<NotificationDelivery> deliveries = const <NotificationDelivery>[
-    _delivery,
+  List<NotificationItem> notifications = const <NotificationItem>[
+    _notification,
   ],
   Result<CommunicationsWorkspaceState>? workspaceOverride,
 }) async {
@@ -162,7 +166,7 @@ Future<void> _pumpDeliveries(
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubWorkspace(
     repository,
-    deliveries: deliveries,
+    notifications: notifications,
     workspaceOverride: workspaceOverride,
   );
 
@@ -172,7 +176,7 @@ Future<void> _pumpDeliveries(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/communications?panel=deliveries',
+    initialLocation: '/communications?panel=notifications',
     routes: <RouteBase>[
       GoRoute(
         path: '/communications',
@@ -229,34 +233,38 @@ void main() {
     repository = _MockCommunicationsRepository();
   });
 
-  group('Communications Deliveries financial inventory (AC1)', () {
+  group('Communications Notifications financial inventory (AC1)', () {
     test('every mounted atom is explicitly not billable with audit code', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.deliveriesTabHasNoBillableActions,
+        CommunicationsNotificationsBillingInventory
+            .notificationsTabHasNoBillableActions,
         isTrue,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory
+        CommunicationsNotificationsBillingInventory
             .allMountedAtomsExplicitlyNotBillable,
         isTrue,
       );
-      expect(CommunicationsDeliveriesBillingInventory.atoms, isNotEmpty);
+      expect(CommunicationsNotificationsBillingInventory.atoms, isNotEmpty);
       expect(
-        CommunicationsDeliveriesBillingInventory.billableClasses.every(
-          (CommunicationsDeliveriesFinancialAtom atom) => !atom.mounted,
+        CommunicationsNotificationsBillingInventory.billableClasses.every(
+          (CommunicationsNotificationsFinancialAtom atom) => !atom.mounted,
         ),
         isTrue,
       );
-      expect(communicationsDeliveriesBillingScopeNote, contains('NOT_BILLED'));
+      expect(
+        communicationsNotificationsBillingScopeNote,
+        contains('NOT_BILLED'),
+      );
 
-      for (final CommunicationsDeliveriesFinancialAtom atom
-          in CommunicationsDeliveriesBillingInventory.mountedAtoms) {
+      for (final CommunicationsNotificationsFinancialAtom atom
+          in CommunicationsNotificationsBillingInventory.mountedAtoms) {
         expect(
           atom.financialClass,
-          isIn(<CommunicationsDeliveriesFinancialClass>[
-            CommunicationsDeliveriesFinancialClass.notRequired,
-            CommunicationsDeliveriesFinancialClass.notBilled,
-            CommunicationsDeliveriesFinancialClass.noCharge,
+          isIn(<CommunicationsNotificationsFinancialClass>[
+            CommunicationsNotificationsFinancialClass.notRequired,
+            CommunicationsNotificationsFinancialClass.notBilled,
+            CommunicationsNotificationsFinancialClass.noCharge,
           ]),
           reason: atom.id,
         );
@@ -268,82 +276,93 @@ void main() {
       }
     });
 
-    test('delivery status display stays NOT_BILLED ops telemetry', () {
-      final CommunicationsDeliveriesFinancialAtom status =
-          CommunicationsDeliveriesBillingInventory.atoms.singleWhere(
-            (CommunicationsDeliveriesFinancialAtom atom) =>
-                atom.id == 'delivery_status_display',
+    test('mark read/unread and archive stay NOT_BILLED internal ops', () {
+      final CommunicationsNotificationsFinancialAtom markRead =
+          CommunicationsNotificationsBillingInventory.atoms.singleWhere(
+            (CommunicationsNotificationsFinancialAtom atom) =>
+                atom.id == 'next_action_mark_read_unread',
           );
       expect(
-        status.financialClass,
-        CommunicationsDeliveriesFinancialClass.notBilled,
+        markRead.financialClass,
+        CommunicationsNotificationsFinancialClass.notBilled,
       );
-      expect(status.auditCode, 'NOT_BILLED');
+      expect(markRead.auditCode, 'NOT_BILLED');
+
+      final CommunicationsNotificationsFinancialAtom archive =
+          CommunicationsNotificationsBillingInventory.atoms.singleWhere(
+            (CommunicationsNotificationsFinancialAtom atom) =>
+                atom.id == 'detail_archive',
+          );
+      expect(
+        archive.financialClass,
+        CommunicationsNotificationsFinancialClass.notBilled,
+      );
+      expect(archive.auditCode, 'NOT_BILLED');
     });
 
     test('open linked stays NOT_REQUIRED navigate-only', () {
-      final CommunicationsDeliveriesFinancialAtom openLinked =
-          CommunicationsDeliveriesBillingInventory.atoms.singleWhere(
-            (CommunicationsDeliveriesFinancialAtom atom) =>
-                atom.id == 'next_action_open_linked',
+      final CommunicationsNotificationsFinancialAtom openLinked =
+          CommunicationsNotificationsBillingInventory.atoms.singleWhere(
+            (CommunicationsNotificationsFinancialAtom atom) =>
+                atom.id == 'detail_open_linked',
           );
       expect(
         openLinked.financialClass,
-        CommunicationsDeliveriesFinancialClass.notRequired,
+        CommunicationsNotificationsFinancialClass.notRequired,
       );
       expect(openLinked.auditCode, 'NOT_REQUIRED');
     });
 
     test('unmounted billable atoms document Billing / subscriptions SoR', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsNotificationsBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsNotificationsFinancialAtom atom) =>
                   atom.id == 'sms_notification_commercial_package',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsNotificationsBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
-                  atom.id == 'patient_clinical_charge_via_message',
+              (CommunicationsNotificationsFinancialAtom atom) =>
+                  atom.id == 'patient_clinical_charge_via_notification',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsNotificationsBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsNotificationsFinancialAtom atom) =>
                   atom.id == 'collect_payment',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsNotificationsBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsNotificationsFinancialAtom atom) =>
                   atom.id == 'issue_invoice_adjust_refund',
             )
             .mounted,
         isFalse,
       );
-      expect(communicationsDeliveriesBillingScopeNote, contains('Billing'));
+      expect(communicationsNotificationsBillingScopeNote, contains('Billing'));
       expect(
-        communicationsDeliveriesBillingScopeNote,
+        communicationsNotificationsBillingScopeNote,
         contains('subscriptions'),
       );
     });
   });
 
-  group('Communications Deliveries billing bypass (AC2–AC4)', () {
+  group('Communications Notifications billing bypass (AC2–AC4)', () {
     testWidgets('worklist has no payment/issue/collect affordances', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -365,62 +384,41 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('detail dialog: no financial controls; flat sibling sections', (
-      WidgetTester tester,
-    ) async {
-      await _pumpDeliveries(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.communicationsRead,
-            AppPermissions.billingWrite,
-          },
-        ),
-      );
+    testWidgets(
+      'detail dialog: sibling sections; no financial controls',
+      (WidgetTester tester) async {
+        await _pumpNotifications(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.communicationsRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          physicalSize: const Size(1024, 900),
+        );
 
-      await _openDeliveryDetail(tester);
+        await tester.tap(_tableRowInkWell().first);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('DELIVERY DETAIL'), findsOneWidget);
-      expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Linked record'), findsOneWidget);
-      expect(find.textContaining('Receive payment'), findsNothing);
-      expect(find.textContaining('Issue invoice'), findsNothing);
-      expect(find.textContaining('Refund'), findsNothing);
-      expect(find.text('Archive'), findsNothing);
-      expect(find.text('Delete'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(2));
-      expectFlatSections(tester);
-    });
-
-    testWidgets('unauthorized users cannot collect or adjust from Deliveries', (
-      WidgetTester tester,
-    ) async {
-      await _pumpDeliveries(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.communicationsRead},
-        ),
-      );
-
-      expect(find.textContaining('Receive payment'), findsNothing);
-      expect(find.textContaining('Issue invoice'), findsNothing);
-      expect(find.byTooltip('New message'), findsNothing);
-
-      await _openDeliveryDetail(tester);
-
-      expect(find.textContaining('Receive payment'), findsNothing);
-      expect(find.textContaining('Adjust'), findsNothing);
-      expect(find.textContaining('Write off'), findsNothing);
-      expectFlatSections(tester);
-    });
+        expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+        expect(find.text('NOTIFICATION DETAIL'), findsWidgets);
+        expect(find.text('Details'), findsOneWidget);
+        expect(find.text('Linked record'), findsOneWidget);
+        expect(find.text('Delivery history'), findsOneWidget);
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.textContaining('Issue invoice'), findsNothing);
+        expect(find.textContaining('Refund'), findsNothing);
+        expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(3));
+        expectFlatSections(tester);
+      },
+    );
 
     testWidgets(
-      'search refresh syncs list without billing gate or payment UX',
+      'unauthorized users cannot collect or adjust from Notifications',
       (WidgetTester tester) async {
-        await _pumpDeliveries(
+        await _pumpNotifications(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -428,12 +426,53 @@ void main() {
           ),
         );
 
-        clearInteractions(repository);
-        await tester.enterText(find.byType(TextField).first, 'Critical');
-        await tester.testTextInput.receiveAction(TextInputAction.search);
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.textContaining('Issue invoice'), findsNothing);
+        expect(find.byTooltip('New message'), findsNothing);
+
+        await tester.tap(_tableRowInkWell().first);
         await tester.pumpAndSettle();
 
-        verify(() => repository.getWorkspace(any())).called(greaterThan(0));
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.textContaining('Adjust'), findsNothing);
+        expect(find.textContaining('Write off'), findsNothing);
+        expect(find.text('Archive'), findsNothing);
+        expectFlatSections(tester);
+      },
+    );
+
+    testWidgets(
+      'mark read syncs list without billing gate or payment UX',
+      (WidgetTester tester) async {
+        when(
+          () => repository.markNotificationRead('notification-1'),
+        ).thenAnswer(
+          (_) async => Result<NotificationItem>.success(_readNotification),
+        );
+        when(() => repository.getNotificationMetrics()).thenAnswer(
+          (_) async => const Result<NotificationMetrics>.success(
+            NotificationMetrics(total: 1),
+          ),
+        );
+
+        await _pumpNotifications(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.communicationsRead,
+              AppPermissions.communicationsWrite,
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Mark read').first);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => repository.markNotificationRead('notification-1'),
+        ).called(1);
+        expect(find.text('Communication action saved.'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Invoice'), findsNothing);
         expectFlatSections(tester);
@@ -441,11 +480,11 @@ void main() {
     );
   });
 
-  group('Communications Deliveries section layout (AC5)', () {
-    testWidgets('desktop Deliveries: flat sections on list + detail', (
+  group('Communications Notifications section layout (AC5)', () {
+    testWidgets('desktop Notifications: flat sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -456,14 +495,18 @@ void main() {
 
       expectFlatSections(tester);
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(_tableRowInkWell().first);
+      await tester.pumpAndSettle();
       expect(find.text('Details'), findsOneWidget);
       expect(find.text('Linked record'), findsOneWidget);
+      expect(find.text('Delivery history'), findsOneWidget);
       expectFlatSections(tester);
     });
 
-    testWidgets('mobile Deliveries: flat sections', (WidgetTester tester) async {
-      await _pumpDeliveries(
+    testWidgets('mobile Notifications: flat sections', (
+      WidgetTester tester,
+    ) async {
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -473,14 +516,15 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.textContaining('Critical lab').first);
+      await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
     testWidgets('light theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -488,14 +532,15 @@ void main() {
         ),
         themeMode: ThemeMode.light,
       );
-      await _openDeliveryDetail(tester);
+      await tester.tap(_tableRowInkWell().first);
+      await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
     testWidgets('dark theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -503,46 +548,48 @@ void main() {
         ),
         themeMode: ThemeMode.dark,
       );
-      await _openDeliveryDetail(tester);
+      await tester.tap(_tableRowInkWell().first);
+      await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
-    testWidgets('detail without path keeps single Details section flat', (
+    testWidgets('detail without path keeps Details section flat', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.communicationsRead},
         ),
-        deliveries: const <NotificationDelivery>[_deliveryNoPath],
+        notifications: const <NotificationItem>[_notificationNoPath],
       );
 
-      await tester.tap(find.text('View delivery').first);
+      await tester.tap(_tableRowInkWell().first);
       await tester.pumpAndSettle();
 
       expect(find.text('Details'), findsOneWidget);
       expect(find.text('Linked record'), findsNothing);
+      expect(find.text('Delivery history'), findsNothing);
       expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
       expectFlatSections(tester);
     });
   });
 
-  group('Communications Deliveries sync / UI states (AC3–AC4, AC6)', () {
+  group('Communications Notifications sync / UI states (AC3–AC4, AC6)', () {
     testWidgets('authorized empty state remains without billing UX', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.communicationsRead},
         ),
-        deliveries: const <NotificationDelivery>[],
+        notifications: const <NotificationItem>[],
       );
 
-      expect(find.text('No deliveries'), findsOneWidget);
+      expect(find.text('No notifications'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expectFlatSections(tester);
     });
@@ -550,7 +597,7 @@ void main() {
     testWidgets('error/retry remains for authorized readers', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpNotifications(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -567,24 +614,38 @@ void main() {
 
     test('inventory reuses shared financial class vocabulary + permissions', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms.any(
-          (CommunicationsDeliveriesFinancialAtom atom) =>
+        CommunicationsNotificationsBillingInventory.atoms.any(
+          (CommunicationsNotificationsFinancialAtom atom) =>
               atom.financialClass ==
-              CommunicationsDeliveriesFinancialClass.createCharge,
+              CommunicationsNotificationsFinancialClass.createCharge,
         ),
         isTrue,
       );
       expect(
         identical(
-          CommunicationsDeliveriesAtomPermissions.tab,
+          CommunicationsNotificationsAtomPermissions.tab,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          CommunicationsDeliveriesAtomPermissions.openLinked,
+          CommunicationsNotificationsAtomPermissions.openLinked,
           communicationsWorkspaceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.markRead,
+          communicationsWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsNotificationsAtomPermissions.archive,
+          communicationsWorkspaceDeleteRequirement,
         ),
         isTrue,
       );

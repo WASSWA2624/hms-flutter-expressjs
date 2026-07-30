@@ -384,36 +384,6 @@ final class DischargeWorkspaceController
     });
   }
 
-  Future<AppFailure?> requestFinalBilling({
-    required String amount,
-    required String currency,
-  }) {
-    return _submitSelectedAction((DischargeAdmissionDetail detail) {
-      final String? tenantId = detail.tenantId;
-      final String? patientId = detail.patientId;
-      if (tenantId == null || patientId == null) {
-        return Future<Result<void>>.value(
-          Result<void>.failure(
-            AppFailure.validation(
-              validationFields: <String>{'tenant_id', 'patient_id'},
-            ),
-          ),
-        );
-      }
-
-      return _repository.createFinalInvoice(<String, Object?>{
-        'tenant_id': tenantId,
-        'facility_id': detail.facilityId,
-        'patient_id': patientId,
-        'status': 'SENT',
-        'billing_status': 'ISSUED',
-        'total_amount': amount.trim(),
-        'currency': currency.trim().toUpperCase(),
-        'issued_at': DateTime.now().toUtc().toIso8601String(),
-      });
-    });
-  }
-
   Future<AppFailure?> requestPharmacyMedicines({
     required String drugId,
     required String customPrescription,

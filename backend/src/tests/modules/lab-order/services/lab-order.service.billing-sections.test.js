@@ -196,24 +196,24 @@ describe('lab-order.service billing (Clinical Waiting review)', () => {
     expect(persistLabOrderBilling.mock.calls[1][1].billing).toEqual(billing);
   });
 
-  it('cancel reverses clinical-request billing when invoice snapshot exists', async () => {
+  it('delete reverses clinical-request billing when invoice snapshot exists', async () => {
     const before = buildOrderRecord({
       billing_snapshot: { invoice_id: 'inv-lab-9', payment_status: 'PENDING' }});
     resolveModelRecordOrThrow.mockResolvedValue(before);
     extractStoredClinicalBilling.mockReturnValue(before.billing_snapshot);
-    labOrderRepository.update.mockResolvedValue(before);
-    labOrderRepository.findById.mockResolvedValue({
-      ...before,
-      status: 'CANCELLED'});
+    labOrderRepository.softDelete.mockResolvedValue(before);
+    prisma.lab_order = {
+      update: jest.fn().mockResolvedValue(before)};
 
-    await labOrderService.updateLabOrder(
+    await labOrderService.deleteLabOrder(
       'LAB-WR-1',
-      { status: 'CANCELLED' },
+      { reason: 'Ordered in error during waiting review' },
       mockUserId,
       mockIpAddress
     );
 
     expect(reverseClinicalRequestBilling).toHaveBeenCalled();
+    expect(labOrderRepository.softDelete).toHaveBeenCalledWith('order-internal-wr-1');
   });
 
   it('unauthorized collect path is not owned by lab-order service', () => {

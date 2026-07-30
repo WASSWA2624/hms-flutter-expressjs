@@ -17,7 +17,7 @@ import 'package:hosspi_hms/features/communications/data/repositories/communicati
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/domain/repositories/communications_repository.dart';
 import 'package:hosspi_hms/features/communications/presentation/communications_access.dart';
-import 'package:hosspi_hms/features/communications/presentation/communications_deliveries_billing_inventory.dart';
+import 'package:hosspi_hms/features/communications/presentation/communications_templates_billing_inventory.dart';
 import 'package:hosspi_hms/features/communications/presentation/pages/communications_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -31,24 +31,17 @@ import '../../../helpers/section_layout_test_helpers.dart';
 class _MockCommunicationsRepository extends Mock
     implements CommunicationsRepository {}
 
-const NotificationDelivery _delivery = NotificationDelivery(
-  id: 'delivery-1',
-  status: 'FAILED',
+const CommunicationTemplate _template = CommunicationTemplate(
+  id: 'template-1',
+  name: 'Discharge summary',
   channel: 'EMAIL',
-  notificationTitle: 'Critical lab result',
-  recipientTarget: 'nurse@example.com',
-  attemptCount: 2,
-  errorMessage: 'Mailbox full',
-  targetPath: '/patients/patient-1',
-);
-
-const NotificationDelivery _deliveryNoPath = NotificationDelivery(
-  id: 'delivery-2',
-  status: 'SENT',
-  channel: 'SMS',
-  notificationTitle: 'Appointment reminder',
-  recipientTarget: '+256700000000',
-  attemptCount: 1,
+  subject: 'Your discharge summary',
+  description: 'Patient discharge template',
+  body: 'Hello {{patientName}}, your discharge is ready.',
+  previewSubject: 'Your discharge summary',
+  previewBody: 'Hello Jane Doe, your discharge is ready.',
+  variableCount: 3,
+  isActive: true,
 );
 
 AppAccessPolicy _policy({
@@ -77,8 +70,8 @@ AppAccessPolicy _policy({
 
 void _stubWorkspace(
   _MockCommunicationsRepository repository, {
-  List<NotificationDelivery> deliveries = const <NotificationDelivery>[
-    _delivery,
+  List<CommunicationTemplate> templates = const <CommunicationTemplate>[
+    _template,
   ],
   Result<CommunicationsWorkspaceState>? workspaceOverride,
 }) {
@@ -96,14 +89,14 @@ void _stubWorkspace(
         summary: CommunicationsSummary(
           unreadThreads: 0,
           notifications: 0,
-          failedDeliveries: deliveries.length,
-          templates: 0,
+          failedDeliveries: 0,
+          templates: templates.length,
         ),
-        metrics: NotificationMetrics(
+        metrics: const NotificationMetrics(
           total: 0,
           unread: 0,
           attentionRequired: 0,
-          failedDeliveries: deliveries.length,
+          failedDeliveries: 0,
         ),
         conversations: AppPage<CommunicationsConversation>(
           items: const <CommunicationsConversation>[],
@@ -116,45 +109,31 @@ void _stubWorkspace(
           totalItemCount: 0,
         ),
         deliveries: AppPage<NotificationDelivery>(
-          items: deliveries,
-          request: query.pageRequest,
-          totalItemCount: deliveries.length,
-        ),
-        templates: AppPage<CommunicationTemplate>(
-          items: const <CommunicationTemplate>[],
+          items: const <NotificationDelivery>[],
           request: query.pageRequest,
           totalItemCount: 0,
         ),
-        selectedDelivery: query.panel == CommunicationsPanel.deliveries
-            ? deliveries.firstOrNull
+        templates: AppPage<CommunicationTemplate>(
+          items: templates,
+          request: query.pageRequest,
+          totalItemCount: templates.length,
+        ),
+        selectedTemplate: query.panel == CommunicationsPanel.templates
+            ? templates.firstOrNull
             : null,
       ),
     );
   });
 }
 
-Finder _tableRowInkWell() => find.byWidgetPredicate(
-  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
-);
-
-Future<void> _openDeliveryDetail(WidgetTester tester) async {
-  final Finder row = _tableRowInkWell();
-  if (row.evaluate().isNotEmpty) {
-    await tester.tap(row.first);
-  } else {
-    await tester.tap(find.textContaining('Critical lab').first);
-  }
-  await tester.pumpAndSettle();
-}
-
-Future<void> _pumpDeliveries(
+Future<void> _pumpTemplates(
   WidgetTester tester, {
   required _MockCommunicationsRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<NotificationDelivery> deliveries = const <NotificationDelivery>[
-    _delivery,
+  List<CommunicationTemplate> templates = const <CommunicationTemplate>[
+    _template,
   ],
   Result<CommunicationsWorkspaceState>? workspaceOverride,
 }) async {
@@ -162,7 +141,7 @@ Future<void> _pumpDeliveries(
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubWorkspace(
     repository,
-    deliveries: deliveries,
+    templates: templates,
     workspaceOverride: workspaceOverride,
   );
 
@@ -172,7 +151,7 @@ Future<void> _pumpDeliveries(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/communications?panel=deliveries',
+    initialLocation: '/communications?panel=templates',
     routes: <RouteBase>[
       GoRoute(
         path: '/communications',
@@ -182,12 +161,6 @@ Future<void> _pumpDeliveries(
               initialQuery: CommunicationsWorkspaceQuery.fromUri(state.uri),
             ),
           );
-        },
-      ),
-      GoRoute(
-        path: '/patients/:id',
-        builder: (BuildContext context, GoRouterState state) {
-          return const Scaffold(body: Text('Patient detail'));
         },
       ),
     ],
@@ -229,34 +202,34 @@ void main() {
     repository = _MockCommunicationsRepository();
   });
 
-  group('Communications Deliveries financial inventory (AC1)', () {
+  group('Communications Templates financial inventory (AC1)', () {
     test('every mounted atom is explicitly not billable with audit code', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.deliveriesTabHasNoBillableActions,
+        CommunicationsTemplatesBillingInventory.templatesTabHasNoBillableActions,
         isTrue,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory
+        CommunicationsTemplatesBillingInventory
             .allMountedAtomsExplicitlyNotBillable,
         isTrue,
       );
-      expect(CommunicationsDeliveriesBillingInventory.atoms, isNotEmpty);
+      expect(CommunicationsTemplatesBillingInventory.atoms, isNotEmpty);
       expect(
-        CommunicationsDeliveriesBillingInventory.billableClasses.every(
-          (CommunicationsDeliveriesFinancialAtom atom) => !atom.mounted,
+        CommunicationsTemplatesBillingInventory.billableClasses.every(
+          (CommunicationsTemplatesFinancialAtom atom) => !atom.mounted,
         ),
         isTrue,
       );
-      expect(communicationsDeliveriesBillingScopeNote, contains('NOT_BILLED'));
+      expect(communicationsTemplatesBillingScopeNote, contains('NOT_BILLED'));
 
-      for (final CommunicationsDeliveriesFinancialAtom atom
-          in CommunicationsDeliveriesBillingInventory.mountedAtoms) {
+      for (final CommunicationsTemplatesFinancialAtom atom
+          in CommunicationsTemplatesBillingInventory.mountedAtoms) {
         expect(
           atom.financialClass,
-          isIn(<CommunicationsDeliveriesFinancialClass>[
-            CommunicationsDeliveriesFinancialClass.notRequired,
-            CommunicationsDeliveriesFinancialClass.notBilled,
-            CommunicationsDeliveriesFinancialClass.noCharge,
+          isIn(<CommunicationsTemplatesFinancialClass>[
+            CommunicationsTemplatesFinancialClass.notRequired,
+            CommunicationsTemplatesFinancialClass.notBilled,
+            CommunicationsTemplatesFinancialClass.noCharge,
           ]),
           reason: atom.id,
         );
@@ -268,82 +241,100 @@ void main() {
       }
     });
 
-    test('delivery status display stays NOT_BILLED ops telemetry', () {
-      final CommunicationsDeliveriesFinancialAtom status =
-          CommunicationsDeliveriesBillingInventory.atoms.singleWhere(
-            (CommunicationsDeliveriesFinancialAtom atom) =>
-                atom.id == 'delivery_status_display',
+    test('template status display stays NOT_BILLED ops catalog', () {
+      final CommunicationsTemplatesFinancialAtom status =
+          CommunicationsTemplatesBillingInventory.atoms.singleWhere(
+            (CommunicationsTemplatesFinancialAtom atom) =>
+                atom.id == 'template_status_display',
           );
       expect(
         status.financialClass,
-        CommunicationsDeliveriesFinancialClass.notBilled,
+        CommunicationsTemplatesFinancialClass.notBilled,
       );
       expect(status.auditCode, 'NOT_BILLED');
     });
 
-    test('open linked stays NOT_REQUIRED navigate-only', () {
-      final CommunicationsDeliveriesFinancialAtom openLinked =
-          CommunicationsDeliveriesBillingInventory.atoms.singleWhere(
-            (CommunicationsDeliveriesFinancialAtom atom) =>
-                atom.id == 'next_action_open_linked',
+    test('detail preview stays NOT_BILLED', () {
+      final CommunicationsTemplatesFinancialAtom preview =
+          CommunicationsTemplatesBillingInventory.atoms.singleWhere(
+            (CommunicationsTemplatesFinancialAtom atom) =>
+                atom.id == 'detail_preview_panel',
           );
       expect(
-        openLinked.financialClass,
-        CommunicationsDeliveriesFinancialClass.notRequired,
+        preview.financialClass,
+        CommunicationsTemplatesFinancialClass.notBilled,
       );
-      expect(openLinked.auditCode, 'NOT_REQUIRED');
+      expect(preview.auditCode, 'NOT_BILLED');
     });
 
     test('unmounted billable atoms document Billing / subscriptions SoR', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsTemplatesBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsTemplatesFinancialAtom atom) =>
                   atom.id == 'sms_notification_commercial_package',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsTemplatesBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsTemplatesFinancialAtom atom) =>
                   atom.id == 'patient_clinical_charge_via_message',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsTemplatesBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsTemplatesFinancialAtom atom) =>
                   atom.id == 'collect_payment',
             )
             .mounted,
         isFalse,
       );
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms
+        CommunicationsTemplatesBillingInventory.atoms
             .singleWhere(
-              (CommunicationsDeliveriesFinancialAtom atom) =>
+              (CommunicationsTemplatesFinancialAtom atom) =>
                   atom.id == 'issue_invoice_adjust_refund',
             )
             .mounted,
         isFalse,
       );
-      expect(communicationsDeliveriesBillingScopeNote, contains('Billing'));
       expect(
-        communicationsDeliveriesBillingScopeNote,
+        CommunicationsTemplatesBillingInventory.atoms
+            .singleWhere(
+              (CommunicationsTemplatesFinancialAtom atom) =>
+                  atom.id == 'create_update_template',
+            )
+            .mounted,
+        isFalse,
+      );
+      expect(
+        CommunicationsTemplatesBillingInventory.atoms
+            .singleWhere(
+              (CommunicationsTemplatesFinancialAtom atom) =>
+                  atom.id == 'delete_template',
+            )
+            .mounted,
+        isFalse,
+      );
+      expect(communicationsTemplatesBillingScopeNote, contains('Billing'));
+      expect(
+        communicationsTemplatesBillingScopeNote,
         contains('subscriptions'),
       );
     });
   });
 
-  group('Communications Deliveries billing bypass (AC2–AC4)', () {
+  group('Communications Templates billing bypass (AC2–AC4)', () {
     testWidgets('worklist has no payment/issue/collect affordances', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -360,15 +351,18 @@ void main() {
       expect(find.textContaining('Collect'), findsNothing);
       expect(find.textContaining('Balance due'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
-      expect(find.text('Critical lab result'), findsWidgets);
+      expect(find.text('Discharge summary'), findsWidgets);
       expect(find.byTooltip('New message'), findsNothing);
+      expect(find.text('Create'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
       expectFlatSections(tester);
     });
 
     testWidgets('detail dialog: no financial controls; flat sibling sections', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -379,25 +373,27 @@ void main() {
         ),
       );
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.text('Discharge summary').first);
+      await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('DELIVERY DETAIL'), findsOneWidget);
+      expect(find.text('TEMPLATE DETAIL'), findsOneWidget);
       expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Linked record'), findsOneWidget);
+      expect(find.text('Preview'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
-      expect(find.text('Archive'), findsNothing);
+      expect(find.text('Create'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
       expect(find.text('Delete'), findsNothing);
       expect(find.byType(AppWorkspaceDetailPanel), findsAtLeastNWidgets(2));
       expectFlatSections(tester);
     });
 
-    testWidgets('unauthorized users cannot collect or adjust from Deliveries', (
+    testWidgets('unauthorized users cannot collect or adjust from Templates', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -409,7 +405,8 @@ void main() {
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.byTooltip('New message'), findsNothing);
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.text('Discharge summary').first);
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Adjust'), findsNothing);
@@ -420,7 +417,7 @@ void main() {
     testWidgets(
       'search refresh syncs list without billing gate or payment UX',
       (WidgetTester tester) async {
-        await _pumpDeliveries(
+        await _pumpTemplates(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -429,7 +426,7 @@ void main() {
         );
 
         clearInteractions(repository);
-        await tester.enterText(find.byType(TextField).first, 'Critical');
+        await tester.enterText(find.byType(TextField).first, 'Discharge');
         await tester.testTextInput.receiveAction(TextInputAction.search);
         await tester.pumpAndSettle();
 
@@ -441,11 +438,11 @@ void main() {
     );
   });
 
-  group('Communications Deliveries section layout (AC5)', () {
-    testWidgets('desktop Deliveries: flat sections on list + detail', (
+  group('Communications Templates section layout (AC5)', () {
+    testWidgets('desktop Templates: flat sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -456,14 +453,15 @@ void main() {
 
       expectFlatSections(tester);
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.text('Discharge summary').first);
+      await tester.pumpAndSettle();
       expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Linked record'), findsOneWidget);
+      expect(find.text('Preview'), findsOneWidget);
       expectFlatSections(tester);
     });
 
-    testWidgets('mobile Deliveries: flat sections', (WidgetTester tester) async {
-      await _pumpDeliveries(
+    testWidgets('mobile Templates: flat sections', (WidgetTester tester) async {
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -473,14 +471,15 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.textContaining('Discharge').first);
+      await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
     testWidgets('light theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -488,14 +487,15 @@ void main() {
         ),
         themeMode: ThemeMode.light,
       );
-      await _openDeliveryDetail(tester);
+      await tester.tap(find.text('Discharge summary').first);
+      await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
     testWidgets('dark theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -503,46 +503,26 @@ void main() {
         ),
         themeMode: ThemeMode.dark,
       );
-      await _openDeliveryDetail(tester);
-      expectFlatSections(tester);
-    });
-
-    testWidgets('detail without path keeps single Details section flat', (
-      WidgetTester tester,
-    ) async {
-      await _pumpDeliveries(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.communicationsRead},
-        ),
-        deliveries: const <NotificationDelivery>[_deliveryNoPath],
-      );
-
-      await tester.tap(find.text('View delivery').first);
+      await tester.tap(find.text('Discharge summary').first);
       await tester.pumpAndSettle();
-
-      expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Linked record'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
       expectFlatSections(tester);
     });
   });
 
-  group('Communications Deliveries sync / UI states (AC3–AC4, AC6)', () {
+  group('Communications Templates sync / UI states (AC3–AC4, AC6)', () {
     testWidgets('authorized empty state remains without billing UX', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{AppPermissions.communicationsRead},
         ),
-        deliveries: const <NotificationDelivery>[],
+        templates: const <CommunicationTemplate>[],
       );
 
-      expect(find.text('No deliveries'), findsOneWidget);
+      expect(find.text('No templates'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expectFlatSections(tester);
     });
@@ -550,7 +530,7 @@ void main() {
     testWidgets('error/retry remains for authorized readers', (
       WidgetTester tester,
     ) async {
-      await _pumpDeliveries(
+      await _pumpTemplates(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -567,24 +547,31 @@ void main() {
 
     test('inventory reuses shared financial class vocabulary + permissions', () {
       expect(
-        CommunicationsDeliveriesBillingInventory.atoms.any(
-          (CommunicationsDeliveriesFinancialAtom atom) =>
+        CommunicationsTemplatesBillingInventory.atoms.any(
+          (CommunicationsTemplatesFinancialAtom atom) =>
               atom.financialClass ==
-              CommunicationsDeliveriesFinancialClass.createCharge,
+              CommunicationsTemplatesFinancialClass.createCharge,
         ),
         isTrue,
       );
       expect(
         identical(
-          CommunicationsDeliveriesAtomPermissions.tab,
+          CommunicationsTemplatesAtomPermissions.tab,
           communicationsWorkspaceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          CommunicationsDeliveriesAtomPermissions.openLinked,
-          communicationsWorkspaceReadRequirement,
+          CommunicationsTemplatesAtomPermissions.delete,
+          communicationsWorkspaceDeleteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          CommunicationsTemplatesAtomPermissions.create,
+          communicationsWorkspaceWriteRequirement,
         ),
         isTrue,
       );

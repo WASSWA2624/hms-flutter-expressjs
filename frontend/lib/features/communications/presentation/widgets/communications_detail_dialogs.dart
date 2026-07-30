@@ -149,6 +149,9 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
         ) &&
         communicationsInternalPath(notification.targetPath) != null;
 
+    // Flat sibling sections under a Column (non-section parent): Details,
+    // optional Linked record, optional Delivery history. Never nest titled
+    // sections inside each other.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -182,43 +185,56 @@ class CommunicationsNotificationDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppInfoTileGrid(
-          emptyValue: context.l10n.profileUnknownValue,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: context.l10n.communicationsTypeLabel,
-              value: communicationsApiLabel(
-                context,
-                notification.notificationType,
+        AppWorkspaceDetailPanel(
+          title: context.l10n.communicationsDeliveryDetailsSectionTitle,
+          titleIcon: Icons.info_outline,
+          child: AppInfoTileGrid(
+            emptyValue: context.l10n.profileUnknownValue,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: context.l10n.communicationsTypeLabel,
+                value: communicationsApiLabel(
+                  context,
+                  notification.notificationType,
+                ),
+                icon: Icons.category_outlined,
               ),
-              icon: Icons.category_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsContextLabel,
-              value: communicationsJoinDisplay(<String?>[
-                notification.contextType,
-                notification.contextPublicId,
-              ]),
-              icon: Icons.link_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsCreatedAtLabel,
-              value: communicationsDateTimeLabel(
-                context,
-                notification.createdAt,
+              AppInfoTileData(
+                label: context.l10n.communicationsContextLabel,
+                value: communicationsJoinDisplay(<String?>[
+                  notification.contextType,
+                  notification.contextPublicId,
+                ]),
+                icon: Icons.link_outlined,
               ),
-              icon: Icons.event_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsReadAtLabel,
-              value: communicationsDateTimeLabel(context, notification.readAt),
-              icon: Icons.mark_email_read_outlined,
-            ),
-          ],
+              AppInfoTileData(
+                label: context.l10n.communicationsCreatedAtLabel,
+                value: communicationsDateTimeLabel(
+                  context,
+                  notification.createdAt,
+                ),
+                icon: Icons.event_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsReadAtLabel,
+                value: communicationsDateTimeLabel(
+                  context,
+                  notification.readAt,
+                ),
+                icon: Icons.mark_email_read_outlined,
+              ),
+            ],
+          ),
         ),
         if (canOpenLinked) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          CommunicationsLinkedRecordAction(targetPath: notification.targetPath),
+          AppWorkspaceDetailPanel(
+            title: context.l10n.communicationsDeliveryLinkedSectionTitle,
+            titleIcon: Icons.open_in_new_outlined,
+            child: CommunicationsLinkedRecordAction(
+              targetPath: notification.targetPath,
+            ),
+          ),
         ],
         if (notification.deliveries.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
@@ -347,6 +363,8 @@ class CommunicationsTemplateDetailContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // Flat sibling sections under a Column (non-section parent): Details +
+    // Preview. Never nest titled sections inside each other.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -358,30 +376,38 @@ class CommunicationsTemplateDetailContent extends ConsumerWidget {
           subtitleMaxLines: 4,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppInfoTileGrid(
-          emptyValue: context.l10n.profileUnknownValue,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: context.l10n.communicationsChannelLabel,
-              value: communicationsApiLabel(context, template.channel),
-              icon: Icons.send_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsSubjectLabel,
-              value: template.subject,
-              icon: Icons.subject_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsVariablesLabel,
-              value: template.variableCount.toString(),
-              icon: Icons.dynamic_form_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsStatusLabel,
-              value: communicationsTemplateStatus(context, template).label,
-              icon: Icons.flag_outlined,
-            ),
-          ],
+        AppWorkspaceStatusBadge(
+          status: communicationsTemplateStatus(context, template),
+        ),
+        SizedBox(height: Theme.of(context).spacing.md),
+        AppWorkspaceDetailPanel(
+          title: context.l10n.communicationsDeliveryDetailsSectionTitle,
+          titleIcon: Icons.info_outline,
+          child: AppInfoTileGrid(
+            emptyValue: context.l10n.profileUnknownValue,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: context.l10n.communicationsChannelLabel,
+                value: communicationsApiLabel(context, template.channel),
+                icon: Icons.send_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsSubjectLabel,
+                value: template.subject,
+                icon: Icons.subject_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsVariablesLabel,
+                value: template.variableCount.toString(),
+                icon: Icons.dynamic_form_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsStatusLabel,
+                value: communicationsTemplateStatus(context, template).label,
+                icon: Icons.flag_outlined,
+              ),
+            ],
+          ),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
         AppWorkspaceDetailPanel(

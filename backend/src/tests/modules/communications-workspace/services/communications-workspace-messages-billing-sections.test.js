@@ -164,6 +164,9 @@ describe('communications Messages (inbox) billing-sections scan', () => {
             create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
             updateMany: jest.fn().mockResolvedValue({ count: 0 }),
           },
+          notification_delivery: {
+            create: jest.fn().mockResolvedValue({ id: 'delivery-1' }),
+          },
         })
       ),
       conversation_participant: {
@@ -281,6 +284,7 @@ describe('communications Messages (inbox) billing-sections scan', () => {
     const result = await service.createConversationMessage(
       'COM-100',
       { content: 'Follow-up sent' },
+      [],
       scopedUser
     );
 
@@ -309,9 +313,10 @@ describe('communications Messages (inbox) billing-sections scan', () => {
       service.createConversationMessage(
         'COM-100',
         { content: 'Should fail' },
+        [],
         { id: 'user-123', permissions: ['billing:write'] }
       )
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ statusCode: 403 });
     expectNoPatientBillingTouch();
   });
 
@@ -320,13 +325,14 @@ describe('communications Messages (inbox) billing-sections scan', () => {
       service.createConversationMessage(
         'COM-100',
         { content: 'Intruder' },
+        [],
         {
           id: 'outsider',
           tenant_id: 'tenant-123',
           permissions: ['communications:write', 'billing:write'],
         }
       )
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ statusCode: 403 });
     expectNoPatientBillingTouch();
   });
 });

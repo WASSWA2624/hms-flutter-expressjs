@@ -570,7 +570,18 @@ class _RelatedRecordsSection extends StatelessWidget {
                       trailing: AppButton.tertiary(
                         label: l10n.patientsActiveWorkContinueAction,
                         enabled: enabled,
-                        onPressed: () => onResolve(AppRoutes.billing.path),
+                        onPressed: () {
+                          final String? patientId = detail.patientId?.trim();
+                          onResolve(
+                            (patientId == null || patientId.isEmpty)
+                                ? AppRoutes.billing.path
+                                : AppRoutes.billing.location(
+                                    queryParameters: <String, String>{
+                                      'patient_id': patientId,
+                                    },
+                                  ),
+                          );
+                        },
                       ),
                     ),
                 ],
@@ -619,7 +630,18 @@ class _ResolveLinksSection extends ConsumerWidget {
           label: l10n.dischargeOpenBillingAction,
           leadingIcon: Icons.receipt_long_outlined,
           enabled: enabled,
-          onPressed: () => onResolve(AppRoutes.billing.path),
+          onPressed: () {
+            final String? patientId = detail.patientId?.trim();
+            onResolve(
+              (patientId == null || patientId.isEmpty)
+                  ? AppRoutes.billing.path
+                  : AppRoutes.billing.location(
+                      queryParameters: <String, String>{
+                        'patient_id': patientId,
+                      },
+                    ),
+            );
+          },
         ),
       if (admissionId.isNotEmpty &&
           dischargeIpdNavigateRequirement.isAllowed(policy))

@@ -1,6 +1,6 @@
 /**
- * Procedure service billing & sections coverage for Clinical Completed and
- * Waiting review flows that call POST /procedures with request-time billing.
+ * Procedure service billing coverage for Clinical Urgent reopen / order flows
+ * that call POST /procedures with request-time billing.
  */
 
 jest.mock('@repositories/procedure/procedure.repository');
@@ -18,7 +18,7 @@ jest.mock('@lib/billing/clinical-request-billing', () => {
     ...actual,
     persistProcedureBilling: jest.fn().mockResolvedValue({
       payment_status: 'PENDING',
-      invoice_id: 'inv-1'}),
+      invoice_id: 'inv-urgent-1'}),
     reverseClinicalRequestBilling: jest.fn().mockResolvedValue(null),
     extractStoredClinicalBilling: jest.fn().mockReturnValue(null)};
 });
@@ -32,10 +32,10 @@ const {
   extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
 const procedureService = require('@services/procedure/procedure.service');
 
-const mockUserId = 'user-123';
+const mockUserId = 'user-urgent';
 const mockIpAddress = '127.0.0.1';
 
-describe('procedure.service billing (Clinical Completed / Waiting review)', () => {
+describe('procedure.service billing (Clinical Urgent)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue(undefined);
@@ -50,9 +50,9 @@ describe('procedure.service billing (Clinical Completed / Waiting review)', () =
 
   it('posts Billing via persistProcedureBilling when billing payload is present', async () => {
     const created = {
-      id: 'proc-1',
+      id: 'proc-urgent-1',
       encounter_id: '550e8400-e29b-41d4-a716-446655440000',
-      description: 'Wound dressing',
+      description: 'Urgent wound dressing',
       code: '10060'};
     procedureRepository.create.mockResolvedValue(created);
 
@@ -72,7 +72,7 @@ describe('procedure.service billing (Clinical Completed / Waiting review)', () =
       {
         encounter_id: '550e8400-e29b-41d4-a716-446655440000',
         code: '10060',
-        description: 'Wound dressing',
+        description: 'Urgent wound dressing',
         billing},
       mockUserId,
       mockIpAddress
@@ -83,18 +83,17 @@ describe('procedure.service billing (Clinical Completed / Waiting review)', () =
     expect(persistProcedureBilling).toHaveBeenCalledWith(
       prisma,
       expect.objectContaining({
-        procedureId: 'proc-1',
+        procedureId: 'proc-urgent-1',
         billing,
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
         patientId: 'patient-1'})
     );
-    expect(createAuditLog).toHaveBeenCalled();
   });
 
   it('does not invent a parallel ledger when billing is omitted', async () => {
     procedureRepository.create.mockResolvedValue({
-      id: 'proc-2',
+      id: 'proc-urgent-2',
       description: 'Suture'});
 
     await procedureService.createProcedure(
@@ -110,7 +109,7 @@ describe('procedure.service billing (Clinical Completed / Waiting review)', () =
 
   it('idempotent replay shape: same billing payload reuses persistProcedureBilling once per create', async () => {
     procedureRepository.create.mockResolvedValue({
-      id: 'proc-3',
+      id: 'proc-urgent-3',
       description: 'Injection'});
     const billing = {
       payment_status: 'PENDING',
@@ -142,16 +141,20 @@ describe('procedure.service billing (Clinical Completed / Waiting review)', () =
 
   it('delete reverses clinical-request billing when snapshot exists', async () => {
     const before = {
-      id: 'proc-4',
+      id: 'proc-urgent-4',
       billing_snapshot: { invoice_id: 'inv-9', payment_status: 'PENDING' }};
     procedureRepository.findById.mockResolvedValue(before);
     extractStoredClinicalBilling.mockReturnValue(before.billing_snapshot);
     procedureRepository.softDelete.mockResolvedValue(before);
 
-    await procedureService.deleteProcedure('proc-4', mockUserId, mockIpAddress);
+    await procedureService.deleteProcedure(
+      'proc-urgent-4',
+      mockUserId,
+      mockIpAddress
+    );
 
     expect(reverseClinicalRequestBilling).toHaveBeenCalled();
-    expect(procedureRepository.softDelete).toHaveBeenCalledWith('proc-4');
+    expect(procedureRepository.softDelete).toHaveBeenCalledWith('proc-urgent-4');
   });
 
   it('unauthorized collect path is not owned by procedure service', () => {

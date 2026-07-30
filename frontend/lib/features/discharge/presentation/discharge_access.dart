@@ -284,7 +284,8 @@ DischargeDeskSection? dischargeFallbackSection(AppAccessPolicy policy) {
 /// | Next action Start plan / Manage clearance | create / update | write source ∩ |
 /// | Next action Print (completed) | export / read | read ∪ |
 /// | Detail Continue discharge | create / update | write source ∩ |
-/// | Detail Request billing / pharmacy | create | write source ∩ |
+/// | Detail Open Billing (settle / invoice / waiver) | navigate | billing:read ∩ |
+/// | Detail Request pharmacy (create-charge via clinical-request-billing) | create | write source ∩ |
 /// | Detail Print summary | export / read | read ∪ |
 /// | Detail clearance pharmacy step / meds panel | nested read | pharmacy:read ∩ |
 /// | Detail clearance billing step / invoices panel | nested read | billing:read ∩ |
@@ -292,16 +293,17 @@ DischargeDeskSection? dischargeFallbackSection(AppAccessPolicy policy) {
 /// | Detail Open IPD | navigate | read ∪ |
 /// | Detail Open Nursing | navigate | last_office:read ∩ |
 /// | Detail Open Pharmacy | navigate | pharmacy:read ∩ |
-/// | Detail Open Billing | navigate | billing:read ∩ |
+/// | Detail Open Billing (cross-module) | navigate | billing:read ∩ |
 /// | Detail Open Housekeeping | navigate | operations:read ∩ |
 /// | Planning Save plan / Finalize | create / update | write source ∩ |
 /// | Route entry (deep link) | navigate | catalog `discharge:read` ∩ module |
 ///
 /// Write keeps source roles + `clinical:write` + module rather than matrix ∩
 /// `clinical:write` alone. Route entry maps prompt ∪ to catalog unique
-/// `discharge:read` (see [dischargeWorkspaceEntryRequirement]). Inventory
-/// previously left request billing/pharmacy ungated; matrix create ∩ applies
-/// via [create]/[requestBilling]/[requestPharmacy].
+/// `discharge:read` (see [dischargeWorkspaceEntryRequirement]). Final invoice /
+/// payment / waiver / refund stay on Billing — this tab only navigates
+/// ([openBilling] / [requestBilling]) and creates pharmacy charges via shared
+/// clinical-request-billing ([requestPharmacy]).
 abstract final class DischargeAllPatientsAtomPermissions {
   static const AccessRequirement tab = dischargeWorkspaceReadRequirement;
   static const AccessRequirement listChrome = dischargeWorkspaceReadRequirement;
@@ -325,8 +327,9 @@ abstract final class DischargeAllPatientsAtomPermissions {
   static const AccessRequirement update = dischargeClinicalWriteRequirement;
   static const AccessRequirement delete = dischargeClinicalWriteRequirement;
   static const AccessRequirement write = dischargeClinicalWriteRequirement;
+  /// Navigate to Billing for financial clearance (no local invoice create).
   static const AccessRequirement requestBilling =
-      dischargeClinicalWriteRequirement;
+      dischargeBillingNavigateRequirement;
   static const AccessRequirement requestPharmacy =
       dischargeClinicalWriteRequirement;
   static const AccessRequirement printSummary =
@@ -415,7 +418,7 @@ abstract final class DischargePlannedAtomPermissions {
   static const AccessRequirement delete = dischargeClinicalWriteRequirement;
   static const AccessRequirement write = dischargeClinicalWriteRequirement;
   static const AccessRequirement requestBilling =
-      dischargeClinicalWriteRequirement;
+      dischargeBillingNavigateRequirement;
   static const AccessRequirement requestPharmacy =
       dischargeClinicalWriteRequirement;
   static const AccessRequirement printSummary =
@@ -515,7 +518,7 @@ abstract final class DischargePendingClearanceAtomPermissions {
   static const AccessRequirement delete = dischargeClinicalWriteRequirement;
   static const AccessRequirement write = dischargeClinicalWriteRequirement;
   static const AccessRequirement requestBilling =
-      dischargeClinicalWriteRequirement;
+      dischargeBillingNavigateRequirement;
   static const AccessRequirement requestPharmacy =
       dischargeClinicalWriteRequirement;
   static const AccessRequirement printSummary =

@@ -131,12 +131,23 @@ const normalizePaymentStatus = (value) =>
     .trim()
     .toUpperCase();
 
-const shouldApplyClinicalRequestBilling = (billing) => {
+/**
+ * True when billing is a non-skipped charge candidate (amount may still be 0
+ * until price-engine enrichment fills catalog unit prices).
+ */
+const isClinicalRequestBillingCandidate = (billing) => {
   if (!billing || typeof billing !== 'object' || Array.isArray(billing)) {
     return false;
   }
   const status = normalizePaymentStatus(billing.payment_status);
   if (!status || SKIPPED_PAYMENT_STATUSES.has(status)) {
+    return false;
+  }
+  return true;
+};
+
+const shouldApplyClinicalRequestBilling = (billing) => {
+  if (!isClinicalRequestBillingCandidate(billing)) {
     return false;
   }
   const scopedAmount = resolveScopedBillingAmount(billing);
@@ -145,17 +156,25 @@ const shouldApplyClinicalRequestBilling = (billing) => {
 
 const resolveScopedBillingAmount = (billing = {}) => {
   if (billing.line_amount !== undefined && billing.line_amount !== null && billing.line_amount !== '') {
-    return toMoneyString(billing.line_amount);
-  }
-  if (billing.total_amount !== undefined && billing.total_amount !== null && billing.total_amount !== '') {
-    return toMoneyString(billing.total_amount);
+    const lineAmount = toDecimalNumber(billing.line_amount);
+    if (lineAmount > 0) {
+      return toMoneyString(billing.line_amount);
+    }
   }
   const lineItems = Array.isArray(billing.line_items) ? billing.line_items : [];
   const summed = lineItems.reduce(
     (total, item) => total + toDecimalNumber(item?.line_total ?? item?.unit_price),
     0
   );
-  return toMoneyString(summed);
+  if (summed > 0) {
+    return toMoneyString(summed);
+  }
+  // Fall back to total only when lines have no priced amounts (ignore 0 totals
+  // so pending payloads with priced lines are not blocked).
+  if (billing.total_amount !== undefined && billing.total_amount !== null && billing.total_amount !== '') {
+    return toMoneyString(billing.total_amount);
+  }
+  return toMoneyString(0);
 };
 
 const resolveBillingCurrency = (billing = {}, fallback = 'USD') => {
@@ -466,6 +485,9 @@ const enrichBillingWithPriceEngine = async (billing = {}, options = {}) => {
   }
 
   const summary = summarizeCoverageShares(enrichedLines);
+  // Prefer engine/line totals when the client sent a zero/missing total so
+  // pending bill-later payloads without catalog unit prices still post.
+  const priorTotal = toDecimalNumber(billing.total_amount);
   return {
     ...billing,
     payment_mode: paymentMode,
@@ -477,9 +499,7 @@ const enrichBillingWithPriceEngine = async (billing = {}, options = {}) => {
     insurer_share: summary.insurerShare,
     copay_amount: summary.copayAmount,
     total_amount:
-      billing.total_amount != null
-        ? billing.total_amount
-        : summary.total,
+      priorTotal > 0 ? billing.total_amount : (summary.total ?? billing.total_amount),
   };
 };
 
@@ -1512,15 +1532,19 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     existingInvoiceId = postedEvent.invoice_id;
   }
 
-  if (!shouldApplyClinicalRequestBilling(billing)) {
+  const tenantId = options.tenantId;
+  const patientId = options.patientId;
+
+  // Skip only explicit not-billable statuses before enrichment. Zero-amount
+  // PENDING payloads (common when Review billing is skipped) must still reach
+  // the price engine so radiology/pharmacy/procedure charges are not leaked.
+  if (!isClinicalRequestBillingCandidate(billing)) {
     if (existingInvoiceId) {
       await cancelInvoiceIfReversible(tx, existingInvoiceId);
     }
     return null;
   }
 
-  const tenantId = options.tenantId;
-  const patientId = options.patientId;
   if (!tenantId || !patientId) {
     return null;
   }
@@ -1543,6 +1567,13 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     encounterId: options.encounterId || null,
     admissionId: options.admissionId || null,
   });
+
+  if (!shouldApplyClinicalRequestBilling(billing)) {
+    if (existingInvoiceId) {
+      await cancelInvoiceIfReversible(tx, existingInvoiceId);
+    }
+    return null;
+  }
 
   const billingEntity = normalizeBillingEntity(
     options.billingEntity || billing.billing_entity || 'FACILITY'
@@ -2396,6 +2427,7 @@ const persistConsumableBilling = async (
 
 module.exports = {
   BILLABLE_SOURCE_MODULES,
+  isClinicalRequestBillingCandidate,
   shouldApplyClinicalRequestBilling,
   applyClinicalRequestBilling,
   syncClinicalRequestBilling,

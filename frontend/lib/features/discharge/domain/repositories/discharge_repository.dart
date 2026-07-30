@@ -29,7 +29,5 @@ abstract interface class DischargeRepository {
     Map<String, Object?> payload,
   );
 
-  Future<Result<void>> createFinalInvoice(Map<String, Object?> payload);
-
   Future<Result<void>> createPharmacyOrder(Map<String, Object?> payload);
 }

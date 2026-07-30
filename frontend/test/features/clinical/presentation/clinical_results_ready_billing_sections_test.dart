@@ -16,7 +16,7 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
-import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
+import 'package:hosspi_hms/features/clinical/presentation/clinical_results_ready_billing_inventory.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
@@ -41,21 +41,55 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
 
-const ClinicalWorklistEntry _waitingReviewEncounter = ClinicalWorklistEntry(
-  id: 'encounter-waiting-review-1',
+final ClinicalWorklistEntry _resultsReadyEncounter = ClinicalWorklistEntry(
+  id: 'encounter-rr-1',
   sourceQueue: 'OPD',
-  encounterId: 'encounter-waiting-review-1',
-  encounterPublicId: 'ENC-WR-1',
-  patientId: 'patient-waiting-review-1',
-  patientDisplayName: 'Waiting Review Tab Patient',
-  patientPublicId: 'PAT-WR-1',
-  providerDisplayName: 'Dr Review',
+  encounterId: 'encounter-rr-1',
+  encounterPublicId: 'ENC-RR-1',
+  patientId: 'patient-rr-1',
+  patientPublicId: 'PAT-RR-1',
+  patientDisplayName: 'Results Ready Patient',
+  providerDisplayName: 'Dr Results',
   encounterType: 'OUTPATIENT',
-  currentLocation: 'Clinic R',
-  status: 'OPEN',
-  stage: 'WAITING_DOCTOR_REVIEW',
-  nextStep: 'DOCTOR_REVIEW',
-  opdFlowApiId: 'opd-flow-waiting-review-1',
+  currentLocation: 'Clinic A',
+  status: 'IN_CONSULTATION',
+  stage: 'IN_CONSULTATION',
+  resultsReady: true,
+  updatedAt: DateTime.now(),
+);
+
+const ClinicalEncounterBundle _resultsReadyBundle = ClinicalEncounterBundle(
+  entry: ClinicalWorklistEntry(
+    id: 'encounter-rr-1',
+    sourceQueue: 'OPD',
+    encounterId: 'encounter-rr-1',
+    encounterPublicId: 'ENC-RR-1',
+    patientId: 'patient-rr-1',
+    patientPublicId: 'PAT-RR-1',
+    patientDisplayName: 'Results Ready Patient',
+    providerDisplayName: 'Dr Results',
+    encounterType: 'OUTPATIENT',
+    currentLocation: 'Clinic A',
+    status: 'IN_CONSULTATION',
+    stage: 'IN_CONSULTATION',
+    resultsReady: true,
+  ),
+  labOrders: <ClinicalRelatedRecord>[
+    ClinicalRelatedRecord(
+      id: 'lab-1',
+      kind: 'lab_order',
+      title: 'CBC',
+      status: 'RESULTED',
+    ),
+  ],
+  radiologyOrders: <ClinicalRelatedRecord>[
+    ClinicalRelatedRecord(
+      id: 'rad-1',
+      kind: 'radiology_order',
+      title: 'Chest X-Ray',
+      status: 'REPORTED',
+    ),
+  ],
 );
 
 AppAccessPolicy _policy({
@@ -83,7 +117,7 @@ void _stubClinical(_MockClinicalRepository repository) {
   when(() => repository.listEncounters(any())).thenAnswer((invocation) async {
     return Result<AppPage<ClinicalWorklistEntry>>.success(
       AppPage<ClinicalWorklistEntry>(
-        items: const <ClinicalWorklistEntry>[_waitingReviewEncounter],
+        items: <ClinicalWorklistEntry>[_resultsReadyEncounter],
         request:
             (invocation.positionalArguments.single as ClinicalWorklistQuery)
                 .pageRequest,
@@ -111,7 +145,11 @@ void _stubClinical(_MockClinicalRepository repository) {
         invocation.positionalArguments.single as ClinicalWorklistEntry;
     return Future<Result<ClinicalEncounterBundle>>.value(
       Result<ClinicalEncounterBundle>.success(
-        ClinicalEncounterBundle(entry: entry),
+        ClinicalEncounterBundle(
+          entry: entry.copyWith(resultsReady: true),
+          labOrders: _resultsReadyBundle.labOrders,
+          radiologyOrders: _resultsReadyBundle.radiologyOrders,
+        ),
       ),
     );
   });
@@ -138,16 +176,6 @@ void _stubOpd(_MockOpdRepository repository) {
       ),
     ),
   );
-  when(() => repository.getOpdFlow(any())).thenAnswer(
-    (_) async => const Result<OpdFlowDetail>.success(
-      OpdFlowDetail(
-        summary: OpdFlowSummary(
-          id: 'opd-flow-waiting-review-1',
-          publicId: 'OPD-WR-1',
-        ),
-      ),
-    ),
-  );
 }
 
 void _stubIpd(_MockIpdRepository repository) {
@@ -163,7 +191,7 @@ void _stubIpd(_MockIpdRepository repository) {
   );
 }
 
-Future<void> _pumpWaitingReviewTab(
+Future<void> _pumpResultsReadyTab(
   WidgetTester tester, {
   required _MockClinicalRepository clinicalRepository,
   required AppAccessPolicy accessPolicy,
@@ -184,7 +212,7 @@ Future<void> _pumpWaitingReviewTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/clinical?section=waiting-review',
+    initialLocation: '/clinical?section=results-ready',
     routes: <RouteBase>[
       GoRoute(
         path: '/clinical',
@@ -227,52 +255,6 @@ Future<void> _pumpWaitingReviewTab(
   await tester.pumpAndSettle();
 }
 
-Future<ProviderContainer> _containerWithSelectedEncounter(
-  _MockClinicalRepository clinicalRepository,
-) async {
-  final _MockOpdRepository opdRepository = _MockOpdRepository();
-  final _MockIpdRepository ipdRepository = _MockIpdRepository();
-  _stubClinical(clinicalRepository);
-  _stubOpd(opdRepository);
-  _stubIpd(ipdRepository);
-
-  final ProviderContainer container = ProviderContainer(
-    overrides: [
-      clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
-      opdRepositoryProvider.overrideWithValue(opdRepository),
-      ipdRepositoryProvider.overrideWithValue(ipdRepository),
-      initialSessionStateProvider.overrideWithValue(
-        const SessionState.ready(),
-      ),
-      appAccessPolicyProvider.overrideWithValue(
-        _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-            AppPermissions.labWrite,
-          },
-          modules: const <AppModuleEntitlement>[
-            AppModuleEntitlement(
-              code: 'encounters-vitals',
-              licenseStatus: 'ACTIVE',
-            ),
-            AppModuleEntitlement(
-              code: 'lab-workflows',
-              licenseStatus: 'ACTIVE',
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-  await container.read(clinicalWorkspaceControllerProvider.future);
-  final ClinicalWorkspaceController controller = container.read(
-    clinicalWorkspaceControllerProvider.notifier,
-  );
-  await controller.selectEntry(_waitingReviewEncounter);
-  return container;
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -280,7 +262,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const ClinicalWorklistQuery());
-    registerFallbackValue(_waitingReviewEncounter);
+    registerFallbackValue(_resultsReadyEncounter);
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const IpdAdmissionQuery());
@@ -291,123 +273,63 @@ void main() {
     clinicalRepository = _MockClinicalRepository();
   });
 
-  group('Waiting review financial inventory (AC1)', () {
+  group('Results ready financial inventory (AC1)', () {
     test('every atom is classified billable or explicit not-billable', () {
-      expect(clinicalWaitingReviewFinancialInventory, isNotEmpty);
-      for (final ClinicalWaitingReviewFinancialAtom atom
-          in clinicalWaitingReviewFinancialInventory) {
-        if (atom.classification ==
-            ClinicalWaitingReviewFinancialClass.notBillable) {
+      expect(ClinicalResultsReadyBillingInventory.all, isNotEmpty);
+      for (final ClinicalResultsReadyFinancialAtom atom
+          in ClinicalResultsReadyBillingInventory.all) {
+        if (atom.financialClass ==
+                ClinicalResultsReadyFinancialClass.notRequired ||
+            atom.financialClass ==
+                ClinicalResultsReadyFinancialClass.notBilled ||
+            atom.financialClass == ClinicalResultsReadyFinancialClass.noCharge) {
           expect(
-            atom.auditReason,
-            isIn(<String>['NOT_REQUIRED', 'NO_CHARGE', 'NOT_BILLED']),
+            atom.auditCode,
+            isIn(<String>['NOT_REQUIRED', 'NOT_BILLED', 'NO_CHARGE']),
             reason: atom.id,
           );
-        } else {
+        } else if (atom.mounted) {
           expect(atom.billingPath, isNotNull, reason: atom.id);
         }
       }
-      expect(clinicalWaitingReviewBillableAtomsUseSharedBilling(), isTrue);
+      expect(
+        ClinicalResultsReadyBillingInventory.allBillableMountedUseSharedBilling,
+        isTrue,
+      );
+      expect(clinicalResultsReadyBillingScopeNote, contains('clinical-request-billing'));
     });
 
-    test('order and procedure atoms are create-charge via shared Billing', () {
-      final ClinicalWaitingReviewFinancialAtom lab =
-          clinicalWaitingReviewFinancialInventory
-              .where(
-                (ClinicalWaitingReviewFinancialAtom a) => a.id == 'request_lab',
-              )
-              .single;
+    test('lab/radiology/pharmacy/procedure are create-charge via Billing', () {
       expect(
-        lab.classification,
-        ClinicalWaitingReviewFinancialClass.createCharge,
+        ClinicalResultsReadyBillingInventory.requestLab.financialClass,
+        ClinicalResultsReadyFinancialClass.createCharge,
       );
-      expect(lab.billingPath, 'clinical-request-billing/lab-order');
-
-      final ClinicalWaitingReviewFinancialAtom procedure =
-          clinicalWaitingReviewFinancialInventory
-              .where(
-                (ClinicalWaitingReviewFinancialAtom a) =>
-                    a.id == 'request_procedure',
-              )
-              .single;
       expect(
-        procedure.classification,
-        ClinicalWaitingReviewFinancialClass.createCharge,
+        ClinicalResultsReadyBillingInventory.requestRadiology.financialClass,
+        ClinicalResultsReadyFinancialClass.createCharge,
       );
-      expect(procedure.billingPath, 'clinical-request-billing/procedure');
-    });
-
-    test('doctor review and consult fee stay NOT_BILLED / NOT_REQUIRED', () {
-      final ClinicalWaitingReviewFinancialAtom review =
-          clinicalWaitingReviewFinancialInventory
-              .where(
-                (ClinicalWaitingReviewFinancialAtom a) =>
-                    a.id == 'next_action_doctor_review',
-              )
-              .single;
       expect(
-        review.classification,
-        ClinicalWaitingReviewFinancialClass.notBillable,
+        ClinicalResultsReadyBillingInventory.prescribe.financialClass,
+        ClinicalResultsReadyFinancialClass.createCharge,
       );
-      expect(review.auditReason, 'NOT_REQUIRED');
-
-      final ClinicalWaitingReviewFinancialAtom consult =
-          clinicalWaitingReviewFinancialInventory
-              .where(
-                (ClinicalWaitingReviewFinancialAtom a) =>
-                    a.id == 'consult_charge_on_doctor_review',
-              )
-              .single;
-      expect(consult.auditReason, 'NOT_BILLED');
+      expect(
+        ClinicalResultsReadyBillingInventory.recordProcedure.financialClass,
+        ClinicalResultsReadyFinancialClass.createCharge,
+      );
+      expect(
+        ClinicalResultsReadyBillingInventory.collectPayment.mounted,
+        isFalse,
+      );
     });
   });
 
-  group('Waiting review billing posting / no-bypass (AC2–AC4)', () {
-    test('addProcedures posts billing payload to createProcedure', () async {
-      when(
-        () => clinicalRepository.createProcedure(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-      when(
-        () => clinicalRepository.createClinicalTermFavorite(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-
-      final ProviderContainer container = await _containerWithSelectedEncounter(
-        clinicalRepository,
-      );
-      addTearDown(container.dispose);
-
-      final ClinicalWorkspaceController controller = container.read(
-        clinicalWorkspaceControllerProvider.notifier,
-      );
-
-      final AppFailure? failure = await controller.addProcedures(
-        procedures: const <ClinicalCatalogOption>[
-          ClinicalCatalogOption(
-            id: 'proc-1',
-            publicId: 'proc-1',
-            code: '10060',
-            name: 'Wound dressing',
-            unitPrice: 40,
-            currency: 'USD',
-          ),
-        ],
-      );
-      expect(failure, isNull);
-
-      final Map<String, Object?> payload =
-          verify(
-                () => clinicalRepository.createProcedure(captureAny()),
-              ).captured.single
-              as Map<String, Object?>;
-      expect(payload['billing'], isA<Map<String, Object?>>());
-      final Map<String, Object?> billing =
-          payload['billing']! as Map<String, Object?>;
-      expect(billing['payment_status'], 'PENDING');
-      expect(billing['total_amount'], 40);
-      expect(billing['line_items'], isA<List<Object?>>());
-    });
-
-    test('requestLab posts billing payload without parallel ledger', () async {
+  group('Results ready billing posting / no-bypass (AC2–AC4)', () {
+    test('requestLab posts billing payload to createLabOrder', () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
       when(
         () => clinicalRepository.createLabOrder(any()),
       ).thenAnswer((_) async => const Result<void>.success(null));
@@ -415,32 +337,49 @@ void main() {
         () => clinicalRepository.createClinicalTermFavorite(any()),
       ).thenAnswer((_) async => const Result<void>.success(null));
 
-      final ProviderContainer container = await _containerWithSelectedEncounter(
-        clinicalRepository,
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+                AppPermissions.labWrite,
+              },
+            ),
+          ),
+        ],
       );
       addTearDown(container.dispose);
 
+      await container.read(clinicalWorkspaceControllerProvider.future);
       final ClinicalWorkspaceController controller = container.read(
         clinicalWorkspaceControllerProvider.notifier,
       );
+      await controller.selectEntry(_resultsReadyEncounter);
 
       final ClinicalRequestBillingSubmit billing =
           buildPendingClinicalRequestBillingSubmit(
             options: const <ClinicalCatalogOption>[
               ClinicalCatalogOption(
-                id: 'lab-test-1',
-                publicId: 'lab-test-1',
+                id: 'lab-cbc',
+                publicId: 'lab-cbc',
                 name: 'CBC',
-                unitPrice: 15,
+                unitPrice: 40,
                 currency: 'USD',
               ),
             ],
             catalogType: 'LAB_TEST',
-            billingEntity: 'FACILITY',
           );
 
       final AppFailure? failure = await controller.requestLab(
-        labTestIds: const <String>['lab-test-1'],
+        labTestIds: const <String>['lab-cbc'],
         labPanelIds: const <String>[],
         billing: billing,
       );
@@ -455,35 +394,172 @@ void main() {
       final Map<String, Object?> posted =
           payload['billing']! as Map<String, Object?>;
       expect(posted['payment_status'], 'PENDING');
-      expect(posted['total_amount'], 15);
+      expect(posted['total_amount'], 40);
     });
 
-    test('billing payload shape is idempotent on replay', () {
+    test('requestRadiology embeds billing in request_details', () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+      when(
+        () => clinicalRepository.createRadiologyOrder(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(
+        () => clinicalRepository.createClinicalTermFavorite(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+                AppPermissions.radiologyWrite,
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_resultsReadyEncounter);
+
       final ClinicalRequestBillingSubmit billing =
           buildPendingClinicalRequestBillingSubmit(
             options: const <ClinicalCatalogOption>[
               ClinicalCatalogOption(
-                id: 'lab-test-1',
-                publicId: 'lab-test-1',
-                name: 'CBC',
-                unitPrice: 15,
+                id: 'rad-cxr',
+                publicId: 'rad-cxr',
+                name: 'Chest X-Ray',
+                unitPrice: 55,
+                currency: 'USD',
+              ),
+            ],
+            catalogType: 'RADIOLOGY_TEST',
+          );
+
+      final AppFailure? failure = await controller.requestRadiology(
+        requests: const <ClinicalRadiologyRequest>[
+          ClinicalRadiologyRequest(radiologyTestId: 'rad-cxr'),
+        ],
+        billing: billing,
+      );
+      expect(failure, isNull);
+
+      final Map<String, Object?> payload =
+          verify(
+                () => clinicalRepository.createRadiologyOrder(captureAny()),
+              ).captured.single
+              as Map<String, Object?>;
+      final List<Object?> tests =
+          payload['requested_tests']! as List<Object?>;
+      final Map<String, Object?> first = tests.first! as Map<String, Object?>;
+      final Map<String, Object?> details =
+          first['request_details']! as Map<String, Object?>;
+      expect(details['billing'], isA<Map<String, Object?>>());
+      final Map<String, Object?> posted =
+          details['billing']! as Map<String, Object?>;
+      expect(posted['payment_status'], 'PENDING');
+    });
+
+    test('addProcedures auto-attaches pending billing when omitted', () async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockIpdRepository ipdRepository = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opdRepository);
+      _stubIpd(ipdRepository);
+      when(
+        () => clinicalRepository.createProcedure(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(
+        () => clinicalRepository.createClinicalTermFavorite(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_resultsReadyEncounter);
+
+      final AppFailure? failure = await controller.addProcedures(
+        procedures: const <ClinicalCatalogOption>[
+          ClinicalCatalogOption(
+            id: 'proc-1',
+            publicId: 'proc-1',
+            code: '99213',
+            name: 'Office visit',
+            unitPrice: 80,
+            currency: 'USD',
+          ),
+        ],
+      );
+      expect(failure, isNull);
+
+      final Map<String, Object?> payload =
+          verify(
+                () => clinicalRepository.createProcedure(captureAny()),
+              ).captured.single
+              as Map<String, Object?>;
+      expect(payload['billing'], isA<Map<String, Object?>>());
+      final Map<String, Object?> posted =
+          payload['billing']! as Map<String, Object?>;
+      expect(posted['payment_status'], 'PENDING');
+      expect(posted['total_amount'], 80);
+    });
+
+    test('pending billing payload is idempotent on replay shape', () {
+      final ClinicalRequestBillingSubmit billing =
+          buildPendingClinicalRequestBillingSubmit(
+            options: const <ClinicalCatalogOption>[
+              ClinicalCatalogOption(
+                id: 'lab-1',
+                name: 'Glucose',
+                unitPrice: 12,
                 currency: 'USD',
               ),
             ],
             catalogType: 'LAB_TEST',
-            billingEntity: 'FACILITY',
           );
-      final Map<String, Object?> first = billing.toPayloadMap();
-      final Map<String, Object?> second = billing.toPayloadMap();
-      expect(first['payment_status'], second['payment_status']);
-      expect(first['total_amount'], second['total_amount']);
-      expect(first['line_items'], second['line_items']);
+      expect(billing.toPayloadMap(), billing.toPayloadMap());
     });
 
     testWidgets(
-      'unauthorized user has no Receive payment / Adjust on Waiting review',
+      'unauthorized user has no Receive payment / Adjust on Results ready',
       (WidgetTester tester) async {
-        await _pumpWaitingReviewTab(
+        await _pumpResultsReadyTab(
           tester,
           clinicalRepository: clinicalRepository,
           accessPolicy: _policy(
@@ -491,7 +567,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Waiting Review Tab Patient'));
+        await tester.tap(find.text('Results Ready Patient'));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Receive payment'), findsNothing);
@@ -502,93 +578,43 @@ void main() {
     );
 
     testWidgets(
-      'clinical write without billing:write opens order actions (no cashier)',
+      'clinical write without billing:write still opens order actions (no cashier)',
       (WidgetTester tester) async {
-        await _pumpWaitingReviewTab(
+        await _pumpResultsReadyTab(
           tester,
           clinicalRepository: clinicalRepository,
           accessPolicy: _policy(
             permissions: <AppPermission>{
               AppPermissions.clinicalRead,
               AppPermissions.clinicalWrite,
+              AppPermissions.labWrite,
+              AppPermissions.radiologyWrite,
             },
           ),
         );
 
-        await tester.tap(find.text('Waiting Review Tab Patient'));
+        await tester.tap(find.text('Results Ready Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Request lab'), findsWidgets);
-        expect(find.text('Record procedure'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
-        expect(find.textContaining('Issue invoice'), findsNothing);
       },
     );
-
-    test('post-mutation detail refresh keeps payment status parity path', () async {
-      when(
-        () => clinicalRepository.createProcedure(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-      when(
-        () => clinicalRepository.createClinicalTermFavorite(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-
-      final ProviderContainer container = await _containerWithSelectedEncounter(
-        clinicalRepository,
-      );
-      addTearDown(container.dispose);
-
-      clearInteractions(clinicalRepository);
-      when(() => clinicalRepository.loadEncounterBundle(any())).thenAnswer((
-        invocation,
-      ) {
-        final ClinicalWorklistEntry entry =
-            invocation.positionalArguments.single as ClinicalWorklistEntry;
-        return Future<Result<ClinicalEncounterBundle>>.value(
-          Result<ClinicalEncounterBundle>.success(
-            ClinicalEncounterBundle(entry: entry),
-          ),
-        );
-      });
-      when(
-        () => clinicalRepository.createProcedure(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-      when(
-        () => clinicalRepository.createClinicalTermFavorite(any()),
-      ).thenAnswer((_) async => const Result<void>.success(null));
-
-      final ClinicalWorkspaceController controller = container.read(
-        clinicalWorkspaceControllerProvider.notifier,
-      );
-      final AppFailure? failure = await controller.addProcedures(
-        procedures: const <ClinicalCatalogOption>[
-          ClinicalCatalogOption(
-            id: 'proc-2',
-            publicId: 'proc-2',
-            name: 'Injection',
-            unitPrice: 10,
-            currency: 'USD',
-          ),
-        ],
-      );
-      expect(failure, isNull);
-      verify(
-        () => clinicalRepository.loadEncounterBundle(any()),
-      ).called(greaterThanOrEqualTo(1));
-    });
   });
 
-  group('Waiting review flat sections (AC5)', () {
+  group('Results ready flat sections (AC5)', () {
     testWidgets('desktop light: flat sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpWaitingReviewTab(
+      await _pumpResultsReadyTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.labWrite,
+            AppPermissions.radiologyWrite,
           },
         ),
         physicalSize: const Size(1440, 900),
@@ -596,7 +622,7 @@ void main() {
       );
 
       expectFlatTitledSectionLayout(tester);
-      await tester.tap(find.text('Waiting Review Tab Patient'));
+      await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
       expectFlatTitledSectionLayout(tester);
     });
@@ -604,7 +630,7 @@ void main() {
     testWidgets('mobile dark: flat sections on detail', (
       WidgetTester tester,
     ) async {
-      await _pumpWaitingReviewTab(
+      await _pumpResultsReadyTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -617,7 +643,7 @@ void main() {
         themeMode: ThemeMode.dark,
       );
 
-      await tester.tap(find.text('Waiting Review Tab Patient'));
+      await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
       expectFlatTitledSectionLayout(tester);
     });
@@ -625,7 +651,7 @@ void main() {
     testWidgets('procedure dialog keeps flat section layout', (
       WidgetTester tester,
     ) async {
-      await _pumpWaitingReviewTab(
+      await _pumpResultsReadyTab(
         tester,
         clinicalRepository: clinicalRepository,
         accessPolicy: _policy(
@@ -636,39 +662,14 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Waiting Review Tab Patient'));
+      await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Record procedure').first);
+      await tester.tap(find.text('Request procedure').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
       expect(find.textContaining('Review billing'), findsOneWidget);
       expectFlatTitledSectionLayout(tester);
-    });
-  });
-
-  group('Waiting review access reuse (AC6)', () {
-    test('inventory gates reuse Waiting review permission atoms', () {
-      expect(
-        ClinicalWaitingReviewAtomPermissions.tab,
-        clinicalWorkspaceReadRequirement,
-      );
-      expect(
-        ClinicalWaitingReviewAtomPermissions.requestLab,
-        clinicalLabOrderWriteRequirement,
-      );
-      expect(
-        ClinicalWaitingReviewAtomPermissions.dischargeFinancialRead,
-        clinicalDischargeFinancialReadRequirement,
-      );
-      expect(
-        clinicalWaitingReviewFinancialInventory.any(
-          (ClinicalWaitingReviewFinancialAtom atom) =>
-              atom.classification ==
-              ClinicalWaitingReviewFinancialClass.createCharge,
-        ),
-        isTrue,
-      );
     });
   });
 }

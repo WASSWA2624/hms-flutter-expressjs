@@ -702,13 +702,12 @@ class _DischargeDetailContent extends ConsumerWidget {
                 },
               ),
             AppAccessActionGate(
-              requirement: _write,
+              requirement: _billingPanel,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.secondary(
-                  label: l10n.dischargeRequestBillingAction,
+                  label: l10n.dischargeOpenBillingAction,
                   leadingIcon: Icons.receipt_long_outlined,
-                  isLoading: state.isSaving,
-                  onPressed: () => _openBillingDialog(context, controller),
+                  onPressed: () => _openBillingWorkspace(context, detail),
                 );
               },
             ),
@@ -850,8 +849,7 @@ class _CrossModuleLinksSection extends ConsumerWidget {
           label: l10n.dischargeOpenBillingAction,
           leadingIcon: Icons.receipt_long_outlined,
           variant: AppActionVariant.tertiary,
-          onPressed: () =>
-              _openLinkedWorkspace(context, AppRoutes.billing.path),
+          onPressed: () => _openBillingWorkspace(context, detail),
         ),
       if (DischargeAllPatientsAtomPermissions.openHousekeeping.isAllowed(policy))
         AppActionItem(
@@ -950,8 +948,9 @@ class _SummarySection extends StatelessWidget {
               icon: Icons.edit_note_outlined,
               minHeight: 180,
             )
+          // Untitled preview chrome — titled AppReportPreviewPanel would nest
+          // another AppWorkspaceDetailPanel inside this section.
           : AppReportPreviewPanel(
-              title: l10n.dischargeGeneratedDocumentsTitle,
               selectable: true,
               child: Text(summary),
             ),
@@ -1052,96 +1051,6 @@ class _QueuePatientCell extends StatelessWidget {
   }
 }
 
-
-class _BillingDialog extends StatefulWidget {
-  const _BillingDialog({required this.onSubmit});
-
-  final Future<AppFailure?> Function(String amount, String currency) onSubmit;
-
-  @override
-  State<_BillingDialog> createState() => _BillingDialogState();
-}
-
-class _BillingDialogState extends State<_BillingDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _currencyController = TextEditingController(
-    text: 'UGX',
-  );
-  AppFailure? _failure;
-  bool _isSubmitting = false;
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _currencyController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        Text(l10n.dischargeBillingDialogBody),
-        AppTextField(
-          controller: _amountController,
-          labelText: l10n.dischargeBillingAmountLabel,
-          keyboardType: TextInputType.number,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.dischargeBillingAmountRequiredMessage,
-          ),
-        ),
-        AppTextField(
-          controller: _currencyController,
-          labelText: l10n.dischargeBillingCurrencyLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.dischargeBillingCurrencyRequiredMessage,
-          ),
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.dischargeRequestBillingSubmitAction,
-          submitIcon: Icons.receipt_long_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      _amountController.text.trim(),
-      _currencyController.text.trim(),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-}
 
 class _PharmacyDialog extends StatefulWidget {
   const _PharmacyDialog({required this.drugs, required this.onSubmit});
@@ -1334,26 +1243,19 @@ Future<void> _openDischargePlanningDialog(
   }
 }
 
-Future<void> _openBillingDialog(
+/// Opens Billing workspace for clearance / settle / invoice — never a local
+/// cashier dialog. Billing owns payment methods, idempotency, and ledger rows.
+void _openBillingWorkspace(
   BuildContext context,
-  DischargeWorkspaceController controller,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(l10n.dischargeBillingDialogTitle),
-    content: _BillingDialog(
-      onSubmit: (String amount, String currency) {
-        return controller.requestFinalBilling(
-          amount: amount,
-          currency: currency,
+  DischargeAdmissionDetail detail,
+) {
+  final String? patientId = detail.patientId?.trim();
+  final String location = (patientId == null || patientId.isEmpty)
+      ? AppRoutes.billing.path
+      : AppRoutes.billing.location(
+          queryParameters: <String, String>{'patient_id': patientId},
         );
-      },
-    ),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
-  }
+  _openLinkedWorkspace(context, location);
 }
 
 Future<void> _openPharmacyDialog(

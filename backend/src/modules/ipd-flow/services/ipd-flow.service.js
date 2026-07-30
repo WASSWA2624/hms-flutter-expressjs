@@ -23,6 +23,7 @@ const {
   persistAdmissionBilling,
   persistNursingServiceBilling,
   mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
+const { computeInvoiceFinancials } = require("@lib/billing/financials");
 
 const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1131,6 +1132,43 @@ const deriveClearancePhase = (status, clearance = DEFAULT_DISCHARGE_CLEARANCE) =
 const isDischargeClearanceComplete = (clearance = DEFAULT_DISCHARGE_CLEARANCE) => {
   if (sanitizeIdentifier(clearance.override_reason)) return true;
   return DISCHARGE_CLEARANCE_KEYS.every((key) => Boolean(clearance[key]));
+};
+
+/**
+ * Block finalize when Billing still shows patient responsibility, unless an
+ * audited override_reason defers clearance. Uses shared financials (balance_due)
+ * so module-local billing_cleared flags cannot bypass the ledger.
+ */
+const assertBillingSettledForDischarge = async (
+  tx,
+  { patientId, tenantId, overrideReason },
+) => {
+  if (sanitizeIdentifier(overrideReason)) return;
+  if (!patientId || !tx?.invoice?.findMany) return;
+
+  const invoices = await tx.invoice.findMany({
+    where: {
+      patient_id: patientId,
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+      deleted_at: null,
+      status: { not: "CANCELLED" },
+      OR: [
+        { billing_status: { not: "CANCELLED" } },
+        { billing_status: null }]},
+    include: {
+      payments: {
+        where: { deleted_at: null },
+        include: { refunds: { where: { deleted_at: null } } }},
+      billing_adjustments: { where: { deleted_at: null } }}});
+
+  for (const invoice of invoices || []) {
+    const financials = computeInvoiceFinancials(invoice);
+    if (Number(financials.balance_due) > 0.009) {
+      throw new HttpError("errors.ipd_flow.billing_clearance_required", 400, [
+        { field: "billing_cleared" },
+        { field: "invoice_id", message: invoice.id }]);
+    }
+  }
 };
 
 const mergeDischargeClearance = (current, patch = {}) => {
@@ -3983,6 +4021,11 @@ const finalizeDischarge = async (id, data, context = {}) => {
     if (!isDischargeClearanceComplete({ ...clearance, override_reason: overrideReason })) {
       throw new HttpError("errors.ipd_flow.discharge_clearance_incomplete", 400);
     }
+
+    await assertBillingSettledForDischarge(tx, {
+      patientId: admission.patient_id,
+      tenantId: admission.tenant_id,
+      overrideReason});
 
     if (latestDischargeSummary) {
       await tx.discharge_summary.update({

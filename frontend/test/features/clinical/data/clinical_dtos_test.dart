@@ -38,6 +38,39 @@ void main() {
       expect(records.single.labOrderItems.single.status, 'ORDERED');
     });
 
+    test('maps payment_status from clinical-request-billing fields', () {
+      final records = decodeRelatedRecords(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LAB-PAY-1',
+            'status': 'ORDERED',
+            'payment_status': 'PENDING',
+            'items': <Object?>[],
+          },
+          <String, Object?>{
+            'id': 'RAD-PAY-1',
+            'status': 'ORDERED',
+            'billing': <String, Object?>{'payment_status': 'PAID'},
+            'requested_tests': <Object?>[],
+          },
+        ],
+      }, 'lab_order');
+
+      expect(records.first.paymentStatus, 'PENDING');
+
+      final radiology = decodeRelatedRecords(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'RAD-PAY-1',
+            'status': 'ORDERED',
+            'billing_snapshot': <String, Object?>{'payment_status': 'PARTIAL'},
+            'requested_tests': <Object?>[],
+          },
+        ],
+      }, 'radiology_order');
+      expect(radiology.single.paymentStatus, 'PARTIAL');
+    });
+
     test('maps lab requested tests fallback into visible order items', () {
       final records = decodeRelatedRecords(<String, Object?>{
         'data': <Object?>[
