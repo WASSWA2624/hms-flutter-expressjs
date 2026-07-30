@@ -1,50 +1,67 @@
-# Polish Lab Result Entry Dialog UI
+# Simplify Lab Worklist — Tabs, Chrome, Filters, and Counts
 
-## Goal
+Simplify the Lab workspace (`/lab`) so tabs are fewer and clearer, strip redundant toolbar chrome, keep Create Lab Order in the search bar, and fix tab counts so each badge reflects independent backend totals.
 
-Tighten the lab result entry dialog by removing actions the lab technician cannot use, making result status visually obvious, and standardizing the patient header on `AppWorkspaceDetailPanel` as a collapsible section.
+## Context
 
-## Remove from this dialog
+- Surface: `LabWorkspacePage` + `LabWorkspaceController` at `/lab?section=…`. Current tabs (UI labels): **All**, **Awaiting results**, **Processing**, **Critical**, **Completed**, **Follow-ups**. Default opens **All** (`worklist`).
+- Observed chrome under the tabs: **Orders view** / patients toggle, **Lab Configurations**, and **+ Create Lab Order**. Configurations belong in admin/facility setup, not Lab.
+- Observed defects: switching to an empty tab (e.g. Processing with count 0) can zero other tab badges (e.g. All); worklist does not always fill remaining viewport height; tab filters and search-bar filters are not one shared filter model.
+- Domain today: `LabDeskSection` / `LabQueueScope` include `processing`; workbench supports `LabWorkbenchView.patients|orders`. Patient-grouped worklist columns remain the only table mode after this change.
+- Permissions: `lab_access.dart` tab/strip atoms; unauthorized UI must not render. Follow `prompts/.cursor/prompt.mdc`.
 
-1. **Lab order section** — Remove the "Lab order LAB..." block with ordered-at, **Edit order**, and **Delete order** actions. Lab technicians do not edit or delete orders from the result entry screen. Keep the test entry and panel content; no order meta panel should appear above the results panels.
-2. **Create Lab Order** footer button — Remove this button from the dialog footer. Result entry is not an order creation surface.
+## Requirements
 
-## Footer actions
+1. **Remove Processing entirely.** Drop the Processing tab, its URL (`section=processing`), queue scope, summary fields used only for that badge, strip actions, billing/permission inventory atoms, empty states, and related tests. Redirect stale `?section=processing` (and aliases) to **Pending**.
 
-Retain only:
+2. **Rename and redefine remaining tabs** (keep URL aliases where safe; update labels via l10n):
+   - **All** — full worklist (not default).
+   - **Pending** (was Awaiting results / `collection`) — orders whose results are not yet completed (new/pending entry).
+   - **Critical** — completed (or entered) results that are abnormal / outside reference range so staff can act on them here.
+   - **Completed today** (was Completed) — results completed for the current facility day only.
+   - **Follow-ups** — patients/results flagged for lab follow-up (existing follow-ups table/fields).
 
-| Action               | Behavior |
-|----------------------|----------|
-| **Preview report**   | Unchanged |
-| **Save results**     | Always visible. **Enabled** once at least one result is entered. The button should remain visible but inactive (disabled) when nothing is entered yet. Payment status (unpaid, partial, etc.) must NOT block entry or saving. |
+3. **Default section = Pending.** Opening `/lab` with no `section` (and `labFallbackSection`) lands on Pending when allowed; otherwise the first allowed remaining tab.
 
-## Color-code entered results
+4. **Remove the section toolbar.** Delete **Orders view** / patients↔orders toggle and **Lab Configurations** from every Lab tab. Do not open catalog/config from Lab; admin/facility setup remains the configuration path. Keep a single patient-grouped worklist (no orders-view mode in the UI).
 
-Color-code results (both before and after save) for quick recognition based on their interpretation against the reference range:
+5. **Move Create Lab Order into the table search bar.** Place it at the extreme right of the search/filter row (with Filters / Settings). On compact widths show icon-only; on large widths show icon + label. Gate with existing create permission; omit when unauthorized. Follow-ups may omit create if that tab already excludes it.
 
-| Interpretation        | Visual treatment                   |
-|-----------------------|------------------------------------|
-| Normal / in range     | Neutral or success tone            |
-| Low / below range     | Distinct "low" tone (e.g., warning/info) |
-| High / above range    | Distinct "high" / abnormal tone    |
-| Critical              | Strong error / critical tone       |
+6. **One shared filter model.** Tab selection applies the same comprehensive filter vocabulary as the search-bar Filters control (status/queue, criticality, completed-today, follow-up, search text, etc.). Changing a tab updates those filters; changing Filters updates the worklist the same way. When applied Filters best match another tab’s definition, activate that tab (most similar / exact match) and keep URL `section` in sync.
 
-Apply the color to the result value presentation (and row accent if already used), not just after saving. Reuse the existing flag/interpreter logic where possible (`NORMAL`, `ABNORMAL`, `CRITICAL`, low/high flags).
+7. **Independent, accurate tab counts.** Each tab badge is the backend total for that tab’s definition, independent of the active tab and of the current page of rows. Switching tabs must not overwrite or zero other badges. Counts match database/API summary fields for All, Pending, Critical, Completed today, and Follow-ups.
 
-## Patient header → `AppWorkspaceDetailPanel` (standardized)
+8. **Worklist fills height and scrolls.** Whether empty or loaded, the table/empty-state region spans the remaining viewport height under the search bar; content is infinitely (or continuously) scrollable within that region—no unused gap below the table chrome. Pagination/footer remains usable; no overflow/clipping on mobile, tablet, or desktop.
 
-Replace the existing patient context header (with "Show less"/"Show more") with a standardized `AppWorkspaceDetailPanel`, implemented as a collapsible section component:
+9. **UI states.** Preserve loading, empty, error/retry, success, and validation feedback. Empty copy stays short (e.g. no patients matching the active filters). Light and dark themes; theme tokens only.
 
-- **Header:** Show patient display name and a copyable patient ID (e.g., `Wilson Wasswa · PAT0000001`). The patient ID should be clearly presented and copy-enabled within the header.
-- **Body:** Display additional patient context details (encounter info, status, order summary) in the panel body as needed, rather than crowding the header.
-- **Collapsibility:** This section uses the collapsible section component. It may be expanded or collapsed if that matches UI policy, but the header format (name + ID, with ID copyable) and detail placement must follow this guidance.
+10. **Tests.** Cover: Processing absent + redirect; default Pending; no Orders view / Lab Configurations controls; Create in search bar (authorized present / unauthorized absent); tab↔filter sync and tab activation from filters; counts stable when switching to an empty tab; Completed today scoped to today; Critical = abnormal/out-of-range; height/scroll smoke on a representative viewport; l10n keys for new labels.
 
-Other collapsible `AppWorkspaceDetailPanel` usage (such as for panels and single-test blocks) remains unchanged.
+## Constraints
 
-## Acceptance criteria
+- Scope: Lab feature (workspace page, controller, entities/DTOs/API query params as needed), lab l10n, lab access/billing inventories, and lab tests. Do not redesign unrelated workspaces.
+- Reuse existing search bar, filters, table, create-order dialog, and permission atoms; remove dead Processing / view-toggle / in-Lab configuration paths rather than leaving hidden stubs.
+- Backend RBAC/ABAC remains authoritative; no unauthorized UI.
+- Optional enhancements: none.
 
-- No Edit order / Delete order or Lab order meta section in result entry.
-- No Create Lab Order button in the dialog footer.
-- Save results is always visible, inactive until there are results to save, and never blocked by payment status.
-- Entered values are color-coded according to normal, low, high, and critical reference ranges.
-- Patient block uses `AppWorkspaceDetailPanel` implemented as a standardized collapsible section with name and copyable ID in the header, and other details in the body.
+## Acceptance Criteria
+
+- AC1 (Req 1): Processing tab and related UI/API surface are gone; `section=processing` resolves to Pending.
+- AC2 (Req 2–3): Tabs are All, Pending, Critical, Completed today, Follow-ups; `/lab` defaults to Pending when allowed.
+- AC3 (Req 4–5): No Orders view or Lab Configurations on Lab; Create Lab Order sits at the right of the search bar with responsive icon/label behavior and correct permission gating.
+- AC4 (Req 6): Tab and search-bar filters share one model; filter changes activate the matching tab and update the URL.
+- AC5 (Req 7): Each tab badge stays correct and independent when switching tabs, including to empty queues.
+- AC6 (Req 8–9): Worklist/empty state fills remaining height and scrolls; loading/empty/error/success remain observable in light and dark themes.
+- AC7 (Req 10): Listed tests pass.
+
+## Relevant Files
+
+- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`
+- `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`
+- `frontend/lib/features/lab/presentation/lab_access.dart`
+- `frontend/lib/features/lab/domain/entities/lab_entities.dart`
+- `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart`
+- `frontend/lib/features/lab/presentation/lab_*_billing_inventory.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/test/features/lab/`
+- Backend lab workbench/summary endpoints used for scope counts and completed-today / critical filters
