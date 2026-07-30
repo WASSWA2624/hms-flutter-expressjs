@@ -555,10 +555,12 @@ abstract final class DischargePendingClearanceAtomPermissions {
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
 /// Worklist `?section=completed`. Prefer read: next-action Print (no write
-/// gate); Continue plan omitted when completed. Request billing/pharmacy still
-/// use write source ∩ when detail is open. Clearance checklist meds / bills /
-/// room-turnover steps use nested ∩ reads; union across sections. Matrix nested
-/// cross-module write rows are _(n/a)_.
+/// gate); Continue plan omitted when completed. Open Billing navigates to the
+/// Billing workspace (no local invoice/cashier). Request pharmacy still uses
+/// write source ∩ when detail is open and posts via clinical-request-billing.
+/// Clearance checklist meds / bills / room-turnover steps use nested ∩ reads;
+/// union across sections. Matrix nested cross-module write rows are _(n/a)_.
+/// Financial atoms: `discharge_completed_billing_inventory.dart`.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -568,7 +570,8 @@ abstract final class DischargePendingClearanceAtomPermissions {
 /// | Row select → detail | read | read ∪ |
 /// | Next action Print | export / read | read ∪ |
 /// | Detail Continue discharge | create / update | write (absent when completed) |
-/// | Detail Request billing / pharmacy | create | write source ∩ |
+/// | Detail Open Billing (settle / invoice / waiver) | navigate | billing:read ∩ |
+/// | Detail Request pharmacy (create-charge) | create | write source ∩ |
 /// | Detail Print summary | export / read | read ∪ |
 /// | Detail clearance pharmacy / meds panel | nested read | pharmacy:read ∩ |
 /// | Detail clearance billing / invoices panel | nested read | billing:read ∩ |
@@ -576,7 +579,7 @@ abstract final class DischargePendingClearanceAtomPermissions {
 /// | Detail Open IPD | navigate | read ∪ |
 /// | Detail Open Nursing | navigate | last_office:read ∩ |
 /// | Detail Open Pharmacy | navigate | pharmacy:read ∩ |
-/// | Detail Open Billing | navigate | billing:read ∩ |
+/// | Detail Open Billing (cross-module) | navigate | billing:read ∩ |
 /// | Detail Open Housekeeping | navigate | operations:read ∩ |
 /// | Route entry (deep link) | navigate | entry ∩ `discharge:read` |
 ///
@@ -604,6 +607,7 @@ abstract final class DischargeCompletedAtomPermissions {
   static const AccessRequirement update = dischargeClinicalWriteRequirement;
   static const AccessRequirement delete = dischargeClinicalWriteRequirement;
   static const AccessRequirement write = dischargeClinicalWriteRequirement;
+  /// Alias of [openBilling] — local invoice create removed; navigate only.
   static const AccessRequirement requestBilling =
       dischargeBillingNavigateRequirement;
   static const AccessRequirement requestPharmacy =
@@ -640,10 +644,11 @@ abstract final class DischargeCompletedAtomPermissions {
 
 /// Atom → requirement map for Discharge Follow-ups (`/discharge?section=follow-ups`).
 ///
-/// Inventory: `screens/discharge.md` → Follow-ups tab (`FollowUpWorklistPanel`).
-/// Planning / clearance / billing / pharmacy nested UI is **not** reachable from
-/// this tab (matrix nested rows _(n/a)_). Shared panel defaults remain reception
-/// ∪; discharge host overrides with these gates.
+/// Financial inventory: `discharge_follow_ups_billing_inventory.dart`.
+/// Worklist: `FollowUpWorklistPanel` (IPD). Planning / clearance / billing /
+/// pharmacy nested UI is **not** reachable from this tab (matrix nested rows
+/// _(n/a)_). Shared panel defaults remain reception ∪; discharge host
+/// overrides with these gates.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |

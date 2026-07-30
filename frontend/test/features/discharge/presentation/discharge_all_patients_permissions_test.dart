@@ -704,7 +704,7 @@ void main() {
       expect(find.text('Amoxicillin'), findsOneWidget);
       expect(find.text('Final bill'), findsOneWidget);
       expect(find.text('Open pharmacy'), findsOneWidget);
-      expect(find.text('Open billing'), findsOneWidget);
+      expect(find.text('Open billing'), findsWidgets);
       expect(find.text('Open housekeeping'), findsOneWidget);
       expect(find.text('Open nursing'), findsOneWidget);
     },

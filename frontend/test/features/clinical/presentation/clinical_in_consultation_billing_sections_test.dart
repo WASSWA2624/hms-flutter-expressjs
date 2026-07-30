@@ -48,7 +48,7 @@ const ClinicalWorklistEntry _encounter = ClinicalWorklistEntry(
   sourceQueue: 'OPD',
   encounterId: 'encounter-consult-bill-1',
   encounterPublicId: 'ENC-CONSULT-BILL-1',
-  apiPatientId: 'patient-uuid-consult-1',
+  patientId: 'patient-uuid-consult-1',
   patientDisplayName: 'Consult Billing Patient',
   patientPublicId: 'PAT-CONSULT-BILL-1',
   providerDisplayName: 'Dr Consult Bill',
@@ -188,6 +188,13 @@ void _stubOpd(_MockOpdRepository repository) {
         request: (invocation.positionalArguments.single as OpdTriageQueueQuery)
             .pageRequest,
         totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(
+        summary: OpdFlowSummary(id: 'flow-1', publicId: 'OPD000001'),
       ),
     ),
   );
@@ -430,7 +437,7 @@ void main() {
           () => clinicalRepository.createProcedure(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
         when(
-          () => clinicalRepository.recordCatalogFavorite(any()),
+          () => clinicalRepository.createClinicalTermFavorite(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
 
         SharedPreferences.setMockInitialValues(<String, Object>{});

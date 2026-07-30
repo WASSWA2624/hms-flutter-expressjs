@@ -241,8 +241,13 @@ final class DischargeAdmissionDetail {
     return invoices.any((DischargeRelatedRecord item) => item.isOpenInvoice);
   }
 
+  /// Live Billing ledger gate: settled when invoices are readable and none are
+  /// open (empty list = no outstanding patient responsibility).
   bool get hasBillingClearance {
-    return invoices.isNotEmpty && !hasOpenInvoices;
+    if (billingDataUnavailable) {
+      return false;
+    }
+    return !hasOpenInvoices;
   }
 
   bool get hasNursingClearance {
@@ -264,7 +269,11 @@ final class DischargeAdmissionDetail {
       summaryReady: hasSummary || backend.summaryReady,
       pendingOrdersReviewed: pendingOrdersReviewed,
       pharmacyCleared: hasPharmacyClearance || backend.pharmacyCleared,
-      billingCleared: hasBillingClearance || backend.billingCleared,
+      // Prefer live Billing invoices; never OR a stale module-local
+      // billing_cleared flag over open ledger balances.
+      billingCleared: billingDataUnavailable
+          ? backend.billingCleared
+          : hasBillingClearance,
       nursingCleared: hasNursingClearance || backend.nursingCleared,
       documentsReady: hasDocumentOutput || backend.documentsReady,
       patientExited: backend.patientExited,
@@ -378,7 +387,12 @@ final class DischargeAdmissionDetail {
           if (_nonBlockingClearanceCodes.contains(item.code)) {
             return false;
           }
-          return item.state == DischargeClearanceState.pending;
+          if (item.state == DischargeClearanceState.pending) {
+            return true;
+          }
+          // Unreadable Billing ledger must block unsafe closure.
+          return item.code == DischargeClearanceCode.billing &&
+              item.state == DischargeClearanceState.unavailable;
         })
         .toList(growable: false);
   }

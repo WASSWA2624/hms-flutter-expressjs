@@ -44,18 +44,18 @@ const notificationService = require('@services/notification/notification.service
  */
 describe('communications Notifications billing-sections scan', () => {
   const scopedUser = {
-    id: 'user-123',
-    tenant_id: 'tenant-123',
-    facility_id: 'facility-123',
+    id: '123e4567-e89b-12d3-a456-426614174099',
+    tenant_id: '123e4567-e89b-12d3-a456-426614174010',
+    facility_id: '123e4567-e89b-12d3-a456-426614174011',
     permissions: ['communications:read', 'communications:write'],
     roles: ['NURSE'],
   };
 
   const notificationRecord = {
-    id: 'notification-uuid',
+    id: '123e4567-e89b-12d3-a456-426614174001',
     human_friendly_id: 'NTF-1001',
-    tenant_id: 'tenant-123',
-    user_id: 'user-123',
+    tenant_id: scopedUser.tenant_id,
+    user_id: scopedUser.id,
     notification_type: 'LAB_ALERT',
     priority: 'HIGH',
     title: 'Critical lab result',
@@ -68,13 +68,13 @@ describe('communications Notifications billing-sections scan', () => {
     updated_at: new Date('2026-07-01T08:00:00.000Z'),
     deleted_at: null,
     tenant: {
-      id: 'tenant-123',
+      id: scopedUser.tenant_id,
       human_friendly_id: 'TEN-1001',
       slug: 'tenant-1001',
       name: 'Tenant 1001',
     },
     user: {
-      id: 'user-123',
+      id: scopedUser.id,
       human_friendly_id: 'USR-1001',
       email: 'nurse@example.com',
       phone: '+256700000000',
@@ -252,9 +252,9 @@ describe('communications Notifications billing-sections scan', () => {
       undefined,
       'desc',
       {
-        id: 'user-readonly',
-        tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
+        id: '123e4567-e89b-12d3-a456-426614174098',
+        tenant_id: scopedUser.tenant_id,
+        facility_id: scopedUser.facility_id,
         permissions: ['communications:read'],
         roles: ['NURSE'],
       }

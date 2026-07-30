@@ -135,6 +135,79 @@ void main() {
 
       expect(detail.blockingItems, isEmpty);
       expect(detail.isClearanceComplete, isTrue);
+      expect(detail.hasBillingClearance, isTrue);
+    });
+
+    test('live open invoices override stale billing_cleared flag', () {
+      const DischargeAdmissionDetail detail = DischargeAdmissionDetail(
+        ipd: IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'ADM-001',
+            stage: 'DISCHARGE_PLANNED',
+          ),
+          latestDischargeSummary: IpdDischargeSummary(
+            id: 'DS-001',
+            status: 'PLANNED',
+            summary: 'Ready for discharge',
+            clearance: IpdDischargeClearance(
+              summaryReady: true,
+              pendingOrdersReviewed: true,
+              pharmacyCleared: true,
+              billingCleared: true,
+              nursingCleared: true,
+              documentsReady: true,
+              patientExited: true,
+            ),
+          ),
+        ),
+        invoices: <DischargeRelatedRecord>[
+          DischargeRelatedRecord(
+            id: 'inv-1',
+            kind: 'invoice',
+            status: 'ISSUED',
+            billingStatus: 'ISSUED',
+          ),
+        ],
+      );
+
+      expect(detail.hasBillingClearance, isFalse);
+      expect(detail.effectiveClearance.billingCleared, isFalse);
+      expect(
+        detail.blockingItems.map((DischargeClearanceItem i) => i.code),
+        contains(DischargeClearanceCode.billing),
+      );
+    });
+
+    test('billing data unavailable blocks finalize gate', () {
+      const DischargeAdmissionDetail detail = DischargeAdmissionDetail(
+        ipd: IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'ADM-001',
+            stage: 'DISCHARGE_PLANNED',
+          ),
+          latestDischargeSummary: IpdDischargeSummary(
+            id: 'DS-001',
+            status: 'PLANNED',
+            summary: 'Ready for discharge',
+            clearance: IpdDischargeClearance(
+              summaryReady: true,
+              pendingOrdersReviewed: true,
+              pharmacyCleared: true,
+              billingCleared: true,
+              nursingCleared: true,
+              documentsReady: true,
+              patientExited: true,
+            ),
+          ),
+        ),
+        billingDataUnavailable: true,
+      );
+
+      expect(detail.hasBillingClearance, isFalse);
+      expect(
+        detail.blockingItems.map((DischargeClearanceItem i) => i.code),
+        contains(DischargeClearanceCode.billing),
+      );
     });
 
     test('buildSyncClearancePayload marks patient exit', () {
@@ -163,6 +236,10 @@ void main() {
       expect(
         detail.buildSyncClearancePayload(),
         containsPair('patient_exited', true),
+      );
+      expect(
+        detail.buildSyncClearancePayload(),
+        containsPair('billing_cleared', true),
       );
     });
   });

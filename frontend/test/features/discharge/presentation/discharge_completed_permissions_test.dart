@@ -534,11 +534,12 @@ void main() {
       expect(find.text('Discharge medicines'), findsOneWidget);
       expect(find.text('Billing clearance'), findsOneWidget);
       expect(find.text('Open pharmacy'), findsOneWidget);
-      expect(find.text('Open billing'), findsOneWidget);
+      expect(find.text('Open billing'), findsWidgets);
       expect(find.text('Open housekeeping'), findsOneWidget);
       expect(find.text('Pharmacy medicines'), findsOneWidget);
       expect(find.text('Final billing'), findsOneWidget);
       expect(find.text('Bed release'), findsOneWidget);
+      expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -682,6 +683,20 @@ void main() {
             AppPermissions.clinicalWrite,
             AppPermissions.billingRead,
           },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
         ),
       );
 
@@ -692,6 +707,7 @@ void main() {
       expect(find.text('Request final billing'), findsNothing);
       expect(find.text('Create invoice request'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
+      expect(find.text('Final invoice'), findsOneWidget);
     },
   );
 

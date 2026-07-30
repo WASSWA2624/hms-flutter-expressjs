@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -19,12 +18,13 @@ import 'package:hosspi_hms/features/discharge/data/repositories/discharge_reposi
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
 import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
-import 'package:hosspi_hms/features/discharge/presentation/discharge_all_patients_billing_inventory.dart';
+import 'package:hosspi_hms/features/discharge/presentation/discharge_planned_billing_inventory.dart';
 import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,21 +32,36 @@ import '../../../support/section_layout_assertions.dart';
 
 class _MockDischargeRepository extends Mock implements DischargeRepository {}
 
-const IpdAdmissionSummary _pending = IpdAdmissionSummary(
-  id: 'adm-pending-bill',
-  displayId: 'ADM-BILL-1',
-  patientDisplayName: 'Billing Scan Patient',
-  stage: 'ADMITTED',
-  dischargeStatus: 'SUMMARY_PENDING',
-  wardDisplayName: 'Ward B',
+const IpdAdmissionSummary _planned = IpdAdmissionSummary(
+  id: 'adm-planned-bill',
+  displayId: 'ADM-PLAN-1',
+  patientDisplayName: 'Planned Billing Patient',
+  stage: 'DISCHARGE_PLANNED',
+  dischargeStatus: 'PLANNED',
+  wardDisplayName: 'Ward A',
+  clearancePhase: 'BILLING_PENDING',
 );
 
 const DischargeAdmissionDetail _detail = DischargeAdmissionDetail(
-  ipd: IpdAdmissionDetail(summary: _pending),
+  ipd: IpdAdmissionDetail(
+    summary: _planned,
+    latestDischargeSummary: IpdDischargeSummary(
+      id: 'ds-1',
+      status: 'PLANNED',
+      summary: 'Plan ready; billing clearance pending.',
+    ),
+    dischargeSummaries: <IpdDischargeSummary>[
+      IpdDischargeSummary(
+        id: 'ds-1',
+        status: 'PLANNED',
+        summary: 'Plan ready; billing clearance pending.',
+      ),
+    ],
+  ),
   tenantId: 'tenant-1',
   facilityId: 'facility-1',
-  patientId: 'patient-uuid-1',
-  encounterId: 'encounter-1',
+  patientId: 'patient-planned-1',
+  encounterId: 'encounter-planned-1',
   pharmacyOrders: <DischargeRelatedRecord>[
     DischargeRelatedRecord(
       id: 'rx-1',
@@ -62,7 +77,7 @@ const DischargeAdmissionDetail _detail = DischargeAdmissionDetail(
       title: 'Final bill',
       status: 'ISSUED',
       billingStatus: 'ISSUED',
-      amount: 1500,
+      amount: 2500,
       currency: 'UGX',
     ),
   ],
@@ -119,7 +134,7 @@ void _stub(_MockDischargeRepository repository) {
   when(() => repository.listQueue(any())).thenAnswer(
     (_) async => Result<AppPage<IpdAdmissionSummary>>.success(
       AppPage<IpdAdmissionSummary>(
-        items: const <IpdAdmissionSummary>[_pending],
+        items: const <IpdAdmissionSummary>[_planned],
         request: const AppPageRequest(pageSize: 12),
         totalItemCount: 1,
       ),
@@ -137,7 +152,7 @@ void _stub(_MockDischargeRepository repository) {
   );
 }
 
-Future<void> _pumpAll(
+Future<void> _pumpPlanned(
   WidgetTester tester, {
   required _MockDischargeRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -154,7 +169,7 @@ Future<void> _pumpAll(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/discharge?section=all',
+    initialLocation: '/discharge?section=planned',
     routes: <RouteBase>[
       GoRoute(
         path: '/discharge',
@@ -181,6 +196,9 @@ Future<void> _pumpAll(
     ProviderScope(
       overrides: <Override>[
         dischargeRepositoryProvider.overrideWithValue(repository),
+        followUpTabCountProvider.overrideWith(
+          (Ref ref, FollowUpWorklistScope scope) => null,
+        ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
@@ -213,27 +231,34 @@ void main() {
     repository = _MockDischargeRepository();
   });
 
-  group('Discharge All patients billing inventory (AC1)', () {
+  group('Discharge Planned billing inventory (AC1)', () {
     test('every atom is classified billable or explicit not-billable', () {
-      expect(DischargeAllPatientsBillingInventory.atoms, isNotEmpty);
-      for (final DischargeAllPatientsFinancialAtom atom
-          in DischargeAllPatientsBillingInventory.atoms) {
+      expect(DischargePlannedBillingInventory.atoms, isNotEmpty);
+      expect(dischargePlannedBillingScopeNote, contains('Planned'));
+      for (final DischargePlannedFinancialAtom atom
+          in DischargePlannedBillingInventory.atoms) {
         expect(atom.id, isNotEmpty);
         expect(atom.label, isNotEmpty);
-        if (atom.financialClass ==
-                DischargeAllPatientsFinancialClass.notBilled ||
+        if (atom.financialClass == DischargePlannedFinancialClass.notBilled ||
             atom.financialClass ==
-                DischargeAllPatientsFinancialClass.notRequired ||
-            atom.financialClass == DischargeAllPatientsFinancialClass.noCharge) {
+                DischargePlannedFinancialClass.notRequired ||
+            atom.financialClass == DischargePlannedFinancialClass.noCharge) {
           expect(atom.auditCode, isNotNull);
         }
       }
     });
 
-    test('settle/adjust/reverse never use inline collection on this tab', () {
-      for (final DischargeAllPatientsFinancialAtom atom
-          in DischargeAllPatientsBillingInventory.billableAtoms) {
-        if (DischargeAllPatientsBillingInventory.isInlineCollectionForbidden(
+    test('mounted billable atoms wire through Billing (no bypass path)', () {
+      expect(
+        DischargePlannedBillingInventory.allMountedBillableAtomsWireThroughBilling,
+        isTrue,
+      );
+      for (final DischargePlannedFinancialAtom atom
+          in DischargePlannedBillingInventory.billableAtoms) {
+        if (!atom.mounted) {
+          continue;
+        }
+        if (DischargePlannedBillingInventory.isInlineCollectionForbidden(
           atom.financialClass,
         )) {
           expect(
@@ -243,37 +268,54 @@ void main() {
         }
       }
       expect(
-        DischargeAllPatientsAtomPermissions.requestBilling,
+        DischargePlannedAtomPermissions.requestBilling,
         same(billingReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.openBilling,
+        DischargePlannedAtomPermissions.openBilling,
         same(billingReadRequirement),
       );
     });
 
     test('pharmacy create-charge reuses clinical-request-billing path', () {
       expect(
-        DischargeAllPatientsBillingInventory.requestPharmacy.billingPath,
+        DischargePlannedBillingInventory.requestPharmacy.billingPath,
         contains('persistPharmacyOrderBilling'),
       );
       expect(
-        DischargeAllPatientsBillingInventory.requestPharmacy.financialClass,
-        DischargeAllPatientsFinancialClass.createCharge,
+        DischargePlannedBillingInventory.requestPharmacy.financialClass,
+        DischargePlannedFinancialClass.createCharge,
+      );
+    });
+
+    test('finalize / continue defer through Billing ledger gate', () {
+      expect(
+        DischargePlannedBillingInventory.continueDischarge.billingPath,
+        contains('assertBillingSettledForDischarge'),
+      );
+      expect(
+        DischargePlannedBillingInventory.finalizeWithOverride.financialClass,
+        DischargePlannedFinancialClass.defer,
       );
     });
   });
 
-  group('Discharge All patients billing wiring (AC2-AC4)', () {
+  group('Discharge Planned billing wiring (AC2-AC4)', () {
     test('discharge realtime group includes billing for status parity', () {
-      expect(RealtimeEventGroups.discharge, containsAll(RealtimeEventGroups.billing));
-      expect(RealtimeEventGroups.discharge, containsAll(RealtimeEventGroups.pharmacy));
+      expect(
+        RealtimeEventGroups.discharge,
+        containsAll(RealtimeEventGroups.billing),
+      );
+      expect(
+        RealtimeEventGroups.discharge,
+        containsAll(RealtimeEventGroups.pharmacy),
+      );
     });
 
     testWidgets(
       'no bypass: unauthorized cannot collect/adjust; no local invoice dialog',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPlanned(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -283,7 +325,8 @@ void main() {
           themeMode: ThemeMode.dark,
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        expect(find.text('Planned Billing Patient'), findsOneWidget);
+        await tester.tap(find.text('Planned Billing Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Open billing'), findsNothing);
@@ -291,6 +334,7 @@ void main() {
         expect(find.text('Create invoice request'), findsNothing);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
+        expect(find.textContaining('no access'), findsNothing);
         expectFlatSections(tester);
       },
     );
@@ -298,7 +342,7 @@ void main() {
     testWidgets(
       'Open billing navigates to Billing workspace (reuse, no fork)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPlanned(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -311,7 +355,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        await tester.tap(find.text('Planned Billing Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Final bill'), findsOneWidget);
@@ -323,14 +367,27 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Billing workspace'), findsOneWidget);
-        expect(find.textContaining('patient_id=patient-uuid-1'), findsOneWidget);
+        expect(
+          find.textContaining('patient_id=patient-planned-1'),
+          findsOneWidget,
+        );
       },
     );
 
     testWidgets(
-      'list chrome has no cashier entry points (idempotent: no local collect)',
+      'pharmacy request posts via repository (clinical-request-billing backend)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        when(() => repository.loadReferenceData()).thenAnswer(
+          (_) async => const Result<DischargeReferenceData>.success(
+            DischargeReferenceData(
+              drugs: <DischargeDrugOption>[
+                DischargeDrugOption(id: 'drug-1', name: 'Amox'),
+              ],
+            ),
+          ),
+        );
+
+        await _pumpPlanned(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -341,18 +398,20 @@ void main() {
           ),
         );
 
-        expect(find.text('Billing Scan Patient'), findsOneWidget);
+        await tester.tap(find.text('Planned Billing Patient'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Request medicines'));
+        await tester.pumpAndSettle();
+
         expect(find.textContaining('Receive payment'), findsNothing);
-        expect(find.textContaining('Issue invoice'), findsNothing);
-        expect(find.text('Create invoice request'), findsNothing);
-        expectFlatSections(tester);
+        expect(find.byType(AppFormShell), findsOneWidget);
       },
     );
 
     testWidgets(
       'invoice status panel reflects Billing SoR (ISSUED parity)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPlanned(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -363,20 +422,46 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        await tester.tap(find.text('Planned Billing Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Final bill'), findsOneWidget);
         expect(find.textContaining('Issued'), findsWidgets);
       },
     );
+
+    testWidgets(
+      'Manage clearance opens planning without inline cashier',
+      (WidgetTester tester) async {
+        await _pumpPlanned(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.billingRead,
+            },
+          ),
+        );
+
+        await tester.tap(find.byTooltip('Manage clearance').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppDialog), findsOneWidget);
+        expect(find.text('Open billing'), findsWidgets);
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.text('Create invoice request'), findsNothing);
+        expectFlatSections(tester);
+      },
+    );
   });
 
-  group('Discharge All patients flat sections (AC5)', () {
+  group('Discharge Planned flat sections (AC5)', () {
     testWidgets('desktop detail: no nested titled sections', (
       WidgetTester tester,
     ) async {
-      await _pumpAll(
+      await _pumpPlanned(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -392,7 +477,7 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await tester.tap(find.text('Billing Scan Patient'));
+      await tester.tap(find.text('Planned Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
       expect(countTitledSections(tester), greaterThan(0));
@@ -401,7 +486,7 @@ void main() {
     testWidgets('mobile + dark: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpAll(
+      await _pumpPlanned(
         tester,
         repository: repository,
         accessPolicy: _policy(

@@ -42,7 +42,7 @@ final class DischargeFollowUpsFinancialAtom {
 
 /// Canonical inventory for `/discharge?section=follow-ups`.
 ///
-/// Tab role: post-discharge IPD callback worklist ([FollowUpWorklistPanel]
+/// Tab role: post-discharge IPD callback worklist (`FollowUpWorklistPanel`
 /// scoped `encounterType: IPD`). Mark completed and reschedule stay
 /// `NOT_BILLED` ops (status/schedule only). Financial clearance, pharmacy
 /// returns, outstanding balances, waivers, and final invoices are **not**

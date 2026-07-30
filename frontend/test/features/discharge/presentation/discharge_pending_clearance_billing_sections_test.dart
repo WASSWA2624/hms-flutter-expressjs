@@ -19,7 +19,7 @@ import 'package:hosspi_hms/features/discharge/data/repositories/discharge_reposi
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
 import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
-import 'package:hosspi_hms/features/discharge/presentation/discharge_all_patients_billing_inventory.dart';
+import 'package:hosspi_hms/features/discharge/presentation/discharge_pending_clearance_billing_inventory.dart';
 import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -33,36 +33,53 @@ import '../../../support/section_layout_assertions.dart';
 class _MockDischargeRepository extends Mock implements DischargeRepository {}
 
 const IpdAdmissionSummary _pending = IpdAdmissionSummary(
-  id: 'adm-pending-bill',
-  displayId: 'ADM-BILL-1',
-  patientDisplayName: 'Billing Scan Patient',
+  id: 'adm-pending-clear',
+  displayId: 'ADM-PC-1',
+  patientDisplayName: 'Pending Clearance Patient',
   stage: 'ADMITTED',
   dischargeStatus: 'SUMMARY_PENDING',
   wardDisplayName: 'Ward B',
+  clearancePhase: 'BILLING_PENDING',
 );
 
 const DischargeAdmissionDetail _detail = DischargeAdmissionDetail(
-  ipd: IpdAdmissionDetail(summary: _pending),
+  ipd: IpdAdmissionDetail(
+    summary: _pending,
+    latestDischargeSummary: IpdDischargeSummary(
+      id: 'ds-1',
+      status: 'PLANNED',
+      summary: 'Ready after clearance',
+      clearance: IpdDischargeClearance(
+        summaryReady: true,
+        pendingOrdersReviewed: true,
+        pharmacyCleared: true,
+        // Stale local flag must not override live open invoices.
+        billingCleared: true,
+        nursingCleared: true,
+        documentsReady: true,
+      ),
+    ),
+  ),
   tenantId: 'tenant-1',
   facilityId: 'facility-1',
-  patientId: 'patient-uuid-1',
-  encounterId: 'encounter-1',
+  patientId: 'patient-uuid-pc',
+  encounterId: 'encounter-pc',
   pharmacyOrders: <DischargeRelatedRecord>[
     DischargeRelatedRecord(
       id: 'rx-1',
       kind: 'pharmacy_order',
       title: 'Amoxicillin',
-      status: 'ORDERED',
+      status: 'DISPENSED',
     ),
   ],
   invoices: <DischargeRelatedRecord>[
     DischargeRelatedRecord(
       id: 'inv-1',
       kind: 'invoice',
-      title: 'Final bill',
+      title: 'Outstanding final bill',
       status: 'ISSUED',
       billingStatus: 'ISSUED',
-      amount: 1500,
+      amount: 2500,
       currency: 'UGX',
     ),
   ],
@@ -137,7 +154,7 @@ void _stub(_MockDischargeRepository repository) {
   );
 }
 
-Future<void> _pumpAll(
+Future<void> _pumpPending(
   WidgetTester tester, {
   required _MockDischargeRepository repository,
   required AppAccessPolicy accessPolicy,
@@ -154,7 +171,7 @@ Future<void> _pumpAll(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/discharge?section=all',
+    initialLocation: '/discharge?section=pending-clearance',
     routes: <RouteBase>[
       GoRoute(
         path: '/discharge',
@@ -188,8 +205,8 @@ Future<void> _pumpAll(
         ),
       ],
       child: MaterialApp.router(
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
         themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -213,29 +230,34 @@ void main() {
     repository = _MockDischargeRepository();
   });
 
-  group('Discharge All patients billing inventory (AC1)', () {
+  group('Discharge Pending clearance billing inventory (AC1)', () {
     test('every atom is classified billable or explicit not-billable', () {
-      expect(DischargeAllPatientsBillingInventory.atoms, isNotEmpty);
-      for (final DischargeAllPatientsFinancialAtom atom
-          in DischargeAllPatientsBillingInventory.atoms) {
+      expect(DischargePendingClearanceBillingInventory.atoms, isNotEmpty);
+      for (final DischargePendingClearanceFinancialAtom atom
+          in DischargePendingClearanceBillingInventory.atoms) {
         expect(atom.id, isNotEmpty);
         expect(atom.label, isNotEmpty);
         if (atom.financialClass ==
-                DischargeAllPatientsFinancialClass.notBilled ||
+                DischargePendingClearanceFinancialClass.notBilled ||
             atom.financialClass ==
-                DischargeAllPatientsFinancialClass.notRequired ||
-            atom.financialClass == DischargeAllPatientsFinancialClass.noCharge) {
+                DischargePendingClearanceFinancialClass.notRequired ||
+            atom.financialClass ==
+                DischargePendingClearanceFinancialClass.noCharge) {
           expect(atom.auditCode, isNotNull);
         }
       }
     });
 
     test('settle/adjust/reverse never use inline collection on this tab', () {
-      for (final DischargeAllPatientsFinancialAtom atom
-          in DischargeAllPatientsBillingInventory.billableAtoms) {
-        if (DischargeAllPatientsBillingInventory.isInlineCollectionForbidden(
-          atom.financialClass,
-        )) {
+      expect(
+        DischargePendingClearanceBillingInventory
+            .allBillableAtomsWireThroughBilling,
+        isTrue,
+      );
+      for (final DischargePendingClearanceFinancialAtom atom
+          in DischargePendingClearanceBillingInventory.billableAtoms) {
+        if (DischargePendingClearanceBillingInventory
+            .isInlineCollectionForbidden(atom.financialClass)) {
           expect(
             atom.billingPath,
             anyOf(contains('Billing'), contains('billing')),
@@ -243,37 +265,97 @@ void main() {
         }
       }
       expect(
-        DischargeAllPatientsAtomPermissions.requestBilling,
+        DischargePendingClearanceAtomPermissions.requestBilling,
         same(billingReadRequirement),
       );
       expect(
-        DischargeAllPatientsAtomPermissions.openBilling,
+        DischargePendingClearanceAtomPermissions.openBilling,
         same(billingReadRequirement),
       );
     });
 
     test('pharmacy create-charge reuses clinical-request-billing path', () {
       expect(
-        DischargeAllPatientsBillingInventory.requestPharmacy.billingPath,
+        DischargePendingClearanceBillingInventory.requestPharmacy.billingPath,
         contains('persistPharmacyOrderBilling'),
       );
       expect(
-        DischargeAllPatientsBillingInventory.requestPharmacy.financialClass,
-        DischargeAllPatientsFinancialClass.createCharge,
+        DischargePendingClearanceBillingInventory
+            .requestPharmacy
+            .financialClass,
+        DischargePendingClearanceFinancialClass.createCharge,
+      );
+    });
+
+    test('clearance billing step documents live invoice gate', () {
+      expect(
+        DischargePendingClearanceBillingInventory
+            .clearanceBillingStep
+            .billingPath,
+        contains('Billing'),
+      );
+      expect(
+        DischargePendingClearanceBillingInventory.absentInlineCollect.mounted,
+        isFalse,
       );
     });
   });
 
-  group('Discharge All patients billing wiring (AC2-AC4)', () {
+  group('Discharge Pending clearance live billing gate (AC2)', () {
+    test('open invoices block clearance even when backend flag is true', () {
+      expect(_detail.hasOpenInvoices, isTrue);
+      expect(_detail.hasBillingClearance, isFalse);
+      expect(_detail.effectiveClearance.billingCleared, isFalse);
+      expect(
+        _detail.blockingItems.any(
+          (DischargeClearanceItem item) =>
+              item.code == DischargeClearanceCode.billing,
+        ),
+        isTrue,
+      );
+    });
+
+    test('empty invoices = settled when Billing data is available', () {
+      final DischargeAdmissionDetail settled = _detail.copyWith(
+        invoices: const <DischargeRelatedRecord>[],
+      );
+      expect(settled.hasOpenInvoices, isFalse);
+      expect(settled.hasBillingClearance, isTrue);
+      expect(settled.effectiveClearance.billingCleared, isTrue);
+    });
+
+    test('unreadable Billing ledger blocks unsafe closure', () {
+      final DischargeAdmissionDetail unavailable = _detail.copyWith(
+        invoices: const <DischargeRelatedRecord>[],
+        billingDataUnavailable: true,
+      );
+      expect(unavailable.hasBillingClearance, isFalse);
+      expect(
+        unavailable.blockingItems.any(
+          (DischargeClearanceItem item) =>
+              item.code == DischargeClearanceCode.billing,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('Discharge Pending clearance billing wiring (AC2-AC4)', () {
     test('discharge realtime group includes billing for status parity', () {
-      expect(RealtimeEventGroups.discharge, containsAll(RealtimeEventGroups.billing));
-      expect(RealtimeEventGroups.discharge, containsAll(RealtimeEventGroups.pharmacy));
+      expect(
+        RealtimeEventGroups.discharge,
+        containsAll(RealtimeEventGroups.billing),
+      );
+      expect(
+        RealtimeEventGroups.discharge,
+        containsAll(RealtimeEventGroups.pharmacy),
+      );
     });
 
     testWidgets(
       'no bypass: unauthorized cannot collect/adjust; no local invoice dialog',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -283,7 +365,7 @@ void main() {
           themeMode: ThemeMode.dark,
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        await tester.tap(find.text('Pending Clearance Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Open billing'), findsNothing);
@@ -298,7 +380,7 @@ void main() {
     testWidgets(
       'Open billing navigates to Billing workspace (reuse, no fork)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -311,10 +393,10 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        await tester.tap(find.text('Pending Clearance Patient'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Final bill'), findsOneWidget);
+        expect(find.text('Outstanding final bill'), findsOneWidget);
         expect(find.text('Open billing'), findsWidgets);
         expect(find.text('Request final billing'), findsNothing);
         expect(find.text('Create invoice request'), findsNothing);
@@ -323,14 +405,27 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Billing workspace'), findsOneWidget);
-        expect(find.textContaining('patient_id=patient-uuid-1'), findsOneWidget);
+        expect(
+          find.textContaining('patient_id=patient-uuid-pc'),
+          findsOneWidget,
+        );
       },
     );
 
     testWidgets(
-      'list chrome has no cashier entry points (idempotent: no local collect)',
+      'pharmacy request posts via repository (clinical-request-billing backend)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        when(() => repository.loadReferenceData()).thenAnswer(
+          (_) async => const Result<DischargeReferenceData>.success(
+            DischargeReferenceData(
+              drugs: <DischargeDrugOption>[
+                DischargeDrugOption(id: 'drug-1', name: 'Amox'),
+              ],
+            ),
+          ),
+        );
+
+        await _pumpPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -341,18 +436,20 @@ void main() {
           ),
         );
 
-        expect(find.text('Billing Scan Patient'), findsOneWidget);
+        await tester.tap(find.text('Pending Clearance Patient'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Request medicines'));
+        await tester.pumpAndSettle();
+
         expect(find.textContaining('Receive payment'), findsNothing);
-        expect(find.textContaining('Issue invoice'), findsNothing);
-        expect(find.text('Create invoice request'), findsNothing);
-        expectFlatSections(tester);
+        expect(find.byType(AppFormShell), findsOneWidget);
       },
     );
 
     testWidgets(
       'invoice status panel reflects Billing SoR (ISSUED parity)',
       (WidgetTester tester) async {
-        await _pumpAll(
+        await _pumpPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -363,20 +460,20 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Billing Scan Patient'));
+        await tester.tap(find.text('Pending Clearance Patient'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Final bill'), findsOneWidget);
+        expect(find.text('Outstanding final bill'), findsOneWidget);
         expect(find.textContaining('Issued'), findsWidgets);
       },
     );
   });
 
-  group('Discharge All patients flat sections (AC5)', () {
+  group('Discharge Pending clearance flat sections (AC5)', () {
     testWidgets('desktop detail: no nested titled sections', (
       WidgetTester tester,
     ) async {
-      await _pumpAll(
+      await _pumpPending(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -392,7 +489,7 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await tester.tap(find.text('Billing Scan Patient'));
+      await tester.tap(find.text('Pending Clearance Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
       expect(countTitledSections(tester), greaterThan(0));
@@ -401,7 +498,7 @@ void main() {
     testWidgets('mobile + dark: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpAll(
+      await _pumpPending(
         tester,
         repository: repository,
         accessPolicy: _policy(

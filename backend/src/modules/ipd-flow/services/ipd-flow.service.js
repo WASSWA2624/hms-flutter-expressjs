@@ -1135,16 +1135,12 @@ const isDischargeClearanceComplete = (clearance = DEFAULT_DISCHARGE_CLEARANCE) =
 };
 
 /**
- * Block finalize when Billing still shows patient responsibility, unless an
- * audited override_reason defers clearance. Uses shared financials (balance_due)
- * so module-local billing_cleared flags cannot bypass the ledger.
+ * Live Billing ledger check for discharge clearance. Uses shared financials
+ * (balance_due) so module-local billing_cleared flags cannot bypass the ledger.
+ * Empty invoice set = settled (no outstanding patient responsibility).
  */
-const assertBillingSettledForDischarge = async (
-  tx,
-  { patientId, tenantId, overrideReason },
-) => {
-  if (sanitizeIdentifier(overrideReason)) return;
-  if (!patientId || !tx?.invoice?.findMany) return;
+const isBillingSettledForPatient = async (tx, { patientId, tenantId }) => {
+  if (!patientId || !tx?.invoice?.findMany) return true;
 
   const invoices = await tx.invoice.findMany({
     where: {
@@ -1164,10 +1160,27 @@ const assertBillingSettledForDischarge = async (
   for (const invoice of invoices || []) {
     const financials = computeInvoiceFinancials(invoice);
     if (Number(financials.balance_due) > 0.009) {
-      throw new HttpError("errors.ipd_flow.billing_clearance_required", 400, [
-        { field: "billing_cleared" },
-        { field: "invoice_id", message: invoice.id }]);
+      return false;
     }
+  }
+  return true;
+};
+
+/**
+ * Block finalize when Billing still shows patient responsibility, unless an
+ * audited override_reason defers clearance.
+ */
+const assertBillingSettledForDischarge = async (
+  tx,
+  { patientId, tenantId, overrideReason },
+) => {
+  if (sanitizeIdentifier(overrideReason)) return;
+  const settled = await isBillingSettledForPatient(tx, {
+    patientId,
+    tenantId});
+  if (!settled) {
+    throw new HttpError("errors.ipd_flow.billing_clearance_required", 400, [
+      { field: "billing_cleared" }]);
   }
 };
 
@@ -3815,6 +3828,11 @@ const updateDischargeClearance = async (id, data, context = {}) => {
       latestDischargeSummary.clearance_snapshot,
       data,
     );
+    // Derive billing_cleared from live Billing ledger — client cannot force
+    // a local paid flag while outstanding balance remains.
+    nextClearance.billing_cleared = await isBillingSettledForPatient(tx, {
+      patientId: admission.patient_id,
+      tenantId: admission.tenant_id});
 
     await tx.discharge_summary.update({
       where: { id: latestDischargeSummary.id },

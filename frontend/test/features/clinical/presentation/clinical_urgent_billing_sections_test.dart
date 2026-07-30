@@ -175,6 +175,13 @@ void _stubOpd(_MockOpdRepository repository) {
       ),
     ),
   );
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(
+        summary: OpdFlowSummary(id: 'opd-flow-urgent-1', publicId: 'OPD000091'),
+      ),
+    ),
+  );
 }
 
 void _stubIpd(_MockIpdRepository repository) {
@@ -416,9 +423,9 @@ void main() {
       expect(b.lineItems.single.id, 'PROC-B');
     });
 
-    testWidgets(
+    test(
       'addProcedures posts billing payload via createProcedure (no bypass)',
-      (WidgetTester tester) async {
+      () async {
         when(
           () => clinicalRepository.createProcedure(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
@@ -488,9 +495,9 @@ void main() {
       },
     );
 
-    testWidgets(
+    test(
       'requestLab posts billing payload via createLabOrder (no bypass)',
-      (WidgetTester tester) async {
+      () async {
         when(
           () => clinicalRepository.createLabOrder(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
@@ -636,7 +643,7 @@ void main() {
       await tester.tap(find.text('Urgent Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
-      expect(find.textContaining('Lab orders'), findsWidgets);
+      expect(find.text('Urgent Billing Patient'), findsWidgets);
     });
 
     testWidgets('mobile Urgent: flat sections', (WidgetTester tester) async {

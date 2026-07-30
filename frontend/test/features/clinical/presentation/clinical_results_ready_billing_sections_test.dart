@@ -671,7 +671,7 @@ void main() {
 
       await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Request procedure').first);
+      await tester.tap(find.text('Record procedure').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);

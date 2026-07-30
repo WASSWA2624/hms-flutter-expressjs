@@ -415,6 +415,181 @@ describe("ipd-flow.service", () => {
       messageKey: "errors.ipd_flow.transfer_must_be_resolved_before_discharge"});
   });
 
+  describe("Discharge Planned tab billing gate (assertBillingSettledForDischarge)", () => {
+  it("rejects Planned finalize when Billing ledger still has balance (no bypass)", async () => {
+    const clearanceComplete = {
+      summary_ready: true,
+      pending_orders_reviewed: true,
+      pharmacy_cleared: true,
+      billing_cleared: true,
+      nursing_cleared: true,
+      documents_ready: true,
+      patient_exited: true,
+      override_reason: null};
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(
+            buildAdmission({
+              discharge_summaries: [
+                {
+                  id: "ds-1",
+                  summary: "Ready",
+                  status: "PLANNED",
+                  clearance_snapshot: clearanceComplete,
+                  deleted_at: null,
+                  updated_at: now}]}),
+          )},
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "inv-1",
+            total_amount: "1000.00",
+            status: "SENT",
+            billing_status: "ISSUED",
+            payments: [],
+            billing_adjustments: []}])}};
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      ipdFlowService.finalizeDischarge(
+        "ADM0000001",
+        { summary: "Ready to go" },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      messageKey: "errors.ipd_flow.billing_clearance_required"});
+    expect(tx.invoice.findMany).toHaveBeenCalled();
+  });
+
+  it("allows Planned finalize with audited override despite outstanding Billing balance", async () => {
+    const clearanceComplete = {
+      summary_ready: true,
+      pending_orders_reviewed: true,
+      pharmacy_cleared: true,
+      billing_cleared: false,
+      nursing_cleared: true,
+      documents_ready: true,
+      patient_exited: false,
+      override_reason: null};
+    const admission = buildAdmission({
+      discharge_summaries: [
+        {
+          id: "ds-1",
+          summary: "Ready",
+          status: "PLANNED",
+          clearance_snapshot: clearanceComplete,
+          deleted_at: null,
+          updated_at: now}]});
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(admission),
+        update: jest.fn().mockResolvedValue({ ...admission, status: "DISCHARGED" })},
+      discharge_summary: {
+        update: jest.fn().mockResolvedValue({ id: "ds-1" })},
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "inv-1",
+            total_amount: "1000.00",
+            status: "SENT",
+            billing_status: "ISSUED",
+            payments: [],
+            billing_adjustments: []}])},
+      encounter: {
+        findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([])},
+      visit_queue: { updateMany: jest.fn() },
+      appointment: { updateMany: jest.fn() }};
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    ipdFlowRepository.findById.mockResolvedValue(
+      buildAdmission({ status: "DISCHARGED", discharged_at: now }),
+    );
+
+    const result = await ipdFlowService.finalizeDischarge(
+      "ADM0000001",
+      {
+        summary: "Ready to go",
+        override_reason: "Clinical emergency discharge — billing deferred"},
+      {},
+    );
+
+    expect(result).toBeDefined();
+    expect(tx.invoice.findMany).not.toHaveBeenCalled();
+    expect(tx.discharge_summary.update).toHaveBeenCalled();
+  });
+
+  it("idempotent Planned finalize with paid invoices does not invent a second ledger", async () => {
+    const clearanceComplete = {
+      summary_ready: true,
+      pending_orders_reviewed: true,
+      pharmacy_cleared: true,
+      billing_cleared: true,
+      nursing_cleared: true,
+      documents_ready: true,
+      patient_exited: true,
+      override_reason: null};
+    const admission = buildAdmission({
+      discharge_summaries: [
+        {
+          id: "ds-1",
+          summary: "Ready",
+          status: "PLANNED",
+          clearance_snapshot: clearanceComplete,
+          deleted_at: null,
+          updated_at: now}]});
+    const paidInvoice = {
+      id: "inv-1",
+      total_amount: "1000.00",
+      status: "PAID",
+      billing_status: "PAID",
+      payments: [
+        {
+          amount: "1000.00",
+          status: "COMPLETED",
+          deleted_at: null,
+          refunds: []}],
+      billing_adjustments: []};
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(admission),
+        update: jest.fn().mockResolvedValue({ ...admission, status: "DISCHARGED" })},
+      discharge_summary: {
+        update: jest.fn().mockResolvedValue({ id: "ds-1" })},
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([paidInvoice])},
+      encounter: {
+        findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([])},
+      visit_queue: { updateMany: jest.fn() },
+      appointment: { updateMany: jest.fn() }};
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    ipdFlowRepository.findById.mockResolvedValue(
+      buildAdmission({ status: "DISCHARGED", discharged_at: now }),
+    );
+
+    await ipdFlowService.finalizeDischarge(
+      "ADM0000001",
+      { summary: "Ready to go" },
+      {},
+    );
+
+    expect(tx.invoice.findMany).toHaveBeenCalledTimes(1);
+    expect(tx.discharge_summary.update).toHaveBeenCalledTimes(1);
+  });
+  });
+
   it("resolves admissions by human-friendly ID", async () => {
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     ipdFlowRepository.findById.mockResolvedValue(buildAdmission());

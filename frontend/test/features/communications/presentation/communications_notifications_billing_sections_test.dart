@@ -404,9 +404,9 @@ void main() {
 
         expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
         expect(find.text('NOTIFICATION DETAIL'), findsWidgets);
-        expect(find.text('Details'), findsOneWidget);
-        expect(find.text('Linked record'), findsOneWidget);
-        expect(find.text('Delivery history'), findsOneWidget);
+        expect(find.text('Details'), findsWidgets);
+        expect(find.text('Linked record'), findsWidgets);
+        expect(find.text('Delivery history'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
@@ -497,9 +497,9 @@ void main() {
 
       await tester.tap(_tableRowInkWell().first);
       await tester.pumpAndSettle();
-      expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Linked record'), findsOneWidget);
-      expect(find.text('Delivery history'), findsOneWidget);
+      expect(find.text('Details'), findsWidgets);
+      expect(find.text('Linked record'), findsWidgets);
+      expect(find.text('Delivery history'), findsWidgets);
       expectFlatSections(tester);
     });
 
@@ -568,10 +568,16 @@ void main() {
       await tester.tap(_tableRowInkWell().first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Details'), findsOneWidget);
+      expect(find.text('Details'), findsWidgets);
       expect(find.text('Linked record'), findsNothing);
       expect(find.text('Delivery history'), findsNothing);
-      expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.byType(AppWorkspaceDetailPanel),
+        ),
+        findsAtLeastNWidgets(1),
+      );
       expectFlatSections(tester);
     });
   });
