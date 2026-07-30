@@ -515,6 +515,8 @@ abstract final class LabPendingVerificationAtomPermissions {
   /// reuse clinical ∪.
   static const AccessRequirement requestFromClinical =
       labRequestFromClinicalWriteRequirement;
+  /// Open Billing workspace when payment gate blocks verify/release.
+  static const AccessRequirement openBilling = labOpenBillingRequirement;
   static const AccessRequirement nestedWrite = labWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = labWorkspaceReadRequirement;
   static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;
@@ -634,6 +636,7 @@ bool canViewLabCriticalTab(AppAccessPolicy policy) {
 /// | Edit / reopen verified result | update | write ∩ |
 /// | Workflow Collect / Receive / Verify / Reverse | update | write ∩ |
 /// | Bulk / item result save / submit / verify / reject / delete | create / update / delete | write ∩ |
+/// | Open billing (payment gate CTA) | navigate | Billing read |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical lab ∪ |
 /// | Critical notify (narrative ∩) | approve / update | lab:write ∩ clinical:read |
@@ -676,6 +679,8 @@ abstract final class LabVerifiedAtomPermissions {
   /// Nested cross-module write — matrix _(n/a)_ on Verified; reuse clinical ∪.
   static const AccessRequirement requestFromClinical =
       labRequestFromClinicalWriteRequirement;
+  /// Open Billing workspace when payment gate blocks progression.
+  static const AccessRequirement openBilling = labOpenBillingRequirement;
   static const AccessRequirement nestedWrite = labWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = labWorkspaceReadRequirement;
   static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;

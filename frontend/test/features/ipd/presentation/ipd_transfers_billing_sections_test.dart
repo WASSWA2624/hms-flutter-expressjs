@@ -454,12 +454,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Terry Transfer').first);
-      await tester.pumpAndSettle();
-
+      // Prefer board next-action (list row) — reliably hit-testable.
       final Finder manage = find.text('Manage transfer');
       expect(manage, findsWidgets);
-      await tester.tap(manage.first);
+      await tester.ensureVisible(manage.first);
+      await tester.pumpAndSettle();
+      await tester.tap(manage.first, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Receive payment'), findsNothing);

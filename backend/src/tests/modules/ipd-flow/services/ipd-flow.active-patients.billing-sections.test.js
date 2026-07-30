@@ -280,7 +280,9 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
       id: 'tr-1',
       status: 'IN_PROGRESS',
       from_ward_id: 'ward-general',
-      to_ward_id: null};
+      to_ward_id: null,
+      admission_id: 'adm-1',
+      deleted_at: null};
     const activeAssignment = {
       id: 'ba-active',
       bed_id: 'bed-general',
@@ -308,7 +310,9 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
       bed_assignment: {
         update: jest.fn(),
         create: jest.fn()},
-      transfer_request: { update: jest.fn() },
+      transfer_request: {
+        findFirst: jest.fn().mockResolvedValue(transferRequest),
+        update: jest.fn()},
       ward: {
         findFirst: jest
           .fn()
@@ -401,6 +405,10 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
           .fn()
           .mockResolvedValueOnce({ id: 'adm-1' })
           .mockResolvedValueOnce(admission)},
+      user: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          human_friendly_id: 'USR-1'})},
       nursing_note: {
         create: jest.fn().mockResolvedValue({ id: 'nn-1' }),
         update: jest.fn()}};
@@ -413,6 +421,7 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
       'ADM-ACTIVE-1',
       {
         note: 'Vitals stable',
+        nurse_user_id: 'user-1',
         billing: {
           payment_status: 'PENDING',
           total_amount: '15000.00',
@@ -424,7 +433,7 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
               quantity: 1,
               unit_price: '15000.00',
               line_total: '15000.00'}]}},
-      { tenant_id: 'tenant-1' },
+      { tenant_id: 'tenant-1', user_id: 'user-1' },
     );
 
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledTimes(1);
@@ -444,6 +453,10 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
           .fn()
           .mockResolvedValueOnce({ id: 'adm-1' })
           .mockResolvedValueOnce(admission)},
+      user: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          human_friendly_id: 'USR-1'})},
       nursing_note: {
         create: jest.fn().mockResolvedValue({ id: 'nn-2' })}};
 
@@ -453,8 +466,8 @@ describe('ipd-flow Active Patients billing-sections scan', () => {
 
     await ipdFlowService.addNursingNote(
       'ADM-ACTIVE-1',
-      { note: 'Charted' },
-      { tenant_id: 'tenant-1' },
+      { note: 'Charted', nurse_user_id: 'user-1' },
+      { tenant_id: 'tenant-1', user_id: 'user-1' },
     );
 
     expect(mockPersistNursingServiceBilling).not.toHaveBeenCalled();

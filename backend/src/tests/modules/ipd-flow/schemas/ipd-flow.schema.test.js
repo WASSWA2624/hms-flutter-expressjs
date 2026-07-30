@@ -70,6 +70,26 @@ describe('ipd-flow.schema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts optional billing on COMPLETE transfer', () => {
+    const result = updateTransferSchema.safeParse({
+      action: 'COMPLETE',
+      to_bed_id: 'BED0000012',
+      billing: {
+        payment_status: 'PENDING',
+        currency: 'UGX',
+        total_amount: '50000.00',
+        line_items: [
+          {
+            id: 'bed-transfer-day',
+            label: 'Bed / day (transfer rate)',
+            quantity: 1,
+            unit_price: '50000.00',
+            line_total: '50000.00'}]}});
+
+    expect(result.success).toBe(true);
+    expect(result.data.billing.payment_status).toBe('PENDING');
+  });
+
   it('validates start payload with optional bed assignment', () => {
     const result = startIpdFlowSchema.safeParse({
       patient_id: 'PAT0000345',

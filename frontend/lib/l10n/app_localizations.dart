@@ -24242,10 +24242,10 @@ abstract class AppLocalizations {
   /// **'Collect sample'**
   String get labWorkflowNextCollectSample;
 
-  /// Next workflow guidance when billing gate blocks sample collection.
+  /// Next workflow guidance when Billing gate blocks collect, receive, verify, or release.
   ///
   /// In en, this message translates to:
-  /// **'Await payment before collection'**
+  /// **'Await payment before continuing'**
   String get labWorkflowNextAwaitPayment;
 
   /// Disabled action label when unpaid billing blocks lab collection.

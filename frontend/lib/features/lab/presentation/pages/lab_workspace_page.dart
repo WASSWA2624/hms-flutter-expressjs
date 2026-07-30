@@ -3064,13 +3064,21 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
   if (order.hasCriticalResult) {
     return l10n.labNextActionReviewCritical;
   }
+  final bool awaitPayment =
+      order.hasBillingGate && !order.isPaymentSatisfied;
   final String status = (order.status ?? '').toUpperCase();
   if (order.verifiableItemCount > 0) {
-    return l10n.labNextActionVerify;
+    return awaitPayment
+        ? l10n.labWorkflowNextAwaitPayment
+        : l10n.labNextActionVerify;
   }
   return switch (status) {
-    'ORDERED' || 'COLLECTED' => l10n.labNextActionEnterResult,
-    'IN_PROCESS' => l10n.labNextActionVerify,
+    'ORDERED' || 'COLLECTED' => awaitPayment
+        ? l10n.labWorkflowNextAwaitPayment
+        : l10n.labNextActionEnterResult,
+    'IN_PROCESS' => awaitPayment
+        ? l10n.labWorkflowNextAwaitPayment
+        : l10n.labNextActionVerify,
     'COMPLETED' => l10n.labNextActionCompleted,
     _ => l10n.labNextActionWatch,
   };
