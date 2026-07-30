@@ -590,6 +590,108 @@ describe("ipd-flow.service", () => {
   });
   });
 
+  describe("Discharge Pending clearance billing gate (updateDischargeClearance)", () => {
+  it("derives billing_cleared from Billing ledger (no client bypass)", async () => {
+    const admission = buildAdmission({
+      discharge_summaries: [
+        {
+          id: "ds-1",
+          summary: "Ready",
+          status: "PLANNED",
+          clearance_snapshot: {
+            summary_ready: true,
+            pending_orders_reviewed: true,
+            pharmacy_cleared: true,
+            billing_cleared: false,
+            nursing_cleared: true,
+            documents_ready: true,
+            patient_exited: false,
+            override_reason: null},
+          deleted_at: null,
+          updated_at: now}]});
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(admission)},
+      discharge_summary: {
+        update: jest.fn().mockResolvedValue({ id: "ds-1" })},
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "inv-1",
+            total_amount: "500.00",
+            status: "SENT",
+            billing_status: "ISSUED",
+            payments: [],
+            billing_adjustments: []}])}};
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    ipdFlowRepository.findById.mockResolvedValue(admission);
+
+    await ipdFlowService.updateDischargeClearance(
+      "ADM0000001",
+      { billing_cleared: true, nursing_cleared: true },
+      {},
+    );
+
+    expect(tx.invoice.findMany).toHaveBeenCalled();
+    expect(tx.discharge_summary.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          clearance_snapshot: expect.objectContaining({
+            billing_cleared: false})})}),
+    );
+  });
+
+  it("sets billing_cleared true when ledger has no outstanding balance", async () => {
+    const admission = buildAdmission({
+      discharge_summaries: [
+        {
+          id: "ds-1",
+          summary: "Ready",
+          status: "PLANNED",
+          clearance_snapshot: {
+            summary_ready: true,
+            pending_orders_reviewed: true,
+            pharmacy_cleared: true,
+            billing_cleared: false,
+            nursing_cleared: true,
+            documents_ready: true,
+            patient_exited: false,
+            override_reason: null},
+          deleted_at: null,
+          updated_at: now}]});
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(admission)},
+      discharge_summary: {
+        update: jest.fn().mockResolvedValue({ id: "ds-1" })},
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([])}};
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    ipdFlowRepository.findById.mockResolvedValue(admission);
+
+    await ipdFlowService.updateDischargeClearance(
+      "ADM0000001",
+      { billing_cleared: false },
+      {},
+    );
+
+    expect(tx.discharge_summary.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          clearance_snapshot: expect.objectContaining({
+            billing_cleared: true})})}),
+    );
+  });
+  });
+
   it("resolves admissions by human-friendly ID", async () => {
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     ipdFlowRepository.findById.mockResolvedValue(buildAdmission());
