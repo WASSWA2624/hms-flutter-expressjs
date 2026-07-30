@@ -172,16 +172,25 @@ class _AppTextFieldState extends State<AppTextField> {
         : appFieldLabel(widget.labelText, isRequired: widget.isRequired);
     final TextStyle fieldLabelStyle =
         inputTheme.labelStyle ??
-        theme.textTheme.labelLarge ??
-        const TextStyle(fontWeight: FontWeight.w500);
+        inputTheme.hintStyle ??
+        theme.textTheme.bodyLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w300,
+        ) ??
+        const TextStyle(fontWeight: FontWeight.w300);
+    final TextStyle placeholderLabelStyle = fieldLabelStyle.copyWith(
+      color:
+          fieldLabelStyle.color ??
+          inputTheme.hintStyle?.color ??
+          theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w300,
+    );
     final Widget? floatingLabel = widget.useFloatingLabel
         ? appFieldLabelWidget(
             context,
             widget.labelText,
             isRequired: widget.isRequired,
-            style: fieldLabelStyle.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: placeholderLabelStyle,
           )
         : null;
     final Widget field = TextFormField(
@@ -261,16 +270,13 @@ class _AppTextFieldState extends State<AppTextField> {
             context,
             widget.labelText,
             isRequired: widget.isRequired,
-            style: fieldLabelStyle.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: placeholderLabelStyle,
           )
         : resolvedLabelText == null
         ? null
         : Text(
             resolvedLabelText,
-            style: fieldLabelStyle.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: placeholderLabelStyle.copyWith(
               fontSize: 14,
               height: 1.2,
             ),

@@ -272,6 +272,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             context,
             widget.labelText,
             isRequired: widget.isRequired,
+            style:
+                theme.inputDecorationTheme.labelStyle ??
+                theme.inputDecorationTheme.hintStyle ??
+                theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w300,
+                ),
           ),
           hintText: widget.hintText,
           helperText: widget.helperText,

@@ -315,7 +315,9 @@ class _PatientDetailsTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TextStyle? nameStyle = theme.textTheme.titleMedium;
+    final TextStyle? nameStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
     final String normalizedId = patientNumber.trim();
     final String semanticsLabel =
         '${showPatientName ? patientName : ''} ${normalizedId.isEmpty ? '' : normalizedId}'

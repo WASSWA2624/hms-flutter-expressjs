@@ -21,6 +21,14 @@ void main() {
       expect(theme.textTheme.titleMedium?.fontWeight, FontWeight.w400);
       expect(theme.textTheme.labelLarge?.fontWeight, FontWeight.w400);
       expect(
+        theme.inputDecorationTheme.labelStyle?.fontWeight,
+        FontWeight.w300,
+      );
+      expect(
+        theme.inputDecorationTheme.floatingLabelStyle?.fontWeight,
+        FontWeight.w400,
+      );
+      expect(
         theme.inputDecorationTheme.hintStyle?.fontWeight,
         FontWeight.w300,
       );

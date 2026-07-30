@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_unit_conversion.dart';
 
 /// Canonical lab reference-range display text.
 ///
@@ -90,8 +91,170 @@ String? formatLabReferenceRange(LabReferenceRange range) {
   );
 }
 
+/// Returns [range] with numeric bounds rewritten into [targetUnit] when
+/// convertible; otherwise returns `null` (caller keeps the native range).
+LabReferenceRange? convertLabReferenceRangeToUnit(
+  LabReferenceRange range, {
+  required String? targetUnit,
+}) {
+  final String? target = normalizeLabUnitToken(targetUnit);
+  final String? source = normalizeLabUnitToken(range.unit);
+  if (target == null || source == null) {
+    return null;
+  }
+  if (source == target) {
+    return range;
+  }
+  if (!labUnitsAreCompatible(source, target)) {
+    return null;
+  }
+
+  final String? normalMin = convertLabBoundText(
+    range.normalMinValue,
+    fromUnit: source,
+    toUnit: target,
+  );
+  final String? normalMax = convertLabBoundText(
+    range.normalMaxValue,
+    fromUnit: source,
+    toUnit: target,
+  );
+  final String? criticalMin = convertLabBoundText(
+    range.criticalMinValue,
+    fromUnit: source,
+    toUnit: target,
+  );
+  final String? criticalMax = convertLabBoundText(
+    range.criticalMaxValue,
+    fromUnit: source,
+    toUnit: target,
+  );
+
+  // Any failed numeric conversion means we must not silently rewrite bounds.
+  if ((range.normalMinValue?.trim().isNotEmpty ?? false) && normalMin == null) {
+    return null;
+  }
+  if ((range.normalMaxValue?.trim().isNotEmpty ?? false) && normalMax == null) {
+    return null;
+  }
+  if ((range.criticalMinValue?.trim().isNotEmpty ?? false) &&
+      criticalMin == null) {
+    return null;
+  }
+  if ((range.criticalMaxValue?.trim().isNotEmpty ?? false) &&
+      criticalMax == null) {
+    return null;
+  }
+
+  final String displayUnit = (targetUnit ?? range.unit)?.trim().isNotEmpty == true
+      ? targetUnit!.trim()
+      : target;
+
+  return LabReferenceRange(
+    id: range.id,
+    label: range.label,
+    unit: displayUnit,
+    method: range.method,
+    gender: range.gender,
+    ageMinValue: range.ageMinValue,
+    ageMinUnit: range.ageMinUnit,
+    ageMaxValue: range.ageMaxValue,
+    ageMaxUnit: range.ageMaxUnit,
+    normalMinValue: normalMin ?? range.normalMinValue,
+    normalMaxValue: normalMax ?? range.normalMaxValue,
+    criticalMinValue: criticalMin ?? range.criticalMinValue,
+    criticalMaxValue: criticalMax ?? range.criticalMaxValue,
+    referenceText: range.referenceText,
+    notes: range.notes,
+    effectiveFrom: range.effectiveFrom,
+    effectiveTo: range.effectiveTo,
+    version: range.version,
+    sortOrder: range.sortOrder,
+    summary: range.summary,
+  );
+}
+
+/// Formats [range] in [resultUnit] when conversion is possible.
+String? formatLabReferenceRangeForResultUnit(
+  LabReferenceRange range, {
+  String? resultUnit,
+}) {
+  final LabReferenceRange display =
+      convertLabReferenceRangeToUnit(range, targetUnit: resultUnit) ?? range;
+  return formatLabReferenceRange(display);
+}
+
+/// Compares [value] to [range] bounds expressed in [resultUnit] when convertible.
+///
+/// Returns `CRITICAL` / `LOW` / `HIGH` / `NORMAL`, or `null` when the value is
+/// non-numeric, the range has no numeric bounds, or units are mismatched and
+/// cannot be converted.
+String? interpretLabNumericResultFlag({
+  required String valueText,
+  required LabReferenceRange range,
+  String? resultUnit,
+}) {
+  final String normalized = valueText.trim();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  final num? value = num.tryParse(normalized);
+  if (value == null) {
+    return null;
+  }
+
+  final String? selectedUnit = resultUnit?.trim();
+  final LabReferenceRange? converted = convertLabReferenceRangeToUnit(
+    range,
+    targetUnit: selectedUnit,
+  );
+  final LabReferenceRange effective = converted ?? range;
+
+  final String? rangeUnit = normalizeLabUnitToken(effective.unit);
+  final String? valueUnit = normalizeLabUnitToken(selectedUnit);
+  if (rangeUnit != null &&
+      valueUnit != null &&
+      rangeUnit != valueUnit &&
+      converted == null) {
+    return null;
+  }
+
+  final num? criticalMin = num.tryParse(
+    (effective.criticalMinValue ?? '').trim(),
+  );
+  final num? criticalMax = num.tryParse(
+    (effective.criticalMaxValue ?? '').trim(),
+  );
+  if (criticalMin != null && value <= criticalMin) {
+    return 'CRITICAL';
+  }
+  if (criticalMax != null && value >= criticalMax) {
+    return 'CRITICAL';
+  }
+
+  final num? normalMin = num.tryParse(
+    (effective.normalMinValue ?? '').trim(),
+  );
+  final num? normalMax = num.tryParse(
+    (effective.normalMaxValue ?? '').trim(),
+  );
+  if (normalMin != null && value < normalMin) {
+    return 'LOW';
+  }
+  if (normalMax != null && value > normalMax) {
+    return 'HIGH';
+  }
+  if (normalMin != null || normalMax != null) {
+    return 'NORMAL';
+  }
+  return null;
+}
+
 /// Formats an applied-range snapshot map from API payloads.
-String? formatLabReferenceRangeFromMap(Map<String, Object?>? applied) {
+String? formatLabReferenceRangeFromMap(
+  Map<String, Object?>? applied, {
+  String? resultUnit,
+}) {
   if (applied == null || applied.isEmpty) {
     return null;
   }
@@ -100,6 +263,39 @@ String? formatLabReferenceRangeFromMap(Map<String, Object?>? applied) {
   if (_trimOrNull(unit) == null && summary != null) {
     unit = _extractLegacyUnitFragment(summary);
   }
+
+  String? normalMin = applied['normal_min_value']?.toString();
+  String? normalMax = applied['normal_max_value']?.toString();
+  final String? target = normalizeLabUnitToken(resultUnit);
+  final String? source = normalizeLabUnitToken(unit);
+  if (target != null &&
+      source != null &&
+      source != target &&
+      labUnitsAreCompatible(source, target)) {
+    final String? convertedMin = convertLabBoundText(
+      normalMin,
+      fromUnit: source,
+      toUnit: target,
+    );
+    final String? convertedMax = convertLabBoundText(
+      normalMax,
+      fromUnit: source,
+      toUnit: target,
+    );
+    if ((normalMin == null ||
+            normalMin.trim().isEmpty ||
+            convertedMin != null) &&
+        (normalMax == null ||
+            normalMax.trim().isEmpty ||
+            convertedMax != null)) {
+      normalMin = convertedMin ?? normalMin;
+      normalMax = convertedMax ?? normalMax;
+      unit = (resultUnit ?? unit)?.trim().isNotEmpty == true
+          ? resultUnit!.trim()
+          : target;
+    }
+  }
+
   return formatLabReferenceRangeDisplay(
     label: applied['label']?.toString(),
     unit: unit,
@@ -109,8 +305,8 @@ String? formatLabReferenceRangeFromMap(Map<String, Object?>? applied) {
     ageMinUnit: applied['age_min_unit']?.toString(),
     ageMaxValue: _asNum(applied['age_max_value']),
     ageMaxUnit: applied['age_max_unit']?.toString(),
-    normalMinValue: applied['normal_min_value']?.toString(),
-    normalMaxValue: applied['normal_max_value']?.toString(),
+    normalMinValue: normalMin,
+    normalMaxValue: normalMax,
     referenceText: applied['reference_text']?.toString(),
     summary: summary,
   );
@@ -201,6 +397,7 @@ String? _extractLegacyUnitFragment(String summary) {
 String? resolveLabOrderItemDisplayReferenceRange(
   LabOrderItem item, {
   String? patientGender,
+  String? resultUnit,
 }) {
   if (item.interpretationOverride) {
     final String? overrideText = _trimOrNull(item.referenceRangeOverride);
@@ -214,7 +411,10 @@ String? resolveLabOrderItemDisplayReferenceRange(
     patientGender: patientGender,
   );
   if (chosen != null) {
-    final String? built = formatLabReferenceRange(chosen);
+    final String? built = formatLabReferenceRangeForResultUnit(
+      chosen,
+      resultUnit: resultUnit,
+    );
     if (built != null) {
       return built;
     }
@@ -222,6 +422,7 @@ String? resolveLabOrderItemDisplayReferenceRange(
 
   final String? applied = formatLabReferenceRangeFromMap(
     item.appliedReferenceRange,
+    resultUnit: resultUnit,
   );
   if (applied != null) {
     return applied;

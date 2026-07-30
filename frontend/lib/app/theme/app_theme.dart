@@ -210,13 +210,17 @@ abstract final class AppTheme {
         focusedErrorBorder: errorInputBorder.copyWith(
           borderSide: BorderSide(color: statusColors.error, width: 1.4),
         ),
+        // Empty-field labels must read as placeholders (light + muted), not
+        // as entered values. Hints stay lightest; floating labels stay ≤ w400.
         labelStyle: inputTextStyle.copyWith(
-          color: palette.inputLabelColor,
-          fontWeight: FontWeight.w400,
+          color: palette.inputHintColor,
+          fontWeight: FontWeight.w300,
+          fontSize: 14,
+          height: 1.5,
         ),
         floatingLabelStyle: inputTextStyle.copyWith(
           color: palette.inputFloatingLabelColor,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w400,
         ),
         hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,

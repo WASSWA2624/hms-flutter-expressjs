@@ -191,6 +191,13 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
           context,
           widget.labelText,
           isRequired: widget.isRequired,
+          style:
+              Theme.of(context).inputDecorationTheme.labelStyle ??
+              Theme.of(context).inputDecorationTheme.hintStyle ??
+              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w300,
+              ),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         helperText: widget.helperText,

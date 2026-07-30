@@ -8,3 +8,4 @@ export 'lab_reference_range_format.dart';
 export 'lab_reference_range_list_field.dart';
 export 'lab_result_value_unit_fields.dart';
 export 'lab_test_definition_form.dart';
+export 'lab_unit_conversion.dart';

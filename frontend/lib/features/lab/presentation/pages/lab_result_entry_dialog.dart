@@ -19,6 +19,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_format.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_result_value_unit_fields.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_unit_conversion.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
@@ -237,10 +238,12 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                 AppAccessActionGate(
                   requirement: labReportPreviewRequirement,
                   builder: (BuildContext context, bool isAllowed) {
+                    final bool canPreview =
+                        isAllowed && !_isSaving && hasSaveableDrafts;
                     return AppReportActionButton.preview(
                       label: l10n.labPreviewReportAction,
-                      enabled: isAllowed && !_isSaving,
-                      onPressed: isAllowed && !_isSaving
+                      enabled: canPreview,
+                      onPressed: canPreview
                           ? () => _openPrintPreview(context, workflows)
                           : null,
                     );
@@ -1291,6 +1294,7 @@ class _LabReferenceRangeCell extends StatelessWidget {
     final String? autoRange = resolveDisplayReferenceRange(
       item,
       patientGender: patientGender,
+      resultUnit: draft.unitController.text,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2713,6 +2717,7 @@ String? _computedNumericFlagToken(
   LabOrderItem item,
   String valueText, {
   String? patientGender,
+  String? resultUnit,
 }) {
   final String normalized = valueText.trim();
   if (normalized.isEmpty) {
@@ -2723,13 +2728,30 @@ String? _computedNumericFlagToken(
     return null;
   }
 
-  final LabReferenceRange? range = resolveLabReferenceRangeForPatient(
+  final LabReferenceRange? nativeRange = resolveLabReferenceRangeForPatient(
     item.referenceRanges,
     patientGender: patientGender,
   );
-  if (range == null) {
+  if (nativeRange == null) {
     return null;
   }
+
+  final String? selectedUnit = (resultUnit ?? item.resultUnit ?? item.unit)
+      ?.trim();
+  final LabReferenceRange? convertedRange = convertLabReferenceRangeToUnit(
+    nativeRange,
+    targetUnit: selectedUnit,
+  );
+  final String? rangeUnit = normalizeLabUnitToken(nativeRange.unit);
+  final String? valueUnit = normalizeLabUnitToken(selectedUnit);
+  if (rangeUnit != null &&
+      valueUnit != null &&
+      rangeUnit != valueUnit &&
+      convertedRange == null) {
+    // Units differ and conversion is impossible — do not compare.
+    return null;
+  }
+  final LabReferenceRange range = convertedRange ?? nativeRange;
 
   final num? criticalMin = num.tryParse(
     (range.criticalMinValue ?? '').trim(),
@@ -2791,6 +2813,7 @@ String? _resultInterpretationFlagToken(
         item,
         draft.valueController.text,
         patientGender: patientGender,
+        resultUnit: draft.unitController.text,
       );
       if (computed != null) {
         return computed;
@@ -2818,6 +2841,7 @@ String? _resultInterpretationFlagToken(
       item,
       valueText,
       patientGender: patientGender,
+      resultUnit: draft?.unitController.text ?? item.resultUnit ?? item.unit,
     );
     if (computed != null) {
       return computed;
@@ -2962,7 +2986,11 @@ String _resolveItemResultFlagLabel(
       ? draft.valueController.text
       : (item.resultValue ?? '');
   if (valueText.trim().isNotEmpty) {
-    final String? computed = _computedNumericFlagToken(item, valueText);
+    final String? computed = _computedNumericFlagToken(
+      item,
+      valueText,
+      resultUnit: draft?.unitController.text ?? item.resultUnit ?? item.unit,
+    );
     if (computed != null) {
       return labStatusLabel(context, computed);
     }
@@ -3045,10 +3073,12 @@ void _scrollToFirstInvalidDraft(List<_ResultDraft> drafts) {
 String? resolveDisplayReferenceRange(
   LabOrderItem item, {
   String? patientGender,
+  String? resultUnit,
 }) {
   return resolveLabOrderItemDisplayReferenceRange(
     item,
     patientGender: patientGender,
+    resultUnit: resultUnit,
   );
 }
 
@@ -3450,7 +3480,11 @@ List<LabOrderItem> _printableReleasedReportItems(List<LabOrderItem> items) {
 
 AppClinicalResultFlag _clinicalResultFlagForLabItem(LabOrderItem item) {
   final String token =
-      (_computedNumericFlagToken(item, item.resultValue ?? '') ??
+      (_computedNumericFlagToken(
+                item,
+                item.resultValue ?? '',
+                resultUnit: item.resultUnit ?? item.unit,
+              ) ??
               item.resultFlag ??
               item.effectiveResultStatus ??
               '')
@@ -3569,7 +3603,11 @@ String _resolveReportItemFlagToken(BuildContext context, LabOrderItem item) {
 
   final String valueText = item.resultValue?.trim() ?? '';
   if (valueText.isNotEmpty) {
-    final String? computed = _computedNumericFlagToken(item, valueText);
+    final String? computed = _computedNumericFlagToken(
+      item,
+      valueText,
+      resultUnit: item.resultUnit ?? item.unit,
+    );
     if (computed != null && computed.trim().isNotEmpty) {
       return computed.trim().toUpperCase();
     }
@@ -3590,7 +3628,11 @@ String _resolveReportItemFlagToken(BuildContext context, LabOrderItem item) {
 
 bool _isAbnormalReportItem(LabOrderItem item) {
   final String? flagToken =
-      _computedNumericFlagToken(item, item.resultValue ?? '') ??
+      _computedNumericFlagToken(
+        item,
+        item.resultValue ?? '',
+        resultUnit: item.resultUnit ?? item.unit,
+      ) ??
       item.resultFlag ??
       item.effectiveResultStatus;
   return _isAbnormalStatus(flagToken);

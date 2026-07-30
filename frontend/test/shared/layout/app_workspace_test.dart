@@ -554,6 +554,9 @@ void main() {
     expect(find.text('Panel body'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
 
+    final Text title = tester.widget<Text>(find.text('Orders'));
+    expect(title.style?.fontWeight, FontWeight.w700);
+
     await tester.tap(find.text('Orders'));
     await tester.pumpAndSettle();
 
@@ -561,6 +564,39 @@ void main() {
     expect(find.text('Panel body'), findsNothing);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
+
+  testWidgets(
+    'AppCollapsibleSection keeps expand chevron extreme-right of header actions',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppCollapsibleSection(
+          title: 'CBC PANEL',
+          headerActions: <Widget>[
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: 'Delete',
+              onPressed: () {},
+            ),
+          ],
+          child: const Text('Panel body'),
+        ),
+        size: const Size(800, 500),
+      );
+
+      final Offset deleteCenter = tester.getCenter(
+        find.byIcon(Icons.delete_outline),
+      );
+      final Offset chevronCenter = tester.getCenter(
+        find.byIcon(Icons.expand_less),
+      );
+      expect(chevronCenter.dx, greaterThan(deleteCenter.dx));
+
+      final Text title = tester.widget<Text>(find.text('CBC PANEL'));
+      expect(title.style?.fontWeight, FontWeight.w700);
+    },
+  );
 
   testWidgets('AppCollapsibleSection can opt out of collapsing', (
     WidgetTester tester,

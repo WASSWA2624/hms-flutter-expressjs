@@ -33,7 +33,7 @@ class AppCollapsibleSection extends StatefulWidget {
   final String? description;
   final List<Widget> actions;
 
-  /// Actions rendered in the header row (before the expand chevron).
+  /// Actions rendered in the header row immediately left of the expand chevron.
   final List<Widget> headerActions;
   final Widget child;
   final IconData? titleIcon;
@@ -134,20 +134,12 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                 child: widget.titleWidget ??
                                     Text(
                                       widget.title!,
-                                      style: theme.textTheme.titleMedium,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                               ),
-                              if (widget.collapsible)
-                                Icon(
-                                  _resolvedExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  size: theme.appTokens.listIconSize,
-                                  color: colorScheme.onSurfaceVariant,
-                                  semanticLabel: _resolvedExpanded
-                                      ? context.l10n.commonShowLessActionLabel
-                                      : context.l10n.commonShowMoreActionLabel,
-                                ),
                             ],
                           ),
                         ),
@@ -159,6 +151,8 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                     // Header actions sit outside the collapse InkWell so they
                     // do not toggle expand/collapse. Default to icon-only so
                     // controls like delete read as plain icon buttons.
+                    // Order: actions, then chevron (extreme right) so chevrons
+                    // align across stacked sections (e.g. patient + panel).
                     AppActionLabelScope(
                       showLabels: false,
                       forceIconOnly: true,
@@ -167,6 +161,29 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                         spacing: theme.spacing.xs,
                         runSpacing: theme.spacing.xs,
                         children: widget.headerActions,
+                      ),
+                    ),
+                  ],
+                  if (widget.collapsible) ...<Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: _toggleExpanded,
+                        customBorder: const CircleBorder(),
+                        child: Padding(
+                          padding: EdgeInsets.all(theme.spacing.xs / 2),
+                          child: Icon(
+                            _resolvedExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            size: theme.appTokens.listIconSize,
+                            color: colorScheme.onSurfaceVariant,
+                            semanticLabel: _resolvedExpanded
+                                ? context.l10n.commonShowLessActionLabel
+                                : context.l10n.commonShowMoreActionLabel,
+                          ),
+                        ),
                       ),
                     ),
                   ],

@@ -75,5 +75,79 @@ void main() {
         'Adult male | MALE | 13.5 - 17.5 g/dL',
       );
     });
+
+    test('recalculates range bounds when result unit changes to g/L', () {
+      const LabOrderItem item = LabOrderItem(
+        id: 'item-1',
+        referenceRanges: <LabReferenceRange>[
+          LabReferenceRange(
+            id: 'male',
+            label: 'Adult male',
+            unit: 'g/dL',
+            gender: 'MALE',
+            normalMinValue: '13.5',
+            normalMaxValue: '17.5',
+          ),
+        ],
+      );
+
+      expect(
+        resolveLabOrderItemDisplayReferenceRange(
+          item,
+          patientGender: 'male',
+          resultUnit: 'g/L',
+        ),
+        'Adult male | MALE | 135 - 175 g/L',
+      );
+    });
+
+    test('keeps native range when conversion is impossible', () {
+      const LabOrderItem item = LabOrderItem(
+        id: 'item-1',
+        referenceRanges: <LabReferenceRange>[
+          LabReferenceRange(
+            id: 'male',
+            label: 'Adult male',
+            unit: 'g/dL',
+            gender: 'MALE',
+            normalMinValue: '13.5',
+            normalMaxValue: '17.5',
+          ),
+        ],
+      );
+
+      expect(
+        resolveLabOrderItemDisplayReferenceRange(
+          item,
+          patientGender: 'male',
+          resultUnit: '%',
+        ),
+        'Adult male | MALE | 13.5 - 17.5 g/dL',
+      );
+    });
+  });
+
+  group('convertLabReferenceRangeToUnit', () {
+    test('converts critical and normal bounds together', () {
+      const LabReferenceRange range = LabReferenceRange(
+        id: 'r1',
+        unit: 'g/dL',
+        normalMinValue: '13.5',
+        normalMaxValue: '17.5',
+        criticalMinValue: '7',
+        criticalMaxValue: '20',
+      );
+
+      final LabReferenceRange? converted = convertLabReferenceRangeToUnit(
+        range,
+        targetUnit: 'g/L',
+      );
+      expect(converted, isNotNull);
+      expect(converted!.unit, 'g/L');
+      expect(converted.normalMinValue, '135');
+      expect(converted.normalMaxValue, '175');
+      expect(converted.criticalMinValue, '70');
+      expect(converted.criticalMaxValue, '200');
+    });
   });
 }
