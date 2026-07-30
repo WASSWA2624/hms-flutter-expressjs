@@ -421,6 +421,7 @@ abstract final class IpdAdmissionQueueAtomPermissions {
 /// | Next action continue care (label) | progressive disclosure | read ∪ |
 /// | Detail complementary writes | create / update / delete | operational / clinical |
 /// | Detail insurance / billing / ward-round billing | nested read | ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
 /// | Manage beds | navigate | ([manageBeds]) — not mounted on this tab |
 /// | Route entry (deep link) | navigate | clinical \| operations \| billing:read |
@@ -494,6 +495,8 @@ abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement navigation = ipdNavigationRequirement;
   static const AccessRequirement billingRead = ipdBillingReadRequirement;
   static const AccessRequirement billingPanel = ipdBillingPanelReadRequirement;
+  /// Navigate to Billing workspace for settle / adjust / refund (no inline cashier).
+  static const AccessRequirement openBilling = ipdBillingReadRequirement;
   static const AccessRequirement manageBeds = ipdBedManageRequirement;
   /// Nested cross-module write — matrix _(n/a)_; reuses clinical write ∩.
   static const AccessRequirement nestedWrite = ipdClinicalWriteRequirement;
@@ -603,6 +606,7 @@ abstract final class IpdBedBoardAtomPermissions {
 /// | Detail complementary writes / clinical orders | create / update / delete | operational / clinical |
 /// | Detail release bed (discharge planned) | update | operational ∪ ([releaseBed]) |
 /// | Detail insurance / billing panel | nested read | ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) — Billing workspace |
 /// | Nested mutation dialogs / `panel=discharge` deep link | create / update | clinical write ([panelDeepLink]) |
 /// | Manage beds | navigate | ([manageBeds]) — not mounted on this tab |
 /// | Route entry (deep link) | navigate | clinical \| operations \| billing:read |
@@ -676,6 +680,8 @@ abstract final class IpdDischargeAtomPermissions {
   static const AccessRequirement navigation = ipdNavigationRequirement;
   static const AccessRequirement billingRead = ipdBillingReadRequirement;
   static const AccessRequirement billingPanel = ipdBillingPanelReadRequirement;
+  /// Navigate to Billing for final bill / refund / outstanding — never cashier.
+  static const AccessRequirement openBilling = ipdBillingPanelReadRequirement;
   static const AccessRequirement manageBeds = ipdBedManageRequirement;
   /// Nested cross-module write — matrix _(n/a)_; reuses clinical write ∩.
   static const AccessRequirement nestedWrite = ipdClinicalWriteRequirement;
@@ -724,6 +730,7 @@ bool ipdRouteEntryMatchesAppRoutes() {
 /// | Next action continue care (label) | progressive disclosure | read ∪ |
 /// | Detail complementary writes | create / update / delete | operational / clinical |
 /// | Detail insurance / billing panel | nested read | ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) — Billing workspace |
 /// | Nested transfer dialogs / `panel=transfers` deep link | create / update | operational ∪ |
 /// | Manage beds | navigate | ([manageBeds]) — not mounted on this tab |
 /// | Route entry (deep link) | navigate | clinical \| operations \| billing:read |
@@ -794,6 +801,7 @@ abstract final class IpdTransfersAtomPermissions {
   static const AccessRequirement navigation = ipdNavigationRequirement;
   static const AccessRequirement billingRead = ipdBillingReadRequirement;
   static const AccessRequirement billingPanel = ipdBillingPanelReadRequirement;
+  static const AccessRequirement openBilling = ipdBillingPanelReadRequirement;
   static const AccessRequirement manageBeds = ipdBedManageRequirement;
   /// Nested cross-module write — matrix _(n/a)_; reuses operational write ∪.
   static const AccessRequirement nestedWrite = ipdOperationalWriteRequirement;

@@ -537,6 +537,7 @@ final class IpdWorkspaceController
     required String action,
     String? transferRequestId,
     String? toBedId,
+    Map<String, Object?>? billing,
   }) {
     return _mutateAdmission(
       admission,
@@ -544,6 +545,7 @@ final class IpdWorkspaceController
         'transfer_request_id': transferRequestId,
         'action': action,
         'to_bed_id': toBedId,
+        'billing': ?billing,
       }),
       refreshReferenceData: action == 'COMPLETE',
       // Transfer status / bed occupancy also appear on rooms & beds boards.
@@ -568,12 +570,14 @@ final class IpdWorkspaceController
 
   Future<AppFailure?> addNursingNote(
     IpdAdmissionSummary admission,
-    String note,
-  ) {
+    String note, {
+    Map<String, Object?>? billing,
+  }) {
     return _mutateAdmission(
       admission,
       () => _repository.addNursingNote(admission.apiId, <String, Object?>{
         'note': note,
+        'billing': ?billing,
       }),
     );
   }

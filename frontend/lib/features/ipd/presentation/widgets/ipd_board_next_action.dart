@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_access.dart';
 import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_nursing_note_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -503,22 +504,7 @@ Future<bool?> _openNursingNoteDialog(
   WidgetRef ref,
   IpdAdmissionSummary summary,
 ) {
-  final AppLocalizations l10n = context.l10n;
-  return showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => ClinicalFreeTextActionDialog(
-      title: l10n.ipdAddNursingNoteAction,
-      icon: const Icon(Icons.note_add_outlined),
-      label: l10n.ipdNotesFieldLabel,
-      submitLabel: l10n.ipdAddNursingNoteAction,
-      minLines: 3,
-      maxLines: 8,
-      onSubmit: (String value) => ref
-          .read(ipdWorkspaceControllerProvider.notifier)
-          .addNursingNote(summary, value),
-    ),
-  );
+  return showIpdNursingNoteDialog(context, summary: summary);
 }
 
 Future<bool?> _openDischargePlanningForAdmission(

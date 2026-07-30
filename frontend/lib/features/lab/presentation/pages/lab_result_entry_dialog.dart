@@ -375,7 +375,11 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         .where(_canSubmitDraft)
         .toList(growable: false);
     final List<_ResultDraft> verifiableDrafts = verifyTargets
-        .where(_canVerifyDraft)
+        .where(
+          (_ResultDraft draft) =>
+              _canVerifyDraft(draft) &&
+              !_isLabDraftPaymentBlocked(draft, workflows),
+        )
         .toList(growable: false);
     final List<_ResultDraft> removableDrafts = selectedDrafts
         .where((draft) => _canRemoveResult(draft.item, draft))
@@ -478,6 +482,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                   drafts: _draftsForWorkflow(drafts, workflow),
                   catalogPanels: catalogPanels,
                   canMutate: canMutate,
+                  allowVerify:
+                      !workflow.nextActions.billingGateBlocked &&
+                      workflow.order.isPaymentSatisfied,
                   selectedItemIds: _selectedItemIds,
                   onToggleItemSelection: canMutate
                       ? _toggleItemSelection
@@ -1254,6 +1261,7 @@ class _LabOrderResultSection extends StatelessWidget {
     required this.drafts,
     required this.catalogPanels,
     required this.canMutate,
+    required this.allowVerify,
     required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmitItem,
@@ -1270,6 +1278,7 @@ class _LabOrderResultSection extends StatelessWidget {
   final List<_ResultDraft> drafts;
   final List<LabCatalogItem> catalogPanels;
   final bool canMutate;
+  final bool allowVerify;
   final Set<String> selectedItemIds;
   final void Function(String itemId, {required bool selected})?
   onToggleItemSelection;
@@ -1288,81 +1297,84 @@ class _LabOrderResultSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final LabOrderSummary order = workflow.order;
     final String orderLabel = order.displayId ?? order.apiId;
+    final List<Widget> orderActions =
+        canMutate && (onEditOrder != null || onDeleteOrder != null)
+        ? <Widget>[
+            if (onEditOrder != null)
+              AppAccessActionGate(
+                requirement: labWorkspaceWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppButton(
+                    leadingIcon: Icons.edit_outlined,
+                    label: l10n.labEditOrderAction,
+                    semanticLabel: l10n.labEditOrderAction,
+                    tooltip: l10n.labEditOrderAction,
+                    enabled: isAllowed,
+                    onPressed: isAllowed ? onEditOrder : null,
+                  );
+                },
+              ),
+            if (onDeleteOrder != null)
+              AppAccessActionGate(
+                requirement: labWorkspaceWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppButton(
+                    icon: Icons.delete_outline,
+                    label: l10n.labDeleteOrderAction,
+                    semanticLabel: l10n.labDeleteOrderAction,
+                    tooltip: l10n.labDeleteOrderAction,
+                    color: theme.statusColors.danger,
+                    enabled: isAllowed,
+                    onPressed: isAllowed ? onDeleteOrder : null,
+                  );
+                },
+              ),
+          ]
+        : const <Widget>[];
 
-    return AppWorkspaceDetailPanel(
-      title: '${l10n.labOrderFieldLabel} $orderLabel',
-      collapsible: false,
-      actions: canMutate && (onEditOrder != null || onDeleteOrder != null)
-          ? <Widget>[
-              if (onEditOrder != null)
-                AppAccessActionGate(
-                  requirement: labWorkspaceWriteRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton(
-                      leadingIcon: Icons.edit_outlined,
-                      label: l10n.labEditOrderAction,
-                      semanticLabel: l10n.labEditOrderAction,
-                      tooltip: l10n.labEditOrderAction,
-                      enabled: isAllowed,
-                      onPressed: isAllowed ? onEditOrder : null,
-                    );
-                  },
-                ),
-              if (onDeleteOrder != null)
-                AppAccessActionGate(
-                  requirement: labWorkspaceWriteRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton(
-                      icon: Icons.delete_outline,
-                      label: l10n.labDeleteOrderAction,
-                      semanticLabel: l10n.labDeleteOrderAction,
-                      tooltip: l10n.labDeleteOrderAction,
-                      color: theme.statusColors.danger,
-                      enabled: isAllowed,
-                      onPressed: isAllowed ? onDeleteOrder : null,
-                    );
-                  },
-                ),
-            ]
-          : const <Widget>[],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _InlineOrderMeta(
+    // Flat sections: order header + item/panel groups are siblings under Column
+    // (never nest panel AppWorkspaceDetailPanel inside the order section).
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppWorkspaceDetailPanel(
+          title: '${l10n.labOrderFieldLabel} $orderLabel',
+          collapsible: false,
+          actions: orderActions,
+          child: _InlineOrderMeta(
             icon: Icons.event_outlined,
             text:
                 '${l10n.labOrderedAtFieldLabel}: ${_optionalDateTimeLabel(context, order.orderedAt) ?? l10n.profileUnknownValue}',
           ),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            l10n.labItemsSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          if (drafts.isEmpty)
-            AppWorkspaceStatePanel.empty(
+        ),
+        SizedBox(height: theme.spacing.sm),
+        if (drafts.isEmpty)
+          AppWorkspaceDetailPanel(
+            title: l10n.labItemsSectionTitle,
+            collapsible: false,
+            child: AppWorkspaceStatePanel.empty(
               title: l10n.labNoOrderItemsEntryTitle,
               body: l10n.labNoOrderItemsEntryBody,
               icon: Icons.science_outlined,
-            )
-          else
-            _LabResultEntryTable(
-              drafts: drafts,
-              catalogPanels: catalogPanels,
-              canMutate: canMutate,
-              selectedItemIds: selectedItemIds,
-              onToggleItemSelection: onToggleItemSelection,
-              onSaveDraft: onSaveDraft,
-              onSubmit: onSubmitItem,
-              onVerify: onVerifyItem,
-              onEditVerified: onEditVerified,
-              onReject: onRejectItem,
-              onRemove: onRemoveResult,
             ),
-        ],
-      ),
+          )
+        else
+          _LabResultEntryTable(
+            drafts: drafts,
+            catalogPanels: catalogPanels,
+            canMutate: canMutate,
+            allowVerify: allowVerify,
+            selectedItemIds: selectedItemIds,
+            onToggleItemSelection: onToggleItemSelection,
+            onSaveDraft: onSaveDraft,
+            onSubmit: onSubmitItem,
+            onVerify: onVerifyItem,
+            onEditVerified: onEditVerified,
+            onReject: onRejectItem,
+            onRemove: onRemoveResult,
+            ungroupedSectionTitle: l10n.labItemsSectionTitle,
+          ),
+      ],
     );
   }
 }
@@ -1406,6 +1418,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
   const _ResponsiveLabResultEntry({
     required this.drafts,
     required this.canMutate,
+    required this.allowVerify,
     required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
@@ -1419,6 +1432,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final bool allowVerify;
   final Set<String> selectedItemIds;
   final void Function(String itemId, {required bool selected})?
   onToggleItemSelection;
@@ -1438,6 +1452,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
           return _LabResultEntryCards(
             drafts: drafts,
             canMutate: canMutate,
+            allowVerify: allowVerify,
             selectedItemIds: selectedItemIds,
             onToggleItemSelection: onToggleItemSelection,
             onSaveDraft: onSaveDraft,
@@ -1451,6 +1466,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
         return _LabResultEntryRowsTable(
           drafts: drafts,
           canMutate: canMutate,
+          allowVerify: allowVerify,
           selectedItemIds: selectedItemIds,
           onToggleItemSelection: onToggleItemSelection,
           onSaveDraft: onSaveDraft,
@@ -1471,6 +1487,7 @@ class _LabResultEntryCards extends StatelessWidget {
   const _LabResultEntryCards({
     required this.drafts,
     required this.canMutate,
+    required this.allowVerify,
     required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
@@ -1483,6 +1500,7 @@ class _LabResultEntryCards extends StatelessWidget {
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final bool allowVerify;
   final Set<String> selectedItemIds;
   final void Function(String itemId, {required bool selected})?
   onToggleItemSelection;
@@ -1556,6 +1574,7 @@ class _LabResultEntryCards extends StatelessWidget {
                     _LabResultActionsCell(
                       draft: draft,
                       canMutate: canMutate,
+                      allowVerify: allowVerify,
                       onSaveDraft: () => onSaveDraft(draft),
                       onSubmit: () => onSubmit(draft),
                       onVerify: () => onVerify(draft),
@@ -1580,6 +1599,7 @@ class _LabResultEntryTable extends StatelessWidget {
     required this.drafts,
     required this.catalogPanels,
     required this.canMutate,
+    required this.allowVerify,
     required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
@@ -1587,12 +1607,14 @@ class _LabResultEntryTable extends StatelessWidget {
     required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
+    required this.ungroupedSectionTitle,
     this.onToggleItemSelection,
   });
 
   final List<_ResultDraft> drafts;
   final List<LabCatalogItem> catalogPanels;
   final bool canMutate;
+  final bool allowVerify;
   final Set<String> selectedItemIds;
   final void Function(String itemId, {required bool selected})?
   onToggleItemSelection;
@@ -1602,6 +1624,7 @@ class _LabResultEntryTable extends StatelessWidget {
   final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
+  final String ungroupedSectionTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -1628,6 +1651,7 @@ class _LabResultEntryTable extends StatelessWidget {
               child: _ResponsiveLabResultEntry(
                 drafts: group.drafts,
                 canMutate: canMutate,
+                allowVerify: allowVerify,
                 selectedItemIds: selectedItemIds,
                 onToggleItemSelection: onToggleItemSelection,
                 onSaveDraft: onSaveDraft,
@@ -1640,17 +1664,23 @@ class _LabResultEntryTable extends StatelessWidget {
               ),
             )
           else
-            _ResponsiveLabResultEntry(
-              drafts: group.drafts,
-              canMutate: canMutate,
-              selectedItemIds: selectedItemIds,
-              onToggleItemSelection: onToggleItemSelection,
-              onSaveDraft: onSaveDraft,
-              onSubmit: onSubmit,
-              onVerify: onVerify,
-              onEditVerified: onEditVerified,
-              onReject: onReject,
-              onRemove: onRemove,
+            AppWorkspaceDetailPanel(
+              title: ungroupedSectionTitle,
+              collapsible: false,
+              child: _ResponsiveLabResultEntry(
+                drafts: group.drafts,
+                canMutate: canMutate,
+                allowVerify: allowVerify,
+                selectedItemIds: selectedItemIds,
+                onToggleItemSelection: onToggleItemSelection,
+                onSaveDraft: onSaveDraft,
+                onSubmit: onSubmit,
+                onVerify: onVerify,
+                onEditVerified: onEditVerified,
+                onReject: onReject,
+                onRemove: onRemove,
+                embeddedInPanel: true,
+              ),
             ),
           SizedBox(height: theme.spacing.sm),
         ],
@@ -1730,6 +1760,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   const _LabResultEntryRowsTable({
     required this.drafts,
     required this.canMutate,
+    required this.allowVerify,
     required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
@@ -1744,6 +1775,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final bool allowVerify;
   final Set<String> selectedItemIds;
   final void Function(String itemId, {required bool selected})?
   onToggleItemSelection;
@@ -1799,6 +1831,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               context,
               draft: draft,
               canMutate: canMutate,
+              allowVerify: allowVerify,
               isSelected: selectedItemIds.contains(draft.item.apiId),
               showSelection: canMutate && onToggleItemSelection != null,
               selectionEnabled: _isBulkSelectable(draft),
@@ -1808,6 +1841,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
                       draft.item.apiId,
                       selected: value ?? false,
                     ),
+              allowVerify: allowVerify,
               onSaveDraft: () => onSaveDraft(draft),
               onSubmit: () => onSubmit(draft),
               onVerify: () => onVerify(draft),
@@ -1874,6 +1908,7 @@ TableRow _labResultEntryTableRow(
   BuildContext context, {
   required _ResultDraft draft,
   required bool canMutate,
+  required bool allowVerify,
   required bool isSelected,
   required bool showSelection,
   required bool selectionEnabled,
@@ -1943,6 +1978,7 @@ TableRow _labResultEntryTableRow(
         child: _LabResultActionsCell(
           draft: draft,
           canMutate: canMutate,
+          allowVerify: allowVerify,
           onSaveDraft: onSaveDraft,
           onSubmit: onSubmit,
           onVerify: onVerify,
@@ -2115,6 +2151,7 @@ class _LabResultActionsCell extends ConsumerWidget {
   const _LabResultActionsCell({
     required this.draft,
     required this.canMutate,
+    required this.allowVerify,
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
@@ -2125,6 +2162,7 @@ class _LabResultActionsCell extends ConsumerWidget {
 
   final _ResultDraft draft;
   final bool canMutate;
+  final bool allowVerify;
   final VoidCallback onSaveDraft;
   final VoidCallback onSubmit;
   final VoidCallback onVerify;
@@ -2181,7 +2219,7 @@ class _LabResultActionsCell extends ConsumerWidget {
           leadingIcon: Icons.outbox_outlined,
           onPressed: onSubmit,
         ),
-      if (canMutate && item.canVerify && draft.hasEntry)
+      if (canMutate && allowVerify && item.canVerify && draft.hasEntry)
         AppButton.secondary(
           label: l10n.labVerifyResultAction,
           leadingIcon: Icons.verified_outlined,

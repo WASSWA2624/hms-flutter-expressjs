@@ -91,6 +91,12 @@ const AccessRequirement labFollowUpsRequirement = labWorkspaceReadRequirement;
 const AccessRequirement labFollowUpsWriteRequirement =
     labWorkspaceWriteRequirement;
 
+/// Open billing navigation from unpaid lab gates — Billing owns settle.
+const AccessRequirement labOpenBillingRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>['billing-payments'],
+);
+
 /// Per-section tab strip gate.
 ///
 /// Worklist tabs (including All / Awaiting results / Processing / Pending
@@ -276,6 +282,8 @@ abstract final class LabAllAtomPermissions {
   /// Nested cross-module write — matrix _(n/a)_ on All; reuse clinical ∪.
   static const AccessRequirement requestFromClinical =
       labRequestFromClinicalWriteRequirement;
+  /// Open Billing workspace when payment gate blocks progression.
+  static const AccessRequirement openBilling = labOpenBillingRequirement;
   static const AccessRequirement nestedWrite = labWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = labWorkspaceReadRequirement;
   static const AccessRequirement entry = labWorkspaceRouteEntryRequirement;

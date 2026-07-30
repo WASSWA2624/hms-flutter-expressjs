@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_dat
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_board_next_action.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_nursing_note_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
@@ -778,16 +779,18 @@ class _IpdDetailPanel extends ConsumerWidget {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canOperate = canWriteIpdOperational(policy);
     final bool canClinical = canWriteIpdClinical(policy);
+    final bool canBilling = canReadIpdBilling(policy);
     final bool actionsEnabled = !state.isSaving;
 
     final ThemeData theme = Theme.of(context);
+    // Sibling titled sections under Column — never nest section-in-section.
     final List<Widget> detailSections = <Widget>[
       if (admission.sourceContext != null)
         _IpdSourceContextSection(admission: admission),
       if (admission.theatre.handoverSummary != null)
         _IpdTheatreHandoverSection(admission: admission),
       _IpdBedSection(admission: admission),
-      if (canReadIpdBilling(policy))
+      if (canBilling)
         InsuranceAuthorizationPanel(
           patientId: admission.summary.patientId,
           admissionId: admission.summary.id,
@@ -912,6 +915,7 @@ class _IpdDetailPanel extends ConsumerWidget {
               state: state,
               canOperate: canOperate,
               canClinical: canClinical,
+              canBilling: canBilling,
               actionsEnabled: actionsEnabled,
               omitNextActionKind: omitNextActionKind,
             ),
@@ -1013,6 +1017,7 @@ class _IpdDetailActions extends ConsumerWidget {
     required this.state,
     required this.canOperate,
     required this.canClinical,
+    required this.canBilling,
     required this.actionsEnabled,
     this.omitNextActionKind,
   });
@@ -1021,6 +1026,7 @@ class _IpdDetailActions extends ConsumerWidget {
   final IpdWorkspaceState state;
   final bool canOperate;
   final bool canClinical;
+  final bool canBilling;
   final bool actionsEnabled;
   final IpdBoardNextActionKind? omitNextActionKind;
 
@@ -1041,6 +1047,12 @@ class _IpdDetailActions extends ConsumerWidget {
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
       actions: <AppActionItem>[
+        if (canBilling)
+          AppActionItem(
+            label: l10n.dischargeOpenBillingAction,
+            leadingIcon: Icons.receipt_long_outlined,
+            onPressed: () => _openBillingWorkspace(context, summary),
+          ),
         if (icuActive || admission.icu.hasCriticalAlert)
           AppActionItem(
             label: l10n.ipdOpenIcuAction,
@@ -1182,17 +1194,7 @@ class _IpdDetailActions extends ConsumerWidget {
             label: l10n.ipdAddNursingNoteAction,
             leadingIcon: Icons.note_add_outlined,
             enabled: canClinical && actionsEnabled,
-            onPressed: () => _openTextActionDialog(
-              context,
-              ref,
-              title: l10n.ipdAddNursingNoteAction,
-              icon: Icons.note_add_outlined,
-              fieldLabel: l10n.ipdNotesFieldLabel,
-              submitLabel: l10n.ipdAddNursingNoteAction,
-              onSubmit: (String value) => ref
-                  .read(ipdWorkspaceControllerProvider.notifier)
-                  .addNursingNote(summary, value),
-            ),
+            onPressed: () => _openNursingNoteDialog(context, ref, summary),
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
@@ -1243,6 +1245,25 @@ class _IpdDetailActions extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  /// Opens Billing for final bill / refund / outstanding — never an IPD cashier.
+  void _openBillingWorkspace(
+    BuildContext context,
+    IpdAdmissionSummary summary,
+  ) {
+    final String? patientId = summary.patientId?.trim();
+    final String location = (patientId == null || patientId.isEmpty)
+        ? AppRoutes.billing.path
+        : AppRoutes.billing.location(
+            queryParameters: <String, String>{'patient_id': patientId},
+          );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      context.go(location);
+    }
   }
 
   void _openIcuWorkspace(BuildContext context, IpdAdmissionSummary summary) {
@@ -1518,6 +1539,20 @@ class _IpdDetailActions extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => _WardRoundActionDialog(summary: summary),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+
+  Future<void> _openNursingNoteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    IpdAdmissionSummary summary,
+  ) async {
+    final bool? saved = await showIpdNursingNoteDialog(
+      context,
+      summary: summary,
     );
     if (saved == true && context.mounted) {
       _showSaved(context);

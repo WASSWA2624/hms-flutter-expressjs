@@ -13139,7 +13139,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorkflowNextCollectSample => 'Collect sample';
 
   @override
-  String get labWorkflowNextAwaitPayment => 'Await payment before collection';
+  String get labWorkflowNextAwaitPayment => 'Await payment before continuing';
 
   @override
   String get labBillingGateBlockedAction => 'Payment required';

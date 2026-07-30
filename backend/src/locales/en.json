@@ -203,7 +203,7 @@
   "errors.lab_order.empty_panel": "Selected lab panels must include at least one active test.",
   "errors.lab_order.no_tests": "Lab orders require at least one active test.",
   "errors.lab_order.not_found": "Lab order not found",
-  "errors.lab_order.payment_required": "Payment is required before sample collection can proceed",
+  "errors.lab_order.payment_required": "Payment is required before sample collection or result verification can proceed",
   "errors.lab_order.encounter_required": "Lab orders must link to a clinical encounter",
   "errors.lab_order_item.not_found": "Lab order item not found",
   "errors.lab_panel.not_found": "Lab panel not found",

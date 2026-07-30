@@ -189,7 +189,8 @@ const updateTransferSchema = z
   .object({
     transfer_request_id: optionalIdentifierSchema,
     action: transferActionSchema,
-    to_bed_id: optionalIdentifierSchema})
+    to_bed_id: optionalIdentifierSchema,
+    billing: clinicalRequestBillingSchema.optional().nullable()})
   .superRefine((value, ctx) => {
     if (value.action === "COMPLETE" && !value.to_bed_id) {
       ctx.addIssue({

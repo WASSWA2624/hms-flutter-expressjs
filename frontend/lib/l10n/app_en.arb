@@ -16839,9 +16839,9 @@
   "@labWorkflowNextCollectSample": {
     "description": "Next workflow action to collect a sample."
   },
-  "labWorkflowNextAwaitPayment": "Await payment before collection",
+  "labWorkflowNextAwaitPayment": "Await payment before continuing",
   "@labWorkflowNextAwaitPayment": {
-    "description": "Next workflow guidance when billing gate blocks sample collection."
+    "description": "Next workflow guidance when Billing gate blocks collect, receive, verify, or release."
   },
   "labBillingGateBlockedAction": "Payment required",
   "@labBillingGateBlockedAction": {

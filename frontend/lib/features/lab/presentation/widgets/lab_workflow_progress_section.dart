@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
@@ -30,10 +32,27 @@ class LabWorkflowProgressSection extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final int activeIndex = labWorkflowStepIndex(workflow);
     final LabWorkflowNextActions next = workflow.nextActions;
+    final bool paymentOpen = !next.billingGateBlocked;
     final List<AppWorkflowStepAction> currentActions =
         <AppWorkflowStepAction>[];
 
-    if (canMutate && next.canCollect) {
+    if (next.billingGateBlocked) {
+      currentActions.add(
+        AppWorkflowStepAction(
+          id: 'open_billing',
+          label: l10n.patientsOpenBillingWorkbenchAction,
+          icon: Icons.point_of_sale_outlined,
+          requirement: labOpenBillingRequirement,
+          capabilityAllowed: true,
+          variant: AppButtonVariant.primary,
+          onPressed: isSaving
+              ? null
+              : () => _openBilling(context, workflow.order),
+        ),
+      );
+    }
+
+    if (canMutate && paymentOpen && next.canCollect) {
       currentActions.add(
         AppWorkflowStepAction(
           id: 'collect',
@@ -46,7 +65,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
         ),
       );
     }
-    if (canMutate && next.canReceiveSample) {
+    if (canMutate && paymentOpen && next.canReceiveSample) {
       currentActions.add(
         AppWorkflowStepAction(
           id: 'receive',
@@ -60,6 +79,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
       );
     }
     if (canMutate &&
+        paymentOpen &&
         (next.canVerifyResult || next.canVerifyAll) &&
         onVerifyResults != null) {
       currentActions.add(
@@ -102,19 +122,25 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           (
             id: 'sample',
             label: l10n.labWorkflowStepSample,
-            help: next.canReceiveSample
+            help: next.billingGateBlocked
+                ? l10n.labWorkflowNextAwaitPayment
+                : next.canReceiveSample
                 ? l10n.labWorkflowNextReceiveSample
                 : l10n.labWorkflowNextEnterResults,
           ),
           (
             id: 'processing',
             label: l10n.labWorkflowStepInProcess,
-            help: l10n.labWorkflowNextEnterResults,
+            help: next.billingGateBlocked
+                ? l10n.labWorkflowNextAwaitPayment
+                : l10n.labWorkflowNextEnterResults,
           ),
           (
             id: 'results_entered',
             label: l10n.labWorkflowStepResultsEntered,
-            help: l10n.labWorkflowNextVerifyResults,
+            help: next.billingGateBlocked
+                ? l10n.labWorkflowNextAwaitPayment
+                : l10n.labWorkflowNextVerifyResults,
           ),
           (id: 'verified', label: l10n.labWorkflowStepVerified, help: null),
         ];
@@ -158,6 +184,22 @@ class LabWorkflowProgressSection extends ConsumerWidget {
       return AppWorkflowStepState.current;
     }
     return AppWorkflowStepState.upcoming;
+  }
+
+  /// Navigate to Billing for the patient — never a lab-local cashier.
+  static void _openBilling(BuildContext context, LabOrderSummary order) {
+    final String? patientId = order.patientId?.trim();
+    final String location = (patientId == null || patientId.isEmpty)
+        ? AppRoutes.billing.path
+        : AppRoutes.billing.location(
+            queryParameters: <String, String>{'patient_id': patientId},
+          );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      context.go(location);
+    }
   }
 
   Future<void> _collect(BuildContext context, WidgetRef ref) async {

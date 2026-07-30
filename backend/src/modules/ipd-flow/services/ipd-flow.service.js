@@ -25,7 +25,13 @@ const {
   persistIcuStayBilling,
   mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
 const { buildIcuStayBilling } = require("@lib/billing/icu-billing");
-const { buildAdmissionBilling } = require("@lib/billing/admission-billing");
+const {
+  buildAdmissionBilling,
+  buildBedDayBilling,
+  buildBedTransferBilling,
+  bedTransferChargeKey,
+  admissionSnapshotHasBedCharge,
+  BED_ASSIGN_CHARGE_KEY} = require("@lib/billing/admission-billing");
 const { computeInvoiceFinancials } = require("@lib/billing/financials");
 
 const UUID_LIKE_REGEX =
@@ -577,6 +583,7 @@ const resolveWardByIdentifier = (
     {
       id: true,
       name: true,
+      ward_type: true,
       tenant_id: true,
       facility_id: true,
       human_friendly_id: true},
@@ -3012,6 +3019,47 @@ const assignBed = async (id, data, context = {}) => {
       where: { id: bed.id },
       data: { status: "OCCUPIED" }});
 
+    // Post bed/day when start never charged (e.g. request → approve → assign).
+    if (
+      data?.billing ||
+      !admissionSnapshotHasBedCharge(admission.billing_snapshot)
+    ) {
+      let facility = null;
+      if (admission.facility_id && tx.facility?.findFirst) {
+        facility = await tx.facility.findFirst({
+          where: {
+            id: admission.facility_id,
+            deleted_at: null}});
+      }
+      let wardType = null;
+      if (bed.ward_id) {
+        const ward = await resolveWardByIdentifier(
+          tx,
+          bed.ward_id,
+          admission.tenant_id,
+          admission.facility_id || null,
+        );
+        wardType = ward?.ward_type || null;
+      }
+      const bedBilling = buildBedDayBilling({
+        billing: data?.billing || null,
+        facility,
+        wardType});
+      if (bedBilling) {
+        await persistAdmissionBilling(tx, {
+          admissionId: admission.id,
+          billing: bedBilling,
+          existingSnapshot: admission.billing_snapshot || null,
+          tenantId: admission.tenant_id,
+          facilityId: admission.facility_id || null,
+          patientId: admission.patient_id,
+          encounterId: admission.encounter_id || null,
+          description: "Bed / day",
+          chargeKey: BED_ASSIGN_CHARGE_KEY,
+          actorUserId: context.user_id || null});
+      }
+    }
+
     return {
       admission_id: admission.id,
       tenant_id: admission.tenant_id,
@@ -3436,6 +3484,59 @@ const updateTransfer = async (id, data, context = {}) => {
           to_ward_id: destinationBed.ward_id}});
 
       compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
+
+      // Rate-change bed/day posts through Billing when destination fee differs.
+      const fromWardId =
+        activeBedAssignment?.bed?.ward_id ||
+        transferRequest.from_ward_id ||
+        null;
+      let fromWardType = null;
+      let toWardType = null;
+      if (fromWardId) {
+        const fromWard = await resolveWardByIdentifier(
+          tx,
+          fromWardId,
+          admission.tenant_id,
+          admission.facility_id || null,
+        );
+        fromWardType = fromWard?.ward_type || null;
+      }
+      if (destinationBed.ward_id) {
+        const toWard = await resolveWardByIdentifier(
+          tx,
+          destinationBed.ward_id,
+          admission.tenant_id,
+          admission.facility_id || null,
+        );
+        toWardType = toWard?.ward_type || null;
+      }
+
+      let facility = null;
+      if (admission.facility_id && tx.facility?.findFirst) {
+        facility = await tx.facility.findFirst({
+          where: {
+            id: admission.facility_id,
+            deleted_at: null}});
+      }
+
+      const transferBilling = buildBedTransferBilling({
+        billing: data?.billing || null,
+        facility,
+        fromWardType,
+        toWardType});
+      if (transferBilling) {
+        await persistAdmissionBilling(tx, {
+          admissionId: admission.id,
+          billing: transferBilling,
+          existingSnapshot: admission.billing_snapshot || null,
+          tenantId: admission.tenant_id,
+          facilityId: admission.facility_id || null,
+          patientId: admission.patient_id,
+          encounterId: admission.encounter_id || null,
+          description: "Bed / day (transfer rate)",
+          chargeKey: bedTransferChargeKey(transferRequest.id),
+          actorUserId: context.user_id || null});
+      }
     } else {
       throw new HttpError("errors.ipd_flow.invalid_transfer_transition", 400);
     }

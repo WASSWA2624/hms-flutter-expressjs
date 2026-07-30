@@ -9,7 +9,10 @@ const {
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
-/** Payment statuses that allow lab sample collection to proceed. */
+/**
+ * Payment statuses that allow lab sample collection and result
+ * release/verification to proceed.
+ */
 const LAB_PAYMENT_SATISFIED_STATUSES = new Set([
   'PAID',
   'NOT_REQUIRED',
@@ -586,10 +589,21 @@ const mapLabOrderWorkflowRecord = (record) => {
         && isLabOrderPaymentSatisfied(record),
       billing_gate_blocked: !isLabOrderPaymentSatisfied(record),
       payment_status: resolveLabOrderPaymentStatus(record),
-      can_receive_sample: order.samples.some((sample) => ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())),
-      can_release_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
-      can_verify_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
-      can_verify_all: order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
+      can_receive_sample:
+        isLabOrderPaymentSatisfied(record)
+        && order.samples.some((sample) =>
+          ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())
+        ),
+      // Verify / release blocked unless Billing payment is satisfied.
+      can_release_result:
+        isLabOrderPaymentSatisfied(record)
+        && order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
+      can_verify_result:
+        isLabOrderPaymentSatisfied(record)
+        && order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
+      can_verify_all:
+        isLabOrderPaymentSatisfied(record)
+        && order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
       can_reject_order_item: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_reverse_workflow: Boolean(resolveLatestReverseWorkflowTarget(record))}};
 };

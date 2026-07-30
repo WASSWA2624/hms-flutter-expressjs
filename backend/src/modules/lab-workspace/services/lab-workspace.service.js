@@ -293,6 +293,7 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
     select: {
       id: true,
       status: true,
+      billing_snapshot: true,
       patient: {
         select: {
           id: true,
@@ -300,6 +301,21 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
           facility_id: true,
           date_of_birth: true,
           gender: true}}}}});
+
+/**
+ * Block collect / result release / verify when Billing shows unpaid required
+ * charges (PENDING / PARTIAL / etc.). Explicit NOT_REQUIRED / NO_CHARGE /
+ * NOT_BILLED / PAID remain allowed.
+ */
+const assertLabOrderPaymentSatisfied = (order) => {
+  if (isLabOrderPaymentSatisfied(order)) {
+    return;
+  }
+  throw new HttpError('errors.lab_order.payment_required', 402, [
+    {
+      field: 'payment_status',
+      payment_status: order?.billing_snapshot?.payment_status || null}]);
+};
 
 const payloadHasField = (payload, field) =>
   Object.prototype.hasOwnProperty.call(payload || {}, field);
@@ -1203,12 +1219,7 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
         throw new HttpError('errors.lab_order.not_found', 404);
       }
 
-      if (!isLabOrderPaymentSatisfied(order)) {
-        throw new HttpError('errors.lab_order.payment_required', 402, [
-          {
-            field: 'payment_status',
-            payment_status: order?.billing_snapshot?.payment_status || null}]);
-      }
+      assertLabOrderPaymentSatisfied(order);
 
       assertTransition(!ORDER_COMPLETION_STATES.has(order.status), {
         from: order.status,
@@ -1323,19 +1334,22 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
         from: sample.status,
         to: 'RECEIVED'});
 
+      const orderForGate = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        sample.lab_order_id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!orderForGate) {
+        throw new HttpError('errors.lab_order.not_found', 404);
+      }
+      assertLabOrderPaymentSatisfied(orderForGate);
+
       const receivedAt = toDateOrNull(payload.received_at, new Date());
       await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
         status: 'RECEIVED',
         received_at: receivedAt});
 
-      const order = await labWorkspaceRepository.txFindOrderById(
-        tx,
-        sample.lab_order_id,
-        LAB_ORDER_WITH_RELATIONS_INCLUDE
-      );
-      if (!order) {
-        throw new HttpError('errors.lab_order.not_found', 404);
-      }
+      const order = orderForGate;
 
       if (!ORDER_COMPLETION_STATES.has(order.status)) {
         await labWorkspaceRepository.txUpdateOrder(tx, order.id, { status: 'IN_PROCESS' });
@@ -1496,6 +1510,8 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
 
+      assertLabOrderPaymentSatisfied(item.lab_order);
+
       const releasedResult = await persistLabOrderItemResult(tx, item, payload);
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
@@ -1575,6 +1591,8 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
       if (!order) {
         throw new HttpError('errors.lab_order.not_found', 404);
       }
+
+      assertLabOrderPaymentSatisfied(order);
 
       const releasedResultIds = [];
       const itemTransitions = [];
