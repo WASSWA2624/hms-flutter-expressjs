@@ -16,6 +16,78 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
 } = require('@lib/identifiers/service-identifier-resolution');
+const prisma = require('@prisma/client');
+const {
+  buildAmbulanceTripBilling,
+  persistAmbulanceTripBilling,
+} = require('@lib/billing/emergency-billing');
+
+/**
+ * Post a deferred ambulance transport charge when a trip is completed.
+ * Idempotent via clinical-request-billing charge key AMBULANCE_TRIP.
+ *
+ * @param {Object} trip - Persisted trip (with emergency_case include when available)
+ * @param {Object} context - Request context
+ * @param {Object|null|undefined} [billingOverride] - Optional caller billing payload
+ * @returns {Promise<Object|null>} Billing snapshot or null when not billable
+ */
+const postAmbulanceTripChargeIfCompleted = async (
+  trip,
+  context = {},
+  billingOverride = null
+) => {
+  if (!trip?.ended_at || !trip?.id) {
+    return null;
+  }
+
+  let emergencyCase = trip.emergency_case || null;
+  if (!emergencyCase && trip.emergency_case_id) {
+    emergencyCase = await prisma.emergency_case.findFirst({
+      where: { id: trip.emergency_case_id, deleted_at: null },
+      select: {
+        id: true,
+        tenant_id: true,
+        facility_id: true,
+        patient_id: true,
+        facility: { select: { id: true, extension_json: true } },
+        patient: { select: { id: true } },
+      },
+    });
+  }
+
+  const patientId = emergencyCase?.patient_id || emergencyCase?.patient?.id || null;
+  const tenantId =
+    emergencyCase?.tenant_id || context.tenant_id || null;
+  const facilityId =
+    emergencyCase?.facility_id ||
+    emergencyCase?.facility?.id ||
+    context.facility_id ||
+    null;
+
+  if (!patientId || !tenantId) {
+    return null;
+  }
+
+  const billing = buildAmbulanceTripBilling({
+    billing: billingOverride,
+    facility: emergencyCase?.facility || null,
+  });
+  if (!billing) {
+    return null;
+  }
+
+  return prisma.$transaction(async (tx) =>
+    persistAmbulanceTripBilling(tx, {
+      tripId: trip.id,
+      billing,
+      tenantId,
+      facilityId,
+      patientId,
+      actorUserId: context.user_id || null,
+      currency: billing.currency || 'USD',
+    })
+  );
+};
 
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const toPublicIdentifier = (value) => {
@@ -154,6 +226,9 @@ const resolveListFilters = async (filters = {}, page, limit) => {
 
 const resolveCreatePayload = async (data = {}) => {
   const payload = { ...data };
+  // Billing is applied after persist via shared Billing helpers — never store
+  // module-private amount fields on ambulance_trip rows.
+  delete payload.billing;
 
   payload.ambulance_id = await resolveIdentifierForPayload({
     value: payload.ambulance_id,
@@ -182,6 +257,7 @@ const resolveCreatePayload = async (data = {}) => {
 
 const resolveUpdatePayload = async (data = {}) => {
   const payload = { ...data };
+  delete payload.billing;
 
   if (payload.ambulance_id !== undefined) {
     payload.ambulance_id = await resolveIdentifierForPayload({
@@ -208,6 +284,76 @@ const resolveUpdatePayload = async (data = {}) => {
   }
 
   return payload;
+};
+
+/**
+ * Post deferred ambulance transport charge through Billing when a fee resolves.
+ * Idempotent on trip id; audits NOT_REQUIRED when no billable amount.
+ *
+ * @param {Object} trip
+ * @param {Object} [billingInput]
+ * @param {Object} [context]
+ * @returns {Promise<Object|null>}
+ */
+const applyAmbulanceTripBilling = async (trip, billingInput = null, context = {}) => {
+  const emergencyCase = trip?.emergency_case || null;
+  const tenantId =
+    emergencyCase?.tenant_id || context.tenant_id || trip?.tenant_id || null;
+  const facilityId =
+    emergencyCase?.facility_id || context.facility_id || trip?.facility_id || null;
+  const patientId = emergencyCase?.patient_id || emergencyCase?.patient?.id || null;
+
+  const billing = buildAmbulanceTripBilling({
+    billing: billingInput,
+    facility: emergencyCase?.facility || null,
+  });
+
+  if (!billing) {
+    await createAuditLog({
+      action: 'AMBULANCE_TRIP_BILLING_SKIPPED',
+      entity: 'ambulance_trip',
+      entity_id: trip?.id,
+      user_id: context.user_id,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      details: {
+        reason: 'NOT_REQUIRED',
+        emergency_case_id: trip?.emergency_case_id || emergencyCase?.id || null,
+      },
+    });
+    return null;
+  }
+
+  if (!tenantId || !patientId || !trip?.id) {
+    return null;
+  }
+
+  const snapshot = await prisma.$transaction(async (tx) =>
+    persistAmbulanceTripBilling(tx, {
+      tripId: trip.id,
+      billing,
+      tenantId,
+      facilityId,
+      patientId,
+      actorUserId: context.user_id || null,
+    })
+  );
+
+  await createAuditLog({
+    action: 'AMBULANCE_TRIP_BILLED',
+    entity: 'ambulance_trip',
+    entity_id: trip.id,
+    user_id: context.user_id,
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    details: {
+      invoice_id: snapshot?.invoice_id || null,
+      payment_status: snapshot?.payment_status || 'PENDING',
+      emergency_case_id: trip.emergency_case_id || emergencyCase?.id || null,
+    },
+  });
+
+  return snapshot;
 };
 
 /**
@@ -287,6 +433,7 @@ const getAmbulanceTripById = async (id) => {
  * @returns {Promise<Object>} Created ambulance trip
  */
 const createAmbulanceTrip = async (data, context = {}) => {
+  const billingInput = data?.billing || null;
   const payload = await resolveCreatePayload(data);
   const trip = await ambulanceTripRepository.create(payload);
 
@@ -307,7 +454,15 @@ const createAmbulanceTrip = async (data, context = {}) => {
     },
   });
 
-  return mapAmbulanceTripForDisplay(trip);
+  // Deferred transport charge posts immediately as PENDING in Billing
+  // (idempotent on trip id). Settlement stays in the Billing workspace.
+  const billingSnapshot = await applyAmbulanceTripBilling(trip, billingInput, context);
+
+  return {
+    ...mapAmbulanceTripForDisplay(trip),
+    billing: billingSnapshot || null,
+    billing_deferred: Boolean(billingSnapshot),
+  };
 };
 
 /**
@@ -328,6 +483,7 @@ const createAmbulanceTrip = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated ambulance trip
  */
 const updateAmbulanceTrip = async (id, data, context = {}) => {
+  const billingInput = data?.billing || null;
   const resolvedId = await resolveAmbulanceTripId(id);
   const beforeTrip = await ambulanceTripRepository.findById(resolvedId);
 
@@ -351,6 +507,7 @@ const updateAmbulanceTrip = async (id, data, context = {}) => {
   }
 
   const trip = await ambulanceTripRepository.update(beforeTrip.id, payload);
+  const completedNow = !beforeTrip.ended_at && Boolean(trip.ended_at);
 
   await createAuditLog({
     action: 'AMBULANCE_TRIP_UPDATED',
@@ -377,7 +534,17 @@ const updateAmbulanceTrip = async (id, data, context = {}) => {
     },
   });
 
-  return mapAmbulanceTripForDisplay(trip);
+  // Idempotent replay on complete (or when billing payload is supplied).
+  let billingSnapshot = null;
+  if (completedNow || billingInput) {
+    billingSnapshot = await applyAmbulanceTripBilling(trip, billingInput, context);
+  }
+
+  return {
+    ...mapAmbulanceTripForDisplay(trip),
+    billing: billingSnapshot || null,
+    billing_deferred: Boolean(billingSnapshot),
+  };
 };
 
 /**

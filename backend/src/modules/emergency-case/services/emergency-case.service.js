@@ -569,6 +569,22 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
     };
   }
 
+  const billingSnapshot =
+    receivingWork.billing ||
+    receivingWork.flow?.consultation?.billing ||
+    receivingWork.encounter?.extension_json?.opd_flow?.consultation?.billing ||
+    receivingWork.admission?.billing_snapshot ||
+    null;
+  const billingPaymentStatus =
+    billingSnapshot?.payment_status ||
+    receivingWork.flow?.consultation?.payment_status ||
+    receivingWork.encounter?.extension_json?.opd_flow?.consultation?.payment_status ||
+    null;
+  const billingInvoiceId =
+    billingSnapshot?.invoice_id ||
+    receivingWork.flow?.consultation?.invoice_id ||
+    null;
+
   switch (destination) {
     case 'OPD': {
       const encounter = receivingWork.encounter || receivingWork;
@@ -584,7 +600,11 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         receiving_display_id: encounterId,
         encounter_display_id: encounterId,
         stage: resolvePublicSnapshotId(flow.workflow_stage, flow.stage) || 'WAITING_VITALS',
-        billing_deferred: false
+        // Emergency OPD handoff creates a PENDING consultation invoice when a
+        // fee resolves; settlement stays in Billing.
+        billing_deferred: true,
+        billing_payment_status: billingPaymentStatus || 'PENDING',
+        billing_invoice_id: billingInvoiceId
       };
     }
     case 'IPD': {
@@ -601,7 +621,9 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         receiving_display_id: admissionId,
         admission_display_id: admissionId,
         stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage, admission?.status),
-        billing_deferred: true
+        billing_deferred: true,
+        billing_payment_status: billingPaymentStatus || (billingSnapshot ? 'PENDING' : 'NOT_REQUIRED'),
+        billing_invoice_id: billingInvoiceId
       };
     }
     case 'ICU': {
@@ -624,7 +646,9 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
           icuStay.id
         ),
         stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage) || 'ICU',
-        billing_deferred: true
+        billing_deferred: true,
+        billing_payment_status: billingPaymentStatus || (billingSnapshot ? 'PENDING' : 'NOT_REQUIRED'),
+        billing_invoice_id: billingInvoiceId
       };
     }
     case 'THEATER': {
@@ -643,7 +667,9 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         stage:
           resolvePublicSnapshotId(theatre.workflow_stage, flow.workflow_stage, flow.stage) ||
           'PRE_OP',
-        billing_deferred: false
+        billing_deferred: true,
+        billing_payment_status: billingPaymentStatus || (billingSnapshot ? 'PENDING' : 'NOT_REQUIRED'),
+        billing_invoice_id: billingInvoiceId
       };
     }
     default:
@@ -959,7 +985,13 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
 
   const note = buildHandoffNote(destination, data.notes);
   const context = buildWorkflowContext(existing, user);
-  const receivingWork = await startReceivingDepartmentWork(existing, destination, note, context);
+  const receivingWork = await startReceivingDepartmentWork(
+    existing,
+    destination,
+    note,
+    context,
+    data
+  );
   const snapshot = buildHandoffSnapshot(destination, receivingWork, data);
 
   await getEmergencyResponseRepository().create({
@@ -993,6 +1025,8 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
       receiving_work: Boolean(receivingWork),
       receiving_display_id: snapshot.receiving_display_id,
       billing_deferred: snapshot.billing_deferred,
+      billing_payment_status: snapshot.billing_payment_status || null,
+      billing_invoice_id: snapshot.billing_invoice_id || null,
       notes: sanitizeText(data.notes)
     }
   });

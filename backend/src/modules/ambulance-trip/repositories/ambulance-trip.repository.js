@@ -23,8 +23,17 @@ const DEFAULT_INCLUDE = {
     select: {
       id: true,
       human_friendly_id: true,
+      tenant_id: true,
+      facility_id: true,
+      patient_id: true,
       severity: true,
       status: true,
+      facility: {
+        select: {
+          id: true,
+          extension_json: true,
+        },
+      },
       patient: {
         select: {
           id: true,

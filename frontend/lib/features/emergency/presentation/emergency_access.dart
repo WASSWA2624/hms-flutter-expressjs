@@ -292,6 +292,12 @@ abstract final class EmergencyActiveCasesAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement openInReceivingModule =
       emergencyWorkspaceReadRequirement;
+  /// Navigate Billing workspace for deferred settlement (∩ `billing:read`).
+  static const AccessRequirement openBilling = AccessRequirement(
+    allPermissions: <AppPermission>[AppPermissions.billingRead],
+    activeModules: <String>['billing-payments'],
+    requiresTenantContext: true,
+  );
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses emergency write ∩ only.
@@ -308,6 +314,10 @@ abstract final class EmergencyActiveCasesAtomPermissions {
 
 bool canViewEmergencyActive(AppAccessPolicy policy) {
   return EmergencyActiveCasesAtomPermissions.tab.isAllowed(policy);
+}
+
+bool canOpenEmergencyBilling(AppAccessPolicy policy) {
+  return EmergencyActiveCasesAtomPermissions.openBilling.isAllowed(policy);
 }
 
 /// All tab atom → permission mapping (inventory + matrix).

@@ -210,7 +210,7 @@ describe('ipd-flow Pending clearance billing-sections scan', () => {
     );
 
     expect(tx.invoice.findMany).toHaveBeenCalledTimes(1);
-    expect(tx.discharge_summary.create).not.toHaveBeenCalled();
+    expect(tx.discharge_summary.update).toHaveBeenCalledTimes(1);
   });
 
   it('update clearance cannot force billing_cleared while balance remains', async () => {

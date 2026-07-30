@@ -23,6 +23,7 @@ const DEFAULT_INCLUDE = {
       id: true,
       human_friendly_id: true,
       name: true,
+      extension_json: true,
     },
   },
   patient: {
