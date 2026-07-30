@@ -412,6 +412,8 @@ abstract final class EmergencyAllAtomPermissions {
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
+  /// Settle deferred / outstanding via Billing (no module cashier).
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = emergencyWorkspaceReadRequirement;
@@ -611,6 +613,8 @@ abstract final class EmergencyAmbulanceAtomPermissions {
       emergencyWorkspaceWriteRequirement;
   static const AccessRequirement printSummary =
       emergencyAmbulanceTabRequirement;
+  /// Settle deferred / ambulance outstanding via Billing (no module cashier).
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement openReceivingModule =
       emergencyAmbulanceTabRequirement;
   static const AccessRequirement openInReceivingModule =

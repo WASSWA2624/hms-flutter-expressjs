@@ -50,7 +50,6 @@ abstract final class EmergencyText {
   static const String completeTrip = 'Complete trip';
   static const String critical = 'Critical';
   static const String discharge = 'Discharge';
-  static const String openBilling = 'Open billing';
   static const String dispatch = 'Dispatch';
   static const String dispatchAmbulance = 'Dispatch ambulance';
   static const String dispatched = 'Dispatched';
@@ -1114,6 +1113,7 @@ class EmergencyDetailPanel extends ConsumerWidget {
           SizedBox(height: theme.spacing.md),
           EmergencyHandoffOutcomePanel(
             outcome: summary.handoff!,
+            patientId: summary.patientDisplayId ?? summary.patientId,
             isDialog: isDialog,
             readRequirement: readRequirement,
           ),
@@ -1245,10 +1245,11 @@ class EmergencyActionPanel extends ConsumerWidget {
       presentation: AppQuickActionsPresentation.detailPanel,
       permissionActions: actions,
       extraActions: <Widget>[
-        if (!isOpen &&
-            (detail.summary.patientId ?? '').trim().isNotEmpty)
+        if ((detail.summary.patientId ?? detail.summary.patientDisplayId ?? '')
+            .trim()
+            .isNotEmpty)
           AppAccessActionGate(
-            requirement: EmergencyClosedAtomPermissions.openBilling,
+            requirement: EmergencyAllAtomPermissions.openBilling,
             builder: (BuildContext context, bool isAllowed) {
               if (!isAllowed) {
                 return const SizedBox.shrink();
@@ -1558,12 +1559,14 @@ class EmergencyActionPanel extends ConsumerWidget {
 class EmergencyHandoffOutcomePanel extends StatelessWidget {
   const EmergencyHandoffOutcomePanel({
     required this.outcome,
+    this.patientId,
     this.isDialog = false,
     this.readRequirement = emergencyWorkspaceReadRequirement,
     super.key,
   });
 
   final EmergencyHandoffOutcome outcome;
+  final String? patientId;
   final bool isDialog;
   final AccessRequirement readRequirement;
 
@@ -1572,6 +1575,7 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final String moduleName = _moduleName(outcome.destination);
     final bool canOpen = outcome.hasReceivingWork;
+    final String? billingStatus = outcome.billingPaymentStatus?.trim();
 
     final List<AppInfoTileData> tiles = <AppInfoTileData>[
       AppInfoTileData(
@@ -1591,6 +1595,12 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
           label: EmergencyText.receivingStage,
           value: apiLabel(outcome.stage ?? ''),
           icon: Icons.timeline_outlined,
+        ),
+      if (billingStatus != null && billingStatus.isNotEmpty)
+        AppInfoTileData(
+          label: EmergencyText.billingStatus,
+          value: apiLabel(billingStatus),
+          icon: Icons.payments_outlined,
         ),
       if (outcome.handoffAt != null)
         AppInfoTileData(
@@ -1617,6 +1627,20 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
                 label: _openInModuleLabel(moduleName),
                 leadingIcon: Icons.open_in_new_outlined,
                 onPressed: () => _openReceivingModule(context),
+              );
+            },
+          ),
+        if (outcome.billingDeferred)
+          AppAccessActionGate(
+            requirement: EmergencyAllAtomPermissions.openBilling,
+            builder: (BuildContext context, bool isAllowed) {
+              if (!isAllowed) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.secondary(
+                label: EmergencyText.openBilling,
+                leadingIcon: Icons.payments_outlined,
+                onPressed: () => _openBillingWorkspace(context),
               );
             },
           ),
@@ -1655,6 +1679,21 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
     }
     if (context.mounted) {
       context.go(link);
+    }
+  }
+
+  void _openBillingWorkspace(BuildContext context) {
+    final String? id = patientId?.trim();
+    final String location = (id == null || id.isEmpty)
+        ? AppRoutes.billing.path
+        : AppRoutes.billing.location(
+            queryParameters: <String, String>{'patient_id': id},
+          );
+    if (isDialog && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      context.go(location);
     }
   }
 

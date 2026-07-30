@@ -258,6 +258,7 @@ final class EmergencyAmbulanceTripDto {
   final EmergencyJsonMap json;
 
   EmergencyAmbulanceTrip toEntity() {
+    final EmergencyJsonMap billing = _map(json['billing']);
     return EmergencyAmbulanceTrip(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
       displayId:
@@ -275,6 +276,12 @@ final class EmergencyAmbulanceTripDto {
       endedAt: _date(json['ended_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
+      billingDeferred: _bool(json['billing_deferred']),
+      billingPaymentStatus:
+          _string(billing['payment_status']) ??
+          _string(json['billing_payment_status']),
+      billingInvoiceId:
+          _string(billing['invoice_id']) ?? _string(json['billing_invoice_id']),
     );
   }
 }

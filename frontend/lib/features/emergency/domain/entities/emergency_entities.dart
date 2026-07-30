@@ -481,6 +481,9 @@ final class EmergencyAmbulanceTrip {
     this.endedAt,
     this.createdAt,
     this.updatedAt,
+    this.billingDeferred = false,
+    this.billingPaymentStatus,
+    this.billingInvoiceId,
   });
 
   final String id;
@@ -497,7 +500,19 @@ final class EmergencyAmbulanceTrip {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// True when trip mutation posted a deferred PENDING charge in Billing.
+  final bool billingDeferred;
+
+  /// Billing SoR payment status when a transport invoice was posted.
+  final String? billingPaymentStatus;
+  final String? billingInvoiceId;
+
   bool get isActive => endedAt == null;
+
+  bool get hasBillingSnapshot =>
+      billingDeferred ||
+      (billingPaymentStatus ?? '').trim().isNotEmpty ||
+      (billingInvoiceId ?? '').trim().isNotEmpty;
 }
 
 @immutable

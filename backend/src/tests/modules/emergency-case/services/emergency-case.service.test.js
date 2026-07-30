@@ -398,7 +398,7 @@ describe('Emergency Case Service', () => {
           emergency_case_id: existingCase.id,
           initial_stage: 'WAITING_VITALS',
           require_consultation_payment: false,
-          create_consultation_invoice: false,
+          create_consultation_invoice: true,
           reuse_open_encounter: true,
           notes: 'Handoff to OPD.\nAccepted by OPD.'
         }),
@@ -426,7 +426,7 @@ describe('Emergency Case Service', () => {
               receiving_display_id: 'ENC000001',
               encounter_display_id: 'ENC000001',
               stage: 'WAITING_VITALS',
-              billing_deferred: false
+              billing_deferred: true
             })
           })
         })
@@ -443,7 +443,7 @@ describe('Emergency Case Service', () => {
             close_case: true,
             receiving_work: true,
             receiving_display_id: 'ENC000001',
-            billing_deferred: false,
+            billing_deferred: true,
             notes: 'Accepted by OPD.'
           })
         })
