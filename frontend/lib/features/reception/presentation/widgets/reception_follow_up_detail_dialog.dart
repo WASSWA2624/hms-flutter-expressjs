@@ -97,6 +97,8 @@ class _ReceptionFollowUpDetailDialogState
             patientName: patientName,
             patientNumber: patientNumber,
             patientNumberLabel: l10n.opdPatientIdLabel,
+            phoneLabel: phone,
+            emailLabel: email,
             status: AppWorkspaceStatus(
               label: l10n.opdFollowUpAction,
               tone: opdStageStatusTone(entry.status),
@@ -105,18 +107,6 @@ class _ReceptionFollowUpDetailDialogState
             persistExpandPreference: false,
             initiallyExpanded: false,
             semanticLabel: patientName,
-            expandedFields: <AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.patientsPhoneLabel,
-                value: phone,
-                icon: Icons.phone_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.patientsEmailLabel,
-                value: email,
-                icon: Icons.email_outlined,
-              ),
-            ],
           ),
           AppFormSection(
             title: l10n.clinicalFollowUpDetailsTitle,

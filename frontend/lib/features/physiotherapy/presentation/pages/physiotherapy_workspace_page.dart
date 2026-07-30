@@ -831,7 +831,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           patientName: item.displayTitle,
           patientNumber: _value(item.patientPublicId, l10n),
           patientNumberLabel: l10n.physiotherapyPatientNumberLabel,
-          ageLabel: item.displaySubtitle,
+          genderLabel: item.patientGender == null
+              ? null
+              : patientGenderLabel(l10n, item.patientGender),
+          genderIcon: patientGenderIcon(item.patientGender),
+          phoneLabel: item.patientPhone,
+          compactSupportingText: item.displaySubtitle,
           showAvatar: false,
           status: _workspaceStatusForStatus(l10n, item.status),
           expandedFields: <AppWorkspacePatientContextField>[

@@ -1752,6 +1752,7 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
           : formatPatientAge(l10n, entry.patientDateOfBirth),
       genderLabel: genderLabel.isEmpty ? null : genderLabel,
       genderIcon: patientGenderIcon(entry.patientGender),
+      phoneLabel: entry.patientPhone,
       compactSupportingText:
           entry.patientDateOfBirth == null && genderLabel.isEmpty
           ? entry.patientAgeSex?.trim()
@@ -3306,11 +3307,6 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
       label: l10n.patientsDobLabel,
       value: dob,
       icon: Icons.event_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.patientsPhoneLabel,
-      value: entry.patientPhone ?? '',
-      icon: Icons.phone_outlined,
     ),
   ];
 }

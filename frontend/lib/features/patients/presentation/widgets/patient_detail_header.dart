@@ -65,6 +65,8 @@ class PatientDetailHeader extends ConsumerWidget {
       ageLabel: formatPatientAge(l10n, patient.dateOfBirth),
       genderLabel: gender,
       genderIcon: genderIcon,
+      phoneLabel: patient.primaryPhone,
+      emailLabel: patient.primaryEmail,
       semanticLabel: l10n.patientsDetailTitle,
       status: AppWorkspaceStatus(
         label: patient.isActive
@@ -96,11 +98,6 @@ class PatientDetailHeader extends ConsumerWidget {
           label: l10n.patientsDobLabel,
           value: formatPatientOptionalDate(context, patient.dateOfBirth),
           icon: Icons.cake_outlined,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.patientsPhoneLabel,
-          value: patient.primaryPhone ?? '',
-          icon: Icons.phone_outlined,
         ),
         AppWorkspacePatientContextField(
           label: l10n.patientsFacilityLabel,

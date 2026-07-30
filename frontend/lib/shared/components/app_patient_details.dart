@@ -75,8 +75,8 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
 /// desktop keeps an overflow row (`Icon Label: Value | …`);
 /// mobile stacks one wrapped `Label: Value` row per fact.
 ///
-/// Body always leads with age, gender, phone, and email when known
-/// (dedicated props or matching [expandedFields]).
+/// Body always leads with age, gender, phone, and email (dedicated props,
+/// matching [expandedFields], or [AppLocalizations.profileUnknownValue]).
 class AppPatientDetails extends ConsumerStatefulWidget {
   const AppPatientDetails({
     required this.patientName,
@@ -236,6 +236,7 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     final String genderFieldLabel = l10n.patientsGenderLabel;
     final String phoneFieldLabel = l10n.patientsPhoneLabel;
     final String emailFieldLabel = l10n.patientsEmailLabel;
+    final String unknown = l10n.profileUnknownValue;
 
     final AppWorkspacePatientContextField? expandedAge = _expandedFieldFor(
       ageFieldLabel,
@@ -250,61 +251,60 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
       emailFieldLabel,
     );
 
-    final String? age =
-        _nonEmpty(widget.ageLabel) ?? _nonEmpty(expandedAge?.value);
-    final String? gender =
-        _nonEmpty(widget.genderLabel) ?? _nonEmpty(expandedGender?.value);
-    final String? phone =
-        _nonEmpty(widget.phoneLabel) ?? _nonEmpty(expandedPhone?.value);
-    final String? email =
-        _nonEmpty(widget.emailLabel) ?? _nonEmpty(expandedEmail?.value);
+    final String age =
+        _nonEmpty(widget.ageLabel) ??
+        _nonEmpty(expandedAge?.value) ??
+        unknown;
+    final String gender =
+        _nonEmpty(widget.genderLabel) ??
+        _nonEmpty(expandedGender?.value) ??
+        unknown;
+    final String phone =
+        _nonEmpty(widget.phoneLabel) ??
+        _nonEmpty(expandedPhone?.value) ??
+        unknown;
+    final String email =
+        _nonEmpty(widget.emailLabel) ??
+        _nonEmpty(expandedEmail?.value) ??
+        unknown;
 
-    if (age != null) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: ageFieldLabel,
-          value: age,
-          icon: expandedAge?.icon ?? Icons.cake_outlined,
-        ),
-      );
-    }
-
-    if (gender != null) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: genderFieldLabel,
-          value: gender,
-          icon:
-              widget.genderIcon ??
-              expandedGender?.icon ??
-              Icons.person_outline,
-        ),
-      );
-    }
-
-    if (phone != null) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: phoneFieldLabel,
-          value: phone,
-          icon: expandedPhone?.icon ?? Icons.phone_outlined,
-        ),
-      );
-    }
-
-    if (email != null) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: emailFieldLabel,
-          value: email,
-          icon: expandedEmail?.icon ?? Icons.email_outlined,
-        ),
-      );
-    }
+    fields.add(
+      AppWorkspacePatientContextField(
+        label: ageFieldLabel,
+        value: age,
+        icon: expandedAge?.icon ?? Icons.cake_outlined,
+      ),
+    );
+    fields.add(
+      AppWorkspacePatientContextField(
+        label: genderFieldLabel,
+        value: gender,
+        icon:
+            widget.genderIcon ??
+            expandedGender?.icon ??
+            Icons.person_outline,
+      ),
+    );
+    fields.add(
+      AppWorkspacePatientContextField(
+        label: phoneFieldLabel,
+        value: phone,
+        icon: expandedPhone?.icon ?? Icons.phone_outlined,
+      ),
+    );
+    fields.add(
+      AppWorkspacePatientContextField(
+        label: emailFieldLabel,
+        value: email,
+        icon: expandedEmail?.icon ?? Icons.email_outlined,
+      ),
+    );
 
     final String? supporting = widget.compactSupportingText?.trim();
-    if (age == null &&
-        gender == null &&
+    final bool ageKnown = age != unknown;
+    final bool genderKnown = gender != unknown;
+    if (!ageKnown &&
+        !genderKnown &&
         supporting != null &&
         supporting.isNotEmpty) {
       fields.add(

@@ -602,6 +602,8 @@ class _PatientListPreviewHeader extends StatelessWidget {
       patientNumber: patient.effectiveIdentifier ?? '',
       ageLabel: _patientAgeLabel(context, patient.dateOfBirth),
       genderLabel: gender,
+      phoneLabel: patient.primaryPhone,
+      emailLabel: patient.primaryEmail,
       semanticLabel: l10n.patientsDetailTitle,
       showAvatar: false,
       status: AppWorkspaceStatus(
@@ -634,11 +636,6 @@ class _PatientListPreviewHeader extends StatelessWidget {
           label: l10n.patientsDobLabel,
           value: _formatOptionalDate(context, patient.dateOfBirth),
           icon: Icons.cake_outlined,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.patientsPhoneLabel,
-          value: patient.primaryPhone ?? '',
-          icon: Icons.phone_outlined,
         ),
         AppWorkspacePatientContextField(
           label: l10n.patientsFacilityLabel,

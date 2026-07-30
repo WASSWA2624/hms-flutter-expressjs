@@ -664,6 +664,13 @@ class _LabResultContextHeader extends StatelessWidget {
       patientName: patientName,
       patientNumber: patientNumber,
       patientNumberLabel: l10n.labPatientIdFieldLabel,
+      ageLabel: firstOrder.patientDateOfBirth == null
+          ? null
+          : formatPatientAge(l10n, firstOrder.patientDateOfBirth),
+      genderLabel: firstOrder.patientGender == null
+          ? null
+          : patientGenderLabel(l10n, firstOrder.patientGender),
+      genderIcon: patientGenderIcon(firstOrder.patientGender),
       copyPatientNumberTooltip: l10n.copyIdentifierAction,
       copyPatientNumberMessage: l10n.identifierCopiedMessage,
       semanticLabel: l10n.labPatientContextLabel,
@@ -2286,33 +2293,24 @@ class _LabReportPreviewPatientDetails extends StatelessWidget {
             ),
         ];
 
-    final bool showGender = settings.showsMetadata(
-      LabReportMetadataKeys.patientGender,
-    );
-    final bool showAge = settings.showsMetadata(LabReportMetadataKeys.patientAge);
-    final String genderLabel = showGender
-        ? patientGenderLabel(l10n, firstOrder.patientGender)
-        : '';
-    final String? ageLabel = showAge && firstOrder.patientDateOfBirth != null
-        ? formatPatientAge(l10n, firstOrder.patientDateOfBirth)
-        : null;
+    final String genderLabel = patientGenderLabel(l10n, firstOrder.patientGender);
+    final String? ageLabel = firstOrder.patientDateOfBirth == null
+        ? null
+        : formatPatientAge(l10n, firstOrder.patientDateOfBirth);
 
     return AppPatientDetails(
       patientName: patientName,
       patientNumber: patientNumber,
       patientNumberLabel: l10n.labPatientIdFieldLabel,
       ageLabel: ageLabel,
-      genderLabel: genderLabel.isEmpty ? null : genderLabel,
-      genderIcon: showGender
-          ? patientGenderIcon(firstOrder.patientGender)
-          : null,
+      genderLabel: genderLabel,
+      genderIcon: patientGenderIcon(firstOrder.patientGender),
       copyPatientNumberTooltip: l10n.copyIdentifierAction,
       copyPatientNumberMessage: l10n.identifierCopiedMessage,
       semanticLabel: l10n.labPatientContextLabel,
       showAvatar: false,
       persistExpandPreference: false,
-      collapsible: false,
-      initiallyExpanded: true,
+      initiallyExpanded: false,
       alerts: alerts,
       expandedFields: expandedFields,
     );

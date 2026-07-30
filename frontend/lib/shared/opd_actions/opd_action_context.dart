@@ -12,6 +12,7 @@ import 'package:hosspi_hms/shared/components/app_workflow_stepper.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 /// Shared patient identity and completed/current/next workflow context used by
 /// appointment, queue, and encounter action hubs.
@@ -24,6 +25,11 @@ class OpdWorkflowContextPanel extends StatelessWidget {
     this.currentStepTone,
     this.nextStep,
     this.completedSteps = const <String>[],
+    this.ageLabel,
+    this.genderLabel,
+    this.genderIcon,
+    this.phoneLabel,
+    this.emailLabel,
     this.expandedFields = const <AppWorkspacePatientContextField>[],
     this.expandedChild,
     this.showTitle = true,
@@ -38,6 +44,11 @@ class OpdWorkflowContextPanel extends StatelessWidget {
   final AppWorkspaceStatusTone? currentStepTone;
   final String? nextStep;
   final List<String> completedSteps;
+  final String? ageLabel;
+  final String? genderLabel;
+  final IconData? genderIcon;
+  final String? phoneLabel;
+  final String? emailLabel;
   final List<AppWorkspacePatientContextField> expandedFields;
   final Widget? expandedChild;
   final bool showTitle;
@@ -86,6 +97,11 @@ class OpdWorkflowContextPanel extends StatelessWidget {
           patientName: patientName,
           patientNumber: patientNumber,
           patientNumberLabel: l10n.opdPatientIdLabel,
+          ageLabel: ageLabel,
+          genderLabel: genderLabel,
+          genderIcon: genderIcon,
+          phoneLabel: phoneLabel,
+          emailLabel: emailLabel,
           status: normalizedCurrent.isEmpty
               ? null
               : AppWorkspaceStatus(
@@ -164,6 +180,14 @@ class OpdActionContextPanel extends StatelessWidget {
           ]) ??
           l10n.profileUnknownValue,
       patientNumber: _firstNonEmpty(<String?>[flow.patientIdentifier]) ?? '',
+      ageLabel: flow.patientDateOfBirth == null
+          ? null
+          : formatPatientAge(l10n, flow.patientDateOfBirth),
+      genderLabel: flow.patientGender == null
+          ? null
+          : patientGenderLabel(l10n, flow.patientGender),
+      genderIcon: patientGenderIcon(flow.patientGender),
+      phoneLabel: flow.patientPhone,
       currentStep: currentStep,
       currentStepCode: flow.displayCode ?? flow.stage,
       nextStep: nextStep,

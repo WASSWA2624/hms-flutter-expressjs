@@ -809,6 +809,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final ThemeData theme = Theme.of(context);
     final String patientNumber = (patient.effectiveIdentifier ?? '').trim();
     final String? phone = patient.primaryPhone?.trim();
+    final String? email = patient.primaryEmail?.trim();
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
       child: AppPatientDetails(
@@ -828,14 +829,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             ? null
             : patientGenderLabel(l10n, patient.gender!),
         genderIcon: patientGenderIcon(patient.gender),
-        expandedFields: <AppWorkspacePatientContextField>[
-          if (phone != null && phone.isNotEmpty)
-            AppWorkspacePatientContextField(
-              label: l10n.patientsPhoneLabel,
-              value: phone,
-              icon: Icons.phone_outlined,
-            ),
-        ],
+        phoneLabel: phone,
+        emailLabel: email,
       ),
     );
   }

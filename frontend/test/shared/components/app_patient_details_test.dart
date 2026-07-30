@@ -58,6 +58,10 @@ void main() {
       AppPatientDetails(
         patientName: 'Ada Lovelace',
         patientNumber: 'MRN-100',
+        ageLabel: '37y',
+        genderLabel: 'Female',
+        phoneLabel: '+256700000000',
+        emailLabel: 'ada@example.com',
         persistExpandPreference: false,
         initiallyExpanded: true,
         expandedFields: const <AppWorkspacePatientContextField>[
@@ -73,14 +77,18 @@ void main() {
           ),
         ],
       ),
-      size: const Size(900, 800),
+      size: const Size(1400, 800),
     );
 
+    expect(find.textContaining('Age:'), findsOneWidget);
+    expect(find.textContaining('Gender:'), findsOneWidget);
+    expect(find.textContaining('Phone:'), findsOneWidget);
+    expect(find.textContaining('Email:'), findsOneWidget);
     expect(find.textContaining('Encounter:'), findsOneWidget);
     expect(find.text('ENC-9'), findsOneWidget);
     expect(find.textContaining('Orders included:'), findsOneWidget);
     expect(find.text('1 active order'), findsOneWidget);
-    expect(find.text('|'), findsOneWidget);
+    expect(find.text('|'), findsWidgets);
     expect(find.byType(SingleChildScrollView), findsWidgets);
 
     final double encounterY = tester
@@ -160,6 +168,35 @@ void main() {
     expect(find.text('ENC-9'), findsNothing);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
+
+  testWidgets(
+    'always shows age, gender, phone, and email with unknown fallback',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppPatientDetails(
+          patientName: 'Ada Lovelace',
+          patientNumber: 'MRN-100',
+          persistExpandPreference: false,
+          initiallyExpanded: true,
+          expandedFields: const <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: 'Encounter',
+              value: 'ENC-9',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.textContaining('Age:'), findsOneWidget);
+      expect(find.textContaining('Gender:'), findsOneWidget);
+      expect(find.textContaining('Phone:'), findsOneWidget);
+      expect(find.textContaining('Email:'), findsOneWidget);
+      expect(find.text('Not available'), findsNWidgets(4));
+      expect(find.textContaining('Encounter:'), findsOneWidget);
+      expect(find.text('ENC-9'), findsOneWidget);
+    },
+  );
 
   testWidgets('expanding reveals age, gender, phone, and email in the row', (
     WidgetTester tester,
@@ -291,7 +328,8 @@ void main() {
     );
 
     expect(find.text('+256700000000'), findsNothing);
-    expect(find.textContaining('Phone'), findsNothing);
+    expect(find.textContaining('Phone:'), findsOneWidget);
+    expect(find.text('Not available'), findsWidgets);
     expect(find.text('Ward A'), findsOneWidget);
   });
 

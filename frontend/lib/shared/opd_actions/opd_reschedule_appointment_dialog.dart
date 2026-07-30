@@ -156,6 +156,7 @@ class _OpdRescheduleAppointmentDialogState
                 : formatPatientAge(l10n, widget.appointment.patientDateOfBirth),
             genderLabel: genderLabel.isEmpty ? null : genderLabel,
             genderIcon: patientGenderIcon(widget.appointment.patientGender),
+            phoneLabel: phone,
             status: statusLabel.isEmpty
                 ? null
                 : AppWorkspaceStatus(
@@ -167,13 +168,6 @@ class _OpdRescheduleAppointmentDialogState
             initiallyExpanded: false,
             semanticLabel: widget.appointment.displayTitle,
             expandedFields: <AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.patientsPhoneLabel,
-                value: (phone == null || phone.isEmpty)
-                    ? l10n.profileUnknownValue
-                    : phone,
-                icon: Icons.phone_outlined,
-              ),
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
                 value: providerLabel,
