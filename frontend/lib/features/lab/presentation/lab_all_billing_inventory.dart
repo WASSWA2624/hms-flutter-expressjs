@@ -190,6 +190,14 @@ abstract final class LabAllBillingInventory {
     billingPath: 'AppRoutes.billing?patient_id=… (no inline settle)',
   );
 
+  static const LabAllFinancialAtom previewReport = LabAllFinancialAtom(
+    id: 'preview_report',
+    label: 'Preview / print released report',
+    financialClass: LabAllFinancialClass.notRequired,
+    requirement: LabAllAtomPermissions.previewReport,
+    auditCode: 'NOT_REQUIRED',
+  );
+
   static const LabAllFinancialAtom collectPayment = LabAllFinancialAtom(
     id: 'collect_payment',
     label: 'Receive payment / cashier collect',

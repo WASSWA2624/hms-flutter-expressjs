@@ -224,10 +224,11 @@ abstract final class IpdDischargeBillingInventory {
   static const IpdDischargeFinancialAtom nursingNote =
       IpdDischargeFinancialAtom(
         id: 'nursing_note',
-        label: 'Add nursing note',
-        financialClass: IpdDischargeFinancialClass.notBilled,
+        label: 'Add nursing note (optional nursing service charge)',
+        financialClass: IpdDischargeFinancialClass.createCharge,
         requirement: IpdDischargeAtomPermissions.recordNursingNote,
-        auditCode: 'NOT_BILLED',
+        billingPath:
+            'add-nursing-note → persistNursingServiceBilling (when billed)',
       );
 
   static const IpdDischargeFinancialAtom collectPayment =
