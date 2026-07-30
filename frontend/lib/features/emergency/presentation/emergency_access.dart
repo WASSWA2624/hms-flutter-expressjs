@@ -560,6 +560,7 @@ bool canViewEmergencyCritical(AppAccessPolicy policy) {
 /// | Detail Handoff | update | handoff ∪ source |
 /// | Detail Schedule in Theater | navigate / update | write ∩ |
 /// | Detail Print summary | export / read | [printSummary] |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` |
 /// | Nested mutation dialogs (dispatch / trip / …) | create / update | write ∩ |
 /// | Hard delete / void | delete | delete ∩ (no UI on this tab) |
 /// | Open in {module} (handoff outcome) | navigate | [detail] when handoff present |

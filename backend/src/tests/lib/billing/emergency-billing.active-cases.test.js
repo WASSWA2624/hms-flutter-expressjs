@@ -11,7 +11,6 @@ const {
   persistAmbulanceTripBilling,
   resolveDeferredEmergencyBilling,
   AMBULANCE_TRIP_CHARGE_KEY,
-  BILLABLE_SOURCE_MODULES: _unused,
 } = require('@lib/billing/emergency-billing');
 
 jest.mock('@lib/billing/clinical-request-billing', () => {

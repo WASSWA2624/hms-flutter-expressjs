@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/emergency_access.dart';
@@ -1113,7 +1114,7 @@ class EmergencyDetailPanel extends ConsumerWidget {
           SizedBox(height: theme.spacing.md),
           EmergencyHandoffOutcomePanel(
             outcome: summary.handoff!,
-            patientId: summary.patientDisplayId ?? summary.patientId,
+            patientId: summary.patientId ?? summary.patientDisplayId,
             isDialog: isDialog,
             readRequirement: readRequirement,
           ),
@@ -1249,7 +1250,7 @@ class EmergencyActionPanel extends ConsumerWidget {
             .trim()
             .isNotEmpty)
           AppAccessActionGate(
-            requirement: EmergencyAllAtomPermissions.openBilling,
+            requirement: billingReadRequirement,
             builder: (BuildContext context, bool isAllowed) {
               if (!isAllowed) {
                 return const SizedBox.shrink();
@@ -1812,6 +1813,10 @@ class AmbulancePanel extends StatelessWidget {
                 item.endedAt == null
                     ? null
                     : 'Ended ${dateTimeLabel(context, item.endedAt)}',
+                item.hasBillingSnapshot
+                    ? '${EmergencyText.billingStatus}: '
+                        '${apiLabel(item.billingPaymentStatus ?? 'PENDING')}'
+                    : null,
               ]),
               occurredAt:
                   item.endedAt ??

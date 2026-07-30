@@ -9,9 +9,23 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/ambulance-trip/ambulance-trip.repository');
 jest.mock('@lib/audit');
+jest.mock('@prisma/client', () => ({
+  $transaction: jest.fn((fn) => fn({})),
+}));
+jest.mock('@lib/billing/clinical-request-billing', () => {
+  const actual = jest.requireActual('@lib/billing/clinical-request-billing');
+  return {
+    ...actual,
+    applyClinicalRequestBilling: jest.fn(),
+  };
+});
 
 const ambulanceTripRepository = require('@repositories/ambulance-trip/ambulance-trip.repository');
 const { createAuditLog } = require('@lib/audit');
+const prisma = require('@prisma/client');
+const {
+  applyClinicalRequestBilling,
+} = require('@lib/billing/clinical-request-billing');
 const {
   listAmbulanceTrips,
   getAmbulanceTripById,
@@ -22,7 +36,12 @@ const {
 
 describe('Ambulance Trip Service', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
+    prisma.$transaction.mockImplementation((fn) => fn({}));
+    applyClinicalRequestBilling.mockResolvedValue({
+      invoice_id: 'inv-amb-1',
+      payment_status: 'PENDING',
+    });
   });
 
   describe('listAmbulanceTrips', () => {
@@ -66,7 +85,12 @@ describe('Ambulance Trip Service', () => {
       const mockTrip = {
         id: 'trip-123',
         ambulance_id: 'ambulance-123',
-        emergency_case_id: 'case-123'
+        emergency_case_id: 'case-123',
+        emergency_case: {
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          patient_id: 'patient-1',
+        },
       };
       ambulanceTripRepository.findMany.mockResolvedValue([]);
       ambulanceTripRepository.create.mockResolvedValue(mockTrip);
@@ -77,16 +101,88 @@ describe('Ambulance Trip Service', () => {
         emergency_case_id: 'case-123'
       }, {});
 
-      expect(result).toEqual(expect.objectContaining(mockTrip));
+      expect(result).toEqual(expect.objectContaining({ id: 'trip-123' }));
       expect(result).toEqual(expect.objectContaining({ display_id: 'trip-123' }));
       expect(createAuditLog).toHaveBeenCalled();
+      // No facility fee / billing payload → audited NOT_REQUIRED, no ledger post.
+      expect(applyClinicalRequestBilling).not.toHaveBeenCalled();
+    });
+
+    it('should post deferred Billing charge when fee resolves (no bypass)', async () => {
+      const mockTrip = {
+        id: 'trip-bill-1',
+        ambulance_id: 'ambulance-123',
+        emergency_case_id: 'case-123',
+        started_at: new Date('2026-01-19T10:00:00Z'),
+        ended_at: new Date('2026-01-19T11:00:00Z'),
+        emergency_case: {
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          patient_id: 'patient-1',
+        },
+      };
+      const pendingBilling = {
+        payment_status: 'PENDING',
+        currency: 'USD',
+        total_amount: '100.00',
+        line_items: [
+          {
+            id: 'ambulance-trip',
+            label: 'Ambulance transport',
+            quantity: 1,
+            unit_price: '100.00',
+            line_total: '100.00',
+          },
+        ],
+      };
+      ambulanceTripRepository.findMany.mockResolvedValue([]);
+      ambulanceTripRepository.create.mockResolvedValue(mockTrip);
+      createAuditLog.mockResolvedValue();
+
+      const result = await createAmbulanceTrip(
+        {
+          ambulance_id: 'ambulance-123',
+          emergency_case_id: 'case-123',
+          started_at: '2026-01-19T10:00:00Z',
+          ended_at: '2026-01-19T11:00:00Z',
+          billing: pendingBilling,
+        },
+        { user_id: 'user-1', tenant_id: 'tenant-1' }
+      );
+
+      expect(applyClinicalRequestBilling).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          sourceId: 'trip-bill-1',
+          sourceModule: 'SERVICE',
+          tenantId: 'tenant-1',
+          patientId: 'patient-1',
+          billing: expect.objectContaining({ payment_status: 'PENDING' }),
+        })
+      );
+      expect(result.billing).toEqual(
+        expect.objectContaining({
+          invoice_id: 'inv-amb-1',
+          payment_status: 'PENDING',
+        })
+      );
+      expect(result.billing_deferred).toBe(true);
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 
   describe('updateAmbulanceTrip', () => {
     it('should update trip and create audit log', async () => {
-      const beforeTrip = { id: 'trip-123', started_at: null };
-      const updatedTrip = { id: 'trip-123', started_at: new Date('2026-01-19T10:00:00Z') };
+      const beforeTrip = { id: 'trip-123', started_at: null, ended_at: null };
+      const updatedTrip = {
+        id: 'trip-123',
+        started_at: new Date('2026-01-19T10:00:00Z'),
+        ended_at: null,
+        emergency_case: {
+          tenant_id: 'tenant-1',
+          patient_id: 'patient-1',
+        },
+      };
 
       ambulanceTripRepository.findById.mockResolvedValue(beforeTrip);
       ambulanceTripRepository.findMany.mockResolvedValue([]);
@@ -95,9 +191,56 @@ describe('Ambulance Trip Service', () => {
 
       const result = await updateAmbulanceTrip('trip-123', { started_at: '2026-01-19T10:00:00Z' }, {});
 
-      expect(result).toEqual(expect.objectContaining(updatedTrip));
+      expect(result).toEqual(expect.objectContaining({ id: 'trip-123' }));
       expect(result).toEqual(expect.objectContaining({ display_id: 'trip-123' }));
       expect(createAuditLog).toHaveBeenCalled();
+      expect(applyClinicalRequestBilling).not.toHaveBeenCalled();
+    });
+
+    it('should idempotently post Billing on trip complete', async () => {
+      const beforeTrip = {
+        id: 'trip-123',
+        started_at: new Date('2026-01-19T10:00:00Z'),
+        ended_at: null,
+        emergency_case: {
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          patient_id: 'patient-1',
+        },
+      };
+      const updatedTrip = {
+        ...beforeTrip,
+        ended_at: new Date('2026-01-19T11:00:00Z'),
+      };
+      const pendingBilling = {
+        payment_status: 'PENDING',
+        total_amount: '75.00',
+        currency: 'USD',
+        line_items: [
+          {
+            id: 'ambulance-trip',
+            label: 'Ambulance transport',
+            quantity: 1,
+            unit_price: '75.00',
+            line_total: '75.00',
+          },
+        ],
+      };
+
+      ambulanceTripRepository.findById.mockResolvedValue(beforeTrip);
+      ambulanceTripRepository.findMany.mockResolvedValue([]);
+      ambulanceTripRepository.update.mockResolvedValue(updatedTrip);
+      createAuditLog.mockResolvedValue();
+
+      const result = await updateAmbulanceTrip(
+        'trip-123',
+        { ended_at: '2026-01-19T11:00:00Z', billing: pendingBilling },
+        { user_id: 'user-1' }
+      );
+
+      expect(applyClinicalRequestBilling).toHaveBeenCalled();
+      expect(result.billing.payment_status).toBe('PENDING');
+      expect(result.billing.invoice_id).toBe('inv-amb-1');
     });
   });
 

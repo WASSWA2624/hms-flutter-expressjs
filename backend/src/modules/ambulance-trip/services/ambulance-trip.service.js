@@ -388,9 +388,10 @@ const createAmbulanceTrip = async (data, context = {}) => {
   });
 
   // Transport charge posts as PENDING when the trip is already completed
-  // at create time (idempotent on trip id). Settlement stays in Billing.
+  // at create time, or when an explicit billing payload is supplied
+  // (idempotent on trip id). Settlement stays in Billing.
   let billingSnapshot = null;
-  if (trip.ended_at) {
+  if (trip.ended_at || billingInput) {
     billingSnapshot = await applyAmbulanceTripBilling(trip, billingInput, context);
   }
 

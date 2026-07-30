@@ -513,6 +513,75 @@ describe('Emergency Case Service', () => {
       );
     });
 
+    it('should pass deferred admission billing into IPD handoff (Billing SoR)', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'HIGH',
+        status: 'OPEN',
+        facility: {
+          extension_json: { billing: { admission_fee: '300.00', currency: 'USD' } }
+        }
+      };
+      const updatedCase = { ...existingCase, status: 'CLOSED' };
+      const pendingBilling = {
+        payment_status: 'PENDING',
+        currency: 'USD',
+        total_amount: '300.00',
+        line_items: [
+          {
+            id: 'emergency-admission',
+            label: 'Emergency admission fee',
+            quantity: 1,
+            unit_price: '300.00',
+            line_total: '300.00',
+            catalog_type: 'SERVICE'
+          }
+        ]
+      };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      ipdFlowService.startIpdFlow.mockResolvedValue({
+        id: 'ADM000099',
+        admission: { id: 'ADM000099', billing_snapshot: pendingBilling },
+        billing: pendingBilling
+      });
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockResolvedValue(updatedCase);
+
+      await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'IPD', close_case: true },
+        mockUser
+      );
+
+      expect(ipdFlowService.startIpdFlow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: existingCase.tenant_id,
+          patient_id: existingCase.patient_id,
+          billing: expect.objectContaining({
+            payment_status: 'PENDING',
+            total_amount: '300.00'
+          })
+        }),
+        expect.objectContaining({ user_id: mockUser.id })
+      );
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
+        existingCase.id,
+        expect.objectContaining({
+          extension_json: expect.objectContaining({
+            handoff: expect.objectContaining({
+              destination: 'IPD',
+              billing_deferred: true,
+              billing_payment_status: 'PENDING'
+            })
+          })
+        })
+      );
+    });
+
     it('should start theater work through a theatre encounter', async () => {
       const existingCase = {
         id: 'case-id',
@@ -571,7 +640,7 @@ describe('Emergency Case Service', () => {
               receiving_display_id: 'THR000001',
               encounter_display_id: 'ENC000001',
               stage: 'PRE_OP',
-              billing_deferred: false
+              billing_deferred: true
             })
           })
         })

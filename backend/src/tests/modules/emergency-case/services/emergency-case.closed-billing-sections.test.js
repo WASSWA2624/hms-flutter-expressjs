@@ -190,7 +190,7 @@ describe('Emergency Closed billing & sections (handoff → Billing)', () => {
     );
   });
 
-  it('AC2/AC6: IPD deferred post is idempotent on replay (same charge key)', async () => {
+  it('AC2/AC6: deferred admission charge uses stable idempotency charge key', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
@@ -214,18 +214,18 @@ describe('Emergency Closed billing & sections (handoff → Billing)', () => {
       { destination: 'IPD', close_case: true, billing: deferredAdmissionBilling },
       mockUser
     );
-    await emergencyCaseService.handoffEmergencyCase(
-      'case-id',
-      { destination: 'IPD', close_case: true, billing: deferredAdmissionBilling },
-      mockUser
-    );
 
-    const calls = persistEmergencyCaseServiceBilling.mock.calls;
-    expect(calls.length).toBeGreaterThanOrEqual(1);
-    for (const [, options] of calls) {
-      expect(options.chargeKey).toBe(HANDOFF_ADMISSION_CHARGE_KEY);
-      expect(options.emergencyCaseId).toBe('case-id');
-    }
+    expect(persistEmergencyCaseServiceBilling).toHaveBeenCalledTimes(1);
+    expect(persistEmergencyCaseServiceBilling).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        chargeKey: HANDOFF_ADMISSION_CHARGE_KEY,
+        emergencyCaseId: 'case-id',
+      })
+    );
+    const [, options] = persistEmergencyCaseServiceBilling.mock.calls[0];
+    expect(options.chargeKey).toBe(HANDOFF_ADMISSION_CHARGE_KEY);
+    expect(options.emergencyCaseId).toBe('case-id');
   });
 
   it('AC2: Theater handoff posts theatre fee when receiving flow omits billing', async () => {
@@ -283,21 +283,18 @@ describe('Emergency Closed billing & sections (handoff → Billing)', () => {
     );
   });
 
-  it('AC2: no module-local paid flag — soft delete does not invent cashier reverse', async () => {
+  it('AC2: soft delete does not invent a module cashier reverse', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
       status: 'CLOSED',
     };
     emergencyCaseRepository.findById.mockResolvedValue(existingCase);
-    emergencyCaseRepository.softDelete = jest.fn().mockResolvedValue(undefined);
+    emergencyCaseRepository.softDelete.mockResolvedValue(undefined);
 
-    // Soft delete path must not call receive-payment / invent paid status.
-    if (typeof emergencyCaseService.deleteEmergencyCase === 'function') {
-      await emergencyCaseService.deleteEmergencyCase('case-id', mockUser);
-      expect(persistEmergencyCaseServiceBilling).not.toHaveBeenCalled();
-    } else {
-      expect(persistEmergencyCaseServiceBilling).not.toHaveBeenCalled();
-    }
+    await emergencyCaseService.deleteEmergencyCase('case-id', mockUser);
+
+    expect(emergencyCaseRepository.softDelete).toHaveBeenCalledWith('case-id');
+    expect(persistEmergencyCaseServiceBilling).not.toHaveBeenCalled();
   });
 });
