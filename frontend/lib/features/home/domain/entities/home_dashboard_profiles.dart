@@ -480,12 +480,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'lab_all_patients': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'worklist'},
       ),
-      'lab_orders_week': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'worklist'},
-      ),
-      'lab_orders_month': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'section': 'worklist'},
-      ),
+      // Week/month volume KPIs are informational only (no desk filter).
     },
   ),
   AppRole.radiologyTech: HomeDashboardProfile(
