@@ -48,7 +48,7 @@ const ClinicalWorklistEntry _urgentEncounter = ClinicalWorklistEntry(
   sourceQueue: 'OPD',
   encounterId: 'encounter-urgent-bill-1',
   encounterPublicId: 'ENC-URG-1',
-  apiPatientId: 'patient-uuid-1',
+  patientId: 'patient-uuid-1',
   patientDisplayName: 'Urgent Billing Patient',
   patientPublicId: 'PAT-URG-1',
   providerDisplayName: 'Dr Urgent',
@@ -423,7 +423,7 @@ void main() {
           () => clinicalRepository.createProcedure(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
         when(
-          () => clinicalRepository.recordCatalogFavorite(any()),
+          () => clinicalRepository.createClinicalTermFavorite(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
 
         SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -495,7 +495,7 @@ void main() {
           () => clinicalRepository.createLabOrder(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
         when(
-          () => clinicalRepository.recordCatalogFavorite(any()),
+          () => clinicalRepository.createClinicalTermFavorite(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
 
         SharedPreferences.setMockInitialValues(<String, Object>{});
