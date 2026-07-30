@@ -225,16 +225,16 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
                             : (widget.hintText ?? widget.labelText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: code.isNotEmpty
-                              ? (canEdit
+                        style: code.isNotEmpty
+                            ? theme.textTheme.titleMedium?.copyWith(
+                                color: canEdit
                                     ? colorScheme.onSurface
                                     : colorScheme.onSurface.withValues(
                                         alpha: 0.62,
-                                      ))
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+                                      ),
+                                fontWeight: FontWeight.w600,
+                              )
+                            : theme.inputDecorationTheme.hintStyle,
                       ),
                       if (selected != null)
                         Text(
@@ -372,16 +372,15 @@ class _CurrencySelectButton extends StatelessWidget {
                     code,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style:
-                        (compact
-                                ? theme.textTheme.titleMedium
-                                : theme.textTheme.headlineSmall)
-                            ?.copyWith(
-                              color: hasCurrency
-                                  ? contentColor
-                                  : colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    style: hasCurrency
+                        ? (compact
+                                  ? theme.textTheme.titleMedium
+                                  : theme.textTheme.headlineSmall)
+                              ?.copyWith(
+                                color: contentColor,
+                                fontWeight: FontWeight.w600,
+                              )
+                        : theme.inputDecorationTheme.hintStyle,
                   ),
                 ),
                 if (isLoading) ...<Widget>[

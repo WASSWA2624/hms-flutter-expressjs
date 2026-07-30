@@ -1343,11 +1343,12 @@ class _CompactResultInputState extends State<_CompactResultInput> {
       widget.draft,
       patientGender: widget.patientGender,
     );
-    final String? flagToken = _resultInterpretationFlagToken(
-      item,
-      widget.draft,
-      patientGender: widget.patientGender,
-    );
+    final TextStyle? valueStyle = tone == null || !widget.draft.hasEntry
+        ? null
+        : TextStyle(
+            color: _resultInterpretationForeground(theme, tone),
+            fontWeight: FontWeight.w600,
+          );
 
     // Keep field-affixed clear/dropdown controls icon-only so toolbar
     // showLabels scope cannot expand them into overflowing labeled pills.
@@ -1365,6 +1366,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                 unitController: widget.draft.unitController,
                 item: item,
                 enabled: enabled,
+                valueStyle: valueStyle,
                 onChanged: enabled
                     ? () {
                         setState(() {});
@@ -1387,6 +1389,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                 labelText: l10n.labResultValueLabel,
                 enabled: enabled,
                 isDense: true,
+                textStyle: valueStyle,
                 options: <AppSelectOption<String>>[
                   for (final LabResultOption option in item.resultOptions)
                     AppSelectOption<String>(
@@ -1412,23 +1415,15 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                     : l10n.labResultTextLabel,
                 enabled: enabled,
                 isDense: true,
+                style: valueStyle,
                 maxLines: item.isText ? 3 : 1,
-                onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
+                onChanged: enabled
+                    ? (_) {
+                        setState(() {});
+                        widget.draft.notifyChanged();
+                      }
+                    : null,
               ),
-            if (tone != null &&
-                flagToken != null &&
-                widget.draft.hasEntry) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: labStatusLabel(context, flagToken),
-                    tone: tone,
-                  ),
-                ),
-              ),
-            ],
             SizedBox(height: theme.spacing.xs),
             AppTextField(
               controller: widget.draft.notesController,
@@ -1482,11 +1477,6 @@ class _CompletedResultReadout extends StatelessWidget {
       );
     }
 
-    final String? flagToken = _resultInterpretationFlagToken(
-      item,
-      null,
-      patientGender: patientGender,
-    );
     final AppWorkspaceStatusTone tone =
         _resultInterpretationTone(
           item,
@@ -1506,16 +1496,6 @@ class _CompletedResultReadout extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (flagToken != null &&
-            tone != AppWorkspaceStatusTone.neutral) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          AppWorkspaceStatusBadge(
-            status: AppWorkspaceStatus(
-              label: labStatusLabel(context, flagToken),
-              tone: tone,
-            ),
-          ),
-        ],
         if (onEdit != null) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           AppButton.tertiary(

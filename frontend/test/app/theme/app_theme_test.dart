@@ -20,6 +20,11 @@ void main() {
       expect(theme.textTheme.bodyMedium?.fontWeight, FontWeight.w400);
       expect(theme.textTheme.titleMedium?.fontWeight, FontWeight.w400);
       expect(theme.textTheme.labelLarge?.fontWeight, FontWeight.w400);
+      expect(
+        theme.inputDecorationTheme.hintStyle?.fontWeight,
+        FontWeight.w300,
+      );
+      expect(theme.inputDecorationTheme.hintStyle?.fontSize, 14);
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure50);

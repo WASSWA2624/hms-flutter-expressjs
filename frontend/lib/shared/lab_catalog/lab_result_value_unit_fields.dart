@@ -18,6 +18,7 @@ class LabResultValueUnitFields extends StatelessWidget {
     this.valueRequired = false,
     this.onChanged,
     this.valueValidator,
+    this.valueStyle,
     this.stackBelowWidth = 420,
     this.valueFlex = 3,
     this.unitFlex = 2,
@@ -31,6 +32,9 @@ class LabResultValueUnitFields extends StatelessWidget {
   final bool valueRequired;
   final VoidCallback? onChanged;
   final FormFieldValidator<String>? valueValidator;
+
+  /// Optional style for the result value input (e.g. interpretation tint).
+  final TextStyle? valueStyle;
   final double stackBelowWidth;
   final int valueFlex;
   final int unitFlex;
@@ -49,6 +53,7 @@ class LabResultValueUnitFields extends StatelessWidget {
           enabled: enabled,
           isRequired: valueRequired,
           isDense: true,
+          style: valueStyle,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: enabled && onChanged != null
               ? (_) => onChanged!()

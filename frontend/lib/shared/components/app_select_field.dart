@@ -45,6 +45,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.allowClear = true,
     this.searchable = false,
     this.isDense = false,
+    this.textStyle,
     this.filterCallback,
     this.searchCallback,
     this.onSearchTextChanged,
@@ -72,6 +73,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.isLoading = false,
     this.allowClear = true,
     this.isDense = false,
+    this.textStyle,
     this.filterCallback,
     this.searchCallback,
     this.onSearchTextChanged,
@@ -101,6 +103,9 @@ class AppSelectField<T> extends StatefulWidget {
   final bool searchable;
   /// Matches [AppTextField.isDense] height (40) for side-by-side layouts.
   final bool isDense;
+
+  /// Optional selected-value text style. Merged over the default field style.
+  final TextStyle? textStyle;
   final FilterCallback<T>? filterCallback;
   final SearchCallback<T>? searchCallback;
   final ValueChanged<String>? onSearchTextChanged;
@@ -272,14 +277,16 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           helperText: widget.helperText,
           trailingIcon: trailingIcon,
           selectedTrailingIcon: selectedTrailingIcon,
-          textStyle: theme.textTheme.bodyLarge?.copyWith(
-            color: canSelect
-                ? theme.colorScheme.onSurface
-                : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-            fontWeight: FontWeight.w400,
-            fontSize: widget.isDense ? 16 : null,
-            height: widget.isDense ? 1.5 : null,
-          ),
+          textStyle: theme.textTheme.bodyLarge
+              ?.copyWith(
+                color: canSelect
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+                fontWeight: FontWeight.w400,
+                fontSize: widget.isDense ? 16 : null,
+                height: widget.isDense ? 1.5 : null,
+              )
+              .merge(widget.textStyle),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
           keyboardType: widget.searchable ? TextInputType.text : null,

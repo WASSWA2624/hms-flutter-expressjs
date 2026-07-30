@@ -220,7 +220,9 @@ abstract final class AppTheme {
         ),
         hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w300,
+          fontSize: 14,
+          height: 1.5,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(indicatorShape: controlShape),

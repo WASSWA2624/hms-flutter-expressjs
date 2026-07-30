@@ -43,6 +43,7 @@ class AppTextField extends StatefulWidget {
     this.enableSuggestions = true,
     this.useFloatingLabel = true,
     this.isDense = false,
+    this.style,
     this.tooltip,
     super.key,
   }) : assert(
@@ -99,6 +100,10 @@ class AppTextField extends StatefulWidget {
   /// When true, uses dense input padding so the field can align with compact
   /// toolbar actions.
   final bool isDense;
+
+  /// Optional input text style. Merged over the default field style so callers
+  /// can tint the value (for example lab result interpretation colors).
+  final TextStyle? style;
   final String? tooltip;
 
   @override
@@ -206,14 +211,16 @@ class _AppTextFieldState extends State<AppTextField> {
       autofocus: widget.autofocus,
       autocorrect: widget.obscureText ? false : widget.autocorrect,
       enableSuggestions: widget.obscureText ? false : widget.enableSuggestions,
-      style: theme.textTheme.bodyLarge?.copyWith(
-        color: canEdit
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-        fontWeight: FontWeight.w400,
-        fontSize: 16,
-        height: 1.5,
-      ),
+      style: theme.textTheme.bodyLarge
+          ?.copyWith(
+            color: canEdit
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+            fontWeight: FontWeight.w400,
+            fontSize: 16,
+            height: 1.5,
+          )
+          .merge(widget.style),
       decoration: InputDecoration(
         isDense: widget.isDense,
         contentPadding: widget.isDense
