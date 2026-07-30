@@ -15826,11 +15826,11 @@ abstract class AppLocalizations {
   /// **'Print summary'**
   String get clinicalPrintSummaryAction;
 
-  /// Clinical encounter dialog title with patient name.
+  /// Clinical encounter dialog title.
   ///
   /// In en, this message translates to:
-  /// **'{patientName} — Clinical details'**
-  String clinicalEncounterDetailsTitle(String patientName);
+  /// **'Clinical details'**
+  String get clinicalEncounterDetailsTitle;
 
   /// Clinical encounter dialog subtitle with encounter id and queue.
   ///

@@ -1183,8 +1183,8 @@ class _ClinicalStatusText extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Color color = _clinicalToneColor(theme, status.tone);
     final IconData icon = status.icon ?? _clinicalStatusIcon(status.tone);
-    final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.labelLarge)
-        ?.copyWith(color: color, fontWeight: FontWeight.w600);
+    final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.bodyMedium)
+        ?.copyWith(color: color, fontWeight: FontWeight.w500);
 
     return Semantics(
       label: status.label,
@@ -1279,7 +1279,7 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(l10n.clinicalEncounterDetailsTitle(initialEntry.displayTitle)),
+          Text(l10n.clinicalEncounterDetailsTitle),
           Text(
             l10n.clinicalEncounterDetailsSubtitle(
               initialEntry.encounterPublicId ?? initialEntry.encounterId,
@@ -1825,7 +1825,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           ? AppWorkspaceStatusTone.warning
           : AppWorkspaceStatusTone.success,
     );
-    final List<AppWorkspacePatientContextField> facts =
+    final List<AppWorkspacePatientContextField> triageFacts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
             label: l10n.opdTriageLevelLabel,
@@ -1866,10 +1866,13 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             value: handoff.triageNotes ?? '',
             icon: Icons.notes_outlined,
           ),
+        ];
+    final List<AppWorkspacePatientContextField> vitalFacts =
+        <AppWorkspacePatientContextField>[
           for (final ClinicalVitalSummary vital in handoff.vitalSigns)
             AppWorkspacePatientContextField(
               label: _apiLabel(vital.vitalType),
-              value: _clinicalVitalFactValue(context, vital),
+              value: vital.displayValue,
               icon: Icons.monitor_heart_outlined,
               tone: _clinicalVitalTone(vital.status),
             ),
@@ -1880,25 +1883,27 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppPatientContextFactsRow(fields: facts),
-          if (handoff.vitalSigns.isNotEmpty) ...<Widget>[
+          AppPatientContextFactsRow(fields: triageFacts),
+          if (vitalFacts.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             Wrap(
-              spacing: theme.spacing.sm,
+              spacing: theme.spacing.md,
               runSpacing: theme.spacing.xs,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 Text(
                   '${l10n.opdVitalsSummaryLabel}:',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 _ClinicalStatusText(status: vitalStatus),
+                _ClinicalVitalsLegend(),
               ],
             ),
-            SizedBox(height: theme.spacing.xs),
-            _ClinicalVitalsLegend(),
+            SizedBox(height: theme.spacing.sm),
+            AppPatientContextFactsRow(fields: vitalFacts),
           ],
         ],
       ),
@@ -1959,7 +1964,7 @@ class _ClinicalVitalLegendItem extends StatelessWidget {
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -3362,16 +3367,6 @@ AppWorkspaceStatusTone _clinicalVitalTone(String? status) {
     'NORMAL' || 'RECORDED' => AppWorkspaceStatusTone.success,
     _ => AppWorkspaceStatusTone.neutral,
   };
-}
-
-String _clinicalVitalFactValue(BuildContext context, ClinicalVitalSummary vital) {
-  final String recordedAtLabel = vital.recordedAt == null
-      ? ''
-      : _dateTimeLabel(context, vital.recordedAt);
-  if (recordedAtLabel.isEmpty) {
-    return vital.displayValue;
-  }
-  return '${vital.displayValue} · $recordedAtLabel';
 }
 
 IconData _recordIcon(String kind) {

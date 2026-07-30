@@ -10989,15 +10989,9 @@
   "@clinicalPrintSummaryAction": {
     "description": "Clinical print summary action label."
   },
-  "clinicalEncounterDetailsTitle": "{patientName} — Clinical details",
+  "clinicalEncounterDetailsTitle": "Clinical details",
   "@clinicalEncounterDetailsTitle": {
-    "description": "Clinical encounter dialog title with patient name.",
-    "placeholders": {
-      "patientName": {
-        "type": "String",
-        "example": "Amina Demo"
-      }
-    }
+    "description": "Clinical encounter dialog title."
   },
   "clinicalEncounterDetailsSubtitle": "{encounterId} · {queue}",
   "@clinicalEncounterDetailsSubtitle": {

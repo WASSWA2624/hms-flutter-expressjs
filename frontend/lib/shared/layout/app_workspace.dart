@@ -1330,8 +1330,8 @@ class AppPatientContextFactsRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextStyle? separatorStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.outline,
-      fontWeight: FontWeight.w500,
+      color: colorScheme.outlineVariant,
+      fontWeight: FontWeight.w400,
     );
 
     return LayoutBuilder(
@@ -1347,7 +1347,7 @@ class AppPatientContextFactsRow extends StatelessWidget {
               for (var index = 0; index < visibleFields.length; index += 1) ...<
                 Widget
               >[
-                if (index > 0) SizedBox(height: theme.spacing.xs),
+                if (index > 0) SizedBox(height: theme.spacing.sm),
                 _PatientContextInlineFact(
                   field: visibleFields[index],
                   expand: true,
@@ -1358,14 +1358,15 @@ class AppPatientContextFactsRow extends StatelessWidget {
         }
 
         return Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.sm,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
             for (var index = 0; index < visibleFields.length; index += 1) ...<
               Widget
             >[
-              if (index > 0) Text('|', style: separatorStyle),
+              if (index > 0)
+                Text('|', style: separatorStyle),
               _PatientContextInlineFact(field: visibleFields[index]),
             ],
           ],
@@ -1405,13 +1406,13 @@ class _PatientContextInlineFact extends StatelessWidget {
         : colors.on;
     final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
       color: field.tone == AppWorkspaceStatusTone.neutral
           ? colorScheme.onSurface
           : accentColor,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
     );
 
     final Widget value = field.copyable
@@ -1444,7 +1445,7 @@ class _PatientContextInlineFact extends StatelessWidget {
               size: theme.appTokens.listIconSize,
               color: accentColor,
             ),
-            SizedBox(width: theme.spacing.xs),
+            SizedBox(width: theme.spacing.sm / 2),
           ],
           if (expand)
             Expanded(

@@ -8619,9 +8619,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrintSummaryAction => 'Print summary';
 
   @override
-  String clinicalEncounterDetailsTitle(String patientName) {
-    return '$patientName — Clinical details';
-  }
+  String get clinicalEncounterDetailsTitle => 'Clinical details';
 
   @override
   String clinicalEncounterDetailsSubtitle(String encounterId, String queue) {

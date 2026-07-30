@@ -191,9 +191,11 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
           ? (bool value) => _toggleExpanded(expanded: value)
           : null,
       initiallyExpanded: !sectionCollapsible,
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.md,
-        vertical: theme.spacing.sm,
+      contentPadding: EdgeInsets.fromLTRB(
+        theme.spacing.md,
+        theme.spacing.sm,
+        theme.spacing.md,
+        theme.spacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -405,7 +407,7 @@ class _PatientDetailsTitle extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool compact = AppBreakpoints.of(context).isMobile;
     final TextStyle? nameStyle = theme.textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
     );
     final String normalizedId = patientNumber.trim();
     final String semanticsLabel =
@@ -430,7 +432,7 @@ class _PatientDetailsTitle extends StatelessWidget {
             onCopied: onCopyPatientNumber,
             textStyle: nameStyle?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           );
 
