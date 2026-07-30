@@ -450,7 +450,7 @@ void main() {
       expectFlatSections(tester);
       expect(_tab('Interop'), findsOneWidget);
 
-      await tester.tap(_tableRowInkWell().first);
+      await tester.tap(find.text('FHIR exchange').first);
       await tester.pumpAndSettle();
       expect(find.text('Interoperability actions are available.'), findsWidgets);
       expectFlatSections(tester);
