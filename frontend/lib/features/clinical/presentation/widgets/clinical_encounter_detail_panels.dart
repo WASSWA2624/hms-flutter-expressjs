@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
@@ -1520,6 +1521,51 @@ class _ClinicalStatusBadge extends StatelessWidget {
       tone: _statusTone(status),
     );
   }
+}
+
+/// Order workflow status plus optional Billing payment_status chip (parity).
+class _ClinicalOrderStatusWithPayment extends StatelessWidget {
+  const _ClinicalOrderStatusWithPayment({
+    required this.status,
+    this.paymentStatus,
+  });
+
+  final String? status;
+  final String? paymentStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String normalizedStatus = (status ?? '').trim();
+    final String normalizedPayment = (paymentStatus ?? '').trim();
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        if (normalizedStatus.isNotEmpty)
+          _ClinicalStatusBadge(status: normalizedStatus),
+        if (normalizedPayment.isNotEmpty)
+          AppStatusBadge(
+            label: clinicalRequestPaymentStatusDisplayLabel(
+              l10n,
+              normalizedPayment,
+            ),
+            tone: _paymentStatusTone(normalizedPayment),
+          ),
+      ],
+    );
+  }
+}
+
+AppWorkspaceStatusTone _paymentStatusTone(String? rawStatus) {
+  return switch (clinicalRequestPaymentStatusFromValue(rawStatus)) {
+    ClinicalRequestPaymentStatus.paid => AppWorkspaceStatusTone.success,
+    ClinicalRequestPaymentStatus.partial => AppWorkspaceStatusTone.warning,
+    ClinicalRequestPaymentStatus.unpaid => AppWorkspaceStatusTone.warning,
+    ClinicalRequestPaymentStatus.notBilled => AppWorkspaceStatusTone.neutral,
+  };
 }
 
 Widget _labOrderActions({

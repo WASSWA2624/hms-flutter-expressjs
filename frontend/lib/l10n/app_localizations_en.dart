@@ -15621,6 +15621,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communicationsDeliveryErrorTitle => 'Delivery error';
 
   @override
+  String get communicationsDeliveryDetailsSectionTitle => 'Details';
+
+  @override
+  String get communicationsDeliveryLinkedSectionTitle => 'Linked record';
+
+  @override
   String get communicationsOpenLinkedRecordAction => 'Open linked record';
 
   @override

@@ -323,7 +323,18 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       payload.status = 'PENDING';
     }
 
-    assertApprovedAmountWhenRequired(payload, {});
+    // Manual Claims desk creates PENDING without an amount. Insurer adapters may
+    // approve with an amount; if they approve without one, keep PENDING so Billing
+    // still requires an explicit limit before coverage splits are capped.
+    const createStatus = String(payload.status || '').toUpperCase();
+    if (
+      (createStatus === 'APPROVED' || createStatus === 'PARTIAL') &&
+      (payload.approved_amount === null ||
+        payload.approved_amount === undefined ||
+        payload.approved_amount === '')
+    ) {
+      payload.status = 'PENDING';
+    }
 
     const preAuthorization = await preAuthorizationRepository.create(payload);
 

@@ -481,6 +481,7 @@ final class ClinicalRelatedRecord {
     required this.id,
     required this.kind,
     this.status,
+    this.paymentStatus,
     this.title,
     this.subtitle,
     this.occurredAt,
@@ -497,6 +498,10 @@ final class ClinicalRelatedRecord {
   final String id;
   final String kind;
   final String? status;
+
+  /// Billing payment status from clinical-request-billing snapshot
+  /// (`PAID` / `PENDING` / `PARTIAL` / `NOT_BILLED` / …).
+  final String? paymentStatus;
   final String? title;
   final String? subtitle;
   final DateTime? occurredAt;

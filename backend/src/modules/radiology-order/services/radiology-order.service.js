@@ -16,7 +16,8 @@ const {
 const {
   persistRadiologyOrderBilling,
   reverseClinicalRequestBilling,
-  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling,
+  buildRadiologyOrderBillingFromRequest} = require('@lib/billing/clinical-request-billing');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
@@ -401,7 +402,17 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         clinical_note: sanitizeString(request?.clinical_note) || null,
         request_details: requestDetails});
 
-      const billing = requestDetails?.billing;
+      let billing = requestDetails?.billing || null;
+      if (!billing) {
+        billing = await buildRadiologyOrderBillingFromRequest({
+          radiologyTestId:
+            sanitizeString(request?.radiology_procedure_id ?? request?.radiology_test_id) ||
+            radiologyTestId,
+          tenantId: patient.tenant_id,
+          facilityId: patient.facility_id || null,
+          description: `Radiology: ${testLabel}`,
+        });
+      }
       if (billing) {
         await prisma.$transaction(async (tx) => {
           await persistRadiologyOrderBilling(tx, {

@@ -1712,7 +1712,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                   ),
         ),
       if (_clinicalHasRecordSections(bundle))
-        _ClinicalRecordSections(bundle: bundle),
+        ..._clinicalRecordSectionWidgets(context, bundle),
     ];
 
     return Column(
@@ -2222,56 +2222,44 @@ class _ClinicalActionBar extends ConsumerWidget {
   }
 }
 
-class _ClinicalRecordSections extends StatelessWidget {
-  const _ClinicalRecordSections({required this.bundle});
-
-  final ClinicalEncounterBundle bundle;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<Widget> sections = <Widget>[
-      if (bundle.clinicalNotes.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.clinicalPatientNotesTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
-        ),
-      if (bundle.procedures.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.opdProceduresSummaryLabel,
-          records: sortClinicalRecordsNewestFirst(bundle.procedures),
-        ),
-      if (bundle.carePlans.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.clinicalCarePlansTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.carePlans),
-        ),
-      if (bundle.referrals.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.opdReferralsTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.referrals),
-        ),
-      if (bundle.followUps.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.opdFollowUpsTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.followUps),
-        ),
-      if (bundle.admissions.isNotEmpty)
-        _ClinicalRecordSection(
-          title: l10n.patientsAdmissionsSectionTitle,
-          records: sortClinicalRecordsNewestFirst(bundle.admissions),
-        ),
-    ];
-
-    if (sections.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: _withClinicalSectionSpacing(context, sections),
-    );
-  }
+/// Sibling record panels for encounter detail (never nested under another section).
+List<Widget> _clinicalRecordSectionWidgets(
+  BuildContext context,
+  ClinicalEncounterBundle bundle,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <Widget>[
+    if (bundle.clinicalNotes.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.clinicalPatientNotesTitle,
+        records: sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
+      ),
+    if (bundle.procedures.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.opdProceduresSummaryLabel,
+        records: sortClinicalRecordsNewestFirst(bundle.procedures),
+      ),
+    if (bundle.carePlans.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.clinicalCarePlansTitle,
+        records: sortClinicalRecordsNewestFirst(bundle.carePlans),
+      ),
+    if (bundle.referrals.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.opdReferralsTitle,
+        records: sortClinicalRecordsNewestFirst(bundle.referrals),
+      ),
+    if (bundle.followUps.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.opdFollowUpsTitle,
+        records: sortClinicalRecordsNewestFirst(bundle.followUps),
+      ),
+    if (bundle.admissions.isNotEmpty)
+      _ClinicalRecordSection(
+        title: l10n.patientsAdmissionsSectionTitle,
+        records: sortClinicalRecordsNewestFirst(bundle.admissions),
+      ),
+  ];
 }
 
 class _ClinicalRecordSection extends StatelessWidget {

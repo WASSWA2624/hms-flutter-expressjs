@@ -26,7 +26,8 @@ const {
 const {
   persistPharmacyOrderBilling,
   reverseClinicalRequestBilling,
-  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling,
+  buildPharmacyOrderBillingFromRequest} = require('@lib/billing/clinical-request-billing');
 
 const ORDER_SCOPE_INCLUDE = PHARMACY_ORDER_WITH_RELATIONS_INCLUDE;
 
@@ -327,7 +328,6 @@ const getPharmacyOrderById = async (id, userId, ipAddress, user = {}) => {
 const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
-    const billing = data.billing;
     const items = Array.isArray(data.items) ? data.items : [];
     const payload = {
       ...data,
@@ -352,21 +352,27 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
 
     const pharmacyOrder = await pharmacyOrderRepository.create(payload, ORDER_SCOPE_INCLUDE);
 
-    if (billing) {
-      const patientRecord = await prisma.patient.findFirst({
-        where: { id: payload.patient_id, deleted_at: null },
-        select: { id: true, tenant_id: true, facility_id: true }});
-      if (patientRecord) {
-        await prisma.$transaction(async (tx) => {
-          await persistPharmacyOrderBilling(tx, {
-            orderId: pharmacyOrder.id,
-            billing,
-            tenantId: patientRecord.tenant_id,
-            facilityId: patientRecord.facility_id || scope.facility_id || null,
-            patientId: patientRecord.id,
-            description: 'Pharmacy prescription'});
-        });
-      }
+    let billing = data.billing;
+    const patientRecord = await prisma.patient.findFirst({
+      where: { id: payload.patient_id, deleted_at: null },
+      select: { id: true, tenant_id: true, facility_id: true }});
+    if (!billing && patientRecord && items.length > 0) {
+      billing = await buildPharmacyOrderBillingFromRequest({
+        items,
+        tenantId: patientRecord.tenant_id,
+        facilityId: patientRecord.facility_id || scope.facility_id || null,
+      });
+    }
+    if (billing && patientRecord) {
+      await prisma.$transaction(async (tx) => {
+        await persistPharmacyOrderBilling(tx, {
+          orderId: pharmacyOrder.id,
+          billing,
+          tenantId: patientRecord.tenant_id,
+          facilityId: patientRecord.facility_id || scope.facility_id || null,
+          patientId: patientRecord.id,
+          description: 'Pharmacy prescription'});
+      });
     }
 
     const persistedOrder = billing

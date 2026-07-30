@@ -55,6 +55,28 @@ describe('Procedure Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts optional request-time billing payload', () => {
+      const result = createProcedureSchema.safeParse({
+        ...validData,
+        billing: {
+          payment_status: 'PENDING',
+          currency: 'USD',
+          total_amount: 120,
+          line_items: [
+            {
+              id: 'proc-1',
+              label: 'Laparoscopic cholecystectomy',
+              quantity: 1,
+              unit_price: 120,
+              line_total: 120
+            }
+          ]
+        }
+      });
+      expect(result.success).toBe(true);
+      expect(result.data.billing.payment_status).toBe('PENDING');
+    });
+
     it('should reject invalid UUID format for encounter_id', () => {
       const data = { ...validData, encounter_id: 'invalid-uuid' };
       const result = createProcedureSchema.safeParse(data);
@@ -71,6 +93,27 @@ describe('Procedure Schemas', () => {
       const data = { ...validData, performed_at: 'invalid-date' };
       const result = createProcedureSchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept optional clinical-request billing payload', () => {
+      const result = createProcedureSchema.safeParse({
+        ...validData,
+        billing: {
+          payment_status: 'PENDING',
+          currency: 'USD',
+          total_amount: 40,
+          line_items: [
+            {
+              id: 'PROC-1',
+              label: 'Wound care',
+              quantity: 1,
+              unit_price: 40,
+              line_total: 40
+            }
+          ]
+        }
+      });
+      expect(result.success).toBe(true);
     });
   });
 

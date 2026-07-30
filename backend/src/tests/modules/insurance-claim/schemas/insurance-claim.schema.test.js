@@ -161,6 +161,22 @@ describe('Insurance Claim Schemas', () => {
       const result = updateInsuranceClaimSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
+
+    it('rejects PAID status so settlement must use /reconcile', () => {
+      const result = updateInsuranceClaimSchema.safeParse({
+        ...validData,
+        status: 'PAID',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects PARTIAL status so settlement must use /reconcile', () => {
+      const result = updateInsuranceClaimSchema.safeParse({
+        ...validData,
+        status: 'PARTIAL',
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('insuranceClaimIdParamsSchema', () => {

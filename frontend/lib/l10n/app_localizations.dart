@@ -28969,6 +28969,18 @@ abstract class AppLocalizations {
   /// **'Delivery error'**
   String get communicationsDeliveryErrorTitle;
 
+  /// Titled section for delivery metadata in the delivery detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get communicationsDeliveryDetailsSectionTitle;
+
+  /// Titled section for opening a linked clinical record from delivery detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked record'**
+  String get communicationsDeliveryLinkedSectionTitle;
+
   /// Action label for opening a linked workflow record.
   ///
   /// In en, this message translates to:

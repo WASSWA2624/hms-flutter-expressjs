@@ -177,6 +177,7 @@ final class ClinicalRelatedRecordDto {
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
       status: _string(json['status']),
+      paymentStatus: _relatedPaymentStatus(json),
       title:
           _string(json['description']) ??
           _string(json['note']) ??
@@ -222,6 +223,7 @@ final class ClinicalRelatedRecordDto {
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
       status: _string(json['status']),
+      paymentStatus: _relatedPaymentStatus(json),
       title:
           title ??
           _string(json['human_friendly_id']) ??
@@ -300,6 +302,7 @@ final class ClinicalRelatedRecordDto {
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
       status: _string(json['status']),
+      paymentStatus: _relatedPaymentStatus(json),
       title:
           requestedTitle ??
           _string(json['radiology_test_display_name']) ??
@@ -395,6 +398,7 @@ final class ClinicalRelatedRecordDto {
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
       status: _string(json['status']),
+      paymentStatus: _relatedPaymentStatus(json),
       title:
           title ??
           _string(json['display_id']) ??
@@ -718,6 +722,20 @@ String? _string(Object? value) {
 
   final String normalized = value.toString().trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+String? _relatedPaymentStatus(ClinicalJsonMap json) {
+  final String? direct = _string(json['payment_status']);
+  if (direct != null) {
+    return direct;
+  }
+  final ClinicalJsonMap billing = _map(json['billing']);
+  final String? fromBilling = _string(billing['payment_status']);
+  if (fromBilling != null) {
+    return fromBilling;
+  }
+  final ClinicalJsonMap snapshot = _map(json['billing_snapshot']);
+  return _string(snapshot['payment_status']);
 }
 
 DateTime? _date(Object? value) {

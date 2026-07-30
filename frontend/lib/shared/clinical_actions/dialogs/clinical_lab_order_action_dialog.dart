@@ -397,6 +397,8 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       options: _requests
           .map((_PendingLabRequest request) => request.option)
           .toList(growable: false),
+      catalogType: 'LAB_TEST',
+      billingEntity: 'FACILITY',
     );
   }
 

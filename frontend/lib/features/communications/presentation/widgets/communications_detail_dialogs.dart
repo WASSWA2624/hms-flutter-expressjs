@@ -249,6 +249,9 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
         CommunicationsDeliveriesAtomPermissions.openLinked.isAllowed(policy) &&
         communicationsInternalPath(delivery.targetPath) != null;
 
+    // Flat sibling sections under a Column (non-section parent): Details,
+    // optional error panel (untitled tone chrome), optional Linked record.
+    // Never nest titled sections inside each other.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -256,50 +259,54 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
           status: communicationsDeliveryStatus(context, delivery.status),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppInfoTileGrid(
-          emptyValue: context.l10n.profileUnknownValue,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: context.l10n.communicationsNotificationLabel,
-              value: delivery.notificationTitle,
-              icon: Icons.notifications_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsChannelLabel,
-              value: communicationsApiLabel(context, delivery.channel),
-              icon: Icons.send_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsRecipientLabel,
-              value: communicationsDeliveryRecipient(delivery),
-              icon: Icons.person_outline,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsAttemptsLabel,
-              value: delivery.attemptCount.toString(),
-              icon: Icons.replay_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsProviderLabel,
-              value: delivery.providerName,
-              icon: Icons.cloud_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsSentAtLabel,
-              value: communicationsDateTimeLabel(context, delivery.sentAt),
-              icon: Icons.schedule_send_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsDeliveredAtLabel,
-              value: communicationsDateTimeLabel(context, delivery.deliveredAt),
-              icon: Icons.done_all_outlined,
-            ),
-            AppInfoTileData(
-              label: context.l10n.communicationsFailedAtLabel,
-              value: communicationsDateTimeLabel(context, delivery.failedAt),
-              icon: Icons.error_outline,
-            ),
-          ],
+        AppWorkspaceDetailPanel(
+          title: context.l10n.communicationsDeliveryDetailsSectionTitle,
+          titleIcon: Icons.info_outline,
+          child: AppInfoTileGrid(
+            emptyValue: context.l10n.profileUnknownValue,
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: context.l10n.communicationsNotificationLabel,
+                value: delivery.notificationTitle,
+                icon: Icons.notifications_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsChannelLabel,
+                value: communicationsApiLabel(context, delivery.channel),
+                icon: Icons.send_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsRecipientLabel,
+                value: communicationsDeliveryRecipient(delivery),
+                icon: Icons.person_outline,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsAttemptsLabel,
+                value: delivery.attemptCount.toString(),
+                icon: Icons.replay_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsProviderLabel,
+                value: delivery.providerName,
+                icon: Icons.cloud_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsSentAtLabel,
+                value: communicationsDateTimeLabel(context, delivery.sentAt),
+                icon: Icons.schedule_send_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsDeliveredAtLabel,
+                value: communicationsDateTimeLabel(context, delivery.deliveredAt),
+                icon: Icons.done_all_outlined,
+              ),
+              AppInfoTileData(
+                label: context.l10n.communicationsFailedAtLabel,
+                value: communicationsDateTimeLabel(context, delivery.failedAt),
+                icon: Icons.error_outline,
+              ),
+            ],
+          ),
         ),
         if (communicationsNonEmpty(delivery.errorMessage) != null) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
@@ -312,7 +319,13 @@ class CommunicationsDeliveryDetailContent extends ConsumerWidget {
         ],
         if (canOpenLinked) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          CommunicationsLinkedRecordAction(targetPath: delivery.targetPath),
+          AppWorkspaceDetailPanel(
+            title: context.l10n.communicationsDeliveryLinkedSectionTitle,
+            titleIcon: Icons.open_in_new_outlined,
+            child: CommunicationsLinkedRecordAction(
+              targetPath: delivery.targetPath,
+            ),
+          ),
         ],
       ],
     );

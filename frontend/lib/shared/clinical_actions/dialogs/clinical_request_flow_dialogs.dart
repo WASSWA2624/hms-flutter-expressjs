@@ -1019,6 +1019,8 @@ class _ClinicalRequestBillingDialogState
         payerContext: widget.payerContext,
         billingEntity: widget.billingEntity,
         enabled: widget.enabled,
+        // Dialog already provides titled chrome — keep sections flat.
+        embedded: true,
         onChanged: (ClinicalRequestBillingSubmit value) {
           _billing = value;
         },

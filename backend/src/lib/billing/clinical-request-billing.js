@@ -1961,6 +1961,197 @@ const buildLabOrderBillingFromRequest = async ({
   return buildPendingClinicalRequestBilling({ lineItems, currency });
 };
 
+/**
+ * Build pending billing from a radiology order request (server-side fallback).
+ *
+ * @param {Object} options
+ * @returns {Promise<Object|null>}
+ */
+const buildRadiologyOrderBillingFromRequest = async ({
+  radiologyTestId,
+  tenantId,
+  facilityId = null,
+  description = 'Radiology order',
+}) => {
+  const { resolveUnitPrice } = require('@lib/billing/price-resolver');
+  const catalogItemId = String(radiologyTestId || '').trim();
+  if (!catalogItemId || !tenantId) {
+    return null;
+  }
+  const test = await resolveCatalogRecord({
+    identifier: catalogItemId,
+    model: 'radiology_procedure',
+    tenantId,
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      unit_price: true,
+      currency: true,
+    },
+  });
+  if (!test) {
+    return null;
+  }
+  const pricing = await resolveUnitPrice({
+    catalogType: 'RADIOLOGY_TEST',
+    catalogItemId: test.id,
+    tenantId,
+    facilityId,
+  });
+  const unitPrice =
+    pricing?.unitPrice ??
+    (test.unit_price != null ? toMoneyString(test.unit_price) : null);
+  if (unitPrice == null || toDecimalNumber(unitPrice) <= 0) {
+    return null;
+  }
+  const currency = resolveBillingCurrency(
+    { currency: pricing?.currency || test.currency },
+    'USD'
+  );
+  return buildPendingClinicalRequestBilling({
+    lineItems: [
+      {
+        id: test.human_friendly_id || test.id,
+        label: test.name || description,
+        quantity: 1,
+        unit_price: unitPrice,
+        line_total: unitPrice,
+        catalog_type: 'RADIOLOGY_TEST',
+      },
+    ],
+    currency,
+  });
+};
+
+/**
+ * Build pending billing from pharmacy order items (server-side fallback).
+ *
+ * @param {Object} options
+ * @returns {Promise<Object|null>}
+ */
+const buildPharmacyOrderBillingFromRequest = async ({
+  items = [],
+  tenantId,
+  facilityId = null,
+}) => {
+  const { resolveUnitPrice } = require('@lib/billing/price-resolver');
+  if (!tenantId || !Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+  const lineItems = [];
+  let currency = 'USD';
+  for (const item of items) {
+    const drugId = String(item?.drug_id || item?.id || '').trim();
+    if (!drugId) {
+      continue;
+    }
+    const quantity = Math.max(1, Number(item?.quantity) || 1);
+    const drug = await resolveCatalogRecord({
+      identifier: drugId,
+      model: 'drug',
+      tenantId,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        unit_price: true,
+        currency: true,
+      },
+    });
+    if (!drug) {
+      continue;
+    }
+    const pricing = await resolveUnitPrice({
+      catalogType: 'DRUG',
+      catalogItemId: drug.id,
+      tenantId,
+      facilityId,
+      billingEntity: 'FACILITY',
+    });
+    const unitPrice =
+      pricing?.unitPrice ??
+      (drug.unit_price != null ? toMoneyString(drug.unit_price) : null);
+    if (unitPrice == null || toDecimalNumber(unitPrice) <= 0) {
+      continue;
+    }
+    if (pricing?.currency || drug.currency) {
+      currency = resolveBillingCurrency(
+        { currency: pricing?.currency || drug.currency },
+        currency
+      );
+    }
+    const lineTotal = toMoneyString(toDecimalNumber(unitPrice) * quantity);
+    lineItems.push({
+      id: drug.human_friendly_id || drug.id,
+      label: drug.name || item?.drug_name || 'Pharmacy item',
+      quantity,
+      unit_price: unitPrice,
+      line_total: lineTotal,
+      catalog_type: 'DRUG',
+      price_source: pricing?.priceSource || 'FACILITY',
+    });
+  }
+  return buildPendingClinicalRequestBilling({ lineItems, currency });
+};
+
+/**
+ * Build pending billing for a procedure when client omitted billing payload.
+ *
+ * @param {Object} options
+ * @returns {Promise<Object|null>}
+ */
+const buildProcedureBillingFromRequest = async ({
+  catalogItemId = null,
+  code = null,
+  description = 'Procedure',
+  unitPrice = null,
+  currency = 'USD',
+  tenantId,
+  facilityId = null,
+}) => {
+  const { resolveUnitPrice } = require('@lib/billing/price-resolver');
+  const lineId = String(catalogItemId || code || description || '').trim();
+  if (!lineId) {
+    return null;
+  }
+  let resolvedPrice = unitPrice != null ? toMoneyString(unitPrice) : null;
+  let resolvedCurrency = currency;
+  if (
+    (resolvedPrice == null || toDecimalNumber(resolvedPrice) <= 0) &&
+    catalogItemId &&
+    tenantId
+  ) {
+    const pricing = await resolveUnitPrice({
+      catalogType: 'SERVICE',
+      catalogItemId: String(catalogItemId).trim(),
+      tenantId,
+      facilityId,
+      billingEntity: 'FACILITY',
+    });
+    if (pricing?.unitPrice != null && toDecimalNumber(pricing.unitPrice) > 0) {
+      resolvedPrice = pricing.unitPrice;
+      resolvedCurrency = pricing.currency || resolvedCurrency;
+    }
+  }
+  if (resolvedPrice == null || toDecimalNumber(resolvedPrice) <= 0) {
+    return null;
+  }
+  return buildPendingClinicalRequestBilling({
+    lineItems: [
+      {
+        id: lineId,
+        label: description || lineId,
+        quantity: 1,
+        unit_price: resolvedPrice,
+        line_total: resolvedPrice,
+        catalog_type: 'SERVICE',
+      },
+    ],
+    currency: resolveBillingCurrency({ currency: resolvedCurrency }, 'USD'),
+  });
+};
+
 const persistPharmacyOrderBilling = async (
   tx,
   { orderId, billing, existingSnapshot, ...context }
@@ -2227,6 +2418,9 @@ module.exports = {
   enrichBillingWithPriceEngine,
   normalizeBillingOfficeClinicalBilling,
   buildLabOrderBillingFromRequest,
+  buildRadiologyOrderBillingFromRequest,
+  buildPharmacyOrderBillingFromRequest,
+  buildProcedureBillingFromRequest,
   resolveClinicalInvoiceContexts,
   resolveInvoiceIdsForEncounterToken,
   resolveInvoiceIdsForSourceModule,

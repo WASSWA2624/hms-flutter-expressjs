@@ -20102,6 +20102,15 @@
   "@communicationsDeliveryErrorTitle": {
     "description": "Title for notification delivery error details."
   },
+  "communicationsDeliveryDetailsSectionTitle": "Details",
+  "@communicationsDeliveryDetailsSectionTitle": {
+    "description": "Titled section for delivery metadata in the delivery detail dialog."
+  },
+  "communicationsDeliveryLinkedSectionTitle": "Linked record",
+  "@communicationsDeliveryLinkedSectionTitle": {
+    "description": "Titled section for opening a linked clinical record from delivery detail."
+  },
+
   "communicationsOpenLinkedRecordAction": "Open linked record",
   "@communicationsOpenLinkedRecordAction": {
     "description": "Action label for opening a linked workflow record."

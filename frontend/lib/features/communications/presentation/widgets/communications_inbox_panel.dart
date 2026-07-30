@@ -55,28 +55,37 @@ class CommunicationsInboxPanel extends ConsumerWidget {
       );
     }
 
-    final Widget listPanel = SizedBox(
-      height: isWide ? 640 : 420,
-      child: CommunicationsConversationList(
-        state: state,
-        searchController: searchController,
+    // Sibling titled sections under Row (never nested): inbox list + empty
+    // detail. Selected thread uses its own header chrome (not a second nested
+    // section) so Conversation detail and Messages stay siblings only when
+    // nothing is selected.
+    final Widget listSection = AppWorkspaceDetailPanel(
+      title: context.l10n.communicationsInboxPanelLabel,
+      collapsible: false,
+      child: SizedBox(
+        height: isWide ? 600 : 380,
+        child: CommunicationsConversationList(
+          state: state,
+          searchController: searchController,
+        ),
       ),
     );
 
     if (!isWide) {
-      return listPanel;
+      return listSection;
     }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Expanded(flex: 5, child: listPanel),
+        Expanded(flex: 5, child: listSection),
         SizedBox(width: Theme.of(context).spacing.lg),
         Expanded(
           flex: 7,
           child: !canShowThread || selected == null
               ? AppWorkspaceDetailPanel(
                   title: context.l10n.communicationsConversationDetailTitle,
+                  collapsible: false,
                   child: AppWorkspaceStatePanel.empty(
                     title:
                         context.l10n.communicationsNoConversationSelectedTitle,

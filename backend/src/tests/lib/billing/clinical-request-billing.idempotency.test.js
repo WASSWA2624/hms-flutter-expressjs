@@ -231,4 +231,53 @@ describe('applyClinicalRequestBilling idempotency', () => {
     expect(event.total_amount_snapshot).toBe('65.50');
     expect(tx._state.items[0].unit_price).toBe('65.50');
   });
+
+  it('posts PROCEDURE charges idempotently (Clinical All request-time hook)', async () => {
+    const tx = createTx();
+    const billing = {
+      payment_status: 'PENDING',
+      currency: 'USD',
+      total_amount: '40.00',
+      line_items: [
+        {
+          id: 'PROC-WOUND',
+          label: 'Wound care',
+          quantity: 1,
+          unit_price: '40.00',
+          line_total: '40.00',
+          catalog_type: 'SERVICE'
+        }
+      ]};
+
+    const first = await applyClinicalRequestBilling(tx, {
+      billing,
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      patientId: 'patient-1',
+      encounterId: 'encounter-proc-1',
+      sourceModule: BILLABLE_SOURCE_MODULES.PROCEDURE,
+      sourceId: 'procedure-1',
+      catalogType: 'SERVICE',
+      catalogItemId: 'PROC-WOUND',
+      description: 'Procedure: Wound care'});
+
+    expect(first?.invoice_id).toBeTruthy();
+    expect(tx.invoice.create).toHaveBeenCalledTimes(1);
+
+    const second = await applyClinicalRequestBilling(tx, {
+      billing,
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      patientId: 'patient-1',
+      encounterId: 'encounter-proc-1',
+      sourceModule: BILLABLE_SOURCE_MODULES.PROCEDURE,
+      sourceId: 'procedure-1',
+      catalogType: 'SERVICE',
+      catalogItemId: 'PROC-WOUND',
+      description: 'Procedure: Wound care'});
+
+    expect(second?.invoice_id).toBe(first.invoice_id);
+    expect(tx.invoice.create).toHaveBeenCalledTimes(1);
+    expect(tx._state.invoices.size).toBe(1);
+  });
 });

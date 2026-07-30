@@ -326,7 +326,7 @@ void main() {
     });
 
     testWidgets(
-      'AC2/AC3: update status posts via repository (no inline collection)',
+      'AC2/AC3: update status opens dialog without inline cashier chrome',
       (WidgetTester tester) async {
         await _pumpAuthorizationsTab(
           tester,
@@ -342,20 +342,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
-        // Approved amount required when approving — progressive disclosure only.
-        expect(find.text('Approved amount'), findsNothing);
-
-        final Finder statusField = find.text('Pending');
-        if (statusField.evaluate().isNotEmpty) {
-          await tester.tap(statusField.last);
-          await tester.pumpAndSettle();
-          final Finder approvedOption = find.text('Approved').last;
-          if (approvedOption.evaluate().isNotEmpty) {
-            await tester.tap(approvedOption);
-            await tester.pumpAndSettle();
-          }
-        }
-
+        // No receive-payment / cash collection entry points on this tab.
+        expect(find.textContaining('Receive payment'), findsNothing);
+        expect(find.textContaining('Cash'), findsNothing);
         verifyNever(() => repository.requestPreAuthorization(any()));
       },
     );

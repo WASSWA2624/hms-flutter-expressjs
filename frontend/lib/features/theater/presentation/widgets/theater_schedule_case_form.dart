@@ -493,6 +493,8 @@ class TheaterScheduleCaseFormState
                       : _billingLineItems,
                   billingEntity: 'FACILITY',
                   payerContext: _payerContext,
+                  // Parent AppFormSection is titled chrome — keep flat.
+                  embedded: true,
                   onChanged: (ClinicalRequestBillingSubmit value) {
                     _billing = value;
                   },

@@ -786,6 +786,214 @@ bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
   return ClinicalWaitingReviewAtomPermissions.tab.isAllowed(policy);
 }
 
+/// Billing action classes for Clinical Waiting review tab inventory (Req 1).
+enum ClinicalWaitingReviewFinancialClass {
+  createCharge,
+  settle,
+  adjust,
+  reverse,
+  defer,
+  notBillable,
+}
+
+/// Financial atom reachable from Waiting review (`?section=waiting-review`).
+final class ClinicalWaitingReviewFinancialAtom {
+  const ClinicalWaitingReviewFinancialAtom({
+    required this.id,
+    required this.classification,
+    this.auditReason,
+    this.billingPath,
+  });
+
+  final String id;
+  final ClinicalWaitingReviewFinancialClass classification;
+
+  /// Explicit not-billable protocol when [classification] is notBillable.
+  final String? auditReason;
+
+  /// Shared Billing / clinical-request path when billable.
+  final String? billingPath;
+}
+
+/// Canonical Waiting-review financial inventory (AC1).
+///
+/// Tab is a scoped outpatient worklist (`WAITING_DOCTOR_REVIEW` / review-stage
+/// aliases) over the same encounter detail chrome as All/Urgent. Billable
+/// atoms reuse clinical-request billing + Billing module; cashier collect /
+/// issue / adjust stay on Billing (pay-now only via request billing panel when
+/// `billing:write`). Consult-on-review and follow-up visit fees are not mounted
+/// here (`NOT_BILLED` / unmounted create-charge docs).
+const List<ClinicalWaitingReviewFinancialAtom>
+clinicalWaitingReviewFinancialInventory =
+    <ClinicalWaitingReviewFinancialAtom>[
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'tab_chrome',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'search_filters_pagination',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'waiting_review_count_chip',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'empty_loading_error_retry',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'row_select_open_encounter',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'next_action_doctor_review',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'next_action_record_vitals',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'next_action_disposition',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'results_chronology',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'print_summary',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'add_note',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'add_diagnosis',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'refer',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'follow_up',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'record_vitals',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'disposition',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'consult_charge_on_doctor_review',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_BILLED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_lab',
+        classification: ClinicalWaitingReviewFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/lab-order',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_lab_pay_now',
+        classification: ClinicalWaitingReviewFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'cancel_lab_order',
+        classification: ClinicalWaitingReviewFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_radiology',
+        classification: ClinicalWaitingReviewFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/radiology-order',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_radiology_pay_now',
+        classification: ClinicalWaitingReviewFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'cancel_radiology_order',
+        classification: ClinicalWaitingReviewFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'prescribe',
+        classification: ClinicalWaitingReviewFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/pharmacy-order',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'prescribe_pay_now',
+        classification: ClinicalWaitingReviewFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'cancel_pharmacy_order',
+        classification: ClinicalWaitingReviewFinancialClass.reverse,
+        billingPath: 'clinical-request-billing/reverse',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_procedure',
+        classification: ClinicalWaitingReviewFinancialClass.createCharge,
+        billingPath: 'clinical-request-billing/procedure',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_procedure_pay_now',
+        classification: ClinicalWaitingReviewFinancialClass.settle,
+        billingPath: 'clinical-request-billing/receive-payment',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'request_admission',
+        classification: ClinicalWaitingReviewFinancialClass.defer,
+        billingPath: 'clinical-request-billing/admission-on-start',
+        auditReason: 'NOT_REQUIRED',
+      ),
+      ClinicalWaitingReviewFinancialAtom(
+        id: 'discharge_open_billing',
+        classification: ClinicalWaitingReviewFinancialClass.notBillable,
+        auditReason: 'NOT_REQUIRED',
+      ),
+    ];
+
+/// Billable Waiting-review atoms must point at shared clinical-request Billing.
+bool clinicalWaitingReviewBillableAtomsUseSharedBilling() {
+  return clinicalWaitingReviewFinancialInventory
+      .where(
+        (ClinicalWaitingReviewFinancialAtom atom) =>
+            atom.classification !=
+            ClinicalWaitingReviewFinancialClass.notBillable,
+      )
+      .every(
+        (ClinicalWaitingReviewFinancialAtom atom) =>
+            atom.billingPath != null &&
+            atom.billingPath!.startsWith('clinical-request-billing'),
+      );
+}
+
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
 /// Same-day terminal outpatient encounters (`?section=completed`). Prefer
