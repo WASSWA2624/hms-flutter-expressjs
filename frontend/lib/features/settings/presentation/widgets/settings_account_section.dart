@@ -288,12 +288,12 @@ class _ProfilePanelContent extends ConsumerWidget {
 
     final List<String> roles = view.roles;
     final List<AppPermission> permissions = view.permissions;
-    final List<AppInfoSheetItem> accountItems = <AppInfoSheetItem>[
-      AppInfoSheetItem(
+    final List<_ProfileKvItem> accountItems = <_ProfileKvItem>[
+      _ProfileKvItem(
         label: l10n.profilePhoneLabel,
         value: _value(profile.phone, l10n),
       ),
-      AppInfoSheetItem(
+      _ProfileKvItem(
         label: l10n.profileUserIdLabel,
         value: _value(profile.displayId ?? profile.id, l10n),
         copyable: true,
@@ -301,24 +301,24 @@ class _ProfilePanelContent extends ConsumerWidget {
         copiedMessage: l10n.userIdCopiedMessage,
       ),
     ];
-    final List<AppInfoSheetItem> professionalItems = <AppInfoSheetItem>[
-      AppInfoSheetItem(
+    final List<_ProfileKvItem> professionalItems = <_ProfileKvItem>[
+      _ProfileKvItem(
         label: l10n.profileOverallRoleLabel,
         value: _value(profile.overallRole, l10n),
       ),
-      AppInfoSheetItem(
+      _ProfileKvItem(
         label: l10n.profileUserTypeLabel,
         value: _value(profile.userType, l10n),
       ),
-      AppInfoSheetItem(
+      _ProfileKvItem(
         label: l10n.profileTenantLabel,
         value: _value(profile.tenantName, l10n),
       ),
-      AppInfoSheetItem(
+      _ProfileKvItem(
         label: l10n.profileFacilityTypeLabel,
         value: _value(_formatProfileToken(profile.facilityType), l10n),
       ),
-      AppInfoSheetItem(
+      _ProfileKvItem(
         label: l10n.profileStaffNumberLabel,
         value: _value(profile.staffNumber, l10n),
         copyable: true,
@@ -335,30 +335,17 @@ class _ProfilePanelContent extends ConsumerWidget {
         _ProfileSectionPair(
           leading: _ProfileBlock(
             title: l10n.profileAccountSectionTitle,
-            description: l10n.profileAccountSectionBody,
-            child: AppInfoSheetGrid(
-              items: accountItems,
-              emptyValue: l10n.profileUnknownValue,
-              maxColumns: 2,
-              minItemWidth: 140,
-            ),
+            child: _ProfileKvList(items: accountItems),
           ),
           trailing: _ProfileBlock(
             title: l10n.profileProfessionalSectionTitle,
-            description: l10n.profileProfessionalSectionBody,
-            child: AppInfoSheetGrid(
-              items: professionalItems,
-              emptyValue: l10n.profileUnknownValue,
-              maxColumns: 2,
-              minItemWidth: 140,
-            ),
+            child: _ProfileKvList(items: professionalItems),
           ),
         ),
         SizedBox(height: theme.spacing.lg),
         _ProfileSectionPair(
           leading: _ProfileBlock(
             title: l10n.profileRolesSectionTitle,
-            description: l10n.profileRolesSectionBody,
             child: _ProfileChipGroup(
               emptyLabel: l10n.profileRolesEmpty,
               labels: <String>[
@@ -369,7 +356,6 @@ class _ProfilePanelContent extends ConsumerWidget {
           ),
           trailing: _ProfileBlock(
             title: l10n.profilePermissionsSectionTitle,
-            description: l10n.profilePermissionsSectionBody,
             child: _ProfileChipGroup(
               emptyLabel: l10n.profilePermissionsEmpty,
               labels: <String>[
@@ -542,11 +528,9 @@ class _ProfileBlock extends StatelessWidget {
   const _ProfileBlock({
     required this.title,
     required this.child,
-    this.description,
   });
 
   final String title;
-  final String? description;
   final Widget child;
 
   @override
@@ -573,22 +557,85 @@ class _ProfileBlock extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            if (description != null &&
-                description!.trim().isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                description!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.35,
-                ),
-              ),
-            ],
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             child,
           ],
         ),
       ),
+    );
+  }
+}
+
+final class _ProfileKvItem {
+  const _ProfileKvItem({
+    required this.label,
+    required this.value,
+    this.copyable = false,
+    this.copyTooltip,
+    this.copiedMessage,
+  });
+
+  final String label;
+  final String value;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+}
+
+class _ProfileKvList extends StatelessWidget {
+  const _ProfileKvList({required this.items});
+
+  final List<_ProfileKvItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (var index = 0; index < items.length; index += 1) ...<Widget>[
+          if (index > 0) SizedBox(height: theme.spacing.sm),
+          _ProfileKvRow(item: items[index]),
+        ],
+      ],
+    );
+  }
+}
+
+class _ProfileKvRow extends StatelessWidget {
+  const _ProfileKvRow({required this.item});
+
+  final _ProfileKvItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
+    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onSurface,
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text('${item.label}:', style: labelStyle),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: item.copyable
+              ? AppCopyableIdentifier(
+                  value: item.value,
+                  tooltip: item.copyTooltip,
+                  copiedMessage: item.copiedMessage,
+                  textStyle: valueStyle,
+                )
+              : Text(item.value, style: valueStyle),
+        ),
+      ],
     );
   }
 }
