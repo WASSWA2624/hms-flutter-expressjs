@@ -105,6 +105,60 @@ void main() {
       );
     });
 
+    test('distinguishes critical-low and critical-high', () {
+      const LabReferenceRange withCritical = LabReferenceRange(
+        id: 'male-crit',
+        label: 'Adult male',
+        unit: 'g/dL',
+        gender: 'MALE',
+        normalMinValue: '13.5',
+        normalMaxValue: '17.5',
+        criticalMinValue: '7',
+        criticalMaxValue: '20',
+      );
+
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '5',
+          range: withCritical,
+          resultUnit: 'g/dL',
+        ),
+        'CRITICAL_LOW',
+      );
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '12',
+          range: withCritical,
+          resultUnit: 'g/dL',
+        ),
+        'LOW',
+      );
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '15',
+          range: withCritical,
+          resultUnit: 'g/dL',
+        ),
+        'NORMAL',
+      );
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '18',
+          range: withCritical,
+          resultUnit: 'g/dL',
+        ),
+        'HIGH',
+      );
+      expect(
+        interpretLabNumericResultFlag(
+          valueText: '21',
+          range: withCritical,
+          resultUnit: 'g/dL',
+        ),
+        'CRITICAL_HIGH',
+      );
+    });
+
     test('returns null when units cannot be converted', () {
       expect(
         interpretLabNumericResultFlag(

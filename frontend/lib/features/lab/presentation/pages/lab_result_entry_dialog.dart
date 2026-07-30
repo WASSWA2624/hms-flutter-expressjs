@@ -1090,7 +1090,8 @@ class _LabPanelResultBlock extends ConsumerWidget {
       contentPadding: contentPadding,
       headerActions: showDelete
           ? <Widget>[
-              AppButton(
+              AppButton.tertiary(
+                iconOnly: true,
                 leadingIcon: Icons.delete_outline,
                 label: deleteLabel,
                 semanticLabel: deleteLabel,
@@ -1181,11 +1182,10 @@ class _LabResultEntryRowsTable extends StatelessWidget {
       child: Table(
         border: tableBorder,
         columnWidths: const <int, TableColumnWidth>{
-          0: FlexColumnWidth(2.0),
-          1: FlexColumnWidth(2.0),
-          2: FlexColumnWidth(2.4),
-          3: FlexColumnWidth(1.3),
-          4: FlexColumnWidth(1.1),
+          0: FlexColumnWidth(2.2),
+          1: FlexColumnWidth(2.2),
+          2: FlexColumnWidth(2.6),
+          3: FlexColumnWidth(1.6),
         },
         children: <TableRow>[
           TableRow(
@@ -1197,7 +1197,6 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
               _LabResultTableCell.header(label: l10n.labReportResultLabel),
               _LabResultTableCell.header(label: l10n.labResultFlagLabel),
-              _LabResultTableCell.header(label: l10n.labResultActionsColumnLabel),
             ],
           ),
           for (final _ResultDraft draft in drafts)
@@ -1327,22 +1326,26 @@ TableRow _labResultEntryTableRow(
         ),
       ),
       _LabResultTableCell(
-        child: _LabResultFlagCell(
-          draft: draft,
-          patientGender: patientGender,
-        ),
-      ),
-      _LabResultTableCell(
-        child: showEditAction
-            ? Align(
-                alignment: AlignmentDirectional.topEnd,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _LabResultFlagCell(
+              draft: draft,
+              patientGender: patientGender,
+            ),
+            if (showEditAction) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
                 child: AppButton.tertiary(
                   label: context.l10n.labEditVerifiedResultAction,
                   leadingIcon: Icons.edit_outlined,
                   onPressed: onEditSaved,
                 ),
-              )
-            : const SizedBox.shrink(),
+              ),
+            ],
+          ],
+        ),
       ),
     ],
   );
@@ -1536,7 +1539,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                       }
                     : null,
               ),
-            SizedBox(height: theme.spacing.xs),
+            SizedBox(height: theme.spacing.lg),
             AppTextField(
               controller: widget.draft.notesController,
               labelText: l10n.labNotesLabel,
@@ -3690,6 +3693,13 @@ bool _matchesReportItemFlagFilter(
   }
   if (flagFilter == 'ABNORMAL') {
     return <String>{'ABNORMAL', 'HIGH', 'LOW'}.contains(token);
+  }
+  if (flagFilter == 'CRITICAL') {
+    return <String>{
+      'CRITICAL',
+      'CRITICAL_LOW',
+      'CRITICAL_HIGH',
+    }.contains(token);
   }
   if (flagFilter == 'NEGATIVE') {
     if (token == 'NEGATIVE' || token == 'NON_REACTIVE') {

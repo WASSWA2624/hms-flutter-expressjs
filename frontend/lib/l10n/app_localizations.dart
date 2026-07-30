@@ -37069,6 +37069,48 @@ abstract class AppLocalizations {
   /// **'High'**
   String get labStatusHigh;
 
+  /// Lab result flag when the value is critically below range.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical low'**
+  String get labStatusCriticalLow;
+
+  /// Lab result flag when the value is critically above range.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical high'**
+  String get labStatusCriticalHigh;
+
+  /// Lab result flag for a positive qualitative finding.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive'**
+  String get labStatusPositive;
+
+  /// Lab result flag for a negative qualitative finding.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative'**
+  String get labStatusNegative;
+
+  /// Lab result flag for a reactive qualitative finding.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactive'**
+  String get labStatusReactive;
+
+  /// Lab result flag for a non-reactive qualitative finding.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-reactive'**
+  String get labStatusNonReactive;
+
+  /// Lab result flag when the analyte was not detected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not detected'**
+  String get labStatusNotDetected;
+
   /// Localized text for labNextActionVerify.
   ///
   /// In en, this message translates to:

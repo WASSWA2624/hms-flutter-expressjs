@@ -19932,6 +19932,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusHigh => 'High';
 
   @override
+  String get labStatusCriticalLow => 'Critical low';
+
+  @override
+  String get labStatusCriticalHigh => 'Critical high';
+
+  @override
+  String get labStatusPositive => 'Positive';
+
+  @override
+  String get labStatusNegative => 'Negative';
+
+  @override
+  String get labStatusReactive => 'Reactive';
+
+  @override
+  String get labStatusNonReactive => 'Non-reactive';
+
+  @override
+  String get labStatusNotDetected => 'Not detected';
+
+  @override
   String get labNextActionVerify => 'Enter results';
 
   @override

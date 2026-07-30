@@ -25550,6 +25550,34 @@
   "@labStatusHigh": {
     "description": "Localized text for labStatusHigh."
   },
+  "labStatusCriticalLow": "Critical low",
+  "@labStatusCriticalLow": {
+    "description": "Lab result flag when the value is critically below range."
+  },
+  "labStatusCriticalHigh": "Critical high",
+  "@labStatusCriticalHigh": {
+    "description": "Lab result flag when the value is critically above range."
+  },
+  "labStatusPositive": "Positive",
+  "@labStatusPositive": {
+    "description": "Lab result flag for a positive qualitative finding."
+  },
+  "labStatusNegative": "Negative",
+  "@labStatusNegative": {
+    "description": "Lab result flag for a negative qualitative finding."
+  },
+  "labStatusReactive": "Reactive",
+  "@labStatusReactive": {
+    "description": "Lab result flag for a reactive qualitative finding."
+  },
+  "labStatusNonReactive": "Non-reactive",
+  "@labStatusNonReactive": {
+    "description": "Lab result flag for a non-reactive qualitative finding."
+  },
+  "labStatusNotDetected": "Not detected",
+  "@labStatusNotDetected": {
+    "description": "Lab result flag when the analyte was not detected."
+  },
   "labNextActionVerify": "Enter results",
   "@labNextActionVerify": {
     "description": "Localized text for labNextActionVerify."

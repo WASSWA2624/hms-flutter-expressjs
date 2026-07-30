@@ -197,9 +197,9 @@ String? formatLabReferenceRangeForResultUnit(
 
 /// Compares [value] to [range] bounds expressed in [resultUnit] when convertible.
 ///
-/// Returns `CRITICAL` / `LOW` / `HIGH` / `NORMAL`, or `null` when the value is
-/// non-numeric, the range has no numeric bounds, or units are mismatched and
-/// cannot be converted.
+/// Returns `CRITICAL_LOW` / `CRITICAL_HIGH` / `LOW` / `HIGH` / `NORMAL`, or
+/// `null` when the value is non-numeric, the range has no numeric bounds, or
+/// units are mismatched and cannot be converted.
 String? interpretLabNumericResultFlag({
   required String valueText,
   required LabReferenceRange range,
@@ -237,10 +237,10 @@ String? interpretLabNumericResultFlag({
     (effective.criticalMaxValue ?? '').trim(),
   );
   if (criticalMin != null && value <= criticalMin) {
-    return 'CRITICAL';
+    return 'CRITICAL_LOW';
   }
   if (criticalMax != null && value >= criticalMax) {
-    return 'CRITICAL';
+    return 'CRITICAL_HIGH';
   }
 
   final num? normalMin = num.tryParse(

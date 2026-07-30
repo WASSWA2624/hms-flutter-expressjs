@@ -9,10 +9,21 @@ AppWorkspaceStatus labStatusBadge(BuildContext context, String? value) {
     tone: switch (status) {
       'COMPLETED' ||
       'NORMAL' ||
+      'NEGATIVE' ||
+      'NON_REACTIVE' ||
+      'NOT_DETECTED' ||
       'RECEIVED' ||
       'VERIFIED' => AppWorkspaceStatusTone.success,
-      'CRITICAL' || 'CANCELLED' || 'REJECTED' => AppWorkspaceStatusTone.error,
+      'CRITICAL' ||
+      'CRITICAL_LOW' ||
+      'CRITICAL_HIGH' ||
+      'CANCELLED' ||
+      'REJECTED' => AppWorkspaceStatusTone.error,
       'ABNORMAL' ||
+      'HIGH' ||
+      'LOW' ||
+      'POSITIVE' ||
+      'REACTIVE' ||
       'ORDERED' ||
       'COLLECTED' ||
       'PENDING' => AppWorkspaceStatusTone.warning,
@@ -34,8 +45,15 @@ String labStatusLabel(BuildContext context, String? value) {
     'NORMAL' => l10n.labStatusNormal,
     'ABNORMAL' => l10n.labStatusAbnormal,
     'CRITICAL' => l10n.labStatusCritical,
+    'CRITICAL_LOW' => l10n.labStatusCriticalLow,
+    'CRITICAL_HIGH' => l10n.labStatusCriticalHigh,
     'LOW' => l10n.labStatusLow,
     'HIGH' => l10n.labStatusHigh,
+    'POSITIVE' => l10n.labStatusPositive,
+    'NEGATIVE' => l10n.labStatusNegative,
+    'REACTIVE' => l10n.labStatusReactive,
+    'NON_REACTIVE' => l10n.labStatusNonReactive,
+    'NOT_DETECTED' => l10n.labStatusNotDetected,
     'VERIFIED' => l10n.labStatusVerified,
     'REJECTED' => l10n.labStatusRejected,
     'RECEIVED' => l10n.labStatusReceived,

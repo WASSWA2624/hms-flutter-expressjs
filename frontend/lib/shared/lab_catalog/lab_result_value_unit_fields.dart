@@ -73,7 +73,8 @@ class LabResultValueUnitFields extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               valueField,
-              SizedBox(height: theme.spacing.xs),
+              // lg keeps floating labels from colliding with the field above.
+              SizedBox(height: theme.spacing.lg),
               unitField,
             ],
           );
@@ -83,7 +84,7 @@ class LabResultValueUnitFields extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(flex: valueFlex, child: valueField),
-            SizedBox(width: theme.spacing.sm),
+            SizedBox(width: theme.spacing.md),
             Expanded(flex: unitFlex, child: unitField),
           ],
         );
