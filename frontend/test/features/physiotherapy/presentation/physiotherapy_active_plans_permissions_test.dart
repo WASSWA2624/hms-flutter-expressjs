@@ -782,9 +782,7 @@ void main() {
       final AppLocalizations readerL10n = AppLocalizations.of(
         tester.element(find.byType(AppDialog)),
       );
-      final Finder readerShowMore = find.text(
-        readerL10n.commonShowMoreActionLabel,
-      );
+      final Finder readerShowMore = find.byIcon(Icons.expand_more);
       if (readerShowMore.evaluate().isNotEmpty) {
         await tester.tap(readerShowMore.first);
         await _pumpAfterAction(tester);
@@ -813,9 +811,7 @@ void main() {
       final AppLocalizations billingL10n = AppLocalizations.of(
         tester.element(find.byType(AppDialog)),
       );
-      final Finder billingShowMore = find.text(
-        billingL10n.commonShowMoreActionLabel,
-      );
+      final Finder billingShowMore = find.byIcon(Icons.expand_more);
       if (billingShowMore.evaluate().isNotEmpty) {
         await tester.tap(billingShowMore.first);
         await _pumpAfterAction(tester);

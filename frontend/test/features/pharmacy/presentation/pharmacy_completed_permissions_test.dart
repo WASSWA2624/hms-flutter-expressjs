@@ -805,7 +805,7 @@ void main() {
 
         final Finder showMore = find.descendant(
           of: dialog,
-          matching: find.text('Show more'),
+          matching: find.byIcon(Icons.expand_more),
         );
         if (showMore.evaluate().isNotEmpty) {
           await tester.tap(showMore);
@@ -861,7 +861,7 @@ void main() {
         expect(dialog, findsOneWidget);
 
         await tester.tap(
-          find.descendant(of: dialog, matching: find.text('Show more')),
+          find.descendant(of: dialog, matching: find.byIcon(Icons.expand_more)),
         );
         await tester.pumpAndSettle();
 

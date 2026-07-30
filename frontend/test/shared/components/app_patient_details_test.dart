@@ -24,7 +24,33 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('expanded fields render as an overflow row with separators', (
+  testWidgets('uses detail panel section chrome with chevron collapse', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppPatientDetails(
+        patientName: 'Ada Lovelace',
+        patientNumber: 'MRN-100',
+        persistExpandPreference: false,
+        expandedFields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Encounter',
+            value: 'ENC-9',
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.text('Ada Lovelace'), findsOneWidget);
+    expect(find.text('MRN-100'), findsOneWidget);
+    expect(find.text('·'), findsOneWidget);
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    expect(find.text('ENC-9'), findsNothing);
+  });
+
+  testWidgets('expanded body is an overflow row with Icon Label: Value |', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -55,6 +81,7 @@ void main() {
     expect(find.textContaining('Orders included:'), findsOneWidget);
     expect(find.text('1 active order'), findsOneWidget);
     expect(find.text('|'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsWidgets);
 
     final double encounterY = tester
         .getTopLeft(find.textContaining('Encounter:'))
@@ -73,6 +100,8 @@ void main() {
       AppPatientDetails(
         patientName: 'Ada Lovelace',
         patientNumber: 'MRN-100',
+        ageLabel: '37y',
+        genderLabel: 'Female',
         persistExpandPreference: false,
         expandedFields: const <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
@@ -85,11 +114,13 @@ void main() {
 
     expect(find.text('Ada Lovelace'), findsOneWidget);
     expect(find.text('MRN-100'), findsOneWidget);
+    expect(find.text('37y'), findsNothing);
+    expect(find.text('Female'), findsNothing);
     expect(find.text('ENC-9'), findsNothing);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
-  testWidgets('compact mode hides expanded fields until Show more', (
+  testWidgets('expanding reveals age, gender, and workflow fields in the row', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -110,76 +141,22 @@ void main() {
       ),
     );
 
-    expect(find.text('MRN-100'), findsOneWidget);
-    expect(find.text('37y'), findsOneWidget);
-    expect(find.text('Female'), findsOneWidget);
     expect(find.textContaining('Phone'), findsNothing);
     expect(find.text('+256700000000'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Phone'), findsOneWidget);
+    expect(find.textContaining('Age:'), findsOneWidget);
+    expect(find.text('37y'), findsOneWidget);
+    expect(find.textContaining('Gender:'), findsOneWidget);
+    expect(find.text('Female'), findsOneWidget);
+    expect(find.textContaining('Phone:'), findsOneWidget);
     expect(find.text('+256700000000'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
   });
 
-  testWidgets('keeps patient id, age, and gender on one row when width allows', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const SizedBox(
-        width: 720,
-        child: AppPatientDetails(
-          patientName: 'Ada Lovelace',
-          patientNumber: 'MRN-100',
-          patientNumberLabel: 'MRN',
-          ageLabel: '37y',
-          genderLabel: 'Female',
-          persistExpandPreference: false,
-        ),
-      ),
-    );
-
-    final double idY = tester.getTopLeft(find.text('MRN-100')).dy;
-    final double ageY = tester.getTopLeft(find.text('37y')).dy;
-    final double genderY = tester.getTopLeft(find.text('Female')).dy;
-
-    expect(ageY, closeTo(idY, 1));
-    expect(genderY, closeTo(idY, 1));
-  });
-
-  testWidgets('wraps age and gender when meta-line width is insufficient', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const SizedBox(
-        width: 180,
-        child: AppPatientDetails(
-          patientName: 'Ada Lovelace',
-          patientNumber: 'PAT0000000004',
-          patientNumberLabel: 'Patient ID',
-          ageLabel: '36 years, 2 months',
-          genderLabel: 'Female',
-          persistExpandPreference: false,
-        ),
-      ),
-    );
-
-    final double idY = tester.getTopLeft(find.text('PAT0000000004')).dy;
-    final double ageY = tester.getTopLeft(find.text('36 years, 2 months')).dy;
-
-    expect(find.text('Female'), findsOneWidget);
-    expect(
-      ageY,
-      greaterThan(idY + 1),
-      reason: 'Age should wrap below the id when width is tight',
-    );
-  });
-
-  testWidgets('Show less collapses expanded workflow fields', (
+  testWidgets('chevron collapses expanded workflow fields', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -187,8 +164,6 @@ void main() {
       AppPatientDetails(
         patientName: 'Ada Lovelace',
         patientNumber: 'MRN-100',
-        ageLabel: '37y',
-        genderLabel: 'Female',
         persistExpandPreference: false,
         initiallyExpanded: true,
         expandedFields: const <AppWorkspacePatientContextField>[
@@ -373,7 +348,7 @@ void main() {
     expect(find.text('+256700000000'), findsOneWidget);
   });
 
-  testWidgets('supports enlarged text scale without losing compact identity', (
+  testWidgets('supports enlarged text scale without losing header identity', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -415,8 +390,7 @@ void main() {
 
     expect(find.text('Ada Lovelace'), findsOneWidget);
     expect(find.text('MRN-100'), findsOneWidget);
-    expect(find.text('37y'), findsOneWidget);
-    expect(find.text('Female'), findsOneWidget);
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 }
 

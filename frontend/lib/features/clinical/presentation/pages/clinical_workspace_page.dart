@@ -3256,7 +3256,7 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
         );
   final DateTime? lastUpdated = entry.updatedAt ?? entry.startedAt;
 
-  // Compact AppPatientDetails already shows name, public ID, age, and gender.
+  // AppPatientDetails header shows name and public ID; age/gender are body fields.
   return <AppWorkspacePatientContextField>[
     if (!omitSubtitleFields)
       AppWorkspacePatientContextField(

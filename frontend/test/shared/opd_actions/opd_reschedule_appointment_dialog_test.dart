@@ -79,7 +79,7 @@ void main() {
     expect(find.byType(AppTriageSummaryPanel), findsNothing);
     expect(find.text('Patient Example'), findsWidgets);
     expect(find.text('PAT0000003'), findsOneWidget);
-    expect(find.textContaining('Female'), findsOneWidget);
+    expect(find.textContaining('Female'), findsNothing);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsNWidgets(2));
     expect(find.byType(AppTextField), findsOneWidget);
@@ -88,8 +88,9 @@ void main() {
     expect(find.byIcon(AppActionIcons.edit), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
-    await tester.tap(find.text('Show more'));
+    await tester.tap(find.byIcon(Icons.expand_more));
     await tester.pumpAndSettle();
+    expect(find.textContaining('Female'), findsOneWidget);
     expect(find.text('+256700000003'), findsOneWidget);
     expect(find.text('Provider Example'), findsWidgets);
   });

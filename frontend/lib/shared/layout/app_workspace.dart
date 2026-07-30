@@ -492,6 +492,8 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
     this.titleIcon,
     this.collapsible = true,
     this.initiallyExpanded = true,
+    this.expanded,
+    this.onExpandedChanged,
     this.contentPadding,
     super.key,
   });
@@ -512,6 +514,10 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
   final bool collapsible;
   final bool initiallyExpanded;
 
+  /// When non-null, expansion is controlled by the parent.
+  final bool? expanded;
+  final ValueChanged<bool>? onExpandedChanged;
+
   /// Overrides default body padding (`spacing.lg` on all sides).
   final EdgeInsetsGeometry? contentPadding;
 
@@ -523,8 +529,28 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
 class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
   late bool _expanded = widget.initiallyExpanded;
 
+  bool get _isControlled => widget.expanded != null;
+
+  bool get _resolvedExpanded => widget.expanded ?? _expanded;
+
   void _toggleExpanded() {
-    setState(() => _expanded = !_expanded);
+    final bool next = !_resolvedExpanded;
+    if (_isControlled) {
+      widget.onExpandedChanged?.call(next);
+      return;
+    }
+    setState(() => _expanded = next);
+    widget.onExpandedChanged?.call(next);
+  }
+
+  @override
+  void didUpdateWidget(covariant AppWorkspaceDetailPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isControlled &&
+        oldWidget.initiallyExpanded != widget.initiallyExpanded &&
+        widget.expanded == null) {
+      _expanded = widget.initiallyExpanded;
+    }
   }
 
   @override
@@ -534,7 +560,7 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
     final bool hasStringTitle =
         widget.title != null && widget.title!.trim().isNotEmpty;
     final bool hasTitle = widget.titleWidget != null || hasStringTitle;
-    final bool showBody = !widget.collapsible || _expanded;
+    final bool showBody = !widget.collapsible || _resolvedExpanded;
     final String? description =
         widget.description != null && widget.description!.trim().isNotEmpty
         ? widget.description
@@ -586,12 +612,12 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
                               ),
                               if (widget.collapsible)
                                 Icon(
-                                  _expanded
+                                  _resolvedExpanded
                                       ? Icons.expand_less
                                       : Icons.expand_more,
                                   size: theme.appTokens.listIconSize,
                                   color: colorScheme.onSurfaceVariant,
-                                  semanticLabel: _expanded
+                                  semanticLabel: _resolvedExpanded
                                       ? context.l10n.commonShowLessActionLabel
                                       : context.l10n.commonShowMoreActionLabel,
                                 ),

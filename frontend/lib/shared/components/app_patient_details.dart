@@ -9,7 +9,7 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Persists only the expand/collapse boolean — never patient PHI.
@@ -67,10 +67,11 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
   }
 }
 
-/// Compact patient identity + optional expanded workflow fields.
+/// Patient identity section built on [AppWorkspaceDetailPanel].
 ///
-/// Compact default: name, public identifier, age, gender.
-/// Expanded: caller-supplied [expandedFields] / [expandedChild].
+/// Collapsed by default: header shows name · public ID (with copy).
+/// Expanded body is a horizontal overflow row:
+/// `Icon Parameter name: Parameter value | …`
 class AppPatientDetails extends ConsumerStatefulWidget {
   const AppPatientDetails({
     required this.patientName,
@@ -123,6 +124,8 @@ class AppPatientDetails extends ConsumerStatefulWidget {
   final bool showAvatar;
   final String? semanticLabel;
   final bool showActionLabels;
+
+  /// Kept for API compatibility; body facts always use the overflow row.
   final AppWorkspacePatientContextFieldStyle fieldStyle;
   final bool persistExpandPreference;
   final bool? initiallyExpanded;
@@ -144,11 +147,9 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final List<AppWorkspacePatientContextField> bodyFields = _bodyFields(l10n);
     final bool hasExpandableContent =
-        widget.expandedFields.any(
-          (AppWorkspacePatientContextField field) => field.hasValue,
-        ) ||
-        widget.expandedChild != null;
+        bodyFields.isNotEmpty || widget.expandedChild != null;
 
     final bool expanded = !hasExpandableContent
         ? false
@@ -156,55 +157,50 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
               ? ref.watch(appPatientDetailsExpandedProvider)
               : _localExpanded);
 
-    final List<Widget> headerActions = <Widget>[
-      ...widget.actions,
-      if (hasExpandableContent)
-        AppButton.tertiary(
-          label: expanded
-              ? l10n.commonShowLessActionLabel
-              : l10n.commonShowMoreActionLabel,
-          leadingIcon: expanded ? Icons.expand_less : Icons.expand_more,
-          semanticLabel: expanded
-              ? l10n.commonShowLessActionLabel
-              : l10n.commonShowMoreActionLabel,
-          tooltip: expanded
-              ? l10n.commonShowLessActionLabel
-              : l10n.commonShowMoreActionLabel,
-          onPressed: () => _toggleExpanded(expanded: !expanded),
-        ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppWorkspacePatientContextHeader(
-          patientName: widget.patientName,
-          patientNumber: widget.patientNumber,
-          patientNumberLabel: widget.patientNumberLabel,
-          demographicsChildren: _buildDemographicsChildren(theme),
-          status: widget.status,
-          alerts: widget.alerts,
-          fields: expanded
-              ? widget.expandedFields
-              : const <AppWorkspacePatientContextField>[],
-          fieldStyle: widget.fieldStyle,
-          actions: headerActions,
-          onCopyPatientNumber: widget.onCopyPatientNumber,
-          copyPatientNumberTooltip: widget.copyPatientNumberTooltip,
-          copyPatientNumberMessage: widget.copyPatientNumberMessage,
-          copyPatientNumberSemanticLabel: widget.copyPatientNumberSemanticLabel,
-          showPatientNumberCopyIcon: widget.showPatientNumberCopyIcon,
-          showPatientName: widget.showPatientName,
-          showAvatar: widget.showAvatar,
-          semanticLabel: widget.semanticLabel,
-          showActionLabels: widget.showActionLabels || hasExpandableContent,
-        ),
-        if (expanded && widget.expandedChild != null) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          widget.expandedChild!,
+    Widget panel = AppWorkspaceDetailPanel(
+      titleWidget: _PatientDetailsTitle(
+        patientName: widget.patientName,
+        patientNumber: widget.patientNumber,
+        patientNumberLabel: widget.patientNumberLabel,
+        showPatientName: widget.showPatientName,
+        showPatientNumberCopyIcon: widget.showPatientNumberCopyIcon,
+        onCopyPatientNumber: widget.onCopyPatientNumber,
+        copyPatientNumberTooltip: widget.copyPatientNumberTooltip,
+        copyPatientNumberMessage: widget.copyPatientNumberMessage,
+        copyPatientNumberSemanticLabel: widget.copyPatientNumberSemanticLabel,
+      ),
+      headerActions: widget.actions,
+      collapsible: hasExpandableContent,
+      expanded: hasExpandableContent ? expanded : null,
+      onExpandedChanged: hasExpandableContent
+          ? (bool value) => _toggleExpanded(expanded: value)
+          : null,
+      initiallyExpanded: false,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (bodyFields.isNotEmpty) AppPatientContextFactsRow(fields: bodyFields),
+          if (bodyFields.isNotEmpty && widget.expandedChild != null)
+            SizedBox(height: theme.spacing.sm),
+          if (widget.expandedChild != null) widget.expandedChild!,
         ],
-      ],
+      ),
     );
+
+    if (widget.semanticLabel != null) {
+      panel = Semantics(
+        container: true,
+        label: widget.semanticLabel,
+        child: panel,
+      );
+    }
+
+    return panel;
   }
 
   Future<void> _toggleExpanded({required bool expanded}) async {
@@ -217,46 +213,144 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     setState(() => _localExpanded = expanded);
   }
 
-  List<Widget> _buildDemographicsChildren(ThemeData theme) {
-    final String? age = widget.ageLabel?.trim();
-    final String? gender = widget.genderLabel?.trim();
-    final String? supporting = widget.compactSupportingText?.trim();
-    final TextStyle? style = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-    final bool hasAge = age != null && age.isNotEmpty;
-    final bool hasGender = gender != null && gender.isNotEmpty;
+  List<AppWorkspacePatientContextField> _bodyFields(AppLocalizations l10n) {
+    final List<AppWorkspacePatientContextField> fields =
+        <AppWorkspacePatientContextField>[];
 
-    if (!hasAge && !hasGender) {
-      if (supporting == null || supporting.isEmpty) {
-        return const <Widget>[];
-      }
-      return <Widget>[
-        Text(
-          supporting,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style,
+    final String? age = widget.ageLabel?.trim();
+    if (age != null && age.isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.patientsAgeColumnLabel,
+          value: age,
+          icon: Icons.cake_outlined,
         ),
-      ];
+      );
     }
 
-    return <Widget>[
-      if (age != null && age.isNotEmpty)
-        Text(age, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
-      if (hasGender && widget.genderIcon != null)
-        Icon(
-          widget.genderIcon,
-          size: theme.appTokens.listIconSize,
-          color: theme.colorScheme.onSurfaceVariant,
+    final String? gender = widget.genderLabel?.trim();
+    if (gender != null && gender.isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.patientsGenderLabel,
+          value: gender,
+          icon: widget.genderIcon ?? Icons.person_outline,
         ),
-      if (gender != null && gender.isNotEmpty)
-        Text(
-          gender,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style,
+      );
+    }
+
+    final String? supporting = widget.compactSupportingText?.trim();
+    if ((age == null || age.isEmpty) &&
+        (gender == null || gender.isEmpty) &&
+        supporting != null &&
+        supporting.isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.patientsDetailTitle,
+          value: supporting,
+          icon: Icons.info_outline,
         ),
-    ];
+      );
+    }
+
+    final AppWorkspaceStatus? status = widget.status;
+    if (status != null && status.label.trim().isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.patientsStatusColumnLabel,
+          value: status.label,
+          icon: status.icon ?? Icons.flag_outlined,
+          tone: status.tone,
+        ),
+      );
+    }
+
+    for (final AppWorkspaceStatus alert in widget.alerts) {
+      if (alert.label.trim().isEmpty) {
+        continue;
+      }
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.icuColumnAlertLabel,
+          value: alert.label,
+          icon: alert.icon ?? Icons.warning_amber_outlined,
+          tone: alert.tone,
+        ),
+      );
+    }
+
+    fields.addAll(
+      widget.expandedFields.where(
+        (AppWorkspacePatientContextField field) => field.hasValue,
+      ),
+    );
+
+    return fields;
+  }
+}
+
+class _PatientDetailsTitle extends StatelessWidget {
+  const _PatientDetailsTitle({
+    required this.patientName,
+    required this.patientNumber,
+    this.patientNumberLabel,
+    this.showPatientName = true,
+    this.showPatientNumberCopyIcon = true,
+    this.onCopyPatientNumber,
+    this.copyPatientNumberTooltip,
+    this.copyPatientNumberMessage,
+    this.copyPatientNumberSemanticLabel,
+  });
+
+  final String patientName;
+  final String patientNumber;
+  final String? patientNumberLabel;
+  final bool showPatientName;
+  final bool showPatientNumberCopyIcon;
+  final VoidCallback? onCopyPatientNumber;
+  final String? copyPatientNumberTooltip;
+  final String? copyPatientNumberMessage;
+  final String? copyPatientNumberSemanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? nameStyle = theme.textTheme.titleMedium;
+    final String normalizedId = patientNumber.trim();
+    final String semanticsLabel =
+        '${showPatientName ? patientName : ''} ${normalizedId.isEmpty ? '' : normalizedId}'
+            .trim();
+
+    return Semantics(
+      label: semanticsLabel,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: theme.spacing.xs,
+        runSpacing: theme.spacing.xs / 2,
+        children: <Widget>[
+          if (showPatientName) Text(patientName, style: nameStyle),
+          if (showPatientName && normalizedId.isNotEmpty)
+            Text(
+              '·',
+              style: nameStyle?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          if (normalizedId.isNotEmpty)
+            AppCopyableIdentifier(
+              value: normalizedId,
+              tooltip: copyPatientNumberTooltip ?? patientNumberLabel,
+              copiedMessage: copyPatientNumberMessage,
+              semanticLabel: copyPatientNumberSemanticLabel,
+              showCopyIcon: showPatientNumberCopyIcon,
+              onCopied: onCopyPatientNumber,
+              textStyle: nameStyle?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

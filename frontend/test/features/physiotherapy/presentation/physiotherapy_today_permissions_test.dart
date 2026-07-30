@@ -852,7 +852,7 @@ void main() {
         tester.element(find.byType(AppDialog)),
       );
       // Expand patient context so nested billing chip can surface.
-      final Finder showMore = find.text(l10n.commonShowMoreActionLabel);
+      final Finder showMore = find.byIcon(Icons.expand_more);
       if (showMore.evaluate().isNotEmpty) {
         await tester.tap(showMore.first);
         await _pumpAfterAction(tester);
@@ -873,9 +873,7 @@ void main() {
       final AppLocalizations billingL10n = AppLocalizations.of(
         tester.element(find.byType(AppDialog)),
       );
-      final Finder billingShowMore = find.text(
-        billingL10n.commonShowMoreActionLabel,
-      );
+      final Finder billingShowMore = find.byIcon(Icons.expand_more);
       if (billingShowMore.evaluate().isNotEmpty) {
         await tester.tap(billingShowMore.first);
         await _pumpAfterAction(tester);
