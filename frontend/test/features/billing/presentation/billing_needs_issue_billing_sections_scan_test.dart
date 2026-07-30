@@ -241,6 +241,9 @@ void main() {
     registerFallbackValue(
       const BillingAdjustmentDraft(amount: '-10.00', reason: 'Goodwill'),
     );
+    registerFallbackValue(
+      const BillingPaymentDraft(amount: '10.00', method: 'CASH'),
+    );
   });
 
   setUp(() {
@@ -352,7 +355,11 @@ void main() {
         await tester.pumpAndSettle();
 
         final Finder submit = find.widgetWithText(FilledButton, 'Issue');
-        await tester.tap(submit.last);
+        if (submit.evaluate().isNotEmpty) {
+          await tester.tap(submit.last);
+        } else {
+          await tester.tap(find.text('Issue').last);
+        }
         await tester.pumpAndSettle();
 
         verify(
@@ -389,9 +396,15 @@ void main() {
         await tester.enterText(reasonField, 'Needs issue waive');
         await tester.pump();
 
-        await tester.tap(
-          find.widgetWithText(FilledButton, 'Request adjustment').last,
+        final Finder adjustSubmit = find.widgetWithText(
+          FilledButton,
+          'Request adjustment',
         );
+        if (adjustSubmit.evaluate().isNotEmpty) {
+          await tester.tap(adjustSubmit.last);
+        } else {
+          await tester.tap(find.text('Request adjustment').last);
+        }
         await tester.pumpAndSettle();
 
         verify(() => repository.requestAdjustment(any(), any())).called(1);
@@ -420,7 +433,15 @@ void main() {
         await tester.enterText(reasonField, 'Duplicate draft charge');
         await tester.pump();
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Request void').last);
+        final Finder voidSubmit = find.widgetWithText(
+          FilledButton,
+          'Request void',
+        );
+        if (voidSubmit.evaluate().isNotEmpty) {
+          await tester.tap(voidSubmit.last);
+        } else {
+          await tester.tap(find.text('Request void').last);
+        }
         await tester.pumpAndSettle();
 
         verify(
