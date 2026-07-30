@@ -342,8 +342,8 @@ void main() {
         );
       }
       expect(
-        EmergencyAmbulanceBillingInventory.startTrip.billingPath,
-        contains('persistAmbulanceTripBilling'),
+        EmergencyAmbulanceBillingInventory.startTrip.financialClass,
+        EmergencyAmbulanceFinancialClass.notRequired,
       );
       expect(
         EmergencyAmbulanceBillingInventory.completeTrip.billingPath,

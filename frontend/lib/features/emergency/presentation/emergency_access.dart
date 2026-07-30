@@ -346,6 +346,7 @@ bool canOpenEmergencyBilling(AppAccessPolicy policy) {
 /// | Detail Update priority / triage / response / ambulance | update | write ∩ |
 /// | Detail Handoff | update | handoff ∪ source |
 /// | Detail Schedule in Theater | navigate / update | write ∩ |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Open in {module} (handoff outcome) | navigate | read ∩ |
 /// | Ambulance timeline panel | read | read ∩ ([ambulanceContext]) |

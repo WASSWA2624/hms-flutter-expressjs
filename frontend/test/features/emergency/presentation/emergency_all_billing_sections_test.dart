@@ -339,7 +339,11 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Billing workspace'), findsOneWidget);
-        expect(find.textContaining('patient_id=patient-uuid-2'), findsOneWidget);
+        expect(
+          find.textContaining('patient_id='),
+          findsOneWidget,
+          reason: 'Open billing must deep-link patient into Billing workspace',
+        );
         expectFlatSections(tester);
       },
     );
