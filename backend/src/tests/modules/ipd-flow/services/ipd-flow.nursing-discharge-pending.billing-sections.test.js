@@ -202,12 +202,15 @@ describe('ipd-flow Nursing Discharge pending billing-sections scan', () => {
             billing_cleared: true},
           deleted_at: null,
           updated_at: now}]});
+    let findFirstCalls = 0;
     const tx = {
       admission: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce({ id: 'adm-disc-pending' })
-          .mockResolvedValueOnce(admission)},
+        findFirst: jest.fn(async () => {
+          findFirstCalls += 1;
+          return findFirstCalls % 2 === 1
+            ? { id: 'adm-disc-pending' }
+            : admission;
+        })},
       discharge_summary: {
         update: jest.fn().mockResolvedValue({ id: 'ds-ndp-1' })},
       invoice: {
@@ -313,25 +316,25 @@ describe('ipd-flow Nursing Discharge pending billing-sections scan', () => {
   });
 
   it('rejects finalize when Billing still has balance (no nursing-local bypass)', async () => {
+    const admission = buildAdmission({
+      discharge_summaries: [
+        {
+          id: 'ds-ndp-1',
+          summary: 'Ready',
+          status: 'PLANNED',
+          clearance_snapshot: {
+            ...clearanceBase,
+            nursing_cleared: true,
+            billing_cleared: true,
+            patient_exited: true},
+          deleted_at: null,
+          updated_at: now}]});
     const tx = {
       admission: {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: 'adm-disc-pending' })
-          .mockResolvedValueOnce(
-            buildAdmission({
-              discharge_summaries: [
-                {
-                  id: 'ds-ndp-1',
-                  summary: 'Ready',
-                  status: 'PLANNED',
-                  clearance_snapshot: {
-                    ...clearanceBase,
-                    nursing_cleared: true,
-                    billing_cleared: true,
-                    patient_exited: true},
-                  deleted_at: null,
-                  updated_at: now}]})),
+          .mockResolvedValueOnce(admission)},
       invoice: {
         findMany: jest.fn().mockResolvedValue([
           {

@@ -1,11 +1,12 @@
 /**
- * Nursing Assigned ward tab billing-sections scan
- * (`/nursing?scope=assigned-ward`).
+ * Nursing Handover pending tab billing-sections scan
+ * (`/nursing?scope=handover-pending`).
  *
- * Billable nursing notes and discharge clearance post through ipd-flow →
- * clinical-request-billing / Billing ledger. Proves posting, no bypass,
- * ledger-derived billing_cleared, idempotent charge keys, and no inline
- * cashier on nursing handlers.
+ * Stage create/accept handover is NOT_BILLED (handover.service). Billable
+ * nursing notes and discharge clearance reachable from patient detail post
+ * through ipd-flow → clinical-request-billing / Billing ledger. Proves
+ * posting, no bypass, ledger-derived billing_cleared, idempotent charge
+ * keys, and no inline cashier on nursing handlers.
  */
 
 jest.mock('@repositories/ipd-flow/ipd-flow.repository');
@@ -23,7 +24,7 @@ jest.mock('@lib/websocket', () => ({
   NOTIFICATION_EVENTS: { NOTIFICATION_CREATED: 'notification.created' }}));
 
 const mockPersistNursingServiceBilling = jest.fn().mockResolvedValue({
-  invoice_id: 'inv-nurse-ward-1',
+  invoice_id: 'inv-nurse-hand-1',
   payment_status: 'PENDING',
   total_amount: '15000.00'});
 
@@ -69,16 +70,17 @@ const { createAuditLog } = require('@lib/audit');
 const ipdFlowRepository = require('@repositories/ipd-flow/ipd-flow.repository');
 const ipdFlowService = require('@services/ipd-flow/ipd-flow.service');
 const nursingNoteService = require('@services/nursing-note/nursing-note.service');
+const handoverService = require('@services/handover/handover.service');
 
 const now = new Date('2026-07-30T10:00:00.000Z');
 
 const buildAdmission = (overrides = {}) => ({
-  id: 'adm-ward-1',
-  human_friendly_id: 'ADM-WARD-1',
+  id: 'adm-hand-1',
+  human_friendly_id: 'ADM-HAND-1',
   tenant_id: 'tenant-1',
   facility_id: 'facility-1',
-  patient_id: 'patient-ward-1',
-  encounter_id: 'enc-ward-1',
+  patient_id: 'patient-hand-1',
+  encounter_id: 'enc-hand-1',
   status: 'ADMITTED',
   admitted_at: now,
   discharged_at: null,
@@ -94,7 +96,7 @@ const buildAdmission = (overrides = {}) => ({
   transfer_requests: [],
   discharge_summaries: [
     {
-      id: 'ds-ward-1',
+      id: 'ds-hand-1',
       summary: 'Planned discharge',
       status: 'PLANNED',
       clearance_snapshot: {
@@ -120,7 +122,7 @@ const nursingBillingPayload = {
       unit_price: '15000.00',
       line_total: '15000.00'}]};
 
-describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
+describe('ipd-flow Nursing Handover pending billing-sections scan', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue(undefined);
@@ -134,24 +136,24 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
       admission: {
         findFirst: jest
           .fn()
-          .mockResolvedValueOnce({ id: 'adm-ward-1' })
+          .mockResolvedValueOnce({ id: 'adm-hand-1' })
           .mockResolvedValueOnce(admission)},
       user: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'user-1',
           human_friendly_id: 'USR-1'})},
       nursing_note: {
-        create: jest.fn().mockResolvedValue({ id: 'nn-ward-1' }),
+        create: jest.fn().mockResolvedValue({ id: 'nn-hand-1' }),
         update: jest.fn()}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
-    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-ward-1' });
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-hand-1' });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.addNursingNote(
-      'ADM-WARD-1',
+      'ADM-HAND-1',
       {
-        note: 'Dressing change',
+        note: 'Handover dressing change',
         nurse_user_id: 'user-1',
         billing: nursingBillingPayload},
       { tenant_id: 'tenant-1', user_id: 'user-1' },
@@ -161,8 +163,8 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledWith(
       tx,
       expect.objectContaining({
-        nursingNoteId: 'nn-ward-1',
-        patientId: 'patient-ward-1',
+        nursingNoteId: 'nn-hand-1',
+        patientId: 'patient-hand-1',
         actorUserId: 'user-1'}),
     );
   });
@@ -173,51 +175,46 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
       admission: {
         findFirst: jest
           .fn()
-          .mockResolvedValueOnce({ id: 'adm-ward-1' })
+          .mockResolvedValueOnce({ id: 'adm-hand-1' })
           .mockResolvedValueOnce(admission)},
       user: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'user-1',
           human_friendly_id: 'USR-1'})},
       nursing_note: {
-        create: jest.fn().mockResolvedValue({ id: 'nn-ward-2' })}};
+        create: jest.fn().mockResolvedValue({ id: 'nn-hand-2' })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
-    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-ward-1' });
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-hand-1' });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.addNursingNote(
-      'ADM-WARD-1',
-      { note: 'Charted vitals follow-up', nurse_user_id: 'user-1' },
+      'ADM-HAND-1',
+      { note: 'Checklist handover note', nurse_user_id: 'user-1' },
       { tenant_id: 'tenant-1', user_id: 'user-1' },
     );
 
     expect(mockPersistNursingServiceBilling).not.toHaveBeenCalled();
   });
 
-  it('AC3/AC6: billed notes key charges by nursing_note id (no orphan double charge on same note)', async () => {
+  it('AC3/AC6: idempotent replay of billed note keys by nursing note id', async () => {
     const admission = buildAdmission();
     const tx = {
       admission: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'adm-ward-1' })},
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'adm-hand-1' })
+          .mockResolvedValueOnce(admission)},
       user: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'user-1',
           human_friendly_id: 'USR-1'})},
       nursing_note: {
-        create: jest.fn().mockResolvedValue({ id: 'nn-ward-3' }),
+        create: jest.fn().mockResolvedValue({ id: 'nn-hand-3' }),
         update: jest.fn()}};
 
-    // fetchAdmissionForMutation also uses findFirst — return full admission
-    // after the identifier resolve.
-    tx.admission.findFirst
-      .mockResolvedValueOnce({ id: 'adm-ward-1' })
-      .mockResolvedValueOnce(admission)
-      .mockResolvedValueOnce({ id: 'adm-ward-1' })
-      .mockResolvedValueOnce(admission);
-
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
-    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-ward-1' });
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-hand-1' });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     const payload = {
@@ -226,18 +223,17 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
       billing: nursingBillingPayload};
     const context = { tenant_id: 'tenant-1', user_id: 'user-1' };
 
-    await ipdFlowService.addNursingNote('ADM-WARD-1', payload, context);
+    await ipdFlowService.addNursingNote('ADM-HAND-1', payload, context);
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledTimes(1);
-    expect(mockPersistNursingServiceBilling.mock.calls[0][1].nursingNoteId).toBe(
-      'nn-ward-3',
-    );
 
-    // Distinct note id → distinct Billing charge key (idempotency per note).
-    tx.nursing_note.create.mockResolvedValue({ id: 'nn-ward-3b' });
-    await ipdFlowService.addNursingNote('ADM-WARD-1', payload, context);
+    tx.nursing_note.create.mockResolvedValue({ id: 'nn-hand-3b' });
+    await ipdFlowService.addNursingNote('ADM-HAND-1', payload, context);
     expect(mockPersistNursingServiceBilling).toHaveBeenCalledTimes(2);
+    expect(mockPersistNursingServiceBilling.mock.calls[0][1].nursingNoteId).toBe(
+      'nn-hand-3',
+    );
     expect(mockPersistNursingServiceBilling.mock.calls[1][1].nursingNoteId).toBe(
-      'nn-ward-3b',
+      'nn-hand-3b',
     );
   });
 
@@ -247,10 +243,10 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
       admission: {
         findFirst: jest
           .fn()
-          .mockResolvedValueOnce({ id: 'adm-ward-1' })
+          .mockResolvedValueOnce({ id: 'adm-hand-1' })
           .mockResolvedValueOnce(admission)},
       discharge_summary: {
-        update: jest.fn().mockResolvedValue({ id: 'ds-ward-1' })},
+        update: jest.fn().mockResolvedValue({ id: 'ds-hand-1' })},
       invoice: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -262,11 +258,11 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
             billing_adjustments: []}])}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
-    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-ward-1' });
+    prisma.admission.findFirst.mockResolvedValue({ id: 'adm-hand-1' });
     ipdFlowRepository.findById.mockResolvedValue(admission);
 
     await ipdFlowService.updateDischargeClearance(
-      'ADM-WARD-1',
+      'ADM-HAND-1',
       { nursing_cleared: true, billing_cleared: true },
       { tenant_id: 'tenant-1', user_id: 'user-1' },
     );
@@ -280,11 +276,17 @@ describe('ipd-flow Nursing Assigned ward billing-sections scan', () => {
     );
   });
 
-  it('AC4: nursing Assigned ward path has no receivePayment / adjust / refund', () => {
+  it('AC4: nursing Handover pending path has no receivePayment / adjust / refund', () => {
     expect(ipdFlowService.receivePayment).toBeUndefined();
     expect(ipdFlowService.adjustInvoice).toBeUndefined();
     expect(ipdFlowService.refundPayment).toBeUndefined();
     expect(nursingNoteService.receivePayment).toBeUndefined();
     expect(nursingNoteService.persistNursingServiceBilling).toBeUndefined();
+    expect(handoverService.receivePayment).toBeUndefined();
+    expect(handoverService.adjustInvoice).toBeUndefined();
+    expect(handoverService.refundPayment).toBeUndefined();
+    expect(handoverService.persistNursingServiceBilling).toBeUndefined();
+    expect(typeof handoverService.createHandover).toBe('function');
+    expect(typeof handoverService.acceptHandover).toBe('function');
   });
 });

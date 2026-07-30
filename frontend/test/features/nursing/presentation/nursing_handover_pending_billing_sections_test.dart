@@ -17,7 +17,7 @@ import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
-import 'package:hosspi_hms/features/nursing/presentation/nursing_all_billing_inventory.dart';
+import 'package:hosspi_hms/features/nursing/presentation/nursing_handover_pending_billing_inventory.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -28,25 +28,34 @@ import '../../../helpers/section_layout_test_helpers.dart';
 
 class _MockNursingRepository extends Mock implements NursingRepository {}
 
-const NursingPatientSummary _allPatient = NursingPatientSummary(
-  id: 'adm-all-bill-1',
-  admissionId: 'adm-all-bill-1',
-  displayId: 'ADM-ALL-B1',
-  patientId: 'pat-all-bill-1',
-  patientDisplayId: 'PT-ALL-B1',
-  patientDisplayName: 'All Billing Patient',
+const NursingPatientSummary _handoverPatient = NursingPatientSummary(
+  id: 'adm-hand-bill-1',
+  admissionId: 'adm-hand-bill-1',
+  displayId: 'ADM-HAND-B1',
+  patientId: 'pat-hand-bill-1',
+  patientDisplayId: 'PT-HAND-B1',
+  patientDisplayName: 'Handover Billing Patient',
   stage: 'ADMITTED_IN_BED',
   admissionStatus: 'ADMITTED',
-  wardDisplayName: 'Ward A',
-  bedDisplayLabel: 'Bed 1',
+  wardDisplayName: 'Ward H',
+  bedDisplayLabel: 'Bed 7',
   hasActiveBed: true,
+  pendingHandoverCount: 1,
   dischargeStatus: 'DISCHARGE_PLANNED',
 );
 
-const NursingPatientDetail _allDetail = NursingPatientDetail(
-  summary: _allPatient,
+const NursingHandover _pendingHandover = NursingHandover(
+  id: 'ho-bill-1',
+  status: 'PENDING',
+  admissionId: 'adm-hand-bill-1',
+  signoffNotes: 'Night shift notes',
+);
+
+const NursingPatientDetail _handoverDetail = NursingPatientDetail(
+  summary: _handoverPatient,
+  handovers: <NursingHandover>[_pendingHandover],
   latestDischarge: NursingDischargeSummary(
-    id: 'ds-all-1',
+    id: 'ds-hand-1',
     status: 'PLANNED',
     summary: 'Awaiting clearance',
     billingCleared: false,
@@ -99,9 +108,9 @@ AppAccessPolicy _policy({
 void _stubRepository(
   _MockNursingRepository repository, {
   List<NursingPatientSummary> items = const <NursingPatientSummary>[
-    _allPatient,
+    _handoverPatient,
   ],
-  NursingPatientDetail detail = _allDetail,
+  NursingPatientDetail detail = _handoverDetail,
 }) {
   when(() => repository.listWardPatients(any())).thenAnswer((invocation) {
     final NursingWorklistQuery query =
@@ -117,8 +126,9 @@ void _stubRepository(
     );
   });
   when(() => repository.listPendingHandovers()).thenAnswer(
-    (_) async =>
-        const Result<List<NursingHandover>>.success(<NursingHandover>[]),
+    (_) async => const Result<List<NursingHandover>>.success(
+      <NursingHandover>[_pendingHandover],
+    ),
   );
   when(() => repository.listCurrentRosters()).thenAnswer(
     (_) async => const Result<List<NursingRosterAssignment>>.success(
@@ -134,9 +144,10 @@ void _stubRepository(
   when(() => repository.updateDischargeClearance(any(), any())).thenAnswer(
     (_) async => Result<NursingPatientDetail>.success(
       NursingPatientDetail(
-        summary: _allPatient,
+        summary: _handoverPatient,
+        handovers: const <NursingHandover>[_pendingHandover],
         latestDischarge: const NursingDischargeSummary(
-          id: 'ds-all-1',
+          id: 'ds-hand-1',
           status: 'PLANNED',
           summary: 'Awaiting clearance',
           billingCleared: false,
@@ -147,13 +158,13 @@ void _stubRepository(
   );
 }
 
-Future<void> _pumpAllTab(
+Future<void> _pumpHandoverPending(
   WidgetTester tester, {
   required _MockNursingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  NursingPatientDetail detail = _allDetail,
+  NursingPatientDetail detail = _handoverDetail,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -165,7 +176,7 @@ Future<void> _pumpAllTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/nursing',
+    initialLocation: '/nursing?scope=handover-pending',
     routes: <RouteBase>[
       GoRoute(
         path: '/nursing',
@@ -224,8 +235,10 @@ void main() {
   late _MockNursingRepository repository;
 
   setUpAll(() {
-    registerFallbackValue(const NursingWorklistQuery());
-    registerFallbackValue(_allPatient);
+    registerFallbackValue(
+      const NursingWorklistQuery(scope: NursingQueueScope.handoverPending),
+    );
+    registerFallbackValue(_handoverPatient);
     registerFallbackValue(<String, Object?>{});
   });
 
@@ -233,20 +246,23 @@ void main() {
     repository = _MockNursingRepository();
   });
 
-  group('Nursing All billing inventory (AC1)', () {
+  group('Nursing Handover pending billing inventory (AC1)', () {
     test('classifies every financially relevant atom', () {
-      expect(NursingAllBillingInventory.all, isNotEmpty);
-      for (final NursingAllFinancialAtom atom
-          in NursingAllBillingInventory.all) {
+      expect(NursingHandoverPendingBillingInventory.all, isNotEmpty);
+      for (final NursingHandoverPendingFinancialAtom atom
+          in NursingHandoverPendingBillingInventory.all) {
         expect(atom.id, isNotEmpty);
         expect(atom.label, isNotEmpty);
         final bool billable =
             atom.financialClass ==
-                NursingAllFinancialClass.createCharge ||
-            atom.financialClass == NursingAllFinancialClass.settle ||
-            atom.financialClass == NursingAllFinancialClass.adjust ||
-            atom.financialClass == NursingAllFinancialClass.reverse ||
-            atom.financialClass == NursingAllFinancialClass.defer;
+                NursingHandoverPendingFinancialClass.createCharge ||
+            atom.financialClass ==
+                NursingHandoverPendingFinancialClass.settle ||
+            atom.financialClass ==
+                NursingHandoverPendingFinancialClass.adjust ||
+            atom.financialClass ==
+                NursingHandoverPendingFinancialClass.reverse ||
+            atom.financialClass == NursingHandoverPendingFinancialClass.defer;
         if (billable && atom.mounted) {
           expect(
             atom.billingPath,
@@ -264,9 +280,32 @@ void main() {
       }
     });
 
+    test('stage create/accept handover is NOT_BILLED', () {
+      expect(
+        NursingHandoverPendingBillingInventory.createHandover.auditCode,
+        'NOT_BILLED',
+      );
+      expect(
+        NursingHandoverPendingBillingInventory.acceptHandover.auditCode,
+        'NOT_BILLED',
+      );
+      expect(
+        NursingHandoverPendingBillingInventory.nextActionHandover.auditCode,
+        'NOT_BILLED',
+      );
+      expect(
+        NursingHandoverPendingBillingInventory.administerMedication.auditCode,
+        'NOT_BILLED',
+      );
+    });
+
     test('billable mounted atoms reuse shared Billing paths', () {
-      for (final NursingAllFinancialAtom atom
-          in NursingAllBillingInventory.billableMounted) {
+      expect(
+        NursingHandoverPendingBillingInventory.allBillableAtomsWireThroughBilling,
+        isTrue,
+      );
+      for (final NursingHandoverPendingFinancialAtom atom
+          in NursingHandoverPendingBillingInventory.billableMounted) {
         expect(atom.billingPath, isNotEmpty);
         expect(
           atom.billingPath!.toLowerCase(),
@@ -288,11 +327,17 @@ void main() {
     });
 
     test('inline cashier settle/adjust atoms are not mounted', () {
-      expect(NursingAllBillingInventory.collectPayment.mounted, isFalse);
-      expect(NursingAllBillingInventory.adjustRefund.mounted, isFalse);
       expect(
-        NursingAllBillingInventory.forbidsInlineCashier(
-          NursingAllFinancialClass.settle,
+        NursingHandoverPendingBillingInventory.collectPayment.mounted,
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingBillingInventory.adjustRefund.mounted,
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingBillingInventory.forbidsInlineCashier(
+          NursingHandoverPendingFinancialClass.settle,
         ),
         isTrue,
       );
@@ -301,45 +346,41 @@ void main() {
     test('Open billing gate requires billing:read ∩ billing-payments', () {
       expect(
         identical(
-          NursingAllAtomPermissions.openBilling,
+          NursingHandoverPendingAtomPermissions.openBilling,
           nursingBillingClearanceReadRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
-          NursingAllAtomPermissions.openBilling,
+          NursingHandoverPendingAtomPermissions.openBilling,
           billingReadRequirement,
         ),
         isTrue,
       );
     });
 
-    test('scope note documents All tab financial focus', () {
+    test('scope note documents Handover pending financial focus', () {
       expect(
-        nursingAllBillingScopeNote.toLowerCase(),
-        contains('clinical-request-billing'),
-      );
-      expect(
-        NursingAllBillingInventory.summary().toLowerCase(),
+        nursingHandoverPendingBillingScopeNote.toLowerCase(),
         contains('persistnursingservicebilling'),
       );
       expect(
-        NursingAllBillingInventory.summary().toLowerCase(),
-        contains('open billing'),
+        NursingHandoverPendingBillingInventory.summary().toLowerCase(),
+        contains('not_billed'),
       );
       expect(
-        NursingAllBillingInventory.administerMedication.auditCode,
-        'NOT_BILLED',
+        NursingHandoverPendingBillingInventory.titledSectionIds,
+        isNotEmpty,
       );
     });
   });
 
-  group('Nursing All billing UX (AC2-AC4)', () {
+  group('Nursing Handover pending billing UX (AC2-AC4)', () {
     testWidgets(
       'authorized reader has no collect/adjust; Open billing needs billing:read',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpHandoverPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -347,14 +388,14 @@ void main() {
           ),
         );
 
-        expect(find.text('All Billing Patient'), findsOneWidget);
+        expect(find.text('Handover Billing Patient'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
         expectFlatSections(tester);
 
-        await tester.tap(find.text('All Billing Patient'));
+        await tester.tap(find.text('Handover Billing Patient'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pumpAndSettle();
@@ -368,7 +409,7 @@ void main() {
     testWidgets(
       'billing:read shows Open billing + ledger status without cashier',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpHandoverPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -379,7 +420,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('All Billing Patient'));
+        await tester.tap(find.text('Handover Billing Patient'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pumpAndSettle();
@@ -392,7 +433,7 @@ void main() {
         await tester.tap(find.text('Open billing').first);
         await tester.pumpAndSettle();
         expect(
-          find.text('Billing workspace patient=pat-all-bill-1'),
+          find.text('Billing workspace patient=pat-hand-bill-1'),
           findsOneWidget,
         );
       },
@@ -401,7 +442,7 @@ void main() {
     testWidgets('list chrome has no redundant cashier entry points', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpHandoverPending(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -420,7 +461,7 @@ void main() {
     testWidgets(
       'billing panel shows ledger outstanding parity (not nurse-local paid)',
       (WidgetTester tester) async {
-        await _pumpAllTab(
+        await _pumpHandoverPending(
           tester,
           repository: repository,
           accessPolicy: _policy(
@@ -431,25 +472,25 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('All Billing Patient'));
+        await tester.tap(find.text('Handover Billing Patient'));
         await tester.pumpAndSettle();
 
         expect(find.text('Billing clearance'), findsOneWidget);
         expect(find.text('Outstanding balance'), findsWidgets);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(
-          NursingAllBillingInventory.dischargeClearance.billingPath,
+          NursingHandoverPendingBillingInventory.dischargeClearance.billingPath,
           contains('isBillingSettledForPatient'),
         );
       },
     );
   });
 
-  group('Nursing All section layout (AC5)', () {
-    testWidgets('desktop All: flat sections on list + detail', (
+  group('Nursing Handover pending section layout (AC5)', () {
+    testWidgets('desktop Handover pending: flat sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpHandoverPending(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -462,15 +503,15 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await tester.tap(find.text('All Billing Patient'));
+      await tester.tap(find.text('Handover Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
-    testWidgets('mobile All + dark: flat sections', (
+    testWidgets('mobile Handover pending + dark: flat sections', (
       WidgetTester tester,
     ) async {
-      await _pumpAllTab(
+      await _pumpHandoverPending(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -484,7 +525,7 @@ void main() {
       );
       expectFlatSections(tester);
 
-      await tester.tap(find.text('All Billing Patient'));
+      await tester.tap(find.text('Handover Billing Patient'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });

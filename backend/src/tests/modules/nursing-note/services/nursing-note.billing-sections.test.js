@@ -1,5 +1,5 @@
 /**
- * Nursing-note module billing-sections guard for Assigned ward.
+ * Nursing-note module billing-sections guard for Nursing All / Assigned ward.
  *
  * Direct nursing-note CRUD must never invent a cash ledger — billable notes
  * post only via ipd-flow addNursingNote → persistNursingServiceBilling.
@@ -10,9 +10,9 @@ jest.mock('@lib/audit');
 
 const nursingNoteService = require('@services/nursing-note/nursing-note.service');
 const {
-  createNursingNoteSchema} = require('@schemas/nursing-note/nursing-note.schema');
+  createNursingNoteSchema} = require('@validations/nursing-note/nursing-note.schema');
 
-describe('nursing-note Assigned ward billing-sections guard', () => {
+describe('nursing-note All / Assigned ward billing-sections guard', () => {
   it('AC2: create schema strips / rejects billing payloads (no parallel ledger)', () => {
     const parsed = createNursingNoteSchema.safeParse({
       admission_id: 'ADM-1',

@@ -415,8 +415,9 @@ void main() {
           policy: _readPolicy(),
         );
         await _openDetail(tester);
-        expect(find.text('Billing'), findsNothing);
+        // Column / context field may say "Billing"; panel content must not.
         expect(find.text('Cold storage day 1'), findsNothing);
+        expect(find.text('Open billing'), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
@@ -427,7 +428,6 @@ void main() {
           policy: _billingPanelPolicy(),
         );
         await _openDetail(tester);
-        expect(find.text('Billing'), findsOneWidget);
         expect(find.textContaining('Cold storage day 1'), findsOneWidget);
         expect(find.text('Open billing'), findsOneWidget);
         expectFlatSections(tester);

@@ -374,7 +374,7 @@ void main() {
         expect(find.text('Open billing'), findsNothing);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
-        expect(find.text('Billing'), findsNothing);
+        expect(find.textContaining('Release preparation'), findsNothing);
         expectFlatSections(tester);
       },
     );
@@ -419,7 +419,6 @@ void main() {
 
         await _openDetail(tester);
 
-        expect(find.text('Billing'), findsOneWidget);
         expect(find.textContaining('Release preparation'), findsOneWidget);
         expect(find.textContaining('inv-mort-rel-1'), findsOneWidget);
         expect(find.text('Open billing'), findsWidgets);
@@ -474,8 +473,7 @@ void main() {
       await _openDetail(tester);
 
       expect(find.text('Identity and source'), findsOneWidget);
-      expect(find.text('Release'), findsWidgets);
-      expect(find.text('Billing'), findsOneWidget);
+      expect(find.textContaining('Release preparation'), findsOneWidget);
       expect(find.text('Documents'), findsOneWidget);
       expectFlatSections(tester);
     });

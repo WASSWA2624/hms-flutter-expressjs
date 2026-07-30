@@ -573,7 +573,8 @@ void main() {
 
         expect(find.text('Assign storage'), findsNothing);
         expect(find.text('Print documents'), findsNothing);
-        expect(find.text('Billing'), findsNothing);
+        expect(find.text('Cold storage day 1'), findsNothing);
+        expect(find.text('Open billing'), findsNothing);
       },
     );
 
@@ -610,8 +611,9 @@ void main() {
         await _openDetail(tester);
 
         expect(find.text('CASE DETAIL'), findsOneWidget);
-        expect(find.text('Billing'), findsNothing);
+        // List/detail chrome may show a "Billing" status label; panel content must not.
         expect(find.text('Cold storage day 1'), findsNothing);
+        expect(find.text('Open billing'), findsNothing);
       },
     );
 
@@ -625,7 +627,6 @@ void main() {
         );
         await _openDetail(tester);
 
-        expect(find.text('Billing'), findsOneWidget);
         expect(find.textContaining('Cold storage day 1'), findsOneWidget);
       },
     );

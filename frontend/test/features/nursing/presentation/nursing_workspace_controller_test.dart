@@ -2,12 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository_impl.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -127,6 +132,132 @@ void main() {
       expect(payload['encounter_id'], 'ENC000001');
       expect(payload['patient_id'], 'PAT000001');
       expect(payload['requested_tests'], isA<List<Object?>>());
+    },
+  );
+
+  test(
+    'orderLab merges ClinicalRequestBillingSubmit into shared Billing payload',
+    () async {
+      final _MockNursingRepository nursing = _MockNursingRepository();
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      when(
+        () => clinical.createLabOrder(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      final ProviderContainer container = buildContainer(
+        nursing: nursing,
+        clinical: clinical,
+      );
+
+      await container.read(nursingWorkspaceControllerProvider.future);
+      final NursingWorkspaceController controller = container.read(
+        nursingWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectPatientByDisplayId('ADM000001');
+
+      const ClinicalRequestBillingSubmit billing = ClinicalRequestBillingSubmit(
+        mode: ClinicalRequestPaymentMode.billLater,
+        totalAmount: 25000,
+        currency: 'UGX',
+        paymentStatus: ClinicalRequestPaymentStatus.unpaid,
+        lineItems: <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'LAB000001',
+            label: 'CBC',
+            quantity: 1,
+            unitPrice: 25000,
+            lineTotal: 25000,
+          ),
+        ],
+      );
+
+      final AppFailure? failure = await controller.orderLab(
+        labTestIds: const <String>['LAB000001'],
+        labPanelIds: const <String>[],
+        billing: billing,
+      );
+      expect(failure, isNull);
+
+      final List<Object?> captured = verify(
+        () => clinical.createLabOrder(captureAny()),
+      ).captured;
+      final Map<String, Object?> payload =
+          captured.first as Map<String, Object?>;
+      expect(payload['billing'], isA<Map<String, Object?>>());
+      final Map<String, Object?> billingMap =
+          payload['billing']! as Map<String, Object?>;
+      expect(billingMap['payment_status'], 'PENDING');
+      expect(billingMap['total_amount'], 25000);
+    },
+  );
+
+  test(
+    'addNursingNote forwards optional billing to ipd-flow path (no local ledger)',
+    () async {
+      final _MockNursingRepository nursing = _MockNursingRepository();
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      when(() => nursing.addNursingNote(any(), any())).thenAnswer(
+        (_) async => Result<NursingPatientDetail>.success(_detail()),
+      );
+      when(() => nursing.listWardPatients(any())).thenAnswer(
+        (invocation) async => Result<AppPage<NursingPatientSummary>>.success(
+          AppPage<NursingPatientSummary>(
+            items: const <NursingPatientSummary>[_summary],
+            request:
+                (invocation.positionalArguments.single as NursingWorklistQuery)
+                    .pageRequest,
+            totalItemCount: 1,
+          ),
+        ),
+      );
+      when(() => nursing.loadPatientDetail(any())).thenAnswer(
+        (_) async => Result<NursingPatientDetail>.success(_detail()),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          nursingRepositoryProvider.overrideWithValue(nursing),
+          clinicalRepositoryProvider.overrideWithValue(clinical),
+          initialSessionStateProvider.overrideWithValue(
+            SessionState.authenticated(
+              session: AuthSession(
+                tokens: SessionTokens(accessToken: 'access-token'),
+                user: const AuthUserProfile(
+                  id: 'nurse-1',
+                  roles: <String>['NURSE'],
+                  tenantId: 'tenant-1',
+                  facilityId: 'facility-1',
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(nursingWorkspaceControllerProvider.future);
+      final NursingWorkspaceController controller = container.read(
+        nursingWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectPatientByDisplayId('ADM000001');
+
+      final AppFailure? failure = await controller.addNursingNote(
+        'Dressing change',
+        billing: <String, Object?>{
+          'payment_status': 'PENDING',
+          'total_amount': 15000,
+          'currency': 'UGX',
+        },
+      );
+      expect(failure, isNull);
+
+      final List<Object?> captured = verify(
+        () => nursing.addNursingNote(any(), captureAny()),
+      ).captured;
+      final Map<String, Object?> payload =
+          captured.first as Map<String, Object?>;
+      expect(payload['note'], 'Dressing change');
+      expect(payload['nurse_user_id'], 'nurse-1');
+      expect(payload['billing'], isA<Map<String, Object?>>());
     },
   );
 

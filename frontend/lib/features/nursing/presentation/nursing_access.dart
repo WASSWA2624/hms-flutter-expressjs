@@ -689,11 +689,13 @@ abstract final class NursingMedicationDueAtomPermissions {
 /// (`screens/nursing.md`) documents broader ∪ write keys for shared nursing
 /// chrome; this tab's stage write atoms prefer the matrix ∩. Create/update/
 /// delete matrix ∩ `clinical:write` → [create] / [update] / [delete] /
-/// [write]. Complementary detail writes (note / vitals / …) keep source
-/// [nursingWriteRequirement] ∪ — mapping noted in tests. `last_office:read`
-/// alone must not unlock writes. Nested cross-module matrix rows are _(n/a)_
-/// except medication panels ([medicationsPanel] / [administerMedication]) and
-/// shift context ([shiftContext]).
+/// [write]. Complementary detail writes (note / vitals / prescribe / …) keep
+/// source [nursingWriteRequirement] ∪ — mapping noted in tests.
+/// `last_office:read` alone must not unlock writes. Nested cross-module
+/// matrix rows are _(n/a)_ except medication panels ([medicationsPanel] /
+/// [administerMedication]), billing clearance ([billingPanel] /
+/// [openBilling] — `billing:read` ∩ `billing-payments`), and shift context
+/// ([shiftContext]).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -706,8 +708,11 @@ abstract final class NursingMedicationDueAtomPermissions {
 /// | Next action Create handover | create / update | ([nextActionHandover]) |
 /// | Detail complementary writes (note / vitals / …) | create / update | ([complementaryWrite]) |
 /// | Detail Accept / Create handover | create / update | ([acceptHandover] / [createHandover]) |
+/// | Detail Prescribe / lab / radiology | create | ([prescribe] / [orderLab] / [orderRadiology]) |
 /// | Detail Administer medication | update | ([administerMedication]) |
 /// | Detail medications panel | nested read | ([medicationsPanel]) |
+/// | Detail billing clearance panel / Open billing | nested read | ([billingPanel] / [openBilling]) |
+/// | Detail Discharge clearance | update | ([dischargeClearance]) |
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Detail Print summary | export | ([printSummary]) |
 /// | Checklist handover / write steps | create / update | ([checklistWrite]) |
@@ -741,11 +746,24 @@ abstract final class NursingHandoverPendingAtomPermissions {
   static const AccessRequirement checklistWrite = nursingWriteRequirement;
   static const AccessRequirement recordVitals = nursingWriteRequirement;
   static const AccessRequirement addNote = nursingWriteRequirement;
+  static const AccessRequirement prescribe = nursingWriteRequirement;
+  static const AccessRequirement orderLab = nursingWriteRequirement;
+  static const AccessRequirement orderRadiology = nursingWriteRequirement;
+  static const AccessRequirement escalate = nursingWriteRequirement;
+  static const AccessRequirement acknowledgeTransfer =
+      NursingTransferPendingAtomPermissions.nextActionTransfer;
+  static const AccessRequirement dischargeClearance =
+      NursingDischargePendingAtomPermissions.write;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
   static const AccessRequirement medicationsPanel =
       nursingMedicationsPanelRequirement;
   static const AccessRequirement administerMedication =
       nursingMedicationAdministerRequirement;
+  /// Billing clearance panel + Open billing — `billing:read` ∩ `billing-payments`.
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
   /// Nested cross-module matrix _(n/a)_; medication uses [medicationsPanel].
   static const AccessRequirement nestedRead =
       nursingNestedCrossModuleReadRequirement;

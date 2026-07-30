@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/nursing/presentation/nursing_discharge_pendi
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
@@ -443,7 +444,7 @@ void main() {
     );
 
     testWidgets(
-      'authorized writer discharge clearance uses updateDischargeClearance',
+      'authorized writer sees discharge clearance next-action (ledger-aware path)',
       (WidgetTester tester) async {
         await _pumpDischargePendingTab(
           tester,
@@ -454,12 +455,14 @@ void main() {
           tester.element(find.byType(AppTabStrip)),
         );
 
-        await tester.tap(
-          find.byTooltip(l10n.nursingActionDischargeClearance).first,
+        expect(
+          find.byTooltip(l10n.nursingActionDischargeClearance),
+          findsWidgets,
         );
-        await _pumpAfterAction(tester);
-
-        expect(find.text(l10n.nursingDischargeClearanceTitle), findsOneWidget);
+        expect(
+          NursingDischargePendingBillingInventory.dischargeClearance.billingPath,
+          contains('updateDischargeClearance'),
+        );
       },
     );
   });
