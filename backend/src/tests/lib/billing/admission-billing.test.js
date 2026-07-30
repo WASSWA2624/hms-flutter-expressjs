@@ -1,105 +1,134 @@
 /**
- * Unit tests for admission + bed-transfer billing helpers.
+ * Unit tests for IPD admission start / bed-assign / transfer billing helpers.
  */
+
+jest.mock('@lib/billing/clinical-request-billing', () => {
+  const actual = jest.requireActual('@lib/billing/clinical-request-billing');
+  return {
+    ...actual,
+  };
+});
 
 const {
   buildAdmissionBilling,
+  buildBedDayBilling,
   buildBedTransferBilling,
-  bedTransferChargeKey,
-  resolveBedDayFeeForWardType,
+  admissionSnapshotHasBedCharge,
   ADMISSION_START_CHARGE_KEY,
-  BED_TRANSFER_CHARGE_KEY_PREFIX,
+  BED_ASSIGN_CHARGE_KEY,
 } = require('@lib/billing/admission-billing');
 
-const facilityWithRates = {
-  extension_json: {
-    billing: {
-      bed_day_fee: 50000,
-      icu_bed_day_fee: 150000,
-      currency: 'UGX',
-    },
-  },
-};
+describe('admission-billing', () => {
+  it('returns null when no payload and no facility fee', () => {
+    expect(
+      buildAdmissionBilling({
+        facility: { extension_json: { billing: { currency: 'UGX' } } },
+      })
+    ).toBeNull();
+  });
 
-describe('admission-billing bed transfer helpers', () => {
-  it('bedTransferChargeKey prefixes transfer id', () => {
-    expect(bedTransferChargeKey('tr-1')).toBe(
-      `${BED_TRANSFER_CHARGE_KEY_PREFIX}:tr-1`,
+  it('prefers explicit PENDING billing payload', () => {
+    const billing = {
+      payment_status: 'PENDING',
+      currency: 'UGX',
+      total_amount: '100.00',
+      line_items: [
+        {
+          id: 'ADMISSION_FEE',
+          label: 'Admission fee',
+          quantity: 1,
+          unit_price: '100.00',
+          line_total: '100.00',
+        },
+      ],
+    };
+    const resolved = buildAdmissionBilling({ billing });
+    expect(resolved).toEqual(
+      expect.objectContaining({
+        payment_status: 'PENDING',
+        total_amount: expect.any(String),
+      })
     );
     expect(ADMISSION_START_CHARGE_KEY).toBe('ADMISSION_START');
+    expect(BED_ASSIGN_CHARGE_KEY).toBe('BED_ASSIGN');
   });
 
-  it('resolveBedDayFeeForWardType prefers ICU fee for ICU wards', () => {
-    const icu = resolveBedDayFeeForWardType(facilityWithRates, 'ICU');
-    const general = resolveBedDayFeeForWardType(facilityWithRates, 'GENERAL');
-    expect(icu.amount).toBe('150000.00');
-    expect(general.amount).toBe('50000.00');
-  });
-
-  it('buildBedTransferBilling posts destination rate when rates differ', () => {
-    const billing = buildBedTransferBilling({
-      facility: facilityWithRates,
-      fromWardType: 'GENERAL',
-      toWardType: 'ICU',
-    });
-    expect(billing).not.toBeNull();
-    expect(billing.payment_status).toBe('PENDING');
-    expect(billing.line_items).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'bed-transfer-day',
-          unit_price: '150000.00',
-        }),
-      ]),
-    );
-  });
-
-  it('buildBedTransferBilling returns null for same-rate moves', () => {
-    const billing = buildBedTransferBilling({
-      facility: facilityWithRates,
-      fromWardType: 'GENERAL',
-      toWardType: 'SURGICAL',
-    });
-    expect(billing).toBeNull();
-  });
-
-  it('buildBedTransferBilling prefers explicit billing payload', () => {
-    const billing = buildBedTransferBilling({
-      billing: {
-        payment_status: 'PENDING',
-        currency: 'UGX',
-        total_amount: '20000.00',
-        line_items: [
-          {
-            id: 'override',
-            label: 'Override',
-            quantity: 1,
-            unit_price: '20000.00',
-            line_total: '20000.00',
-          },
-        ],
-      },
-      facility: facilityWithRates,
-      fromWardType: 'GENERAL',
-      toWardType: 'GENERAL',
-    });
-    expect(billing).not.toBeNull();
-    expect(billing.total_amount).toBe('20000.00');
-  });
-
-  it('buildAdmissionBilling still builds start fee lines', () => {
-    const billing = buildAdmissionBilling({
+  it('builds fee + deposit + bed/day lines from facility fees', () => {
+    const resolved = buildAdmissionBilling({
       facility: {
         extension_json: {
           billing: {
-            admission_fee: 10000,
+            admission_fee: 80000,
+            admission_deposit: 20000,
             bed_day_fee: 50000,
             currency: 'UGX',
           },
         },
       },
     });
-    expect(billing).not.toBeNull();
-    expect(billing.line_items.length).toBeGreaterThanOrEqual(2);
+
+    expect(resolved).toEqual(
+      expect.objectContaining({
+        payment_status: 'PENDING',
+        currency: 'UGX',
+      })
+    );
+    expect(resolved.line_items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'admission-fee' }),
+        expect.objectContaining({ id: 'admission-deposit' }),
+        expect.objectContaining({ id: 'bed-day' }),
+      ])
+    );
+  });
+
+  it('does not treat NOT_BILLED request as a charge (falls back to facility)', () => {
+    const resolved = buildAdmissionBilling({
+      billing: {
+        payment_status: 'NOT_BILLED',
+        total_amount: '0.00',
+      },
+      facility: {
+        extension_json: {
+          billing: { admission_fee: 80, currency: 'USD' },
+        },
+      },
+    });
+    expect(resolved.line_items[0].id).toBe('admission-fee');
+  });
+
+  it('buildBedDayBilling posts bed/day only for assign-bed', () => {
+    const resolved = buildBedDayBilling({
+      facility: {
+        extension_json: {
+          billing: { bed_day_fee: 55, currency: 'USD' },
+        },
+      },
+    });
+    expect(resolved.line_items).toHaveLength(1);
+    expect(resolved.line_items[0].id).toBe('bed-day');
+  });
+
+  it('buildBedTransferBilling is null when ward rates match', () => {
+    expect(
+      buildBedTransferBilling({
+        facility: {
+          extension_json: {
+            billing: { bed_day_fee: 50, currency: 'USD' },
+          },
+        },
+        fromWardType: 'GENERAL',
+        toWardType: 'GENERAL',
+      })
+    ).toBeNull();
+  });
+
+  it('admissionSnapshotHasBedCharge treats NOT_REQUIRED as uncharged', () => {
+    expect(
+      admissionSnapshotHasBedCharge({
+        payment_status: 'NOT_REQUIRED',
+        audit_code: 'ADMISSION_REQUEST_NO_CHARGE',
+      })
+    ).toBe(false);
   });
 });

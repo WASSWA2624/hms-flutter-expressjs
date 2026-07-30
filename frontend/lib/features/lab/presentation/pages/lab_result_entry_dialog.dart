@@ -1841,7 +1841,6 @@ class _LabResultEntryRowsTable extends StatelessWidget {
                       draft.item.apiId,
                       selected: value ?? false,
                     ),
-              allowVerify: allowVerify,
               onSaveDraft: () => onSaveDraft(draft),
               onSubmit: () => onSubmit(draft),
               onVerify: () => onVerify(draft),
@@ -4158,6 +4157,30 @@ bool _canSubmitDraft(_ResultDraft draft) {
 bool _canVerifyDraft(_ResultDraft draft) {
   return draft.item.canVerify &&
       (draft.hasEntry || _hasSavedResult(draft.item));
+}
+
+bool _isLabDraftPaymentBlocked(
+  _ResultDraft draft,
+  List<LabOrderWorkflow> workflows,
+) {
+  final String orderKey = (draft.item.labOrderId ?? '').trim();
+  for (final LabOrderWorkflow workflow in workflows) {
+    final LabOrderSummary order = workflow.order;
+    final bool matches =
+        orderKey.isNotEmpty &&
+        (orderKey == order.id.trim() ||
+            orderKey == order.apiId.trim() ||
+            orderKey == (order.displayId ?? '').trim());
+    if (!matches && workflows.length == 1) {
+      return workflow.nextActions.billingGateBlocked ||
+          !order.isPaymentSatisfied;
+    }
+    if (!matches) {
+      continue;
+    }
+    return workflow.nextActions.billingGateBlocked || !order.isPaymentSatisfied;
+  }
+  return false;
 }
 
 bool _validateDraftForPersist(_ResultDraft draft, {required bool forVerify}) {

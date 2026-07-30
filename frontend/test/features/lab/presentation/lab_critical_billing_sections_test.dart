@@ -181,7 +181,7 @@ Future<void> _pumpCriticalTab(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         labRepositoryProvider.overrideWithValue(repository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
@@ -287,7 +287,7 @@ void main() {
     test('inline cashier settle/adjust atoms are not mounted', () {
       expect(LabCriticalBillingInventory.collectPayment.mounted, isFalse);
       expect(LabCriticalBillingInventory.adjustRefund.mounted, isFalse);
-      expect(LabCriticalBillingInventory.openBilling.mounted, isFalse);
+      expect(LabCriticalBillingInventory.openBilling.mounted, isTrue);
       expect(LabCriticalBillingInventory.criticalNotify.mounted, isFalse);
       expect(LabCriticalBillingInventory.acknowledge.mounted, isFalse);
       expect(
@@ -491,7 +491,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: <Override>[
+          overrides: [
             labRepositoryProvider.overrideWithValue(repository),
             sharedPreferencesProvider.overrideWithValue(preferences),
             initialSessionStateProvider.overrideWithValue(

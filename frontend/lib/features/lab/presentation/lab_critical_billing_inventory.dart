@@ -261,14 +261,14 @@ abstract final class LabCriticalBillingInventory {
       );
 
   /// Navigate-only; Billing workspace remains system of record.
+  /// Mounted from workflow when `billingGateBlocked` (Open billing CTA).
   static const LabCriticalFinancialAtom openBilling = LabCriticalFinancialAtom(
     id: 'open_billing',
     label: 'Open billing (settle / invoice / waive / refund)',
-    financialClass: LabCriticalFinancialClass.settle,
-    requirement: billingWorkspaceReadRequirement,
+    financialClass: LabCriticalFinancialClass.defer,
+    requirement: labOpenBillingRequirement,
     billingPath: 'AppRoutes.billing?patient_id=… (Billing workspace)',
     auditCode: 'REQUIRES_BILLING',
-    mounted: false,
   );
 
   static const LabCriticalFinancialAtom collectPayment =
