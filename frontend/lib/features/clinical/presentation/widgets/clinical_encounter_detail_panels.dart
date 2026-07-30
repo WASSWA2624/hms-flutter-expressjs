@@ -1231,7 +1231,12 @@ DataRow _clinicalRadiologyDataRow({
       ),
       DataCell(Text(AppDisplay.apiLabel(item.modality ?? ''))),
       DataCell(Text(AppDisplay.apiLabel(item.bodyRegion ?? ''))),
-      DataCell(_ClinicalStatusBadge(status: order.status ?? '')),
+      DataCell(
+        _ClinicalOrderStatusWithPayment(
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+        ),
+      ),
       DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
       if (showActions)
         DataCell(
@@ -1278,6 +1283,7 @@ class _ClinicalLabOrderMobileCard extends StatelessWidget {
       title: order.title ?? order.id,
       value: _labOrderAggregateValue(context, order),
       status: order.status,
+      paymentStatus: order.paymentStatus,
       resultFlag: _labOrderAggregateResultFlag(order),
       occurredAt: order.occurredAt,
       expandable: expandable,
@@ -1364,6 +1370,7 @@ class _ClinicalRadiologyOrderMobileCard extends StatelessWidget {
                 : (order.title ?? order.id),
             subtitle: _joinDisplay(<String?>[item.modality, item.bodyRegion]),
             status: order.status,
+            paymentStatus: order.paymentStatus,
             occurredAt: order.occurredAt,
             actions: showActions
                 ? _radiologyOrderActions(
@@ -1387,6 +1394,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
     this.subtitle,
     this.value,
     this.status,
+    this.paymentStatus,
     this.resultFlag,
     this.occurredAt,
     this.expandable = false,
@@ -1399,6 +1407,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
   final String? subtitle;
   final String? value;
   final String? status;
+  final String? paymentStatus;
   final String? resultFlag;
   final DateTime? occurredAt;
   final bool expandable;
@@ -1466,10 +1475,13 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
                     label: l10n.clinicalOrderValueColumnLabel,
                     value: value!,
                   ),
-                if (_hasText(status))
+                if (_hasText(status) || _hasText(paymentStatus))
                   _ClinicalLabeledChip(
                     label: l10n.opdStatusColumnLabel,
-                    child: _ClinicalStatusBadge(status: status!),
+                    child: _ClinicalOrderStatusWithPayment(
+                      status: status,
+                      paymentStatus: paymentStatus,
+                    ),
                   ),
                 if (_hasText(resultFlag))
                   _ClinicalLabeledChip(

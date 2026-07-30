@@ -2764,7 +2764,17 @@ const requestIpdAdmission = async (data, context = {}) => {
             encounter_id: encounterId || existingAdmission.encounter_id,
             status: "REQUESTED",
             discharged_at: null,
-            updated_at: requestedAt}})
+            updated_at: requestedAt,
+            ...(!existingAdmission.billing_snapshot
+              ? {
+                  billing_snapshot: {
+                    payment_status: "NOT_REQUIRED",
+                    audit_code: "ADMISSION_REQUEST_NO_CHARGE",
+                    note:
+                      "Bed/admission charges post on IPD start when billing is supplied",
+                  },
+                }
+              : {})}})
       : await tx.admission.create({
           data: {
             tenant_id: tenantId,
@@ -2772,7 +2782,13 @@ const requestIpdAdmission = async (data, context = {}) => {
             patient_id: patient.id,
             encounter_id: encounterId,
             status: "REQUESTED",
-            admitted_at: requestedAt}});
+            admitted_at: requestedAt,
+            billing_snapshot: {
+              payment_status: "NOT_REQUIRED",
+              audit_code: "ADMISSION_REQUEST_NO_CHARGE",
+              note:
+                "Bed/admission charges post on IPD start when billing is supplied",
+            }}});
 
     const requestNote = [data?.reason, data?.notes]
       .map((value) => sanitizeIdentifier(value))
@@ -2788,7 +2804,8 @@ const requestIpdAdmission = async (data, context = {}) => {
         stage_to: STAGES.ADMISSION_REQUESTED,
         occurred_at: requestedAt.toISOString()},
       compatibilitySignals: ["ADMISSION_REQUESTED"],
-      request_note: requestNote || null};
+      request_note: requestNote || null,
+      billing_snapshot: admission.billing_snapshot || null};
   });
 
   return finalizeAction({
