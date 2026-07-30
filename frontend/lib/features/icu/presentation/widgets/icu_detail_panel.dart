@@ -184,13 +184,7 @@ class IcuActionPanel extends ConsumerWidget {
             requirement: writeRequirement,
             label: l10n.icuActionStartStay,
             icon: Icons.play_circle_outline,
-            onPressed: () => confirmIcuAction(
-              context: context,
-              title: l10n.icuStartStayTitle,
-              body: l10n.icuStartStayBody,
-              actionLabel: l10n.icuStartStayActionLabel,
-              onConfirmed: () => controller.startIcuStay(),
-            ),
+            onPressed: () => openIcuStartStayDialog(context),
           ),
         if (hasActiveStay && omit != IcuNextActionKind.recordObservation)
           AppPermissionActionItem(
@@ -294,10 +288,10 @@ class IcuActionPanel extends ConsumerWidget {
                 openIpdDischargeClearance(context, detail.summary),
           ),
         AppPermissionActionItem(
-          requirement: navigationRequirement,
+          requirement: IcuActiveIcuAtomPermissions.openBilling,
           label: l10n.icuActionOpenBilling,
           icon: Icons.receipt_long_outlined,
-          onPressed: () => context.go(AppRoutes.billing.path),
+          onPressed: () => openIcuBillingWorkspace(context, detail.summary),
         ),
         if (detail.summary.displayId != null &&
             omit != IcuNextActionKind.openIpd)

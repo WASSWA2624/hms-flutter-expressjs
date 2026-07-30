@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -1043,6 +1045,224 @@ String _icuAssignBedFirstDisplay(Iterable<String?> values) {
     }
   }
   return '';
+}
+
+class _IcuRoundActionDialog extends ConsumerStatefulWidget {
+  const _IcuRoundActionDialog();
+
+  @override
+  ConsumerState<_IcuRoundActionDialog> createState() =>
+      _IcuRoundActionDialogState();
+}
+
+class _IcuRoundActionDialogState extends ConsumerState<_IcuRoundActionDialog> {
+  final TextEditingController _notesController = TextEditingController();
+  ClinicalRequestBillingSubmit? _billing;
+  bool _submitting = false;
+  AppFailure? _failure;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) {
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _failure = null;
+    });
+    final ClinicalRequestBillingSubmit? billing = _billing;
+    final bool charge =
+        billing != null &&
+        billing.paymentStatus != ClinicalRequestPaymentStatus.notBilled &&
+        billing.totalAmount > 0;
+    final AppFailure? failure = await ref
+        .read(icuWorkspaceControllerProvider.notifier)
+        .addRoundNote(
+          notes: _notesController.text.trim(),
+          billing: charge ? billing.toPayloadMap() : null,
+        );
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _submitting = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'WARD_ROUND_FEE',
+            label: l10n.icuRoundFeeLabel,
+          ),
+        ];
+
+    return AppDialog(
+      title: Text(l10n.icuRoundDialogTitle),
+      icon: const Icon(Icons.rate_review_outlined),
+      maxWidth: 560,
+      scrollable: true,
+      closeEnabled: !_submitting,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.icuRoundNoteLabel,
+            minLines: 3,
+            maxLines: 8,
+            enabled: !_submitting,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppAccessGate(
+            requirement: icuBillingPanelReadRequirement,
+            child: ClinicalRequestBillingPanel(
+              lineItems: lineItems,
+              enabled: !_submitting,
+              // Dialog already provides titled chrome — keep sections flat.
+              embedded: true,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                _billing = value;
+              },
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_submitting,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.icuRoundAddActionLabel,
+          isLoading: _submitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+}
+
+class _StartIcuStayDialog extends ConsumerStatefulWidget {
+  const _StartIcuStayDialog();
+
+  @override
+  ConsumerState<_StartIcuStayDialog> createState() =>
+      _StartIcuStayDialogState();
+}
+
+class _StartIcuStayDialogState extends ConsumerState<_StartIcuStayDialog> {
+  ClinicalRequestBillingSubmit? _billing;
+  bool _submitting = false;
+  AppFailure? _failure;
+
+  Future<void> _submit() async {
+    if (_submitting) {
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _failure = null;
+    });
+    final ClinicalRequestBillingSubmit? billing = _billing;
+    final bool charge =
+        billing != null &&
+        billing.paymentStatus != ClinicalRequestPaymentStatus.notBilled &&
+        billing.totalAmount > 0;
+    final AppFailure? failure = await ref
+        .read(icuWorkspaceControllerProvider.notifier)
+        .startIcuStay(billing: charge ? billing.toPayloadMap() : null);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _submitting = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'ICU_CRITICAL_CARE_PACKAGE',
+            label: l10n.icuCriticalCarePackageFeeLabel,
+          ),
+          ClinicalRequestBillingLineItem(
+            id: 'ICU_BED_DAY',
+            label: l10n.icuBedDayFeeLabel,
+          ),
+        ];
+
+    return AppDialog(
+      title: Text(l10n.icuStartStayTitle),
+      icon: const Icon(Icons.play_circle_outline),
+      maxWidth: 560,
+      scrollable: true,
+      closeEnabled: !_submitting,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
+          Text(l10n.icuStartStayBody),
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppAccessGate(
+            requirement: icuBillingPanelReadRequirement,
+            child: ClinicalRequestBillingPanel(
+              lineItems: lineItems,
+              enabled: !_submitting,
+              // Dialog already provides titled chrome — keep sections flat.
+              embedded: true,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                _billing = value;
+              },
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_submitting,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.icuStartStayActionLabel,
+          isLoading: _submitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
 }
 
 List<Widget> _dialogActions(

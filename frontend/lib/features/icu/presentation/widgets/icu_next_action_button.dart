@@ -239,13 +239,7 @@ Future<void> runIcuNextAction(
       if (!context.mounted) {
         return;
       }
-      await confirmIcuAction(
-        context: context,
-        title: l10n.icuStartStayTitle,
-        body: l10n.icuStartStayBody,
-        actionLabel: l10n.icuStartStayActionLabel,
-        onConfirmed: controller.startIcuStay,
-      );
+      await openIcuStartStayDialog(context);
     case IcuNextActionKind.acknowledgeAlert:
       await ensureSelected();
       if (!context.mounted) {
