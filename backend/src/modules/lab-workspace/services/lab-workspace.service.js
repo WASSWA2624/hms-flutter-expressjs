@@ -160,6 +160,37 @@ const uniqueByKey = (items, keySelector) => {
   });
 };
 
+/** Panels once (prefer code), standalone tests (prefer code); first-seen order. */
+const buildLabTestsSummaryLabels = (items = []) => {
+  const labels = [];
+  const seenPanels = new Set();
+  const seenTests = new Set();
+  for (const item of toSafeArray(items)) {
+    const panelKey = [item?.panel_id, item?.panel_code, item?.panel_display_name]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .find((value) => value);
+    if (panelKey) {
+      if (seenPanels.has(panelKey)) continue;
+      seenPanels.add(panelKey);
+      const label = [item?.panel_code, item?.panel_display_name, panelKey]
+        .map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .find((value) => value);
+      if (label) labels.push(label);
+      continue;
+    }
+    const testKey = [item?.lab_test_id, item?.test_code, item?.test_display_name, item?.id]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .find((value) => value);
+    if (!testKey || seenTests.has(testKey)) continue;
+    seenTests.add(testKey);
+    const label = [item?.test_code, item?.test_display_name]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .find((value) => value);
+    if (label) labels.push(label);
+  }
+  return labels;
+};
+
 const labOrderIsTerminal = (order) => ORDER_COMPLETION_STATES.has(normalizeStatus(order?.status));
 
 const mapLabPatientWorkItem = (records = []) => {
@@ -195,10 +226,7 @@ const mapLabPatientWorkItem = (records = []) => {
                 ? 'CANCELLED'
                 : representative.status;
 
-  const testNames = uniqueByKey(
-    items.map((item) => ({ id: item?.lab_test_id || item?.test_code || item?.test_display_name, label: item?.test_display_name || item?.test_code })).filter((item) => item.label),
-    (item) => item.id || item.label
-  ).map((item) => item.label);
+  const testNames = buildLabTestsSummaryLabels(items);
   const shownTests = testNames.slice(0, 3);
   const testsSummary = shownTests.length
     ? `${shownTests.join(', ')}${testNames.length > shownTests.length ? ` +${testNames.length - shownTests.length}` : ''}`

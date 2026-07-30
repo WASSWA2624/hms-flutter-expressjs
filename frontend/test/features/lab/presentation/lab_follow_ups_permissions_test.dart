@@ -477,7 +477,8 @@ void main() {
       );
 
       expect(find.text('Follow Up Patient'), findsOneWidget);
-      expect(find.byTooltip('Create Lab Order'), findsNothing);
+      expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+      expect(find.text('Filters'), findsWidgets);
 
       await tester.tap(find.text('Follow Up Patient'));
       await tester.pumpAndSettle();

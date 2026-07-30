@@ -23,6 +23,7 @@ import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
+import 'package:hosspi_hms/shared/components/app_patient_details.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_tab_strip.dart';
@@ -806,15 +807,35 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     }
 
     final ThemeData theme = Theme.of(context);
+    final String patientNumber = (patient.effectiveIdentifier ?? '').trim();
+    final String? phone = patient.primaryPhone?.trim();
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
-      child: AppFormInformationBanner.message(
-        title: l10n.opdPatientSectionTitle,
-        message: _joinDisplay(<String?>[
-          patient.effectiveDisplayName,
-          patient.effectiveIdentifier,
-          patient.primaryPhone,
-        ]),
+      child: AppPatientDetails(
+        patientName: patient.effectiveDisplayName,
+        patientNumber: patientNumber,
+        patientNumberLabel: l10n.opdPatientIdLabel,
+        copyPatientNumberTooltip: l10n.opdCopyPatientIdAction,
+        copyPatientNumberMessage: l10n.clinicalPatientIdCopiedMessage,
+        semanticLabel: l10n.opdPatientSectionTitle,
+        showAvatar: false,
+        persistExpandPreference: false,
+        initiallyExpanded: false,
+        ageLabel: patient.dateOfBirth == null
+            ? null
+            : formatPatientAge(l10n, patient.dateOfBirth),
+        genderLabel: patient.gender == null
+            ? null
+            : patientGenderLabel(l10n, patient.gender!),
+        genderIcon: patientGenderIcon(patient.gender),
+        expandedFields: <AppWorkspacePatientContextField>[
+          if (phone != null && phone.isNotEmpty)
+            AppWorkspacePatientContextField(
+              label: l10n.patientsPhoneLabel,
+              value: phone,
+              icon: Icons.phone_outlined,
+            ),
+        ],
       ),
     );
   }

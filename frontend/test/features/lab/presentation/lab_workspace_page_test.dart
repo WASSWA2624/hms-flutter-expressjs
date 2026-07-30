@@ -221,10 +221,10 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byType(AppListTable<LabOrderSummary>), findsOneWidget);
-    expect(find.textContaining('All'), findsWidgets);
+    expect(find.textContaining('All patients'), findsWidgets);
     expect(find.textContaining('Pending'), findsWidgets);
-    expect(find.textContaining('Critical'), findsWidgets);
-    expect(find.textContaining('Completed'), findsWidgets);
+    expect(find.textContaining('Critical today'), findsWidgets);
+    expect(find.textContaining('Completed today'), findsWidgets);
     expect(find.textContaining('Processing'), findsNothing);
     expect(find.textContaining('Pending verification'), findsNothing);
     expect(find.byTooltip('Create Lab Order'), findsOneWidget);
@@ -232,9 +232,11 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Orders view'), findsNothing);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
-    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Lab desk settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).search?.enableDateFilter, isTrue);
+    expect(_table(tester).search?.textFilters, isNotEmpty);
     expect(_table(tester).columns.length, lessThanOrEqualTo(5));
     expect(
       _table(tester).columns.any((AppListTableColumn<LabOrderSummary> column) {
@@ -242,6 +244,30 @@ void main() {
       }),
       isTrue,
     );
+    expect(
+      _table(tester).columns.any((AppListTableColumn<LabOrderSummary> column) {
+        return column.id == 'workflow_status' && column.label == 'Status';
+      }),
+      isTrue,
+    );
+    expect(find.text('Entry status'), findsNothing);
+
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    expect(strip.tabs.map((AppTabItem tab) => tab.label).toList(), <String>[
+      'Pending',
+      'Critical today',
+      'Completed today',
+      'Follow-ups',
+      'All patients',
+    ]);
+
+    // Toolbar order: Filters (in search bar) → Settings → Create.
+    final List<AppSearchBarAction> trailing =
+        _table(tester).search?.trailingActions ?? const <AppSearchBarAction>[];
+    expect(trailing, isNotEmpty);
+    expect(trailing.last.label, 'Create Lab Order');
   });
 
   testWidgets('does not paint a dedicated laboratory title header', (

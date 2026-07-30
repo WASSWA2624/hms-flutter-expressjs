@@ -24,6 +24,71 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
+  testWidgets('expanded fields render as an overflow row with separators', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppPatientDetails(
+        patientName: 'Ada Lovelace',
+        patientNumber: 'MRN-100',
+        persistExpandPreference: false,
+        initiallyExpanded: true,
+        expandedFields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Encounter',
+            value: 'ENC-9',
+            icon: Icons.badge_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Orders included',
+            value: '1 active order',
+            icon: Icons.science_outlined,
+          ),
+        ],
+      ),
+      size: const Size(360, 800),
+    );
+
+    expect(find.textContaining('Encounter:'), findsOneWidget);
+    expect(find.text('ENC-9'), findsOneWidget);
+    expect(find.textContaining('Orders included:'), findsOneWidget);
+    expect(find.text('1 active order'), findsOneWidget);
+    expect(find.text('|'), findsOneWidget);
+
+    final double encounterY = tester
+        .getTopLeft(find.textContaining('Encounter:'))
+        .dy;
+    final double ordersY = tester
+        .getTopLeft(find.textContaining('Orders included:'))
+        .dy;
+    expect(ordersY, closeTo(encounterY, 1));
+  });
+
+  testWidgets('defaults to collapsed with only the header visible', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppPatientDetails(
+        patientName: 'Ada Lovelace',
+        patientNumber: 'MRN-100',
+        persistExpandPreference: false,
+        expandedFields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Encounter',
+            value: 'ENC-9',
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Ada Lovelace'), findsOneWidget);
+    expect(find.text('MRN-100'), findsOneWidget);
+    expect(find.text('ENC-9'), findsNothing);
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+  });
+
   testWidgets('compact mode hides expanded fields until Show more', (
     WidgetTester tester,
   ) async {

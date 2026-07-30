@@ -12936,7 +12936,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeFilterLabel => 'Queue';
 
   @override
-  String get labScopeAll => 'All';
+  String get labScopeAll => 'All patients';
 
   @override
   String get labScopeCollection => 'Pending';
@@ -12948,7 +12948,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeResults => 'Enter results';
 
   @override
-  String get labScopeCritical => 'Critical';
+  String get labScopeCritical => 'Critical today';
 
   @override
   String get labScopeCompleted => 'Completed today';
@@ -19532,7 +19532,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labSaveResultsAction => 'Save results';
 
   @override
-  String get labEntryStatusColumnLabel => 'Entry status';
+  String get labEntryStatusColumnLabel => 'Status';
 
   @override
   String get labPaymentColumnLabel => 'Payment';
@@ -19880,6 +19880,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labCreateAction => 'Create Lab Order';
+
+  @override
+  String get labOrderedDateFilterLabel => 'Ordered date';
+
+  @override
+  String get labPatientFilterLabel => 'Patient name';
+
+  @override
+  String get labPatientIdFilterLabel => 'Patient ID';
+
+  @override
+  String get labTestFilterLabel => 'Test';
+
+  @override
+  String get labOrderIdFilterLabel => 'Order ID';
+
+  @override
+  String get labResultFlagFilterLabel => 'Result flag';
+
+  @override
+  String get labResultFlagCritical => 'Critical';
+
+  @override
+  String get labResultFlagAbnormal => 'Abnormal';
+
+  @override
+  String get labResultFlagAnyFlagged => 'Any flagged';
+
+  @override
+  String get labDeskSettingsTitle => 'Lab desk settings';
+
+  @override
+  String get labDeskSettingsColumnsSection => 'Visible columns';
+
+  @override
+  String get labDeskSettingsPreferencesSection => 'Desk preferences';
+
+  @override
+  String get labDefaultTabLabel => 'Default tab';
+
+  @override
+  String get labPageSizeLabel => 'Rows per page';
+
+  @override
+  String get labFollowUpStatusFilterLabel => 'Follow-up status';
+
+  @override
+  String get labFollowUpStatusPending => 'Pending';
+
+  @override
+  String get labFollowUpStatusCompleted => 'Completed';
+
+  @override
+  String get labFollowUpDateFilterLabel => 'Follow-up date';
 
   @override
   String get labCreateChoiceDialogTitle => 'Create Laboratory Item';

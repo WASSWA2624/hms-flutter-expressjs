@@ -274,6 +274,7 @@ void main() {
     const Widget header = AppWorkspacePatientContextHeader(
       patientName: 'Amina Kato',
       patientNumber: 'MRN-10024',
+      fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
       fields: <AppWorkspacePatientContextField>[
         AppWorkspacePatientContextField(label: 'Encounter', value: 'OPD-1'),
         AppWorkspacePatientContextField(label: 'Location', value: 'Ward A'),
@@ -295,6 +296,52 @@ void main() {
     expect(wideLocationTop.dy, closeTo(wideEncounterTop.dy, 0.1));
     expect(wideLocationTop.dx, greaterThan(wideEncounterTop.dx));
   });
+
+  testWidgets(
+    'AppWorkspacePatientContextHeader inline facts stay in one overflow row',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        const AppWorkspacePatientContextHeader(
+          patientName: 'Amina Kato',
+          patientNumber: 'MRN-10024',
+          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+          fields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: 'Encounter',
+              value: 'OPD-1',
+              icon: Icons.assignment_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: 'Location',
+              value: 'Ward A',
+              icon: Icons.location_on_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: 'Coverage',
+              value: 'Insurance active',
+              icon: Icons.verified_user_outlined,
+            ),
+          ],
+        ),
+        size: const Size(320, 500),
+      );
+
+      expect(find.textContaining('Encounter:'), findsOneWidget);
+      expect(find.textContaining('Location:'), findsOneWidget);
+      expect(find.textContaining('Coverage:'), findsOneWidget);
+      expect(find.text('|'), findsNWidgets(2));
+      expect(find.byType(SingleChildScrollView), findsWidgets);
+
+      final double encounterY = tester
+          .getTopLeft(find.textContaining('Encounter:'))
+          .dy;
+      final double coverageY = tester
+          .getTopLeft(find.textContaining('Coverage:'))
+          .dy;
+      expect(coverageY, closeTo(encounterY, 1));
+    },
+  );
 
   testWidgets(
     'AppWorkspacePatientContextHeader merges fields into meta line and shows action labels',

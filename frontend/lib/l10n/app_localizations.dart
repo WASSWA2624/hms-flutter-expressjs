@@ -23903,7 +23903,7 @@ abstract class AppLocalizations {
   /// Localized text for labScopeAll.
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'All patients'**
   String get labScopeAll;
 
   /// Lab queue tab for orders whose results are not yet completed.
@@ -23927,7 +23927,7 @@ abstract class AppLocalizations {
   /// Localized text for labScopeCritical.
   ///
   /// In en, this message translates to:
-  /// **'Critical'**
+  /// **'Critical today'**
   String get labScopeCritical;
 
   /// Lab queue tab for results completed on the current facility day.
@@ -36358,7 +36358,7 @@ abstract class AppLocalizations {
   /// Localized text for labEntryStatusColumnLabel.
   ///
   /// In en, this message translates to:
-  /// **'Entry status'**
+  /// **'Status'**
   String get labEntryStatusColumnLabel;
 
   /// Lab worklist column for billing clearance status.
@@ -36984,6 +36984,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Lab Order'**
   String get labCreateAction;
+
+  /// Date filter label for lab order ordered-at range.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered date'**
+  String get labOrderedDateFilterLabel;
+
+  /// Advanced filter label for patient name on lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient name'**
+  String get labPatientFilterLabel;
+
+  /// Advanced filter label for patient identifier on lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get labPatientIdFilterLabel;
+
+  /// Advanced filter label for test name or code on lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get labTestFilterLabel;
+
+  /// Advanced filter label for lab order display id.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get labOrderIdFilterLabel;
+
+  /// Advanced filter label for critical/abnormal result flags.
+  ///
+  /// In en, this message translates to:
+  /// **'Result flag'**
+  String get labResultFlagFilterLabel;
+
+  /// Filter choice for critical lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get labResultFlagCritical;
+
+  /// Filter choice for abnormal lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Abnormal'**
+  String get labResultFlagAbnormal;
+
+  /// Filter choice for any critical or abnormal lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Any flagged'**
+  String get labResultFlagAnyFlagged;
+
+  /// Title for the laboratory desk settings dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab desk settings'**
+  String get labDeskSettingsTitle;
+
+  /// Section title for column visibility in lab desk settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible columns'**
+  String get labDeskSettingsColumnsSection;
+
+  /// Section title for lab desk preferences in settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Desk preferences'**
+  String get labDeskSettingsPreferencesSection;
+
+  /// Label for default laboratory landing tab preference.
+  ///
+  /// In en, this message translates to:
+  /// **'Default tab'**
+  String get labDefaultTabLabel;
+
+  /// Label for laboratory worklist page size preference.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows per page'**
+  String get labPageSizeLabel;
+
+  /// Advanced filter label for follow-up completion status.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up status'**
+  String get labFollowUpStatusFilterLabel;
+
+  /// Follow-up filter choice for not-yet-completed entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get labFollowUpStatusPending;
+
+  /// Follow-up filter choice for completed entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get labFollowUpStatusCompleted;
+
+  /// Date filter label for follow-up scheduled date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up date'**
+  String get labFollowUpDateFilterLabel;
 
   /// Title for the laboratory create action picker dialog.
   ///

@@ -162,6 +162,53 @@ final class LabWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<AppFailure?> applyDateRange({
+    DateTime? orderedFrom,
+    DateTime? orderedTo,
+  }) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          orderedFrom: orderedFrom,
+          orderedTo: orderedTo,
+          clearOrderedFrom: orderedFrom == null,
+          clearOrderedTo: orderedTo == null,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
+  Future<AppFailure?> applyPageSize(int pageSize) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final int resolved = pageSize <= 0 ? 25 : pageSize;
+    if (current.query.pageRequest.pageSize == resolved) {
+      return null;
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          pageRequest: AppPageRequest(pageSize: resolved),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
   Future<AppFailure?> applyView(LabWorkbenchView view) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {
@@ -1585,7 +1632,9 @@ final class LabWorkspaceController
         left.scope == right.scope &&
         left.view == right.view &&
         left.pageRequest.pageIndex == right.pageRequest.pageIndex &&
-        left.pageRequest.pageSize == right.pageRequest.pageSize;
+        left.pageRequest.pageSize == right.pageRequest.pageSize &&
+        left.orderedFrom == right.orderedFrom &&
+        left.orderedTo == right.orderedTo;
   }
 
   List<String> _workflowIdentifiersFor(LabOrderSummary order) {

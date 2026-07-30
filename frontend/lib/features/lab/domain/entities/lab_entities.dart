@@ -11,12 +11,13 @@ enum LabQueueScope {
   cancelled,
 }
 
+/// Tab order: Pending → Critical today → Completed today → Follow-ups → All patients.
 enum LabDeskSection {
-  worklist,
   collection, // Pending
-  critical,
+  critical, // Critical today
   completed, // Completed today
   followUps,
+  worklist, // All patients (lab encounters only)
 }
 
 extension LabDeskSectionX on LabDeskSection {
@@ -33,24 +34,36 @@ final class LabWorkbenchQuery {
     this.scope = LabQueueScope.collection,
     this.view = LabWorkbenchView.patients,
     this.pageRequest = const AppPageRequest(pageSize: 25),
+    this.orderedFrom,
+    this.orderedTo,
   });
 
   final String search;
   final LabQueueScope scope;
   final LabWorkbenchView view;
   final AppPageRequest pageRequest;
+  /// Inclusive ordered-at lower bound (ISO datetime sent as `from`).
+  final DateTime? orderedFrom;
+  /// Inclusive ordered-at upper bound (ISO datetime sent as `to`).
+  final DateTime? orderedTo;
 
   LabWorkbenchQuery copyWith({
     String? search,
     LabQueueScope? scope,
     LabWorkbenchView? view,
     AppPageRequest? pageRequest,
+    DateTime? orderedFrom,
+    DateTime? orderedTo,
+    bool clearOrderedFrom = false,
+    bool clearOrderedTo = false,
   }) {
     return LabWorkbenchQuery(
       search: search ?? this.search,
       scope: scope ?? this.scope,
       view: view ?? this.view,
       pageRequest: pageRequest ?? this.pageRequest,
+      orderedFrom: clearOrderedFrom ? null : orderedFrom ?? this.orderedFrom,
+      orderedTo: clearOrderedTo ? null : orderedTo ?? this.orderedTo,
     );
   }
 }
@@ -613,22 +626,56 @@ final class LabOrderSummary {
   }
 
   String? get testsLabel {
-    if (testsSummary != null && testsSummary!.trim().isNotEmpty) {
-      return testsSummary;
+    final List<String> labels = _testsLabelEntries;
+    if (labels.isEmpty) {
+      final String? summary = testsSummary?.trim();
+      return summary == null || summary.isEmpty ? null : summary;
     }
-    final List<String> names = items
-        .map((LabOrderItem item) => item.displayTitle)
-        .where((String value) => value.trim().isNotEmpty)
-        .take(3)
-        .toList(growable: false);
-    if (names.isEmpty) {
-      return null;
-    }
-    final int remaining = items.length - names.length;
+    final List<String> shown = labels.take(3).toList(growable: false);
+    final int remaining = labels.length - shown.length;
     if (remaining <= 0) {
-      return names.join(', ');
+      return shown.join(', ');
     }
-    return '${names.join(', ')} +$remaining';
+    return '${shown.join(', ')} +$remaining';
+  }
+
+  /// Panels once (short name), then standalone tests (short name); order preserved.
+  List<String> get _testsLabelEntries {
+    if (items.isEmpty) {
+      return const <String>[];
+    }
+    final List<String> labels = <String>[];
+    final Set<String> seenPanels = <String>{};
+    final Set<String> seenTests = <String>{};
+    for (final LabOrderItem item in items) {
+      if (item.hasPanel) {
+        final String key = item.panelKey!;
+        if (!seenPanels.add(key)) {
+          continue;
+        }
+        final String? label = item.shortPanelLabel;
+        if (label != null) {
+          labels.add(label);
+        }
+        continue;
+      }
+      final String testKey =
+          _firstNonEmpty(<String?>[
+            item.labTestId,
+            item.testCode,
+            item.testDisplayName,
+            item.id,
+          ]) ??
+          item.id;
+      if (!seenTests.add(testKey)) {
+        continue;
+      }
+      final String? label = item.shortTestLabel;
+      if (label != null) {
+        labels.add(label);
+      }
+    }
+    return labels;
   }
 
   bool get hasBillingGate {
@@ -826,11 +873,19 @@ final class LabOrderItem {
         apiId;
   }
 
+  /// Prefer catalog short code for worklist / summary chips.
+  String? get shortTestLabel =>
+      _firstNonEmpty(<String?>[testCode, testDisplayName, labTestId, apiId]);
+
   String? get panelKey =>
       _firstNonEmpty(<String?>[panelId, panelCode, panelDisplayName]);
 
   String? get panelTitle =>
       _joinDisplay(<String?>[panelDisplayName, panelCode]) ?? panelKey;
+
+  /// Prefer panel short code when listing panels in the Tests column.
+  String? get shortPanelLabel =>
+      _firstNonEmpty(<String?>[panelCode, panelDisplayName, panelKey]);
 
   bool get hasPanel => panelKey != null;
 

@@ -10,12 +10,15 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_access.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_desk_preferences.dart';
 import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
+import 'package:hosspi_hms/features/lab/presentation/pages/lab_desk_settings_dialog.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -26,6 +29,7 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LabWorkspacePage extends ConsumerWidget {
   const LabWorkspacePage({this.initialQuery, super.key});
@@ -70,6 +74,11 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   static const String _paymentFilterKey = 'payment';
   static const String _statusFilterKey = 'status';
   static const String _queueFilterKey = 'queue';
+  static const String _resultFlagFilterKey = 'result_flag';
+  static const String _textPatientKey = 'patient';
+  static const String _textPatientIdKey = 'patient_id';
+  static const String _textTestKey = 'test';
+  static const String _textOrderIdKey = 'order_id';
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<LabOrderSummary>
@@ -83,21 +92,35 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   @override
   void initState() {
     super.initState();
-    _section = LabDeskSection.collection;
-    _filterValue = _filterValueForSection(LabDeskSection.collection);
+    final SharedPreferences prefs = ref.read(sharedPreferencesProvider);
+    final LabDeskSection preferred =
+        LabDeskPreferences.readDefaultTab(prefs) ?? LabDeskSection.collection;
+    _section = preferred;
+    _filterValue = _filterValueForSection(preferred);
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<LabOrderSummary>();
     _scheduleRouteQuery(widget.initialQuery);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final int pageSize = LabDeskPreferences.readPageSize(prefs);
+      if (widget.state.query.pageRequest.pageSize != pageSize) {
+        unawaited(
+          ref
+              .read(labWorkspaceControllerProvider.notifier)
+              .applyPageSize(pageSize),
+        );
+      }
       if (widget.initialQuery == null ||
           !widget.initialQuery!.hasRouteTargeting) {
         unawaited(
           ref
               .read(labWorkspaceControllerProvider.notifier)
-              .applyScope(LabQueueScope.collection),
+              .applyScope(_scopeForSection(_section)),
         );
+        if (_section != LabDeskSection.collection) {
+          _updateUrlForSection(_section);
+        }
       }
     });
   }
@@ -195,12 +218,32 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                 ),
               )
             else if (effectiveSection.isFollowUps)
-              const Expanded(
+              Expanded(
                 child: FollowUpWorklistPanel(
-                  scope: FollowUpWorklistScope(),
+                  scope: const FollowUpWorklistScope(),
                   storageKeyPrefix: 'lab_follow_ups',
                   readRequirement: LabFollowUpsAtomPermissions.tab,
                   writeRequirement: LabFollowUpsAtomPermissions.write,
+                  createAction: _buildCreateSearchAction(
+                    l10n,
+                    state,
+                    section: effectiveSection,
+                  ),
+                  showAdvancedFilterButton: true,
+                  advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                  advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                  advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                  enableDateFilter: true,
+                  dateFilterLabel: l10n.labFollowUpDateFilterLabel,
+                  dateFromLabel: l10n.opdDateFromLabel,
+                  dateToLabel: l10n.opdDateToLabel,
+                  textFilters: _labFollowUpTextFilters(l10n),
+                  filterGroups: _labFollowUpFilterGroups(l10n),
+                  onSettingsPressed: () => _openLabDeskSettings(
+                    context,
+                    sectionName: effectiveSection.name,
+                  ),
                 ),
               )
             else
@@ -221,6 +264,10 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                     state,
                     section: effectiveSection,
                   ),
+                  onSettingsPressed: () => _openLabDeskSettings(
+                    context,
+                    sectionName: effectiveSection.name,
+                  ),
                 ),
               ),
           ],
@@ -234,9 +281,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     LabWorkspaceState state, {
     required LabDeskSection section,
   }) {
-    if (section.isFollowUps) {
-      return null;
-    }
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final AccessRequirement requirement = labStripCreateRequirement(section);
     if (!requirement.isAllowed(policy)) {
@@ -250,6 +294,55 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       onPressed: state.isSaving
           ? null
           : () => _openCreateLabOrderDialog(context, state),
+    );
+  }
+
+  Future<void> _openLabDeskSettings(
+    BuildContext context, {
+    required String sectionName,
+  }) async {
+    final AppLocalizations l10n = context.l10n;
+    final SharedPreferences prefs = ref.read(sharedPreferencesProvider);
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final List<AppListTableColumn<LabOrderSummary>> columns =
+        <AppListTableColumn<LabOrderSummary>>[
+          ..._patientViewWorklistColumns(
+            context,
+            onNextAction: (_) {},
+          ),
+          ..._optionalWorklistColumns(context),
+        ];
+    _tableColumnController.syncColumns(
+      columns: _patientViewWorklistColumns(context, onNextAction: (_) {}),
+      columnChoices: _optionalWorklistColumns(context),
+      storageKey: 'lab_$sectionName',
+    );
+    final LabDeskSettingsResult? result = await showLabDeskSettingsDialog(
+      context: context,
+      columns: columns,
+      visibleColumnKeys: _tableColumnController.visibleColumnKeys,
+      defaultColumnKeys: _tableColumnController.defaultColumnKeys.isEmpty
+          ? columns
+                .map((AppListTableColumn<LabOrderSummary> column) => column.key)
+                .toSet()
+          : _tableColumnController.defaultColumnKeys,
+      preferences: prefs,
+      sectionLabel: (LabDeskSection section) => _sectionLabel(l10n, section),
+      allowedDefaultTabs: labAllowedSections(policy),
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+    _tableColumnController.applyVisibleColumnKeys(
+      result.visibleColumnKeys,
+      storageKey: 'lab_$sectionName',
+    );
+    await LabDeskPreferences.writeDefaultTab(prefs, result.defaultTab);
+    await LabDeskPreferences.writePageSize(prefs, result.pageSize);
+    unawaited(
+      ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .applyPageSize(result.pageSize),
     );
   }
 
@@ -287,13 +380,18 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       _section = matched;
     });
     _updateUrlForSection(matched);
+    final LabWorkspaceController controller = ref.read(
+      labWorkspaceControllerProvider.notifier,
+    );
     if (!matched.isFollowUps) {
-      unawaited(
-        ref
-            .read(labWorkspaceControllerProvider.notifier)
-            .applyScope(_scopeForSection(matched)),
-      );
+      unawaited(controller.applyScope(_scopeForSection(matched)));
     }
+    unawaited(
+      controller.applyDateRange(
+        orderedFrom: value.dateFrom,
+        orderedTo: value.dateTo,
+      ),
+    );
   }
 
   AppSearchBarFilterValue _filterValueForSection(LabDeskSection section) {
@@ -542,6 +640,7 @@ class _LabWorklistPanel extends ConsumerWidget {
     required this.onSearchCleared,
     required this.sectionName,
     this.createAction,
+    this.onSettingsPressed,
   });
 
   final LabWorkspaceState state;
@@ -556,6 +655,7 @@ class _LabWorklistPanel extends ConsumerWidget {
   final VoidCallback onSearchCleared;
   final String sectionName;
   final AppSearchBarAction? createAction;
+  final Future<void> Function()? onSettingsPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -568,18 +668,11 @@ class _LabWorklistPanel extends ConsumerWidget {
       pageItems,
       filterValue,
     );
+    final bool clientFiltersActive = _labClientFiltersActive(filterValue);
     final AppPage<LabOrderSummary> displayPage = AppPage<LabOrderSummary>(
       items: filteredItems,
       request: state.worklist.request,
-      totalItemCount: filterValue.isActive &&
-              (filterValue.option(
-                        _LabWorkspaceContentState._paymentFilterKey,
-                      ) !=
-                      null ||
-                  filterValue.option(
-                        _LabWorkspaceContentState._statusFilterKey,
-                      ) !=
-                      null)
+      totalItemCount: clientFiltersActive
           ? filteredItems.length
           : state.worklist.totalItemCount,
     );
@@ -592,9 +685,10 @@ class _LabWorklistPanel extends ConsumerWidget {
           columnVisibilityStorageKey: 'lab_$sectionName',
           columnWidthStorageKey: 'lab_cw_$sectionName',
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.commonTableSettingsTitle,
+          columnVisibilityTitle: l10n.labDeskSettingsTitle,
           columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
           columnVisibilityResetLabel: l10n.labResetColumnsAction,
+          onSettingsPressed: onSettingsPressed,
           search: AppListTableSearch<LabOrderSummary>(
             controller: searchController,
             semanticLabel: l10n.labSearchLabel,
@@ -608,18 +702,18 @@ class _LabWorklistPanel extends ConsumerWidget {
             advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
             advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            enableDateFilter: false,
+            enableDateFilter: true,
+            dateFilterLabel: l10n.labOrderedDateFilterLabel,
+            dateFromLabel: l10n.opdDateFromLabel,
+            dateToLabel: l10n.opdDateToLabel,
             allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+            textFilters: _labWorklistTextFilters(l10n),
             filterGroups: <AppSearchBarFilterGroup>[
               AppSearchBarFilterGroup(
                 key: _LabWorkspaceContentState._queueFilterKey,
                 label: l10n.labScopeFilterLabel,
                 allLabel: l10n.opdAllFieldsFilterLabel,
                 choices: <AppSearchBarFilterChoice>[
-                  AppSearchBarFilterChoice(
-                    value: 'all',
-                    label: l10n.labScopeAll,
-                  ),
                   AppSearchBarFilterChoice(
                     value: 'pending',
                     label: l10n.labScopeCollection,
@@ -631,6 +725,10 @@ class _LabWorklistPanel extends ConsumerWidget {
                   AppSearchBarFilterChoice(
                     value: 'completed_today',
                     label: l10n.labScopeCompleted,
+                  ),
+                  AppSearchBarFilterChoice(
+                    value: 'all',
+                    label: l10n.labScopeAll,
                   ),
                 ],
               ),
@@ -646,20 +744,31 @@ class _LabWorklistPanel extends ConsumerWidget {
                 allLabel: l10n.opdAllFieldsFilterLabel,
                 choices: _statusFilterChoices(context, pageItems),
               ),
+              AppSearchBarFilterGroup(
+                key: _LabWorkspaceContentState._resultFlagFilterKey,
+                label: l10n.labResultFlagFilterLabel,
+                allLabel: l10n.opdAllFieldsFilterLabel,
+                choices: <AppSearchBarFilterChoice>[
+                  AppSearchBarFilterChoice(
+                    value: 'critical',
+                    label: l10n.labResultFlagCritical,
+                  ),
+                  AppSearchBarFilterChoice(
+                    value: 'abnormal',
+                    label: l10n.labResultFlagAbnormal,
+                  ),
+                  AppSearchBarFilterChoice(
+                    value: 'flagged',
+                    label: l10n.labResultFlagAnyFlagged,
+                  ),
+                ],
+              ),
             ],
             filterValue: filterValue,
-            hasActiveFilters:
-                filterValue.option(
-                      _LabWorkspaceContentState._paymentFilterKey,
-                    ) !=
-                    null ||
-                filterValue.option(
-                      _LabWorkspaceContentState._statusFilterKey,
-                    ) !=
-                    null,
+            hasActiveFilters: _labHasActiveAdvancedFilters(filterValue),
             onFilterChanged: onFilterChanged,
             trailingActions: <AppSearchBarAction>[
-              if (createAction != null) createAction!,
+              ?createAction,
             ],
           ),
           previousPageLabel: l10n.labPreviousPageLabel,
@@ -760,7 +869,7 @@ List<LabOrderSummary> _filterWorklistItems(
   List<LabOrderSummary> items,
   AppSearchBarFilterValue filterValue,
 ) {
-  if (!filterValue.isActive) {
+  if (!_labClientFiltersActive(filterValue)) {
     return items;
   }
   final String? payment = filterValue.option(
@@ -769,6 +878,34 @@ List<LabOrderSummary> _filterWorklistItems(
   final String? status = filterValue.option(
     _LabWorkspaceContentState._statusFilterKey,
   );
+  final String? resultFlag = filterValue.option(
+    _LabWorkspaceContentState._resultFlagFilterKey,
+  );
+  final String patient = (filterValue.text(
+            _LabWorkspaceContentState._textPatientKey,
+          ) ??
+          '')
+      .trim()
+      .toLowerCase();
+  final String patientId = (filterValue.text(
+            _LabWorkspaceContentState._textPatientIdKey,
+          ) ??
+          '')
+      .trim()
+      .toLowerCase();
+  final String test = (filterValue.text(
+            _LabWorkspaceContentState._textTestKey,
+          ) ??
+          '')
+      .trim()
+      .toLowerCase();
+  final String orderId = (filterValue.text(
+            _LabWorkspaceContentState._textOrderIdKey,
+          ) ??
+          '')
+      .trim()
+      .toLowerCase();
+
   return items
       .where((LabOrderSummary order) {
         if (payment != null && payment.isNotEmpty) {
@@ -783,9 +920,172 @@ List<LabOrderSummary> _filterWorklistItems(
             return false;
           }
         }
+        if (resultFlag != null && resultFlag.isNotEmpty) {
+          if (!_orderMatchesResultFlag(order, resultFlag)) {
+            return false;
+          }
+        }
+        if (patient.isNotEmpty) {
+          final String name = (order.patientDisplayName ?? '').toLowerCase();
+          if (!name.contains(patient)) {
+            return false;
+          }
+        }
+        if (patientId.isNotEmpty) {
+          final String id = (order.patientId ?? '').toLowerCase();
+          if (!id.contains(patientId)) {
+            return false;
+          }
+        }
+        if (test.isNotEmpty) {
+          final String tests = (order.testsLabel ?? '').toLowerCase();
+          final bool itemMatch = order.items.any((LabOrderItem item) {
+            final String haystack = <String?>[
+              item.testDisplayName,
+              item.testCode,
+              item.panelDisplayName,
+            ].whereType<String>().join(' ').toLowerCase();
+            return haystack.contains(test);
+          });
+          if (!tests.contains(test) && !itemMatch) {
+            return false;
+          }
+        }
+        if (orderId.isNotEmpty) {
+          final String haystack = <String?>[
+            order.displayId,
+            order.id,
+            order.apiId,
+            ...order.orderDisplayIds,
+            ...order.orderIds,
+          ].whereType<String>().join(' ').toLowerCase();
+          if (!haystack.contains(orderId)) {
+            return false;
+          }
+        }
         return true;
       })
       .toList(growable: false);
+}
+
+bool _labClientFiltersActive(AppSearchBarFilterValue filterValue) {
+  return filterValue.option(_LabWorkspaceContentState._paymentFilterKey) !=
+          null ||
+      filterValue.option(_LabWorkspaceContentState._statusFilterKey) != null ||
+      filterValue.option(_LabWorkspaceContentState._resultFlagFilterKey) !=
+          null ||
+      (filterValue.text(_LabWorkspaceContentState._textPatientKey)?.trim().isNotEmpty ??
+          false) ||
+      (filterValue
+              .text(_LabWorkspaceContentState._textPatientIdKey)
+              ?.trim()
+              .isNotEmpty ??
+          false) ||
+      (filterValue.text(_LabWorkspaceContentState._textTestKey)?.trim().isNotEmpty ??
+          false) ||
+      (filterValue
+              .text(_LabWorkspaceContentState._textOrderIdKey)
+              ?.trim()
+              .isNotEmpty ??
+          false);
+}
+
+bool _labHasActiveAdvancedFilters(AppSearchBarFilterValue filterValue) {
+  return _labClientFiltersActive(filterValue) ||
+      filterValue.dateFrom != null ||
+      filterValue.dateTo != null;
+}
+
+bool _orderMatchesResultFlag(LabOrderSummary order, String flag) {
+  final String normalized = flag.trim().toLowerCase();
+  final bool hasCritical = order.items.any((LabOrderItem item) {
+    final String status = (item.effectiveResultStatus ?? '').toUpperCase();
+    return status == 'CRITICAL';
+  });
+  final bool hasAbnormal = order.items.any((LabOrderItem item) {
+    final String status = (item.effectiveResultStatus ?? '').toUpperCase();
+    return status == 'ABNORMAL';
+  });
+  return switch (normalized) {
+    'critical' => hasCritical,
+    'abnormal' => hasAbnormal,
+    'flagged' => hasCritical || hasAbnormal || order.hasCriticalResult,
+    _ => true,
+  };
+}
+
+List<AppSearchBarTextFilter> _labWorklistTextFilters(AppLocalizations l10n) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: _LabWorkspaceContentState._textPatientKey,
+      label: l10n.labPatientFilterLabel,
+      hintText: l10n.labPatientFilterLabel,
+      icon: Icons.person_search_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _LabWorkspaceContentState._textPatientIdKey,
+      label: l10n.labPatientIdFilterLabel,
+      icon: Icons.badge_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _LabWorkspaceContentState._textTestKey,
+      label: l10n.labTestFilterLabel,
+      icon: Icons.science_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _LabWorkspaceContentState._textOrderIdKey,
+      label: l10n.labOrderIdFilterLabel,
+      icon: Icons.tag_outlined,
+      textInputAction: TextInputAction.done,
+    ),
+  ];
+}
+
+List<AppSearchBarTextFilter> _labFollowUpTextFilters(AppLocalizations l10n) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: 'patient',
+      label: l10n.labPatientFilterLabel,
+      icon: Icons.person_search_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: 'patient_id',
+      label: l10n.labPatientIdFilterLabel,
+      icon: Icons.badge_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: 'phone',
+      label: l10n.patientsPhoneLabel,
+      icon: Icons.phone_outlined,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.next,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _labFollowUpFilterGroups(AppLocalizations l10n) {
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: 'follow_up_status',
+      label: l10n.labFollowUpStatusFilterLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'pending',
+          label: l10n.labFollowUpStatusPending,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'completed',
+          label: l10n.labFollowUpStatusCompleted,
+        ),
+      ],
+    ),
+  ];
 }
 
 List<AppSearchBarFilterChoice> _paymentFilterChoices(
@@ -988,32 +1288,35 @@ class _LabCompactNextActionButton extends StatelessWidget {
           onTap: onPressed,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.xs,
-                vertical: 2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.arrow_forward_outlined,
-                    size: 14,
-                    color: primaryColor,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: primaryColor,
-                        fontWeight: FontWeight.w500,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.xs,
+                  vertical: theme.spacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      Icons.arrow_forward_outlined,
+                      size: 18,
+                      color: primaryColor,
+                    ),
+                    SizedBox(width: theme.spacing.xs),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

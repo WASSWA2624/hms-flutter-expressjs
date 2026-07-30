@@ -1518,6 +1518,50 @@ class _PatientContextAlerts extends StatelessWidget {
   }
 }
 
+/// Horizontal overflow row of patient context facts:
+/// `Icon Label: Value | Icon Label: Value | …`
+class AppPatientContextFactsRow extends StatelessWidget {
+  const AppPatientContextFactsRow({required this.fields, super.key});
+
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<AppWorkspacePatientContextField> visibleFields = fields
+        .where((AppWorkspacePatientContextField field) => field.hasValue)
+        .toList(growable: false);
+    if (visibleFields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? separatorStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.outline,
+      fontWeight: FontWeight.w500,
+    );
+
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            for (var index = 0; index < visibleFields.length; index += 1) ...<Widget>[
+              if (index > 0) ...<Widget>[
+                SizedBox(width: theme.spacing.sm),
+                Text('|', style: separatorStyle),
+                SizedBox(width: theme.spacing.sm),
+              ],
+              _PatientContextInlineFact(field: visibleFields[index]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PatientContextInlineFacts extends StatelessWidget {
   const _PatientContextInlineFacts({required this.fields});
 
@@ -1525,16 +1569,7 @@ class _PatientContextInlineFacts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final AppWorkspacePatientContextField field in fields)
-          _PatientContextInlineFact(field: field),
-      ],
-    );
+    return AppPatientContextFactsRow(fields: fields);
   }
 }
 
@@ -1574,24 +1609,17 @@ class _PatientContextInlineFact extends StatelessWidget {
             SizedBox(width: theme.spacing.xs),
           ],
           Text('${field.label}: ', style: labelStyle),
-          Flexible(
-            child: field.copyable
-                ? AppCopyableIdentifier(
-                    value: field.value,
-                    tooltip: field.copyTooltip,
-                    copiedMessage: field.copiedMessage,
-                    semanticLabel: field.copySemanticLabel,
-                    showCopyIcon: field.showCopyIcon,
-                    placeholderValues: field.copyPlaceholderValues,
-                    textStyle: valueStyle,
-                  )
-                : Text(
-                    field.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: valueStyle,
-                  ),
-          ),
+          field.copyable
+              ? AppCopyableIdentifier(
+                  value: field.value,
+                  tooltip: field.copyTooltip,
+                  copiedMessage: field.copiedMessage,
+                  semanticLabel: field.copySemanticLabel,
+                  showCopyIcon: field.showCopyIcon,
+                  placeholderValues: field.copyPlaceholderValues,
+                  textStyle: valueStyle,
+                )
+              : Text(field.value, maxLines: 1, style: valueStyle),
         ],
       ),
     );

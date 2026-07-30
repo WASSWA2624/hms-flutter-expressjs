@@ -239,6 +239,20 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     return appListTableDefaultVisibleColumns(_availableColumns);
   }
 
+  Set<String> get visibleColumnKeys => Set<String>.of(_visibleColumnKeys);
+
+  Set<String> get defaultColumnKeys => Set<String>.of(
+    _syncedDefaultColumnKeys.isEmpty
+        ? _defaultColumnKeys
+        : _syncedDefaultColumnKeys,
+  );
+
+  void applyVisibleColumnKeys(Set<String> keys, {String? storageKey}) {
+    _visibleColumnKeys = _withAlwaysVisibleColumnKeys(keys);
+    _persistVisibleColumnKeys(storageKey ?? _syncedStorageKey);
+    notifyListeners();
+  }
+
   bool get canConfigure => _availableColumns.length > 1;
 
   bool get hasCustomColumnVisibility {
@@ -516,10 +530,10 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
-      // Prefer caller trailing actions (e.g. Add) ahead of table Settings.
+      // Filters (in AppSearchBar) → Settings (table) → caller actions (e.g. Create).
       trailingActions: <AppSearchBarAction>[
-        ...this.trailingActions,
         ...trailingActions,
+        ...this.trailingActions,
       ],
       maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
       trailingActionsOverflowLabel:
@@ -852,6 +866,7 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityController,
     this.columnVisibilityStorageKey,
     this.columnWidthStorageKey,
+    this.onSettingsPressed,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.showRowNumbers = true,
@@ -911,6 +926,8 @@ class AppListTable<T> extends StatefulWidget {
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
   final String? columnVisibilityStorageKey;
   final String? columnWidthStorageKey;
+  /// When set, Settings opens this callback instead of the column-visibility dialog.
+  final Future<void> Function()? onSettingsPressed;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
 
@@ -2132,6 +2149,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   Future<void> _openColumnVisibilityDialog() async {
+    final Future<void> Function()? customSettings = widget.onSettingsPressed;
+    if (customSettings != null) {
+      await customSettings();
+      return;
+    }
+
     final AppListTableColumnVisibilityController<T>? controller =
         widget.columnVisibilityController;
     final String? storageKey = _resolvedColumnVisibilityStorageKey();

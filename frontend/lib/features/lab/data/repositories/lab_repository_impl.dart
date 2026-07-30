@@ -31,6 +31,8 @@ final class LabRepositoryImpl implements LabRepository {
         'criticality': query.scope == LabQueueScope.critical
             ? 'CRITICAL'
             : null,
+        'from': query.orderedFrom?.toUtc().toIso8601String(),
+        'to': query.orderedTo?.toUtc().toIso8601String(),
         'sort_by': 'ordered_at',
         'order': 'desc',
       }),

@@ -623,7 +623,6 @@ class _LabResultContextHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final LabOrderSummary firstOrder = workflows.first.order;
     final List<String> encounterIds = _uniqueNonEmpty(
@@ -637,154 +636,38 @@ class _LabResultContextHeader extends StatelessWidget {
       context,
       workflows,
     );
+    final String encounterValue = encounterIds.join(', ');
 
-    return AppWorkspaceDetailPanel(
-      titleWidget: _LabResultPatientTitle(
-        patientName: patientName,
-        patientNumber: patientNumber,
-        patientNumberLabel: l10n.labPatientIdFieldLabel,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              AppWorkspaceStatusBadge(status: status),
-              for (final AppWorkspaceStatus alert in alerts)
-                AppWorkspaceStatusBadge(status: alert),
-            ],
-          ),
-          if (encounterIds.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _LabResultContextMetaRow(
-              icon: Icons.assignment_outlined,
-              label: l10n.labEncounterFieldLabel,
-              value: encounterIds.join(', '),
-              copyable: encounterIds.length == 1,
-              copyTooltip: l10n.opdCopyEncounterIdAction,
-              copiedMessage: l10n.opdEncounterIdCopiedMessage,
-            ),
-          ],
-          SizedBox(height: theme.spacing.sm),
-          _LabResultContextMetaRow(
-            icon: Icons.science_outlined,
-            label: l10n.labOrdersIncludedLabel,
-            value: l10n.labActiveOrderCount(workflows.length),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabResultPatientTitle extends StatelessWidget {
-  const _LabResultPatientTitle({
-    required this.patientName,
-    required this.patientNumber,
-    required this.patientNumberLabel,
-  });
-
-  final String patientName;
-  final String patientNumber;
-  final String patientNumberLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? nameStyle = theme.textTheme.titleMedium;
-    final String normalizedId = patientNumber.trim();
-
-    return Semantics(
-      label: '$patientName ${normalizedId.isEmpty ? '' : normalizedId}'.trim(),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs / 2,
-        children: <Widget>[
-          Text(patientName, style: nameStyle),
-          if (normalizedId.isNotEmpty) ...<Widget>[
-            Text(
-              '·',
-              style: nameStyle?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            AppCopyableIdentifier(
-              value: normalizedId,
-              tooltip: patientNumberLabel,
-              textStyle: nameStyle?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _LabResultContextMetaRow extends StatelessWidget {
-  const _LabResultContextMetaRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-    this.copyTooltip,
-    this.copiedMessage,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-  final String? copyTooltip;
-  final String? copiedMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          icon,
-          size: theme.appTokens.listIconSize * 0.85,
-          color: theme.colorScheme.onSurfaceVariant,
+    return AppPatientDetails(
+      patientName: patientName,
+      patientNumber: patientNumber,
+      patientNumberLabel: l10n.labPatientIdFieldLabel,
+      copyPatientNumberTooltip: l10n.copyIdentifierAction,
+      copyPatientNumberMessage: l10n.identifierCopiedMessage,
+      semanticLabel: l10n.labPatientContextLabel,
+      showAvatar: false,
+      persistExpandPreference: false,
+      initiallyExpanded: false,
+      alerts: alerts,
+      expandedFields: <AppWorkspacePatientContextField>[
+        AppWorkspacePatientContextField(
+          label: l10n.labOrderStatusFieldLabel,
+          value: status.label,
+          icon: status.icon ?? Icons.assignment_outlined,
+          tone: status.tone,
         ),
-        SizedBox(width: theme.spacing.xs),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: theme.spacing.xs / 2),
-              if (copyable)
-                AppCopyableIdentifier(
-                  value: value,
-                  tooltip: copyTooltip,
-                  copiedMessage: copiedMessage,
-                  textStyle: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              else
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
+        AppWorkspacePatientContextField(
+          label: l10n.labEncounterFieldLabel,
+          value: encounterValue,
+          icon: Icons.badge_outlined,
+          copyable: encounterIds.length == 1,
+          copyTooltip: l10n.opdCopyEncounterIdAction,
+          copiedMessage: l10n.opdEncounterIdCopiedMessage,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.labOrdersIncludedLabel,
+          value: l10n.labActiveOrderCount(workflows.length),
+          icon: Icons.science_outlined,
         ),
       ],
     );

@@ -504,16 +504,13 @@ bool canViewLabVerifiedTab(AppAccessPolicy policy) {
 
 /// Atom → requirement map for Lab Follow-ups (`/lab?section=follow-ups`).
 ///
-/// Inventory: `screens/lab.md` → Follow-ups tab (`FollowUpWorklistPanel`).
-/// No Create Lab Order / Lab Configurations / Orders↔Patients strip actions on
-/// this tab. Nested result-entry / configurations / critical-notify chrome is
-/// **not** reachable from Follow-ups (matrix nested rows _(n/a)_). Shared panel
-/// defaults remain reception ∪; lab host overrides with these gates.
+/// Inventory: Follow-ups tab (`FollowUpWorklistPanel`) with Filters, Settings,
+/// and Create Lab Order chrome parity with other lab tabs.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups strip tab / count badge | navigate | read ∩ `lab:read` |
-/// | Search / Clear / Settings / columns | read chrome | read ∩ ([listChrome]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ ([listChrome]) |
 /// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → Follow-up details | read | ([detail]) |
@@ -522,13 +519,14 @@ bool canViewLabVerifiedTab(AppAccessPolicy policy) {
 /// | Mark completed | update | write ∩ ([markCompleted]) |
 /// | Save follow-up (nested reschedule dialog) | update | write ∩ ([saveFollowUp]) |
 /// | Hard delete / void | delete | write ∩ ([delete]) — not mounted |
-/// | Create Lab Order / Configurations | create / update | absent on this tab |
+/// | Create Lab Order | create | write ∩ ([create]) |
 /// | Request-from-clinical / critical notify | nested write | _(n/a)_ — not reachable |
 /// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write ([routeEntry]) |
 abstract final class LabFollowUpsAtomPermissions {
   static const AccessRequirement tab = labFollowUpsRequirement;
   static const AccessRequirement listChrome = labFollowUpsRequirement;
   static const AccessRequirement search = labFollowUpsRequirement;
+  static const AccessRequirement filters = labFollowUpsRequirement;
   static const AccessRequirement settings = labFollowUpsRequirement;
   static const AccessRequirement empty = labFollowUpsRequirement;
   static const AccessRequirement loading = labFollowUpsRequirement;

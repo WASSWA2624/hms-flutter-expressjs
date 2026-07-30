@@ -1760,7 +1760,6 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
       semanticLabel: l10n.patientsDetailTitle,
       status: showPrimaryStatus && status.label.isNotEmpty ? status : null,
       alerts: alerts,
-      fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
       expandedFields: _clinicalPatientContextFields(
         context,
         l10n,

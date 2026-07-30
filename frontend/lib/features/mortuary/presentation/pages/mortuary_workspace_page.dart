@@ -961,6 +961,14 @@ class _MortuaryDetailPanel extends ConsumerWidget {
             tone: _identificationTone(item.caseIdentificationStatus),
           ),
           AppWorkspacePatientContextField(
+            label: l10n.mortuaryPatientFieldLabel,
+            value: item.patientLabel ?? '',
+            icon: Icons.assignment_ind_outlined,
+            copyable: (item.patientLabel ?? '').trim().isNotEmpty,
+            copyTooltip: l10n.copyIdentifierAction,
+            copiedMessage: l10n.identifierCopiedMessage,
+          ),
+          AppWorkspacePatientContextField(
             label: l10n.mortuaryBillingFieldLabel,
             value:
                 _displayCode(
@@ -980,9 +988,14 @@ class _MortuaryDetailPanel extends ConsumerWidget {
             value: item.facilityLabel ?? l10n.mortuaryUnknownValueLabel,
             icon: Icons.apartment_outlined,
           ),
+          AppWorkspacePatientContextField(
+            label: l10n.mortuaryReceivedAtFieldLabel,
+            value: _formatDateTime(context, item.receivedAt),
+            icon: Icons.schedule_outlined,
+          ),
         ],
       ),
-      _IdentitySection(item: item),
+      _SourceContextSection(item: item),
       _StorageSection(item: item),
       _CustodySection(item: item),
       _ViewingSection(item: item),
@@ -1019,8 +1032,8 @@ void _openMortuaryBillingWorkspace(
   }
 }
 
-class _IdentitySection extends StatelessWidget {
-  const _IdentitySection({required this.item});
+class _SourceContextSection extends StatelessWidget {
+  const _SourceContextSection({required this.item});
 
   final MortuaryWorkspaceItem item;
 
@@ -1029,74 +1042,31 @@ class _IdentitySection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     return AppWorkspaceDetailPanel(
       title: l10n.mortuaryIdentitySectionTitle,
-      titleIcon: Icons.person_outline,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppInfoTileGrid(
-            emptyValue: l10n.mortuaryUnknownValueLabel,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.mortuaryCaseFieldLabel,
-                value: _mortuaryCaseIdentifier(item),
-                icon: Icons.tag_outlined,
-                copyable: true,
-                copyTooltip: l10n.copyIdentifierAction,
-                copiedMessage: l10n.identifierCopiedMessage,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryDeceasedFieldLabel,
-                value: item.effectiveDeceasedLabel,
-                icon: Icons.person_outline,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryPatientFieldLabel,
-                value: item.patientLabel,
-                icon: Icons.assignment_ind_outlined,
-                copyable: true,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryFacilityFieldLabel,
-                value: item.facilityLabel,
-                icon: Icons.apartment_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryStatusFieldLabel,
-                value: _displayCode(item.caseStatus ?? item.status),
-                icon: Icons.flag_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryReceivedAtFieldLabel,
-                value: _formatDateTime(context, item.receivedAt),
-                icon: Icons.schedule_outlined,
-              ),
-            ],
+      titleIcon: Icons.account_tree_outlined,
+      initiallyExpanded: false,
+      child: AppInfoTileGrid(
+        emptyValue: l10n.mortuaryUnknownValueLabel,
+        items: <AppInfoTileData>[
+          AppInfoTileData(
+            label: l10n.mortuarySourceWorkflowFieldLabel,
+            value: item.sourceWorkflow,
+            icon: Icons.account_tree_outlined,
           ),
-          AppInfoTileGrid(
-            emptyValue: l10n.mortuaryUnknownValueLabel,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.mortuarySourceWorkflowFieldLabel,
-                value: item.sourceWorkflow,
-                icon: Icons.account_tree_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuarySourceDepartmentFieldLabel,
-                value: item.sourceDepartment,
-                icon: Icons.local_hospital_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuarySourceReferenceFieldLabel,
-                value: item.sourceReferenceId,
-                icon: Icons.link_outlined,
-                copyable: true,
-              ),
-              AppInfoTileData(
-                label: l10n.mortuaryReceivedFromFieldLabel,
-                value: item.receivedFrom,
-                icon: Icons.move_to_inbox_outlined,
-              ),
-            ],
+          AppInfoTileData(
+            label: l10n.mortuarySourceDepartmentFieldLabel,
+            value: item.sourceDepartment,
+            icon: Icons.local_hospital_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuarySourceReferenceFieldLabel,
+            value: item.sourceReferenceId,
+            icon: Icons.link_outlined,
+            copyable: true,
+          ),
+          AppInfoTileData(
+            label: l10n.mortuaryReceivedFromFieldLabel,
+            value: item.receivedFrom,
+            icon: Icons.move_to_inbox_outlined,
           ),
         ],
       ),

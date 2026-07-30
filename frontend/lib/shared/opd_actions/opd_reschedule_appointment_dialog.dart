@@ -166,7 +166,6 @@ class _OpdRescheduleAppointmentDialogState
             persistExpandPreference: false,
             initiallyExpanded: false,
             semanticLabel: widget.appointment.displayTitle,
-            fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.patientsPhoneLabel,

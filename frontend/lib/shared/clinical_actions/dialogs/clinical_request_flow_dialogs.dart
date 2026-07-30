@@ -6,6 +6,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Compact summary strip for modular clinical request dialogs.
 class ClinicalRequestFlowSummaryBar extends StatelessWidget {
@@ -236,88 +237,31 @@ class ClinicalRequestPatientContextStrip extends StatelessWidget {
     }
 
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final TextStyle valueStyle = theme.textTheme.bodyMedium!;
-    final TextStyle labelStyle = valueStyle.copyWith(
-      fontWeight: FontWeight.w600,
-    );
-    final List<Widget> facts = <Widget>[
-      if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
-        _ClinicalRequestPatientContextFact(
-          label: l10n.clinicalRequestPatientNameLabel,
-          value: patientContext.patientName!.trim(),
-          labelStyle: labelStyle,
-          valueStyle: valueStyle,
-        ),
-      if (!ClinicalRequestPatientContext._isBlank(patientContext.patientId))
-        _ClinicalRequestPatientContextFact(
-          label: l10n.clinicalRequestPatientIdLabel,
-          value: patientContext.patientId!.trim(),
-          labelStyle: labelStyle,
-          valueStyle: valueStyle,
-          copyable: true,
-          copyTooltip: l10n.opdCopyPatientIdAction,
-          copiedMessage: l10n.clinicalPatientIdCopiedMessage,
-        ),
-      if (!ClinicalRequestPatientContext._isBlank(patientContext.encounterId))
-        _ClinicalRequestPatientContextFact(
-          label: l10n.clinicalRequestPatientEncounterIdLabel,
-          value: patientContext.encounterId!.trim(),
-          labelStyle: labelStyle,
-          valueStyle: valueStyle,
-          copyable: true,
-          copyTooltip: l10n.opdCopyEncounterIdAction,
-          copiedMessage: l10n.opdEncounterIdCopiedMessage,
-        ),
-    ];
-
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.xs,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: facts,
-    );
-  }
-}
-
-class _ClinicalRequestPatientContextFact extends StatelessWidget {
-  const _ClinicalRequestPatientContextFact({
-    required this.label,
-    required this.value,
-    required this.labelStyle,
-    required this.valueStyle,
-    this.copyable = false,
-    this.copyTooltip,
-    this.copiedMessage,
-  });
-
-  final String label;
-  final String value;
-  final TextStyle labelStyle;
-  final TextStyle valueStyle;
-  final bool copyable;
-  final String? copyTooltip;
-  final String? copiedMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text('$label: ', style: labelStyle),
-        if (copyable)
-          AppCopyableIdentifier(
-            value: value,
-            tooltip: copyTooltip,
-            copiedMessage: copiedMessage,
-            textStyle: valueStyle,
-          )
-        else
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: valueStyle,
+    return AppPatientContextFactsRow(
+      fields: <AppWorkspacePatientContextField>[
+        if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRequestPatientNameLabel,
+            value: patientContext.patientName!.trim(),
+            icon: Icons.person_outline,
+          ),
+        if (!ClinicalRequestPatientContext._isBlank(patientContext.patientId))
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRequestPatientIdLabel,
+            value: patientContext.patientId!.trim(),
+            icon: Icons.badge_outlined,
+            copyable: true,
+            copyTooltip: l10n.opdCopyPatientIdAction,
+            copiedMessage: l10n.clinicalPatientIdCopiedMessage,
+          ),
+        if (!ClinicalRequestPatientContext._isBlank(patientContext.encounterId))
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRequestPatientEncounterIdLabel,
+            value: patientContext.encounterId!.trim(),
+            icon: Icons.assignment_outlined,
+            copyable: true,
+            copyTooltip: l10n.opdCopyEncounterIdAction,
+            copiedMessage: l10n.opdEncounterIdCopiedMessage,
           ),
       ],
     );

@@ -35,6 +35,80 @@ void main() {
       expect(item.panelTitle, 'Full blood count | FBC');
     });
 
+    test('testsLabel collapses panels and prefers short names with +count', () {
+      const LabOrderSummary summary = LabOrderSummary(
+        id: 'LAB0000002',
+        testsSummary: 'ignored when items present',
+        items: <LabOrderItem>[
+          LabOrderItem(
+            id: 'i1',
+            panelId: 'LPN1',
+            panelDisplayName: 'Full blood count',
+            panelCode: 'FBC',
+            testDisplayName: 'Hemoglobin',
+            testCode: 'HGB',
+          ),
+          LabOrderItem(
+            id: 'i2',
+            panelId: 'LPN1',
+            panelDisplayName: 'Full blood count',
+            panelCode: 'FBC',
+            testDisplayName: 'Mean Corpuscular Volume',
+            testCode: 'MCV',
+          ),
+          LabOrderItem(
+            id: 'i3',
+            panelId: 'LPN1',
+            panelDisplayName: 'Full blood count',
+            panelCode: 'FBC',
+            testDisplayName: 'Mean Corpuscular Hemoglobin',
+            testCode: 'MCH',
+          ),
+          LabOrderItem(
+            id: 'i4',
+            testDisplayName: 'Glucose',
+            testCode: 'GLU',
+          ),
+          LabOrderItem(
+            id: 'i5',
+            panelId: 'LPN2',
+            panelDisplayName: 'Liver function tests',
+            panelCode: 'LFT',
+            testDisplayName: 'ALT',
+            testCode: 'ALT',
+          ),
+          LabOrderItem(
+            id: 'i6',
+            panelId: 'LPN2',
+            panelDisplayName: 'Liver function tests',
+            panelCode: 'LFT',
+            testDisplayName: 'AST',
+            testCode: 'AST',
+          ),
+          LabOrderItem(
+            id: 'i7',
+            testDisplayName: 'C-reactive protein',
+            testCode: 'CRP',
+          ),
+          LabOrderItem(
+            id: 'i8',
+            testDisplayName: 'Malaria smear',
+          ),
+        ],
+      );
+
+      expect(summary.testsLabel, 'FBC, GLU, LFT +2');
+    });
+
+    test('testsLabel falls back to testsSummary when items are empty', () {
+      const LabOrderSummary summary = LabOrderSummary(
+        id: 'LAB0000003',
+        testsSummary: 'FBC, GLU +1',
+      );
+
+      expect(summary.testsLabel, 'FBC, GLU +1');
+    });
+
     test('maps top-level encounter source and inpatient ward/bed context', () {
       const LabOrderSummaryDto dto = LabOrderSummaryDto(<String, Object?>{
         'id': 'LAB0000010',

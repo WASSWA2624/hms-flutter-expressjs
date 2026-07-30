@@ -103,9 +103,8 @@ class _ReceptionFollowUpDetailDialogState
             ),
             showAvatar: false,
             persistExpandPreference: false,
-            initiallyExpanded: true,
+            initiallyExpanded: false,
             semanticLabel: patientName,
-            fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.patientsPhoneLabel,

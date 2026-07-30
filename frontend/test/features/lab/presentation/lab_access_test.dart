@@ -508,19 +508,13 @@ void main() {
       expect(canViewLabVerifiedTab(clinicalReader), isFalse);
       expect(
         labAllowedSections(labReader),
-        contains(LabDeskSection.worklist),
-      );
-      expect(
-        labAllowedSections(labReader),
-        contains(LabDeskSection.collection),
-      );
-      expect(
-        labAllowedSections(labReader),
-        contains(LabDeskSection.critical),
-      );
-      expect(
-        labAllowedSections(labReader),
-        contains(LabDeskSection.completed),
+        <LabDeskSection>[
+          LabDeskSection.collection,
+          LabDeskSection.critical,
+          LabDeskSection.completed,
+          LabDeskSection.followUps,
+          LabDeskSection.worklist,
+        ],
       );
       expect(
         labAllowedSections(clinicalReader),
@@ -543,6 +537,10 @@ void main() {
         isNot(contains(LabDeskSection.followUps)),
       );
       expect(labFallbackSection(labReader), LabDeskSection.collection);
+      expect(
+        labAllowedSections(labReader).last,
+        LabDeskSection.worklist,
+      );
     });
   });
 }

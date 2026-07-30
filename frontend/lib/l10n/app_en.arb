@@ -16546,7 +16546,7 @@
   "@labScopeFilterLabel": {
     "description": "Localized text for labScopeFilterLabel."
   },
-  "labScopeAll": "All",
+  "labScopeAll": "All patients",
   "@labScopeAll": {
     "description": "Localized text for labScopeAll."
   },
@@ -16562,7 +16562,7 @@
   "@labScopeResults": {
     "description": "Localized text for labScopeResults."
   },
-  "labScopeCritical": "Critical",
+  "labScopeCritical": "Critical today",
   "@labScopeCritical": {
     "description": "Localized text for labScopeCritical."
   },
@@ -25021,7 +25021,7 @@
   "@labSaveResultsAction": {
     "description": "Primary footer action that saves entered lab results."
   },
-  "labEntryStatusColumnLabel": "Entry status",
+  "labEntryStatusColumnLabel": "Status",
   "@labEntryStatusColumnLabel": {
     "description": "Localized text for labEntryStatusColumnLabel."
   },
@@ -25471,6 +25471,78 @@
   "labCreateAction": "Create Lab Order",
   "@labCreateAction": {
     "description": "Action label for opening laboratory create actions."
+  },
+  "labOrderedDateFilterLabel": "Ordered date",
+  "@labOrderedDateFilterLabel": {
+    "description": "Date filter label for lab order ordered-at range."
+  },
+  "labPatientFilterLabel": "Patient name",
+  "@labPatientFilterLabel": {
+    "description": "Advanced filter label for patient name on lab worklist."
+  },
+  "labPatientIdFilterLabel": "Patient ID",
+  "@labPatientIdFilterLabel": {
+    "description": "Advanced filter label for patient identifier on lab worklist."
+  },
+  "labTestFilterLabel": "Test",
+  "@labTestFilterLabel": {
+    "description": "Advanced filter label for test name or code on lab worklist."
+  },
+  "labOrderIdFilterLabel": "Order ID",
+  "@labOrderIdFilterLabel": {
+    "description": "Advanced filter label for lab order display id."
+  },
+  "labResultFlagFilterLabel": "Result flag",
+  "@labResultFlagFilterLabel": {
+    "description": "Advanced filter label for critical/abnormal result flags."
+  },
+  "labResultFlagCritical": "Critical",
+  "@labResultFlagCritical": {
+    "description": "Filter choice for critical lab results."
+  },
+  "labResultFlagAbnormal": "Abnormal",
+  "@labResultFlagAbnormal": {
+    "description": "Filter choice for abnormal lab results."
+  },
+  "labResultFlagAnyFlagged": "Any flagged",
+  "@labResultFlagAnyFlagged": {
+    "description": "Filter choice for any critical or abnormal lab result."
+  },
+  "labDeskSettingsTitle": "Lab desk settings",
+  "@labDeskSettingsTitle": {
+    "description": "Title for the laboratory desk settings dialog."
+  },
+  "labDeskSettingsColumnsSection": "Visible columns",
+  "@labDeskSettingsColumnsSection": {
+    "description": "Section title for column visibility in lab desk settings."
+  },
+  "labDeskSettingsPreferencesSection": "Desk preferences",
+  "@labDeskSettingsPreferencesSection": {
+    "description": "Section title for lab desk preferences in settings."
+  },
+  "labDefaultTabLabel": "Default tab",
+  "@labDefaultTabLabel": {
+    "description": "Label for default laboratory landing tab preference."
+  },
+  "labPageSizeLabel": "Rows per page",
+  "@labPageSizeLabel": {
+    "description": "Label for laboratory worklist page size preference."
+  },
+  "labFollowUpStatusFilterLabel": "Follow-up status",
+  "@labFollowUpStatusFilterLabel": {
+    "description": "Advanced filter label for follow-up completion status."
+  },
+  "labFollowUpStatusPending": "Pending",
+  "@labFollowUpStatusPending": {
+    "description": "Follow-up filter choice for not-yet-completed entries."
+  },
+  "labFollowUpStatusCompleted": "Completed",
+  "@labFollowUpStatusCompleted": {
+    "description": "Follow-up filter choice for completed entries."
+  },
+  "labFollowUpDateFilterLabel": "Follow-up date",
+  "@labFollowUpDateFilterLabel": {
+    "description": "Date filter label for follow-up scheduled date range."
   },
   "labCreateChoiceDialogTitle": "Create Laboratory Item",
   "@labCreateChoiceDialogTitle": {
