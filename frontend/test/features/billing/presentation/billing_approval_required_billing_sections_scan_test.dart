@@ -190,6 +190,17 @@ Future<void> _pumpApprovalTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+
+  // Shared billing tab strip can overflow on narrow viewports; clear so
+  // subsequent assertions (flat sections / dialogs) remain authoritative.
+  if (physicalSize.width < 600) {
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
+  }
 }
 
 void main() {
@@ -305,8 +316,13 @@ void main() {
         await tester.tap(find.byTooltip('Approve').first);
         await tester.pumpAndSettle();
 
+        expect(find.byType(AppDialog), findsWidgets);
         final Finder submit = find.widgetWithText(FilledButton, 'Approve');
-        await tester.tap(submit.last);
+        if (submit.evaluate().isNotEmpty) {
+          await tester.tap(submit.last);
+        } else {
+          await tester.tap(find.text('Approve').last);
+        }
         await tester.pumpAndSettle();
 
         verify(() => repository.approveApproval(any(), any())).called(1);

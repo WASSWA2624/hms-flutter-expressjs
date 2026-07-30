@@ -58,7 +58,12 @@ describe('billing.service', () => {
           invoice_id: 'INV0001',
           amount: '60.00',
           reason: 'Manual correction'},
-        { id: 'user-1', tenant_id: 'tenant-1', facility_id: 'facility-1' },
+        {
+          id: 'user-1',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          permissions: ['billing:read', 'billing:write'],
+        },
         '127.0.0.1'
       );
 

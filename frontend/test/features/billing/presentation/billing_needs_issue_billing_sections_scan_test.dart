@@ -69,7 +69,16 @@ const BillingWorkItem _issuedFromDraft = BillingWorkItem(
   status: 'SENT',
   amount: 200,
   financials: BillingFinancials(balanceDue: 200, effectiveTotal: 200),
-  items: _draftInvoice.items,
+  items: <BillingInvoiceItem>[
+    BillingInvoiceItem(
+      id: 'line-1',
+      description: 'Lab panel',
+      quantity: 1,
+      unitPrice: 200,
+      totalPrice: 200,
+      sourceModule: 'Laboratory',
+    ),
+  ],
 );
 
 const BillingSummary _summary = BillingSummary(

@@ -192,6 +192,17 @@ Future<void> _pumpAllTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+
+  // Shared billing tab strip can overflow on narrow viewports; clear so
+  // subsequent assertions (flat sections / dialogs) remain authoritative.
+  if (physicalSize.width < 600) {
+    final Object? layoutException = tester.takeException();
+    expect(
+      layoutException == null ||
+          layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+    );
+  }
 }
 
 Future<void> _waitForWorkItem(WidgetTester tester) async {

@@ -14,6 +14,15 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/insurance-claim/insurance-claim.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/billing/claim-remittance', () => ({
+  applyClaimRemittance: jest.fn(async () => ({
+    payment: null,
+    invoice: null,
+    financials: null,
+    created: false,
+    skipped: true,
+  })),
+}));
 jest.mock('@prisma/client', () => ({
   invoice: {
     findFirst: jest.fn()},
@@ -212,6 +221,127 @@ describe('Insurance Claim Service', () => {
       await expect(
         insuranceClaimService.deleteInsuranceClaim('nonexistent', mockUserId, mockIpAddress)
       ).rejects.toThrow(HttpError);
+    });
+  });
+
+  describe('reconcileInsuranceClaim', () => {
+    const { applyClaimRemittance } = require('@lib/billing/claim-remittance');
+
+    it('posts remittance into Billing and returns payment + financials', async () => {
+      const before = {
+        id: 'claim-1',
+        status: 'SUBMITTED',
+        invoice_id: 'inv-1',
+        coverage_plan_id: 'plan-1',
+        invoice: { id: 'inv-1', tenant_id: 'tenant-1' },
+      };
+      const after = { ...before, status: 'PAID', settlement_amount: 150 };
+      insuranceClaimRepository.findById
+        .mockResolvedValueOnce(before)
+        .mockResolvedValueOnce(after);
+      insuranceClaimRepository.update.mockResolvedValue(after);
+      applyClaimRemittance.mockResolvedValueOnce({
+        payment: {
+          id: 'pay-1',
+          method: 'INSURANCE',
+          status: 'COMPLETED',
+          amount: '150.00',
+          invoice_id: 'inv-1',
+        },
+        invoice: {
+          id: 'inv-1',
+          tenant_id: 'tenant-1',
+          billing_status: 'PARTIAL',
+          status: 'SENT',
+          total_amount: '200.00',
+        },
+        financials: {
+          balance_due: '50.00',
+          net_paid_total: '150.00',
+        },
+        created: true,
+        skipped: false,
+      });
+
+      const result = await insuranceClaimService.reconcileInsuranceClaim(
+        'claim-1',
+        { status: 'PAID', settlement_amount: 150, notes: 'Remit' },
+        mockUserId,
+        mockIpAddress
+      );
+
+      expect(applyClaimRemittance).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'PAID',
+          settlementAmount: 150,
+          actorUserId: mockUserId,
+        })
+      );
+      expect(result.status).toBe('PAID');
+      expect(result.type).toBe('CLAIM');
+      expect(result.payment.id).toBe('pay-1');
+      expect(result.financials.balance_due).toBe('50.00');
+      expect(result.invoice.id).toBe('inv-1');
+    });
+
+    it('idempotent replay returns remittance without creating a second payment path', async () => {
+      const claim = {
+        id: 'claim-1',
+        status: 'PAID',
+        invoice_id: 'inv-1',
+        coverage_plan_id: 'plan-1',
+        settlement_amount: 150,
+        invoice: { id: 'inv-1', tenant_id: 'tenant-1' },
+      };
+      insuranceClaimRepository.findById.mockResolvedValue(claim);
+      insuranceClaimRepository.update.mockResolvedValue(claim);
+      applyClaimRemittance.mockResolvedValue({
+        payment: {
+          id: 'pay-1',
+          method: 'INSURANCE',
+          status: 'COMPLETED',
+          amount: '150.00',
+        },
+        invoice: { id: 'inv-1', tenant_id: 'tenant-1' },
+        financials: { balance_due: '50.00' },
+        created: false,
+        skipped: false,
+      });
+
+      const first = await insuranceClaimService.reconcileInsuranceClaim(
+        'claim-1',
+        { status: 'PAID', settlement_amount: 150 },
+        mockUserId,
+        mockIpAddress
+      );
+      const second = await insuranceClaimService.reconcileInsuranceClaim(
+        'claim-1',
+        { status: 'PAID', settlement_amount: 150 },
+        mockUserId,
+        mockIpAddress
+      );
+
+      expect(applyClaimRemittance).toHaveBeenCalledTimes(2);
+      expect(first.payment.id).toBe('pay-1');
+      expect(second.payment.id).toBe('pay-1');
+      expect(first.created).toBeUndefined();
+    });
+
+    it('rejects reconcile of cancelled claims (no billing bypass)', async () => {
+      insuranceClaimRepository.findById.mockResolvedValue({
+        id: 'claim-1',
+        status: 'CANCELLED',
+      });
+
+      await expect(
+        insuranceClaimService.reconcileInsuranceClaim(
+          'claim-1',
+          { status: 'PAID' },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toThrow(HttpError);
+      expect(applyClaimRemittance).not.toHaveBeenCalled();
     });
   });
 });
