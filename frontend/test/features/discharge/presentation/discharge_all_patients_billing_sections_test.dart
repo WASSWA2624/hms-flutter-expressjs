@@ -179,7 +179,7 @@ Future<void> _pumpAll(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         dischargeRepositoryProvider.overrideWithValue(repository),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
         sharedPreferencesProvider.overrideWithValue(preferences),

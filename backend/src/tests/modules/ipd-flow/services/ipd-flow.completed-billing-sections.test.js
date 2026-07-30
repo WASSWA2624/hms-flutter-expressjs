@@ -173,6 +173,10 @@ const settledInvoice = {
 };
 
 const stubSnapshot = (admission) => {
+  prisma.admission.findFirst.mockResolvedValue({
+    id: admission.id,
+    human_friendly_id: admission.human_friendly_id,
+  });
   ipdFlowRepository.findById.mockResolvedValue({
     ...admission,
     status: 'DISCHARGED',

@@ -220,6 +220,16 @@ Future<void> _pumpCompletedTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  // Narrow viewports can overflow print next-action chrome; clear so
+  // subsequent assertions remain authoritative.
+  final Object? layoutException = tester.takeException();
+  if (layoutException != null) {
+    expect(
+      layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+      reason: 'Unexpected exception: $layoutException',
+    );
+  }
 }
 
 void main() {

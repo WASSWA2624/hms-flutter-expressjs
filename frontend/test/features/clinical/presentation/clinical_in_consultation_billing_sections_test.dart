@@ -430,77 +430,73 @@ void main() {
       expect(b!.totalAmount, 20);
     });
 
-    testWidgets(
-      'addProcedures posts billing payload via createProcedure (no bypass)',
-      (WidgetTester tester) async {
-        when(
-          () => clinicalRepository.createProcedure(any()),
-        ).thenAnswer((_) async => const Result<void>.success(null));
-        when(
-          () => clinicalRepository.createClinicalTermFavorite(any()),
-        ).thenAnswer((_) async => const Result<void>.success(null));
+    test('addProcedures posts billing payload via createProcedure (no bypass)', () async {
+      when(
+        () => clinicalRepository.createProcedure(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+      when(
+        () => clinicalRepository.createClinicalTermFavorite(any()),
+      ).thenAnswer((_) async => const Result<void>.success(null));
 
-        SharedPreferences.setMockInitialValues(<String, Object>{});
-        final SharedPreferences preferences =
-            await SharedPreferences.getInstance();
-        final _MockOpdRepository opd = _MockOpdRepository();
-        final _MockIpdRepository ipd = _MockIpdRepository();
-        _stubClinical(clinicalRepository);
-        _stubOpd(opd);
-        _stubIpd(ipd);
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      final _MockOpdRepository opd = _MockOpdRepository();
+      final _MockIpdRepository ipd = _MockIpdRepository();
+      _stubClinical(clinicalRepository);
+      _stubOpd(opd);
+      _stubIpd(ipd);
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [
-            clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
-            opdRepositoryProvider.overrideWithValue(opd),
-            ipdRepositoryProvider.overrideWithValue(ipd),
-            sharedPreferencesProvider.overrideWithValue(preferences),
-            initialSessionStateProvider.overrideWithValue(
-              const SessionState.ready(),
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opd),
+          ipdRepositoryProvider.overrideWithValue(ipd),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{
+                AppPermissions.clinicalRead,
+                AppPermissions.clinicalWrite,
+              },
             ),
-            appAccessPolicyProvider.overrideWithValue(
-              _policy(
-                permissions: <AppPermission>{
-                  AppPermissions.clinicalRead,
-                  AppPermissions.clinicalWrite,
-                },
-              ),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        await container.read(clinicalWorkspaceControllerProvider.future);
-        final ClinicalWorkspaceController controller = container.read(
-          clinicalWorkspaceControllerProvider.notifier,
-        );
-        await controller.selectEntry(_encounter);
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectEntry(_encounter);
 
-        final AppFailure? failure = await controller.addProcedures(
-          procedures: const <ClinicalCatalogOption>[
-            ClinicalCatalogOption(
-              id: 'PROC-1',
-              name: 'Wound care',
-              unitPrice: 40,
-              currency: 'USD',
-            ),
-          ],
-        );
-        expect(failure, isNull);
+      final AppFailure? failure = await controller.addProcedures(
+        procedures: const <ClinicalCatalogOption>[
+          ClinicalCatalogOption(
+            id: 'PROC-1',
+            name: 'Wound care',
+            unitPrice: 40,
+            currency: 'USD',
+          ),
+        ],
+      );
+      expect(failure, isNull);
 
-        final List<Object?> captured = verify(
-          () => clinicalRepository.createProcedure(captureAny()),
-        ).captured;
-        expect(captured, hasLength(1));
-        final Map<String, Object?> payload =
-            captured.single as Map<String, Object?>;
-        expect(payload['billing'], isA<Map<String, Object?>>());
-        final Map<String, Object?> billing =
-            payload['billing']! as Map<String, Object?>;
-        expect(billing['payment_status'], 'PENDING');
-        expect(billing['line_items'], isNotEmpty);
-      },
-    );
+      final List<Object?> captured = verify(
+        () => clinicalRepository.createProcedure(captureAny()),
+      ).captured;
+      expect(captured, hasLength(1));
+      final Map<String, Object?> payload =
+          captured.single as Map<String, Object?>;
+      expect(payload['billing'], isA<Map<String, Object?>>());
+      final Map<String, Object?> billing =
+          payload['billing']! as Map<String, Object?>;
+      expect(billing['payment_status'], 'PENDING');
+      expect(billing['line_items'], isNotEmpty);
+    });
 
     testWidgets(
       'detail shows payment status parity chips without cashier controls',

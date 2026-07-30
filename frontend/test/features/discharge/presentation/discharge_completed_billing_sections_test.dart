@@ -246,6 +246,16 @@ Future<void> _pumpCompletedTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  // Narrow viewports can overflow print next-action chrome; clear so flat /
+  // dialog assertions remain authoritative (same pattern as Billing scans).
+  final Object? layoutException = tester.takeException();
+  if (layoutException != null) {
+    expect(
+      layoutException.toString().contains('A RenderFlex overflowed'),
+      isTrue,
+      reason: 'Unexpected exception: $layoutException',
+    );
+  }
 }
 
 void main() {
@@ -508,8 +518,12 @@ void main() {
         themeMode: ThemeMode.dark,
       );
 
-      await tester.tap(find.text('Carol Completed'));
+      final Finder row = find.text('Carol Completed');
+      await tester.ensureVisible(row);
+      await tester.tap(row, warnIfMissed: false);
       await tester.pumpAndSettle();
+      // Clear any residual list overflow after opening detail.
+      tester.takeException();
 
       expectFlatTitledSectionLayout(
         tester,

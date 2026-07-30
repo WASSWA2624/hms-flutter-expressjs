@@ -205,8 +205,8 @@ Future<void> _pumpPending(
         ),
       ],
       child: MaterialApp.router(
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
         themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
