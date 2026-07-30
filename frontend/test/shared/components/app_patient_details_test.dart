@@ -50,7 +50,7 @@ void main() {
     expect(find.text('ENC-9'), findsNothing);
   });
 
-  testWidgets('expanded body is an overflow row with Icon Label: Value |', (
+  testWidgets('expanded body wraps Icon Label: Value facts across rows', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -89,7 +89,7 @@ void main() {
     expect(find.textContaining('Orders included:'), findsOneWidget);
     expect(find.text('1 active order'), findsOneWidget);
     expect(find.text('|'), findsWidgets);
-    expect(find.byType(SingleChildScrollView), findsWidgets);
+    expect(find.byType(Wrap), findsWidgets);
 
     final double encounterY = tester
         .getTopLeft(find.textContaining('Encounter:'))
@@ -98,6 +98,48 @@ void main() {
         .getTopLeft(find.textContaining('Orders included:'))
         .dy;
     expect(ordersY, closeTo(encounterY, 1));
+  });
+
+  testWidgets('expanded body wraps facts onto the next row when narrow', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppPatientDetails(
+        patientName: 'Ada Lovelace',
+        patientNumber: 'MRN-100',
+        ageLabel: '37 years, 2 months',
+        genderLabel: 'Female',
+        phoneLabel: '+256700000000',
+        emailLabel: 'ada@example.com',
+        persistExpandPreference: false,
+        initiallyExpanded: true,
+        expandedFields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Encounter type',
+            value: 'Emergency',
+            icon: Icons.local_hospital_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Last updated',
+            value: 'Jul 17, 2026 12:31 AM',
+            icon: Icons.update_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Alert',
+            value: 'Urgent',
+            icon: Icons.priority_high_outlined,
+          ),
+        ],
+      ),
+      size: const Size(720, 800),
+    );
+
+    final double firstY = tester.getTopLeft(find.textContaining('Age:')).dy;
+    final double lastY = tester
+        .getTopLeft(find.textContaining('Last updated:'))
+        .dy;
+    expect(lastY, greaterThan(firstY + 4));
   });
 
   testWidgets('mobile expanded body stacks facts so values stay visible', (

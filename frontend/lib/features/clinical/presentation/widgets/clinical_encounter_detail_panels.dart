@@ -15,7 +15,6 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 export 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart'
     show clinicalEncounterWriteRequirement;
@@ -43,85 +42,6 @@ List<ClinicalRelatedRecord> sortClinicalRecordsNewestFirst(
     return rightAt.compareTo(leftAt);
   });
   return sorted;
-}
-
-class ClinicalWorkflowProgressStrip extends StatelessWidget {
-  const ClinicalWorkflowProgressStrip({
-    required this.handoff,
-    this.onNextAction,
-    super.key,
-  });
-
-  final ClinicalTriageHandoff handoff;
-  final VoidCallback? onNextAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final String currentStage = handoff.stage ?? '';
-    final String nextStep = handoff.nextStep ?? '';
-    final List<String> stages = handoff.timeline.isNotEmpty
-        ? handoff.timeline
-              .map(
-                (ClinicalWorkflowTimelineItem item) =>
-                    item.stage ?? item.action,
-              )
-              .where((String value) => value.trim().isNotEmpty)
-              .toList(growable: false)
-        : opdWorkflowStagesAround(currentStage, lookAhead: 0);
-    final int currentIndex = handoff.timeline.isNotEmpty
-        ? stages.length - 1
-        : opdFlowStageIndex(currentStage);
-    final String currentLabel = opdStageDisplayLabel(l10n, currentStage);
-    final String nextLabel = opdNextStepDisplayLabel(l10n, nextStep);
-    final bool nextActionIsRecordVitals = _isRecordVitalsNextStep(nextStep);
-    final List<AppWorkflowStepItem> steps = <AppWorkflowStepItem>[
-      for (var index = 0; index < stages.length; index += 1)
-        if (index < currentIndex &&
-            opdStageDisplayLabel(l10n, stages[index]).isNotEmpty)
-          AppWorkflowStepItem(
-            id: 'completed-$index-${stages[index]}',
-            label: opdStageDisplayLabel(l10n, stages[index]),
-            state: AppWorkflowStepState.completed,
-          ),
-      if (currentLabel.isNotEmpty)
-        AppWorkflowStepItem(
-          id: 'current-$currentStage',
-          label: currentLabel,
-          description: l10n.clinicalCurrentStageLabel,
-          state: AppWorkflowStepState.current,
-        ),
-      if (nextLabel.isNotEmpty && nextLabel != currentLabel)
-        AppWorkflowStepItem(
-          id: 'next-$nextStep',
-          label: nextLabel,
-          description: l10n.opdNextActionColumnLabel,
-          state: AppWorkflowStepState.upcoming,
-          onTap: nextActionIsRecordVitals ? onNextAction : null,
-          helpText: nextActionIsRecordVitals && onNextAction != null
-              ? l10n.opdRecordVitalsAction
-              : null,
-        ),
-    ];
-
-    if (steps.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AppWorkflowStepper(
-      steps: steps,
-      semanticLabel: l10n.clinicalWorkflowProgressLabel,
-    );
-  }
-}
-
-bool _isRecordVitalsNextStep(String? nextStep) {
-  final String normalized = (nextStep ?? '').trim().toUpperCase();
-  return normalized == 'RECORD_VITALS' ||
-      normalized == 'WAITING_VITALS' ||
-      normalized == 'VITALS_NEEDED' ||
-      normalized == 'VITALS_PENDING' ||
-      normalized == 'TRIAGE_PENDING';
 }
 
 class ClinicalLabOrdersTablePanel extends ConsumerStatefulWidget {

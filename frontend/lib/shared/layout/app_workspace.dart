@@ -1308,8 +1308,9 @@ class _PatientContextAlerts extends StatelessWidget {
 
 /// Responsive patient context facts.
 ///
-/// Desktop/tablet: horizontal overflow row
+/// Desktop/tablet: wrapping horizontal facts row
 /// `Icon Label: Value | Icon Label: Value | …`
+/// that flows to the next line when width is insufficient.
 ///
 /// Mobile: one wrapped row per fact so values are never clipped off-screen.
 class AppPatientContextFactsRow extends StatelessWidget {
@@ -1356,27 +1357,18 @@ class AppPatientContextFactsRow extends StatelessWidget {
           );
         }
 
-        return ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: <Widget>[
-                for (
-                  var index = 0;
-                  index < visibleFields.length;
-                  index += 1
-                ) ...<Widget>[
-                  if (index > 0) ...<Widget>[
-                    SizedBox(width: theme.spacing.sm),
-                    Text('|', style: separatorStyle),
-                    SizedBox(width: theme.spacing.sm),
-                  ],
-                  _PatientContextInlineFact(field: visibleFields[index]),
-                ],
-              ],
-            ),
-          ),
+        return Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            for (var index = 0; index < visibleFields.length; index += 1) ...<
+              Widget
+            >[
+              if (index > 0) Text('|', style: separatorStyle),
+              _PatientContextInlineFact(field: visibleFields[index]),
+            ],
+          ],
         );
       },
     );
@@ -1416,7 +1408,9 @@ class _PatientContextInlineFact extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
     final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurface,
+      color: field.tone == AppWorkspaceStatusTone.neutral
+          ? colorScheme.onSurface
+          : accentColor,
       fontWeight: FontWeight.w500,
     );
 

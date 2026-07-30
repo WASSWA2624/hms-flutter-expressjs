@@ -23,7 +23,6 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart';
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_next_action_cell.dart';
-import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
@@ -954,7 +953,6 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
   final GlobalKey _studiesSectionKey = GlobalKey();
   final GlobalKey _reportSectionKey = GlobalKey();
   final GlobalKey _doctorReviewSectionKey = GlobalKey();
-  bool _workflowExpanded = true;
 
   @override
   void initState() {
@@ -986,16 +984,6 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
         alignment: 0.06,
       ),
     );
-  }
-
-  void _handleWorkflowStepTap(int stepIndex) {
-    final GlobalKey target = switch (stepIndex) {
-      0 || 1 || 2 => _requestSectionKey,
-      3 || 4 => _studiesSectionKey,
-      5 || 6 || 7 => _reportSectionKey,
-      _ => _requestSectionKey,
-    };
-    _scrollToSection(target);
   }
 
   @override
@@ -1053,19 +1041,6 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
                 .read(radiologyWorkspaceControllerProvider.notifier)
                 .setDetailViewMode(mode);
           },
-        ),
-        SizedBox(height: theme.spacing.md),
-        RadiologyWorkflowProgressSection(
-          workflow: widget.workflow,
-          canMutate: widget.canWork,
-          isSaving: widget.state.isMutating,
-          expanded: _workflowExpanded,
-          onExpandedChanged: (bool value) {
-            setState(() => _workflowExpanded = value);
-          },
-          onStepTap: _handleWorkflowStepTap,
-          onAssign: () => _showAssignDialog(context, ref),
-          onStart: () => _startImaging(context, ref),
         ),
         SizedBox(height: theme.spacing.lg),
         ..._orderedDetailSections(
@@ -1151,18 +1126,42 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
     if (!widget.canWork) {
       return const <Widget>[];
     }
-    final RadiologyWorkflow workflow = widget.workflow;
-    if (!workflow.nextActions.canCancel) {
-      return const <Widget>[];
+    final AppLocalizations l10n = context.l10n;
+    final RadiologyNextActions next = widget.workflow.nextActions;
+    final bool isSaving = widget.state.isMutating;
+    final List<Widget> actions = <Widget>[];
+
+    if (!next.billingGateBlocked && next.canAssign) {
+      actions.add(
+        AppButton.tertiary(
+          label: l10n.radiologyAssignAction,
+          leadingIcon: Icons.event_available_outlined,
+          isLoading: isSaving,
+          onPressed: isSaving ? null : () => _showAssignDialog(context, ref),
+        ),
+      );
     }
-    return <Widget>[
-      AppButton.tertiary(
-        label: context.l10n.radiologyCancelOrderAction,
-        leadingIcon: Icons.cancel_outlined,
-        isLoading: widget.state.isMutating,
-        onPressed: () => _showCancelDialog(context, ref),
-      ),
-    ];
+    if (next.canStart) {
+      actions.add(
+        AppButton.tertiary(
+          label: l10n.radiologyStartImagingAction,
+          leadingIcon: Icons.play_arrow_outlined,
+          isLoading: isSaving,
+          onPressed: isSaving ? null : () => _startImaging(context, ref),
+        ),
+      );
+    }
+    if (next.canCancel) {
+      actions.add(
+        AppButton.tertiary(
+          label: l10n.radiologyCancelOrderAction,
+          leadingIcon: Icons.cancel_outlined,
+          isLoading: isSaving,
+          onPressed: () => _showCancelDialog(context, ref),
+        ),
+      );
+    }
+    return actions;
   }
 }
 

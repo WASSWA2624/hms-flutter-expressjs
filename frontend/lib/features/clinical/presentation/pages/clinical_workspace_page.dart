@@ -1368,10 +1368,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     final bool canViewLabResults = canViewClinicalLabResultsPanel(accessPolicy);
     final bool canViewRadiologyResults =
         canViewClinicalRadiologyResultsPanel(accessPolicy);
-    final bool canRecordVitalsFromWorkflow =
-        clinicalEncounterWriteRequirement.isAllowed(accessPolicy) &&
-        !entry.isTerminal &&
-        clinicalOpdFlowApiId(entry) != null;
     final List<AppClinicalResultPreviewEntry> previewEntries =
         _clinicalResultsPreviewEntries(
           bundle,
@@ -1395,24 +1391,9 @@ class _ClinicalDetailPanel extends ConsumerWidget {
             ),
         ],
       ),
-      if (triageHandoff?.hasWorkflowProgress ?? false)
-        AppCollapsibleSection(
-          title: l10n.clinicalWorkflowProgressLabel,
-          child: ClinicalWorkflowProgressStrip(
-            handoff: triageHandoff!,
-            onNextAction: canRecordVitalsFromWorkflow
-                ? () => _openVitalsDialog(
-                    context,
-                    ref.read(clinicalWorkspaceControllerProvider.notifier),
-                    hasExistingVitals:
-                        triageHandoff.vitalSigns.isNotEmpty,
-                  )
-                : null,
-          ),
-        ),
+      _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
       if (triageHandoff?.hasTriageDetails ?? false)
         _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
-      _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
       if (previewEntries.isNotEmpty)
         AppCollapsibleSection(
           title: l10n.clinicalResultsChronologyTitle,
@@ -1885,6 +1866,13 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             value: handoff.triageNotes ?? '',
             icon: Icons.notes_outlined,
           ),
+          for (final ClinicalVitalSummary vital in handoff.vitalSigns)
+            AppWorkspacePatientContextField(
+              label: _apiLabel(vital.vitalType),
+              value: _clinicalVitalFactValue(context, vital),
+              icon: Icons.monitor_heart_outlined,
+              tone: _clinicalVitalTone(vital.status),
+            ),
         ];
 
     return AppCollapsibleSection(
@@ -1892,7 +1880,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _ClinicalInfoGrid(fields: facts),
+          AppPatientContextFactsRow(fields: facts),
           if (handoff.vitalSigns.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             Wrap(
@@ -1901,7 +1889,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 Text(
-                  l10n.opdVitalsSummaryLabel,
+                  '${l10n.opdVitalsSummaryLabel}:',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -1911,96 +1899,9 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             ),
             SizedBox(height: theme.spacing.xs),
             _ClinicalVitalsLegend(),
-            SizedBox(height: theme.spacing.sm),
-            _ClinicalVitalsGrid(vitals: handoff.vitalSigns),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _ClinicalVitalsGrid extends StatelessWidget {
-  const _ClinicalVitalsGrid({required this.vitals});
-
-  final List<ClinicalVitalSummary> vitals;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth >= 900
-            ? 4
-            : constraints.maxWidth >= 620
-            ? 3
-            : constraints.maxWidth >= 420
-            ? 2
-            : 1;
-        final double gap = theme.spacing.md;
-        final double itemWidth =
-            (constraints.maxWidth - (gap * (columns - 1))) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final ClinicalVitalSummary vital in vitals)
-              SizedBox(
-                width: itemWidth,
-                child: _ClinicalVitalSummary(vital: vital),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ClinicalVitalSummary extends StatelessWidget {
-  const _ClinicalVitalSummary({required this.vital});
-
-  final ClinicalVitalSummary vital;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Color valueColor = _clinicalVitalValueColor(theme, vital.status);
-    final String recordedAtLabel = vital.recordedAt == null
-        ? ''
-        : _dateTimeLabel(context, vital.recordedAt);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          _apiLabel(vital.vitalType),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          vital.displayValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: valueColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (recordedAtLabel.isNotEmpty)
-          Text(
-            recordedAtLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
     );
   }
 }
@@ -3451,6 +3352,26 @@ Color _clinicalVitalValueColor(ThemeData theme, String? status) {
     'NORMAL' || 'RECORDED' => colorScheme.onSurface,
     _ => colorScheme.onSurface,
   };
+}
+
+AppWorkspaceStatusTone _clinicalVitalTone(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'CRITICAL' => AppWorkspaceStatusTone.error,
+    'HIGH' || 'ABNORMAL' => AppWorkspaceStatusTone.warning,
+    'LOW' => AppWorkspaceStatusTone.info,
+    'NORMAL' || 'RECORDED' => AppWorkspaceStatusTone.success,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+String _clinicalVitalFactValue(BuildContext context, ClinicalVitalSummary vital) {
+  final String recordedAtLabel = vital.recordedAt == null
+      ? ''
+      : _dateTimeLabel(context, vital.recordedAt);
+  if (recordedAtLabel.isEmpty) {
+    return vital.displayValue;
+  }
+  return '${vital.displayValue} · $recordedAtLabel';
 }
 
 IconData _recordIcon(String kind) {
