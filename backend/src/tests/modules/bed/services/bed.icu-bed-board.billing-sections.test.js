@@ -77,17 +77,7 @@ describe('ICU Bed board billing-sections scan (beds occupancy read)', () => {
     bedRepository.findMany.mockResolvedValue([occupiedBedRecord]);
     bedRepository.count.mockResolvedValue(1);
 
-    const result = await listBeds(
-      {
-        facility_id: 'facility-123',
-        include_occupancy: true,
-        sort_by: 'label',
-      },
-      1,
-      200,
-      'label',
-      'asc'
-    );
+    const result = await listBeds({ include_occupancy: 'true' }, 1, 200, 'label', 'asc');
 
     expect(result.beds).toHaveLength(1);
     expect(result.beds[0].label).toBe('ICU-2');
@@ -97,6 +87,7 @@ describe('ICU Bed board billing-sections scan (beds occupancy read)', () => {
         patient_display_name: 'Ada Occupant',
       })
     );
+    expect(result.beds[0].bed_assignments).toBeUndefined();
     expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();
@@ -109,7 +100,7 @@ describe('ICU Bed board billing-sections scan (beds occupancy read)', () => {
     bedRepository.findMany.mockResolvedValue([occupiedBedRecord]);
     bedRepository.count.mockResolvedValue(1);
 
-    const filters = { facility_id: 'facility-123', include_occupancy: true };
+    const filters = { include_occupancy: 'true' };
     const first = await listBeds(filters, 1, 200, 'label', 'asc');
     const second = await listBeds(filters, 1, 200, 'label', 'asc');
 
@@ -125,13 +116,7 @@ describe('ICU Bed board billing-sections scan (beds occupancy read)', () => {
     bedRepository.findMany.mockResolvedValue([occupiedBedRecord]);
     bedRepository.count.mockResolvedValue(1);
 
-    const result = await listBeds(
-      { include_occupancy: true },
-      1,
-      200,
-      'label',
-      'asc'
-    );
+    const result = await listBeds({ include_occupancy: 'true' }, 1, 200, 'label', 'asc');
     const bed = result.beds[0];
 
     expect(bed).not.toHaveProperty('payment_status');

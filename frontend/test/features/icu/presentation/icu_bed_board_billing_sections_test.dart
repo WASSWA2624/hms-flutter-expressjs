@@ -251,6 +251,9 @@ void main() {
   setUp(() {
     repository = _MockIcuRepository();
     registerFallbackValue(const IcuBoardQuery());
+    registerFallbackValue(
+      const IcuPatientSummary(id: 'fallback', admissionId: 'fallback'),
+    );
   });
 
   group('ICU Bed board financial inventory (AC1)', () {
@@ -378,7 +381,7 @@ void main() {
         ),
       );
 
-      final Finder openIpd = find.byTooltip('Open IPD');
+      final Finder openIpd = find.byTooltip('Open in IPD');
       expect(openIpd, findsOneWidget);
       await tester.tap(openIpd);
       await tester.pumpAndSettle();

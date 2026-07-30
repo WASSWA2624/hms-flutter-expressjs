@@ -614,7 +614,7 @@ void main() {
       expect(find.text('End ICU stay'), findsNothing);
       expect(find.text('Critical alert'), findsNothing);
       expect(find.text('Print summary'), findsOneWidget);
-      expect(find.text('Open billing'), findsOneWidget);
+      expect(find.text('Open billing'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

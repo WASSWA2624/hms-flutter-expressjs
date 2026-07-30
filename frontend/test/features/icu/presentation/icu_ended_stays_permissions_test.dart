@@ -653,7 +653,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Print summary'), findsOneWidget);
-      expect(find.text('Open billing'), findsOneWidget);
+      expect(find.text('Open billing'), findsNothing);
       // Open IPD is the row next-action — omitted from detail Quick Actions.
       expect(
         find.descendant(

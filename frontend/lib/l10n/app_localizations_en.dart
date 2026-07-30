@@ -857,6 +857,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuStartStayActionLabel => 'Start stay';
 
   @override
+  String get icuCriticalCarePackageFeeLabel => 'ICU critical-care package';
+
+  @override
+  String get icuBedDayFeeLabel => 'ICU bed / day';
+
+  @override
+  String get icuRoundFeeLabel => 'ICU intensivist review fee';
+
+  @override
   String get icuAcknowledgeTitle => 'Acknowledge alert';
 
   @override

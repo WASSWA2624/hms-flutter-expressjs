@@ -24,6 +24,7 @@ const {
   persistNursingServiceBilling,
   persistIcuStayBilling,
   mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
+const { buildIcuStayBilling } = require("@lib/billing/icu-billing");
 const { computeInvoiceFinancials } = require("@lib/billing/financials");
 
 const UUID_LIKE_REGEX =
@@ -4135,10 +4136,21 @@ const startIcuStay = async (id, data, context = {}) => {
         admission_id: admission.id,
         started_at: startedAt}});
 
-    if (data?.billing) {
+    let facility = null;
+    if (admission.facility_id && tx.facility?.findFirst) {
+      facility = await tx.facility.findFirst({
+        where: {
+          id: admission.facility_id,
+          deleted_at: null}});
+    }
+
+    const stayBilling = buildIcuStayBilling({
+      billing: data?.billing || null,
+      facility});
+    if (stayBilling) {
       await persistIcuStayBilling(tx, {
         icuStayId: icuStay.id,
-        billing: data.billing,
+        billing: stayBilling,
         tenantId: admission.tenant_id,
         facilityId: admission.facility_id || null,
         patientId: admission.patient_id,

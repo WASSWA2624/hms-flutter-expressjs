@@ -711,7 +711,7 @@ void main() {
 
       expect(find.text('Print summary'), findsOneWidget);
       expect(find.text('Open in IPD'), findsOneWidget);
-      expect(find.text('Open billing'), findsOneWidget);
+      expect(find.text('Open billing'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),

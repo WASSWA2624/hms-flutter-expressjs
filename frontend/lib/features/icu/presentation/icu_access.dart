@@ -525,7 +525,7 @@ abstract final class IcuAllAtomPermissions {
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
@@ -610,7 +610,7 @@ abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -688,7 +688,7 @@ abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -769,7 +769,7 @@ abstract final class IcuCriticalAtomPermissions {
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
@@ -854,7 +854,7 @@ abstract final class IcuTransfersAtomPermissions {
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
-  static const AccessRequirement openBilling = icuNavigationRequirement;
+  static const AccessRequirement openBilling = icuBillingReadRequirement;
   static const AccessRequirement openDischargeClearance =
       icuNavigationRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.

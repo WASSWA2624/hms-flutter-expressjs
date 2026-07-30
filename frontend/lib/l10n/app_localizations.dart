@@ -1714,6 +1714,24 @@ abstract class AppLocalizations {
   /// **'Start stay'**
   String get icuStartStayActionLabel;
 
+  /// Billing line for ICU stay start package charge.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU critical-care package'**
+  String get icuCriticalCarePackageFeeLabel;
+
+  /// Billing line for ICU bed-day charge on stay start.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU bed / day'**
+  String get icuBedDayFeeLabel;
+
+  /// Billing line for ICU round / ward-round fee.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU intensivist review fee'**
+  String get icuRoundFeeLabel;
+
   /// Title for the acknowledge alert confirmation.
   ///
   /// In en, this message translates to:
