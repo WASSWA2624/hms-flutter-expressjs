@@ -362,17 +362,21 @@ void main() {
         when(() => repository.replayLog(any(), any())).thenAnswer(
           (_) async => const Result<IntegrationActionResult>.success(
             IntegrationActionResult(
-              id: 'log-3',
+              title: 'Replay',
               status: 'FAILED',
               message: '[REPLAY] Delivery timed out',
             ),
           ),
         );
-        when(() => repository.listLogs()).thenAnswer(
-          (_) async => const Result<List<IntegrationLogRecord>>.success(
-            <IntegrationLogRecord>[_attentionLog, _replayedLog],
-          ),
-        );
+        var listCalls = 0;
+        when(() => repository.listLogs()).thenAnswer((_) async {
+          listCalls += 1;
+          return Result<List<IntegrationLogRecord>>.success(
+            listCalls <= 1
+                ? const <IntegrationLogRecord>[_attentionLog]
+                : const <IntegrationLogRecord>[_attentionLog, _replayedLog],
+          );
+        });
 
         await _pumpLogsTab(
           tester,
@@ -381,17 +385,17 @@ void main() {
           logs: const <IntegrationLogRecord>[_attentionLog],
         );
 
-        await tester.tap(find.text('Failed Delivery').first);
+        expect(find.text('Replay or escalate'), findsWidgets);
+        await tester.tap(find.text('Replay or escalate').first);
         await tester.pumpAndSettle();
-        await tester.tap(find.textContaining('Replay').first);
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(AppButton, 'Replay').last);
+        await tester.tap(find.text('Replay log').last);
         await tester.pumpAndSettle();
 
         verify(() => repository.replayLog('log-2', any())).called(1);
+        expect(listCalls, greaterThan(1));
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Invoice'), findsNothing);
-        expect(find.textContaining('Balance'), findsNothing);
+        expect(find.textContaining('Balance due'), findsNothing);
       },
     );
 

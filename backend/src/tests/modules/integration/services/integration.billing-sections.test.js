@@ -96,7 +96,10 @@ describe('integration Integrations-tab billing-sections scan', () => {
   });
 
   it('create integration resolves tenant id only — no ledger post', async () => {
-    const raw = buildRawIntegration();
+    const raw = buildRawIntegration({
+      integration_type: 'BILLING',
+      config_json: { endpoint: 'https://billing-connector.example' },
+    });
     integrationRepository.create.mockResolvedValue(raw);
     integrationRepository.findById.mockResolvedValue(raw);
 

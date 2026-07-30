@@ -21,18 +21,18 @@ jest.mock('@lib/websocket', () => ({
     BED_ASSIGNMENT_CHANGED: 'admission.bed_assignment_changed'},
   NOTIFICATION_EVENTS: { NOTIFICATION_CREATED: 'notification.created' }}));
 
-const persistIcuStayBilling = jest.fn().mockResolvedValue({
+const mockPersistIcuStayBilling = jest.fn().mockResolvedValue({
   invoice_id: 'inv-icu-xfer-1',
   payment_status: 'PENDING',
   total_amount: '150000.00'});
-const persistWardRoundBilling = jest.fn().mockResolvedValue({
+const mockPersistWardRoundBilling = jest.fn().mockResolvedValue({
   invoice_id: 'inv-round-xfer-1',
   payment_status: 'PENDING',
   total_amount: '50000.00'});
 
 jest.mock('@lib/billing/clinical-request-billing', () => ({
-  persistIcuStayBilling: (...args) => persistIcuStayBilling(...args),
-  persistWardRoundBilling: (...args) => persistWardRoundBilling(...args),
+  persistIcuStayBilling: (...args) => mockPersistIcuStayBilling(...args),
+  persistWardRoundBilling: (...args) => mockPersistWardRoundBilling(...args),
   persistAdmissionBilling: jest.fn(),
   persistNursingServiceBilling: jest.fn(),
   mapClinicalOrderBillingFields: jest.fn((value) => value),
@@ -162,8 +162,8 @@ describe('ipd-flow ICU Transfers billing-sections scan', () => {
     );
 
     expect(tx.transfer_request.create).toHaveBeenCalledTimes(1);
-    expect(persistIcuStayBilling).not.toHaveBeenCalled();
-    expect(persistWardRoundBilling).not.toHaveBeenCalled();
+    expect(mockPersistIcuStayBilling).not.toHaveBeenCalled();
+    expect(mockPersistWardRoundBilling).not.toHaveBeenCalled();
   });
 
   it('updateTransfer approve does not invent a cash ledger', async () => {
@@ -203,8 +203,8 @@ describe('ipd-flow ICU Transfers billing-sections scan', () => {
     );
 
     expect(tx.transfer_request.update).toHaveBeenCalled();
-    expect(persistIcuStayBilling).not.toHaveBeenCalled();
-    expect(persistWardRoundBilling).not.toHaveBeenCalled();
+    expect(mockPersistIcuStayBilling).not.toHaveBeenCalled();
+    expect(mockPersistWardRoundBilling).not.toHaveBeenCalled();
   });
 
   it('startIcuStay with billing posts via persistIcuStayBilling (no bypass)', async () => {
@@ -237,8 +237,8 @@ describe('ipd-flow ICU Transfers billing-sections scan', () => {
       { tenant_id: 'tenant-1', user_id: 'user-1' },
     );
 
-    expect(persistIcuStayBilling).toHaveBeenCalledTimes(1);
-    expect(persistIcuStayBilling).toHaveBeenCalledWith(
+    expect(mockPersistIcuStayBilling).toHaveBeenCalledTimes(1);
+    expect(mockPersistIcuStayBilling).toHaveBeenCalledWith(
       tx,
       expect.objectContaining({
         icuStayId: 'icu-stay-xfer',
@@ -281,7 +281,7 @@ describe('ipd-flow ICU Transfers billing-sections scan', () => {
       { tenant_id: 'tenant-1' },
     );
 
-    expect(persistIcuStayBilling).not.toHaveBeenCalled();
+    expect(mockPersistIcuStayBilling).not.toHaveBeenCalled();
   });
 
   it('idempotent startIcuStay billing replay reuses ICU_STAY_START charge key', async () => {
@@ -314,7 +314,7 @@ describe('ipd-flow ICU Transfers billing-sections scan', () => {
       { tenant_id: 'tenant-1' },
     );
 
-    expect(persistIcuStayBilling).toHaveBeenCalledWith(
+    expect(mockPersistIcuStayBilling).toHaveBeenCalledWith(
       tx,
       expect.objectContaining({
         chargeKey: 'ICU_STAY_START',
