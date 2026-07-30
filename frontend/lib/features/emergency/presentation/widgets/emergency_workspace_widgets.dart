@@ -1633,7 +1633,7 @@ class EmergencyHandoffOutcomePanel extends StatelessWidget {
           ),
         if (outcome.billingDeferred)
           AppAccessActionGate(
-            requirement: EmergencyAllAtomPermissions.openBilling,
+            requirement: billingReadRequirement,
             builder: (BuildContext context, bool isAllowed) {
               if (!isAllowed) {
                 return const SizedBox.shrink();

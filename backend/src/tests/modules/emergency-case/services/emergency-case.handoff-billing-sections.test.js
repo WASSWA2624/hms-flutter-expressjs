@@ -1,5 +1,11 @@
 /**
- * Emergency All tab — handoff billing sections (posts deferred Billing records).
+ * Billing & sections scan for Emergency Handoff ready (`/emergency?scope=handoff`).
+ *
+ * Primary tab mutation is handoffEmergencyCase. Deferred OPD consultation,
+ * IPD/ICU admission, and theatre fees must post through shared
+ * clinical-request-billing / emergency-billing helpers (PENDING / outstanding).
+ * Settlement is owned by Billing — Emergency never invents a cashier path.
+ * Terminal referral / discharge is NOT_BILLED.
  *
  * @module tests/modules/emergency-case/services/emergency-case.handoff-billing-sections
  */
@@ -9,7 +15,7 @@ jest.mock('@repositories/patient/patient.repository');
 jest.mock('@repositories/patient-contact/patient-contact.repository');
 jest.mock('@repositories/triage-assessment/triage-assessment.repository');
 jest.mock('@prisma/client', () => ({
-  $transaction: jest.fn((fn) => fn({})),
+  $transaction: jest.fn(async (fn) => fn({})),
 }));
 jest.mock('@modules/emergency-response/repositories/emergency-response.repository', () => ({
   create: jest.fn(),
@@ -44,27 +50,56 @@ const ipdFlowService = require('@services/ipd-flow/ipd-flow.service');
 const theatreFlowService = require('@services/theatre-flow/theatre-flow.service');
 const encounterService = require('@services/encounter/encounter.service');
 const { createAuditLog } = require('@lib/audit');
+const {
+  persistEmergencyCaseServiceBilling,
+  HANDOFF_ADMISSION_CHARGE_KEY,
+  HANDOFF_THEATRE_CHARGE_KEY,
+  buildPendingClinicalRequestBilling,
+} = require('@lib/billing/emergency-billing');
 
-describe('Emergency case handoff billing sections (All tab)', () => {
-  const mockUser = { id: 'user-id', tenant_id: 'tenant-id' };
-  const facilityWithFees = {
-    id: 'facility-id',
-    extension_json: {
-      billing: {
-        admission_fee: 250,
-        theatre_fee: 800,
-        currency: 'USD',
-      },
+const mockUser = {
+  id: 'user-id',
+  tenant_id: 'tenant-id',
+  facility_id: 'facility-id',
+};
+
+const facilityWithFees = {
+  id: 'facility-id',
+  extension_json: {
+    billing: {
+      admission_fee: 250,
+      theatre_fee: 800,
+      currency: 'USD',
     },
-  };
+  },
+};
 
+const deferredAdmissionBilling = buildPendingClinicalRequestBilling({
+  lineItems: [
+    {
+      id: 'emergency-admission',
+      label: 'Emergency admission fee',
+      quantity: 1,
+      unit_price: '50000.00',
+      line_total: '50000.00',
+      catalog_type: 'SERVICE',
+    },
+  ],
+  currency: 'UGX',
+});
+
+describe('Emergency Handoff ready billing & sections (handoff → Billing)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
     emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+    persistEmergencyCaseServiceBilling.mockResolvedValue({
+      invoice_id: 'inv-deferred-1',
+      payment_status: 'PENDING',
+    });
   });
 
-  it('OPD handoff creates deferred consultation invoice (no payment gate)', async () => {
+  it('AC2: OPD handoff posts deferred consultation invoice (no payment gate)', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
@@ -120,7 +155,7 @@ describe('Emergency case handoff billing sections (All tab)', () => {
     );
   });
 
-  it('IPD handoff passes deferred admission billing into startIpdFlow', async () => {
+  it('AC2/AC3: IPD handoff posts deferred admission fee through Billing SoR', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
@@ -169,7 +204,45 @@ describe('Emergency case handoff billing sections (All tab)', () => {
     );
   });
 
-  it('Theater handoff passes deferred theatre billing (no double cashier)', async () => {
+  it('AC2/AC6: IPD handoff falls back to persistEmergencyCaseServiceBilling (idempotent key)', async () => {
+    const existingCase = {
+      id: 'case-id',
+      tenant_id: 'tenant-id',
+      facility_id: 'facility-id',
+      patient_id: 'patient-id',
+      severity: 'HIGH',
+      status: 'OPEN',
+    };
+    emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+    ipdFlowService.startIpdFlow.mockResolvedValue({
+      id: 'ADM000002',
+      admission: { id: 'ADM000002' },
+    });
+    emergencyCaseRepository.update.mockResolvedValue({
+      ...existingCase,
+      status: 'CLOSED',
+    });
+
+    await emergencyCaseService.handoffEmergencyCase(
+      'case-id',
+      { destination: 'IPD', close_case: true, billing: deferredAdmissionBilling },
+      mockUser
+    );
+
+    expect(persistEmergencyCaseServiceBilling).toHaveBeenCalledTimes(1);
+    expect(persistEmergencyCaseServiceBilling).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        chargeKey: HANDOFF_ADMISSION_CHARGE_KEY,
+        emergencyCaseId: 'case-id',
+      })
+    );
+    const [, options] = persistEmergencyCaseServiceBilling.mock.calls[0];
+    expect(options.chargeKey).toBe(HANDOFF_ADMISSION_CHARGE_KEY);
+    expect(options.emergencyCaseId).toBe('case-id');
+  });
+
+  it('AC2: Theater handoff posts deferred theatre billing (no double cashier)', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
@@ -212,13 +285,69 @@ describe('Emergency case handoff billing sections (All tab)', () => {
         extension_json: expect.objectContaining({
           handoff: expect.objectContaining({
             billing_deferred: true,
+            billing_payment_status: 'PENDING',
           }),
         }),
       })
     );
   });
 
-  it('terminal referral does not invent Billing charges', async () => {
+  it('AC2: Theater handoff persists SERVICE charge when receiving flow omits billing', async () => {
+    const existingCase = {
+      id: 'case-id',
+      tenant_id: 'tenant-id',
+      facility_id: 'facility-id',
+      patient_id: 'patient-id',
+      severity: 'HIGH',
+      status: 'OPEN',
+      human_friendly_id: 'EME000001',
+    };
+    const theatreBilling = buildPendingClinicalRequestBilling({
+      lineItems: [
+        {
+          id: 'emergency-theatre',
+          label: 'Emergency theatre fee',
+          quantity: 1,
+          unit_price: '120000.00',
+          line_total: '120000.00',
+          catalog_type: 'SERVICE',
+        },
+      ],
+      currency: 'UGX',
+    });
+
+    emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+    encounterService.createEncounter.mockResolvedValue({
+      id: 'ENC-T1',
+      human_friendly_id: 'ENC-T1',
+    });
+    theatreFlowService.startTheatreFlow.mockResolvedValue({
+      id: 'TH-1',
+      human_friendly_id: 'TH-1',
+      workflow_stage: 'PRE_OP',
+    });
+    emergencyCaseRepository.update.mockResolvedValue({
+      ...existingCase,
+      status: 'CLOSED',
+    });
+
+    await emergencyCaseService.handoffEmergencyCase(
+      'case-id',
+      { destination: 'THEATER', close_case: true, billing: theatreBilling },
+      mockUser
+    );
+
+    expect(persistEmergencyCaseServiceBilling).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        emergencyCaseId: 'case-id',
+        chargeKey: HANDOFF_THEATRE_CHARGE_KEY,
+        description: 'Emergency theatre fee',
+      })
+    );
+  });
+
+  it('AC2: terminal referral does not invent Billing charges (NOT_BILLED)', async () => {
     const existingCase = {
       id: 'case-id',
       tenant_id: 'tenant-id',
@@ -241,6 +370,7 @@ describe('Emergency case handoff billing sections (All tab)', () => {
 
     expect(opdFlowService.startOpdFlow).not.toHaveBeenCalled();
     expect(ipdFlowService.startIpdFlow).not.toHaveBeenCalled();
+    expect(persistEmergencyCaseServiceBilling).not.toHaveBeenCalled();
     expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
       existingCase.id,
       expect.objectContaining({
@@ -253,5 +383,20 @@ describe('Emergency case handoff billing sections (All tab)', () => {
         }),
       })
     );
+  });
+
+  it('AC2: soft delete does not invent a module cashier reverse', async () => {
+    const existingCase = {
+      id: 'case-id',
+      tenant_id: 'tenant-id',
+      status: 'CLOSED',
+    };
+    emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+    emergencyCaseRepository.softDelete.mockResolvedValue(undefined);
+
+    await emergencyCaseService.deleteEmergencyCase('case-id', mockUser);
+
+    expect(emergencyCaseRepository.softDelete).toHaveBeenCalledWith('case-id');
+    expect(persistEmergencyCaseServiceBilling).not.toHaveBeenCalled();
   });
 });

@@ -438,7 +438,8 @@ bool canViewEmergencyAll(AppAccessPolicy policy) {
 /// ∩ `emergency:delete` (no Critical delete control yet). Matrix nested
 /// cross-module rows are _(n/a)_. Route entry keeps catalog ∪
 /// `emergency:read` | `emergency:write` | `operations:read` ([routeEntry]).
-/// Tab chrome stays ∩ `emergency:read`.
+/// Tab chrome stays ∩ `emergency:read`. Deferred settle navigates Billing
+/// (∩ `billing:read`); no module cashier on this tab.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -454,6 +455,7 @@ bool canViewEmergencyAll(AppAccessPolicy policy) {
 /// | Detail complementary writes (priority / triage / …) | create / update | write ∩ |
 /// | Detail Record handoff | update | handoff ∪ source |
 /// | Detail Schedule in Theater | navigate / update | write ∩ |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Open in {module} (handoff outcome) | navigate | read ∩ |
 /// | Ambulance timeline panel | read | read ∩ ([ambulanceContext]) |
@@ -520,6 +522,8 @@ abstract final class EmergencyCriticalAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement openInReceivingModule =
       emergencyWorkspaceReadRequirement;
+  /// Settle deferred / outstanding via Billing (no module cashier).
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
   /// Nested cross-module — not used on this tab (matrix _(n/a)_).
@@ -662,6 +666,7 @@ bool canViewEmergencyClosed(AppAccessPolicy policy) {
 /// | Detail Record handoff | update | handoff ∪ source |
 /// | Detail Schedule in Theater | navigate / update | write ∩ |
 /// | Detail Print summary | export / read | read ∩ |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` |
 /// | Open in {module} (handoff outcome) | navigate | read ∩ |
 /// | Ambulance timeline panel | read | read ∩ ([ambulanceContext]) |
 /// | Hard delete / void | delete | delete ∩ (no UI yet) |
@@ -725,8 +730,14 @@ abstract final class EmergencyHandoffAtomPermissions {
       emergencyWorkspaceReadRequirement;
   static const AccessRequirement openInReceivingModule =
       emergencyWorkspaceReadRequirement;
+  /// Settle deferred / outstanding via Billing workspace (no module cashier).
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement ambulanceContext =
       emergencyAmbulanceContextReadRequirement;
+  static const AccessRequirement ambulancePanel =
+      emergencyAmbulanceContextReadRequirement;
+  static const AccessRequirement timelinePanel =
+      emergencyWorkspaceReadRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses emergency write/read only.
   static const AccessRequirement nestedWrite =
       emergencyWorkspaceWriteRequirement;

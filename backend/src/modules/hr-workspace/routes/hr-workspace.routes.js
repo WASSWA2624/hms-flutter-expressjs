@@ -32,6 +32,10 @@ const {
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
+// Payroll process is staff compensation approval (NOT patient Billing cashier).
+// Frontend ∩ `hr:write` + `financial:approve` — chain authorize for AND.
+const PAYROLL_PROCESS_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
+const PAYROLL_PROCESS_APPROVE_SCOPES = [PERMISSIONS.FINANCIAL_APPROVE];
 
 const requireHrWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('hr_workspace_v1')) {
@@ -154,7 +158,8 @@ router.get(
 router.post(
   '/payroll-runs/:payrollRunIdentifier/process',
   validateRequest({ params: payrollRunIdentifierParamsSchema, body: payrollProcessSchema }),
-  authorize(HR_WRITE_SCOPES, 'permission'),
+  authorize(PAYROLL_PROCESS_WRITE_SCOPES, 'permission'),
+  authorize(PAYROLL_PROCESS_APPROVE_SCOPES, 'permission'),
   hrWorkspaceController.processPayrollRun
 );
 

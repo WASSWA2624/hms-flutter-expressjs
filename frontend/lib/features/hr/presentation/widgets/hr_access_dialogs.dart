@@ -1365,33 +1365,45 @@ class _HrAccessUserDetailContent extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
+    // Sibling titled sections under Column (never nested): Account, then
+    // AppUserAccessPanel's role / direct / effective panels.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _HrAccessDetailRow(
-          label: l10n.hrEmailLabel,
-          value: detail.email ?? '—',
+        AppWorkspaceDetailPanel(
+          title: l10n.accessAdminUserDetailProfileSectionTitle,
+          description: l10n.accessAdminUserDetailProfileSectionDescription,
+          titleIcon: Icons.badge_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _HrAccessDetailRow(
+                label: l10n.hrEmailLabel,
+                value: detail.email ?? '—',
+              ),
+              if ((detail.phone ?? '').isNotEmpty)
+                _HrAccessDetailRow(
+                  label: l10n.profilePhoneLabel,
+                  value: detail.phone!,
+                ),
+              if ((detail.positionTitle ?? '').isNotEmpty)
+                _HrAccessDetailRow(
+                  label: l10n.hrAccessPositionTitleLabel,
+                  value: detail.positionTitle!,
+                ),
+              if ((detail.status ?? '').isNotEmpty)
+                _HrAccessDetailRow(
+                  label: l10n.hrStatusColumnLabel,
+                  value: detail.status!,
+                ),
+              if ((detail.staffProfileId ?? '').isNotEmpty)
+                _HrAccessDetailRow(
+                  label: l10n.hrAccessLinkedStaffLabel,
+                  value: detail.staffProfileName ?? detail.staffProfileId!,
+                ),
+            ],
+          ),
         ),
-        if ((detail.phone ?? '').isNotEmpty)
-          _HrAccessDetailRow(
-            label: l10n.profilePhoneLabel,
-            value: detail.phone!,
-          ),
-        if ((detail.positionTitle ?? '').isNotEmpty)
-          _HrAccessDetailRow(
-            label: l10n.hrAccessPositionTitleLabel,
-            value: detail.positionTitle!,
-          ),
-        if ((detail.status ?? '').isNotEmpty)
-          _HrAccessDetailRow(
-            label: l10n.hrStatusColumnLabel,
-            value: detail.status!,
-          ),
-        if ((detail.staffProfileId ?? '').isNotEmpty)
-          _HrAccessDetailRow(
-            label: l10n.hrAccessLinkedStaffLabel,
-            value: detail.staffProfileName ?? detail.staffProfileId!,
-          ),
         SizedBox(height: theme.spacing.md),
         AppUserAccessPanel(
           roleGroups: detail.userRoles

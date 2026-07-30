@@ -1038,6 +1038,7 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final HousekeepingWorkItem? item = state.selectedItem;
     if (item == null) {
       return AppWorkspaceDetailPanel(
@@ -1051,51 +1052,61 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.housekeepingDetailTitle,
-      description: item.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppInfoTileGrid(
-            maxColumns: 2,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.housekeepingReferenceLabel,
-                value: item.effectiveDisplayId,
-                icon: Icons.tag_outlined,
-                copyable: true,
-              ),
-              AppInfoTileData(
-                label: l10n.housekeepingLocationLabel,
-                value: _locationLabel(l10n, item),
-                icon: Icons.meeting_room_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.housekeepingAssigneeLabel,
-                value: item.assigneeLabel ?? l10n.housekeepingUnassigned,
-                icon: Icons.person_outline,
-              ),
-              AppInfoTileData(
-                label: l10n.housekeepingDueLabel,
-                value: _dateTimeLabel(context, _primaryDate(item)),
-                icon: Icons.schedule_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.housekeepingStatusColumnLabel,
-                value: _statusLabel(l10n, item),
-                icon: _statusIcon(item),
-              ),
-            ],
+    // Sibling titled sections only — never nest Quick actions inside Detail.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _DetailActions(
+          item: item,
+          isSaving: state.isSaving,
+          capabilities: capabilities,
+        ),
+        SizedBox(height: theme.spacing.md),
+        ...appWorkspaceDetailSectionSpacing(context, <Widget>[
+          AppWorkspaceDetailPanel(
+            title: l10n.housekeepingDetailTitle,
+            description: item.title,
+            titleIcon: _resourceIcon(item.resource),
+            child: AppInfoTileGrid(
+              maxColumns: 2,
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.housekeepingReferenceLabel,
+                  value: item.effectiveDisplayId,
+                  icon: Icons.tag_outlined,
+                  copyable: true,
+                ),
+                AppInfoTileData(
+                  label: l10n.housekeepingLocationLabel,
+                  value: _locationLabel(l10n, item),
+                  icon: Icons.meeting_room_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.housekeepingAssigneeLabel,
+                  value: item.assigneeLabel ?? l10n.housekeepingUnassigned,
+                  icon: Icons.person_outline,
+                ),
+                AppInfoTileData(
+                  label: l10n.housekeepingDueLabel,
+                  value: _dateTimeLabel(context, _primaryDate(item)),
+                  icon: Icons.schedule_outlined,
+                ),
+                AppInfoTileData(
+                  label: l10n.housekeepingStatusColumnLabel,
+                  value: _statusLabel(l10n, item),
+                  icon: _statusIcon(item),
+                ),
+                if (item.isMaintenanceRequest && _notEmpty(item.assetLabel))
+                  AppInfoTileData(
+                    label: l10n.housekeepingAssetColumnLabel,
+                    value: item.assetLabel!,
+                    icon: Icons.inventory_2_outlined,
+                  ),
+              ],
+            ),
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _DetailActions(
-            item: item,
-            isSaving: state.isSaving,
-            capabilities: capabilities,
-          ),
-        ],
-      ),
+        ]),
+      ],
     );
   }
 }
