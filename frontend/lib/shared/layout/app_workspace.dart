@@ -487,21 +487,29 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
     required this.child,
     this.description,
     this.actions = const <Widget>[],
+    this.headerActions = const <Widget>[],
     this.titleIcon,
     this.collapsible = true,
     this.initiallyExpanded = true,
+    this.contentPadding,
     super.key,
   });
 
   final String? title;
   final String? description;
   final List<Widget> actions;
+
+  /// Actions rendered in the header row (before the expand chevron).
+  final List<Widget> headerActions;
   final Widget child;
   final IconData? titleIcon;
 
   /// When true (default), titled panels can collapse to the header only.
   final bool collapsible;
   final bool initiallyExpanded;
+
+  /// Overrides default body padding (`spacing.lg` on all sides).
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   State<AppWorkspaceDetailPanel> createState() =>
@@ -537,53 +545,78 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (hasTitle) ...<Widget>[
-            Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: widget.collapsible ? _toggleExpanded : null,
-                child: Padding(
-                  // Minimal header: just enough inset so title/icon miss the border.
-                  padding: EdgeInsets.symmetric(
-                    horizontal: theme.spacing.sm,
-                    vertical: theme.spacing.xs,
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      if (widget.titleIcon != null) ...<Widget>[
-                        Icon(
-                          widget.titleIcon,
-                          size: theme.appTokens.listIconSize,
-                          color: colorScheme.primary,
-                        ),
-                        SizedBox(width: theme.spacing.sm),
-                      ],
-                      Expanded(
-                        child: Text(
-                          widget.title!,
-                          style: theme.textTheme.titleMedium,
+            Padding(
+              // Minimal header: just enough inset so title/icon miss the border.
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.xs,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: widget.collapsible ? _toggleExpanded : null,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: theme.spacing.xs / 2,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              if (widget.titleIcon != null) ...<Widget>[
+                                Icon(
+                                  widget.titleIcon,
+                                  size: theme.appTokens.listIconSize,
+                                  color: colorScheme.primary,
+                                ),
+                                SizedBox(width: theme.spacing.sm),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  widget.title!,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                              ),
+                              if (widget.collapsible)
+                                Icon(
+                                  _expanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  size: theme.appTokens.listIconSize,
+                                  color: colorScheme.onSurfaceVariant,
+                                  semanticLabel: _expanded
+                                      ? context.l10n.commonShowLessActionLabel
+                                      : context.l10n.commonShowMoreActionLabel,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                      if (widget.collapsible)
-                        Icon(
-                          _expanded
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          size: theme.appTokens.listIconSize,
-                          color: colorScheme.onSurfaceVariant,
-                          semanticLabel: _expanded
-                              ? context.l10n.commonShowLessActionLabel
-                              : context.l10n.commonShowMoreActionLabel,
-                        ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (widget.headerActions.isNotEmpty) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    AppActionLabelScope(
+                      showLabels: true,
+                      forceIconOnly: false,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: theme.spacing.xs,
+                        runSpacing: theme.spacing.xs,
+                        children: widget.headerActions,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (showBody) const Divider(height: 1),
           ],
           if (showBody)
             Padding(
-              padding: EdgeInsets.all(theme.spacing.lg),
+              padding:
+                  widget.contentPadding ?? EdgeInsets.all(theme.spacing.lg),
               child: _buildBody(
                 theme: theme,
                 colorScheme: colorScheme,

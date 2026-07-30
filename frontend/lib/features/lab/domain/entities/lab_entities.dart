@@ -514,6 +514,8 @@ final class LabOrderSummary {
     this.locationLabel,
     this.patientId,
     this.patientDisplayName,
+    this.patientGender,
+    this.patientDateOfBirth,
     this.orderedAt,
     this.createdAt,
     this.updatedAt,
@@ -548,6 +550,8 @@ final class LabOrderSummary {
   final String? locationLabel;
   final String? patientId;
   final String? patientDisplayName;
+  final String? patientGender;
+  final DateTime? patientDateOfBirth;
   final DateTime? orderedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;

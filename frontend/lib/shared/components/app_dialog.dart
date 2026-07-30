@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_dialog_title.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
 
@@ -606,37 +607,51 @@ class _DialogHeader extends StatelessWidget {
                       child: normalizeDialogTitleWidget(title!),
                     ),
             ),
-            if (showMaximizeButton)
-              AppButton(
-                iconOnly: true,
-                leadingIcon: isMaximized
-                    ? Icons.fullscreen_exit
-                    : Icons.fullscreen,
-                label: isMaximized ? 'Restore dialog' : 'Maximize dialog',
-                semanticLabel: isMaximized
-                    ? 'Restore dialog'
-                    : 'Maximize dialog',
-                tooltip: isMaximized ? 'Restore dialog' : 'Maximize dialog',
-                onPressed: onMaximizeToggle,
-              ),
-            if (showMaximizeButton && showCloseButton)
-              SizedBox(width: theme.spacing.sm),
-            if (showCloseButton)
-              AppButton(
-                iconOnly: true,
-                leadingIcon: Icons.close,
-                label: MaterialLocalizations.of(context).closeButtonTooltip,
-                semanticLabel: MaterialLocalizations.of(
-                  context,
-                ).closeButtonTooltip,
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                color: colorScheme.error,
-                enabled: closeEnabled,
-                onPressed: closeEnabled
-                    ? () {
-                        Navigator.of(context).maybePop();
-                      }
-                    : null,
+            if (showMaximizeButton || showCloseButton)
+              AppActionLabelScope(
+                showLabels: true,
+                forceIconOnly: false,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (showMaximizeButton)
+                      AppButton(
+                        leadingIcon: isMaximized
+                            ? Icons.fullscreen_exit
+                            : Icons.fullscreen,
+                        label: isMaximized ? 'Restore' : 'Maximize',
+                        semanticLabel: isMaximized
+                            ? 'Restore dialog'
+                            : 'Maximize dialog',
+                        tooltip: isMaximized
+                            ? 'Restore dialog'
+                            : 'Maximize dialog',
+                        onPressed: onMaximizeToggle,
+                      ),
+                    if (showMaximizeButton && showCloseButton)
+                      SizedBox(width: theme.spacing.sm),
+                    if (showCloseButton)
+                      AppButton(
+                        leadingIcon: Icons.close,
+                        label: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonLabel,
+                        semanticLabel: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                        color: colorScheme.error,
+                        enabled: closeEnabled,
+                        onPressed: closeEnabled
+                            ? () {
+                                Navigator.of(context).maybePop();
+                              }
+                            : null,
+                      ),
+                  ],
+                ),
               ),
           ],
         ),

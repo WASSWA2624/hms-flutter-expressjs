@@ -19529,6 +19529,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labVerifyAllAction => 'Save all';
 
   @override
+  String get labSaveResultsAction => 'Save results';
+
+  @override
   String get labEntryStatusColumnLabel => 'Entry status';
 
   @override

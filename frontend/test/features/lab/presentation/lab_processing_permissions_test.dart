@@ -397,7 +397,8 @@ void main() {
 
         expect(find.text(l10n.labEditOrderAction), findsOneWidget);
         expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
-        expect(find.text(l10n.labReceiveSampleAction), findsOneWidget);
+        expect(find.text(l10n.labReceiveSampleAction), findsNothing);
+        expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
       },
     );
 
@@ -573,7 +574,7 @@ void main() {
       expect(find.textContaining('Try again'), findsWidgets);
     });
 
-    testWidgets('post-mutation sync: receive updates selected workflow in place', (
+    testWidgets('result entry omits workflow receive chrome', (
       WidgetTester tester,
     ) async {
       await _pumpProcessingTab(tester, repository: repository);
@@ -584,13 +585,10 @@ void main() {
       await tester.tap(find.text(l10n.labNextActionEnterResult).first);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.labReceiveSampleAction));
-      await tester.pumpAndSettle();
-
-      verify(() => repository.receiveSample(any(), any())).called(1);
-      // Detail stays open with synchronized workflow (in-place worklist replace).
       expect(find.byType(LabResultEntryDialog), findsOneWidget);
       expect(find.text(l10n.labReceiveSampleAction), findsNothing);
+      expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
+      verifyNever(() => repository.receiveSample(any(), any()));
     });
 
     testWidgets('mobile viewport: processing chrome remains', (

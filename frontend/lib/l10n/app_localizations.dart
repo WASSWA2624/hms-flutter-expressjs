@@ -36349,6 +36349,12 @@ abstract class AppLocalizations {
   /// **'Save all'**
   String get labVerifyAllAction;
 
+  /// Primary footer action that saves entered lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Save results'**
+  String get labSaveResultsAction;
+
   /// Localized text for labEntryStatusColumnLabel.
   ///
   /// In en, this message translates to:

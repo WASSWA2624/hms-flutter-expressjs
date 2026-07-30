@@ -509,6 +509,8 @@ const mapLabOrderRecord = (record, options = {}) => {
     location_label: encounterContext?.location_label || null,
     patient_id: toPublicIdentifier(patient?.human_friendly_id, record.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
+    patient_gender: toText(patient?.gender).toUpperCase() || null,
+    patient_date_of_birth: toIsoDateTime(patient?.date_of_birth),
     ordered_by_user_id: toPublicIdentifier(record.ordered_by?.human_friendly_id, record.ordered_by_user_id),
     ordered_at: toIsoDateTime(record.ordered_at),
     created_at: toIsoDateTime(record.created_at),

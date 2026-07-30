@@ -241,7 +241,7 @@ void main() {
       expect(find.text('Reschedule follow-up'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Close'), findsWidgets);
       expectFlatSections(tester);
     });
 

@@ -25017,6 +25017,10 @@
   "@labVerifyAllAction": {
     "description": "Localized text for labVerifyAllAction."
   },
+  "labSaveResultsAction": "Save results",
+  "@labSaveResultsAction": {
+    "description": "Primary footer action that saves entered lab results."
+  },
   "labEntryStatusColumnLabel": "Entry status",
   "@labEntryStatusColumnLabel": {
     "description": "Localized text for labEntryStatusColumnLabel."

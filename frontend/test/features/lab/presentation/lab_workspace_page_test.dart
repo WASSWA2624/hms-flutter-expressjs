@@ -459,7 +459,8 @@ void main() {
 
     expect(find.text(l10n.labEditOrderAction), findsOneWidget);
     expect(find.text(l10n.labDeleteOrderAction), findsOneWidget);
-    expect(find.text(l10n.labCollectSampleAction), findsOneWidget);
+    expect(find.text(l10n.labCollectSampleAction), findsNothing);
+    expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
   });
 
   testWidgets('mobile viewport: All tab authorized chrome remains', (

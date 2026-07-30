@@ -293,6 +293,8 @@ final class LabOrderSummaryDto {
           _string(_encounterField(json, 'location_label')),
       patientId: _string(json['patient_id']),
       patientDisplayName: _string(json['patient_display_name']),
+      patientGender: _string(json['patient_gender']),
+      patientDateOfBirth: _date(json['patient_date_of_birth']),
       orderedAt: _date(json['ordered_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),

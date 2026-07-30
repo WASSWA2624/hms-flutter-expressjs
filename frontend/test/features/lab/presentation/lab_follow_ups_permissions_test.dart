@@ -428,7 +428,7 @@ void main() {
 
       expect(find.text('Reschedule follow-up'), findsNothing);
       expect(find.text('Mark completed'), findsNothing);
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Close'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
