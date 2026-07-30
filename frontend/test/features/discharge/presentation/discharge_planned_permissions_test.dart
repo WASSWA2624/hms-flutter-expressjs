@@ -186,9 +186,6 @@ void _stubQueue(
       ),
     );
   });
-  when(
-    () => repository.createFinalInvoice(any()),
-  ).thenAnswer((_) async => const Result<void>.success(null));
 }
 
 Future<void> _pumpPlannedTab(
@@ -569,7 +566,8 @@ void main() {
       await tester.tap(find.text('Alice Planned'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Request final billing'), findsOneWidget);
+      expect(find.text('Request final billing'), findsNothing);
+      expect(find.text('Open billing'), findsNothing);
       expect(find.text('Request medicines'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -724,7 +722,7 @@ void main() {
   );
 
   testWidgets(
-    'post-mutation sync: request billing shows success snackbar on Planned',
+    'no local invoice create: Open billing only with billing:read on Planned',
     (WidgetTester tester) async {
       await _pumpPlannedTab(
         tester,
@@ -733,26 +731,18 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.billingRead,
           },
         ),
       );
 
       await tester.tap(find.text('Alice Planned'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Request final billing'));
-      await tester.pumpAndSettle();
 
-      expect(find.text('Create invoice request'), findsOneWidget);
-      final Finder amountField = find.descendant(
-        of: find.byType(AppFormShell),
-        matching: find.byType(TextField),
-      );
-      await tester.enterText(amountField.first, '1000');
-      await tester.tap(find.text('Create invoice request'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Discharge workflow updated.'), findsOneWidget);
-      verify(() => repository.createFinalInvoice(any())).called(1);
+      expect(find.text('Open billing'), findsWidgets);
+      expect(find.text('Request final billing'), findsNothing);
+      expect(find.text('Create invoice request'), findsNothing);
+      expect(find.textContaining('Receive payment'), findsNothing);
     },
   );
 

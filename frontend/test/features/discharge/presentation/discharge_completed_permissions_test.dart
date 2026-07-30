@@ -151,9 +151,6 @@ void _stubQueue(
       ),
     );
   });
-  when(
-    () => repository.createFinalInvoice(any()),
-  ).thenAnswer((_) async => const Result<void>.success(null));
 }
 
 Future<void> _pumpCompletedTab(

@@ -226,9 +226,10 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | Next action WorkflowActionButton | navigate / write | registry requirement |
 /// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
 /// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab | create / update | lab order ∪ |
-/// | Detail Request radiology | create / update | radiology order ∪ |
-/// | Detail Prescribe | create | pharmacy order ∪ |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
+/// | Detail Request procedure (+ Review billing) | create-charge | write ∪ + clinical-request-billing |
 /// | Detail Request admission | create | admission ∪ |
 /// | Detail Print summary | export / read | read ∩ |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |

@@ -2842,8 +2842,7 @@ const requestIpdAdmission = async (data, context = {}) => {
         stage_to: STAGES.ADMISSION_REQUESTED,
         occurred_at: requestedAt.toISOString()},
       compatibilitySignals: ["ADMISSION_REQUESTED"],
-      request_note: requestNote || null,
-      billing_snapshot: admission.billing_snapshot || null};
+      request_note: requestNote || null};
   });
 
   return finalizeAction({

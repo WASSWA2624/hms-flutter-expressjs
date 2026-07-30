@@ -543,9 +543,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Start discharge plan'), findsWidgets);
-      expect(find.text('Request final billing'), findsOneWidget);
+      expect(find.text('Request final billing'), findsNothing);
+      expect(find.text('Open billing'), findsNothing);
       expect(find.text('Request medicines'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'billing:read ∩: Open billing mounts; no local invoice create dialog',
+    (WidgetTester tester) async {
+      final AppAccessPolicy withBilling = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.billingRead,
+        },
+      );
+
+      await _pumpAllTab(
+        tester,
+        repository: repository,
+        accessPolicy: withBilling,
+      );
+
+      await tester.tap(find.text('Bob Pending'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open billing'), findsWidgets);
+      expect(find.text('Request final billing'), findsNothing);
+      expect(find.text('Create invoice request'), findsNothing);
+      expect(find.textContaining('Receive payment'), findsNothing);
     },
   );
 
@@ -843,4 +871,6 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
 
-    expec
+    expect(find.text('Alice Planned'), findsOneWidget);
+  });
+}

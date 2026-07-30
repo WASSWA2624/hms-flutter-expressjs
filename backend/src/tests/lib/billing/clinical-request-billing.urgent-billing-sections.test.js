@@ -308,7 +308,7 @@ describe('Clinical Urgent clinical-request-billing (AC2–AC6)', () => {
           label: 'Wound care',
           quantity: 1,
           unit_price: 55,
-          line_total: 55}];
+          line_total: 55}]};
 
     const first = await applyClinicalRequestBilling(tx, {
       billing,
