@@ -359,6 +359,13 @@ void main() {
     testWidgets(
       'replay posts audit copy only — no Billing UX; list syncs',
       (WidgetTester tester) async {
+        await _pumpLogsTab(
+          tester,
+          repository: repository,
+          accessPolicy: writer,
+          logs: const <IntegrationLogRecord>[_attentionLog],
+        );
+
         when(() => repository.replayLog(any(), any())).thenAnswer(
           (_) async => const Result<IntegrationActionResult>.success(
             IntegrationActionResult(
@@ -368,22 +375,13 @@ void main() {
             ),
           ),
         );
-        var listCalls = 0;
+        var refreshCalls = 0;
         when(() => repository.listLogs()).thenAnswer((_) async {
-          listCalls += 1;
-          return Result<List<IntegrationLogRecord>>.success(
-            listCalls <= 1
-                ? const <IntegrationLogRecord>[_attentionLog]
-                : const <IntegrationLogRecord>[_attentionLog, _replayedLog],
+          refreshCalls += 1;
+          return const Result<List<IntegrationLogRecord>>.success(
+            <IntegrationLogRecord>[_attentionLog, _replayedLog],
           );
         });
-
-        await _pumpLogsTab(
-          tester,
-          repository: repository,
-          accessPolicy: writer,
-          logs: const <IntegrationLogRecord>[_attentionLog],
-        );
 
         expect(find.text('Replay or escalate'), findsWidgets);
         await tester.tap(find.text('Replay or escalate').first);
@@ -392,7 +390,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => repository.replayLog('log-2', any())).called(1);
-        expect(listCalls, greaterThan(1));
+        expect(refreshCalls, greaterThan(0));
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Invoice'), findsNothing);
         expect(find.textContaining('Balance due'), findsNothing);

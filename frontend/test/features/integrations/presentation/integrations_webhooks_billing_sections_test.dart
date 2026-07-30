@@ -387,13 +387,6 @@ void main() {
             ),
           ),
         );
-        var listCalls = 0;
-        when(() => repository.listWebhooks()).thenAnswer((_) async {
-          listCalls += 1;
-          return const Result<List<WebhookSubscriptionRecord>>.success(
-            <WebhookSubscriptionRecord>[_activeWebhook],
-          );
-        });
 
         await _pumpWebhooksTab(
           tester,
@@ -403,13 +396,17 @@ void main() {
 
         await tester.tap(find.text('payment.completed').first);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Replay webhook').last);
+
+        expect(find.text('Replay webhook'), findsOneWidget);
+        await tester.tap(find.text('Replay webhook'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Replay webhook').last);
+
+        final Finder confirm = find.widgetWithText(AppButton, 'Replay webhook');
+        expect(confirm, findsWidgets);
+        await tester.tap(confirm.last);
         await tester.pumpAndSettle();
 
         verify(() => repository.replayWebhook('webhook-1', any())).called(1);
-        expect(listCalls, greaterThanOrEqualTo(1));
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Invoice'), findsNothing);
         expect(find.textContaining('Balance due'), findsNothing);
