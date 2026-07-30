@@ -8,6 +8,7 @@
 const housekeepingTaskRepository = require('@repositories/housekeeping-task/housekeeping-task.repository');
 const { createAuditLog } = require('@lib/audit');
 const { resolveEntityId, resolveIdentifierForFilter, resolveIdentifierForPayload, resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { maybeBillCompletedHousekeepingTask } = require('@lib/billing/housekeeping-billing');
 const { HttpError } = require('@lib/errors');
 
 const TASK_SORT_FIELDS = new Set([
@@ -19,7 +20,15 @@ const TASK_SORT_FIELDS = new Set([
 ]);
 
 const HOUSEKEEPING_TASK_INCLUDE = {
-  facility: { select: { id: true, human_friendly_id: true, name: true } },
+  facility: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      tenant_id: true,
+      extension_json: true,
+    },
+  },
   room: { select: { id: true, human_friendly_id: true, name: true } },
   assigned_to: {
     select: {
@@ -129,6 +138,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
 const resolvePayload = async (data = {}, context = {}, { defaultFacility = true } = {}) => {
   const tenantWhere = context?.tenant_id ? { tenant_id: context.tenant_id } : {};
   const payload = { ...data };
+
+  // Billing-only hints — never persist on housekeeping_task.
+  delete payload.patient_id;
+  delete payload.prefer_private_room_billing;
+  delete payload.billing;
 
   if (hasOwn(payload, 'facility_id')) {
     payload.facility_id = await resolveIdentifierForPayload({
@@ -275,6 +289,21 @@ const updateHousekeepingTask = async (id, data, context = {}) => {
       },
     },
   });
+
+  const beforeStatus = String(beforeHousekeepingTask.status || '')
+    .trim()
+    .toUpperCase();
+  const afterStatus = String(housekeepingTask.status || '')
+    .trim()
+    .toUpperCase();
+  // Billable room-turnover / private-room cleaning surcharges post on Complete
+  // only when facility fee + patient context exist; otherwise audit NOT_BILLED.
+  if (beforeStatus !== 'COMPLETED' && afterStatus === 'COMPLETED') {
+    await maybeBillCompletedHousekeepingTask(housekeepingTask, context, {
+      patientId: data?.patient_id || null,
+      preferPrivateRoom: Boolean(data?.prefer_private_room_billing),
+    });
+  }
 
   return mapHousekeepingTask(housekeepingTask);
 };

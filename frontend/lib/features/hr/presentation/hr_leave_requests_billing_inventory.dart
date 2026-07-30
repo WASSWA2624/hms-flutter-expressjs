@@ -190,8 +190,8 @@ abstract final class HrLeaveRequestsBillingInventory {
 /// Documents Leave requests financial scope for tests and audits.
 const String hrLeaveRequestsBillingScopeNote =
     'HR Leave requests covers staff leave request/approve/reject. Mutations '
-    'update staff_leave with audit and realtime sync; they do not create '
-    'patient invoice lines. UNPAID leave type is payroll eligibility metadata '
-    '(Payroll drafts), not a patient ledger balance. Payment collection and '
-    'invoice issuance remain on Billing; payroll processing stays on the '
-    'Payroll drafts tab.';
+    'update staff_leave with audit and realtime sync and stay NOT_BILLED '
+    'internal ops; they do not create patient invoice lines. UNPAID leave type '
+    'is payroll eligibility metadata (Payroll drafts), not a patient ledger '
+    'balance. Payment collection and invoice issuance remain on Billing; '
+    'payroll processing stays on the Payroll drafts tab.';

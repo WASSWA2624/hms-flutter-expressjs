@@ -10,6 +10,9 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies before requiring the service
 jest.mock('@repositories/housekeeping-task/housekeeping-task.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/billing/housekeeping-billing', () => ({
+  maybeBillCompletedHousekeepingTask: jest.fn().mockResolvedValue(null),
+}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),

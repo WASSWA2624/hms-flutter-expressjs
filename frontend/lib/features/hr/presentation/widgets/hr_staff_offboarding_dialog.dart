@@ -59,6 +59,11 @@ Future<void> showHrStaffOffboardingDialog(
   );
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
+    // Staff payroll draft path only — never patient Billing collect/issue.
+    if (formKey.currentState?.scheduleFinalPayroll == true &&
+        onOpenPayroll != null) {
+      onOpenPayroll!();
+    }
   }
 }
 
@@ -89,6 +94,9 @@ class _HrOffboardingFormState extends State<_HrOffboardingForm> {
     _notesController.dispose();
     super.dispose();
   }
+
+  /// Whether the operator requested a final staff payroll draft (NOT patient Billing).
+  bool get scheduleFinalPayroll => _finalPayroll;
 
   Map<String, Object?> toPayload() {
     return <String, Object?>{

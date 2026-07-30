@@ -2727,6 +2727,8 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
     throw new HttpError('errors.validation.invalid_date', 400);
   }
 
+  const scheduleFinalPayroll = Boolean(payload.schedule_final_payroll);
+
   await prisma.$transaction(async (tx) => {
     if (payload.end_assignments !== false) {
       await tx.staff_assignment.updateMany({
@@ -2770,17 +2772,62 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
     });
   });
 
+  // Staff compensation draft only — never patient Billing / clinical-request.
+  let finalPayrollRun = null;
+  if (scheduleFinalPayroll && staffRecord.tenant_id && prisma?.payroll_run?.create) {
+    const periodEnd = lastWorkingDay;
+    const periodStart = new Date(lastWorkingDay.getTime());
+    periodStart.setUTCDate(periodStart.getUTCDate() - 13);
+    finalPayrollRun = await prisma.payroll_run.create({
+      data: {
+        tenant_id: staffRecord.tenant_id,
+        period_start: periodStart,
+        period_end: periodEnd,
+        status: 'DRAFT',
+        audit_trail_json: {
+          operation: 'SCHEDULE_FINAL_PAYROLL',
+          source: 'STAFF_OFFBOARD',
+          staff_profile_id: staffRecord.id,
+          billing_status: 'NOT_BILLED',
+        },
+      },
+    }).catch(() => null);
+
+    if (finalPayrollRun?.id) {
+      publishHrWorkspaceUpdate({
+        action: 'CREATE',
+        actorUserId: userId || null,
+        tenantId: staffRecord.tenant_id,
+        panel: 'payroll',
+        resource: 'payroll-runs',
+        displayId: resolveDisplayId(finalPayrollRun),
+        queue: 'PAYROLL_DRAFTS',
+        targetPath: buildWorkbenchPath({
+          panel: 'payroll',
+          resource: 'payroll-runs',
+          id: resolveDisplayId(finalPayrollRun),
+          payrollRunId: resolveDisplayId(finalPayrollRun),
+          action: 'view',
+        }),
+      }).catch(() => {});
+    }
+  }
+
   createAuditLog({
     user_id: userId,
     action: 'UPDATE',
     entity: 'staff_profile',
     entity_id: staffRecord.id,
+    tenant_id: staffRecord.tenant_id,
     diff: {
       metadata: {
         operation: 'STAFF_OFFBOARD',
         separation_type: payload.separation_type,
         last_working_day: lastWorkingDay.toISOString(),
         reason: normalizeString(payload.reason) || null,
+        schedule_final_payroll: scheduleFinalPayroll,
+        final_payroll_run_id: finalPayrollRun?.id || null,
+        billing_status: 'NOT_BILLED',
       },
     },
     ip_address: ipAddress,
@@ -2800,6 +2847,9 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
     separation_type: payload.separation_type,
     separation_date: lastWorkingDay,
     reason: normalizeString(payload.reason) || null,
+    schedule_final_payroll: scheduleFinalPayroll,
+    final_payroll_run_id: finalPayrollRun ? resolveDisplayId(finalPayrollRun) : null,
+    billing_status: 'NOT_BILLED',
   };
 };
 

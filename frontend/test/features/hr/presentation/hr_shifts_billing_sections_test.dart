@@ -225,7 +225,11 @@ void _stubWorkspace(
     ),
   );
   when(
-    () => repository.generateRoster(any(), dryRun: any(named: 'dryRun')),
+    () => repository.generateRoster(
+      any(),
+      replaceExistingAssignments: any(named: 'replaceExistingAssignments'),
+      dryRun: any(named: 'dryRun'),
+    ),
   ).thenAnswer((_) async => const Result<Object?>.success(<String, Object?>{}));
 }
 
@@ -302,10 +306,13 @@ void main() {
   late _MockHrRepository repository;
 
   setUpAll(() {
+    registerFallbackValue(const HrStaffQuery());
     registerFallbackValue(
       const HrWorkItemsQuery(queue: HrQueue.rosterDrafts),
     );
+    registerFallbackValue(const HrAccessQuery());
     registerFallbackValue(const AppPageRequest());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {

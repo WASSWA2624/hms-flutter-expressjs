@@ -616,7 +616,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Activity'));
+      await tester.tap(find.text('HR activity'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });

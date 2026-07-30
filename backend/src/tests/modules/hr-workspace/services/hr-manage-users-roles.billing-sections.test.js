@@ -32,6 +32,9 @@ jest.mock('@services/billing/billing.service', () => ({
   createInvoice: jest.fn(),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  sanitizeIdentifier: jest.fn((value) =>
+    value == null ? '' : String(value).trim()
+  ),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
   resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
@@ -50,6 +53,9 @@ jest.mock('@lib/authorization/assignable-access', () => {
     assertPermissionIdsAssignable: jest.fn(async (ids = []) =>
       (Array.isArray(ids) ? [...ids] : [])
     ),
+    assertRoleIdAssignable: jest.fn().mockResolvedValue(undefined),
+    assertPermissionIdAssignable: jest.fn().mockResolvedValue(undefined),
+    assertPermissionIdHasRequiredRead: jest.fn().mockResolvedValue(undefined),
   };
 });
 jest.mock('@lib/hr/staff-number', () => ({
@@ -246,7 +252,7 @@ describe('HR manage-users-roles billing-sections scan', () => {
     };
     userRoleRepository.create.mockResolvedValue(assignment);
     userRoleRepository.findById.mockResolvedValue(assignment);
-    userRoleRepository.delete.mockResolvedValue(assignment);
+    userRoleRepository.softDelete.mockResolvedValue(assignment);
 
     await createUserRole(
       { user_id: userId, role_id: roleId, tenant_id: tenantId },
@@ -255,6 +261,7 @@ describe('HR manage-users-roles billing-sections scan', () => {
     );
     await deleteUserRole('ur-1', 'actor-1', '127.0.0.1');
 
+    expect(userRoleRepository.softDelete).toHaveBeenCalledWith('ur-1');
     expectNoPatientBillingPosts();
   });
 
@@ -264,12 +271,14 @@ describe('HR manage-users-roles billing-sections scan', () => {
       role_id: roleId,
       permission_id: permissionId,
     };
+    rolePermissionRepository.findMany.mockResolvedValue([]);
     rolePermissionRepository.create.mockResolvedValue(link);
 
     await createRolePermission(
       { role_id: roleId, permission_id: permissionId },
       'actor-1',
-      '127.0.0.1'
+      '127.0.0.1',
+      tenantActor
     );
 
     expectNoPatientBillingPosts();
@@ -283,6 +292,7 @@ describe('HR manage-users-roles billing-sections scan', () => {
       user_id: userId,
       staff_number: 'STF-001',
       position: 'Medical Officer',
+      practitioner_type: 'SPECIALIST',
       consultation_fee: 50,
       consultation_currency: 'USD',
     };
@@ -295,14 +305,15 @@ describe('HR manage-users-roles billing-sections scan', () => {
         user_id: userId,
         staff_number: 'STF-001',
         position: 'Medical Officer',
+        practitioner_type: 'SPECIALIST',
         consultation_fee: 50,
         consultation_currency: 'USD',
         compensations: [
           {
-            pay_type: 'SALARY',
+            pay_type: 'PER_MONTH',
             rate: 1200,
             currency: 'USD',
-            effective_from: '2026-01-01',
+            effective_from: new Date('2026-01-01'),
           },
         ],
       },
@@ -329,6 +340,7 @@ describe('HR manage-users-roles billing-sections scan', () => {
       tenant_id: tenantId,
       user_id: userId,
       staff_number: 'STF-001',
+      practitioner_type: 'SPECIALIST',
       consultation_fee: 75,
       consultation_currency: 'UGX',
     };
@@ -340,6 +352,7 @@ describe('HR manage-users-roles billing-sections scan', () => {
       user_id: userId,
       staff_number: 'STF-001',
       position: 'MO',
+      practitioner_type: 'SPECIALIST',
       consultation_fee: 75,
       consultation_currency: 'UGX',
     };

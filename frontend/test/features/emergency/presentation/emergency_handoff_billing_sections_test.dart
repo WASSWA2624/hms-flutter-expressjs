@@ -22,6 +22,8 @@ import 'package:hosspi_hms/features/emergency/presentation/emergency_handoff_bil
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:mocktail/mocktail.dart';
@@ -97,6 +99,8 @@ AppAccessPolicy _policy({
 }) {
   final bool needsBilling = permissions.contains(AppPermissions.billingRead) ||
       permissions.contains(AppPermissions.billingWrite);
+  final bool needsClinical = permissions.contains(AppPermissions.clinicalWrite) ||
+      permissions.contains(AppPermissions.clinicalRead);
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -113,6 +117,11 @@ AppAccessPolicy _policy({
               code: 'scheduling-queue',
               licenseStatus: 'ACTIVE',
             ),
+            if (needsClinical)
+              const AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
             if (needsBilling)
               const AppModuleEntitlement(
                 code: 'billing-payments',

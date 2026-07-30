@@ -3,56 +3,53 @@
  * Patient Billing cashier scopes are not used; process is staff compensation.
  */
 
+const fs = require('fs');
+const path = require('path');
 const subject = require('../../../../modules/hr-workspace/routes/hr-workspace.routes');
 const { PERMISSIONS } = require('@config/permissions');
 
-const findProcessLayer = () => {
-  const layer = subject.stack.find((entry) => {
-    if (!entry?.route) return false;
-    const path = entry.route.path || '';
-    return (
-      path.includes('payroll-runs') &&
-      path.includes('process') &&
-      entry.route.methods &&
-      entry.route.methods.post
-    );
-  });
-  return layer;
-};
+const routesSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    '../../../../modules/hr-workspace/routes/hr-workspace.routes.js'
+  ),
+  'utf8'
+);
 
 describe('hr-workspace payroll process route billing-sections auth', () => {
-  it('registers process route with hr:write then financial:approve (AND)', () => {
-    const layer = findProcessLayer();
-    expect(layer).toBeDefined();
-    expect(layer.route.stack.length).toBeGreaterThanOrEqual(3);
-
-    const permissionChecks = layer.route.stack.filter(
-      (stackLayer) =>
-        typeof stackLayer.handle === 'function' &&
-        stackLayer.handle.length >= 3
+  it('chains authorize(hr:write) then authorize(financial:approve) on process', () => {
+    expect(routesSource).toMatch(
+      /payroll-runs\/:payrollRunIdentifier\/process[\s\S]*?authorize\(PAYROLL_PROCESS_WRITE_SCOPES[\s\S]*?authorize\(PAYROLL_PROCESS_APPROVE_SCOPES/
     );
-
-    // validateRequest + authorize(hr:write) + authorize(financial:approve) + controller
-    expect(permissionChecks.length).toBeGreaterThanOrEqual(3);
-
-    const routeSource = String(layer.route.stack.map((s) => s.handle).join('\n'));
-    // Stack order is encoded in route registration; assert middleware count and
-    // that FINANCIAL_APPROVE / HR_WRITE constants remain the process gates.
+    expect(routesSource).toMatch(
+      /PAYROLL_PROCESS_WRITE_SCOPES\s*=\s*\[PERMISSIONS\.HR_WRITE\]/
+    );
+    expect(routesSource).toMatch(
+      /PAYROLL_PROCESS_APPROVE_SCOPES\s*=\s*\[PERMISSIONS\.FINANCIAL_APPROVE\]/
+    );
     expect(PERMISSIONS.HR_WRITE).toBe('hr:write');
     expect(PERMISSIONS.FINANCIAL_APPROVE).toBe('financial:approve');
-    expect(routeSource).not.toContain('billing:write');
+    expect(routesSource).not.toMatch(
+      /payroll-runs\/:payrollRunIdentifier\/process[\s\S]{0,400}billing:write/
+    );
   });
 
-  it('exports router with payroll preview (read) and process (approve) paths', () => {
+  it('keeps preview on hr:read (no patient Billing write scopes)', () => {
+    expect(routesSource).toMatch(
+      /payroll-runs\/:payrollRunIdentifier\/preview[\s\S]*?authorize\(HR_READ_SCOPES/
+    );
+  });
+
+  it('exports router with payroll preview and process paths', () => {
     const paths = subject.stack
       .filter((entry) => entry?.route)
       .map((entry) => entry.route.path);
 
-    expect(paths.some((path) => path.includes('payroll-runs') && path.includes('preview'))).toBe(
-      true
-    );
-    expect(paths.some((path) => path.includes('payroll-runs') && path.includes('process'))).toBe(
-      true
-    );
+    expect(
+      paths.some((routePath) => routePath.includes('payroll-runs') && routePath.includes('preview'))
+    ).toBe(true);
+    expect(
+      paths.some((routePath) => routePath.includes('payroll-runs') && routePath.includes('process'))
+    ).toBe(true);
   });
 });

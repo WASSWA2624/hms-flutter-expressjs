@@ -17,11 +17,12 @@ import 'package:hosspi_hms/features/housekeeping/data/repositories/housekeeping_
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/repositories/housekeeping_repository.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/housekeeping_access.dart';
-import 'package:hosspi_hms/features/housekeeping/presentation/housekeeping_maintenance_requests_billing_inventory.dart';
+import 'package:hosspi_hms/features/housekeeping/presentation/housekeeping_schedules_billing_inventory.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,15 +31,15 @@ import '../../../helpers/section_layout_test_helpers.dart';
 class _MockHousekeepingRepository extends Mock
     implements HousekeepingRepository {}
 
-const HousekeepingWorkItem _openRequest = HousekeepingWorkItem(
-  id: 'HK-MR-1',
-  displayId: 'MR-001',
-  resource: HousekeepingResource.maintenanceRequests,
-  title: 'Fix leaking tap',
-  status: 'OPEN',
-  roomLabel: 'Room 3A',
+const HousekeepingWorkItem _scheduleItem = HousekeepingWorkItem(
+  id: 'HK-SCH-1',
+  displayId: 'HS-001',
+  resource: HousekeepingResource.schedules,
+  title: 'Daily corridor sweep',
+  subtitle: 'Daily',
+  status: 'ACTIVE',
+  roomLabel: 'Corridor A',
   facilityLabel: 'Main Campus',
-  assetLabel: 'Tap-12',
 );
 
 const HousekeepingWorkspaceOverview _overview = HousekeepingWorkspaceOverview(
@@ -51,21 +52,11 @@ const HousekeepingWorkspaceOverview _overview = HousekeepingWorkspaceOverview(
     HousekeepingSummaryCard(
       id: 'active_schedules',
       labelKey: 'active_schedules',
-      value: 0,
+      value: 1,
     ),
     HousekeepingSummaryCard(
       id: 'open_requests',
       labelKey: 'open_requests',
-      value: 1,
-    ),
-    HousekeepingSummaryCard(
-      id: 'completed_today',
-      labelKey: 'completed_today',
-      value: 0,
-    ),
-    HousekeepingSummaryCard(
-      id: 'overdue_requests',
-      labelKey: 'overdue_requests',
       value: 0,
     ),
   ],
@@ -74,10 +65,10 @@ const HousekeepingWorkspaceOverview _overview = HousekeepingWorkspaceOverview(
       HousekeepingLookupOption(id: 'FAC-1', label: 'Main Campus'),
     ],
     rooms: <HousekeepingLookupOption>[
-      HousekeepingLookupOption(id: 'ROOM-1', label: 'Room 3A'),
+      HousekeepingLookupOption(id: 'ROOM-1', label: 'Corridor A'),
     ],
-    assets: <HousekeepingLookupOption>[
-      HousekeepingLookupOption(id: 'ASSET-1', label: 'Tap-12'),
+    assignees: <HousekeepingLookupOption>[
+      HousekeepingLookupOption(id: 'STAFF-1', label: 'Asha Cleaner'),
     ],
   ),
 );
@@ -87,19 +78,18 @@ AppAccessPolicy _policy({
   List<String> roles = const <String>['VIEWER'],
   List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
     AppModuleEntitlement(
-      code: housekeepingFacilitiesMaintenanceModule,
+      code: housekeepingFacilitiesModule,
       licenseStatus: 'ACTIVE',
     ),
   ],
   String? facilityId = 'facility-1',
-  String? tenantId = 'tenant-1',
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: AuthUserProfile(
         roles: roles,
-        tenantId: tenantId,
+        tenantId: 'tenant-1',
         facilityId: facilityId,
       ),
       permissions: permissions,
@@ -111,7 +101,9 @@ AppAccessPolicy _policy({
 
 void _stubWorkspace(
   _MockHousekeepingRepository repository, {
-  List<HousekeepingWorkItem> items = const <HousekeepingWorkItem>[_openRequest],
+  List<HousekeepingWorkItem> schedules = const <HousekeepingWorkItem>[
+    _scheduleItem,
+  ],
   Result<HousekeepingWorkspaceLoad>? workspaceOverride,
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer((
@@ -122,37 +114,39 @@ void _stubWorkspace(
     }
     final HousekeepingWorkspaceQuery query =
         invocation.positionalArguments.single as HousekeepingWorkspaceQuery;
-    final List<HousekeepingWorkItem> pageItems =
-        query.resource == HousekeepingResource.maintenanceRequests
-        ? items
+    final List<HousekeepingWorkItem> items =
+        query.resource == HousekeepingResource.schedules
+        ? schedules
         : const <HousekeepingWorkItem>[];
     return Result<HousekeepingWorkspaceLoad>.success(
       HousekeepingWorkspaceLoad(
         overview: _overview,
         items: AppPage<HousekeepingWorkItem>(
-          items: pageItems,
+          items: items,
           request: query.pageRequest,
-          totalItemCount: pageItems.length,
+          totalItemCount: items.length,
         ),
       ),
     );
   });
 }
 
-Future<void> _pumpMaintenanceTab(
+Future<void> _pumpSchedulesTab(
   WidgetTester tester, {
   required _MockHousekeepingRepository repository,
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  List<HousekeepingWorkItem> items = const <HousekeepingWorkItem>[_openRequest],
+  List<HousekeepingWorkItem> schedules = const <HousekeepingWorkItem>[
+    _scheduleItem,
+  ],
   Result<HousekeepingWorkspaceLoad>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   _stubWorkspace(
     repository,
-    items: items,
+    schedules: schedules,
     workspaceOverride: workspaceOverride,
   );
 
@@ -162,14 +156,15 @@ Future<void> _pumpMaintenanceTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/housekeeping?section=maintenance',
+    initialLocation: '/housekeeping?section=schedules',
     routes: <RouteBase>[
       GoRoute(
         path: '/housekeeping',
         builder: (BuildContext context, GoRouterState state) {
+          final String? section = state.uri.queryParameters['section'];
           return Scaffold(
             body: HousekeepingWorkspacePage(
-              initialSection: HousekeepingSection.maintenance,
+              initialSection: HousekeepingSection.fromQueryValue(section),
             ),
           );
         },
@@ -200,14 +195,6 @@ Future<void> _pumpMaintenanceTab(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
-  // Narrow phone chrome may overflow the shared tab strip; clear so AC checks
-  // focus on billing/sections rather than pre-existing strip layout.
-  final Object? layoutException = tester.takeException();
-  expect(
-    layoutException == null ||
-        layoutException.toString().contains('A RenderFlex overflowed'),
-    isTrue,
-  );
 }
 
 void main() {
@@ -215,54 +202,44 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const HousekeepingWorkspaceQuery());
+    registerFallbackValue(
+      const HousekeepingScheduleDraft(frequency: 'Daily'),
+    );
     registerFallbackValue(<String, Object?>{});
-    registerFallbackValue(
-      const HousekeepingMaintenanceRequestDraft(
-        status: 'OPEN',
-        description: 'leak',
-      ),
-    );
-    registerFallbackValue(
-      const HousekeepingMaintenanceTriageDraft(status: 'IN_PROGRESS'),
-    );
   });
 
   setUp(() {
     repository = _MockHousekeepingRepository();
   });
 
-  group('Housekeeping Maintenance requests financial inventory (AC1)', () {
+  group('Housekeeping Schedules financial inventory (AC1)', () {
     test('every mounted atom is explicitly not billable with audit code', () {
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory
-            .maintenanceRequestsTabHasNoBillableActions,
+        HousekeepingSchedulesBillingInventory.schedulesTabHasNoBillableActions,
         isTrue,
       );
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory
+        HousekeepingSchedulesBillingInventory
             .allMountedAtomsExplicitlyNotBillable,
         isTrue,
       );
-      expect(HousekeepingMaintenanceRequestsBillingInventory.atoms, isNotEmpty);
+      expect(HousekeepingSchedulesBillingInventory.atoms, isNotEmpty);
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory.billableClasses.every(
-          (HousekeepingMaintenanceRequestsFinancialAtom atom) => !atom.mounted,
+        HousekeepingSchedulesBillingInventory.billableClasses.every(
+          (HousekeepingSchedulesFinancialAtom atom) => !atom.mounted,
         ),
         isTrue,
       );
-      expect(
-        housekeepingMaintenanceRequestsBillingScopeNote,
-        contains('NOT_BILLED'),
-      );
+      expect(housekeepingSchedulesBillingScopeNote, contains('NOT_BILLED'));
 
-      for (final HousekeepingMaintenanceRequestsFinancialAtom atom
-          in HousekeepingMaintenanceRequestsBillingInventory.mountedAtoms) {
+      for (final HousekeepingSchedulesFinancialAtom atom
+          in HousekeepingSchedulesBillingInventory.mountedAtoms) {
         expect(
           atom.financialClass,
-          isIn(<HousekeepingMaintenanceRequestsFinancialClass>[
-            HousekeepingMaintenanceRequestsFinancialClass.notRequired,
-            HousekeepingMaintenanceRequestsFinancialClass.notBilled,
-            HousekeepingMaintenanceRequestsFinancialClass.noCharge,
+          isIn(<HousekeepingSchedulesFinancialClass>[
+            HousekeepingSchedulesFinancialClass.notRequired,
+            HousekeepingSchedulesFinancialClass.notBilled,
+            HousekeepingSchedulesFinancialClass.noCharge,
           ]),
           reason: atom.id,
         );
@@ -274,86 +251,73 @@ void main() {
       }
     });
 
-    test('Request maintenance primary stays NOT_BILLED', () {
-      final HousekeepingMaintenanceRequestsFinancialAtom primary =
-          HousekeepingMaintenanceRequestsBillingInventory.atoms.singleWhere(
-            (HousekeepingMaintenanceRequestsFinancialAtom atom) =>
-                atom.id == 'request_maintenance_primary',
+    test('Create schedule primary stays NOT_BILLED', () {
+      final HousekeepingSchedulesFinancialAtom primary =
+          HousekeepingSchedulesBillingInventory.atoms.singleWhere(
+            (HousekeepingSchedulesFinancialAtom atom) =>
+                atom.id == 'create_schedule_primary',
           );
       expect(
         primary.financialClass,
-        HousekeepingMaintenanceRequestsFinancialClass.notBilled,
+        HousekeepingSchedulesFinancialClass.notBilled,
       );
       expect(primary.auditCode, 'NOT_BILLED');
       expect(primary.mounted, isTrue);
     });
 
-    test('Triage, Complete, and Cancel stay NOT_BILLED', () {
-      for (final String id in <String>[
-        'next_action_triage',
-        'detail_complete_request',
-        'detail_cancel_request',
-        'detail_triage_complementary',
-        'nested_mutation_dialogs',
-      ]) {
-        final HousekeepingMaintenanceRequestsFinancialAtom atom =
-            HousekeepingMaintenanceRequestsBillingInventory.atoms.singleWhere(
-              (HousekeepingMaintenanceRequestsFinancialAtom entry) =>
-                  entry.id == id,
-            );
-        expect(
-          atom.financialClass,
-          HousekeepingMaintenanceRequestsFinancialClass.notBilled,
-          reason: id,
-        );
-        expect(atom.auditCode, 'NOT_BILLED', reason: id);
-      }
+    test('Review schedule next-action stays NOT_REQUIRED', () {
+      final HousekeepingSchedulesFinancialAtom review =
+          HousekeepingSchedulesBillingInventory.atoms.singleWhere(
+            (HousekeepingSchedulesFinancialAtom atom) =>
+                atom.id == 'next_action_review',
+          );
+      expect(
+        review.financialClass,
+        HousekeepingSchedulesFinancialClass.notRequired,
+      );
+      expect(review.auditCode, 'NOT_REQUIRED');
     });
 
     test('unmounted billable atoms document Billing system of record', () {
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory.atoms
+        HousekeepingSchedulesBillingInventory.atoms
             .singleWhere(
-              (HousekeepingMaintenanceRequestsFinancialAtom atom) =>
+              (HousekeepingSchedulesFinancialAtom atom) =>
                   atom.id == 'patient_billable_room_turnover_surcharge',
             )
             .mounted,
         isFalse,
       );
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory.atoms
+        HousekeepingSchedulesBillingInventory.atoms
             .singleWhere(
-              (HousekeepingMaintenanceRequestsFinancialAtom atom) =>
+              (HousekeepingSchedulesFinancialAtom atom) =>
                   atom.id == 'collect_payment',
             )
             .mounted,
         isFalse,
       );
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory.atoms
+        HousekeepingSchedulesBillingInventory.atoms
             .singleWhere(
-              (HousekeepingMaintenanceRequestsFinancialAtom atom) =>
+              (HousekeepingSchedulesFinancialAtom atom) =>
                   atom.id == 'issue_invoice_adjust_refund',
             )
             .mounted,
         isFalse,
       );
-      expect(
-        housekeepingMaintenanceRequestsBillingScopeNote,
-        contains('Billing'),
-      );
+      expect(housekeepingSchedulesBillingScopeNote, contains('Billing'));
     });
   });
 
-  group('Housekeeping Maintenance requests billing bypass (AC2–AC4)', () {
+  group('Housekeeping Schedules billing bypass (AC2–AC4)', () {
     testWidgets('worklist has no payment/issue/collect affordances', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
@@ -366,44 +330,41 @@ void main() {
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Collect'), findsNothing);
       expect(find.textContaining('Balance due'), findsNothing);
-      expect(find.text('Fix leaking tap'), findsOneWidget);
-      expect(find.byTooltip('Request maintenance'), findsOneWidget);
+      expect(find.text('Daily corridor sweep'), findsOneWidget);
+      expect(find.byTooltip('Create schedule'), findsOneWidget);
       expectFlatSections(tester);
     });
 
     testWidgets('detail dialog: no financial controls; flat sibling sections', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
-            AppPermissions.reportsRead,
           },
         ),
       );
 
-      await tester.tap(find.text('Fix leaking tap'));
+      await tester.tap(find.text('Daily corridor sweep'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Refund'), findsNothing);
-      expect(find.text('Complete request'), findsOneWidget);
-      expect(find.text('Cancel request'), findsOneWidget);
-      expect(find.text('Quick actions'), findsOneWidget);
-      expect(find.text('Housekeeping detail'), findsOneWidget);
+      expect(find.byType(AppWorkspaceDetailPanel), findsWidgets);
+      // Schedules have no complementary write Quick actions section.
+      expect(find.text('Quick actions'), findsNothing);
       expectFlatSections(tester);
     });
 
     testWidgets('unauthorized reader cannot collect or adjust', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -411,29 +372,29 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Fix leaking tap'));
+      expect(find.byTooltip('Create schedule'), findsNothing);
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expect(find.textContaining('Issue invoice'), findsNothing);
+
+      await tester.tap(find.text('Daily corridor sweep'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete request'), findsNothing);
-      expect(find.text('Cancel request'), findsNothing);
-      expect(find.byTooltip('Request maintenance'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expectFlatSections(tester);
     });
 
     testWidgets(
-      'Complete request mutation syncs without billing gate',
+      'Create schedule mutation syncs without billing gate',
       (WidgetTester tester) async {
         when(
-          () => repository.updateMaintenanceRequest(any(), any()),
+          () => repository.createSchedule(any()),
         ).thenAnswer((_) async => const Result<void>.success(null));
 
-        await _pumpMaintenanceTab(
+        await _pumpSchedulesTab(
           tester,
           repository: repository,
           accessPolicy: _policy(
-            roles: const <String>['HOUSEKEEPING_MANAGER'],
             permissions: <AppPermission>{
               AppPermissions.operationsRead,
               AppPermissions.operationsWrite,
@@ -441,93 +402,45 @@ void main() {
           ),
         );
 
-        await tester.tap(find.text('Fix leaking tap'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Complete request'));
+        await tester.tap(find.byTooltip('Create schedule'));
         await tester.pumpAndSettle();
 
-        verify(
-          () => repository.updateMaintenanceRequest(any(), any()),
-        ).called(1);
-        expect(find.textContaining('Receive payment'), findsNothing);
-        expect(find.textContaining('Invoice'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'Request maintenance primary dialog has no billing affordances',
-      (WidgetTester tester) async {
-        await _pumpMaintenanceTab(
-          tester,
-          repository: repository,
-          accessPolicy: _policy(
-            roles: const <String>['HOUSEKEEPING_MANAGER'],
-            permissions: <AppPermission>{
-              AppPermissions.operationsRead,
-              AppPermissions.operationsWrite,
-            },
-          ),
-        );
-
-        await tester.tap(find.byTooltip('Request maintenance'));
-        await tester.pumpAndSettle();
-
+        expect(find.text('CREATE CLEANING SCHEDULE'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Issue invoice'), findsNothing);
         expect(find.textContaining('Balance due'), findsNothing);
         expectFlatSections(tester);
-        verifyNever(() => repository.createMaintenanceRequest(any()));
-      },
-    );
 
-    testWidgets(
-      'Triage next-action mutation syncs without billing gate',
-      (WidgetTester tester) async {
-        when(
-          () => repository.triageMaintenanceRequest(any(), any()),
-        ).thenAnswer(
-          (_) async => const Result<HousekeepingWorkItem>.success(_openRequest),
+        final Finder dialogFields = find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.byType(TextField),
         );
-
-        await _pumpMaintenanceTab(
-          tester,
-          repository: repository,
-          accessPolicy: _policy(
-            roles: const <String>['HOUSEKEEPING_MANAGER'],
-            permissions: <AppPermission>{
-              AppPermissions.operationsRead,
-              AppPermissions.operationsWrite,
-            },
+        await tester.enterText(dialogFields.first, 'Weekly');
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.text('Create schedule'),
           ),
         );
-
-        expect(find.text('Triage handoff'), findsWidgets);
-        await tester.tap(find.text('Triage handoff').first);
         await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.widgetWithText(AppButton, 'Triage maintenance request'),
-        );
-        await tester.pumpAndSettle();
-
-        verify(
-          () => repository.triageMaintenanceRequest(any(), any()),
-        ).called(1);
+        verify(() => repository.createSchedule(any())).called(1);
+        expect(find.text('Housekeeping changes saved.'), findsOneWidget);
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Invoice'), findsNothing);
+        verify(() => repository.getWorkspace(any())).called(greaterThan(1));
       },
     );
   });
 
-  group('Housekeeping Maintenance requests section layout (AC5)', () {
-    testWidgets('desktop Maintenance: flat sections on list + detail', (
+  group('Housekeeping Schedules section layout (AC5)', () {
+    testWidgets('desktop Schedules: flat sections on list + detail', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
@@ -538,15 +451,13 @@ void main() {
 
       expectFlatSections(tester);
 
-      await tester.tap(find.text('Fix leaking tap'));
+      await tester.tap(find.text('Daily corridor sweep'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
-    testWidgets('mobile Maintenance: flat sections', (
-      WidgetTester tester,
-    ) async {
-      await _pumpMaintenanceTab(
+    testWidgets('mobile Schedules: flat sections', (WidgetTester tester) async {
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -560,11 +471,10 @@ void main() {
     testWidgets('light theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
@@ -572,7 +482,7 @@ void main() {
         ),
         themeMode: ThemeMode.light,
       );
-      await tester.tap(find.text('Fix leaking tap'));
+      await tester.tap(find.text('Daily corridor sweep'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
@@ -580,11 +490,10 @@ void main() {
     testWidgets('dark theme: flat sections on authorized UI', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
@@ -592,19 +501,18 @@ void main() {
         ),
         themeMode: ThemeMode.dark,
       );
-      await tester.tap(find.text('Fix leaking tap'));
+      await tester.tap(find.text('Daily corridor sweep'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
 
-    testWidgets('Request maintenance dialog: flat sections', (
+    testWidgets('Create schedule dialog: flat sections', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
-          roles: const <String>['HOUSEKEEPING_MANAGER'],
           permissions: <AppPermission>{
             AppPermissions.operationsRead,
             AppPermissions.operationsWrite,
@@ -612,35 +520,34 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Request maintenance'));
+      await tester.tap(find.byTooltip('Create schedule'));
       await tester.pumpAndSettle();
       expectFlatSections(tester);
     });
   });
 
-  group('Housekeeping Maintenance requests sync / UI states (AC3–AC4, AC6)', () {
-    testWidgets(
-      'authorized empty state remains observable without billing UX',
-      (WidgetTester tester) async {
-        await _pumpMaintenanceTab(
-          tester,
-          repository: repository,
-          accessPolicy: _policy(
-            permissions: <AppPermission>{AppPermissions.operationsRead},
-          ),
-          items: const <HousekeepingWorkItem>[],
-        );
+  group('Housekeeping Schedules sync / UI states (AC3–AC4, AC6)', () {
+    testWidgets('authorized empty state remains observable without billing UX', (
+      WidgetTester tester,
+    ) async {
+      await _pumpSchedulesTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.operationsRead},
+        ),
+        schedules: const <HousekeepingWorkItem>[],
+      );
 
-        expect(find.text('Maintenance requests'), findsWidgets);
-        expect(find.textContaining('Receive payment'), findsNothing);
-        expectFlatSections(tester);
-      },
-    );
+      expect(find.text('No housekeeping items'), findsOneWidget);
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expectFlatSections(tester);
+    });
 
     testWidgets('error/retry remains for authorized readers', (
       WidgetTester tester,
     ) async {
-      await _pumpMaintenanceTab(
+      await _pumpSchedulesTab(
         tester,
         repository: repository,
         accessPolicy: _policy(
@@ -657,20 +564,20 @@ void main() {
 
     test('inventory reuses shared financial class vocabulary', () {
       expect(
-        HousekeepingMaintenanceRequestsBillingInventory.atoms.any(
-          (HousekeepingMaintenanceRequestsFinancialAtom atom) =>
+        HousekeepingSchedulesBillingInventory.atoms.any(
+          (HousekeepingSchedulesFinancialAtom atom) =>
               atom.financialClass ==
-              HousekeepingMaintenanceRequestsFinancialClass.createCharge,
+              HousekeepingSchedulesFinancialClass.createCharge,
         ),
         isTrue,
       );
       expect(
-        HousekeepingMaintenanceRequestsAtomPermissions.tab,
-        housekeepingWorkspaceReadRequirement,
+        HousekeepingSchedulesAtomPermissions.tab,
+        isNotNull,
       );
       expect(
-        HousekeepingMaintenanceRequestsAtomPermissions.requestMaintenance,
-        housekeepingWorkspaceManageRequirement,
+        HousekeepingSchedulesAtomPermissions.createSchedule,
+        isNotNull,
       );
     });
   });
