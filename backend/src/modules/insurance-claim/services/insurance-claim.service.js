@@ -273,6 +273,15 @@ const updateInsuranceClaim = async (id, data, userId, ipAddress) => {
     }
 
     const payload = { ...data };
+    // Settling statuses must post remittance via /reconcile — never flip PAID /
+    // PARTIAL on PUT alone (Billing ledger leakage).
+    const nextStatus = payload.status == null
+      ? null
+      : String(payload.status).trim().toUpperCase();
+    if (nextStatus === 'PAID' || nextStatus === 'PARTIAL') {
+      throw new HttpError('errors.insurance_claim.use_reconcile_for_settlement', 400);
+    }
+
     if (Object.prototype.hasOwnProperty.call(payload, 'coverage_plan_id')) {
       payload.coverage_plan_id = await resolveIdentifierForPayload({
         value: payload.coverage_plan_id,

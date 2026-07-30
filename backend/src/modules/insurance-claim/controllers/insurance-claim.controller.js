@@ -11,6 +11,22 @@ const insuranceClaimService = require('@services/insurance-claim/insurance-claim
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
+const { HttpError } = require('@lib/errors');
+const { PERMISSIONS } = require('@config/permissions');
+const { getUserPermissions } = require('@middlewares/auth.middleware');
+
+const SETTLING_CLAIM_STATUSES = new Set(['PAID', 'PARTIAL']);
+const CLAIM_SETTLEMENT_APPROVE_SCOPES = [
+  PERMISSIONS.FINANCIAL_APPROVE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+
+const canApproveClaimSettlement = (user) => {
+  const permissions = getUserPermissions(user);
+  return CLAIM_SETTLEMENT_APPROVE_SCOPES.some((scope) => permissions.includes(scope));
+};
 
 /**
  * List insurance claims with pagination
@@ -151,6 +167,12 @@ const reconcileInsuranceClaim = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user?.id;
   const ipAddress = req.ip;
+  const nextStatus = String(req.body?.status || 'PAID').trim().toUpperCase();
+
+  // Manual PAID/PARTIAL remittance requires financial approve (Billing owns settle).
+  if (SETTLING_CLAIM_STATUSES.has(nextStatus) && !canApproveClaimSettlement(req.user)) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
 
   const insuranceClaim = await insuranceClaimService.reconcileInsuranceClaim(id, req.body, userId, ipAddress);
 

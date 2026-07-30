@@ -197,6 +197,46 @@ describe('Insurance Claim Service', () => {
         insuranceClaimService.updateInsuranceClaim('nonexistent', {}, mockUserId, mockIpAddress)
       ).rejects.toThrow(HttpError);
     });
+
+    it('rejects PAID status on PUT so remittance cannot bypass /reconcile', async () => {
+      insuranceClaimRepository.findById.mockResolvedValue({
+        id: '123',
+        status: 'APPROVED',
+      });
+
+      await expect(
+        insuranceClaimService.updateInsuranceClaim(
+          '123',
+          { status: 'PAID', settlement_amount: 100 },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.insurance_claim.use_reconcile_for_settlement',
+        statusCode: 400,
+      });
+      expect(insuranceClaimRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects PARTIAL status on PUT so remittance cannot bypass /reconcile', async () => {
+      insuranceClaimRepository.findById.mockResolvedValue({
+        id: '123',
+        status: 'SUBMITTED',
+      });
+
+      await expect(
+        insuranceClaimService.updateInsuranceClaim(
+          '123',
+          { status: 'PARTIAL' },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.insurance_claim.use_reconcile_for_settlement',
+        statusCode: 400,
+      });
+      expect(insuranceClaimRepository.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('deleteInsuranceClaim', () => {

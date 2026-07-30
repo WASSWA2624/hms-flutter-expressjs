@@ -40,8 +40,9 @@ const updateInsuranceClaimSchema = z.object({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
   invoice_id: uuidOrFriendlyIdentifierSchema.optional(),
   insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  // PAID / PARTIAL require /reconcile so remittance posts to Billing.
   status: z
-    .enum(['SUBMITTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'PAID', 'CANCELLED'])
+    .enum(['SUBMITTED', 'APPROVED', 'REJECTED', 'CANCELLED'])
     .optional(),
   submitted_at: z.string().datetime().optional(),
   claim_amount: z.number().min(0).finite().optional().nullable(),

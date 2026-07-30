@@ -2087,14 +2087,19 @@ class _ClaimResponseDialog extends StatefulWidget {
     required this.submitLabel,
     required this.onSubmit,
     this.statusEditable = true,
+    this.allowSettlingStatuses = false,
   });
 
   final String initialStatus;
   final String submitLabel;
   final bool statusEditable;
+
+  /// PAID / PARTIAL remittance requires financial:approve ∩.
+  final bool allowSettlingStatuses;
   final Future<AppFailure?> Function({
     required String status,
     required String notes,
+    num? settlementAmount,
   })
   onSubmit;
 
@@ -2105,9 +2110,12 @@ class _ClaimResponseDialog extends StatefulWidget {
 class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _settlementController = TextEditingController();
   late String _status;
   bool _isSubmitting = false;
   AppFailure? _failure;
+
+  bool get _requiresSettlement => _status == 'PAID' || _status == 'PARTIAL';
 
   @override
   void initState() {
@@ -2118,6 +2126,7 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
   @override
   void dispose() {
     _notesController.dispose();
+    _settlementController.dispose();
     super.dispose();
   }
 
@@ -2134,7 +2143,10 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
             labelText: l10n.claimsClaimResponseFieldLabel,
             value: _status,
             isRequired: true,
-            options: _claimResponseOptions(l10n),
+            options: _claimResponseOptions(
+              l10n,
+              allowSettlingStatuses: widget.allowSettlingStatuses,
+            ),
             validator: AppValidators.requiredValue<String>(
               l10n.claimsStatusRequiredMessage,
             ),
@@ -2142,6 +2154,24 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
               setState(() {
                 _status = value ?? _status;
               });
+            },
+          ),
+        if (_requiresSettlement)
+          AppTextField(
+            controller: _settlementController,
+            labelText: l10n.claimsSettlementAmountColumnLabel,
+            isRequired: _status == 'PARTIAL',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: (String? value) {
+              if (_status != 'PARTIAL') {
+                return null;
+              }
+              final String normalized = value?.replaceAll(',', '').trim() ?? '';
+              if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(normalized) ||
+                  (num.tryParse(normalized) ?? 0) <= 0) {
+                return l10n.billingAdjustmentAmountValidation;
+              }
+              return null;
             },
           ),
         AppTextField(
@@ -2170,9 +2200,16 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
       _isSubmitting = true;
       _failure = null;
     });
+    final String settlementRaw = _settlementController.text
+        .replaceAll(',', '')
+        .trim();
+    final num? settlementAmount = _requiresSettlement && settlementRaw.isNotEmpty
+        ? num.tryParse(settlementRaw)
+        : null;
     final AppFailure? failure = await widget.onSubmit(
       status: _status,
       notes: _notesController.text.trim(),
+      settlementAmount: settlementAmount,
     );
     if (!mounted) {
       return;
@@ -2318,6 +2355,7 @@ Future<void> _openClaimResponseDialog(
   bool statusEditable = true,
 }) async {
   // Defense in depth: record response → write ∩; close-as-paid → approve ∩.
+  // Editable PAID option also needs financial:approve (settlement).
   final AppAccessPolicy policy = ProviderScope.containerOf(
     context,
   ).read(appAccessPolicyProvider);
@@ -2327,6 +2365,8 @@ Future<void> _openClaimResponseDialog(
   if (!requirement.isAllowed(policy)) {
     return;
   }
+  final bool allowSettlingStatuses =
+      ClaimsActiveClaimsAtomPermissions.closeAsPaid.isAllowed(policy);
 
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2335,7 +2375,25 @@ Future<void> _openClaimResponseDialog(
       initialStatus: initialStatus,
       submitLabel: submitLabel,
       statusEditable: statusEditable,
-      onSubmit: controller.reconcileClaim,
+      allowSettlingStatuses: allowSettlingStatuses,
+      onSubmit:
+          ({
+            required String status,
+            required String notes,
+            num? settlementAmount,
+          }) async {
+            final String normalized = status.toUpperCase();
+            // PAID / PARTIAL remittance always needs approve ∩.
+            if ((normalized == 'PAID' || normalized == 'PARTIAL') &&
+                !allowSettlingStatuses) {
+              return AppFailure.forbidden();
+            }
+            return controller.reconcileClaim(
+              status: status,
+              notes: notes,
+              settlementAmount: settlementAmount,
+            );
+          },
     ),
   );
   if (context.mounted && saved == true) {
@@ -2352,6 +2410,7 @@ List<AppPermissionActionItem> _detailPermissionActions(
 }) {
   // Status-primary mutations match row next-action — omit from detail.
   // Sync is Active Claims detail-only (inventory); Settled is review-only.
+  // Residual co-pay deep-links Billing receive-payment (no local cashier).
   final AppLocalizations l10n = context.l10n;
   if (section == ClaimsDeskSection.settled ||
       section == ClaimsDeskSection.insuranceSetup ||
@@ -2360,29 +2419,53 @@ List<AppPermissionActionItem> _detailPermissionActions(
   }
 
   final String status = detail.item.status.toUpperCase();
-  if (status == 'PAID' || status == 'CANCELLED') {
-    return const <AppPermissionActionItem>[];
+  final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
+
+  if (status != 'PAID' && status != 'CANCELLED') {
+    actions.add(
+      AppPermissionActionItem(
+        requirement: ClaimsActiveClaimsAtomPermissions.sync,
+        label: l10n.claimsSyncClaimStatusAction,
+        icon: Icons.sync_outlined,
+        isLoading: state.isSaving,
+        onPressed: () {
+          unawaited(() async {
+            final AppFailure? failure = await controller.syncClaimStatus();
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+              if (failure == null) {
+                _showSaved(context);
+              }
+            }
+          }());
+        },
+      ),
+    );
   }
 
-  return <AppPermissionActionItem>[
-    AppPermissionActionItem(
-      requirement: ClaimsActiveClaimsAtomPermissions.sync,
-      label: l10n.claimsSyncClaimStatusAction,
-      icon: Icons.sync_outlined,
-      isLoading: state.isSaving,
-      onPressed: () {
-        unawaited(() async {
-          final AppFailure? failure = await controller.syncClaimStatus();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-            if (failure == null) {
-              _showSaved(context);
-            }
-          }
-        }());
-      },
-    ),
-  ];
+  final ClaimInvoiceOption? invoice = detail.invoice;
+  if (invoice != null && invoice.hasCollectibleBalance) {
+    actions.add(
+      AppPermissionActionItem(
+        requirement: ClaimsActiveClaimsAtomPermissions.collectPatientShare,
+        label: l10n.billingReceivePayment,
+        icon: Icons.payments_outlined,
+        onPressed: () {
+          final Uri billingPayUri = Uri(
+            path: AppRoutes.billing.path,
+            queryParameters: <String, String>{
+              'queue': 'awaiting-payment',
+              'invoice': invoice.apiId,
+              'action': 'pay',
+            },
+          );
+          context.go(billingPayUri.toString());
+        },
+      ),
+    );
+  }
+
+  return actions;
 }
 
 const String _claimsQueueFilterKey = 'queue';
@@ -2491,18 +2574,26 @@ List<AppSelectOption<String>> _authorizationStatusOptions(
   ];
 }
 
-List<AppSelectOption<String>> _claimResponseOptions(AppLocalizations l10n) {
+List<AppSelectOption<String>> _claimResponseOptions(
+  AppLocalizations l10n, {
+  bool allowSettlingStatuses = false,
+}) {
   return <AppSelectOption<String>>[
     AppSelectOption<String>(
       value: 'APPROVED',
       label: l10n.claimsStatusApproved,
     ),
-    AppSelectOption<String>(value: 'PARTIAL', label: l10n.claimsStatusPartial),
     AppSelectOption<String>(
       value: 'REJECTED',
       label: l10n.claimsStatusRejected,
     ),
-    AppSelectOption<String>(value: 'PAID', label: l10n.claimsStatusPaid),
+    if (allowSettlingStatuses) ...<AppSelectOption<String>>[
+      AppSelectOption<String>(
+        value: 'PARTIAL',
+        label: l10n.claimsStatusPartial,
+      ),
+      AppSelectOption<String>(value: 'PAID', label: l10n.claimsStatusPaid),
+    ],
   ];
 }
 

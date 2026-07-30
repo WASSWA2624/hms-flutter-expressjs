@@ -255,4 +255,31 @@ describe('claim-remittance (Claims pending)', () => {
     expect(result.skipped).toBe(true);
     expect(result.payment).toBeNull();
   });
+
+  test('Settled parity: PAID remittance recalculates invoice balance_due', async () => {
+    mockPaymentFindFirst.mockResolvedValue(null);
+    mockPaymentCreate.mockResolvedValue({
+      id: 'pay-new',
+      method: 'INSURANCE',
+      amount: '150.00',
+      transaction_ref: remittanceTransactionRef('claim-1'),
+    });
+
+    const result = await applyClaimRemittanceTx(
+      {
+        invoice: { findFirst: mockInvoiceFindFirst },
+        payment: {
+          findFirst: mockPaymentFindFirst,
+          create: mockPaymentCreate,
+        },
+      },
+      { claim, status: 'PAID', settlementAmount: 150 }
+    );
+
+    expect(result.created).toBe(true);
+    expect(result.payment.method).toBe('INSURANCE');
+    expect(recalculateInvoiceStateTx).toHaveBeenCalled();
+    expect(result.invoiceState.financials.balance_due).toBe('50.00');
+    expect(result.invoiceState.financials.net_paid_total).toBe('150.00');
+  });
 });

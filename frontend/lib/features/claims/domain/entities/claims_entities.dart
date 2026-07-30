@@ -223,6 +223,12 @@ final class ClaimInvoiceOption {
   String? get subtitle {
     return _joinDisplay(<String?>[patientDisplayId, billingStatus ?? status]);
   }
+
+  /// True when Billing reports a collectible patient residual.
+  bool get hasCollectibleBalance {
+    final num? due = balanceDue;
+    return due != null && due > 0.009;
+  }
 }
 
 @immutable

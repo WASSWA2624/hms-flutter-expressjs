@@ -47,7 +47,8 @@ jest.mock('@lib/billing/identifiers', () => ({
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})}));
 jest.mock('@prisma/client', () => ({
-  insurer_integration: { findMany: jest.fn() }}));
+  insurer_integration: { findMany: jest.fn() },
+  coverage_plan: { findFirst: jest.fn() }}));
 
 const insuranceCompanyRepository = require('@repositories/insurance-company/insurance-company.repository');
 const coveragePlanRepository = require('@repositories/coverage-plan/coverage-plan.repository');
@@ -60,6 +61,7 @@ const { resolveUnitPrices } = require('@lib/billing/price-resolver');
 const {
   applyCoverageSplitToLineItems} = require('@lib/billing/coverage-split');
 const { createAuditLog } = require('@lib/audit');
+const prisma = require('@prisma/client');
 
 const {
   createInsuranceCompany} = require('@services/insurance-company/insurance-company.service');
@@ -106,7 +108,11 @@ describe('Insurance Setup catalog billing-sections scan', () => {
       ip
     );
 
-    expect(result).toEqual(expect.objectContaining({ id: 'INS0001' }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        display_id: 'INS0001',
+        name: 'Acme'})
+    );
     expect(insuranceCompanyRepository.create).toHaveBeenCalledTimes(1);
     assertNoPatientLedgerTouch();
   });
@@ -257,6 +263,13 @@ describe('Insurance Setup catalog billing-sections scan', () => {
         unitPrice: 100,
         currency: 'UGX',
         source: 'PRICE_BOOK'}]);
+    prisma.coverage_plan.findFirst.mockResolvedValue({
+      id: 'plan-1',
+      coverage_percentage: 80,
+      name: 'Gold',
+      default_copay_type: 'NONE',
+      default_copay_value: null,
+      insurance_company_id: 'co-1'});
     applyCoverageSplitToLineItems.mockImplementation((items) =>
       items.map((item) => ({
         ...item,
@@ -270,13 +283,14 @@ describe('Insurance Setup catalog billing-sections scan', () => {
       payment_mode: 'INSURANCE',
       coverage_plan_id: 'plan-1',
       insurance_company_id: 'co-1',
-      items: [{ catalog_type: 'LAB_TEST', catalog_item_id: 'LAB-1', quantity: 1 }],
-      include_coverage_split: true});
+      items: [{ catalog_type: 'LAB_TEST', catalog_item_id: 'LAB-1', quantity: 1 }]});
 
     expect(resolveUnitPrices).toHaveBeenCalled();
+    expect(applyCoverageSplitToLineItems).toHaveBeenCalled();
     expect(result).toEqual(
       expect.objectContaining({
-        line_items: expect.any(Array)})
+        items: expect.any(Array),
+        summary: expect.any(Object)})
     );
     expect(priceBookEntryRepository.create).not.toHaveBeenCalled();
     assertNoPatientLedgerTouch();

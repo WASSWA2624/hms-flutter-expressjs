@@ -195,6 +195,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const ClaimsQueueQuery());
+    registerFallbackValue(<String, Object?>{});
     registerFallbackValue(
       const ClaimsQueueItem.claim(
         InsuranceClaimRecord(
