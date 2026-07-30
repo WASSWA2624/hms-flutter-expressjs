@@ -63,13 +63,17 @@ const buildLabReferenceRangeRowSummary = (entry = {}) => {
     entry.normal_max_value
   );
   const textSummary = toText(entry.reference_text);
+  const rangeCore = textSummary || normalSummary;
+  const rangeSummary =
+    rangeCore && unit
+      ? `${rangeCore} ${unit}`
+      : rangeCore || unit || '';
   const fragments = [
     toText(entry.label),
-    unit ? `Unit ${unit}` : '',
     toText(entry.method) ? `Method ${toText(entry.method)}` : '',
     toText(entry.gender),
     ageSummary,
-    textSummary || normalSummary].filter(Boolean);
+    rangeSummary].filter(Boolean);
   return fragments.join(' | ');
 };
 

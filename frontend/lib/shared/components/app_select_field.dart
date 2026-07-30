@@ -44,6 +44,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.isLoading = false,
     this.allowClear = true,
     this.searchable = false,
+    this.isDense = false,
     this.filterCallback,
     this.searchCallback,
     this.onSearchTextChanged,
@@ -70,6 +71,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.isRequired = false,
     this.isLoading = false,
     this.allowClear = true,
+    this.isDense = false,
     this.filterCallback,
     this.searchCallback,
     this.onSearchTextChanged,
@@ -97,6 +99,8 @@ class AppSelectField<T> extends StatefulWidget {
   final bool isLoading;
   final bool allowClear;
   final bool searchable;
+  /// Matches [AppTextField.isDense] height (40) for side-by-side layouts.
+  final bool isDense;
   final FilterCallback<T>? filterCallback;
   final SearchCallback<T>? searchCallback;
   final ValueChanged<String>? onSearchTextChanged;
@@ -273,6 +277,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.62),
             fontWeight: FontWeight.w400,
+            fontSize: widget.isDense ? 16 : null,
+            height: widget.isDense ? 1.5 : null,
           ),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
@@ -304,6 +310,22 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         textField: true,
         enabled: canSelect,
         label: widget.semanticLabel,
+        child: field,
+      );
+    }
+
+    if (widget.isDense) {
+      field = Theme(
+        data: theme.copyWith(
+          inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: 10,
+            ),
+            constraints: const BoxConstraints.tightFor(height: 40),
+          ),
+        ),
         child: field,
       );
     }

@@ -603,9 +603,12 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
                   ),
                   if (widget.headerActions.isNotEmpty) ...<Widget>[
                     SizedBox(width: theme.spacing.sm),
+                    // Header actions sit outside the collapse InkWell so they
+                    // do not toggle expand/collapse. Default to icon-only so
+                    // controls like delete read as plain icon buttons.
                     AppActionLabelScope(
-                      showLabels: true,
-                      forceIconOnly: false,
+                      showLabels: false,
+                      forceIconOnly: true,
                       child: Wrap(
                         alignment: WrapAlignment.end,
                         spacing: theme.spacing.xs,

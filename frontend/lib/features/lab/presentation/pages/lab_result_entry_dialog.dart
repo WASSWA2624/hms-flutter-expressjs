@@ -1139,6 +1139,7 @@ class _LabPanelResultBlock extends ConsumerWidget {
       headerActions: showDelete
           ? <Widget>[
               AppButton(
+                iconOnly: true,
                 leadingIcon: Icons.delete_outline,
                 label: l10n.labDeletePanelAction,
                 semanticLabel: l10n.labDeletePanelAction,
@@ -1632,6 +1633,7 @@ class _ResultUnitInput extends StatelessWidget {
       labelText: l10n.labResultUnitLabel,
       enabled: enabled,
       allowClear: false,
+      isDense: true,
       options: <AppSelectOption<String>>[
         for (final LabUnitOption option in item.unitOptions)
           AppSelectOption<String>(
@@ -3282,7 +3284,11 @@ String? resolveDisplayReferenceRange(
     }
   }
 
-  return item.displayReferenceRange;
+  final String? fallback = item.displayReferenceRange?.trim();
+  if (fallback == null || fallback.isEmpty) {
+    return null;
+  }
+  return _rewriteLegacyUnitInRangeSummary(fallback);
 }
 
 LabReferenceRange? _resolveReferenceRange(
@@ -3324,39 +3330,137 @@ String? _normalizeGenderToken(String? value) {
 }
 
 String? _referenceRangeDisplayText(LabReferenceRange range) {
+  final String? unit = range.unit?.trim();
+  final String? text = range.referenceText?.trim();
+  final String? bounds = _referenceRangeBoundsSummary(range);
+  final bool hasStructuredRange =
+      (text != null && text.isNotEmpty) ||
+      (bounds != null && bounds.isNotEmpty);
+
+  if (hasStructuredRange) {
+    final List<String> parts = <String>[];
+
+    final String? label = range.label?.trim();
+    if (label != null && label.isNotEmpty) {
+      parts.add(label);
+    }
+
+    final String? method = range.method?.trim();
+    if (method != null && method.isNotEmpty) {
+      parts.add('Method $method');
+    }
+
+    final String? gender = range.gender?.trim();
+    if (gender != null && gender.isNotEmpty) {
+      parts.add(gender);
+    }
+
+    final String? ageSummary = _referenceRangeAgeSummary(range);
+    if (ageSummary != null) {
+      parts.add(ageSummary);
+    }
+
+    final String rangeCore =
+        (text != null && text.isNotEmpty) ? text : bounds!;
+    final bool alreadyHasUnit =
+        unit != null && unit.isNotEmpty && rangeCore.contains(unit);
+    parts.add(
+      unit != null && unit.isNotEmpty && !alreadyHasUnit
+          ? '$rangeCore $unit'
+          : rangeCore,
+    );
+    return parts.join(' | ');
+  }
+
   final String? summary = range.summary?.trim();
   if (summary != null && summary.isNotEmpty) {
-    return summary;
+    return _rewriteLegacyUnitInRangeSummary(summary);
   }
+
   final String? label = range.label?.trim();
   if (label != null && label.isNotEmpty) {
     return label;
   }
-  final String? text = range.referenceText?.trim();
-  if (text != null && text.isNotEmpty) {
-    return text;
+  if (unit != null && unit.isNotEmpty) {
+    return unit;
   }
+  return null;
+}
+
+String? _referenceRangeAgeSummary(LabReferenceRange range) {
+  final String? ageMin = _formatReferenceAge(range.ageMinValue, range.ageMinUnit);
+  final String? ageMax = _formatReferenceAge(range.ageMaxValue, range.ageMaxUnit);
+  if (ageMin != null && ageMax != null) {
+    return '$ageMin to $ageMax';
+  }
+  if (ageMin != null) {
+    return '$ageMin+';
+  }
+  if (ageMax != null) {
+    return 'up to $ageMax';
+  }
+  return null;
+}
+
+String? _formatReferenceAge(num? value, String? unit) {
+  if (value == null) {
+    return null;
+  }
+  final String unitLabel = (unit ?? '').trim().toLowerCase();
+  final String amount = value % 1 == 0
+      ? value.toInt().toString()
+      : value.toString();
+  if (unitLabel.isEmpty) {
+    return amount;
+  }
+  final String plural = value == 1 ? unitLabel : '${unitLabel}s';
+  return '$amount $plural';
+}
+
+String? _referenceRangeBoundsSummary(LabReferenceRange range) {
   final String? min = range.normalMinValue?.toString().trim();
   final String? max = range.normalMaxValue?.toString().trim();
   if ((min == null || min.isEmpty) && (max == null || max.isEmpty)) {
     return null;
   }
-  final String bounds = switch ((min, max)) {
+  return switch ((min, max)) {
     (final String lower, final String upper)
         when lower.isNotEmpty && upper.isNotEmpty =>
       '$lower - $upper',
     (final String lower, _) when lower.isNotEmpty => '≥ $lower',
     (_, final String upper) when upper.isNotEmpty => '≤ $upper',
-    _ => '',
+    _ => null,
   };
-  if (bounds.isEmpty) {
-    return null;
+}
+
+/// Moves legacy `Unit g/dL` fragments after the numeric range and drops "Unit".
+String _rewriteLegacyUnitInRangeSummary(String summary) {
+  final List<String> fragments = summary
+      .split(' | ')
+      .map((String part) => part.trim())
+      .where((String part) => part.isNotEmpty)
+      .toList();
+  String? unit;
+  final List<String> kept = <String>[];
+  for (final String fragment in fragments) {
+    final String lower = fragment.toLowerCase();
+    if (lower.startsWith('unit ')) {
+      final String extracted = fragment.substring(5).trim();
+      if (extracted.isNotEmpty) {
+        unit = extracted;
+      }
+      continue;
+    }
+    kept.add(fragment);
   }
-  final String? unit = range.unit?.trim();
-  if (unit == null || unit.isEmpty) {
-    return bounds;
+  if (unit == null || unit.isEmpty || kept.isEmpty) {
+    return kept.isEmpty ? summary : kept.join(' | ');
   }
-  return '$bounds $unit';
+  final String last = kept.last;
+  if (!last.contains(unit)) {
+    kept[kept.length - 1] = '$last $unit';
+  }
+  return kept.join(' | ');
 }
 
 String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {

@@ -322,6 +322,10 @@ class AppButton extends StatelessWidget {
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
+        // Icon-only controls read as plain icon buttons: no chrome border.
+        if (iconOnly) {
+          return BorderSide.none;
+        }
         const double thinWidth = 0.5;
         if (states.contains(WidgetState.focused) &&
             variant != AppButtonVariant.primary) {
