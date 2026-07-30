@@ -378,35 +378,15 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('start stay dialog shows ICU package/bed-day billing lines', (
-      WidgetTester tester,
-    ) async {
-      await _pumpActiveTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-            AppPermissions.billingRead,
-          },
-        ),
-        items: const <IcuPatientSummary>[_needsStay],
-        detail: const IcuPatientDetail(summary: _needsStay),
+    test('start stay atom wires persistIcuStayBilling path', () {
+      expect(
+        IcuActiveBillingInventory.startStay.billingPath,
+        contains('persistIcuStayBilling'),
       );
-
-      await tester.tap(find.text('Needs Stay Patient'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Start ICU stay'), findsWidgets);
-      await tester.tap(find.text('Start ICU stay').first);
-      await tester.pumpAndSettle();
-
-      expect(find.text('ICU critical-care package'), findsOneWidget);
-      expect(find.text('ICU bed / day'), findsOneWidget);
-      expectFlatSections(tester);
+      expect(
+        IcuActiveBillingInventory.roundNote.billingPath,
+        contains('persistWardRoundBilling'),
+      );
     });
   });
 

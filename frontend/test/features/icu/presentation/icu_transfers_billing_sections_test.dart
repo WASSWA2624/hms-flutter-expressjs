@@ -17,7 +17,6 @@ import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
-import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_transfers_billing_inventory.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
@@ -585,27 +584,70 @@ void main() {
     testWidgets('authorized error/retry remains observable', (
       WidgetTester tester,
     ) async {
-      await _pumpTransfersTab(
-        tester,
-        repository: repository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-          },
-        ),
-      );
-
-      // Override after pump to force a refresh failure path via controller.
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
       when(() => repository.listIcuBoard(any())).thenAnswer(
         (_) async => const Result<AppPage<IcuPatientSummary>>.failure(
           AppFailure.network(),
         ),
       );
+      when(repository.loadReferenceData).thenAnswer(
+        (_) async =>
+            const Result<IcuReferenceData>.success(IcuReferenceData()),
+      );
+      when(repository.loadBedBoard).thenAnswer(
+        (_) async => const Result<IcuBedBoard>.success(IcuBedBoard()),
+      );
 
-      final Element element = tester.element(find.byType(IcuWorkspacePage));
-      final ProviderContainer container = ProviderScope.containerOf(element);
-      container.read(icuWorkspaceControllerProvider.notifier).refresh();
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/icu?section=transfers',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/icu',
+            builder: (BuildContext context, GoRouterState state) {
+              return Scaffold(
+                body: IcuWorkspacePage(
+                  initialQuery: IcuBoardQuery.fromUri(state.uri),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            icuRepositoryProvider.overrideWithValue(repository),
+            followUpTabCountProvider.overrideWith(
+              (Ref ref, FollowUpWorklistScope scope) => null,
+            ),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(
+              _policy(
+                permissions: <AppPermission>{
+                  AppPermissions.clinicalRead,
+                  AppPermissions.clinicalWrite,
+                },
+              ),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
