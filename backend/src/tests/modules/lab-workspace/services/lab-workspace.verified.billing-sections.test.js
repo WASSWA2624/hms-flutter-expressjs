@@ -149,7 +149,31 @@ describe('lab-workspace Verified tab billing sections', () => {
   it('reopenLabOrderItemResult is clinical NOT_BILLED (no invoice reverse)', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
-    const completedOrder = buildBaseOrder();
+    const completedOrder = buildBaseOrder({
+      items: [
+        {
+          id: 'order-item-internal-1',
+          human_friendly_id: 'LIT-VER-1',
+          status: 'COMPLETED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-1',
+            human_friendly_id: 'LBT-VER-1',
+            name: 'CBC',
+            code: 'CBC',
+            unit: null,
+            reference_ranges: [],
+            unit_options: [],
+            result_options: []},
+          results: [
+            {
+              id: 'result-internal-1',
+              status: 'NORMAL',
+              result_value: '12.0',
+              created_at: now}]}]},
+    });
+
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
@@ -166,10 +190,17 @@ describe('lab-workspace Verified tab billing sections', () => {
         result_options: []}});
     labWorkspaceRepository.txFindFirstResult.mockResolvedValue({
       id: 'result-internal-1',
-      status: 'FINAL',
+      status: 'NORMAL',
       result_value: '12.0'});
     labWorkspaceRepository.txUpdateResult.mockResolvedValue({});
     labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({});
+    labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+    labWorkspaceRepository.txCountOrderItems
+      .mockResolvedValueOnce(0) // completed
+      .mockResolvedValueOnce(0) // cancelled
+      .mockResolvedValueOnce(1); // open
+    labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({});
     labWorkspaceRepository.txFindOrderById.mockResolvedValue(
       buildBaseOrder({
         status: 'IN_PROCESS',
@@ -184,14 +215,6 @@ describe('lab-workspace Verified tab billing sections', () => {
                 result_value: '12.0',
                 created_at: now}]}]})
     );
-
-    // syncLabOrderProgress is internal — stub via repository helpers used inside
-    if (labWorkspaceRepository.txCountOrderItems) {
-      labWorkspaceRepository.txCountOrderItems.mockResolvedValue(1);
-    }
-    if (labWorkspaceRepository.txUpdateOrder) {
-      labWorkspaceRepository.txUpdateOrder.mockResolvedValue({});
-    }
 
     const result = await labWorkspaceService.reopenLabOrderItemResult(
       'LIT-VER-1',

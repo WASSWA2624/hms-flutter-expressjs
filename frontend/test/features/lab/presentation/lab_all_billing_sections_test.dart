@@ -433,6 +433,20 @@ void main() {
         },
         items: <LabOrderItem>[panelItem, loneItem],
       );
+      // Worklist row omits nested items so Next action stays "Enter result".
+      const LabOrderSummary listOrder = LabOrderSummary(
+        id: 'LAB-ORDER-ALL-BILL-1',
+        displayId: 'LO-ALL-BILL-1',
+        status: 'ORDERED',
+        patientDisplayName: 'All Billing Patient',
+        patientId: 'PAT-ALL-BILL-1',
+        paymentStatus: 'PAID',
+        billing: <String, Object?>{
+          'payment_status': 'PAID',
+          'total_amount': '25.00',
+          'currency': 'USD',
+        },
+      );
 
       await _pumpAllTab(
         tester,
@@ -443,7 +457,7 @@ void main() {
             AppPermissions.labWrite,
           },
         ),
-        items: const <LabOrderSummary>[orderWithItems],
+        items: const <LabOrderSummary>[listOrder],
         workflow: const LabOrderWorkflow(
           order: orderWithItems,
           nextActions: LabWorkflowNextActions(
@@ -456,6 +470,7 @@ void main() {
       final AppLocalizations l10n = AppLocalizations.of(
         tester.element(find.byType(LabWorkspacePage)),
       );
+      expect(find.text(l10n.labNextActionEnterResult), findsWidgets);
       await tester.tap(find.text(l10n.labNextActionEnterResult).first);
       await tester.pumpAndSettle();
       expect(find.byType(LabResultEntryDialog), findsOneWidget);

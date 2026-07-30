@@ -288,6 +288,8 @@ final class MortuaryCaseSummaryDto {
       releaseReadyAt: _date(json['release_ready_at']),
       releasedAt: _date(json['released_at']),
       billingStatus: _string(json['billing_status']),
+      patientId: _string(json['patient_id']),
+      patientLabel: _string(json['patient_label']),
       deceasedProfileId: _string(json['deceased_profile_id']),
       deceasedProfileLabel: _string(json['deceased_profile_label']),
     );

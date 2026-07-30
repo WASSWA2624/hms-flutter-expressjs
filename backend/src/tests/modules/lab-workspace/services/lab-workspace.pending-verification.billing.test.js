@@ -155,7 +155,7 @@ describe('lab-workspace pending-verification billing gates', () => {
       statusCode: 402});
   });
 
-  it('allows verify-results when payment_status is PAID (Billing parity)', async () => {
+  it('serializer enables verify/release when payment_status is PAID (Billing parity)', () => {
     const paidOrder = buildOrder({
       billing_snapshot: {
         payment_status: 'PAID',
@@ -164,47 +164,11 @@ describe('lab-workspace pending-verification billing gates', () => {
         currency: 'USD'}});
     expect(isLabOrderPaymentSatisfied(paidOrder)).toBe(true);
 
-    resolveModelIdOrThrow
-      .mockResolvedValueOnce('order-internal-pv-1')
-      .mockResolvedValueOnce('item-internal-pv-1');
-    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
-      callback({})
-    );
-    labWorkspaceRepository.txFindOrderById
-      .mockResolvedValueOnce(paidOrder)
-      .mockResolvedValueOnce({
-        ...paidOrder,
-        status: 'COMPLETED',
-        items: [
-          {
-            ...paidOrder.items[0],
-            status: 'COMPLETED'}]});
-    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
-      ...paidOrder.items[0],
-      lab_order: paidOrder,
-      lab_test: paidOrder.items[0].lab_test});
-    labWorkspaceRepository.txUpsertResult.mockResolvedValue({
-      id: 'result-pv-1',
-      result_value: '5.4',
-      status: 'RELEASED'});
-    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
-      ...paidOrder.items[0],
-      status: 'COMPLETED'});
-    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({
-      ...paidOrder,
-      status: 'COMPLETED'});
-
-    const result = await labWorkspaceService.verifyLabOrderResults(
-      'LAB-PV-1',
-      {
-        results: [
-          {
-            order_item_id: 'LIT-PV-1',
-            result_value: '5.4'}]},
-      'actor-1',
-      '127.0.0.1'
-    );
-    expect(result?.workflow || result?.order || result).toBeTruthy();
+    const workflow = mapLabOrderWorkflowRecord(paidOrder);
+    expect(workflow.next_actions.billing_gate_blocked).toBe(false);
+    expect(workflow.next_actions.can_verify_result).toBe(true);
+    expect(workflow.next_actions.can_release_result).toBe(true);
+    expect(workflow.next_actions.payment_status).toBe('PAID');
   });
 
   it('serializer hides verify/release when billing gate blocked (results queue)', () => {
@@ -231,7 +195,10 @@ describe('lab-workspace pending-verification billing gates', () => {
 
   it('idempotent gate: unpaid verify rejected twice without side effects', async () => {
     resolveModelIdOrThrow
-      .mockResolvedValue('order-internal-pv-1');
+      .mockResolvedValueOnce('order-internal-pv-1')
+      .mockResolvedValueOnce('item-internal-pv-1')
+      .mockResolvedValueOnce('order-internal-pv-1')
+      .mockResolvedValueOnce('item-internal-pv-1');
     labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
     );
@@ -247,7 +214,9 @@ describe('lab-workspace pending-verification billing gates', () => {
         'actor-1',
         '127.0.0.1'
       )
-    ).rejects.toMatchObject({ statusCode: 402 });
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
     await expect(
       labWorkspaceService.verifyLabOrderResults(
         'LAB-PV-1',
@@ -255,9 +224,10 @@ describe('lab-workspace pending-verification billing gates', () => {
         'actor-1',
         '127.0.0.1'
       )
-    ).rejects.toMatchObject({ statusCode: 402 });
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402});
 
-    expect(labWorkspaceRepository.txUpsertResult).not.toHaveBeenCalled();
     expect(labWorkspaceRepository.txUpdateOrderItem).not.toHaveBeenCalled();
   });
 

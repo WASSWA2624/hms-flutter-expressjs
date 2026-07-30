@@ -599,6 +599,11 @@ final class MortuaryWorkspaceItem {
     return isCase ? identificationStatus : mortuaryCase?.identificationStatus;
   }
 
+  /// Patient id for Billing navigation — case row or nested case summary.
+  String? get effectivePatientId {
+    return patientId.ifNotEmpty ?? mortuaryCase?.patientId.ifNotEmpty;
+  }
+
   String? get effectiveDeceasedLabel {
     return deceasedProfileLabel.ifNotEmpty ??
         mortuaryCase?.deceasedProfileLabel.ifNotEmpty ??
@@ -606,7 +611,9 @@ final class MortuaryWorkspaceItem {
   }
 
   String? get effectivePersonLabel {
-    return patientLabel.ifNotEmpty ?? effectiveDeceasedLabel;
+    return patientLabel.ifNotEmpty ??
+        mortuaryCase?.patientLabel.ifNotEmpty ??
+        effectiveDeceasedLabel;
   }
 
   String? get storageLabel {
@@ -640,6 +647,8 @@ final class MortuaryCaseSummary {
     this.releaseReadyAt,
     this.releasedAt,
     this.billingStatus,
+    this.patientId,
+    this.patientLabel,
     this.deceasedProfileId,
     this.deceasedProfileLabel,
   });
@@ -651,6 +660,8 @@ final class MortuaryCaseSummary {
   final DateTime? releaseReadyAt;
   final DateTime? releasedAt;
   final String? billingStatus;
+  final String? patientId;
+  final String? patientLabel;
   final String? deceasedProfileId;
   final String? deceasedProfileLabel;
 }

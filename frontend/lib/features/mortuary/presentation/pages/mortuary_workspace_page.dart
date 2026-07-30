@@ -884,6 +884,28 @@ class _MortuaryDetailPanel extends ConsumerWidget {
       );
     }
 
+    final bool showOpenBilling =
+        panel == mortuaryPanelCustody &&
+        MortuaryCustodyAtomPermissions.openBilling.isAllowed(policy) &&
+        (item.effectivePatientId?.trim().isNotEmpty ?? false);
+
+    final List<Widget> actions = <Widget>[
+      if (showOpenBilling)
+        AppPermissionActionButton(
+          requirement: MortuaryCustodyAtomPermissions.openBilling,
+          label: l10n.icuActionOpenBilling,
+          icon: Icons.receipt_long_outlined,
+          onPressed: () => _openMortuaryBillingWorkspace(context, item),
+        ),
+      if (onPrint != null)
+        AppPermissionActionButton(
+          requirement: printRequirement,
+          label: l10n.mortuaryPrintDocumentsAction,
+          icon: Icons.print_outlined,
+          onPressed: onPrint,
+        ),
+    ];
+
     final List<Widget> sections = <Widget>[
       if (state.isRefreshingDetail) const LinearProgressIndicator(),
       AppPatientDetails(
@@ -902,16 +924,7 @@ class _MortuaryDetailPanel extends ConsumerWidget {
               l10n.mortuaryUnknownValueLabel,
           tone: _statusTone(item.caseStatus ?? item.status),
         ),
-        actions: onPrint == null
-            ? const <Widget>[]
-            : <Widget>[
-                AppPermissionActionButton(
-                  requirement: printRequirement,
-                  label: l10n.mortuaryPrintDocumentsAction,
-                  icon: Icons.print_outlined,
-                  onPressed: onPrint,
-                ),
-              ],
+        actions: actions,
         expandedFields: <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
             label: l10n.mortuaryIdentificationFieldLabel,
@@ -955,6 +968,26 @@ class _MortuaryDetailPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: _withMortuaryDetailSectionSpacing(context, sections),
     );
+  }
+}
+
+/// Opens Billing workspace for outstanding mortuary settle — never a local
+/// cashier dialog. Billing owns payment methods, idempotency, and ledger rows.
+void _openMortuaryBillingWorkspace(
+  BuildContext context,
+  MortuaryWorkspaceItem item,
+) {
+  final String? patientId = item.effectivePatientId?.trim();
+  final String location = (patientId == null || patientId.isEmpty)
+      ? AppRoutes.billing.path
+      : AppRoutes.billing.location(
+          queryParameters: <String, String>{'patient_id': patientId},
+        );
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+  }
+  if (context.mounted) {
+    context.go(location);
   }
 }
 

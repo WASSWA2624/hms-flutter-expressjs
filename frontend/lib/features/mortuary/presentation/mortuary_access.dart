@@ -2,6 +2,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
 
 /// Module entitlement for the mortuary workspace route and panels.
@@ -293,6 +294,7 @@ String? mortuaryFallbackPanel(AppAccessPolicy policy) {
 /// | Next action (guidance text only) | read | read ∩ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ∩ `billing-payments` ([openBilling]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
 /// | Receive case | create | write ∩ ([create]) — not mounted |
 /// | Assign storage | update | manage_storage ∩ — not mounted |
@@ -326,6 +328,9 @@ abstract final class MortuaryOverviewAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+
+  /// Navigate to Billing workspace to settle — never a module cashier.
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement audit = mortuaryAuditRequirement;
@@ -464,11 +469,13 @@ abstract final class MortuaryStorageAtomPermissions {
 
 /// Atom → requirement map for Mortuary Custody (`/mortuary?panel=custody`).
 ///
-/// Inventory: `screens/mortuary.md` → Custody tab (custody-events worklist;
-/// read-only detail; Print documents when export ∪). Nested write ∪ is
-/// documented via [nestedWrite] — no write chrome mounts today. Export keeps
-/// source ∪ `mortuary:export` | `reports:read`. Billing events use ∩
-/// `mortuary:billing_event` + `billing:read`. Route entry ∪ is [routeEntry].
+/// Custody-events worklist; read-only detail; Print documents when export ∪.
+/// Nested write ∪ is documented via [nestedWrite] — no write chrome mounts
+/// today. Export keeps source ∪ `mortuary:export` | `reports:read`. Billing
+/// events use ∩ `mortuary:billing_event` + `billing:read`. Open billing uses
+/// Billing read (`billing:read` ∩ `billing-payments`) — never a module cashier.
+/// Financial inventory: `mortuary_custody_billing_inventory.dart`.
+/// Route entry ∪ is [routeEntry].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -480,6 +487,7 @@ abstract final class MortuaryStorageAtomPermissions {
 /// | Next action (guidance text only) | read | read ∩ |
 /// | Detail Identity / Storage / Custody / Viewing / Post-mortem / Release / Documents | read | read ∩ |
 /// | Detail Billing events | read | billing ∩ ([billingPanel]) |
+/// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Print documents | export | export ∪ ([printDocuments]) |
 /// | Nested post-mortem request / approve / record custody | create / update / approve | nested write ∪ ([nestedWrite]) — not mounted |
 /// | Assign storage | update | manage_storage ∩ — not mounted |
@@ -511,6 +519,7 @@ abstract final class MortuaryCustodyAtomPermissions {
   static const AccessRequirement approve = mortuaryApproveRequirement;
   static const AccessRequirement release = mortuaryReleaseRequirement;
   static const AccessRequirement billingPanel = mortuaryBillingPanelRequirement;
+  static const AccessRequirement openBilling = billingReadRequirement;
   static const AccessRequirement printDocuments = mortuaryExportRequirement;
   static const AccessRequirement export = mortuaryExportRequirement;
   static const AccessRequirement audit = mortuaryAuditRequirement;
