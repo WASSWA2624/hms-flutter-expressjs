@@ -19,6 +19,10 @@ const {
   mapMergedRadiologyTestRecord,
   mapClinicalCatalogRadiologyTestRow,
 } = require('@services/radiology-workspace/facility-radiology-catalog.merge');
+const {
+  buildRadiologyProcedureSearchFilter,
+  buildRadiologyProcedureSearchOr,
+} = require('@lib/radiology/radiology-procedure-search');
 
 const normalizeText = (value) => String(value || '').trim();
 const isTrue = (value) => String(value || '').toLowerCase() === 'true';
@@ -107,13 +111,11 @@ const syncLegacyOffering = async ({ tenantId, facilityId, radiologyTestId, isAct
 const buildTestSearchWhere = (tenantId, searchTerm) => {
   const where = { tenant_id: tenantId };
   if (!searchTerm?.raw) return where;
+  const or = buildRadiologyProcedureSearchOr(searchTerm.raw);
+  if (or.length === 0) return where;
   return {
     ...where,
-    OR: [
-      { name: { contains: searchTerm.raw } },
-      { code: { contains: searchTerm.raw } },
-      { modality: { contains: searchTerm.raw } },
-    ],
+    OR: or,
   };
 };
 
@@ -135,14 +137,9 @@ const listFacilityRadiologyTests = async (filters, page, limit, sortBy, order, c
       ...(includeInactive ? {} : { is_active: true }),
       ...(searchTerm?.raw
         ? {
-            radiology_procedure: {
-              deleted_at: null,
-              OR: [
-                { name: { contains: searchTerm.raw } },
-                { code: { contains: searchTerm.raw } },
-                { modality: { contains: searchTerm.raw } },
-              ],
-            },
+            radiology_procedure: buildRadiologyProcedureSearchFilter(
+              searchTerm.raw
+            ),
           }
         : {}),
     };
@@ -333,14 +330,9 @@ const searchFacilityRadiologyCatalog = async (filters = {}, context = {}) => {
     is_active: offeredOnly ? true : undefined,
     ...(searchTerm?.raw
       ? {
-          radiology_procedure: {
-            deleted_at: null,
-            OR: [
-              { name: { contains: searchTerm.raw } },
-              { code: { contains: searchTerm.raw } },
-              { modality: { contains: searchTerm.raw } },
-            ],
-          },
+          radiology_procedure: buildRadiologyProcedureSearchFilter(
+            searchTerm.raw
+          ),
         }
       : {}),
   };

@@ -28,6 +28,9 @@ const {
   searchFacilityRadiologyCatalog,
 } = require('@services/facility-radiology-catalog/facility-radiology-catalog.service');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
+const {
+  buildRadiologyProcedureSearchFilter,
+} = require('@lib/radiology/radiology-procedure-search');
 
 const CATALOG_SOURCES = new Set(['FAVORITES', 'FACILITY', 'GLOBAL', 'ALL']);
 
@@ -262,14 +265,7 @@ const loadFacilityCatalogItems = async ({ termType, tenantId, facilityId, q, lim
         is_active: true,
         ...(q
           ? {
-              radiology_procedure: {
-                deleted_at: null,
-                OR: [
-                  { name: { contains: q } },
-                  { code: { contains: q } },
-                  { modality: { contains: q } },
-                ],
-              },
+              radiology_procedure: buildRadiologyProcedureSearchFilter(q),
             }
           : {}),
       },
