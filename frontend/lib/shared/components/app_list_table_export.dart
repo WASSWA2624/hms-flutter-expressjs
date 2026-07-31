@@ -293,6 +293,7 @@ class _AppListTableExportDialogState<T>
   static const String _allValue = '__all__';
 
   late Set<String> _selectedColumnKeys;
+  late Set<String> _defaultExportColumnKeys;
   late DateTime? _dateFrom;
   late DateTime? _dateTo;
   late Map<String, TextEditingController> _textControllers;
@@ -317,6 +318,7 @@ class _AppListTableExportDialogState<T>
                 .toSet()
           : seeded,
     );
+    _defaultExportColumnKeys = Set<String>.of(_selectedColumnKeys);
     final AppSearchBarFilterValue initial = widget.config.initialFilterValue;
     _dateFrom = initial.dateFrom;
     _dateTo = initial.dateTo;
@@ -374,18 +376,11 @@ class _AppListTableExportDialogState<T>
               contentPadding: EdgeInsets.all(theme.spacing.md),
               headerActions: <Widget>[
                 AppButton.tertiary(
-                  label:
-                      context.l10n.commonTableExportSelectVisibleColumnsAction,
-                  enabled: canInteract,
-                  onPressed: canInteract
-                      ? () {
-                          setState(() {
-                            _selectedColumnKeys = _withAlwaysVisible(
-                              widget.visibleColumnKeys,
-                            );
-                            _inlineError = null;
-                          });
-                        }
+                  label: context.l10n.commonTableExportResetColumnsAction,
+                  leadingIcon: Icons.restart_alt,
+                  enabled: canInteract && _hasCustomExportColumnSelection,
+                  onPressed: canInteract && _hasCustomExportColumnSelection
+                      ? _resetExportColumns
                       : null,
                 ),
               ],
@@ -436,6 +431,7 @@ class _AppListTableExportDialogState<T>
                 headerActions: <Widget>[
                   AppButton.tertiary(
                     label: context.l10n.commonTableExportClearFiltersAction,
+                    leadingIcon: Icons.filter_alt_off_outlined,
                     enabled: canInteract && _filters.isActive,
                     onPressed: canInteract && _filters.isActive
                         ? _clearExportFilters
@@ -617,6 +613,11 @@ class _AppListTableExportDialogState<T>
     );
   }
 
+  /// True when export column picks differ from the Settings-synced defaults.
+  bool get _hasCustomExportColumnSelection {
+    return !setEquals(_selectedColumnKeys, _defaultExportColumnKeys);
+  }
+
   bool get _allToggleableColumnsSelected {
     return widget.columns.every(
       (AppListTableColumn<T> column) =>
@@ -656,6 +657,13 @@ class _AppListTableExportDialogState<T>
           _selectedColumnKeys = <String>{widget.columns.first.key};
         }
       }
+      _inlineError = null;
+    });
+  }
+
+  void _resetExportColumns() {
+    setState(() {
+      _selectedColumnKeys = Set<String>.of(_defaultExportColumnKeys);
       _inlineError = null;
     });
   }

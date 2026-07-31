@@ -231,7 +231,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableExportSelectAllColumnsAction => 'Select all';
 
   @override
-  String get commonTableExportSelectVisibleColumnsAction => 'Visible';
+  String get commonTableExportResetColumnsAction => 'Reset columns';
 
   @override
   String get commonTableExportClearFiltersAction => 'Clear filters';

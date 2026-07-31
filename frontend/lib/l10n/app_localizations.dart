@@ -502,11 +502,11 @@ abstract class AppLocalizations {
   /// **'Select all'**
   String get commonTableExportSelectAllColumnsAction;
 
-  /// Quick action that restores export columns to the table's currently visible columns.
+  /// Resets export column selection to the table's current Settings defaults. Enabled when the selection differs from those defaults.
   ///
   /// In en, this message translates to:
-  /// **'Visible'**
-  String get commonTableExportSelectVisibleColumnsAction;
+  /// **'Reset columns'**
+  String get commonTableExportResetColumnsAction;
 
   /// Action that clears all export-scoped filters so the workbook includes every loaded row.
   ///

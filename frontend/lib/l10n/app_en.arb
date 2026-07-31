@@ -297,9 +297,9 @@
   "@commonTableExportSelectAllColumnsAction": {
     "description": "Checkbox label to select or deselect every exportable column in the table export dialog."
   },
-  "commonTableExportSelectVisibleColumnsAction": "Visible",
-  "@commonTableExportSelectVisibleColumnsAction": {
-    "description": "Quick action that restores export columns to the table's currently visible columns."
+  "commonTableExportResetColumnsAction": "Reset columns",
+  "@commonTableExportResetColumnsAction": {
+    "description": "Resets export column selection to the table's current Settings defaults. Enabled when the selection differs from those defaults."
   },
   "commonTableExportClearFiltersAction": "Clear filters",
   "@commonTableExportClearFiltersAction": {

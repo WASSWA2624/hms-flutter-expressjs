@@ -387,6 +387,100 @@ void main() {
     );
   });
 
+  testWidgets('Reset columns restores Settings defaults when selection changes', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    final AppListTableColumnVisibilityController<_ExportRow> visibility =
+        AppListTableColumnVisibilityController<_ExportRow>();
+    addTearDown(visibility.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 520,
+        child: AppListTable<_ExportRow>(
+          items: items,
+          columns: columns,
+          columnChoices: columns,
+          columnVisibilityController: visibility,
+          columnVisibilityStorageKey: 'export-reset-columns',
+          exportConfig: AppListTableExportConfig<_ExportRow>(
+            enableDateFilter: false,
+            saver: ({required Uint8List bytes, required String fileName}) async {
+              return true;
+            },
+          ),
+          search: AppListTableSearch<_ExportRow>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _ExportRow item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    await tester.pumpAndSettle();
+    visibility.syncColumns(columns: columns, columnChoices: columns);
+    visibility.applyVisibleColumnKeys(<String>{'title', 'status'});
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.pumpAndSettle();
+
+    final Finder reset = find.text('Reset columns');
+    expect(reset, findsOneWidget);
+    expect(
+      tester
+          .widget<AppButton>(find.widgetWithText(AppButton, 'Reset columns'))
+          .enabled,
+      isFalse,
+    );
+
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Select all'));
+    await tester.pumpAndSettle();
+    if (tester
+            .widget<CheckboxListTile>(
+              find.widgetWithText(CheckboxListTile, 'Select all'),
+            )
+            .value !=
+        true) {
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Select all'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(
+      tester
+          .widget<AppButton>(find.widgetWithText(AppButton, 'Reset columns'))
+          .enabled,
+      isTrue,
+    );
+
+    await tester.tap(reset);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.widgetWithText(CheckboxListTile, 'Code'),
+          )
+          .value,
+      isFalse,
+    );
+    expect(
+      tester
+          .widget<AppButton>(find.widgetWithText(AppButton, 'Reset columns'))
+          .enabled,
+      isFalse,
+    );
+  });
+
   testWidgets('Clear filters restores full row export', (
     WidgetTester tester,
   ) async {
