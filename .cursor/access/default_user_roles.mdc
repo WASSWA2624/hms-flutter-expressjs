@@ -8,35 +8,38 @@ alwaysApply: false
 
 # Default User Roles
 
-These roles must be seeded automatically on install; see `permissions.mdc` for access semantics.
+Seed on install; see `permissions.mdc` for semantics.
 
 ## Shipped Roles
 
-- `super_admin`: platform manage, all active modules.
-- `tenant_admin`: tenant manage, all entitled modules.
-- `facility_admin`: facility manage, facility modules.
-- `integration_admin`: integrations and reports_audit.
-- `doctor`: clinical care, diagnostics, and billing visibility.
-- `nurse`: ward care, triage, diagnostics, and registry.
-- `receptionist`: registration, queues, and billing.
-- `accountant`: billing, claims, and reporting.
-- `pharmacist`: dispensing, stock, billing view.
-- `laboratory_technician`: lab work.
-- `radiographer`: radiology scan workflow.
-- `radiologist`: imaging interpretation.
-- `physiotherapist`: therapy workflow.
-- `discharge_planner`: discharge coordination.
-- `operations_staff`, `housekeeper`, `biomedical_engineer`, `mortuary_attendant`: their own modules.
-- `hr_staff`: HR administration.
-- `patient`: own-data only.
-- `visitor_guest`: limited visitor info.
+- `super_admin`: platform manage; all active modules; all-scope reporting.
+- `tenant_admin`: tenant manage; all entitled modules; entitled-scope reporting.
+- `facility_admin`: facility manage; facility modules; facility reporting.
+- `integration_admin`: `integrations` and `reports_audit` manage; those modules' reporting.
+- `doctor`: clinical care (OPD/IPD/ICU/theater/emergency as assigned); diagnostics; billing view; clinical reporting.
+- `nurse`: nursing, triage, ward care (IPD/ICU as assigned); diagnostics assist; registry; nursing reporting.
+- `receptionist`: `patient_registry`, queues/OPD desk; billing view; reception reporting.
+- `accountant`: `billing`, `claims`; finance reporting.
+- `pharmacist`: `pharmacy` dispense and stock; billing view; pharmacy reporting.
+- `laboratory_technician`: `lab` specimen and workflow; lab reporting.
+- `radiographer`: `radiology` scan acquisition; scan-scope reporting.
+- `radiologist`: `radiology` interpretation and review; interpretation reporting.
+- `physiotherapist`: `physiotherapy` sessions and workflow; physiotherapy reporting.
+- `discharge_planner`: `discharge` coordination; discharge reporting.
+- `operations_staff`: `operations` tasks; operations reporting.
+- `housekeeper`: `housekeeping` tasks and areas; housekeeping reporting.
+- `biomedical_engineer`: `biomedical` equipment maintenance; biomedical reporting.
+- `mortuary_attendant`: `mortuary` workflow; mortuary reporting.
+- `hr_staff`: `hr` administration; HR reporting.
+- `patient`: own patient data only; own-data reporting.
+- `visitor_guest`: limited visitor info only; allowed-visitor reporting.
 
 ## Administration
 
-- Admins may add custom roles using the same vocabulary.
-- Reset must restore this shipped matrix atomically.
-- Failed changes must roll back completely and stay auditable.
-- Frontend and backend must deny unauthorized menus, actions, and workflows.
+- Admins may add custom roles with the same vocabulary.
+- Reset must restore this matrix atomically; stay auditable.
+- Failed changes must roll back completely.
+- UI and API must deny unauthorized menus, actions, workflows.
 
 ## Related Rules
 

@@ -1,6 +1,8 @@
 ---
 description: Standards for creating and maintaining Cursor MDC rule files
-alwaysApply: true
+globs:
+  - ".cursor/*.mdc"
+alwaysApply: false
 ---
 
 # MDC Rule File Standards
