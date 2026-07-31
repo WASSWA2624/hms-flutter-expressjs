@@ -1,78 +1,69 @@
-# Radiology workflow detail
+# Radiology procedure workbench (table + status actions)
 
-Simplify the Radiology workflow detail dialog so technologists and reporters work from a clear procedure list: mark each ordered study Done, then complete a **comprehensive per-procedure report** for any imaging procedure and modality. Keep the patient header; remove the cluttered metadata / request-details / standalone report / timeline stack that makes the current dialog hard to use.
+Refine the Radiology workflow detail **Procedures** section so it is a flat, table-like workbench—not nested cards. Drive the row by clear status → action transitions (Procedure done → awaiting report → Mark report done), allow undoing accidental status changes, open the existing comprehensive report dialog from the waiting-for-report state, and keep results/status fresh via realtime refresh.
 
 ## Context
 
-- Detail dialog: `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart` (`_openRadiologyDetailDialog`, `_RadiologyOrderDetail`, `_RadiologyDetailBody`).
-- Detail cells / “Not available” lines: `radiology_workspace_page.detail_cells.dart` (`_DetailLine`, `_valueOrUnknown`).
-- Print field picker (exists, poorly placed): `radiology_workspace_page.print.dart`.
-- Controller: `radiology_workspace_controller.dart` (`selectOrder`, `getWorkflow`, study/result mutations, assign/start/complete, asset upload, PACS sync).
-- Entities / DTOs: `radiology_entities.dart`, `radiology_dtos.dart` — `RadiologyWorkflow`, `RadiologyOrder`, `RadiologyRequestedTest` (`requestedTests` already on the order but **not shown as a procedure workbench** in detail), `ImagingStudy` / `ImagingAsset` / `PacsLink`.
-- Access: `radiology_access.dart` (write / report / print gates).
-- Image intake today: local file/upload study assets, PACS link sync on studies; capture-photo currently shares the file picker. Reporting is plain text and not modality-complete.
-- Current layout (painful): patient header → order metadata grid (many “Not available”) → Imaging floor / Reporting radios (chrome only) → Imaging studies empty state → Request details (edit icon) → independent Report section → Workflow timeline.
-- Target UX inspiration: lab result entry (`lab_result_entry_dialog.dart`) — patient header + flat procedure/test rows + focused report/result dialog with print/preview in the footer.
-- Clinical request-time details (modality, laterality, priority, clinical note) already live in the **request** / catalog dialog; do not re-surface them as a long read-only form here.
-- Follow `.cursor/locale-development.mdc`, `.cursor/mandatories.mdc`, `frontend/.cursor/ui-feedback.mdc`, and existing `AppCollapsibleSection` / `AppDialog` / `AppListTable` patterns.
+- Detail dialog / workbench: `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart` (`_RadiologyDetailBody`, `_ProcedureWorkbenchSection`, `_procedureWorkbenchRows`, `_showStudyDialog` / `createStudy`, `_showReportDialog`).
+- Report dialog (keep): rich technique/findings/impression/recommendation + multi-source images + print footer already shipped in the same file (`_ReportEditDialog`).
+- Print / compose helpers: `radiology_workspace_page.print.dart`, `radiology_workspace_page.detail_cells.dart`.
+- Controller: `radiology_workspace_controller.dart` — already has `listenForRealtimeRefresh` / adaptive polling; study + draft/finalize/assign mutations.
+- Entities: `radiology_entities.dart` / DTOs — `RadiologyWorkflow`, `RadiologyOrder`, `RadiologyRequestedTest`, `ImagingStudy`, `RadiologyResult`, `RadiologyNextActions` (`canCreateStudy`, `canCreateDraftResult`, `canFinalizeResult`, `canAssign`, …).
+- Access: `radiology_access.dart` (write / print gates).
+- Current pain (see live detail, e.g. `RAD0000006` Ankle and Foot X-Ray): Procedures still render as a **bordered nested card** with a `Wrap` of chips (id · name · modality · body · Pending). Actions are easy to miss or absent under weak `canCreateStudy` gating; layout is not a scannable table; no numbered column; no undo after accidental Done; row click does not open reporting; status labels do not clearly say “waiting for report.”
+- Target density: lab result entry / clinical flat rows (`lab_result_entry_dialog.dart`, clinical diagnoses/lab panels)—full-width rows, columns aligned, actions on the right.
+- Follow `.cursor/locale-development.mdc`, `.cursor/mandatories.mdc`, `frontend/.cursor/ui-feedback.mdc`, and existing `AppCollapsibleSection` / `AppListTable` / `AppDialog` patterns.
 
 ## Requirements
 
-1. **Keep patient header:** Retain `AppPatientDetails` (name, patient id, order status, essential billing/study summary). Keep honest header next-actions (Assign / Start imaging / Cancel) gated by write access. Do not bury the primary work under stage radios.
-2. **Procedure workbench table (primary body):** Replace the order-metadata label/value grid with a scannable table (or flat list matching clinical/lab density) of **ordered radiology procedures** for this workflow. Prefer `order.requestedTests` when present; if the API still returns one procedure per order row, show that as a one-row table—do not invent fake multi-rows. Show modality on the row when known (X-ray, Ultrasound, CT, MRI, Fluoroscopy, Mammography, Nuclear medicine, Interventional, etc.—humanized labels).
-3. **Procedure columns:** At minimum show:
-   - Radiology order / procedure id (friendly id, e.g. `RAD0000006`)
-   - Procedure / study name
-   - Modality (when available)
-   - Laterality (and body region when useful)
-   - Status (e.g. Pending / In process / Done—humanized, not raw enums; prefer localized Pending over “Not available” / `—`)
-   - Actions column
-4. **Mark Done:** Each pending/in-process procedure has a clear **Done** (or equivalent) action that records the procedure as performed. Done must be permission-gated and must call the real complete/study path—not a cosmetic checkbox. Done must work for **every** supported modality/procedure type on the catalog—not only X-ray or ultrasound.
-5. **Write report after Done:** Only when a procedure is Done (or already reportable) show a **Write report** / open-report action. Tapping it opens a focused **report dialog** (not another long section on the same scroll). One report per procedure when multiple procedures exist. The same report path must complete reporting for **any** ordered imaging procedure/modality (no modality-specific dead ends or “unsupported study” stubs).
-6. **Comprehensive report editor:** The report dialog is the full reporting workplace for that procedure. Authors must be able to:
-   - Use a rich-text surface (not a single plain `AppTextField`) with structured narrative (technique / findings / impression / recommendation, or equivalent sections that fit all modalities)
-   - Complete a clinically usable report regardless of modality (X-ray, US, CT, MRI, fluoro, mammo, NM, interventional, Doppler, etc.)—shared sections plus optional modality-aware hints/templates if they already exist; do not hard-block modalities without a template
-   - Insert imaging assets **inline** in the report body with captions
-   - Add simple annotations / on-image text where the asset/study model allows
-   - Attach and browse images from **multiple sources** in one place (see Req 7)
-   - Save draft, finalize, and (where product already supports it) attest / addendum without leaving the dialog for a second “Report” page section
-7. **Multi-source imaging for reports:** From the procedure / report dialog, support gathering images from:
-   - **Local device** — camera capture (real camera path when available) and file/gallery picker for common image formats
-   - **Remote sources** — URL / remote fetch or facility remote intake already supported by the product; clear failure copy when unreachable
-   - **PACS** — link / sync / pull existing PACS studies and assets via existing `PacsLink` / study sync APIs; show sync state honestly
-   - **Already-attached study assets** — reuse uploads already on the imaging study for this procedure
-   Present sources as explicit intake actions (not one ambiguous “Upload” that pretends to be camera + PACS). Each attached image must retain source metadata where available (local / remote / PACS) so reporters know provenance. Prefer tying all assets to the procedure being reported.
-8. **Assign report typist:** For a completed procedure awaiting a report, allow assigning a user (typist/reporter) to type the report—reuse existing assignee/assign APIs where possible; do not invent a parallel staff module.
-9. **Remove clutter from the detail body:**
-   - Remove the standalone **Request details** read-only section (those fields belong at request time / edit-order flows, not as empty “Not available” chrome here).
-   - Remove the independent **Report** section that duplicates the report dialog.
-   - Remove the **Workflow timeline** from this dialog.
-   - Remove or replace the **Imaging floor / Reporting** radio switch if it only reorders chrome; do not keep a fake two-mode shell once the procedure table + report dialog own the work.
-10. **Lean procedure-scoped studies chrome:** Do not keep a large empty “No imaging studies” block competing with the report. Image intake lives as compact row actions and/or inside the report dialog (Req 7). Empty states must say what to do next (attach from device, remote, or PACS)—not generic “Not available.”
-11. **Print in report dialog footer:** Move **Print report** into the report dialog footer (and/or dialog actions). Opening print must show a preview / field-selection dialog (existing print picker can be reused) so the user chooses which sections/fields (and selected images) go on the printed report. Gate print with the real radiology print/access requirement—do not leave an always-enabled dead control.
-12. **Empty & unknown copy:** Stop flooding the detail with “Not available” lines for unset optional fields. Show only fields that have values, or use short localized Pending / em dash sparingly inside the procedure table—not a metadata encyclopedia.
-13. **l10n + tests:** English strings for procedure columns (including modality), Done, Write report, multi-source image intake labels (local / remote / PACS), typist assign, report dialog sections, print footer, and empty states; widget/controller tests for procedure table presence, modality-agnostic Done → report, multi-source attach entry points, removed Request details / Report / Timeline sections, and print living on the report dialog.
+1. **Remove nested procedure chrome:** Inside the Procedures `AppCollapsibleSection`, do **not** wrap each procedure in a bordered card / nested panel. No inner `DecoratedBox` “tile” around the row. Rows are flat and full-width within the section (same idea as clinical diagnoses / lab panel rows).
 
-Optional enhancements: modality-aware report templates/snippets if catalog already carries them—do not block shipping the shared comprehensive editor; do not expand desk tabs in this prompt.
+2. **Table-like procedure list:** Render procedures as a dense table (prefer `AppListTable` or an equivalent aligned column layout). Columns, left → right:
+   - **#** — 1-based row number
+   - **Procedure ID** — friendly order/procedure id (e.g. `RAD0000006`)
+   - **Procedure name** — study / catalog name (e.g. Ankle and Foot X-Ray)
+   - **Modality** — humanized when known (X-ray, CT, MRI, …)
+   - **Body organ / region** — body region (and laterality when useful, without crowding)
+   - **Status** — localized, humanized (not raw enums; not “Not available”)
+   - **Actions** — extreme right; primary status-changing control(s) only (overflow ok on narrow layouts)
+
+   Prefer `order.requestedTests` when present; otherwise one row for the order—do not invent fake multi-rows.
+
+3. **Status → action contract:**
+   - **Pending** (just requested / not yet performed): primary action **Procedure done** (permission-gated). Calling it must run the real performed path (`createStudy` / existing Done study dialog)—not a cosmetic checkbox.
+   - After Procedure done: status becomes **Done — waiting for report** (or equivalent clear localized wording). Primary action becomes **Mark report done** (opens / completes reporting—reuse the existing comprehensive report dialog; do not rebuild a second reporter).
+   - While waiting for report (and when a draft already exists): **clicking the procedure row** opens the same comprehensive report dialog. Keep an explicit Mark report done / Write report control as well so the affordance is obvious.
+   - After the report is released/final: status **Reported** (or existing released wording); hide Mark report done; row may still open a read-only / addendum path only if product already supports it—do not invent a new viewer.
+
+4. **Undo / reverse status:** Accidental Procedure done or premature report-state change must be reversible with a clear **Undo** / **Revert** action (confirm dialog, localized). Prefer existing backend/controller paths (delete unreleased study, reopen draft, cancel unreleased result, etc.). If no API exists, add the **smallest** safe radiology-workspace undo for unreleased work only—do not allow undo of finalized/released reports without the existing addendum/amend flow. Undo must refresh the row status and next actions immediately.
+
+5. **Keep the shipped report dialog:** Do not regress rich text, multi-source images (local / remote / PACS / study assets), draft/release, or print-in-footer. Mark report done must land in that dialog.
+
+6. **Assign typist (keep):** When status is waiting for report, keep Assign typist as a secondary row/header action using existing assign APIs—do not invent a parallel staff module.
+
+7. **Realtime results / status:** Radiology workflow detail (selected order + procedure statuses + draft/released results) must update in **real time** when another client or mutation changes the workflow. Reuse `radiology_workspace_controller` realtime refresh / adaptive polling; ensure an open detail dialog rebuilds from the refreshed selected workflow—no stale Pending after Done elsewhere. Do not add a second polling stack.
+
+8. **Honest empty / gated actions:** If Procedure done cannot run (`canCreateStudy` false, billing gate, etc.), do not show a dead enabled button—omit or disable with existing denial/billing copy. Do not leave Pending rows with no explanation and no next step.
+
+9. **l10n + tests:** English strings for column headers (#, Procedure ID, name, modality, body organ, status, actions), **Procedure done**, **Done — waiting for report**, **Mark report done**, Undo/Revert confirms, and any new status labels. Widget tests for: flat non-nested table columns; Pending → Procedure done; waiting-for-report → Mark report done + row opens report dialog; Undo restores prior status when allowed; detail reflects realtime/controller refresh after mutation; no bordered nested procedure cards.
+
+Optional enhancements: none (do not expand desk tabs or redesign patient header in this prompt).
 
 ## Constraints
 
-- Reuse `AppDialog`, `AppPatientDetails`, `AppListTable` / dense table patterns, existing radiology assign/complete/result APIs, study asset upload, and PACS link/sync paths. Do not invent a second radiology desk or a parallel reporting module.
-- Prefer surfacing `requestedTests` / existing order+result+study+asset+PacsLink models over new Prisma tables unless a true multi-procedure report or multi-source asset link is missing—then add the smallest backend glue needed.
-- Rich text + inline images should build on existing imaging assets / upload / PACS paths; extend intake UX rather than requiring a greenfield PACS rewrite. Remote URL/fetch may use the smallest safe existing storage/upload pipeline.
-- Reporting must remain **modality-complete**: one report dialog contract for all catalog modalities; optional templates are additive, not exclusive.
-- Request-time metadata editing stays in order create/edit / request dialogs; this detail is for **performing**, **gathering images**, and **reporting**.
-- No unrelated desk-tab redesign (Worklist / Reports today / etc.) in this prompt—detail dialog only.
-- Preserve permission gating for write, report finalize, assign, print, upload, and PACS actions.
-- Responsive: procedure table and report dialog usable on desktop dense layout and mobile overflow; image intake actions remain reachable in overflow menus on narrow layouts.
+- Reuse `AppPatientDetails`, Procedures `AppCollapsibleSection`, existing `createStudy` / draft/finalize/assign/print paths, and controller realtime refresh. Do not invent a second radiology desk.
+- Prefer frontend layout + status labeling + wiring of existing next-actions; only add backend undo glue if unreleased study/result cannot be reversed today.
+- No return of Request details / Timeline / Imaging floor–Reporting radios / empty “No imaging studies” wall.
+- Preserve write / print / assign permission gating.
+- Responsive: table columns may collapse into overflow actions on mobile; # / id / name / status / actions must remain reachable.
 
 ## Acceptance Criteria
 
-- AC1 (Req 1–3, 12): Detail keeps patient header; primary body is a procedure table with id, name, modality, laterality/region, status; no “Not available” metadata wall.
-- AC2 (Req 4–5, 9): Done marks any modality’s procedure performed; Write report opens only when appropriate; Request details, standalone Report, Timeline, and useless stage radios are gone from this dialog.
-- AC3 (Req 6–8, 10): Report dialog completes comprehensive rich reporting for any procedure/modality; images can be attached from local device, remote sources, PACS, and existing study assets with clear source actions; typist can be assigned; no competing empty studies wall.
-- AC4 (Req 11): Print lives on the report dialog footer with field/image selection / preview and real access gating.
-- AC5 (Req 13): English l10n and tests cover the table, modality-agnostic Done → report, multi-source intake, removed sections, and print placement.
+- AC1 (Req 1–2): Procedures section is a flat table (# | ID | name | modality | body | status | actions) with no nested bordered procedure cards.
+- AC2 (Req 3, 5–6, 8): Pending shows Procedure done; after done, status is waiting-for-report with Mark report done; row click opens the existing comprehensive report dialog; typist assign remains available while waiting; gated actions are honest.
+- AC3 (Req 4): Undo/Revert can reverse accidental unreleased Procedure done (and unreleased report-state changes where supported) with confirm + refreshed row.
+- AC4 (Req 7): Open detail / procedure status and results refresh via existing radiology realtime paths after mutations or remote updates.
+- AC5 (Req 9): English l10n and tests cover table layout, status→action flow, row→report dialog, undo, and non-nested chrome.
 
 ## Relevant Files
 
@@ -84,11 +75,10 @@ Optional enhancements: modality-aware report templates/snippets if catalog alrea
 - `frontend/lib/features/radiology/domain/entities/radiology_entities.dart`
 - `frontend/lib/features/radiology/data/dtos/radiology_dtos.dart`
 - `frontend/lib/features/radiology/domain/repositories/radiology_repository.dart`
-- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart` (pattern reference)
-- `frontend/lib/shared/components/app_patient_details.dart`
+- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart` (flat row density reference)
 - `frontend/lib/shared/components/app_list_table.dart`
 - `frontend/lib/shared/components/app_collapsible_section.dart`
-- `frontend/lib/shared/components/app_clinical_results_preview.dart`
+- `frontend/lib/shared/components/app_patient_details.dart`
 - `backend/src/modules/radiology-workspace/`
 - `backend/src/modules/radiology-order/`
 - `frontend/lib/l10n/app_en.arb`
