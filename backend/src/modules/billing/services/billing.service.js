@@ -21,6 +21,9 @@ const {
   syncClinicalOrderBillingSnapshotsFromInvoiceTx,
 } = require('@lib/billing/clinical-request-billing');
 const { notifyLabOrdersBillingUpdated } = require('@services/lab-order/lab-order.service');
+const {
+  notifyRadiologyOrdersBillingUpdated,
+} = require('@services/radiology-workspace/radiology-workspace.service');
 const { BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
 const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
 
@@ -981,6 +984,10 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     actorUserId: user?.id || null,
   });
   await notifyLabOrdersBillingUpdated(mutation.clinicalSync?.labOrderIds || [], user?.id || null);
+  await notifyRadiologyOrdersBillingUpdated(
+    mutation.clinicalSync?.radiologyOrderIds || [],
+    null
+  );
   try {
     const opdFlowService = require('@services/opd-flow/opd-flow.service');
     await opdFlowService.syncConsultationBillingFromInvoicePayment({

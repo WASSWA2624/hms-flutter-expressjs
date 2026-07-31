@@ -2461,6 +2461,34 @@ const addendumRadiologyResult = async (identifier, payload = {}, userId, ipAddre
   }
 };
 
+const notifyRadiologyOrdersBillingUpdated = async (
+  orderIds = [],
+  actorUserId = null
+) => {
+  const uniqueIds = [
+    ...new Set(
+      (orderIds || [])
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+    ),
+  ];
+  for (const orderId of uniqueIds) {
+    const orderRecord = await radiologyWorkspaceRepository.findOrderById(
+      orderId,
+      RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+    );
+    if (!orderRecord) {
+      continue;
+    }
+    await publishRadiologyRealtimeUpdates({
+      workflow: mapRadiologyOrderWorkflowRecord(orderRecord),
+      orderRecord,
+      actorUserId,
+      action: 'BILLING_UPDATED',
+    });
+  }
+};
+
 const resolveLegacyRouteIdentifier = async (resource, identifier) => {
   try {
     const normalizedResource = String(resource || '').trim().toLowerCase();
@@ -2527,4 +2555,5 @@ module.exports = {
   requestRadiologyResultFinalization,
   attestRadiologyResultFinalization,
   addendumRadiologyResult,
+  notifyRadiologyOrdersBillingUpdated,
   resolveLegacyRouteIdentifier};

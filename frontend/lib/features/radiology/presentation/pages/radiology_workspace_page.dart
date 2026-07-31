@@ -1797,6 +1797,7 @@ class _ProcedureStatusLabel extends StatelessWidget {
     return Semantics(
       label: label,
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Padding(
@@ -1804,7 +1805,8 @@ class _ProcedureStatusLabel extends StatelessWidget {
             child: Icon(icon, size: theme.appTokens.listIconSize, color: color),
           ),
           SizedBox(width: theme.spacing.xs),
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: Text(
               label,
               softWrap: true,

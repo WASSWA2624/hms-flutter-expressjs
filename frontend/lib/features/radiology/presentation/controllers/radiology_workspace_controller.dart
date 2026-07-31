@@ -357,8 +357,8 @@ final class RadiologyWorkspaceController
         clearCatalogLoadFailure: true,
       ),
     );
-    final Result<List<RadiologyCatalogProcedure>> testsResult = await _repository
-        .listFacilityRadiologyProcedures(
+    final Result<List<RadiologyCatalogProcedure>> testsResult =
+        await _repository.listFacilityRadiologyProcedures(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           search: search,
@@ -402,20 +402,19 @@ final class RadiologyWorkspaceController
 
     final Future<Result<List<RadiologyCatalogProcedure>>> platformFuture =
         _repository.listRadiologyCatalogProcedures(search: query, limit: limit);
-    final Future<Result<List<RadiologyCatalogProcedure>>> offeredFuture = _repository
-        .listFacilityRadiologyProcedures(
+    final Future<Result<List<RadiologyCatalogProcedure>>> offeredFuture =
+        _repository.listFacilityRadiologyProcedures(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           offeredOnly: true,
           limit: limit,
         );
 
-    final List<Result<List<RadiologyCatalogProcedure>>> results = await Future.wait(
-      <Future<Result<List<RadiologyCatalogProcedure>>>>[
-        platformFuture,
-        offeredFuture,
-      ],
-    );
+    final List<Result<List<RadiologyCatalogProcedure>>> results =
+        await Future.wait(<Future<Result<List<RadiologyCatalogProcedure>>>>[
+          platformFuture,
+          offeredFuture,
+        ]);
     return _mergePlatformRadiologyOfferingStatus(results[0], results[1]);
   }
 
@@ -507,11 +506,8 @@ final class RadiologyWorkspaceController
         if (latest == null) {
           return null;
         }
-        final List<RadiologyCatalogProcedure> tests = _mergeCatalogOfferingUpdate(
-          latest.catalogTests,
-          updated,
-          testId,
-        );
+        final List<RadiologyCatalogProcedure> tests =
+            _mergeCatalogOfferingUpdate(latest.catalogTests, updated, testId);
         _emit(
           latest.copyWith(
             catalogTests: tests,
@@ -746,9 +742,7 @@ final class RadiologyWorkspaceController
   }
 
   Future<AppFailure?> undoStudy(ImagingStudy study) {
-    return _mutate(
-      () => _repository.undoStudy(study.effectiveDisplayId),
-    );
+    return _mutate(() => _repository.undoStudy(study.effectiveDisplayId));
   }
 
   Future<AppFailure?> undoDraftResult(RadiologyResult result) {
@@ -1150,6 +1144,16 @@ final class RadiologyWorkspaceController
             ),
           );
         }
+        // A workflow mutation can move an order out of the active stage
+        // (for example, releasing a report moves it from REPORTING to HISTORY).
+        // Re-query the active page and summary instead of leaving a replaced,
+        // now-filtered-out row and stale tab counts in memory.
+        await _syncVisibleData(
+          plan: const WorkspaceRefreshPlan(
+            primaryList: true,
+            summaryCounts: true,
+          ),
+        );
         return null;
       },
       failure: (AppFailure failure) {
@@ -1239,7 +1243,8 @@ final class RadiologyWorkspaceController
   ) {
     final String normalizedRequestId = requestId.trim();
     var replaced = false;
-    final List<RadiologyCatalogProcedure> merged = <RadiologyCatalogProcedure>[];
+    final List<RadiologyCatalogProcedure> merged =
+        <RadiologyCatalogProcedure>[];
     for (final RadiologyCatalogProcedure item in items) {
       if (_catalogItemMatchesRequest(item, updated, normalizedRequestId)) {
         replaced = true;

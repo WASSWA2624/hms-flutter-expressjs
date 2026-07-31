@@ -1082,12 +1082,12 @@ const resolveInvoiceIdsForSourceModule = async (scope, sourceModule) => {
  *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {string} invoiceId
- * @returns {Promise<{ labOrderIds: string[] }>}
+ * @returns {Promise<{ labOrderIds: string[], radiologyOrderIds: string[] }>}
  */
 const syncClinicalOrderBillingSnapshotsFromInvoiceTx = async (tx, invoiceId) => {
   const normalizedInvoiceId = String(invoiceId || '').trim();
   if (!normalizedInvoiceId) {
-    return { labOrderIds: [] };
+    return { labOrderIds: [], radiologyOrderIds: [] };
   }
 
   const invoice = await tx.invoice.findFirst({
@@ -1095,7 +1095,7 @@ const syncClinicalOrderBillingSnapshotsFromInvoiceTx = async (tx, invoiceId) => 
     include: { payments: { where: { deleted_at: null } } },
   });
   if (!invoice) {
-    return { labOrderIds: [] };
+    return { labOrderIds: [], radiologyOrderIds: [] };
   }
 
   const paymentStatus = resolveInvoicePaymentStatus(invoice);
@@ -1140,7 +1140,41 @@ const syncClinicalOrderBillingSnapshotsFromInvoiceTx = async (tx, invoiceId) => 
     });
   }
 
-  return { labOrderIds };
+  const radiologyOrders = await tx.radiology_order.findMany({
+    where: {
+      deleted_at: null,
+      request_details: {
+        path: ['billing', 'invoice_id'],
+        equals: normalizedInvoiceId,
+      },
+    },
+    select: { id: true, request_details: true },
+  });
+  const radiologyOrderIds = [];
+  for (const order of radiologyOrders) {
+    const snapshot = extractStoredClinicalBilling(order);
+    if (!snapshot) {
+      continue;
+    }
+    const requestDetails =
+      order.request_details &&
+      typeof order.request_details === 'object' &&
+      !Array.isArray(order.request_details)
+        ? { ...order.request_details }
+        : {};
+    await tx.radiology_order.update({
+      where: { id: order.id },
+      data: {
+        request_details: {
+          ...requestDetails,
+          billing: mergeSnapshotPaymentStatus(snapshot, invoice, paymentStatus),
+        },
+      },
+    });
+    radiologyOrderIds.push(order.id);
+  }
+
+  return { labOrderIds, radiologyOrderIds };
 };
 
 const extractStoredClinicalBilling = (record = {}) => {

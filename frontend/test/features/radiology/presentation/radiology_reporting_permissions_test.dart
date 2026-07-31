@@ -232,7 +232,10 @@ void main() {
         permissions: <AppPermission>{AppPermissions.radiologyRead},
       );
       expect(RadiologyReportingAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(RadiologyReportingAtomPermissions.write.isAllowed(reader), isFalse);
+      expect(
+        RadiologyReportingAtomPermissions.write.isAllowed(reader),
+        isFalse,
+      );
       expect(
         RadiologyReportingAtomPermissions.create.isAllowed(reader),
         isFalse,
@@ -256,22 +259,25 @@ void main() {
       expect(canWriteRadiology(reader), isFalse);
     });
 
-    test('∩ denial: missing radiology:read fails Reporting tab requirement', () {
-      final AppAccessPolicy writerOnly = _policy(
-        permissions: <AppPermission>{AppPermissions.radiologyWrite},
-      );
-      expect(
-        RadiologyReportingAtomPermissions.tab.isAllowed(writerOnly),
-        isFalse,
-      );
-      expect(canViewRadiologyReportingTab(writerOnly), isFalse);
-      // Mapping note: route ∪ without radiology:read still keeps Reporting in
-      // the strip via radiologyAllowedSections fallback (shared results).
-      expect(
-        radiologyAllowedSections(writerOnly),
-        contains(RadiologyDeskSection.reporting),
-      );
-    });
+    test(
+      '∩ denial: missing radiology:read fails Reporting tab requirement',
+      () {
+        final AppAccessPolicy writerOnly = _policy(
+          permissions: <AppPermission>{AppPermissions.radiologyWrite},
+        );
+        expect(
+          RadiologyReportingAtomPermissions.tab.isAllowed(writerOnly),
+          isFalse,
+        );
+        expect(canViewRadiologyReportingTab(writerOnly), isFalse);
+        // Mapping note: route ∪ without radiology:read still keeps Reporting in
+        // the strip via radiologyAllowedSections fallback (shared results).
+        expect(
+          radiologyAllowedSections(writerOnly),
+          contains(RadiologyDeskSection.reporting),
+        );
+      },
+    );
 
     test('write ∩ presence: radiology:write + module allows mutations', () {
       final AppAccessPolicy writer = _policy(
@@ -298,10 +304,9 @@ void main() {
     });
 
     test('mapping note: matrix ∩ radiology:write via allPermissions', () {
-      expect(
-        radiologyWorkspaceWriteRequirement.allPermissions,
-        <AppPermission>[AppPermissions.radiologyWrite],
-      );
+      expect(radiologyWorkspaceWriteRequirement.allPermissions, <AppPermission>[
+        AppPermissions.radiologyWrite,
+      ]);
       expect(radiologyWorkspaceWriteRequirement.anyPermissions, isEmpty);
       expect(
         radiologyWorkspaceWriteRequirement.activeModules,
@@ -326,69 +331,62 @@ void main() {
         isTrue,
       );
       expect(
-        RadiologyReportingAtomPermissions.printReport.isAllowed(radiologyReader),
+        RadiologyReportingAtomPermissions.printReport.isAllowed(
+          radiologyReader,
+        ),
         isTrue,
       );
       expect(canViewRadiologyReportingTab(radiologyReader), isTrue);
       expect(canReadRadiology(radiologyReader), isTrue);
     });
 
-    test(
-      '∪ allowance: clinical:read satisfies route entry; tab ∩ denied',
-      () {
-        final AppAccessPolicy clinical = _policy(
-          permissions: <AppPermission>{AppPermissions.clinicalRead},
-          roles: const <String>['DOCTOR'],
-        );
-        expect(
-          RadiologyReportingAtomPermissions.routeEntry.isAllowed(clinical),
-          isTrue,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.tab.isAllowed(clinical),
-          isFalse,
-        );
-        expect(canViewRadiologyReportingTab(clinical), isFalse);
-        expect(canEnterRadiologyWorkspace(clinical), isTrue);
-        // Mapping note: shared-results fallback keeps Reporting chrome.
-        expect(
-          radiologyAllowedSections(clinical),
-          contains(RadiologyDeskSection.reporting),
-        );
-        expect(
-          RadiologyReportingAtomPermissions.create.isAllowed(clinical),
-          isFalse,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.configure.isAllowed(clinical),
-          isFalse,
-        );
-      },
-    );
+    test('∪ allowance: clinical:read satisfies route entry; tab ∩ denied', () {
+      final AppAccessPolicy clinical = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+        roles: const <String>['DOCTOR'],
+      );
+      expect(
+        RadiologyReportingAtomPermissions.routeEntry.isAllowed(clinical),
+        isTrue,
+      );
+      expect(
+        RadiologyReportingAtomPermissions.tab.isAllowed(clinical),
+        isFalse,
+      );
+      expect(canViewRadiologyReportingTab(clinical), isFalse);
+      expect(canEnterRadiologyWorkspace(clinical), isTrue);
+      // Mapping note: shared-results fallback keeps Reporting chrome.
+      expect(
+        radiologyAllowedSections(clinical),
+        contains(RadiologyDeskSection.reporting),
+      );
+      expect(
+        RadiologyReportingAtomPermissions.create.isAllowed(clinical),
+        isFalse,
+      );
+      expect(
+        RadiologyReportingAtomPermissions.configure.isAllowed(clinical),
+        isFalse,
+      );
+    });
 
-    test(
-      '∪ allowance: billing:read satisfies route entry + billing hold',
-      () {
-        final AppAccessPolicy billing = _policy(
-          permissions: <AppPermission>{AppPermissions.billingRead},
-          roles: const <String>['BILLING_CLERK'],
-        );
-        expect(
-          RadiologyReportingAtomPermissions.routeEntry.isAllowed(billing),
-          isTrue,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.tab.isAllowed(billing),
-          isFalse,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.billingHold.isAllowed(billing),
-          isTrue,
-        );
-        expect(canViewRadiologyBillingHold(billing), isTrue);
-        expect(canViewRadiologyReportingTab(billing), isFalse);
-      },
-    );
+    test('∪ allowance: billing:read satisfies route entry + billing hold', () {
+      final AppAccessPolicy billing = _policy(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+        roles: const <String>['BILLING_CLERK'],
+      );
+      expect(
+        RadiologyReportingAtomPermissions.routeEntry.isAllowed(billing),
+        isTrue,
+      );
+      expect(RadiologyReportingAtomPermissions.tab.isAllowed(billing), isFalse);
+      expect(
+        RadiologyReportingAtomPermissions.billingHold.isAllowed(billing),
+        isTrue,
+      );
+      expect(canViewRadiologyBillingHold(billing), isTrue);
+      expect(canViewRadiologyReportingTab(billing), isFalse);
+    });
 
     test(
       '∪ allowance: clinical:write satisfies route entry + request-from-clinical',
@@ -398,7 +396,9 @@ void main() {
           roles: const <String>['DOCTOR'],
         );
         expect(
-          RadiologyReportingAtomPermissions.routeEntry.isAllowed(clinicalWriter),
+          RadiologyReportingAtomPermissions.routeEntry.isAllowed(
+            clinicalWriter,
+          ),
           isTrue,
         );
         expect(
@@ -414,54 +414,48 @@ void main() {
       },
     );
 
-    test(
-      'subscription strips Reporting when radiology-workflows inactive',
-      () {
-        final AppAccessPolicy noModule = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.radiologyRead,
-            AppPermissions.radiologyWrite,
-          },
-          modules: const <AppModuleEntitlement>[],
-        );
-        expect(
-          RadiologyReportingAtomPermissions.tab.isAllowed(noModule),
-          isFalse,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.write.isAllowed(noModule),
-          isFalse,
-        );
-        expect(canEnterRadiologyWorkspace(noModule), isFalse);
-      },
-    );
+    test('subscription strips Reporting when radiology-workflows inactive', () {
+      final AppAccessPolicy noModule = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.radiologyRead,
+          AppPermissions.radiologyWrite,
+        },
+        modules: const <AppModuleEntitlement>[],
+      );
+      expect(
+        RadiologyReportingAtomPermissions.tab.isAllowed(noModule),
+        isFalse,
+      );
+      expect(
+        RadiologyReportingAtomPermissions.write.isAllowed(noModule),
+        isFalse,
+      );
+      expect(canEnterRadiologyWorkspace(noModule), isFalse);
+    });
 
-    test(
-      'ABAC: missing facility still allows Reporting chrome '
-      '(row/own scope remains backend-authoritative)',
-      () {
-        final AppAccessPolicy noFacility = _policy(
-          permissions: <AppPermission>{
-            AppPermissions.radiologyRead,
-            AppPermissions.radiologyWrite,
-          },
-          facilityId: null,
-        );
-        expect(noFacility.hasFacilityContext, isFalse);
-        expect(
-          RadiologyReportingAtomPermissions.tab.isAllowed(noFacility),
-          isTrue,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.write.isAllowed(noFacility),
-          isTrue,
-        );
-        expect(
-          RadiologyReportingAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
-        );
-      },
-    );
+    test('ABAC: missing facility still allows Reporting chrome '
+        '(row/own scope remains backend-authoritative)', () {
+      final AppAccessPolicy noFacility = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.radiologyRead,
+          AppPermissions.radiologyWrite,
+        },
+        facilityId: null,
+      );
+      expect(noFacility.hasFacilityContext, isFalse);
+      expect(
+        RadiologyReportingAtomPermissions.tab.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        RadiologyReportingAtomPermissions.write.isAllowed(noFacility),
+        isTrue,
+      );
+      expect(
+        RadiologyReportingAtomPermissions.routeEntry.isAllowed(noFacility),
+        isTrue,
+      );
+    });
 
     test(
       'nested cross-module _(n/a)_: Reporting write does not grant billing hold',
@@ -472,7 +466,10 @@ void main() {
             AppPermissions.radiologyWrite,
           },
         );
-        expect(RadiologyReportingAtomPermissions.write.isAllowed(writer), isTrue);
+        expect(
+          RadiologyReportingAtomPermissions.write.isAllowed(writer),
+          isTrue,
+        );
         expect(
           RadiologyReportingAtomPermissions.billingHold.isAllowed(writer),
           isFalse,
@@ -483,24 +480,23 @@ void main() {
     );
   });
 
-  testWidgets(
-    '∩ denial: without radiology:write, Request imaging absent',
-    (WidgetTester tester) async {
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.radiologyRead},
-        ),
-      );
+  testWidgets('∩ denial: without radiology:write, Request imaging absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.radiologyRead},
+      ),
+    );
 
-      expect(_tab('For reporting'), findsOneWidget);
-      expect(find.text('Rita Reporting'), findsOneWidget);
-      expect(find.byTooltip('Request imaging'), findsNothing);
-      expect(find.byTooltip('Configurations'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
+    expect(_tab('For reporting'), findsOneWidget);
+    expect(find.text('Rita Reporting'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsNothing);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+  });
 
   testWidgets(
     'subscription strips Reporting workspace when radiology-workflows inactive',
@@ -525,37 +521,36 @@ void main() {
     },
   );
 
-  testWidgets(
-    'authorized read ∩: list mounts; write / billing atoms absent',
-    (WidgetTester tester) async {
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.radiologyRead},
-        ),
-      );
+  testWidgets('authorized read ∩: list mounts; write / billing atoms absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.radiologyRead},
+      ),
+    );
 
-      expect(_tab('For reporting'), findsOneWidget);
-      expect(find.text('Rita Reporting'), findsOneWidget);
-      expect(find.byTooltip('Request imaging'), findsNothing);
-      expect(find.byTooltip('Configurations'), findsNothing);
-      expect(find.text('Billing gate'), findsNothing);
+    expect(_tab('For reporting'), findsOneWidget);
+    expect(find.text('Rita Reporting'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsNothing);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.text('Billing gate'), findsNothing);
 
-      await tester.tap(find.text('Rita Reporting'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Rita Reporting'));
+    await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppButton, 'Continue report'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Procedure done'), findsNothing);
-      expect(find.text('Draft report'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Release report'), findsNothing);
-      expect(find.text('Cancel order'), findsNothing);
-      expect(find.text('Assign'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
-      // Print lives in the report dialog, not on the detail body.
-      expect(find.text('Print report'), findsNothing);
-    },
-  );
+    expect(find.widgetWithText(AppButton, 'Continue report'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Procedure done'), findsNothing);
+    expect(find.text('Draft report'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Release report'), findsNothing);
+    expect(find.text('Cancel order'), findsNothing);
+    expect(find.text('Assign'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
+    // Print lives in the report dialog, not on the detail body.
+    expect(find.text('Print report'), findsNothing);
+  });
 
   testWidgets(
     '∪ allowance: clinical:read mounts Reporting shared-results chrome without write',
@@ -630,101 +625,101 @@ void main() {
     },
   );
 
-  testWidgets(
-    'full write ∩: Request imaging / Draft report mount',
-    (WidgetTester tester) async {
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.radiologyRead,
-            AppPermissions.radiologyWrite,
-          },
-        ),
-      );
+  testWidgets('full write ∩: Request imaging / Draft report mount', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.radiologyRead,
+          AppPermissions.radiologyWrite,
+        },
+      ),
+    );
 
-      expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Configurations'), findsNothing);
-      expect(find.text('Rita Reporting'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.text('Rita Reporting'), findsOneWidget);
 
-      await _openReportingDetail(tester);
+    await _openReportingDetail(tester);
 
-      expect(find.text('Cancel order'), findsNothing);
-      expect(find.text('Cancel selected'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Continue report'), findsOneWidget);
-      expect(find.text('Procedures'), findsOneWidget);
-      expect(find.text('CT Head'), findsWidgets);
-      expect(find.text('Procedure ID'), findsOneWidget);
-      expect(find.text('Body organ'), findsOneWidget);
-      expect(find.text('Done — waiting for report'), findsWidgets);
-      expect(find.text('Undo'), findsOneWidget);
-      expect(find.text('Assign'), findsNothing);
-      expect(find.text('Start imaging'), findsNothing);
-      expect(find.text('Assign typist'), findsNothing);
-      expect(find.text('Perform study'), findsNothing);
-      expect(find.text('Request details'), findsNothing);
-      expect(find.text('Workflow timeline'), findsNothing);
-      expect(find.text('Imaging floor'), findsNothing);
-      expect(find.text('Print report'), findsNothing);
-      expect(find.textContaining('no access'), findsNothing);
+    expect(find.text('Cancel order'), findsNothing);
+    expect(find.text('Cancel selected'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Continue report'), findsOneWidget);
+    expect(find.text('Procedures'), findsOneWidget);
+    expect(find.text('CT Head'), findsWidgets);
+    expect(find.text('Procedure ID'), findsOneWidget);
+    expect(find.text('Body organ'), findsOneWidget);
+    expect(find.text('Done — waiting for report'), findsWidgets);
+    expect(find.text('Undo'), findsOneWidget);
+    expect(find.text('Assign'), findsNothing);
+    expect(find.text('Start imaging'), findsNothing);
+    expect(find.text('Assign typist'), findsNothing);
+    expect(find.text('Perform study'), findsNothing);
+    expect(find.text('Request details'), findsNothing);
+    expect(find.text('Workflow timeline'), findsNothing);
+    expect(find.text('Imaging floor'), findsNothing);
+    expect(find.text('Print report'), findsNothing);
+    expect(find.textContaining('no access'), findsNothing);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Continue report'));
-      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-      await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.widgetWithText(AppButton, 'Continue report'),
+    );
+    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
+    await tester.pumpAndSettle();
 
-      expect(find.textContaining('Findings'), findsWidgets);
-      expect(find.textContaining('Impression/Conclusion'), findsWidgets);
-      expect(find.textContaining('Recommendation'), findsWidgets);
-      expect(find.textContaining('Report narrative'), findsWidgets);
-      expect(find.text('Report preview'), findsOneWidget);
-      expect(find.text('Local device'), findsNothing);
-      expect(find.text('Remote URL'), findsNothing);
-      expect(find.text('PACS'), findsNothing);
-      expect(find.text('Study images'), findsNothing);
-      expect(find.text('Live preview'), findsNothing);
-      expect(find.text('Print report'), findsOneWidget);
-      expect(find.text('Release report'), findsOneWidget);
-      expect(find.text('Draft report'), findsOneWidget);
-    },
-  );
+    expect(find.textContaining('Findings'), findsWidgets);
+    expect(find.textContaining('Impression/Conclusion'), findsWidgets);
+    expect(find.textContaining('Recommendation'), findsWidgets);
+    expect(find.textContaining('Report narrative'), findsWidgets);
+    expect(find.text('Report preview'), findsOneWidget);
+    expect(find.text('Local device'), findsNothing);
+    expect(find.text('Remote URL'), findsNothing);
+    expect(find.text('PACS'), findsNothing);
+    expect(find.text('Study images'), findsNothing);
+    expect(find.text('Live preview'), findsNothing);
+    expect(find.text('Print report'), findsOneWidget);
+    expect(find.text('Release report'), findsOneWidget);
+    expect(find.text('Draft report'), findsOneWidget);
+  });
 
-  testWidgets(
-    'authorized draft validation: empty findings keeps dialog open',
-    (WidgetTester tester) async {
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.radiologyRead,
-            AppPermissions.radiologyWrite,
-          },
-        ),
-      );
+  testWidgets('authorized draft validation: empty findings keeps dialog open', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.radiologyRead,
+          AppPermissions.radiologyWrite,
+        },
+      ),
+    );
 
-      await _openReportingDetail(tester);
-      await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Continue report'),
-      );
-      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-      await tester.pumpAndSettle();
+    await _openReportingDetail(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(AppButton, 'Continue report'),
+    );
+    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
+    await tester.pumpAndSettle();
 
-      final Finder submit = find.descendant(
-        of: find.byType(AppDialog).last,
-        matching: find.widgetWithText(AppButton, 'Draft report'),
-      );
-      expect(submit, findsOneWidget);
-      final AppButton submitButton = tester.widget<AppButton>(submit);
-      expect(submitButton.onPressed, isNotNull);
-      submitButton.onPressed!();
-      await tester.pumpAndSettle();
+    final Finder submit = find.descendant(
+      of: find.byType(AppDialog).last,
+      matching: find.widgetWithText(AppButton, 'Draft report'),
+    );
+    expect(submit, findsOneWidget);
+    final AppButton submitButton = tester.widget<AppButton>(submit);
+    expect(submitButton.onPressed, isNotNull);
+    submitButton.onPressed!();
+    await tester.pumpAndSettle();
 
-      expect(find.text('Findings is required.'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-      verifyNever(() => radiologyRepository.draftResult(any(), any()));
-    },
-  );
+    expect(find.text('Findings is required.'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+    verifyNever(() => radiologyRepository.draftResult(any(), any()));
+  });
 
   testWidgets(
     'post-mutation sync: draft shows success snackbar and refreshes workflow',
@@ -790,107 +785,118 @@ void main() {
         findsOneWidget,
       );
       // Draft keeps the composer open so Release remains available.
-      expect(
-        find.widgetWithText(AppButton, 'Release report'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(AppButton, 'Release report'), findsOneWidget);
       verify(() => radiologyRepository.draftResult(any(), any())).called(1);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
-  testWidgets(
-    'post-mutation sync: release report updates selected workflow',
-    (WidgetTester tester) async {
-      when(() => radiologyRepository.getWorkflow(any())).thenAnswer(
-        (_) async => Result<RadiologyWorkflow>.success(
-          _reportingWorkflow(
-            nextActions: const RadiologyNextActions(
-              canFinalizeResult: true,
-              canCancel: true,
-            ),
-            results: const <RadiologyResult>[
-              RadiologyResult(
-                id: 'RES-DRAFT',
-                displayId: 'RES-DRAFT',
-                status: 'DRAFT',
-                reportText: 'Preliminary findings',
-              ),
-            ],
+  testWidgets('post-mutation sync: release report updates selected workflow', (
+    WidgetTester tester,
+  ) async {
+    var workbenchCalls = 0;
+    when(() => radiologyRepository.getWorkbench(any())).thenAnswer((_) async {
+      workbenchCalls += 1;
+      return Result<RadiologyWorkbench>.success(
+        RadiologyWorkbench(
+          summary: _summary,
+          orders: AppPage<RadiologyOrder>(
+            items: const <RadiologyOrder>[_reportingOrder],
+            request: const AppPageRequest(pageSize: 12),
+            totalItemCount: 1,
           ),
         ),
       );
-      when(() => radiologyRepository.draftResult(any(), any())).thenAnswer((
-        _,
-      ) async {
-        return Result<RadiologyWorkflow>.success(
-          _reportingWorkflow(
-            nextActions: const RadiologyNextActions(
-              canFinalizeResult: true,
-              canCancel: true,
+    });
+    when(() => radiologyRepository.getWorkflow(any())).thenAnswer(
+      (_) async => Result<RadiologyWorkflow>.success(
+        _reportingWorkflow(
+          nextActions: const RadiologyNextActions(
+            canFinalizeResult: true,
+            canCancel: true,
+          ),
+          results: const <RadiologyResult>[
+            RadiologyResult(
+              id: 'RES-DRAFT',
+              displayId: 'RES-DRAFT',
+              status: 'DRAFT',
+              reportText: 'Preliminary findings',
             ),
-            results: const <RadiologyResult>[
-              RadiologyResult(
-                id: 'RES-DRAFT',
-                displayId: 'RES-DRAFT',
-                status: 'DRAFT',
-                reportText: 'Preliminary findings',
-              ),
-            ],
+          ],
+        ),
+      ),
+    );
+    when(() => radiologyRepository.draftResult(any(), any())).thenAnswer((
+      _,
+    ) async {
+      return Result<RadiologyWorkflow>.success(
+        _reportingWorkflow(
+          nextActions: const RadiologyNextActions(
+            canFinalizeResult: true,
+            canCancel: true,
           ),
-        );
-      });
-      when(() => radiologyRepository.finalizeResult(any(), any())).thenAnswer((
-        _,
-      ) async {
-        return Result<RadiologyWorkflow>.success(
-          _reportingWorkflow(
-            nextActions: const RadiologyNextActions(canCancel: true),
-            results: const <RadiologyResult>[
-              RadiologyResult(
-                id: 'RES-FINAL',
-                displayId: 'RES-FINAL',
-                status: 'FINAL',
-                reportText: 'Preliminary findings',
-              ),
-            ],
-          ),
-        );
-      });
-
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{
-            AppPermissions.radiologyRead,
-            AppPermissions.radiologyWrite,
-          },
+          results: const <RadiologyResult>[
+            RadiologyResult(
+              id: 'RES-DRAFT',
+              displayId: 'RES-DRAFT',
+              status: 'DRAFT',
+              reportText: 'Preliminary findings',
+            ),
+          ],
         ),
       );
-
-      await _openReportingDetail(tester);
-      await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Continue report'),
+    });
+    when(() => radiologyRepository.finalizeResult(any(), any())).thenAnswer((
+      _,
+    ) async {
+      return Result<RadiologyWorkflow>.success(
+        _reportingWorkflow(
+          nextActions: const RadiologyNextActions(canCancel: true),
+          results: const <RadiologyResult>[
+            RadiologyResult(
+              id: 'RES-FINAL',
+              displayId: 'RES-FINAL',
+              status: 'FINAL',
+              reportText: 'Preliminary findings',
+            ),
+          ],
+        ),
       );
-      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-      await tester.pumpAndSettle();
+    });
 
-      final Finder releaseSubmit = find.descendant(
-        of: find.byType(AppDialog).last,
-        matching: find.widgetWithText(AppButton, 'Release report'),
-      );
-      expect(releaseSubmit, findsOneWidget);
-      final AppButton releaseButton = tester.widget<AppButton>(releaseSubmit);
-      expect(releaseButton.onPressed, isNotNull);
-      releaseButton.onPressed!();
-      await tester.pumpAndSettle();
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{
+          AppPermissions.radiologyRead,
+          AppPermissions.radiologyWrite,
+        },
+      ),
+    );
 
-      verify(() => radiologyRepository.finalizeResult(any(), any())).called(1);
-      expect(find.text('Radiology workflow updated.'), findsOneWidget);
-      expect(find.textContaining('no access'), findsNothing);
-    },
-  );
+    await _openReportingDetail(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(AppButton, 'Continue report'),
+    );
+    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
+    await tester.pumpAndSettle();
+
+    final Finder releaseSubmit = find.descendant(
+      of: find.byType(AppDialog).last,
+      matching: find.widgetWithText(AppButton, 'Release report'),
+    );
+    expect(releaseSubmit, findsOneWidget);
+    final AppButton releaseButton = tester.widget<AppButton>(releaseSubmit);
+    expect(releaseButton.onPressed, isNotNull);
+    releaseButton.onPressed!();
+    await tester.pumpAndSettle();
+
+    verify(() => radiologyRepository.finalizeResult(any(), any())).called(1);
+    expect(workbenchCalls, greaterThan(1));
+    expect(find.text('Radiology workflow updated.'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
+  });
 
   testWidgets('error / retry state remains for authorized Reporting users', (
     WidgetTester tester,
@@ -1031,9 +1037,7 @@ void main() {
             const SessionState.ready(),
           ),
           appAccessPolicyProvider.overrideWithValue(
-            _policy(
-              permissions: <AppPermission>{AppPermissions.radiologyRead},
-            ),
+            _policy(permissions: <AppPermission>{AppPermissions.radiologyRead}),
           ),
         ],
         child: MaterialApp.router(
@@ -1167,22 +1171,21 @@ void main() {
     },
   );
 
-  testWidgets(
-    'legacy section=draft alias still opens Reporting tab',
-    (WidgetTester tester) async {
-      await _pumpReportingTab(
-        tester,
-        radiologyRepository: radiologyRepository,
-        accessPolicy: _policy(
-          permissions: <AppPermission>{AppPermissions.radiologyRead},
-        ),
-        initialLocation: '/radiology?section=draft',
-      );
+  testWidgets('legacy section=draft alias still opens Reporting tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReportingTab(
+      tester,
+      radiologyRepository: radiologyRepository,
+      accessPolicy: _policy(
+        permissions: <AppPermission>{AppPermissions.radiologyRead},
+      ),
+      initialLocation: '/radiology?section=draft',
+    );
 
-      expect(_tab('For reporting'), findsOneWidget);
-      expect(find.text('Rita Reporting'), findsOneWidget);
-    },
-  );
+    expect(_tab('For reporting'), findsOneWidget);
+    expect(find.text('Rita Reporting'), findsOneWidget);
+  });
 }
 
 Future<void> _openReportingDetail(WidgetTester tester) async {
