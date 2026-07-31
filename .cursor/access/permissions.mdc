@@ -1,9 +1,6 @@
 ---
-description: Permission vocabulary, ABAC scope, and enforcement model for access control.
-globs:
-  - "backend/**"
-  - "frontend/**"
-alwaysApply: false
+description: Permission vocabulary, ABAC scope, and enforcement model for access control. Always enforce permission-based access.
+alwaysApply: true
 ---
 
 # Permissions
