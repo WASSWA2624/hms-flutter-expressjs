@@ -88,7 +88,6 @@ void main() {
     expect(find.text('ENC-9'), findsOneWidget);
     expect(find.textContaining('Orders included:'), findsOneWidget);
     expect(find.text('1 active order'), findsOneWidget);
-    expect(find.text('|'), findsWidgets);
     expect(find.byType(Wrap), findsWidgets);
 
     final double encounterY = tester

@@ -275,7 +275,7 @@ class AppButton extends StatelessWidget {
         ),
       ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(
-        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
       ),
       foregroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
@@ -309,14 +309,15 @@ class AppButton extends StatelessWidget {
           }
           return colorScheme.primary.withValues(alpha: 0.12);
         }
+        // Secondary / tertiary: faint resting fill with stronger hover/press.
         if (states.contains(WidgetState.pressed)) {
-          return colorScheme.surfaceContainerHigh.withValues(alpha: 0.72);
+          return colorScheme.surfaceContainerHigh.withValues(alpha: 0.92);
         }
         if (states.contains(WidgetState.hovered) ||
             states.contains(WidgetState.focused)) {
-          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.56);
+          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.78);
         }
-        return Colors.transparent;
+        return colorScheme.surfaceContainerHighest.withValues(alpha: 0.42);
       }),
       overlayColor: const WidgetStatePropertyAll<Color?>(null),
       side: WidgetStateProperty.resolveWith<BorderSide?>((

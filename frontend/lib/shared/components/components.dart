@@ -65,6 +65,7 @@ export 'app_timeline.dart';
 export 'app_triage_components.dart';
 export 'app_user_access_panel.dart';
 export 'app_vitals_form.dart';
+export 'app_vital_icons.dart';
 export 'app_choice_tile.dart';
 export 'app_wizard_stepper.dart';
 export 'app_workflow_stepper.dart';

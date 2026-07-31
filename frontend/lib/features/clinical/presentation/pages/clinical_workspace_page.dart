@@ -1817,25 +1817,25 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
               handoff.triageLevel,
               emptyAsPending: false,
             ),
-            icon: Icons.priority_high_outlined,
+            icon: Icons.health_and_safety_outlined,
             tone: appTriageToneForValue(handoff.triageLevel),
           ),
           AppWorkspacePatientContextField(
             label: l10n.opdRouteDecisionLabel,
             value: _apiLabel(handoff.routeTo ?? ''),
-            icon: Icons.alt_route_outlined,
+            icon: AppActionIcons.route,
           ),
           AppWorkspacePatientContextField(
             label: l10n.opdChiefComplaintLabel,
             value: handoff.chiefComplaint ?? '',
-            icon: Icons.sick_outlined,
+            icon: Icons.medical_information_outlined,
           ),
           AppWorkspacePatientContextField(
             label: l10n.opdTimeColumnLabel,
             value: handoff.queuedAt == null
                 ? ''
                 : _dateTimeLabel(context, handoff.queuedAt),
-            icon: Icons.schedule_outlined,
+            icon: AppActionIcons.time,
           ),
           if (handoff.emergencyIndicator)
             AppWorkspacePatientContextField(
@@ -1847,7 +1847,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           AppWorkspacePatientContextField(
             label: l10n.opdTriageNotesLabel,
             value: handoff.triageNotes ?? '',
-            icon: Icons.notes_outlined,
+            icon: Icons.sticky_note_2_outlined,
           ),
         ];
     final List<AppWorkspacePatientContextField> vitalFacts =
@@ -1856,7 +1856,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             AppWorkspacePatientContextField(
               label: _apiLabel(vital.vitalType),
               value: vital.displayValue,
-              icon: Icons.monitor_heart_outlined,
+              icon: appVitalTypeIcon(vital.vitalType),
               tone: _clinicalVitalTone(vital.status),
             ),
         ];
@@ -1869,21 +1869,40 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           AppPatientContextFactsRow(fields: triageFacts),
           if (vitalFacts.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.md),
-            Wrap(
-              spacing: theme.spacing.md,
-              runSpacing: theme.spacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                Text(
-                  '${l10n.opdVitalsSummaryLabel}:',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.35,
+                ),
+                borderRadius: BorderRadius.circular(theme.radius.sm),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.35,
                   ),
                 ),
-                _ClinicalStatusText(status: vitalStatus),
-                _ClinicalVitalsLegend(),
-              ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.sm,
+                ),
+                child: Wrap(
+                  spacing: theme.spacing.md,
+                  runSpacing: theme.spacing.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      '${l10n.opdVitalsSummaryLabel}:',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    _ClinicalStatusText(status: vitalStatus),
+                    _ClinicalVitalsLegend(),
+                  ],
+                ),
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             AppPatientContextFactsRow(fields: vitalFacts),
@@ -1994,12 +2013,6 @@ class _ClinicalActionBar extends ConsumerWidget {
           hasOpdFlow: bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false,
         );
     final List<AppActionItem> actions = <AppActionItem>[
-      if (canWrite)
-        AppActionItem(
-          label: l10n.clinicalAddNoteAction,
-          leadingIcon: Icons.note_add_outlined,
-          onPressed: () => _openNoteDialog(context, controller),
-        ),
       if (canWrite &&
           !bundle.entry.isTerminal &&
           clinicalOpdFlowApiId(bundle.entry) != null)
@@ -2017,8 +2030,14 @@ class _ClinicalActionBar extends ConsumerWidget {
         ),
       if (canWrite)
         AppActionItem(
+          label: l10n.clinicalAddNoteAction,
+          leadingIcon: Icons.note_add_outlined,
+          onPressed: () => _openNoteDialog(context, controller),
+        ),
+      if (canWrite)
+        AppActionItem(
           label: l10n.clinicalAddDiagnosisAction,
-          leadingIcon: Icons.rule_outlined,
+          leadingIcon: AppActionIcons.triage,
           onPressed: () => _openDiagnosisDialog(context, controller),
         ),
       if (canLab)
@@ -2051,26 +2070,19 @@ class _ClinicalActionBar extends ConsumerWidget {
       if (canWrite)
         AppActionItem(
           label: l10n.opdReferAction,
-          leadingIcon: Icons.alt_route_outlined,
+          leadingIcon: AppActionIcons.referral,
           onPressed: () => _openReferralDialog(context, controller),
-        ),
-      if (canAdmission)
-        AppActionItem(
-          label: l10n.clinicalRequestAdmissionAction,
-          leadingIcon: Icons.bed_outlined,
-          onPressed: () =>
-              _openAdmissionDialog(context, controller, referenceData),
         ),
       if (canWrite)
         AppActionItem(
           label: l10n.opdFollowUpAction,
-          leadingIcon: Icons.event_repeat_outlined,
+          leadingIcon: AppActionIcons.followUp,
           onPressed: () => _openFollowUpDialog(context, controller),
         ),
       if (canCompleteDisposition)
         AppActionItem(
           label: dispositionActionLabel,
-          leadingIcon: Icons.task_alt_outlined,
+          leadingIcon: AppActionIcons.complete,
           onPressed: () => _openCompleteDispositionDialog(
             context,
             ref,
@@ -2079,10 +2091,17 @@ class _ClinicalActionBar extends ConsumerWidget {
             actionLabel: dispositionActionLabel,
           ),
         ),
+      if (canAdmission)
+        AppActionItem(
+          label: l10n.clinicalRequestAdmissionAction,
+          leadingIcon: AppActionIcons.bed,
+          onPressed: () =>
+              _openAdmissionDialog(context, controller, referenceData),
+        ),
       if (canPrint)
         AppActionItem(
           label: l10n.clinicalPrintSummaryAction,
-          leadingIcon: Icons.print_outlined,
+          leadingIcon: AppActionIcons.print,
           onPressed: () async {
             await printFormTemplateDocument(
               ref: ref,

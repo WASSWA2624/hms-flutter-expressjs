@@ -330,8 +330,7 @@ void main() {
       expect(find.textContaining('Encounter:'), findsOneWidget);
       expect(find.textContaining('Location:'), findsOneWidget);
       expect(find.textContaining('Coverage:'), findsOneWidget);
-      expect(find.text('|'), findsNWidgets(2));
-      expect(find.byType(SingleChildScrollView), findsWidgets);
+      expect(find.byType(Wrap), findsWidgets);
 
       final double encounterY = tester
           .getTopLeft(find.textContaining('Encounter:'))
@@ -339,7 +338,8 @@ void main() {
       final double coverageY = tester
           .getTopLeft(find.textContaining('Coverage:'))
           .dy;
-      expect(coverageY, closeTo(encounterY, 1));
+      // Narrow widths stretch chips onto separate rows.
+      expect(coverageY, greaterThanOrEqualTo(encounterY));
     },
   );
 

@@ -279,6 +279,18 @@ class _NursingActionBar extends ConsumerWidget {
           icon: Icons.note_add_outlined,
           onPressed: () => _openNoteDialog(context),
         ),
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionOrderLab,
+          icon: Icons.science_outlined,
+          onPressed: () => _openLabOrderDialog(context, controller),
+        ),
+        AppPermissionActionItem(
+          requirement: writeRequirement,
+          label: l10n.nursingActionOrderRadiology,
+          icon: Icons.biotech_outlined,
+          onPressed: () => _openRadiologyOrderDialog(context, controller),
+        ),
         if (omit != NursingNextActionKind.medication)
           AppPermissionActionItem(
             requirement:
@@ -290,20 +302,8 @@ class _NursingActionBar extends ConsumerWidget {
         AppPermissionActionItem(
           requirement: writeRequirement,
           label: l10n.clinicalPrescribeAction,
-          icon: Icons.add_circle_outline,
+          icon: Icons.medication_outlined,
           onPressed: () => _openPrescriptionDialog(context, controller),
-        ),
-        AppPermissionActionItem(
-          requirement: writeRequirement,
-          label: l10n.nursingActionOrderLab,
-          icon: Icons.science_outlined,
-          onPressed: () => _openLabOrderDialog(context, controller),
-        ),
-        AppPermissionActionItem(
-          requirement: writeRequirement,
-          label: l10n.nursingActionOrderRadiology,
-          icon: Icons.radio_outlined,
-          onPressed: () => _openRadiologyOrderDialog(context, controller),
         ),
         if (omit != NursingNextActionKind.escalate)
           AppPermissionActionItem(
