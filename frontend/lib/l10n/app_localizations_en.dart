@@ -8387,6 +8387,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalCancelLabOrderAction => 'Cancel order';
 
   @override
+  String get clinicalCancelLabTestAction => 'Cancel test';
+
+  @override
+  String get clinicalCancelLabTestDialogTitle => 'Cancel lab test';
+
+  @override
+  String clinicalCancelLabTestDialogBody(String testName) {
+    return 'Cancel $testName and remove it from pending lab work?';
+  }
+
+  @override
+  String get clinicalCancelLabTestReason => 'Cancelled from clinical workspace';
+
+  @override
+  String get clinicalCancelSelectedLabOrdersAction => 'Cancel selected';
+
+  @override
+  String get clinicalDeleteSelectedLabOrdersAction => 'Delete selected';
+
+  @override
   String get clinicalDeleteLabOrderAction => 'Delete order';
 
   @override

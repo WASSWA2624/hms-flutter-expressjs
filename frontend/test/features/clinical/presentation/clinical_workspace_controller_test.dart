@@ -484,4 +484,84 @@ void main() {
       ).called(1);
     },
   );
+
+  test('cancelLabOrderItem rejects sibling test and cancels sole item via order',
+      () async {
+    final _MockClinicalRepository clinical = _MockClinicalRepository();
+    final _MockOpdRepository opd = _MockOpdRepository();
+    final _MockIpdRepository ipd = _MockIpdRepository();
+
+    const ClinicalWorklistEntry entry = ClinicalWorklistEntry(
+      id: 'enc-lab-1',
+      sourceQueue: 'ENCOUNTER',
+      encounterId: 'enc-uuid-lab',
+      patientId: 'pat-1',
+      status: 'IN_CONSULTATION',
+    );
+
+    when(() => clinical.cancelLabOrderItem(any(), reason: any(named: 'reason')))
+        .thenAnswer((_) async => const Result<void>.success(null));
+    when(() => clinical.updateLabOrder(any(), any())).thenAnswer(
+      (_) async => const Result<void>.success(null),
+    );
+
+    final ProviderContainer container = buildContainer(
+      clinical: clinical,
+      opd: opd,
+      ipd: ipd,
+      encounters: const <ClinicalWorklistEntry>[entry],
+    );
+
+    when(() => clinical.loadEncounterBundle(any())).thenAnswer((_) async {
+      return const Result<ClinicalEncounterBundle>.success(
+        ClinicalEncounterBundle(entry: entry),
+      );
+    });
+
+    await container.read(clinicalWorkspaceControllerProvider.future);
+    final ClinicalWorkspaceController controller = container.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    await controller.selectEntry(entry);
+
+    const ClinicalLabOrderItem amy = ClinicalLabOrderItem(
+      id: 'ITEM-AMY',
+      status: 'ORDERED',
+      testDisplayName: 'Amylase',
+    );
+    const ClinicalLabOrderItem lip = ClinicalLabOrderItem(
+      id: 'ITEM-LIP',
+      status: 'ORDERED',
+      testDisplayName: 'Lipase',
+    );
+
+    final AppFailure? itemFailure = await controller.cancelLabOrderItem(
+      labOrderId: 'LAB-1',
+      item: amy,
+      orderItems: const <ClinicalLabOrderItem>[amy, lip],
+      reason: 'Cancelled from clinical workspace',
+    );
+    expect(itemFailure, isNull);
+    verify(
+      () => clinical.cancelLabOrderItem(
+        'ITEM-AMY',
+        reason: 'Cancelled from clinical workspace',
+      ),
+    ).called(1);
+    verifyNever(() => clinical.updateLabOrder(any(), any()));
+
+    final AppFailure? soleFailure = await controller.cancelLabOrderItem(
+      labOrderId: 'LAB-1',
+      item: lip,
+      orderItems: const <ClinicalLabOrderItem>[lip],
+      reason: 'Cancelled from clinical workspace',
+    );
+    expect(soleFailure, isNull);
+    verify(
+      () => clinical.updateLabOrder(
+        'LAB-1',
+        any(that: containsPair('status', 'CANCELLED')),
+      ),
+    ).called(1);
+  });
 }

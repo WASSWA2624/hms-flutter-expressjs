@@ -590,7 +590,14 @@ final class ClinicalLabOrderItem {
     this.resultStatus,
     this.resultValue,
     this.resultText,
+    this.resultFlag,
+    this.resultUnit,
+    this.referenceRangeLabel,
+    this.referenceRangeSummary,
     this.labTestId,
+    this.panelId,
+    this.panelDisplayName,
+    this.panelCode,
     this.testDisplayName,
     this.testCode,
     this.category,
@@ -605,7 +612,14 @@ final class ClinicalLabOrderItem {
   final String? resultStatus;
   final String? resultValue;
   final String? resultText;
+  final String? resultFlag;
+  final String? resultUnit;
+  final String? referenceRangeLabel;
+  final String? referenceRangeSummary;
   final String? labTestId;
+  final String? panelId;
+  final String? panelDisplayName;
+  final String? panelCode;
   final String? testDisplayName;
   final String? testCode;
   final String? category;
@@ -617,6 +631,31 @@ final class ClinicalLabOrderItem {
   String get displayTitle {
     return _joinDisplay(<String?>[testDisplayName, testCode]) ?? id;
   }
+
+  String? get panelKey =>
+      _firstNonEmpty(<String?>[panelId, panelCode, panelDisplayName]);
+
+  String? get panelTitle =>
+      _joinDisplay(<String?>[panelDisplayName, panelCode]) ?? panelKey;
+
+  String? get displayResultValue {
+    final String? qualitative = _firstNonEmpty(<String?>[resultText, resultValue]);
+    if (qualitative != null &&
+        (resultValue == null || resultValue!.trim().isEmpty)) {
+      return qualitative;
+    }
+    return _joinDisplay(<String?>[resultValue, resultUnit ?? unit]) ??
+        resultText;
+  }
+
+  String? get displayReferenceRange =>
+      _firstNonEmpty(<String?>[referenceRangeSummary, referenceRangeLabel]);
+
+  String? get effectiveResultFlag =>
+      _firstNonEmpty(<String?>[resultFlag, resultStatus]);
+
+  bool get hasResult =>
+      _firstNonEmpty(<String?>[resultValue, resultText]) != null;
 
   String? get displaySubtitle {
     return _joinDisplay(<String?>[category, specimenType, unit, status]);

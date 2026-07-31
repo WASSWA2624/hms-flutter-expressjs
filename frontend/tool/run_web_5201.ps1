@@ -138,17 +138,32 @@ function Invoke-FlutterWebRun {
 
   Write-Host ("Running: flutter {0}" -f ($RunArgs -join ' '))
   $script:browserOpenedForWebServer = $false
-  & flutter @RunArgs 2>&1 | ForEach-Object {
-    $line = "$_"
-    Write-Host $line
-    if ($OpenBrowserWhenReady -and -not $script:browserOpenedForWebServer -and $line -match 'is being served at') {
-      if ($AppUrl) {
-        Write-Host "Opening $AppUrl"
-        Start-Process $AppUrl
+  # Flutter writes progress/warnings to stderr. With $ErrorActionPreference=Stop,
+  # piping 2>&1 would otherwise turn those into terminating ErrorRecords.
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    & flutter @RunArgs 2>&1 | ForEach-Object {
+      $line = if ($_ -is [System.Management.Automation.ErrorRecord]) {
+        $_.Exception.Message
+      } else {
+        "$_"
       }
-      $script:browserOpenedForWebServer = $true
-      Write-Host 'Dev server is ready. The terminal stays open for hot reload (r/R/q); that is normal.'
+      if ([string]::IsNullOrWhiteSpace($line)) {
+        return
+      }
+      Write-Host $line
+      if ($OpenBrowserWhenReady -and -not $script:browserOpenedForWebServer -and $line -match 'is being served at') {
+        if ($AppUrl) {
+          Write-Host "Opening $AppUrl"
+          Start-Process $AppUrl
+        }
+        $script:browserOpenedForWebServer = $true
+        Write-Host 'Dev server is ready. The terminal stays open for hot reload (r/R/q); that is normal.'
+      }
     }
+  } finally {
+    $ErrorActionPreference = $previousEap
   }
   return $LASTEXITCODE
 }

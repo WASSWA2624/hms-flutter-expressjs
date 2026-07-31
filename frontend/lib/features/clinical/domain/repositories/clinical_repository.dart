@@ -88,6 +88,13 @@ abstract interface class ClinicalRepository {
 
   Future<Result<void>> deleteLabOrder(String labOrderId);
 
+  /// Cancels a single pending lab order item via lab workspace reject.
+  Future<Result<void>> cancelLabOrderItem(
+    String labOrderItemId, {
+    required String reason,
+    String? notes,
+  });
+
   Future<Result<void>> createRadiologyOrder(Map<String, Object?> payload);
 
   Future<Result<void>> updateRadiologyOrder(

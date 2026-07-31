@@ -29,6 +29,13 @@ typedef ClinicalOrderBatchAction =
       List<ClinicalRelatedRecord> orders,
     );
 
+typedef ClinicalLabOrderItemAction =
+    Future<void> Function(
+      BuildContext context,
+      ClinicalRelatedRecord order,
+      ClinicalLabOrderItem item,
+    );
+
 List<ClinicalRelatedRecord> sortClinicalRecordsNewestFirst(
   List<ClinicalRelatedRecord> records,
 ) {
@@ -51,6 +58,7 @@ class ClinicalLabOrdersTablePanel extends ConsumerStatefulWidget {
     required this.onEdit,
     required this.onCancel,
     required this.onDelete,
+    this.onCancelItem,
     this.onCancelSelected,
     this.onDeleteSelected,
     super.key,
@@ -60,6 +68,7 @@ class ClinicalLabOrdersTablePanel extends ConsumerStatefulWidget {
   final ClinicalOrderAction onEdit;
   final ClinicalOrderAction onCancel;
   final ClinicalOrderAction onDelete;
+  final ClinicalLabOrderItemAction? onCancelItem;
   final ClinicalOrderBatchAction? onCancelSelected;
   final ClinicalOrderBatchAction? onDeleteSelected;
 
@@ -70,7 +79,6 @@ class ClinicalLabOrdersTablePanel extends ConsumerStatefulWidget {
 
 class _ClinicalLabOrdersTablePanelState
     extends ConsumerState<ClinicalLabOrdersTablePanel> {
-  final Set<String> _expandedOrderIds = <String>{};
   final Set<String> _selectedIds = <String>{};
 
   @override
@@ -80,12 +88,12 @@ class _ClinicalLabOrdersTablePanelState
         .map((ClinicalRelatedRecord order) => order.id)
         .toSet();
     _selectedIds.removeWhere((String id) => !validIds.contains(id));
-    _expandedOrderIds.removeWhere((String id) => !validIds.contains(id));
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final bool canMutate = canWriteClinicalLabOrder(
       ref.watch(appAccessPolicyProvider),
     );
@@ -116,108 +124,508 @@ class _ClinicalLabOrdersTablePanelState
               _canDeleteLabOrder(order.status),
         )
         .toList(growable: false);
+    final bool hasSelection = selectedOrders.isNotEmpty;
 
     return AppCollapsibleSection(
       title: l10n.clinicalLabOrdersTitle,
       description: l10n.clinicalLabOrdersBody,
-      actions: canMutate
-          ? _clinicalBatchHeaderActions(
-              context: context,
-              selectedCount: selectedOrders.length,
-              cancellableSelected: cancellableSelected,
-              deletableSelected: deletableSelected,
-              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-              deleteLabel: l10n.clinicalDeleteSelectedRadiologyOrdersAction,
-              onCancelSelected: widget.onCancelSelected,
-              onDeleteSelected: widget.onDeleteSelected,
-              onCleared: () => setState(_selectedIds.clear),
-              requirement: clinicalLabOrderWriteRequirement,
-            )
-          : const <Widget>[],
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 480;
-          final bool allSelected =
-              canMutate &&
-              orders.isNotEmpty &&
-              orders.every(
-                (ClinicalRelatedRecord order) =>
-                    _selectedIds.contains(order.id),
-              );
-          final bool someSelected =
-              canMutate &&
-              orders.any(
-                (ClinicalRelatedRecord order) =>
-                    _selectedIds.contains(order.id),
-              );
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (canMutate)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Checkbox(
-                    tristate: true,
-                    value: allSelected
-                        ? true
-                        : someSelected
-                        ? null
-                        : false,
-                    onChanged: (bool? checked) {
-                      setState(() {
-                        if (checked ?? false) {
-                          _selectedIds
-                            ..clear()
-                            ..addAll(
-                              orders.map(
-                                (ClinicalRelatedRecord order) => order.id,
-                              ),
+      headerActions: canMutate
+          ? <Widget>[
+              AppAccessActionGate(
+                requirement: clinicalLabOrderWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  if (!isAllowed) {
+                    return const SizedBox.shrink();
+                  }
+                  return Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      if (hasSelection)
+                        Text(
+                          l10n.clinicalLabRequestSelectedCount(
+                            selectedOrders.length,
+                          ),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (cancellableSelected.isNotEmpty &&
+                          widget.onCancelSelected != null)
+                        AppButton.tertiary(
+                          dense: true,
+                          label: l10n.clinicalCancelSelectedLabOrdersAction,
+                          leadingIcon: Icons.block_outlined,
+                          color: theme.colorScheme.tertiary,
+                          onPressed: () async {
+                            await widget.onCancelSelected!(
+                              context,
+                              cancellableSelected,
                             );
-                        } else {
-                          _selectedIds.clear();
-                        }
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              for (final ClinicalRelatedRecord order in orders)
-                _ClinicalLabOrderGroup(
-                  order: order,
-                  compact: compact,
-                  selected: canMutate && _selectedIds.contains(order.id),
-                  onSelectedChanged: canMutate
-                      ? (bool selected) {
-                          setState(() {
-                            if (selected) {
-                              _selectedIds.add(order.id);
-                            } else {
-                              _selectedIds.remove(order.id);
+                            if (mounted) {
+                              setState(_selectedIds.clear);
                             }
-                          });
-                        }
-                      : null,
-                  expanded: _expandedOrderIds.contains(order.id),
-                  onToggleExpanded: () {
-                    setState(() {
-                      if (_expandedOrderIds.contains(order.id)) {
-                        _expandedOrderIds.remove(order.id);
-                      } else {
-                        _expandedOrderIds.add(order.id);
+                          },
+                        ),
+                      if (deletableSelected.isNotEmpty &&
+                          widget.onDeleteSelected != null)
+                        AppButton.tertiary(
+                          dense: true,
+                          label: l10n.clinicalDeleteSelectedLabOrdersAction,
+                          leadingIcon: Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                          onPressed: () async {
+                            await widget.onDeleteSelected!(
+                              context,
+                              deletableSelected,
+                            );
+                            if (mounted) {
+                              setState(_selectedIds.clear);
+                            }
+                          },
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ]
+          : const <Widget>[],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final ClinicalRelatedRecord order in orders) ...<Widget>[
+            for (final _ClinicalLabPanelGroup group
+                in _clinicalLabPanelGroups(order)) ...<Widget>[
+              _ClinicalLabPanelSection(
+                order: order,
+                group: group,
+                selected: canMutate && _selectedIds.contains(order.id),
+                onSelectedChanged: canMutate
+                    ? (bool selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedIds.add(order.id);
+                          } else {
+                            _selectedIds.remove(order.id);
+                          }
+                        });
                       }
-                    });
-                  },
-                  onEdit: canMutate ? widget.onEdit : null,
-                  onCancel: canMutate ? widget.onCancel : null,
-                  onDelete: canMutate ? widget.onDelete : null,
-                ),
+                    : null,
+                onEdit: canMutate ? widget.onEdit : null,
+                onCancel: canMutate ? widget.onCancel : null,
+                onDelete: canMutate ? widget.onDelete : null,
+                onCancelItem: canMutate ? widget.onCancelItem : null,
+              ),
+              SizedBox(height: theme.spacing.sm),
             ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+final class _ClinicalLabPanelGroup {
+  const _ClinicalLabPanelGroup({
+    required this.title,
+    required this.items,
+    required this.isPanel,
+  });
+
+  final String title;
+  final List<ClinicalLabOrderItem> items;
+  final bool isPanel;
+}
+
+List<_ClinicalLabPanelGroup> _clinicalLabPanelGroups(
+  ClinicalRelatedRecord order,
+) {
+  final List<ClinicalLabOrderItem> items = order.labOrderItems;
+  if (items.isEmpty) {
+    return <_ClinicalLabPanelGroup>[
+      _ClinicalLabPanelGroup(
+        title: order.title ?? order.id,
+        items: const <ClinicalLabOrderItem>[],
+        isPanel: false,
+      ),
+    ];
+  }
+
+  final Map<String, List<ClinicalLabOrderItem>> byPanel =
+      <String, List<ClinicalLabOrderItem>>{};
+  final List<ClinicalLabOrderItem> ungrouped = <ClinicalLabOrderItem>[];
+  for (final ClinicalLabOrderItem item in items) {
+    final String? panelKey = item.panelKey;
+    if (panelKey == null || panelKey.isEmpty) {
+      ungrouped.add(item);
+      continue;
+    }
+    byPanel.putIfAbsent(panelKey, () => <ClinicalLabOrderItem>[]).add(item);
+  }
+
+  final List<_ClinicalLabPanelGroup> groups = <_ClinicalLabPanelGroup>[];
+  for (final MapEntry<String, List<ClinicalLabOrderItem>> entry
+      in byPanel.entries) {
+    final ClinicalLabOrderItem first = entry.value.first;
+    groups.add(
+      _ClinicalLabPanelGroup(
+        title: first.panelTitle ?? order.title ?? order.id,
+        items: entry.value,
+        isPanel: true,
+      ),
+    );
+  }
+  for (final ClinicalLabOrderItem item in ungrouped) {
+    groups.add(
+      _ClinicalLabPanelGroup(
+        title: item.displayTitle,
+        items: <ClinicalLabOrderItem>[item],
+        isPanel: false,
+      ),
+    );
+  }
+  if (groups.isEmpty) {
+    groups.add(
+      _ClinicalLabPanelGroup(
+        title: order.title ?? order.id,
+        items: items,
+        isPanel: false,
+      ),
+    );
+  }
+  return groups;
+}
+
+class _ClinicalLabPanelSection extends StatelessWidget {
+  const _ClinicalLabPanelSection({
+    required this.order,
+    required this.group,
+    required this.selected,
+    this.onSelectedChanged,
+    this.onEdit,
+    this.onCancel,
+    this.onDelete,
+    this.onCancelItem,
+  });
+
+  final ClinicalRelatedRecord order;
+  final _ClinicalLabPanelGroup group;
+  final bool selected;
+  final ValueChanged<bool>? onSelectedChanged;
+  final ClinicalOrderAction? onEdit;
+  final ClinicalOrderAction? onCancel;
+  final ClinicalOrderAction? onDelete;
+  final ClinicalLabOrderItemAction? onCancelItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final bool canEdit =
+        onEdit != null && _canEditLabOrder(order.status);
+    final bool canCancel =
+        onCancel != null && _canCancelLabOrder(order.status);
+    final bool canDelete =
+        onDelete != null &&
+        !canCancel &&
+        _canDeleteLabOrder(order.status);
+    final bool showSelection = onSelectedChanged != null;
+
+    return AppCollapsibleSection(
+      title: group.title,
+      titleIcon: group.isPanel
+          ? Icons.inventory_2_outlined
+          : Icons.science_outlined,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      headerActions: <Widget>[
+        if (showSelection)
+          Checkbox(
+            value: selected,
+            onChanged: (bool? value) =>
+                onSelectedChanged!(value ?? false),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        if (canEdit || canCancel || canDelete)
+          AppAccessActionGate(
+            requirement: clinicalLabOrderWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              if (!isAllowed) {
+                return const SizedBox.shrink();
+              }
+              return Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  if (canEdit)
+                    AppButton.secondary(
+                      dense: true,
+                      leadingIcon: Icons.edit_outlined,
+                      label: l10n.clinicalEditLabOrderAction,
+                      semanticLabel: l10n.clinicalEditLabOrderAction,
+                      tooltip: l10n.clinicalEditLabOrderAction,
+                      onPressed: () => onEdit!(context, order),
+                    ),
+                  if (canCancel)
+                    AppButton.tertiary(
+                      dense: true,
+                      leadingIcon: Icons.block_outlined,
+                      label: l10n.clinicalCancelLabOrderAction,
+                      semanticLabel: l10n.clinicalCancelLabOrderAction,
+                      tooltip: l10n.clinicalCancelLabOrderAction,
+                      color: theme.colorScheme.tertiary,
+                      onPressed: () => onCancel!(context, order),
+                    ),
+                  if (canDelete)
+                    AppButton.tertiary(
+                      dense: true,
+                      leadingIcon: Icons.delete_outline,
+                      label: l10n.clinicalDeleteLabOrderAction,
+                      semanticLabel: l10n.clinicalDeleteLabOrderAction,
+                      tooltip: l10n.clinicalDeleteLabOrderAction,
+                      color: theme.colorScheme.error,
+                      onPressed: () => onDelete!(context, order),
+                    ),
+                ],
+              );
+            },
+          ),
+      ],
+      child: _ClinicalLabResultRowsTable(
+        order: order,
+        items: group.items.isEmpty
+            ? <ClinicalLabOrderItem>[
+                ClinicalLabOrderItem(
+                  id: order.id,
+                  testDisplayName: order.title,
+                  status: order.status,
+                ),
+              ]
+            : group.items,
+        onCancelItem: onCancelItem,
+      ),
+    );
+  }
+}
+
+class _ClinicalLabResultRowsTable extends StatelessWidget {
+  const _ClinicalLabResultRowsTable({
+    required this.order,
+    required this.items,
+    this.onCancelItem,
+  });
+
+  final ClinicalRelatedRecord order;
+  final List<ClinicalLabOrderItem> items;
+  final ClinicalLabOrderItemAction? onCancelItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
+    final bool showActions = onCancelItem != null;
+    final Color borderColor = colorScheme.outlineVariant;
+    final TableBorder tableBorder = TableBorder(
+      horizontalInside: BorderSide(color: borderColor),
+      verticalInside: BorderSide(color: borderColor),
+    );
+
+    return Table(
+      border: tableBorder,
+      columnWidths: <int, TableColumnWidth>{
+        0: const FlexColumnWidth(2.2),
+        1: const FlexColumnWidth(2.2),
+        2: const FlexColumnWidth(2.0),
+        3: const FlexColumnWidth(1.4),
+        if (showActions) 4: const FlexColumnWidth(1.2),
+      },
+      children: <TableRow>[
+        TableRow(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+          ),
+          children: <Widget>[
+            _ClinicalLabResultTableCell.header(
+              label: l10n.labTestsColumnLabel,
+            ),
+            _ClinicalLabResultTableCell.header(
+              label: l10n.labReferenceRangeLabel,
+            ),
+            _ClinicalLabResultTableCell.header(
+              label: l10n.labReportResultLabel,
+            ),
+            _ClinicalLabResultTableCell.header(
+              label: l10n.labResultFlagLabel,
+            ),
+            if (showActions)
+              _ClinicalLabResultTableCell.header(
+                label: l10n.labResultActionsColumnLabel,
+              ),
+          ],
+        ),
+        for (final ClinicalLabOrderItem item in items)
+          _clinicalLabResultTableRow(
+            context,
+            order: order,
+            item: item,
+            showActions: showActions,
+            onCancelItem: onCancelItem,
+          ),
+      ],
+    );
+  }
+}
+
+class _ClinicalLabResultTableCell extends StatelessWidget {
+  const _ClinicalLabResultTableCell({required this.child});
+
+  factory _ClinicalLabResultTableCell.header({required String label}) {
+    return _ClinicalLabResultTableCell(
+      child: Builder(
+        builder: (BuildContext context) {
+          final ThemeData theme = Theme.of(context);
+          return Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+              letterSpacing: 0.1,
+            ),
           );
         },
       ),
     );
   }
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(Theme.of(context).spacing.sm),
+      child: Align(alignment: Alignment.topLeft, child: child),
+    );
+  }
+}
+
+TableRow _clinicalLabResultTableRow(
+  BuildContext context, {
+  required ClinicalRelatedRecord order,
+  required ClinicalLabOrderItem item,
+  required bool showActions,
+  ClinicalLabOrderItemAction? onCancelItem,
+}) {
+  final ThemeData theme = Theme.of(context);
+  final AppLocalizations l10n = context.l10n;
+  final String pending = l10n.labStatusPending;
+  final String? range = item.displayReferenceRange;
+  final String? result = item.displayResultValue;
+  final String? flagToken = item.effectiveResultFlag;
+  final bool cancelled =
+      (item.status ?? order.status ?? '').toUpperCase() == 'CANCELLED';
+  final bool canCancelItem =
+      onCancelItem != null &&
+      _canCancelLabOrderItem(item, order.status);
+  final AppClinicalResultFlag flag = _clinicalLabResultFlagForToken(flagToken);
+  final AppClinicalResultFlagDisplay? flagDisplay =
+      flagToken == null || flagToken.trim().isEmpty
+      ? null
+      : AppClinicalResultFlagDisplay.resolve(
+          l10n,
+          flag,
+          customLabel: AppDisplay.apiLabel(flagToken),
+        );
+  final bool abnormalResult =
+      flag == AppClinicalResultFlag.abnormal ||
+      flag == AppClinicalResultFlag.critical;
+
+  return TableRow(
+    decoration: BoxDecoration(
+      color: cancelled
+          ? theme.colorScheme.errorContainer.withValues(alpha: 0.22)
+          : theme.colorScheme.surfaceContainerLowest,
+    ),
+    children: <Widget>[
+      _ClinicalLabResultTableCell(
+        child: Text(
+          item.displayTitle,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      _ClinicalLabResultTableCell(
+        child: Text(range?.trim().isNotEmpty == true ? range! : pending),
+      ),
+      _ClinicalLabResultTableCell(
+        child: Text(
+          result?.trim().isNotEmpty == true ? result! : pending,
+          style: abnormalResult && result?.trim().isNotEmpty == true
+              ? theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                )
+              : null,
+        ),
+      ),
+      _ClinicalLabResultTableCell(
+        child: flagDisplay == null
+            ? Text(pending)
+            : AppStatusBadge(
+                label: flagDisplay.label,
+                tone: flagDisplay.tone,
+                icon: flagDisplay.icon,
+              ),
+      ),
+      if (showActions)
+        _ClinicalLabResultTableCell(
+          child: canCancelItem
+              ? AppAccessActionGate(
+                  requirement: clinicalLabOrderWriteRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    if (!isAllowed) {
+                      return const SizedBox.shrink();
+                    }
+                    return AppButton.tertiary(
+                      dense: true,
+                      leadingIcon: Icons.block_outlined,
+                      label: l10n.clinicalCancelLabTestAction,
+                      semanticLabel: l10n.clinicalCancelLabTestAction,
+                      tooltip: l10n.clinicalCancelLabTestAction,
+                      color: theme.colorScheme.tertiary,
+                      onPressed: () => onCancelItem!(context, order, item),
+                    );
+                  },
+                )
+              : const SizedBox.shrink(),
+        ),
+    ],
+  );
+}
+
+AppClinicalResultFlag _clinicalLabResultFlagForToken(String? rawToken) {
+  final String token = (rawToken ?? '').trim().toUpperCase();
+  return switch (token) {
+    'CRITICAL' || 'CRITICAL_LOW' || 'CRITICAL_HIGH' =>
+      AppClinicalResultFlag.critical,
+    'ABNORMAL' ||
+    'HIGH' ||
+    'LOW' ||
+    'POSITIVE' ||
+    'REACTIVE' ||
+    'INVALID' => AppClinicalResultFlag.abnormal,
+    'NORMAL' ||
+    'NEGATIVE' ||
+    'NON_REACTIVE' ||
+    'NOT_DETECTED' => AppClinicalResultFlag.normal,
+    _ => AppClinicalResultFlag.unknown,
+  };
 }
 
 class ClinicalRadiologyOrdersTablePanel extends ConsumerStatefulWidget {
@@ -872,268 +1280,6 @@ class _ClinicalDiagnosisRow extends StatelessWidget {
   }
 }
 
-class _ClinicalLabOrderGroup extends StatelessWidget {
-  const _ClinicalLabOrderGroup({
-    required this.order,
-    required this.compact,
-    required this.selected,
-    required this.expanded,
-    required this.onToggleExpanded,
-    this.onSelectedChanged,
-    this.onEdit,
-    this.onCancel,
-    this.onDelete,
-  });
-
-  final ClinicalRelatedRecord order;
-  final bool compact;
-  final bool selected;
-  final ValueChanged<bool>? onSelectedChanged;
-  final bool expanded;
-  final VoidCallback onToggleExpanded;
-  final ClinicalOrderAction? onEdit;
-  final ClinicalOrderAction? onCancel;
-  final ClinicalOrderAction? onDelete;
-
-  bool get _canMutate =>
-      onEdit != null || onCancel != null || onDelete != null;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final bool hasChildTests = order.labOrderItems.isNotEmpty;
-    final bool showSelection = onSelectedChanged != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        const Divider(height: 1),
-        if (compact)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (showSelection)
-                Padding(
-                  padding: EdgeInsets.only(top: theme.spacing.sm),
-                  child: Checkbox(
-                    value: selected,
-                    onChanged: (bool? value) =>
-                        onSelectedChanged!(value ?? false),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              Expanded(
-                child: _ClinicalLabOrderMobileCard(
-                  order: order,
-                  expandable: hasChildTests,
-                  expanded: expanded,
-                  onToggleExpanded: onToggleExpanded,
-                  onEdit: onEdit,
-                  onCancel: onCancel,
-                  onDelete: onDelete,
-                ),
-              ),
-            ],
-          )
-        else
-          _ClinicalDetailDataTableContainer(
-            child: DataTable(
-              showCheckboxColumn: false,
-              columns: <DataColumn>[
-                if (showSelection) const DataColumn(label: SizedBox.shrink()),
-                DataColumn(label: Text(l10n.clinicalOrderTestColumnLabel)),
-                DataColumn(label: Text(l10n.clinicalOrderValueColumnLabel)),
-                DataColumn(label: Text(l10n.opdStatusColumnLabel)),
-                DataColumn(label: Text(l10n.clinicalResultFlagColumnLabel)),
-                DataColumn(label: Text(l10n.opdTimeColumnLabel)),
-                if (_canMutate)
-                  DataColumn(label: Text(l10n.opdActionsColumnLabel)),
-              ],
-              rows: <DataRow>[
-                _clinicalLabOrderDataRow(
-                  context: context,
-                  l10n: l10n,
-                  order: order,
-                  selected: selected,
-                  onSelectedChanged: onSelectedChanged,
-                  expandable: hasChildTests,
-                  expanded: expanded,
-                  onToggleExpanded: onToggleExpanded,
-                  onEdit: onEdit,
-                  onCancel: onCancel,
-                  onDelete: onDelete,
-                ),
-              ],
-            ),
-          ),
-        if (expanded && hasChildTests)
-          Padding(
-            padding: EdgeInsets.only(
-              left: compact ? 0 : theme.spacing.md,
-              bottom: theme.spacing.sm,
-            ),
-            child: compact
-                ? Column(
-                    children: <Widget>[
-                      for (final ClinicalLabOrderItem item
-                          in order.labOrderItems)
-                        _ClinicalLabOrderItemMobileCard(
-                          item: item,
-                          orderStatus: order.status,
-                        ),
-                    ],
-                  )
-                : _ClinicalDetailDataTableContainer(
-                    child: DataTable(
-                      showCheckboxColumn: false,
-                      columns: <DataColumn>[
-                        DataColumn(
-                          label: Text(l10n.clinicalOrderTestColumnLabel),
-                        ),
-                        DataColumn(
-                          label: Text(l10n.clinicalOrderCategoryColumnLabel),
-                        ),
-                        DataColumn(
-                          label: Text(l10n.clinicalOrderValueColumnLabel),
-                        ),
-                        DataColumn(label: Text(l10n.opdStatusColumnLabel)),
-                        DataColumn(
-                          label: Text(l10n.clinicalResultFlagColumnLabel),
-                        ),
-                      ],
-                      rows: <DataRow>[
-                        for (final ClinicalLabOrderItem item
-                            in order.labOrderItems)
-                          _clinicalLabItemDataRow(
-                            context: context,
-                            l10n: l10n,
-                            item: item,
-                            orderStatus: order.status,
-                          ),
-                      ],
-                    ),
-                  ),
-          ),
-      ],
-    );
-  }
-}
-
-DataRow _clinicalLabOrderDataRow({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required ClinicalRelatedRecord order,
-  required bool selected,
-  ValueChanged<bool>? onSelectedChanged,
-  required bool expandable,
-  required bool expanded,
-  required VoidCallback onToggleExpanded,
-  ClinicalOrderAction? onEdit,
-  ClinicalOrderAction? onCancel,
-  ClinicalOrderAction? onDelete,
-}) {
-  final ThemeData theme = Theme.of(context);
-  final String status = order.status ?? '';
-  final String title = order.title ?? order.id;
-  final bool showSelection = onSelectedChanged != null;
-  final bool showActions = onEdit != null || onCancel != null || onDelete != null;
-
-  return DataRow(
-    selected: showSelection && selected,
-    onSelectChanged: showSelection
-        ? (bool? value) => onSelectedChanged(value ?? false)
-        : null,
-    cells: <DataCell>[
-      if (showSelection)
-        DataCell(
-          Checkbox(
-            value: selected,
-            onChanged: (bool? value) => onSelectedChanged(value ?? false),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-      DataCell(
-        Row(
-          children: <Widget>[
-            if (expandable)
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: onToggleExpanded,
-                icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
-              ),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      DataCell(Text(_labOrderAggregateValue(context, order))),
-      DataCell(
-        _ClinicalOrderStatusWithPayment(
-          status: status,
-          paymentStatus: order.paymentStatus,
-        ),
-      ),
-      DataCell(
-        _labOrderAggregateResultFlag(order) == null
-            ? Text(l10n.clinicalOrderEmptyValueLabel)
-            : _ClinicalStatusBadge(
-                status: _labOrderAggregateResultFlag(order)!,
-              ),
-      ),
-      DataCell(Text(_dateTimeLabel(context, order.occurredAt))),
-      if (showActions)
-        DataCell(
-          _labOrderActions(
-            context: context,
-            l10n: l10n,
-            order: order,
-            onEdit: onEdit,
-            onCancel: onCancel,
-            onDelete: onDelete,
-          ),
-        ),
-    ],
-  );
-}
-
-DataRow _clinicalLabItemDataRow({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required ClinicalLabOrderItem item,
-  required String? orderStatus,
-}) {
-  final ThemeData theme = Theme.of(context);
-  final String status = _effectiveLabOrderItemStatus(item, orderStatus);
-
-  return DataRow(
-    cells: <DataCell>[
-      DataCell(
-        Padding(
-          padding: EdgeInsets.only(left: theme.spacing.lg),
-          child: Text(item.displayTitle),
-        ),
-      ),
-      DataCell(Text(_joinDisplay(<String?>[item.category, item.specimenType]))),
-      DataCell(Text(_labItemValue(context, item))),
-      DataCell(_ClinicalStatusBadge(status: status)),
-      DataCell(
-        item.resultStatus == null
-            ? Text(l10n.clinicalOrderEmptyValueLabel)
-            : _ClinicalStatusBadge(status: item.resultStatus!),
-      ),
-    ],
-  );
-}
-
 DataRow _clinicalRadiologyDataRow({
   required BuildContext context,
   required AppLocalizations l10n,
@@ -1194,75 +1340,6 @@ DataRow _clinicalRadiologyDataRow({
         ),
     ],
   );
-}
-
-class _ClinicalLabOrderMobileCard extends StatelessWidget {
-  const _ClinicalLabOrderMobileCard({
-    required this.order,
-    required this.expandable,
-    required this.expanded,
-    required this.onToggleExpanded,
-    this.onEdit,
-    this.onCancel,
-    this.onDelete,
-  });
-
-  final ClinicalRelatedRecord order;
-  final bool expandable;
-  final bool expanded;
-  final VoidCallback onToggleExpanded;
-  final ClinicalOrderAction? onEdit;
-  final ClinicalOrderAction? onCancel;
-  final ClinicalOrderAction? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final bool showActions =
-        onEdit != null || onCancel != null || onDelete != null;
-    return _ClinicalOrderMobileCard(
-      title: order.title ?? order.id,
-      value: _labOrderAggregateValue(context, order),
-      status: order.status,
-      paymentStatus: order.paymentStatus,
-      resultFlag: _labOrderAggregateResultFlag(order),
-      occurredAt: order.occurredAt,
-      expandable: expandable,
-      expanded: expanded,
-      onToggleExpanded: onToggleExpanded,
-      actions: showActions
-          ? _labOrderActions(
-              context: context,
-              l10n: l10n,
-              order: order,
-              onEdit: onEdit,
-              onCancel: onCancel,
-              onDelete: onDelete,
-            )
-          : null,
-    );
-  }
-}
-
-class _ClinicalLabOrderItemMobileCard extends StatelessWidget {
-  const _ClinicalLabOrderItemMobileCard({
-    required this.item,
-    required this.orderStatus,
-  });
-
-  final ClinicalLabOrderItem item;
-  final String? orderStatus;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ClinicalOrderMobileCard(
-      title: item.displayTitle,
-      subtitle: _joinDisplay(<String?>[item.category, item.specimenType]),
-      value: _labItemValue(context, item),
-      status: _effectiveLabOrderItemStatus(item, orderStatus),
-      resultFlag: item.resultStatus,
-    );
-  }
 }
 
 class _ClinicalRadiologyOrderMobileCard extends StatelessWidget {
@@ -1529,70 +1606,6 @@ AppWorkspaceStatusTone _paymentStatusTone(String? rawStatus) {
   };
 }
 
-Widget _labOrderActions({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required ClinicalRelatedRecord order,
-  ClinicalOrderAction? onEdit,
-  ClinicalOrderAction? onCancel,
-  ClinicalOrderAction? onDelete,
-}) {
-  final ThemeData theme = Theme.of(context);
-  final String status = order.status ?? '';
-  final bool canEdit = onEdit != null && _canEditLabOrder(status);
-  final bool canCancel = onCancel != null && _canCancelLabOrder(status);
-  final bool canDelete =
-      onDelete != null && !canCancel && _canDeleteLabOrder(status);
-
-  if (!canEdit && !canCancel && !canDelete) {
-    return const SizedBox.shrink();
-  }
-
-  return AppAccessActionGate(
-    requirement: clinicalLabOrderWriteRequirement,
-    builder: (BuildContext context, bool isAllowed) {
-      if (!isAllowed) {
-        return const SizedBox.shrink();
-      }
-      return Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: <Widget>[
-          if (canEdit)
-            AppButton.secondary(
-              dense: true,
-              leadingIcon: Icons.edit_outlined,
-              label: l10n.clinicalEditLabOrderAction,
-              semanticLabel: l10n.clinicalEditLabOrderAction,
-              tooltip: l10n.clinicalEditLabOrderAction,
-              onPressed: () => onEdit(context, order),
-            ),
-          if (canCancel)
-            AppButton.tertiary(
-              dense: true,
-              leadingIcon: Icons.block_outlined,
-              label: l10n.clinicalCancelLabOrderAction,
-              semanticLabel: l10n.clinicalCancelLabOrderAction,
-              tooltip: l10n.clinicalCancelLabOrderAction,
-              color: theme.colorScheme.tertiary,
-              onPressed: () => onCancel(context, order),
-            ),
-          if (canDelete)
-            AppButton.tertiary(
-              dense: true,
-              leadingIcon: Icons.delete_outline,
-              label: l10n.clinicalDeleteLabOrderAction,
-              semanticLabel: l10n.clinicalDeleteLabOrderAction,
-              tooltip: l10n.clinicalDeleteLabOrderAction,
-              color: theme.colorScheme.error,
-              onPressed: () => onDelete(context, order),
-            ),
-        ],
-      );
-    },
-  );
-}
-
 Widget _radiologyOrderActions({
   required BuildContext context,
   required AppLocalizations l10n,
@@ -1714,38 +1727,6 @@ List<Widget> _clinicalBatchHeaderActions({
   ];
 }
 
-String _labItemValue(BuildContext context, ClinicalLabOrderItem item) {
-  final String? value = _firstNonEmpty(<String?>[
-    item.resultValue,
-    item.resultText,
-  ]);
-  return value ?? context.l10n.clinicalOrderEmptyValueLabel;
-}
-
-String _labOrderAggregateValue(
-  BuildContext context,
-  ClinicalRelatedRecord order,
-) {
-  final String emptyLabel = context.l10n.clinicalOrderEmptyValueLabel;
-  final List<String> values = order.labOrderItems
-      .map((ClinicalLabOrderItem item) => _labItemValue(context, item))
-      .where((String value) => value.trim().isNotEmpty && value != emptyLabel)
-      .toList(growable: false);
-  if (values.isEmpty) {
-    return emptyLabel;
-  }
-  return values.join(' · ');
-}
-
-String? _labOrderAggregateResultFlag(ClinicalRelatedRecord order) {
-  for (final ClinicalLabOrderItem item in order.labOrderItems) {
-    if (_hasText(item.resultStatus)) {
-      return item.resultStatus;
-    }
-  }
-  return null;
-}
-
 String _effectiveLabOrderItemStatus(
   ClinicalLabOrderItem item,
   String? orderStatus,
@@ -1764,14 +1745,25 @@ String _effectiveLabOrderItemStatus(
 
 bool _canEditLabOrder(String? status) {
   return switch ((status ?? '').toUpperCase()) {
-    'ORDERED' || 'PENDING' || 'IN_PROCESS' => true,
+    'ORDERED' || 'PENDING' => true,
     _ => false,
   };
 }
 
 bool _canCancelLabOrder(String? status) {
   return switch ((status ?? '').toUpperCase()) {
-    'ORDERED' || 'PENDING' || 'IN_PROCESS' => true,
+    'ORDERED' || 'PENDING' => true,
+    _ => false,
+  };
+}
+
+bool _canCancelLabOrderItem(ClinicalLabOrderItem item, String? orderStatus) {
+  if (item.hasResult) {
+    return false;
+  }
+  final String status = _effectiveLabOrderItemStatus(item, orderStatus).toUpperCase();
+  return switch (status) {
+    'ORDERED' || 'PENDING' => true,
     _ => false,
   };
 }
@@ -1903,15 +1895,6 @@ String _joinDisplay(Iterable<String?> values) {
 }
 
 bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
-
-String? _firstNonEmpty(Iterable<String?> values) {
-  for (final String? value in values) {
-    if (_hasText(value)) {
-      return value!.trim();
-    }
-  }
-  return null;
-}
 
 class _ClinicalDetailDataTableContainer extends StatelessWidget {
   const _ClinicalDetailDataTableContainer({

@@ -209,6 +209,12 @@ void main() {
                 'result_status': 'NORMAL',
                 'result_value': '5.2',
                 'result_text': 'Positive',
+                'result_flag': 'HIGH',
+                'result_unit': 'mg/L',
+                'reference_range_summary': 'Adult | ≤ 5 mg/L',
+                'panel_display_name': 'Abdominal Pain Panel',
+                'panel_code': 'ABDP',
+                'panel_id': 'PANEL-1',
                 'test_display_name': 'Glucose',
               },
             ],
@@ -220,6 +226,12 @@ void main() {
       expect(item.resultValue, '5.2');
       expect(item.resultText, 'Positive');
       expect(item.resultStatus, 'NORMAL');
+      expect(item.resultFlag, 'HIGH');
+      expect(item.resultUnit, 'mg/L');
+      expect(item.referenceRangeSummary, 'Adult | ≤ 5 mg/L');
+      expect(item.panelDisplayName, 'Abdominal Pain Panel');
+      expect(item.panelCode, 'ABDP');
+      expect(records.single.title, 'Abdominal Pain Panel | ABDP');
     });
   });
 

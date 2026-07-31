@@ -711,6 +711,42 @@ final class ClinicalWorkspaceController
     );
   }
 
+  /// Cancels one pending lab test. If it is the last active item on the order,
+  /// cancels the whole order (backend reject requires ≥1 remaining active item).
+  Future<AppFailure?> cancelLabOrderItem({
+    required String labOrderId,
+    required ClinicalLabOrderItem item,
+    required List<ClinicalLabOrderItem> orderItems,
+    required String reason,
+  }) {
+    final String normalizedItemId = item.id.trim();
+    final String normalizedOrderId = labOrderId.trim();
+    final String normalizedReason = reason.trim();
+    if (normalizedItemId.isEmpty ||
+        normalizedOrderId.isEmpty ||
+        normalizedReason.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    final bool hasOtherActiveItems = orderItems.any((ClinicalLabOrderItem other) {
+      if (other.id.trim() == normalizedItemId) {
+        return false;
+      }
+      final String status = (other.status ?? '').trim().toUpperCase();
+      return status != 'CANCELLED';
+    });
+    if (!hasOtherActiveItems) {
+      return cancelLabOrder(normalizedOrderId);
+    }
+
+    return _mutateSelectedEncounter(
+      () => _repository.cancelLabOrderItem(
+        normalizedItemId,
+        reason: normalizedReason,
+      ),
+    );
+  }
+
   Future<AppFailure?> deleteLabOrder(String labOrderId) {
     return _mutateSelectedEncounter(
       () => _repository.deleteLabOrder(labOrderId),

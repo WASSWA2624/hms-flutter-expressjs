@@ -1450,6 +1450,25 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     .read(clinicalWorkspaceControllerProvider.notifier)
                     .deleteLabOrder(order.id),
               ),
+          onCancelItem:
+              (
+                BuildContext context,
+                ClinicalRelatedRecord order,
+                ClinicalLabOrderItem item,
+              ) => _confirmLabOrderMutation(
+                context: context,
+                title: l10n.clinicalCancelLabTestDialogTitle,
+                body: l10n.clinicalCancelLabTestDialogBody(item.displayTitle),
+                confirmLabel: l10n.clinicalCancelLabTestAction,
+                action: () => ref
+                    .read(clinicalWorkspaceControllerProvider.notifier)
+                    .cancelLabOrderItem(
+                      labOrderId: order.id,
+                      item: item,
+                      orderItems: order.labOrderItems,
+                      reason: l10n.clinicalCancelLabTestReason,
+                    ),
+              ),
           onCancelSelected:
               (BuildContext context, List<ClinicalRelatedRecord> orders) =>
                   _confirmLabOrderMutation(
@@ -1458,8 +1477,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     body: l10n.clinicalCancelSelectedLabOrdersDialogBody(
                       orders.length,
                     ),
-                    confirmLabel:
-                        l10n.clinicalCancelSelectedRadiologyOrdersAction,
+                    confirmLabel: l10n.clinicalCancelSelectedLabOrdersAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord order in orders) {
@@ -1481,8 +1499,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     body: l10n.clinicalDeleteSelectedLabOrdersDialogBody(
                       orders.length,
                     ),
-                    confirmLabel:
-                        l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+                    confirmLabel: l10n.clinicalDeleteSelectedLabOrdersAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord order in orders) {

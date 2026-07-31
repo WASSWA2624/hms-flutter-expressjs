@@ -380,6 +380,27 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   }
 
   @override
+  Future<Result<void>> cancelLabOrderItem(
+    String labOrderItemId, {
+    required String reason,
+    String? notes,
+  }) {
+    return _apiClient.post<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.lab.path,
+        'order-items',
+        labOrderItemId,
+        'reject',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'reason': reason,
+        'notes': notes,
+      }),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> createRadiologyOrder(Map<String, Object?> payload) {
     return _postVoid(HmsApiResource.radiologyOrders, payload);
   }

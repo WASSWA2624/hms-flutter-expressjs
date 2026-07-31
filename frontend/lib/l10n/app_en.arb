@@ -10682,6 +10682,35 @@
   "@clinicalCancelLabOrderAction": {
     "description": "Clinical cancel lab order action label."
   },
+  "clinicalCancelLabTestAction": "Cancel test",
+  "@clinicalCancelLabTestAction": {
+    "description": "Clinical cancel single pending lab test action label."
+  },
+  "clinicalCancelLabTestDialogTitle": "Cancel lab test",
+  "@clinicalCancelLabTestDialogTitle": {
+    "description": "Clinical cancel single lab test confirmation title."
+  },
+  "clinicalCancelLabTestDialogBody": "Cancel {testName} and remove it from pending lab work?",
+  "@clinicalCancelLabTestDialogBody": {
+    "description": "Clinical cancel single lab test confirmation body.",
+    "placeholders": {
+      "testName": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalCancelLabTestReason": "Cancelled from clinical workspace",
+  "@clinicalCancelLabTestReason": {
+    "description": "Default reject reason when cancelling a lab test from clinical."
+  },
+  "clinicalCancelSelectedLabOrdersAction": "Cancel selected",
+  "@clinicalCancelSelectedLabOrdersAction": {
+    "description": "Clinical cancel selected lab orders action label."
+  },
+  "clinicalDeleteSelectedLabOrdersAction": "Delete selected",
+  "@clinicalDeleteSelectedLabOrdersAction": {
+    "description": "Clinical delete selected lab orders action label."
+  },
   "clinicalDeleteLabOrderAction": "Delete order",
   "@clinicalDeleteLabOrderAction": {
     "description": "Clinical delete lab order action label."

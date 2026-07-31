@@ -15460,6 +15460,42 @@ abstract class AppLocalizations {
   /// **'Cancel order'**
   String get clinicalCancelLabOrderAction;
 
+  /// Clinical cancel single pending lab test action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel test'**
+  String get clinicalCancelLabTestAction;
+
+  /// Clinical cancel single lab test confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel lab test'**
+  String get clinicalCancelLabTestDialogTitle;
+
+  /// Clinical cancel single lab test confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {testName} and remove it from pending lab work?'**
+  String clinicalCancelLabTestDialogBody(String testName);
+
+  /// Default reject reason when cancelling a lab test from clinical.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled from clinical workspace'**
+  String get clinicalCancelLabTestReason;
+
+  /// Clinical cancel selected lab orders action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected'**
+  String get clinicalCancelSelectedLabOrdersAction;
+
+  /// Clinical delete selected lab orders action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get clinicalDeleteSelectedLabOrdersAction;
+
   /// Clinical delete lab order action label.
   ///
   /// In en, this message translates to:

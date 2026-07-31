@@ -231,9 +231,12 @@ final class ClinicalRelatedRecordDto {
         .map(_labOrderItemFromJson)
         .where((ClinicalLabOrderItem item) => item.id.isNotEmpty)
         .toList(growable: false);
-    final String? title = _joinDisplay(
-      items.take(3).map((ClinicalLabOrderItem item) => item.displayTitle),
-    );
+    final String? panelTitle = _sharedLabPanelTitle(items);
+    final String? title =
+        panelTitle ??
+        _joinDisplay(
+          items.take(3).map((ClinicalLabOrderItem item) => item.displayTitle),
+        );
     return ClinicalRelatedRecord(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
@@ -261,6 +264,7 @@ final class ClinicalRelatedRecordDto {
 
   ClinicalLabOrderItem _labOrderItemFromJson(ClinicalJsonMap json) {
     final ClinicalJsonMap labTest = _map(json['lab_test']);
+    final ClinicalJsonMap panel = _map(json['lab_panel']);
     final String? labTestId =
         _string(json['lab_test_id']) ??
         _string(labTest['human_friendly_id']) ??
@@ -272,6 +276,17 @@ final class ClinicalRelatedRecordDto {
         _string(labTest['description']);
     final String? testCode =
         _string(json['test_code']) ?? _string(labTest['code']);
+    final String? panelId =
+        _string(json['panel_id']) ??
+        _string(json['lab_panel_id']) ??
+        _string(panel['human_friendly_id']) ??
+        _string(panel['id']);
+    final String? panelDisplayName =
+        _string(json['panel_display_name']) ??
+        _string(panel['name']) ??
+        _string(panel['description']);
+    final String? panelCode =
+        _string(json['panel_code']) ?? _string(panel['code']);
     return ClinicalLabOrderItem(
       id:
           _string(json['human_friendly_id']) ??
@@ -287,7 +302,16 @@ final class ClinicalRelatedRecordDto {
       resultValue: _string(json['result_value']),
       resultText:
           _string(json['result_text']) ?? _string(json['display_value']),
+      resultFlag: _string(json['result_flag']),
+      resultUnit: _string(json['result_unit']),
+      referenceRangeLabel: _string(json['reference_range_label']),
+      referenceRangeSummary:
+          _string(json['reference_range_summary']) ??
+          _string(json['reference_range']),
       labTestId: labTestId,
+      panelId: panelId,
+      panelDisplayName: panelDisplayName,
+      panelCode: panelCode,
       testDisplayName: testDisplayName,
       testCode: testCode,
       category: _string(json['category']) ?? _string(labTest['category']),
@@ -297,6 +321,17 @@ final class ClinicalRelatedRecordDto {
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );
+  }
+
+  String? _sharedLabPanelTitle(List<ClinicalLabOrderItem> items) {
+    final Set<String> titles = items
+        .map((ClinicalLabOrderItem item) => item.panelTitle?.trim() ?? '')
+        .where((String title) => title.isNotEmpty)
+        .toSet();
+    if (titles.length == 1) {
+      return titles.single;
+    }
+    return null;
   }
 
   ClinicalRelatedRecord _toRadiologyOrderEntity() {
