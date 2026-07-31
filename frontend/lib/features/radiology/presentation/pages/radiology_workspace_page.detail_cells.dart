@@ -468,7 +468,9 @@ String _nextActionLabel(BuildContext context, RadiologyOrder order) {
   if (order.normalizedStatus == 'AWAITING_REPORT' ||
       order.hasDraftResult ||
       order.hasPerformedStudy) {
-    return l10n.radiologyCreateReportAction;
+    return order.hasDraftResult
+        ? l10n.radiologyContinueReportAction
+        : l10n.radiologyCreateReportAction;
   }
   return l10n.radiologyMarkProcedureDoneAction;
 }

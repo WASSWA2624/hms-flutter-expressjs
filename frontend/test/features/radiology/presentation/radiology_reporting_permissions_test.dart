@@ -545,7 +545,7 @@ void main() {
       await tester.tap(find.text('Rita Reporting'));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppButton, 'Create report'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Continue report'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Procedure done'), findsNothing);
       expect(find.text('Draft report'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Release report'), findsNothing);
@@ -652,7 +652,7 @@ void main() {
 
       expect(find.text('Cancel order'), findsNothing);
       expect(find.text('Cancel selected'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Create report'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Continue report'), findsOneWidget);
       expect(find.text('Procedures'), findsOneWidget);
       expect(find.text('CT Head'), findsWidgets);
       expect(find.text('Procedure ID'), findsOneWidget);
@@ -669,8 +669,8 @@ void main() {
       expect(find.text('Print report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Create report'));
-      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Continue report'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Findings'), findsWidgets);
@@ -705,9 +705,9 @@ void main() {
 
       await _openReportingDetail(tester);
       await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Create report'),
+        find.widgetWithText(AppButton, 'Continue report'),
       );
-      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(
@@ -763,9 +763,9 @@ void main() {
 
       await _openReportingDetail(tester);
       await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Create report'),
+        find.widgetWithText(AppButton, 'Continue report'),
       );
-      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
       await tester.pumpAndSettle();
 
       final Finder findingsField = find.descendant(
@@ -785,11 +785,16 @@ void main() {
       submitButton.onPressed!();
       await tester.pumpAndSettle();
 
-      expect(find.text('Radiology workflow updated.'), findsOneWidget);
+      expect(
+        find.text('Draft report saved. Release when ready for clinicians.'),
+        findsOneWidget,
+      );
+      // Draft keeps the composer open so Release remains available.
+      expect(
+        find.widgetWithText(AppButton, 'Release report'),
+        findsOneWidget,
+      );
       verify(() => radiologyRepository.draftResult(any(), any())).called(1);
-      verify(
-        () => radiologyRepository.getWorkflow(any()),
-      ).called(greaterThan(0));
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -866,9 +871,9 @@ void main() {
 
       await _openReportingDetail(tester);
       await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Create report'),
+        find.widgetWithText(AppButton, 'Continue report'),
       );
-      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
       await tester.pumpAndSettle();
 
       final Finder releaseSubmit = find.descendant(

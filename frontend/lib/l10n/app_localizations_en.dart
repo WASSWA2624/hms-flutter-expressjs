@@ -11323,6 +11323,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyCreateReportAction => 'Create report';
 
   @override
+  String get radiologyContinueReportAction => 'Continue report';
+
+  @override
+  String get radiologyDraftSavedMessage =>
+      'Draft report saved. Release when ready for clinicians.';
+
+  @override
   String get radiologyMarkReportDoneAction => 'Mark report done';
 
   @override

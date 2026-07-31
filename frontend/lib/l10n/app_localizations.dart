@@ -20878,6 +20878,18 @@ abstract class AppLocalizations {
   /// **'Create report'**
   String get radiologyCreateReportAction;
 
+  /// Opens the report composer when a draft already exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue report'**
+  String get radiologyContinueReportAction;
+
+  /// Snack shown after saving a radiology draft without releasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft report saved. Release when ready for clinicians.'**
+  String get radiologyDraftSavedMessage;
+
   /// Open radiology report dialog to complete the report.
   ///
   /// In en, this message translates to:

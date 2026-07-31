@@ -483,7 +483,7 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     // Reporting fixture has draftResultCount only (no embedded results list).
     expect(find.text('Done — waiting for report'), findsWidgets);
-    expect(find.text('Create report'), findsWidgets);
+    expect(find.text('Continue report'), findsWidgets);
   });
 
   testWidgets('search filters table rows via controller', (

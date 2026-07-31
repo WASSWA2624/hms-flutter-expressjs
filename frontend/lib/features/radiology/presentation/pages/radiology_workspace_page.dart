@@ -910,18 +910,24 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           workflow: widget.workflow,
           state: widget.state,
           canWork: widget.canWork,
-          onMarkDone: widget.canWork && !widget.state.isMutating
+          onMarkDone: widget.canWork
               ? () => _markProcedureDone(context, ref, order)
               : null,
-          onMarkReportDone: widget.canWork && !widget.state.isMutating
-              ? () => _showReportDialog(context, ref, widget.workflow)
+          onMarkReportDone: widget.canWork
+              ? () {
+                  final RadiologyWorkflow liveWorkflow =
+                      _readState(ref)?.selectedWorkflow ?? widget.workflow;
+                  _showReportDialog(context, ref, liveWorkflow);
+                }
               : null,
-          onUndo: widget.canWork && !widget.state.isMutating
-              ? () => _undoProcedureWorkbenchStatus(context, ref, widget.workflow)
+          onUndo: widget.canWork
+              ? () {
+                  final RadiologyWorkflow liveWorkflow =
+                      _readState(ref)?.selectedWorkflow ?? widget.workflow;
+                  _undoProcedureWorkbenchStatus(context, ref, liveWorkflow);
+                }
               : null,
-          onCancel: widget.canWork &&
-                  widget.workflow.nextActions.canCancel &&
-                  !widget.state.isMutating
+          onCancel: widget.canWork && widget.workflow.nextActions.canCancel
               ? () => _showCancelDialog(context, ref)
               : null,
         ),
@@ -1472,16 +1478,24 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                                   if (canMarkReportDone)
                                     AppButton.primary(
                                       dense: true,
-                                      label: l10n.radiologyCreateReportAction,
+                                      label: order.hasDraftResult
+                                          ? l10n.radiologyContinueReportAction
+                                          : l10n.radiologyCreateReportAction,
                                       leadingIcon: Icons.edit_note_outlined,
-                                      onPressed: widget.onMarkReportDone,
+                                      isLoading: state.isMutating,
+                                      onPressed: state.isMutating
+                                          ? null
+                                          : widget.onMarkReportDone,
                                     ),
                                   if (canViewReport)
                                     AppButton.primary(
                                       dense: true,
                                       label: l10n.radiologyViewReportAction,
                                       leadingIcon: Icons.description_outlined,
-                                      onPressed: widget.onMarkReportDone,
+                                      isLoading: state.isMutating,
+                                      onPressed: state.isMutating
+                                          ? null
+                                          : widget.onMarkReportDone,
                                     ),
                                   if (canUndo)
                                     AppButton.tertiary(
@@ -1701,12 +1715,17 @@ class _ProcedureDetailsDialog extends StatelessWidget {
         if (canMarkReportDone || canOpenReport)
           AppButton.primary(
             label: canMarkReportDone
-                ? l10n.radiologyCreateReportAction
+                ? (order.hasDraftResult
+                      ? l10n.radiologyContinueReportAction
+                      : l10n.radiologyCreateReportAction)
                 : l10n.radiologyViewReportAction,
             leadingIcon: canMarkReportDone
                 ? Icons.edit_note_outlined
                 : Icons.description_outlined,
-            onPressed: () => runAndClose(onMarkReportDone),
+            isLoading: state.isMutating,
+            onPressed: state.isMutating
+                ? null
+                : () => runAndClose(onMarkReportDone),
           ),
       ],
     );
@@ -2512,6 +2531,8 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
   final TextEditingController _reportController = TextEditingController();
   VoidCallback? _handleReportTextChanged;
   bool _isSubmitting = false;
+  bool _isFinalizing = false;
+  bool _draftSaved = false;
   AppFailure? _failure;
 
   @override
@@ -2519,6 +2540,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     super.initState();
     final RadiologyResult? draft = widget.order.latestDraftResult;
     _reportController.text = draft?.reportText ?? '';
+    _draftSaved = draft != null;
     _handleReportTextChanged = () {
       if (mounted) {
         setState(() {});
@@ -2588,6 +2610,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
 
     setState(() {
       _isSubmitting = true;
+      _isFinalizing = finalize;
       _failure = null;
     });
 
@@ -2616,13 +2639,29 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     }
 
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      if (finalize) {
+        // Released report is ready for clinicians — close the composer.
+        Navigator.of(context).pop(true);
+        return;
+      }
+      // Keep the dialog open after draft so Release stays available.
+      setState(() {
+        _isSubmitting = false;
+        _isFinalizing = false;
+        _draftSaved = true;
+      });
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(content: Text(context.l10n.radiologyDraftSavedMessage)),
+      );
       return;
     }
 
     setState(() {
       _failure = failure;
       _isSubmitting = false;
+      _isFinalizing = false;
     });
   }
 
@@ -2783,21 +2822,37 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
           enabled: !busy,
-          onPressed: busy ? null : () => Navigator.of(context).pop(false),
+          onPressed: busy ? null : () => Navigator.of(context).pop(_draftSaved),
         ),
-        if (widget.onFinalize != null)
+        if (widget.onFinalize != null && !_draftSaved)
           AppButton.secondary(
             label: l10n.radiologyReleaseReportAction,
             leadingIcon: Icons.verified_outlined,
-            isLoading: _isSubmitting,
+            isLoading: _isSubmitting && _isFinalizing,
             onPressed: busy ? null : () => _submit(finalize: true),
           ),
-        AppButton.primary(
-          label: l10n.radiologyDraftReportAction,
-          leadingIcon: Icons.save_outlined,
-          isLoading: _isSubmitting,
-          onPressed: busy ? null : () => _submit(),
-        ),
+        if (!_draftSaved)
+          AppButton.primary(
+            label: l10n.radiologyDraftReportAction,
+            leadingIcon: Icons.save_outlined,
+            isLoading: _isSubmitting && !_isFinalizing,
+            onPressed: busy ? null : () => _submit(),
+          ),
+        if (_draftSaved) ...<Widget>[
+          AppButton.secondary(
+            label: l10n.radiologyDraftReportAction,
+            leadingIcon: Icons.save_outlined,
+            isLoading: _isSubmitting && !_isFinalizing,
+            onPressed: busy ? null : () => _submit(),
+          ),
+          if (widget.onFinalize != null)
+            AppButton.primary(
+              label: l10n.radiologyReleaseReportAction,
+              leadingIcon: Icons.verified_outlined,
+              isLoading: _isSubmitting && _isFinalizing,
+              onPressed: busy ? null : () => _submit(finalize: true),
+            ),
+        ],
       ],
     );
   }

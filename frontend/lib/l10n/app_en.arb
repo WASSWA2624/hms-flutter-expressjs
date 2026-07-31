@@ -14451,6 +14451,14 @@
   "@radiologyCreateReportAction": {
     "description": "Open the radiology report editor after procedure done."
   },
+  "radiologyContinueReportAction": "Continue report",
+  "@radiologyContinueReportAction": {
+    "description": "Opens the report composer when a draft already exists."
+  },
+  "radiologyDraftSavedMessage": "Draft report saved. Release when ready for clinicians.",
+  "@radiologyDraftSavedMessage": {
+    "description": "Snack shown after saving a radiology draft without releasing."
+  },
   "radiologyMarkReportDoneAction": "Mark report done",
   "@radiologyMarkReportDoneAction": {
     "description": "Open radiology report dialog to complete the report."
