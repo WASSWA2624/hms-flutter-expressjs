@@ -503,6 +503,14 @@ class _DialogBody extends StatelessWidget {
             child: DefaultTextStyle(style: contentStyle, child: content!),
           );
 
+    final Widget? body = dialogContent == null
+        ? null
+        : _dialogBodyContent(
+            scrollable: scrollable,
+            bodyPadding: bodyPadding,
+            child: dialogContent,
+          );
+
     return Column(
       mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -519,30 +527,7 @@ class _DialogBody extends StatelessWidget {
           onMaximizeToggle: onMaximizeToggle,
           onDragUpdate: onHeaderDragUpdate,
         ),
-        if (dialogContent != null)
-          fillHeight
-              ? Expanded(
-                  child: Padding(
-                    padding: bodyPadding,
-                    child: scrollable
-                        ? SingleChildScrollView(
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            child: dialogContent,
-                          )
-                        : dialogContent,
-                  ),
-                )
-              : Padding(
-                  padding: bodyPadding,
-                  child: scrollable
-                      ? SingleChildScrollView(
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          child: dialogContent,
-                        )
-                      : dialogContent,
-                ),
+        if (body != null) fillHeight ? Expanded(child: body) : body,
         if (actions.isNotEmpty)
           _DialogActions(
             actions: actions,
@@ -550,6 +535,26 @@ class _DialogBody extends StatelessWidget {
             stackWhenCompact: stackActionsWhenCompact,
           ),
       ],
+    );
+  }
+
+  /// Keeps section content inset while the scrollbar/gutter stays on the outer
+  /// edge of the dialog body (outside section chrome).
+  static Widget _dialogBodyContent({
+    required bool scrollable,
+    required EdgeInsets bodyPadding,
+    required Widget child,
+  }) {
+    if (!scrollable) {
+      return Padding(padding: bodyPadding, child: child);
+    }
+
+    return Scrollbar(
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: bodyPadding,
+        child: child,
+      ),
     );
   }
 }

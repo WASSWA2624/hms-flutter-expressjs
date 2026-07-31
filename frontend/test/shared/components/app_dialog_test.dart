@@ -572,6 +572,40 @@ void main() {
     expect(preview.dy, closeTo(save.dy, 1));
     expect(save.dx, greaterThan(preview.dx));
   });
+
+  testWidgets('scrollable dialog puts body padding on the scroll view', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        scrollable: true,
+        title: Text('Scroll body'),
+        content: SizedBox(height: 800, child: Text('Tall sections')),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    final SingleChildScrollView scrollView = tester
+        .widget<SingleChildScrollView>(find.byType(SingleChildScrollView));
+    expect(scrollView.padding, isNot(EdgeInsets.zero));
+    expect(find.byType(Scrollbar), findsWidgets);
+
+    // Scroll padding should own the body inset (no outer Padding wrapping the
+    // scroller), so the gutter sits outside section content.
+    final Finder paddedScroller = find.ancestor(
+      of: find.byType(SingleChildScrollView),
+      matching: find.byType(Padding),
+    );
+    expect(
+      paddedScroller.evaluate().where((Element element) {
+        final Padding padding = element.widget as Padding;
+        return padding.child is SingleChildScrollView ||
+            padding.child is Scrollbar;
+      }),
+      isEmpty,
+    );
+  });
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {

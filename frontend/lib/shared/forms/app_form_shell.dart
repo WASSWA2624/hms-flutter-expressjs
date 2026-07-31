@@ -129,19 +129,23 @@ class AppFormShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Padding(
-      padding: padding,
-      child: AppFormSection(
-        density: density,
-        children: <Widget>[?formStatus, ...children],
-      ),
+    Widget content = AppFormSection(
+      density: density,
+      children: <Widget>[?formStatus, ...children],
     );
 
     if (scrollable) {
-      content = SingleChildScrollView(
-        keyboardDismissBehavior: keyboardDismissBehavior,
-        child: content,
+      // Padding lives on the scroll view so the scrollbar/gutter stays outside
+      // form sections (same pattern as [AppDialog] scrollable bodies).
+      content = Scrollbar(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: keyboardDismissBehavior,
+          padding: padding,
+          child: content,
+        ),
       );
+    } else {
+      content = Padding(padding: padding, child: content);
     }
 
     return FocusTraversalGroup(
