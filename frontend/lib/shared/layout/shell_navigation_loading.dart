@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,6 +92,12 @@ class AppShellLoadingBar extends StatelessWidget {
 }
 
 /// Keeps the previous route visible while the destination workspace loads.
+///
+/// On route change the previous child stays painted while the destination
+/// mounts offstage (so it can fetch and report loading). The pending route is
+/// committed when shell loading finishes, or after a short settle delay when
+/// the destination never reports shell loading—never on the same frame as the
+/// route swap, which previously flashed a blank deferred-loading child.
 class ShellRouteChildRetention extends StatefulWidget {
   const ShellRouteChildRetention({
     required this.routeKey,
@@ -111,6 +119,9 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   String? _visibleRouteKey;
   Widget? _visibleChild;
   String? _pendingRouteKey;
+  bool _sawLoadingForPending = false;
+  int _pendingGeneration = 0;
+  Timer? _neverLoadedCommitTimer;
 
   @override
   void initState() {
@@ -120,39 +131,90 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   }
 
   @override
+  void dispose() {
+    _neverLoadedCommitTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(ShellRouteChildRetention oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.routeKey != oldWidget.routeKey) {
       _pendingRouteKey = widget.routeKey;
-      if (!widget.isLoading) {
-        _commitPending();
+      _sawLoadingForPending = widget.isLoading;
+      _pendingGeneration += 1;
+      final int generation = _pendingGeneration;
+      if (_sawLoadingForPending) {
+        _cancelNeverLoadedCommit();
+      } else {
+        _scheduleCommitIfNeverLoaded(generation);
       }
       return;
     }
 
-    if (_pendingRouteKey != null && !widget.isLoading) {
-      _commitPending();
+    if (_pendingRouteKey == null) {
+      if (widget.routeKey == _visibleRouteKey) {
+        _visibleChild = widget.child;
+      }
       return;
     }
 
-    if (widget.routeKey == _visibleRouteKey && _pendingRouteKey == null) {
-      _visibleChild = widget.child;
+    if (widget.isLoading) {
+      _sawLoadingForPending = true;
+      _cancelNeverLoadedCommit();
+      return;
+    }
+
+    if (_sawLoadingForPending) {
+      _commitPending();
     }
   }
 
+  void _cancelNeverLoadedCommit() {
+    _neverLoadedCommitTimer?.cancel();
+    _neverLoadedCommitTimer = null;
+  }
+
+  void _scheduleCommitIfNeverLoaded(int generation) {
+    _cancelNeverLoadedCommit();
+    // Two zero-delay ticks so [ShellLoadingReporter] can mark loading after
+    // the destination mounts. Destinations that never report then commit.
+    _neverLoadedCommitTimer = Timer(Duration.zero, () {
+      _neverLoadedCommitTimer = Timer(Duration.zero, () {
+        _neverLoadedCommitTimer = null;
+        if (!mounted || generation != _pendingGeneration) {
+          return;
+        }
+        _commitIfPendingNeverLoaded();
+      });
+    });
+  }
+
+  void _commitIfPendingNeverLoaded() {
+    if (_pendingRouteKey == null || _sawLoadingForPending) {
+      return;
+    }
+    if (widget.routeKey != _pendingRouteKey || widget.isLoading) {
+      return;
+    }
+    _commitPending();
+  }
+
   void _commitPending() {
+    _cancelNeverLoadedCommit();
     setState(() {
       _visibleRouteKey = widget.routeKey;
       _visibleChild = widget.child;
       _pendingRouteKey = null;
+      _sawLoadingForPending = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final bool retainPrevious =
-        _pendingRouteKey != null && widget.isLoading && _visibleChild != null;
+        _pendingRouteKey != null && _visibleChild != null;
 
     if (!retainPrevious) {
       return widget.child;
@@ -162,7 +224,9 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
       fit: StackFit.expand,
       children: <Widget>[
         _visibleChild!,
-        Offstage(child: TickerMode(enabled: true, child: widget.child)),
+        Offstage(
+          child: TickerMode(enabled: true, child: widget.child),
+        ),
       ],
     );
   }
