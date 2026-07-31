@@ -113,82 +113,63 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                 horizontal: theme.spacing.sm,
                 vertical: theme.spacing.xs,
               ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: widget.collapsible ? _toggleExpanded : null,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: theme.spacing.xs / 2,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: widget.collapsible ? _toggleExpanded : null,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: theme.spacing.xs / 2,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        if (widget.titleIcon != null) ...<Widget>[
+                          Icon(
+                            widget.titleIcon,
+                            size: theme.appTokens.listIconSize,
+                            color: colorScheme.primary,
                           ),
-                          child: Row(
-                            children: <Widget>[
-                              if (widget.titleIcon != null) ...<Widget>[
-                                Icon(
-                                  widget.titleIcon,
-                                  size: theme.appTokens.listIconSize,
-                                  color: colorScheme.primary,
+                          SizedBox(width: theme.spacing.sm),
+                        ],
+                        Expanded(
+                          child: widget.titleWidget ??
+                              Text(
+                                widget.title!,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                SizedBox(width: theme.spacing.sm),
-                              ],
-                              Expanded(
-                                child: widget.titleWidget ??
-                                    Text(
-                                      widget.title!,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: true,
-                                    ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
                               ),
-                            ],
-                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                  if (widget.headerActions.isNotEmpty) ...<Widget>[
-                    SizedBox(width: theme.spacing.sm),
-                    // Header actions sit outside the collapse InkWell so they
-                    // do not toggle expand/collapse. Icon-only on phones;
-                    // larger screens inherit ambient label visibility.
-                    Builder(
-                      builder: (BuildContext context) {
-                        final bool compact =
-                            AppBreakpoints.of(context).isMobile;
-                        final AppActionLabelScope? ambient =
-                            AppActionLabelScope.maybeOf(context);
-                        return AppActionLabelScope(
-                          showLabels: compact
-                              ? false
-                              : (ambient?.showLabels ?? true),
-                          forceIconOnly: compact,
-                          child: Wrap(
-                            alignment: WrapAlignment.end,
-                            spacing: theme.spacing.xs,
-                            runSpacing: theme.spacing.xs,
-                            children: widget.headerActions,
+                        if (widget.headerActions.isNotEmpty) ...<Widget>[
+                          SizedBox(width: theme.spacing.sm),
+                          // Keep header actions tappable without toggling.
+                          Builder(
+                            builder: (BuildContext context) {
+                              final bool compact =
+                                  AppBreakpoints.of(context).isMobile;
+                              final AppActionLabelScope? ambient =
+                                  AppActionLabelScope.maybeOf(context);
+                              return AppActionLabelScope(
+                                showLabels: compact
+                                    ? false
+                                    : (ambient?.showLabels ?? true),
+                                forceIconOnly: compact,
+                                child: Wrap(
+                                  alignment: WrapAlignment.end,
+                                  spacing: theme.spacing.xs,
+                                  runSpacing: theme.spacing.xs,
+                                  children: widget.headerActions,
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                  if (widget.collapsible) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: _toggleExpanded,
-                        customBorder: const CircleBorder(),
-                        child: Padding(
-                          padding: EdgeInsets.all(theme.spacing.xs / 2),
-                          child: Icon(
+                        ],
+                        if (widget.collapsible) ...<Widget>[
+                          SizedBox(width: theme.spacing.xs),
+                          Icon(
                             _resolvedExpanded
                                 ? Icons.expand_less
                                 : Icons.expand_more,
@@ -198,11 +179,11 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                 ? context.l10n.commonShowLessActionLabel
                                 : context.l10n.commonShowMoreActionLabel,
                           ),
-                        ),
-                      ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
             if (showBody) const Divider(height: 1),

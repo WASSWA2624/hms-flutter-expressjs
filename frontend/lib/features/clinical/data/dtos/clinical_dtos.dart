@@ -174,7 +174,13 @@ final class ClinicalRelatedRecordDto {
     }
 
     return ClinicalRelatedRecord(
-      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      id: kind == 'clinical_note'
+          ? (_string(json['id']) ??
+                _string(json['human_friendly_id']) ??
+                '')
+          : (_string(json['human_friendly_id']) ??
+                _string(json['id']) ??
+                ''),
       kind: kind,
       status: _string(json['status']),
       paymentStatus: _relatedPaymentStatus(json),

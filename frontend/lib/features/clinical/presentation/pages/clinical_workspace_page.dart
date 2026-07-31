@@ -1324,13 +1324,54 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
   }
 }
 
-class _ClinicalDetailPanel extends ConsumerWidget {
+class _ClinicalDetailPanel extends ConsumerStatefulWidget {
   const _ClinicalDetailPanel({required this.state});
 
   final ClinicalWorkspaceState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ClinicalDetailPanel> createState() =>
+      _ClinicalDetailPanelState();
+}
+
+class _ClinicalDetailPanelState extends ConsumerState<_ClinicalDetailPanel> {
+  final GlobalKey _vitalsSectionKey = GlobalKey();
+  final GlobalKey _notesSectionKey = GlobalKey();
+  bool _notesEditing = false;
+  bool _notesExpanded = true;
+
+  ClinicalWorkspaceState get state => widget.state;
+
+  void _scrollToSection(GlobalKey key) {
+    final BuildContext? target = key.currentContext;
+    if (target == null) {
+      return;
+    }
+    unawaited(
+      Scrollable.ensureVisible(
+        target,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOut,
+        alignment: 0.08,
+      ),
+    );
+  }
+
+  void _beginNotesEditing() {
+    setState(() {
+      _notesEditing = true;
+      _notesExpanded = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _scrollToSection(_notesSectionKey);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ClinicalEncounterBundle? bundle = state.selectedBundle;
     if (bundle == null) {
@@ -1358,6 +1399,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     final bool showUrgentAlert =
         entry.isUrgent &&
         ClinicalUrgentAtomPermissions.urgentChip.isAllowed(accessPolicy);
+    final bool canWrite = canWriteClinical(accessPolicy);
     final List<Widget> sections = <Widget>[
       _ClinicalEncounterContextPanel(
         entry: entry,
@@ -1371,50 +1413,105 @@ class _ClinicalDetailPanel extends ConsumerWidget {
             ),
         ],
       ),
-      _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
+      _ClinicalActionBar(
+        bundle: bundle,
+        referenceData: state.referenceData,
+        onEditClinicalNotes:
+            bundle.clinicalNotes.isEmpty ? null : _beginNotesEditing,
+      ),
       if (triageHandoff?.hasTriageDetails ?? false)
-        _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
-      if (previewEntries.isNotEmpty)
-        AppCollapsibleSection(
-          title: l10n.clinicalResultsChronologyTitle,
-          actions: <Widget>[
-            Builder(
-              builder: (BuildContext context) {
-                final AppClinicalResultStatusDisplay statusDisplay =
-                    AppClinicalResultStatusDisplay.resolve(
-                      l10n,
-                      _clinicalResultsPreviewOverallStatus(previewEntries),
-                    );
-                return AppStatusBadge(
-                  label: statusDisplay.label,
-                  tone: statusDisplay.tone,
-                );
-              },
-            ),
-          ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if ((bundle.entry.encounterPublicId ?? '').trim().isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: Theme.of(context).spacing.sm,
-                  ),
-                  child: Text(
-                    l10n.clinicalResultsEncounterScopeLabel(
-                      bundle.entry.encounterPublicId!,
-                    ),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              AppClinicalResultsPreviewList(
-                entries: previewEntries,
-                dense: true,
-              ),
-            ],
+        KeyedSubtree(
+          key: _vitalsSectionKey,
+          child: _ClinicalTriageHandoffPanel(
+            handoff: triageHandoff!,
+            onEditVitals: canWrite &&
+                    !entry.isTerminal &&
+                    clinicalOpdFlowApiId(entry) != null
+                ? () => _openVitalsDialog(
+                      context,
+                      ref.read(clinicalWorkspaceControllerProvider.notifier),
+                      hasExistingVitals:
+                          triageHandoff.vitalSigns.isNotEmpty,
+                    )
+                : null,
           ),
+        ),
+      if (bundle.clinicalNotes.isNotEmpty)
+        KeyedSubtree(
+          key: _notesSectionKey,
+          child: _ClinicalNotesSection(
+            records: sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
+            canEdit: canWrite,
+            editing: _notesEditing,
+            expanded: _notesExpanded,
+            onExpandedChanged: (bool value) {
+              setState(() => _notesExpanded = value);
+            },
+            onStartEditing: canWrite ? _beginNotesEditing : null,
+            onCancelEditing: () {
+              setState(() => _notesEditing = false);
+            },
+            onSaveEditing: (Map<String, String> drafts) async {
+              final ClinicalWorkspaceController controller = ref.read(
+                clinicalWorkspaceControllerProvider.notifier,
+              );
+              AppFailure? failure;
+              for (final MapEntry<String, String> draft in drafts.entries) {
+                failure = await controller.updateClinicalNote(
+                  noteId: draft.key,
+                  note: draft.value,
+                );
+                if (failure != null) {
+                  break;
+                }
+              }
+              if (!context.mounted) {
+                return;
+              }
+              if (failure != null) {
+                _showFailureIfNeeded(context, failure);
+                return;
+              }
+              setState(() => _notesEditing = false);
+            },
+          ),
+        ),
+      if (bundle.diagnoses.isNotEmpty)
+        ClinicalDiagnosesTablePanel(
+          diagnoses: bundle.diagnoses,
+          onDelete: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
+              _confirmLabOrderMutation(
+                context: context,
+                title: l10n.clinicalDeleteDiagnosisDialogTitle,
+                body: l10n.clinicalDeleteDiagnosisDialogBody,
+                confirmLabel: l10n.clinicalDeleteDiagnosisAction,
+                action: () => ref
+                    .read(clinicalWorkspaceControllerProvider.notifier)
+                    .deleteDiagnosis(diagnosis.id),
+              ),
+          onDeleteSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
+                  _confirmLabOrderMutation(
+                    context: context,
+                    title: l10n.clinicalDeleteSelectedDiagnosesDialogTitle,
+                    body: l10n.clinicalDeleteSelectedDiagnosesDialogBody(
+                      diagnoses.length,
+                    ),
+                    confirmLabel: l10n.clinicalDeleteSelectedDiagnosesAction,
+                    action: () async {
+                      AppFailure? failure;
+                      for (final ClinicalRelatedRecord diagnosis
+                          in diagnoses) {
+                        failure = await ref
+                            .read(clinicalWorkspaceControllerProvider.notifier)
+                            .deleteDiagnosis(diagnosis.id);
+                        if (failure != null) {
+                          return failure;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
         ),
       if (canViewLabResults && bundle.labOrders.isNotEmpty)
         ClinicalLabOrdersTablePanel(
@@ -1635,45 +1732,73 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     },
                   ),
         ),
-      if (bundle.diagnoses.isNotEmpty)
-        ClinicalDiagnosesTablePanel(
-          diagnoses: bundle.diagnoses,
-          onDelete: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
-              _confirmLabOrderMutation(
-                context: context,
-                title: l10n.clinicalDeleteDiagnosisDialogTitle,
-                body: l10n.clinicalDeleteDiagnosisDialogBody,
-                confirmLabel: l10n.clinicalDeleteDiagnosisAction,
-                action: () => ref
-                    .read(clinicalWorkspaceControllerProvider.notifier)
-                    .deleteDiagnosis(diagnosis.id),
-              ),
-          onDeleteSelected:
-              (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
-                  _confirmLabOrderMutation(
-                    context: context,
-                    title: l10n.clinicalDeleteSelectedDiagnosesDialogTitle,
-                    body: l10n.clinicalDeleteSelectedDiagnosesDialogBody(
-                      diagnoses.length,
-                    ),
-                    confirmLabel: l10n.clinicalDeleteSelectedDiagnosesAction,
-                    action: () async {
-                      AppFailure? failure;
-                      for (final ClinicalRelatedRecord diagnosis
-                          in diagnoses) {
-                        failure = await ref
-                            .read(clinicalWorkspaceControllerProvider.notifier)
-                            .deleteDiagnosis(diagnosis.id);
-                        if (failure != null) {
-                          return failure;
-                        }
-                      }
-                      return null;
-                    },
-                  ),
+      if (bundle.procedures.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.opdProceduresSummaryLabel,
+          records: sortClinicalRecordsNewestFirst(bundle.procedures),
         ),
-      if (_clinicalHasRecordSections(bundle))
-        ..._clinicalRecordSectionWidgets(context, bundle),
+      if (bundle.referrals.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.opdReferralsTitle,
+          records: sortClinicalRecordsNewestFirst(bundle.referrals),
+        ),
+      if (bundle.followUps.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.opdFollowUpsTitle,
+          records: sortClinicalRecordsNewestFirst(bundle.followUps),
+        ),
+      if (bundle.admissions.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.patientsAdmissionsSectionTitle,
+          records: sortClinicalRecordsNewestFirst(bundle.admissions),
+        ),
+      if (bundle.carePlans.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.clinicalCarePlansTitle,
+          records: sortClinicalRecordsNewestFirst(bundle.carePlans),
+        ),
+      if (previewEntries.isNotEmpty)
+        AppCollapsibleSection(
+          title: l10n.clinicalResultsChronologyTitle,
+          actions: <Widget>[
+            Builder(
+              builder: (BuildContext context) {
+                final AppClinicalResultStatusDisplay statusDisplay =
+                    AppClinicalResultStatusDisplay.resolve(
+                      l10n,
+                      _clinicalResultsPreviewOverallStatus(previewEntries),
+                    );
+                return AppStatusBadge(
+                  label: statusDisplay.label,
+                  tone: statusDisplay.tone,
+                );
+              },
+            ),
+          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if ((bundle.entry.encounterPublicId ?? '').trim().isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(
+                    bottom: Theme.of(context).spacing.sm,
+                  ),
+                  child: Text(
+                    l10n.clinicalResultsEncounterScopeLabel(
+                      bundle.entry.encounterPublicId!,
+                    ),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              AppClinicalResultsPreviewList(
+                entries: previewEntries,
+                dense: true,
+              ),
+            ],
+          ),
+        ),
     ];
 
     return Column(
@@ -1769,9 +1894,11 @@ class _ClinicalInfoGrid extends StatelessWidget {
 class _ClinicalTriageHandoffPanel extends StatelessWidget {
   const _ClinicalTriageHandoffPanel({
     required this.handoff,
+    this.onEditVitals,
   });
 
   final ClinicalTriageHandoff handoff;
+  final VoidCallback? onEditVitals;
 
   @override
   Widget build(BuildContext context) {
@@ -1858,10 +1985,32 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
         ];
 
     return AppCollapsibleSection(
-      title: l10n.opdWorkflowTriageTitle,
-      headerActions: vitalFacts.isEmpty
+      titleWidget: Row(
+        children: <Widget>[
+          Text(
+            l10n.clinicalVitalsSectionTitle,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (vitalFacts.isNotEmpty) ...<Widget>[
+            SizedBox(width: theme.spacing.md),
+            Flexible(child: _ClinicalVitalsLegend()),
+          ],
+        ],
+      ),
+      headerActions: onEditVitals == null
           ? const <Widget>[]
-          : <Widget>[_ClinicalVitalsLegend()],
+          : <Widget>[
+              AppButton.secondary(
+                label: handoff.vitalSigns.isNotEmpty
+                    ? l10n.opdEditVitalsAction
+                    : l10n.opdRecordVitalsAction,
+                leadingIcon: Icons.monitor_heart_outlined,
+                dense: true,
+                onPressed: onEditVitals,
+              ),
+            ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -1958,10 +2107,15 @@ class _ClinicalVitalLegendItem extends StatelessWidget {
 }
 
 class _ClinicalActionBar extends ConsumerWidget {
-  const _ClinicalActionBar({required this.bundle, required this.referenceData});
+  const _ClinicalActionBar({
+    required this.bundle,
+    required this.referenceData,
+    this.onEditClinicalNotes,
+  });
 
   final ClinicalEncounterBundle bundle;
   final ClinicalReferenceData referenceData;
+  final VoidCallback? onEditClinicalNotes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2013,9 +2167,17 @@ class _ClinicalActionBar extends ConsumerWidget {
         ),
       if (canWrite)
         AppActionItem(
-          label: l10n.clinicalAddNoteAction,
+          label: bundle.clinicalNotes.isEmpty
+              ? l10n.clinicalAddNoteAction
+              : l10n.clinicalEditNotesAction,
           leadingIcon: Icons.note_add_outlined,
-          onPressed: () => _openNoteDialog(context, controller),
+          onPressed: () {
+            if (bundle.clinicalNotes.isEmpty) {
+              _openNoteDialog(context, controller);
+              return;
+            }
+            onEditClinicalNotes?.call();
+          },
         ),
       if (canWrite)
         AppActionItem(
@@ -2113,44 +2275,172 @@ class _ClinicalActionBar extends ConsumerWidget {
   }
 }
 
-/// Sibling record panels for encounter detail (never nested under another section).
-List<Widget> _clinicalRecordSectionWidgets(
-  BuildContext context,
-  ClinicalEncounterBundle bundle,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <Widget>[
-    if (bundle.clinicalNotes.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.clinicalPatientNotesTitle,
-        records: sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
-      ),
-    if (bundle.procedures.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.opdProceduresSummaryLabel,
-        records: sortClinicalRecordsNewestFirst(bundle.procedures),
-      ),
-    if (bundle.carePlans.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.clinicalCarePlansTitle,
-        records: sortClinicalRecordsNewestFirst(bundle.carePlans),
-      ),
-    if (bundle.referrals.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.opdReferralsTitle,
-        records: sortClinicalRecordsNewestFirst(bundle.referrals),
-      ),
-    if (bundle.followUps.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.opdFollowUpsTitle,
-        records: sortClinicalRecordsNewestFirst(bundle.followUps),
-      ),
-    if (bundle.admissions.isNotEmpty)
-      _ClinicalRecordSection(
-        title: l10n.patientsAdmissionsSectionTitle,
-        records: sortClinicalRecordsNewestFirst(bundle.admissions),
-      ),
-  ];
+class _ClinicalNotesSection extends StatefulWidget {
+  const _ClinicalNotesSection({
+    required this.records,
+    required this.canEdit,
+    required this.editing,
+    required this.expanded,
+    required this.onExpandedChanged,
+    required this.onCancelEditing,
+    required this.onSaveEditing,
+    this.onStartEditing,
+  });
+
+  final List<ClinicalRelatedRecord> records;
+  final bool canEdit;
+  final bool editing;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
+  final VoidCallback? onStartEditing;
+  final VoidCallback onCancelEditing;
+  final Future<void> Function(Map<String, String> drafts) onSaveEditing;
+
+  @override
+  State<_ClinicalNotesSection> createState() => _ClinicalNotesSectionState();
+}
+
+class _ClinicalNotesSectionState extends State<_ClinicalNotesSection> {
+  final Map<String, TextEditingController> _controllers =
+      <String, TextEditingController>{};
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncControllers();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ClinicalNotesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.editing && oldWidget.editing) {
+      _syncControllers(force: true);
+    } else if (widget.editing && !oldWidget.editing) {
+      _syncControllers(force: true);
+    } else if (widget.records.map((ClinicalRelatedRecord r) => r.id).join() !=
+        oldWidget.records.map((ClinicalRelatedRecord r) => r.id).join()) {
+      _syncControllers(force: true);
+    }
+  }
+
+  void _syncControllers({bool force = false}) {
+    final Set<String> ids = widget.records
+        .map((ClinicalRelatedRecord record) => record.id)
+        .toSet();
+    for (final String id in _controllers.keys.toList(growable: false)) {
+      if (!ids.contains(id)) {
+        _controllers.remove(id)?.dispose();
+      }
+    }
+    for (final ClinicalRelatedRecord record in widget.records) {
+      final String text = (record.title ?? '').trim();
+      final TextEditingController? existing = _controllers[record.id];
+      if (existing == null) {
+        _controllers[record.id] = TextEditingController(text: text);
+      } else if (force) {
+        existing.text = text;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final TextEditingController controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) {
+      return;
+    }
+    setState(() => _saving = true);
+    final Map<String, String> drafts = <String, String>{
+      for (final MapEntry<String, TextEditingController> entry
+          in _controllers.entries)
+        if (entry.value.text.trim().isNotEmpty) entry.key: entry.value.text.trim(),
+    };
+    try {
+      await widget.onSaveEditing(drafts);
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> headerActions = <Widget>[];
+    if (widget.canEdit) {
+      if (widget.editing) {
+        headerActions.addAll(<Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
+            dense: true,
+            enabled: !_saving,
+            onPressed: widget.onCancelEditing,
+          ),
+          AppButton.secondary(
+            label: l10n.clinicalSaveChangesAction,
+            leadingIcon: Icons.save_outlined,
+            dense: true,
+            isLoading: _saving,
+            onPressed: _save,
+          ),
+        ]);
+      } else if (widget.onStartEditing != null) {
+        headerActions.add(
+          AppButton.secondary(
+            label: l10n.clinicalEditNotesAction,
+            leadingIcon: Icons.edit_outlined,
+            dense: true,
+            onPressed: widget.onStartEditing,
+          ),
+        );
+      }
+    }
+
+    return AppCollapsibleSection(
+      title: l10n.clinicalPatientNotesTitle,
+      expanded: widget.expanded,
+      onExpandedChanged: widget.onExpandedChanged,
+      headerActions: headerActions,
+      child: widget.editing
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (var index = 0; index < widget.records.length; index += 1) ...<
+                  Widget
+                >[
+                  if (index > 0) SizedBox(height: theme.spacing.md),
+                  Text(
+                    _dateTimeLabel(context, widget.records[index].occurredAt),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  TextField(
+                    controller: _controllers[widget.records[index].id],
+                    minLines: 3,
+                    maxLines: 8,
+                    decoration: InputDecoration(
+                      labelText: l10n.opdClinicalNoteLabel,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ],
+            )
+          : _ClinicalRecordList(records: widget.records),
+    );
+  }
 }
 
 class _ClinicalRecordSection extends StatelessWidget {
@@ -3264,14 +3554,6 @@ bool _clinicalTriageShowsWorkflowStage(ClinicalTriageHandoff? handoff) {
   return stage.isNotEmpty || nextStep.isNotEmpty || handoff.timeline.isNotEmpty;
 }
 
-bool _clinicalHasRecordSections(ClinicalEncounterBundle bundle) {
-  return bundle.clinicalNotes.isNotEmpty ||
-      bundle.procedures.isNotEmpty ||
-      bundle.carePlans.isNotEmpty ||
-      bundle.referrals.isNotEmpty ||
-      bundle.followUps.isNotEmpty ||
-      bundle.admissions.isNotEmpty;
-}
 
 IconData _clinicalStatusIcon(AppWorkspaceStatusTone tone) {
   return switch (tone) {

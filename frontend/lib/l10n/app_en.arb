@@ -10342,9 +10342,21 @@
   "@clinicalActionsTitle": {
     "description": "Clinical actions panel title."
   },
-  "clinicalAddNoteAction": "Add clinical note",
+  "clinicalAddNoteAction": "Add clinical notes",
   "@clinicalAddNoteAction": {
-    "description": "Clinical add note action label."
+    "description": "Clinical add notes action label."
+  },
+  "clinicalEditNotesAction": "Edit clinical notes",
+  "@clinicalEditNotesAction": {
+    "description": "Clinical edit notes action label when notes already exist."
+  },
+  "clinicalSaveChangesAction": "Save changes",
+  "@clinicalSaveChangesAction": {
+    "description": "Save changes action label for inline clinical notes editing."
+  },
+  "clinicalVitalsSectionTitle": "Vitals",
+  "@clinicalVitalsSectionTitle": {
+    "description": "Clinical encounter vitals section title."
   },
   "clinicalAddNoteTitle": "Add patient clinical note",
   "@clinicalAddNoteTitle": {
@@ -11051,7 +11063,7 @@
   "@clinicalNoResultsReadyBody": {
     "description": "Clinical no results ready body."
   },
-  "clinicalPatientNotesTitle": "Patient clinical notes",
+  "clinicalPatientNotesTitle": "Clinical Notes",
   "@clinicalPatientNotesTitle": {
     "description": "Clinical patient notes section title."
   },

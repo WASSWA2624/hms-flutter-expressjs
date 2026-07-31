@@ -15004,11 +15004,29 @@ abstract class AppLocalizations {
   /// **'Clinical actions'**
   String get clinicalActionsTitle;
 
-  /// Clinical add note action label.
+  /// Clinical add notes action label.
   ///
   /// In en, this message translates to:
-  /// **'Add clinical note'**
+  /// **'Add clinical notes'**
   String get clinicalAddNoteAction;
+
+  /// Clinical edit notes action label when notes already exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit clinical notes'**
+  String get clinicalEditNotesAction;
+
+  /// Save changes action label for inline clinical notes editing.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get clinicalSaveChangesAction;
+
+  /// Clinical encounter vitals section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get clinicalVitalsSectionTitle;
 
   /// Clinical add note dialog title.
   ///
@@ -15907,7 +15925,7 @@ abstract class AppLocalizations {
   /// Clinical patient notes section title.
   ///
   /// In en, this message translates to:
-  /// **'Patient clinical notes'**
+  /// **'Clinical Notes'**
   String get clinicalPatientNotesTitle;
 
   /// Clinical patient notes empty state label.

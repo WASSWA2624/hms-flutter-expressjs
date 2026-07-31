@@ -61,6 +61,11 @@ abstract interface class ClinicalRepository {
 
   Future<Result<void>> createClinicalNote(Map<String, Object?> payload);
 
+  Future<Result<void>> updateClinicalNote(
+    String noteId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<void>> createDiagnosis(Map<String, Object?> payload);
 
   Future<Result<void>> deleteDiagnosis(String diagnosisId);

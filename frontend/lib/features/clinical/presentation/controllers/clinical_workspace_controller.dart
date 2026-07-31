@@ -352,6 +352,23 @@ final class ClinicalWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateClinicalNote({
+    required String noteId,
+    required String note,
+  }) {
+    final String normalizedId = noteId.trim();
+    final String normalizedNote = note.trim();
+    if (normalizedId.isEmpty || normalizedNote.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelectedEncounter(
+      () => _repository.updateClinicalNote(normalizedId, <String, Object?>{
+        'note': normalizedNote,
+      }),
+    );
+  }
+
   Future<Result<OpdFlowDetail>> loadSelectedOpdFlowDetail() async {
     final String? opdFlowApiId = _selectedOpdFlowApiId();
     if (opdFlowApiId == null) {
