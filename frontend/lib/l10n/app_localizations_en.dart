@@ -11244,6 +11244,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyReportDialogTitle => 'Draft radiology report';
 
   @override
+  String get radiologyProceduresSectionTitle => 'Procedures';
+
+  @override
+  String get radiologyProcedureIdColumnLabel => 'Order ID';
+
+  @override
+  String get radiologyProcedureNameColumnLabel => 'Procedure';
+
+  @override
+  String get radiologyProcedureStatusPending => 'Pending';
+
+  @override
+  String get radiologyProcedureStatusDone => 'Done';
+
+  @override
+  String get radiologyProcedureStatusReported => 'Reported';
+
+  @override
+  String get radiologyMarkProcedureDoneAction => 'Done';
+
+  @override
+  String get radiologyWriteReportAction => 'Write report';
+
+  @override
+  String get radiologyAssignTypistAction => 'Assign typist';
+
+  @override
+  String get radiologyTechniqueLabel => 'Technique';
+
+  @override
+  String get radiologyRecommendationLabel => 'Recommendation';
+
+  @override
+  String get radiologyImageSourcesTitle => 'Images';
+
+  @override
+  String get radiologyImageSourcesBody =>
+      'Attach images from the local device, a remote URL, PACS, or images already on this study.';
+
+  @override
+  String get radiologyImageSourceLocalAction => 'Local device';
+
+  @override
+  String get radiologyImageSourceRemoteAction => 'Remote URL';
+
+  @override
+  String get radiologyImageSourcePacsAction => 'PACS';
+
+  @override
+  String get radiologyImageSourceExistingAction => 'Study images';
+
+  @override
+  String get radiologyRemoteImageDialogTitle => 'Remote image';
+
+  @override
+  String get radiologyRemoteImageUrlLabel => 'Image URL';
+
+  @override
+  String get radiologyRemoteImageCaptionLabel => 'Caption';
+
+  @override
+  String get radiologyImageSourceLocalLabel => 'Local';
+
+  @override
+  String get radiologyImageSourceRemoteLabel => 'Remote';
+
+  @override
+  String get radiologyImageSourcePacsLabel => 'PACS';
+
+  @override
+  String get radiologyPerformStudyFirstMessage =>
+      'Mark the procedure Done before attaching images.';
+
+  @override
+  String get radiologyNoExistingStudyImagesMessage =>
+      'No study images are attached yet.';
+
+  @override
   String get radiologyFindingsLabel => 'Findings';
 
   @override

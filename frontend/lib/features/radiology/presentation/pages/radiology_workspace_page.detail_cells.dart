@@ -537,14 +537,21 @@ String _joinDisplay(Iterable<String?> values) {
 }
 
 String _composeRadiologyReportText({
+  String technique = '',
   required String findings,
   required String impression,
+  String recommendation = '',
   required String narrative,
 }) {
   if (narrative.isNotEmpty) {
     return narrative;
   }
-  return _joinDisplay(<String?>[findings, impression]);
+  return _joinDisplay(<String?>[
+    technique,
+    findings,
+    impression,
+    recommendation,
+  ]);
 }
 
 extension on String {

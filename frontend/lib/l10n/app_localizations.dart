@@ -20734,6 +20734,156 @@ abstract class AppLocalizations {
   /// **'Draft radiology report'**
   String get radiologyReportDialogTitle;
 
+  /// Radiology workflow detail procedure workbench section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures'**
+  String get radiologyProceduresSectionTitle;
+
+  /// Radiology workflow procedure table order/procedure id column.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get radiologyProcedureIdColumnLabel;
+
+  /// Radiology workflow procedure table procedure name column.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure'**
+  String get radiologyProcedureNameColumnLabel;
+
+  /// Radiology procedure workbench pending status.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get radiologyProcedureStatusPending;
+
+  /// Radiology procedure workbench done/performed status.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get radiologyProcedureStatusDone;
+
+  /// Radiology procedure workbench reported status.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported'**
+  String get radiologyProcedureStatusReported;
+
+  /// Mark radiology procedure as performed action.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get radiologyMarkProcedureDoneAction;
+
+  /// Open radiology procedure report dialog action.
+  ///
+  /// In en, this message translates to:
+  /// **'Write report'**
+  String get radiologyWriteReportAction;
+
+  /// Assign a typist/reporter for a radiology procedure report.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign typist'**
+  String get radiologyAssignTypistAction;
+
+  /// Radiology report technique section label.
+  ///
+  /// In en, this message translates to:
+  /// **'Technique'**
+  String get radiologyTechniqueLabel;
+
+  /// Radiology report recommendation section label.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendation'**
+  String get radiologyRecommendationLabel;
+
+  /// Radiology report multi-source image intake section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get radiologyImageSourcesTitle;
+
+  /// Radiology report multi-source image intake helper body.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach images from the local device, a remote URL, PACS, or images already on this study.'**
+  String get radiologyImageSourcesBody;
+
+  /// Attach radiology images from the local device or gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Local device'**
+  String get radiologyImageSourceLocalAction;
+
+  /// Attach a remote radiology image by URL.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote URL'**
+  String get radiologyImageSourceRemoteAction;
+
+  /// Sync or pull radiology images from PACS.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS'**
+  String get radiologyImageSourcePacsAction;
+
+  /// Insert already-attached study image references into the report.
+  ///
+  /// In en, this message translates to:
+  /// **'Study images'**
+  String get radiologyImageSourceExistingAction;
+
+  /// Dialog title for entering a remote radiology image URL.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote image'**
+  String get radiologyRemoteImageDialogTitle;
+
+  /// Remote radiology image URL field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL'**
+  String get radiologyRemoteImageUrlLabel;
+
+  /// Optional caption for a remote radiology image reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption'**
+  String get radiologyRemoteImageCaptionLabel;
+
+  /// Provenance label for a locally attached radiology image.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get radiologyImageSourceLocalLabel;
+
+  /// Provenance label for a remote radiology image.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote'**
+  String get radiologyImageSourceRemoteLabel;
+
+  /// Provenance label for a PACS radiology image.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS'**
+  String get radiologyImageSourcePacsLabel;
+
+  /// Message when image intake requires a performed study first.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the procedure Done before attaching images.'**
+  String get radiologyPerformStudyFirstMessage;
+
+  /// Empty state when inserting existing study image references.
+  ///
+  /// In en, this message translates to:
+  /// **'No study images are attached yet.'**
+  String get radiologyNoExistingStudyImagesMessage;
+
   /// Localized text for radiologyFindingsLabel.
   ///
   /// In en, this message translates to:

@@ -545,20 +545,15 @@ void main() {
       await tester.tap(find.text('Rita Reporting'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Write report'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Done'), findsNothing);
       expect(find.text('Draft report'), findsNothing);
       expect(find.text('Release report'), findsNothing);
       expect(find.text('Cancel order'), findsNothing);
       expect(find.text('Assign'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
-
-      // Switch to Reporting detail view — draft CTA still absent for readers.
-      final Finder reportingMode = find.text('Reporting');
-      expect(reportingMode, findsWidgets);
-      await tester.tap(reportingMode.last);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Draft report'), findsNothing);
-      expect(find.text('Print report'), findsOneWidget);
+      // Print lives in the report dialog, not on the detail body.
+      expect(find.text('Print report'), findsNothing);
     },
   );
 
@@ -656,8 +651,25 @@ void main() {
       await _openReportingDetail(tester);
 
       expect(find.text('Cancel order'), findsOneWidget);
-      expect(find.text('Draft report'), findsOneWidget);
+      expect(find.text('Write report'), findsOneWidget);
+      expect(find.text('Procedures'), findsOneWidget);
+      expect(find.text('CT Head'), findsWidgets);
+      expect(find.text('Request details'), findsNothing);
+      expect(find.text('Workflow timeline'), findsNothing);
+      expect(find.text('Imaging floor'), findsNothing);
+      expect(find.text('Print report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+
+      await tester.ensureVisible(find.text('Write report'));
+      await tester.tap(find.text('Write report'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Local device'), findsOneWidget);
+      expect(find.text('Remote URL'), findsOneWidget);
+      expect(find.text('PACS'), findsOneWidget);
+      expect(find.text('Study images'), findsOneWidget);
+      expect(find.text('Print report'), findsOneWidget);
+      expect(find.text('Draft report'), findsOneWidget);
     },
   );
 
@@ -676,8 +688,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Draft report'));
-      await tester.tap(find.text('Draft report'));
+      await tester.ensureVisible(find.text('Write report'));
+      await tester.tap(find.text('Write report'));
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(
@@ -732,8 +744,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Draft report'));
-      await tester.tap(find.text('Draft report'));
+      await tester.ensureVisible(find.text('Write report'));
+      await tester.tap(find.text('Write report'));
       await tester.pumpAndSettle();
 
       final Finder findingsField = find.descendant(
@@ -741,7 +753,8 @@ void main() {
         matching: find.byType(TextField),
       );
       expect(findingsField, findsWidgets);
-      await tester.enterText(findingsField.first, 'No acute bleed');
+      // Technique is first rich-text field; findings is second.
+      await tester.enterText(findingsField.at(1), 'No acute bleed');
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(
@@ -782,6 +795,26 @@ void main() {
           ),
         ),
       );
+      when(() => radiologyRepository.draftResult(any(), any())).thenAnswer((
+        _,
+      ) async {
+        return Result<RadiologyWorkflow>.success(
+          _reportingWorkflow(
+            nextActions: const RadiologyNextActions(
+              canFinalizeResult: true,
+              canCancel: true,
+            ),
+            results: const <RadiologyResult>[
+              RadiologyResult(
+                id: 'RES-DRAFT',
+                displayId: 'RES-DRAFT',
+                status: 'DRAFT',
+                reportText: 'Preliminary findings',
+              ),
+            ],
+          ),
+        );
+      });
       when(() => radiologyRepository.finalizeResult(any(), any())).thenAnswer((
         _,
       ) async {
@@ -812,17 +845,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-
-      final Finder releaseEntry = find.widgetWithText(
-        AppButton,
-        'Release report',
-      );
-      expect(releaseEntry, findsWidgets);
-      final AppButton releaseEntryButton = tester.widget<AppButton>(
-        releaseEntry.first,
-      );
-      expect(releaseEntryButton.onPressed, isNotNull);
-      releaseEntryButton.onPressed!();
+      await tester.ensureVisible(find.text('Write report'));
+      await tester.tap(find.text('Write report'));
       await tester.pumpAndSettle();
 
       final Finder releaseSubmit = find.descendant(

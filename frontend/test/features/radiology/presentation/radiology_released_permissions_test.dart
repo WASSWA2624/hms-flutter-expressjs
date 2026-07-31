@@ -23,7 +23,6 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/features/radiology/domain/repositories/radiology_repository.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart';
-import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -485,8 +484,9 @@ void main() {
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAddendumAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
-        // Prefer read: print ∩ still mounts for radiology:read.
-        expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
+        // Print / Write report are write-gated; print also lives in the report dialog.
+        expect(find.text(l10n.radiologyPrintReportAction), findsNothing);
+        expect(find.text(l10n.radiologyWriteReportAction), findsNothing);
       },
     );
 
@@ -534,18 +534,13 @@ void main() {
         await _openReleasedDetail(tester);
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
-        expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
+        expect(find.text(l10n.radiologyWriteReportAction), findsOneWidget);
+        expect(find.text(l10n.radiologyPrintReportAction), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
-        // Addendum mounts on Reporting view (default detail is Imaging floor).
-        final Finder reportingMode = find.descendant(
-          of: find.byType(AppDialog),
-          matching: find.text(l10n.radiologyViewModeReportingLabel),
-        );
-        await tester.ensureVisible(reportingMode);
-        await tester.tap(reportingMode);
+        await tester.tap(find.text(l10n.radiologyWriteReportAction));
         await tester.pumpAndSettle();
-        expect(find.text(l10n.radiologyAddendumAction), findsOneWidget);
+        expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
       },
     );
 

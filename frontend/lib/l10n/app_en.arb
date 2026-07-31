@@ -14355,6 +14355,106 @@
   "@radiologyReportDialogTitle": {
     "description": "Localized text for radiologyReportDialogTitle."
   },
+  "radiologyProceduresSectionTitle": "Procedures",
+  "@radiologyProceduresSectionTitle": {
+    "description": "Radiology workflow detail procedure workbench section title."
+  },
+  "radiologyProcedureIdColumnLabel": "Order ID",
+  "@radiologyProcedureIdColumnLabel": {
+    "description": "Radiology workflow procedure table order/procedure id column."
+  },
+  "radiologyProcedureNameColumnLabel": "Procedure",
+  "@radiologyProcedureNameColumnLabel": {
+    "description": "Radiology workflow procedure table procedure name column."
+  },
+  "radiologyProcedureStatusPending": "Pending",
+  "@radiologyProcedureStatusPending": {
+    "description": "Radiology procedure workbench pending status."
+  },
+  "radiologyProcedureStatusDone": "Done",
+  "@radiologyProcedureStatusDone": {
+    "description": "Radiology procedure workbench done/performed status."
+  },
+  "radiologyProcedureStatusReported": "Reported",
+  "@radiologyProcedureStatusReported": {
+    "description": "Radiology procedure workbench reported status."
+  },
+  "radiologyMarkProcedureDoneAction": "Done",
+  "@radiologyMarkProcedureDoneAction": {
+    "description": "Mark radiology procedure as performed action."
+  },
+  "radiologyWriteReportAction": "Write report",
+  "@radiologyWriteReportAction": {
+    "description": "Open radiology procedure report dialog action."
+  },
+  "radiologyAssignTypistAction": "Assign typist",
+  "@radiologyAssignTypistAction": {
+    "description": "Assign a typist/reporter for a radiology procedure report."
+  },
+  "radiologyTechniqueLabel": "Technique",
+  "@radiologyTechniqueLabel": {
+    "description": "Radiology report technique section label."
+  },
+  "radiologyRecommendationLabel": "Recommendation",
+  "@radiologyRecommendationLabel": {
+    "description": "Radiology report recommendation section label."
+  },
+  "radiologyImageSourcesTitle": "Images",
+  "@radiologyImageSourcesTitle": {
+    "description": "Radiology report multi-source image intake section title."
+  },
+  "radiologyImageSourcesBody": "Attach images from the local device, a remote URL, PACS, or images already on this study.",
+  "@radiologyImageSourcesBody": {
+    "description": "Radiology report multi-source image intake helper body."
+  },
+  "radiologyImageSourceLocalAction": "Local device",
+  "@radiologyImageSourceLocalAction": {
+    "description": "Attach radiology images from the local device or gallery."
+  },
+  "radiologyImageSourceRemoteAction": "Remote URL",
+  "@radiologyImageSourceRemoteAction": {
+    "description": "Attach a remote radiology image by URL."
+  },
+  "radiologyImageSourcePacsAction": "PACS",
+  "@radiologyImageSourcePacsAction": {
+    "description": "Sync or pull radiology images from PACS."
+  },
+  "radiologyImageSourceExistingAction": "Study images",
+  "@radiologyImageSourceExistingAction": {
+    "description": "Insert already-attached study image references into the report."
+  },
+  "radiologyRemoteImageDialogTitle": "Remote image",
+  "@radiologyRemoteImageDialogTitle": {
+    "description": "Dialog title for entering a remote radiology image URL."
+  },
+  "radiologyRemoteImageUrlLabel": "Image URL",
+  "@radiologyRemoteImageUrlLabel": {
+    "description": "Remote radiology image URL field label."
+  },
+  "radiologyRemoteImageCaptionLabel": "Caption",
+  "@radiologyRemoteImageCaptionLabel": {
+    "description": "Optional caption for a remote radiology image reference."
+  },
+  "radiologyImageSourceLocalLabel": "Local",
+  "@radiologyImageSourceLocalLabel": {
+    "description": "Provenance label for a locally attached radiology image."
+  },
+  "radiologyImageSourceRemoteLabel": "Remote",
+  "@radiologyImageSourceRemoteLabel": {
+    "description": "Provenance label for a remote radiology image."
+  },
+  "radiologyImageSourcePacsLabel": "PACS",
+  "@radiologyImageSourcePacsLabel": {
+    "description": "Provenance label for a PACS radiology image."
+  },
+  "radiologyPerformStudyFirstMessage": "Mark the procedure Done before attaching images.",
+  "@radiologyPerformStudyFirstMessage": {
+    "description": "Message when image intake requires a performed study first."
+  },
+  "radiologyNoExistingStudyImagesMessage": "No study images are attached yet.",
+  "@radiologyNoExistingStudyImagesMessage": {
+    "description": "Empty state when inserting existing study image references."
+  },
   "radiologyFindingsLabel": "Findings",
   "@radiologyFindingsLabel": {
     "description": "Localized text for radiologyFindingsLabel."

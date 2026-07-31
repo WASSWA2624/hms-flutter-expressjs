@@ -45,6 +45,10 @@ const AccessRequirement radiologyWriteRequirement =
 const AccessRequirement radiologyMutationRequirement =
     radiologyWorkspaceWriteRequirement;
 
+/// Historical alias used by desk permission widget tests.
+const AccessRequirement radiologyWorkflowMutationRequirement =
+    radiologyMutationRequirement;
+
 /// Catalog / configurations enablement (same ∩ `radiology:write` as mutations).
 ///
 /// Readers with only `clinical:read` must not see config/create.

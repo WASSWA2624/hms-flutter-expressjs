@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +25,6 @@ import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_nex
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -44,12 +42,6 @@ import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.da
 part 'radiology_workspace_page.configurations.dart';
 part 'radiology_workspace_page.detail_cells.dart';
 part 'radiology_workspace_page.print.dart';
-
-typedef _RadiologyResultMutation =
-    Future<AppFailure?> Function(
-      RadiologyResult result,
-      Map<String, Object?> payload,
-    );
 
 class RadiologyWorkspacePage extends ConsumerWidget {
   const RadiologyWorkspacePage({this.initialQuery, super.key});
@@ -949,50 +941,11 @@ class _RadiologyDetailBody extends ConsumerStatefulWidget {
 }
 
 class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
-  final GlobalKey _requestSectionKey = GlobalKey();
-  final GlobalKey _studiesSectionKey = GlobalKey();
-  final GlobalKey _reportSectionKey = GlobalKey();
-  final GlobalKey _doctorReviewSectionKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final RadiologyDetailViewMode inferred =
-          widget.canRequest && !widget.canWork
-          ? RadiologyDetailViewMode.reporting
-          : RadiologyDetailViewMode.imagingFloor;
-      ref
-          .read(radiologyWorkspaceControllerProvider.notifier)
-          .setDetailViewMode(inferred);
-    });
-  }
-
-  void _scrollToSection(GlobalKey key) {
-    final BuildContext? target = key.currentContext;
-    if (target == null) {
-      return;
-    }
-    unawaited(
-      Scrollable.ensureVisible(
-        target,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOut,
-        alignment: 0.06,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final RadiologyOrder order = widget.workflow.order;
-    final RadiologyDetailViewMode viewMode = widget.state.detailViewMode;
-    final bool imagingView = viewMode == RadiologyDetailViewMode.imagingFloor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1031,95 +984,23 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           ],
           actions: _buildHeaderActions(context),
         ),
-        SizedBox(height: theme.spacing.md),
-        _WorkflowSummarySection(order: order),
-        SizedBox(height: theme.spacing.md),
-        _RadiologyViewModeSection(
-          viewMode: viewMode,
-          onViewModeChanged: (RadiologyDetailViewMode mode) {
-            ref
-                .read(radiologyWorkspaceControllerProvider.notifier)
-                .setDetailViewMode(mode);
-          },
-        ),
         SizedBox(height: theme.spacing.lg),
-        ..._orderedDetailSections(
-          context: context,
-          imagingView: imagingView,
-          l10n: l10n,
-          theme: theme,
+        _ProcedureWorkbenchSection(
+          workflow: widget.workflow,
+          state: widget.state,
+          canWork: widget.canWork,
+          onMarkDone: widget.canWork && !widget.state.isMutating
+              ? () => _showStudyDialog(context, ref, order)
+              : null,
+          onWriteReport: widget.canWork && !widget.state.isMutating
+              ? () => _showReportDialog(context, ref, widget.workflow)
+              : null,
+          onAssignTypist: widget.canWork && !widget.state.isMutating
+              ? () => _showAssignDialog(context, ref)
+              : null,
         ),
       ],
     );
-  }
-
-  List<Widget> _orderedDetailSections({
-    required BuildContext context,
-    required bool imagingView,
-    required AppLocalizations l10n,
-    required ThemeData theme,
-  }) {
-    final Widget requestSection = KeyedSubtree(
-      key: _requestSectionKey,
-      child: _RequestSection(
-        order: widget.workflow.order,
-        canEdit: widget.canWork && !widget.state.isMutating,
-      ),
-    );
-    final Widget reportSection = KeyedSubtree(
-      key: _reportSectionKey,
-      child: _ReportingSection(
-        state: widget.state,
-        workflow: widget.workflow,
-        canWork: widget.canWork,
-        imagingView: imagingView,
-      ),
-    );
-    final Widget studiesSection = KeyedSubtree(
-      key: _studiesSectionKey,
-      child: _StudiesSection(
-        state: widget.state,
-        workflow: widget.workflow,
-        canWork: widget.canWork,
-        imagingView: imagingView,
-        onPerformStudy: widget.canWork && !widget.state.isMutating
-            ? () => _showStudyDialog(context, ref, widget.workflow.order)
-            : null,
-      ),
-    );
-    final Widget doctorReview = KeyedSubtree(
-      key: _doctorReviewSectionKey,
-      child: _DoctorReviewPanel(
-        order: widget.workflow.order,
-        onOpenReport: () => _scrollToSection(_reportSectionKey),
-      ),
-    );
-    final Widget timeline = _TimelineSection(workflow: widget.workflow);
-    final List<Widget> sections = imagingView
-        ? <Widget>[
-            studiesSection,
-            SizedBox(height: theme.spacing.lg),
-            requestSection,
-            SizedBox(height: theme.spacing.lg),
-            reportSection,
-          ]
-        : <Widget>[
-            requestSection,
-            SizedBox(height: theme.spacing.lg),
-            reportSection,
-            SizedBox(height: theme.spacing.lg),
-            studiesSection,
-          ];
-    if (widget.workflow.nextActions.canRequestFinalization ||
-        widget.workflow.nextActions.canAttestFinalization ||
-        widget.workflow.nextActions.canAddAddendum) {
-      sections.addAll(<Widget>[
-        SizedBox(height: theme.spacing.lg),
-        doctorReview,
-      ]);
-    }
-    sections.addAll(<Widget>[SizedBox(height: theme.spacing.lg), timeline]);
-    return sections;
   }
 
   List<Widget> _buildHeaderActions(BuildContext context) {
@@ -1165,1353 +1046,245 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
   }
 }
 
-class _RadiologyViewModeSection extends StatelessWidget {
-  const _RadiologyViewModeSection({
-    required this.viewMode,
-    required this.onViewModeChanged,
+enum _ProcedureWorkbenchStatus { pending, inProcess, done, reported, cancelled }
+
+_ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) {
+  final RadiologyOrder order = workflow.order;
+  if (order.isCancelled) {
+    return _ProcedureWorkbenchStatus.cancelled;
+  }
+  if (order.hasFinalResult) {
+    return _ProcedureWorkbenchStatus.reported;
+  }
+  final bool hasStudy =
+      order.imagingStudies.isNotEmpty || (order.studyCount > 0);
+  if (hasStudy) {
+    return _ProcedureWorkbenchStatus.done;
+  }
+  if (order.normalizedStatus == 'IN_PROCESS') {
+    return _ProcedureWorkbenchStatus.inProcess;
+  }
+  return _ProcedureWorkbenchStatus.pending;
+}
+
+String _procedureWorkbenchStatusLabel(
+  AppLocalizations l10n,
+  _ProcedureWorkbenchStatus status,
+) {
+  switch (status) {
+    case _ProcedureWorkbenchStatus.pending:
+      return l10n.radiologyProcedureStatusPending;
+    case _ProcedureWorkbenchStatus.inProcess:
+      return l10n.radiologyStatusInProcess;
+    case _ProcedureWorkbenchStatus.done:
+      return l10n.radiologyProcedureStatusDone;
+    case _ProcedureWorkbenchStatus.reported:
+      return l10n.radiologyProcedureStatusReported;
+    case _ProcedureWorkbenchStatus.cancelled:
+      return l10n.radiologyStatusCancelled;
+  }
+}
+
+@immutable
+final class _ProcedureWorkbenchRow {
+  const _ProcedureWorkbenchRow({
+    required this.id,
+    required this.name,
+    this.modality,
+    this.bodyRegion,
+    this.laterality,
   });
 
-  final RadiologyDetailViewMode viewMode;
-  final ValueChanged<RadiologyDetailViewMode> onViewModeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final bool imagingFloor = viewMode == RadiologyDetailViewMode.imagingFloor;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        RadioGroup<RadiologyDetailViewMode>(
-          groupValue: viewMode,
-          onChanged: (RadiologyDetailViewMode? selected) {
-            if (selected != null) {
-              onViewModeChanged(selected);
-            }
-          },
-          child: Wrap(
-            spacing: theme.spacing.xl,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              _RadiologyViewModeRadioOption(
-                value: RadiologyDetailViewMode.imagingFloor,
-                icon: Icons.medical_services_outlined,
-                label: l10n.radiologyViewModeImagingFloorLabel,
-                onSelected: () =>
-                    onViewModeChanged(RadiologyDetailViewMode.imagingFloor),
-              ),
-              _RadiologyViewModeRadioOption(
-                value: RadiologyDetailViewMode.reporting,
-                icon: Icons.description_outlined,
-                label: l10n.radiologyViewModeReportingLabel,
-                onSelected: () =>
-                    onViewModeChanged(RadiologyDetailViewMode.reporting),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          imagingFloor
-              ? l10n.radiologyViewModeImagingFloorHelper
-              : l10n.radiologyViewModeReportingHelper,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
+  final String id;
+  final String name;
+  final String? modality;
+  final String? bodyRegion;
+  final String? laterality;
 }
 
-class _RadiologyViewModeRadioOption extends StatelessWidget {
-  const _RadiologyViewModeRadioOption({
-    required this.value,
-    required this.icon,
-    required this.label,
-    required this.onSelected,
-  });
-
-  final RadiologyDetailViewMode value;
-  final IconData icon;
-  final String label;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Semantics(
-      button: true,
-      label: label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onSelected,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Radio<RadiologyDetailViewMode>(
-              value: value,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-            Icon(icon, size: theme.appTokens.listIconSize),
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkflowSummarySection extends StatelessWidget {
-  const _WorkflowSummarySection({required this.order});
-
-  final RadiologyOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<_DetailLine> lines = <_DetailLine>[
-      _DetailLine(
-        label: l10n.radiologyOrderColumnLabel,
-        value: order.effectiveDisplayId,
-      ),
-      _DetailLine(
-        label: l10n.radiologyOrderedAtLabel,
-        value: _formatDateTimeOrNull(context, order.orderedAt),
-      ),
-      _DetailLine(
-        label: l10n.radiologyModalityLabel,
-        value: _modalityLabelOrNull(l10n, order.modality),
-      ),
-      _DetailLine(
-        label: l10n.radiologyEncounterLabel,
-        value: order.encounterId,
-      ),
-      _DetailLine(
-        label: l10n.radiologyPriorityLabel,
-        value: _radiologyPriorityDisplayLabel(l10n, order.priority),
-      ),
-      if ((order.authorizationStatus ?? '').trim().isNotEmpty)
-        _DetailLine(
-          label: l10n.radiologyAuthorizationLabel,
-          value: order.authorizationStatus,
+List<_ProcedureWorkbenchRow> _procedureWorkbenchRows(RadiologyOrder order) {
+  if (order.requestedTests.isNotEmpty) {
+    return <_ProcedureWorkbenchRow>[
+      for (final RadiologyRequestedTest test in order.requestedTests)
+        _ProcedureWorkbenchRow(
+          id: order.effectiveDisplayId,
+          name:
+              (test.testDisplayName ?? order.testDisplayName ?? order.effectiveDisplayId)
+                  .trim(),
+          modality: test.modality ?? order.modality,
+          bodyRegion: test.bodyRegion ?? order.bodyRegion,
+          laterality: test.laterality ?? order.laterality,
         ),
     ];
-
-    return AppCollapsibleSection(
-      title: l10n.radiologyOrderMetadataTitle,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool wide = constraints.maxWidth >= 720;
-          if (!wide) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: lines,
-            );
-          }
-
-          final int columnCount = lines.length <= 3 ? lines.length : 2;
-          final int rowCount = (lines.length / columnCount).ceil();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              for (int row = 0; row < rowCount; row++) ...<Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    for (
-                      int column = 0;
-                      column < columnCount;
-                      column++
-                    ) ...<Widget>[
-                      if (row * columnCount + column < lines.length)
-                        Expanded(child: lines[row * columnCount + column]),
-                    ],
-                  ],
-                ),
-                if (row < rowCount - 1)
-                  SizedBox(height: Theme.of(context).spacing.xs),
-              ],
-            ],
-          );
-        },
-      ),
-    );
   }
-}
-
-class _RequestSection extends ConsumerWidget {
-  const _RequestSection({required this.order, required this.canEdit});
-
-  final RadiologyOrder order;
-  final bool canEdit;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-
-    final ThemeData theme = Theme.of(context);
-    final List<_DetailLine> lines = <_DetailLine>[
-      _DetailLine(
-        label: l10n.radiologyBodyRegionLabel,
-        value: order.bodyRegion,
-      ),
-      _DetailLine(
-        label: l10n.radiologyLateralityLabel,
-        value: order.laterality,
-      ),
-      _DetailLine(
-        label: l10n.radiologyAssigneeLabel,
-        value: order.assignedUserDisplayName ?? order.assignedUserId,
-      ),
-      _DetailLine(
-        label: l10n.radiologyScheduledAtLabel,
-        value: order.scheduledAt == null
-            ? null
-            : AppFormatters.mediumDate(
-                order.scheduledAt!,
-                Localizations.localeOf(context),
-              ),
-      ),
-      _DetailLine(label: l10n.radiologyRoomLabel, value: order.room),
-      _DetailLine(
-        label: l10n.radiologyEquipmentLabel,
-        value: order.equipmentDisplayName ?? order.equipmentRegistryId,
-      ),
-      _DetailLine(
-        label: l10n.radiologyClinicalNotesLabel,
-        value: order.clinicalNote,
-        maxLines: 6,
-      ),
-    ];
-
-    return AppCollapsibleSection(
-      title: l10n.radiologyRequestDetailsTitle,
-      actions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.edit_outlined,
-          label: l10n.radiologyEditRequestDetailsAction,
-          semanticLabel: l10n.radiologyEditRequestDetailsAction,
-          tooltip: l10n.radiologyEditRequestDetailsAction,
-          onPressed: canEdit
-              ? () => _showEditRequestDetailsDialog(context, ref, order)
-              : null,
-        ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          for (int index = 0; index < lines.length; index += 1) ...<Widget>[
-            if (index > 0) SizedBox(height: theme.spacing.sm),
-            lines[index],
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-Future<void> _showEditRequestDetailsDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RadiologyOrder order,
-) async {
-  final List<ClinicalActionCatalogOption> catalog = _radiologyCatalogOptions(
-    _watchState(ref),
-  );
-  final bool? saved = await showAppDialog<bool>(
-    context: context,
-    builder: (_) => _RequestDetailsEditDialog(
-      order: order,
-      catalog: catalog,
-      onSubmit: (Map<String, Object?> payload) => ref
-          .read(radiologyWorkspaceControllerProvider.notifier)
-          .updateOrderRequestDetails(payload),
+  return <_ProcedureWorkbenchRow>[
+    _ProcedureWorkbenchRow(
+      id: order.effectiveDisplayId,
+      name: (order.testDisplayName ?? order.effectiveDisplayId).trim(),
+      modality: order.modality,
+      bodyRegion: order.bodyRegion,
+      laterality: order.laterality,
     ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
+  ];
 }
 
-class _RequestDetailsEditDialog extends StatefulWidget {
-  const _RequestDetailsEditDialog({
-    required this.order,
-    required this.catalog,
-    required this.onSubmit,
-  });
-
-  final RadiologyOrder order;
-  final List<ClinicalActionCatalogOption> catalog;
-  final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
-
-  @override
-  State<_RequestDetailsEditDialog> createState() =>
-      _RequestDetailsEditDialogState();
-}
-
-class _RequestDetailsEditDialogState extends State<_RequestDetailsEditDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _notesController;
-  String? _priority;
-  String? _bodyRegion;
-  String? _laterality;
-  bool _isSubmitting = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _priority = _trimmedOrNull(widget.order.priority);
-    _bodyRegion = _trimmedOrNull(widget.order.bodyRegion);
-    _laterality = _trimmedOrNull(widget.order.laterality);
-    _notesController = TextEditingController(
-      text: widget.order.clinicalNote ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-
-    final AppFailure? failure = await widget.onSubmit(<String, Object?>{
-      'clinical_note': _trimmedOrNull(_notesController.text),
-      'request_details': <String, Object?>{
-        'priority': _priority,
-        'body_region': _bodyRegion,
-        'laterality': _laterality,
-      },
-    });
-
-    if (!mounted) {
-      return;
-    }
-
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(l10n.radiologyEditRequestDetailsDialogTitle),
-      icon: const Icon(Icons.edit_outlined),
-      scrollable: true,
-      maxWidth: 560,
-      closeEnabled: !_isSubmitting,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSubmitting,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _priority,
-            labelText: l10n.radiologyPriorityLabel,
-            helperText: _priority == 'STAT'
-                ? l10n.radiologyPriorityStatHint
-                : null,
-            options: _radiologyPriorityOptions(l10n),
-            onChanged: (String? value) => setState(() => _priority = value),
-          ),
-          AppSelectField<String>(
-            value: _bodyRegion,
-            labelText: l10n.radiologyBodyRegionLabel,
-            hintText: l10n.clinicalRadiologyBodyRegionPickerHint,
-            options: clinicalRadiologyBodyRegionOptions(
-              widget.catalog,
-              modality: widget.order.modality,
-              laterality: _laterality,
-              priority: _priority,
-            ),
-            onChanged: (String? value) => setState(() => _bodyRegion = value),
-          ),
-          AppSelectField<String>(
-            value: _laterality,
-            labelText: l10n.radiologyLateralityLabel,
-            options: _radiologyLateralityOptions(l10n),
-            onChanged: (String? value) => setState(() => _laterality = value),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyClinicalNotesLabel,
-            maxLines: 5,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.radiologySaveRequestDetailsAction,
-          leadingIcon: Icons.save_outlined,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      ],
-    );
-  }
-}
-
-class _ReportingSection extends ConsumerStatefulWidget {
-  const _ReportingSection({
-    required this.state,
+class _ProcedureWorkbenchSection extends StatelessWidget {
+  const _ProcedureWorkbenchSection({
     required this.workflow,
-    required this.canWork,
-    required this.imagingView,
-  });
-
-  final RadiologyWorkspaceState state;
-  final RadiologyWorkflow workflow;
-  final bool canWork;
-  final bool imagingView;
-
-  @override
-  ConsumerState<_ReportingSection> createState() => _ReportingSectionState();
-}
-
-class _ReportingSectionState extends ConsumerState<_ReportingSection> {
-  late final TextEditingController _inlineReportController;
-  bool _isInlineSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _inlineReportController = TextEditingController(
-      text: widget.workflow.order.latestDraftResult?.reportText ?? '',
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _ReportingSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final String? nextText =
-        widget.workflow.order.latestDraftResult?.reportText;
-    if (nextText != null &&
-        nextText != _inlineReportController.text &&
-        !_inlineReportController.selection.isValid) {
-      _inlineReportController.text = nextText;
-    } else if (nextText != null &&
-        nextText != _inlineReportController.text &&
-        !_inlineReportController.text.contains(nextText)) {
-      _inlineReportController.text = nextText;
-    }
-  }
-
-  @override
-  void dispose() {
-    _inlineReportController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveInlineDraft() async {
-    final RadiologyResult? draft = widget.workflow.order.latestDraftResult;
-    if (draft == null) {
-      return;
-    }
-    setState(() => _isInlineSaving = true);
-    final AppFailure? failure = await ref
-        .read(radiologyWorkspaceControllerProvider.notifier)
-        .draftResult(<String, Object?>{
-          'report_text': _inlineReportController.text.trim(),
-        });
-    if (mounted) {
-      setState(() => _isInlineSaving = false);
-      _showMutationResult(context, failure);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final RadiologyResult? latest = widget.workflow.order.latestResult;
-    final RadiologyResult? draft = widget.workflow.order.latestDraftResult;
-    final RadiologyResult? released =
-        widget.workflow.order.latestReleasedResult;
-    final bool canDraft =
-        widget.canWork && widget.workflow.nextActions.canCreateDraftResult;
-    final bool canFinalize =
-        widget.canWork &&
-        widget.workflow.nextActions.canFinalizeResult &&
-        draft != null;
-    final bool canRequest =
-        widget.canWork &&
-        widget.workflow.nextActions.canRequestFinalization &&
-        draft != null;
-    final bool canAttest =
-        widget.canWork &&
-        widget.workflow.nextActions.canAttestFinalization &&
-        draft != null;
-    final bool canAddendum =
-        widget.canWork &&
-        widget.workflow.nextActions.canAddAddendum &&
-        released != null;
-    final bool showInlineEditor =
-        !widget.imagingView && canDraft && draft != null;
-    final bool imagingComplete = widget.workflow.studies.isNotEmpty;
-    final bool showEmptyDraftCta =
-        !widget.imagingView && canDraft && imagingComplete && latest == null;
-    final bool showPanelDraftAction =
-        !widget.imagingView &&
-        canDraft &&
-        !showEmptyDraftCta &&
-        !showInlineEditor;
-
-    return AppCollapsibleSection(
-      title: l10n.radiologyReportSectionTitle,
-      description: widget.imagingView ? null : l10n.radiologyReportSectionBody,
-      actions: <Widget>[
-        AppAccessActionGate(
-          requirement: radiologyPrintReportRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.tertiary(
-              label: l10n.radiologyPrintReportAction,
-              leadingIcon: Icons.print_outlined,
-              onPressed: widget.state.isMutating
-                  ? null
-                  : () => _showRadiologyPrintDialog(context, widget.workflow),
-            );
-          },
-        ),
-        if (showPanelDraftAction)
-          AppButton.secondary(
-            label: l10n.radiologyDraftReportAction,
-            leadingIcon: Icons.edit_note_outlined,
-            onPressed: widget.state.isMutating
-                ? null
-                : () => _showReportDialog(context, ref, widget.workflow.order),
-          ),
-        if (!widget.imagingView && canFinalize)
-          AppButton.primary(
-            label: l10n.radiologyReleaseReportAction,
-            leadingIcon: Icons.verified_outlined,
-            onPressed: widget.state.isMutating
-                ? null
-                : () => _showFinalizeDialog(context, ref, draft),
-          ),
-        if (!widget.imagingView && canRequest)
-          AppButton.secondary(
-            label: l10n.radiologyRequestFinalizationAction,
-            leadingIcon: Icons.how_to_reg_outlined,
-            onPressed: widget.state.isMutating
-                ? null
-                : () => _showFinalizationNoteDialog(
-                    context,
-                    ref,
-                    draft,
-                    l10n.radiologyRequestFinalizationDialogTitle,
-                    l10n.radiologyRequestFinalizationAction,
-                    ref
-                        .read(radiologyWorkspaceControllerProvider.notifier)
-                        .requestFinalization,
-                  ),
-          ),
-        if (!widget.imagingView && canAttest)
-          AppButton.secondary(
-            label: l10n.radiologyAttestFinalizationAction,
-            leadingIcon: Icons.assignment_turned_in_outlined,
-            onPressed: widget.state.isMutating
-                ? null
-                : () => _showFinalizationNoteDialog(
-                    context,
-                    ref,
-                    draft,
-                    l10n.radiologyAttestFinalizationDialogTitle,
-                    l10n.radiologyAttestFinalizationAction,
-                    ref
-                        .read(radiologyWorkspaceControllerProvider.notifier)
-                        .attestFinalization,
-                  ),
-          ),
-        if (!widget.imagingView && canAddendum)
-          AppButton.tertiary(
-            label: l10n.radiologyAddendumAction,
-            leadingIcon: Icons.post_add_outlined,
-            onPressed: widget.state.isMutating
-                ? null
-                : () => _showAddendumDialog(context, ref, released),
-          ),
-      ],
-      child: latest == null
-          ? AppWorkspaceStatePanel.empty(
-              title: widget.imagingView
-                  ? l10n.radiologyNoReportTitle
-                  : imagingComplete
-                  ? l10n.radiologyNoReportReadyTitle
-                  : l10n.radiologyNoReportTitle,
-              body: widget.imagingView
-                  ? (imagingComplete
-                        ? l10n.radiologyNoReportImagingFloorBody
-                        : l10n.radiologyNoReportBody)
-                  : (imagingComplete
-                        ? l10n.radiologyNoReportReadyBody
-                        : l10n.radiologyNoReportBody),
-              icon: Icons.description_outlined,
-              minHeight: widget.imagingView ? 120 : 180,
-              action: showEmptyDraftCta
-                  ? AppButton.primary(
-                      label: l10n.radiologyDraftReportAction,
-                      leadingIcon: Icons.edit_note_outlined,
-                      onPressed: widget.state.isMutating
-                          ? null
-                          : () => _showReportDialog(
-                              context,
-                              ref,
-                              widget.workflow.order,
-                            ),
-                    )
-                  : null,
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.sm,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: _resultStatus(context, latest),
-                    ),
-                    if (latest.finalization.pendingAttestation)
-                      AppWorkspaceStatusBadge(
-                        status: AppWorkspaceStatus(
-                          label: l10n.radiologyPendingAttestationLabel,
-                          tone: AppWorkspaceStatusTone.warning,
-                          icon: Icons.how_to_reg_outlined,
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: theme.spacing.md),
-                _DetailLine(
-                  label: l10n.radiologyReportedAtLabel,
-                  value: _formatDateTimeOrNull(context, latest.reportedAt),
-                ),
-                SizedBox(height: theme.spacing.md),
-                if (showInlineEditor) ...<Widget>[
-                  Text(
-                    l10n.radiologyReportInlineEditHelper,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  AppTextField(
-                    controller: _inlineReportController,
-                    labelText: l10n.radiologyReportTextLabel,
-                    minLines: 6,
-                    maxLines: 14,
-                    enabled: !widget.state.isMutating && !_isInlineSaving,
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: AppButton.secondary(
-                      label: l10n.radiologyDraftReportAction,
-                      leadingIcon: Icons.save_outlined,
-                      isLoading: _isInlineSaving,
-                      onPressed: widget.state.isMutating
-                          ? null
-                          : _saveInlineDraft,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                  AppClinicalResultsPreview(
-                    title: l10n.radiologyReportLivePreviewTitle,
-                    status: AppClinicalResultStatus.preliminary,
-                    isEmpty: _inlineReportController.text.trim().isEmpty,
-                    emptyBody: l10n.radiologyEmptyReportBody,
-                    child: AppClinicalResultEntryView(
-                      entry: AppClinicalResultPreviewEntry(
-                        id: 'inline-draft',
-                        module: AppClinicalResultModule.radiology,
-                        title: l10n.radiologyReportLivePreviewTitle,
-                        status: AppClinicalResultStatus.preliminary,
-                        radiology: AppClinicalRadiologyReportContent(
-                          reportText: _inlineReportController.text.trim(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                ],
-                AppClinicalResultsPreview(
-                  title: l10n.radiologyGeneratedReportPreviewTitle,
-                  status: _clinicalResultStatusForRadiology(latest),
-                  isEmpty: (latest.reportText ?? '').trim().isEmpty,
-                  emptyBody: l10n.radiologyEmptyReportBody,
-                  printEligible: appClinicalResultsPrintEligible(
-                    authorized: true,
-                    hasPrintableReleasedContent:
-                        latest.isReleased &&
-                        (latest.reportText ?? '').trim().isNotEmpty,
-                  ),
-                  child: AppClinicalResultEntryView(
-                    entry: _radiologyPreviewEntry(
-                      result: latest,
-                      title: l10n.radiologyGeneratedReportPreviewTitle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-class _StudiesSection extends ConsumerWidget {
-  const _StudiesSection({
     required this.state,
-    required this.workflow,
     required this.canWork,
-    required this.imagingView,
-    this.onPerformStudy,
+    this.onMarkDone,
+    this.onWriteReport,
+    this.onAssignTypist,
   });
 
-  final RadiologyWorkspaceState state;
   final RadiologyWorkflow workflow;
+  final RadiologyWorkspaceState state;
   final bool canWork;
-  final bool imagingView;
-  final VoidCallback? onPerformStudy;
+  final VoidCallback? onMarkDone;
+  final VoidCallback? onWriteReport;
+  final VoidCallback? onAssignTypist;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<ImagingStudy> studies = workflow.studies;
-    final RadiologyResult? latestReport = workflow.order.latestResult;
-    final bool canPerform =
-        canWork && !state.isMutating && workflow.nextActions.canCreateStudy;
+    final RadiologyOrder order = workflow.order;
+    final List<_ProcedureWorkbenchRow> rows = _procedureWorkbenchRows(order);
+    final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
+    final RadiologyNextActions next = workflow.nextActions;
+    final bool canMarkDone =
+        canWork &&
+        onMarkDone != null &&
+        next.canCreateStudy &&
+        (status == _ProcedureWorkbenchStatus.pending ||
+            status == _ProcedureWorkbenchStatus.inProcess);
+    final bool canWriteReport =
+        onWriteReport != null &&
+        status != _ProcedureWorkbenchStatus.cancelled &&
+        status != _ProcedureWorkbenchStatus.pending &&
+        (status == _ProcedureWorkbenchStatus.done ||
+            status == _ProcedureWorkbenchStatus.reported ||
+            (status == _ProcedureWorkbenchStatus.inProcess &&
+                order.imagingStudies.isNotEmpty) ||
+            next.canCreateDraftResult ||
+            order.hasDraftResult ||
+            order.hasFinalResult);
+    final bool canAssignTypist =
+        canWork &&
+        onAssignTypist != null &&
+        next.canAssign &&
+        status == _ProcedureWorkbenchStatus.done;
 
     return AppCollapsibleSection(
-      title: l10n.radiologyStudiesAssetsTitle,
-      actions: canPerform && studies.isNotEmpty
-          ? <Widget>[
-              AppButton.secondary(
-                label: l10n.radiologyPerformStudyAction,
-                leadingIcon: Icons.add_a_photo_outlined,
-                onPressed: onPerformStudy,
-              ),
-            ]
-          : const <Widget>[],
-      child: studies.isEmpty
-          ? AppWorkspaceStatePanel.empty(
-              title: l10n.radiologyNoStudiesTitle,
-              body: l10n.radiologyNoStudiesBody,
-              icon: Icons.image_search_outlined,
-              minHeight: 160,
-              action: canPerform
-                  ? AppButton.primary(
-                      label: l10n.radiologyStudiesPerformStudyCta,
-                      leadingIcon: Icons.add_a_photo_outlined,
-                      onPressed: onPerformStudy,
-                    )
-                  : null,
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (imagingView && latestReport != null) ...<Widget>[
-                  AppCollapsibleSection(
-                    title: l10n.radiologyStudiesReportPreviewTitle,
-                    titleIcon: Icons.description_outlined,
-                    initiallyExpanded: false,
-                    child: AppClinicalResultsPreview(
-                      title: l10n.radiologyGeneratedReportPreviewTitle,
-                      status: _clinicalResultStatusForRadiology(latestReport),
-                      isEmpty: (latestReport.reportText ?? '').trim().isEmpty,
-                      emptyBody: l10n.radiologyEmptyReportBody,
-                      printEligible: appClinicalResultsPrintEligible(
-                        authorized: true,
-                        hasPrintableReleasedContent:
-                            latestReport.isReleased &&
-                            (latestReport.reportText ?? '').trim().isNotEmpty,
-                      ),
-                      child: AppClinicalResultEntryView(
-                        entry: _radiologyPreviewEntry(
-                          result: latestReport,
-                          title: l10n.radiologyGeneratedReportPreviewTitle,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                ],
-                for (final ImagingStudy study in studies) ...<Widget>[
-                  _StudyBlock(
-                    study: study,
-                    canWork: canWork && !state.isMutating,
-                    canSync:
-                        canWork &&
-                        !state.isMutating &&
-                        workflow.nextActions.canPacsSync &&
-                        study.hasAssets,
-                    onSync: () => _showPacsSyncDialog(context, ref, study),
-                    onUpload: (List<StudyAssetUploadRequest> uploads) => ref
-                        .read(radiologyWorkspaceControllerProvider.notifier)
-                        .uploadStudyAssets(study: study, uploads: uploads),
-                    onRemoveAsset: (ImagingAsset asset) => ref
-                        .read(radiologyWorkspaceControllerProvider.notifier)
-                        .deleteStudyAsset(asset),
-                  ),
-                  if (study != studies.last) SizedBox(height: theme.spacing.md),
-                ],
-              ],
-            ),
-    );
-  }
-}
-
-class _StudyBlock extends ConsumerStatefulWidget {
-  const _StudyBlock({
-    required this.study,
-    required this.canWork,
-    required this.canSync,
-    required this.onSync,
-    required this.onUpload,
-    required this.onRemoveAsset,
-  });
-
-  final ImagingStudy study;
-  final bool canWork;
-  final bool canSync;
-  final VoidCallback onSync;
-  final Future<AppFailure?> Function(List<StudyAssetUploadRequest> uploads)
-  onUpload;
-  final Future<AppFailure?> Function(ImagingAsset asset) onRemoveAsset;
-
-  @override
-  ConsumerState<_StudyBlock> createState() => _StudyBlockState();
-}
-
-class _StudyBlockState extends ConsumerState<_StudyBlock> {
-  final List<_PendingStudyAsset> _pendingAssets = <_PendingStudyAsset>[];
-  bool _isUploading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final int assetCount = widget.study.assets.isNotEmpty
-        ? widget.study.assets.length
-        : widget.study.assetCount;
-    final bool pacsSynced = widget.study.hasPacsLinks;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: AppListItemText(
-                    title: widget.study.effectiveDisplayId,
-                    subtitle: _joinDisplay(<String?>[
-                      _modalityLabelOrNull(l10n, widget.study.modality),
-                      _formatDateTimeOrNull(context, widget.study.performedAt),
-                    ]),
-                    titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: l10n.radiologyStudyAssetCountLabel(assetCount),
-                        tone: assetCount > 0
-                            ? AppWorkspaceStatusTone.success
-                            : AppWorkspaceStatusTone.neutral,
-                        icon: Icons.image_outlined,
-                      ),
-                    ),
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: pacsSynced
-                            ? l10n.radiologyPacsSyncStatusSynced
-                            : l10n.radiologyPacsSyncStatusPending,
-                        tone: pacsSynced
-                            ? AppWorkspaceStatusTone.success
-                            : AppWorkspaceStatusTone.warning,
-                        icon: Icons.cloud_sync_outlined,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: <Widget>[
-                AppButton.secondary(
-                  label: l10n.radiologyStudiesUploadImagesCta,
-                  leadingIcon: Icons.upload_outlined,
-                  enabled: widget.canWork && !_isUploading,
-                  onPressed: widget.canWork && !_isUploading
-                      ? _pickImages
-                      : null,
-                ),
-                AppButton.secondary(
-                  label: l10n.radiologyStudiesCapturePhotoCta,
-                  leadingIcon: Icons.photo_camera_outlined,
-                  enabled: widget.canWork && !_isUploading,
-                  onPressed: widget.canWork && !_isUploading
-                      ? _pickImages
-                      : null,
-                ),
-                AppButton.secondary(
-                  label: l10n.radiologySyncPacsAction,
-                  leadingIcon: Icons.cloud_sync_outlined,
-                  enabled: widget.canSync && !_isUploading,
-                  onPressed: widget.canSync ? widget.onSync : null,
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            Text(l10n.radiologyAssetsLabel, style: theme.textTheme.labelLarge),
-            SizedBox(height: theme.spacing.xs),
-            if (widget.study.assets.isEmpty)
-              Text(
-                l10n.radiologyNoAssetsLabel,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              for (final ImagingAsset asset in widget.study.assets)
-                _StudyAssetTile(
-                  asset: asset,
-                  canEdit: widget.canWork && !_isUploading,
-                  onRemove: () async {
-                    final AppFailure? failure = await widget.onRemoveAsset(
-                      asset,
-                    );
-                    if (context.mounted && failure != null) {
-                      _showMutationResult(context, failure);
-                    }
-                  },
-                ),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.radiologyPacsLinksLabel,
-              style: theme.textTheme.labelLarge,
-            ),
-            SizedBox(height: theme.spacing.xs),
-            if (widget.study.pacsLinks.isEmpty)
-              Text(
-                l10n.radiologyNoPacsLinksLabel,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              for (final PacsLink link in widget.study.pacsLinks)
-                SelectableText(
-                  link.url ?? link.displayId ?? l10n.profileUnknownValue,
-                  style: theme.textTheme.bodyMedium,
-                ),
-            SizedBox(height: theme.spacing.md),
-            if (_pendingAssets.isNotEmpty) ...<Widget>[
-              for (final _PendingStudyAsset pending in _pendingAssets)
-                _PendingStudyAssetTile(
-                  pending: pending,
-                  enabled: widget.canWork && !_isUploading,
-                  onCaptionChanged: (String value) {
-                    setState(() => pending.caption = value);
-                  },
-                  onRemove: () {
-                    setState(() => _pendingAssets.remove(pending));
-                  },
-                ),
-              SizedBox(height: theme.spacing.sm),
-            ],
-            AppFileUploadPanel(
-              title: l10n.radiologyAttachImagesTitle,
-              emptyDescription: l10n.radiologyAttachImagesBody,
-              chooseLabel: l10n.radiologyChooseImagesAction,
-              clearLabel: l10n.radiologyClearSelectedImagesAction,
-              uploadLabel: l10n.radiologyUploadImagesAction,
-              fileNames: _pendingAssets
-                  .map((_PendingStudyAsset asset) => asset.file.name)
-                  .toList(growable: false),
-              enabled: widget.canWork && !_isUploading,
-              isLoading: _isUploading,
-              onChoose: _pickImages,
-              onClear: () => setState(() => _pendingAssets.clear()),
-              onUpload: _pendingAssets.isEmpty ? null : _uploadPendingAssets,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImages() async {
-    try {
-      final List<XFile> files = await openFiles(
-        acceptedTypeGroups: <XTypeGroup>[
-          XTypeGroup(
-            label: context.l10n.radiologyAttachImagesTitle,
-            extensions: const <String>['jpg', 'jpeg', 'png', 'webp'],
-            mimeTypes: const <String>['image/jpeg', 'image/png', 'image/webp'],
-          ),
-        ],
-      );
-      if (!mounted || files.isEmpty) {
-        return;
-      }
-      setState(() {
-        for (final XFile file in files.take(8)) {
-          _pendingAssets.add(_PendingStudyAsset(file: file));
-        }
-      });
-    } catch (_) {}
-  }
-
-  Future<void> _uploadPendingAssets() async {
-    if (_pendingAssets.isEmpty) {
-      return;
-    }
-
-    setState(() => _isUploading = true);
-    final List<StudyAssetUploadRequest> uploads = <StudyAssetUploadRequest>[];
-    for (final _PendingStudyAsset pending in _pendingAssets) {
-      final int sizeBytes = await pending.file.length();
-      uploads.add(
-        StudyAssetUploadRequest(
-          fileName: pending.file.name,
-          contentType: pending.file.mimeType,
-          sizeBytes: sizeBytes,
-          caption: pending.caption,
-        ),
-      );
-    }
-
-    final AppFailure? failure = await widget.onUpload(uploads);
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isUploading = false;
-      if (failure == null) {
-        _pendingAssets.clear();
-      }
-    });
-
-    if (failure != null) {
-      _showMutationResult(context, failure);
-    }
-  }
-}
-
-class _PendingStudyAsset {
-  _PendingStudyAsset({required this.file});
-
-  final XFile file;
-  String caption = '';
-}
-
-class _PendingStudyAssetTile extends StatelessWidget {
-  const _PendingStudyAssetTile({
-    required this.pending,
-    required this.enabled,
-    required this.onCaptionChanged,
-    required this.onRemove,
-  });
-
-  final _PendingStudyAsset pending;
-  final bool enabled;
-  final ValueChanged<String> onCaptionChanged;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _StudyImagePreview(file: pending.file, size: 72),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: AppTextField(
-              initialValue: pending.caption,
-              labelText: l10n.radiologyAssetCaptionLabel,
-              hintText: pending.file.name,
-              enabled: enabled,
-              onChanged: onCaptionChanged,
-            ),
-          ),
-          AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.delete_outline,
-            label: l10n.radiologyRemoveAssetAction,
-            semanticLabel: l10n.radiologyRemoveAssetAction,
-            tooltip: l10n.radiologyRemoveAssetAction,
-            onPressed: enabled ? onRemove : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StudyAssetTile extends StatelessWidget {
-  const _StudyAssetTile({
-    required this.asset,
-    required this.canEdit,
-    required this.onRemove,
-  });
-
-  final ImagingAsset asset;
-  final bool canEdit;
-  final Future<void> Function() onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _StudyAssetPlaceholder(
-            label:
-                asset.fileName ?? asset.displayId ?? l10n.profileUnknownValue,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  asset.fileName ?? asset.displayId ?? l10n.profileUnknownValue,
-                  style: theme.textTheme.titleSmall,
-                ),
-                if ((asset.contentType ?? '').isNotEmpty)
-                  Text(
-                    asset.contentType!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (canEdit)
-            AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.delete_outline,
-              label: l10n.radiologyRemoveAssetAction,
-
-              semanticLabel: l10n.radiologyRemoveAssetAction,
-              tooltip: l10n.radiologyRemoveAssetAction,
-              onPressed: onRemove,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StudyImagePreview extends StatefulWidget {
-  const _StudyImagePreview({required this.file, this.size = 96});
-
-  final XFile file;
-  final double size;
-
-  @override
-  State<_StudyImagePreview> createState() => _StudyImagePreviewState();
-}
-
-class _StudyImagePreviewState extends State<_StudyImagePreview> {
-  late Future<Uint8List> _bytesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _bytesFuture = widget.file.readAsBytes();
-  }
-
-  @override
-  void didUpdateWidget(_StudyImagePreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.file != widget.file) {
-      _bytesFuture = widget.file.readAsBytes();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Uint8List>(
-      future: _bytesFuture,
-      builder: (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
-        if (!snapshot.hasData) {
-          return SizedBox.square(
-            dimension: widget.size,
-            child: const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        }
-        return ClipRRect(
-          child: Image.memory(
-            snapshot.data!,
-            width: widget.size,
-            height: widget.size,
-            fit: BoxFit.cover,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StudyAssetPlaceholder extends StatelessWidget {
-  const _StudyAssetPlaceholder({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return SizedBox.square(
-      dimension: 72,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Icon(
-          Icons.image_outlined,
-          color: theme.colorScheme.onSurfaceVariant,
-          semanticLabel: label,
-        ),
-      ),
-    );
-  }
-}
-
-class _DoctorReviewPanel extends StatelessWidget {
-  const _DoctorReviewPanel({
-    required this.order,
-    required this.onOpenReport,
-  });
-
-  final RadiologyOrder order;
-  final VoidCallback onOpenReport;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final bool released = order.hasFinalResult;
-
-    return AppCollapsibleSection(
-      title: l10n.radiologyDoctorReviewTitle,
-      description: released
-          ? l10n.radiologyDoctorReviewReleasedBody
-          : l10n.radiologyDoctorReviewPendingBody,
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.radiologyDoctorReviewOpenReportAction,
-          leadingIcon: Icons.description_outlined,
-          onPressed: onOpenReport,
-        ),
-      ],
+      title: l10n.radiologyProceduresSectionTitle,
+      titleIcon: Icons.biotech_outlined,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppWorkspaceStatusBadge(
-            status: AppWorkspaceStatus(
-              label: released
-                  ? l10n.radiologyDoctorReviewReadyLabel
-                  : l10n.radiologyDoctorReviewPendingLabel,
-              tone: released
-                  ? AppWorkspaceStatusTone.success
-                  : AppWorkspaceStatusTone.warning,
-              icon: released
-                  ? Icons.notification_important_outlined
-                  : Icons.pending_actions_outlined,
-            ),
-          ),
-          if (order.results.isNotEmpty) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.sm),
-            Text(
-              l10n.radiologyReportVersionsTitle,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            SizedBox(height: Theme.of(context).spacing.xs),
-            for (final RadiologyResult result
-                in order.results.toList()..sort(
-                  (RadiologyResult a, RadiologyResult b) =>
-                      b.reportVersion.compareTo(a.reportVersion),
-                ))
-              Padding(
-                padding: EdgeInsets.only(bottom: Theme.of(context).spacing.xs),
-                child: AppListItemText(
-                  title: l10n.radiologyReportVersionLabel(result.reportVersion),
-                  subtitle: <String?>[
-                    result.normalizedStatus,
-                    result.effectiveDisplayId,
-                    if (result.parentResultId != null) result.parentResultId,
-                  ].whereType<String>().join(' · '),
+          for (final _ProcedureWorkbenchRow row in rows) ...<Widget>[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(theme.spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: theme.spacing.md,
+                      runSpacing: theme.spacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          row.id,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          row.name,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if ((row.modality ?? '').trim().isNotEmpty)
+                          AppWorkspaceStatusBadge(
+                            status: AppWorkspaceStatus(
+                              label:
+                                  _modalityLabelOrNull(l10n, row.modality) ??
+                                  row.modality!,
+                              tone: AppWorkspaceStatusTone.neutral,
+                              icon: Icons.camera_alt_outlined,
+                            ),
+                          ),
+                        if ((row.bodyRegion ?? '').trim().isNotEmpty)
+                          Text(
+                            row.bodyRegion!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if ((row.laterality ?? '').trim().isNotEmpty)
+                          Text(
+                            row.laterality!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        AppWorkspaceStatusBadge(
+                          status: AppWorkspaceStatus(
+                            label: _procedureWorkbenchStatusLabel(l10n, status),
+                            tone: switch (status) {
+                              _ProcedureWorkbenchStatus.pending =>
+                                AppWorkspaceStatusTone.warning,
+                              _ProcedureWorkbenchStatus.inProcess =>
+                                AppWorkspaceStatusTone.info,
+                              _ProcedureWorkbenchStatus.done =>
+                                AppWorkspaceStatusTone.success,
+                              _ProcedureWorkbenchStatus.reported =>
+                                AppWorkspaceStatusTone.success,
+                              _ProcedureWorkbenchStatus.cancelled =>
+                                AppWorkspaceStatusTone.error,
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: theme.spacing.sm),
+                    Wrap(
+                      spacing: theme.spacing.xs,
+                      runSpacing: theme.spacing.xs,
+                      children: <Widget>[
+                        if (canMarkDone)
+                          AppButton.secondary(
+                            dense: true,
+                            label: l10n.radiologyMarkProcedureDoneAction,
+                            leadingIcon: Icons.check_circle_outline,
+                            isLoading: state.isMutating,
+                            onPressed: state.isMutating ? null : onMarkDone,
+                          ),
+                        if (canWriteReport)
+                          AppButton.primary(
+                            dense: true,
+                            label: l10n.radiologyWriteReportAction,
+                            leadingIcon: Icons.edit_note_outlined,
+                            onPressed: onWriteReport,
+                          ),
+                        if (canAssignTypist)
+                          AppButton.tertiary(
+                            dense: true,
+                            label: l10n.radiologyAssignTypistAction,
+                            leadingIcon: Icons.person_outline,
+                            onPressed: onAssignTypist,
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+            ),
+            if (row != rows.last) SizedBox(height: theme.spacing.sm),
           ],
         ],
       ),
@@ -2519,32 +1292,7 @@ class _DoctorReviewPanel extends StatelessWidget {
   }
 }
 
-class _TimelineSection extends StatelessWidget {
-  const _TimelineSection({required this.workflow});
 
-  final RadiologyWorkflow workflow;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppCollapsibleSection(
-      title: l10n.radiologyTimelineTitle,
-      child: AppTimeline(
-        emptyTitle: l10n.radiologyNoTimelineTitle,
-        emptyBody: l10n.radiologyNoTimelineBody,
-        items: <AppTimelineItem>[
-          for (final RadiologyTimelineItem item in workflow.timeline)
-            AppTimelineItem(
-              title: item.label,
-              occurredAt: item.occurredAt,
-              icon: Icons.timeline_outlined,
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 Future<void> _showCreateOrderDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, Object?>? payload =
@@ -3210,15 +1958,40 @@ class _StudyFormState extends State<_StudyForm> {
 Future<void> _showReportDialog(
   BuildContext context,
   WidgetRef ref,
-  RadiologyOrder order,
+  RadiologyWorkflow workflow,
 ) async {
   final bool? saved = await showAppDialog<bool>(
     context: context,
     builder: (_) => _ReportEditDialog(
-      order: order,
+      workflow: workflow,
       onSubmit: (Map<String, Object?> payload) => ref
           .read(radiologyWorkspaceControllerProvider.notifier)
           .draftResult(payload),
+      onFinalize: workflow.order.latestDraftResult == null
+          ? null
+          : (Map<String, Object?> payload) {
+              final RadiologyResult draft = workflow.order.latestDraftResult!;
+              return ref
+                  .read(radiologyWorkspaceControllerProvider.notifier)
+                  .finalizeResult(draft, payload);
+            },
+      onSyncPacs: workflow.order.latestStudy == null
+          ? null
+          : (Map<String, Object?> payload) {
+              final ImagingStudy study = workflow.order.latestStudy!;
+              return ref
+                  .read(radiologyWorkspaceControllerProvider.notifier)
+                  .syncStudyToPacs(study, payload);
+            },
+      onUploadLocal: workflow.order.latestStudy == null
+          ? null
+          : (List<StudyAssetUploadRequest> uploads) {
+              final ImagingStudy study = workflow.order.latestStudy!;
+              return ref
+                  .read(radiologyWorkspaceControllerProvider.notifier)
+                  .uploadStudyAssets(study: study, uploads: uploads);
+            },
+      onPrint: () => _showRadiologyPrintDialog(context, workflow),
     ),
   );
   if (saved == true && context.mounted) {
@@ -3227,10 +2000,24 @@ Future<void> _showReportDialog(
 }
 
 class _ReportEditDialog extends StatefulWidget {
-  const _ReportEditDialog({required this.order, required this.onSubmit});
+  const _ReportEditDialog({
+    required this.workflow,
+    required this.onSubmit,
+    this.onFinalize,
+    this.onSyncPacs,
+    this.onUploadLocal,
+    this.onPrint,
+  });
 
-  final RadiologyOrder order;
+  final RadiologyWorkflow workflow;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
+  final Future<AppFailure?> Function(Map<String, Object?> payload)? onFinalize;
+  final Future<AppFailure?> Function(Map<String, Object?> payload)? onSyncPacs;
+  final Future<AppFailure?> Function(List<StudyAssetUploadRequest> uploads)?
+  onUploadLocal;
+  final Future<void> Function()? onPrint;
+
+  RadiologyOrder get order => workflow.order;
 
   @override
   State<_ReportEditDialog> createState() => _ReportEditDialogState();
@@ -3238,11 +2025,15 @@ class _ReportEditDialog extends StatefulWidget {
 
 class _ReportEditDialogState extends State<_ReportEditDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _techniqueController = TextEditingController();
   final TextEditingController _findingsController = TextEditingController();
   final TextEditingController _impressionController = TextEditingController();
+  final TextEditingController _recommendationController =
+      TextEditingController();
   final TextEditingController _reportController = TextEditingController();
   VoidCallback? _handleReportTextChanged;
   bool _isSubmitting = false;
+  bool _isUploading = false;
   AppFailure? _failure;
 
   @override
@@ -3256,8 +2047,10 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       }
     };
     for (final TextEditingController controller in <TextEditingController>[
+      _techniqueController,
       _findingsController,
       _impressionController,
+      _recommendationController,
       _reportController,
     ]) {
       controller.addListener(_handleReportTextChanged!);
@@ -3268,18 +2061,49 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
   void dispose() {
     final VoidCallback? listener = _handleReportTextChanged;
     if (listener != null) {
+      _techniqueController.removeListener(listener);
       _findingsController.removeListener(listener);
       _impressionController.removeListener(listener);
+      _recommendationController.removeListener(listener);
       _reportController.removeListener(listener);
     }
+    _techniqueController.dispose();
     _findingsController.dispose();
     _impressionController.dispose();
+    _recommendationController.dispose();
     _reportController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  String get _composedReportText => _composeRadiologyReportText(
+    technique: _techniqueController.text.trim(),
+    findings: _findingsController.text.trim(),
+    impression: _impressionController.text.trim(),
+    recommendation: _recommendationController.text.trim(),
+    narrative: _reportController.text.trim(),
+  );
+
+  Future<void> _submit({bool finalize = false}) async {
     if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    final String findings = _findingsController.text.trim();
+    final String reportText = _composedReportText.trim();
+    // Accept structured findings or a legacy draft that only stored report_text.
+    if (findings.isEmpty && reportText.isEmpty) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage: context.l10n.radiologyFieldRequiredLabel(
+            context.l10n.radiologyFindingsLabel,
+          ),
+          validationFields: const <String>{'findings'},
+          fieldMessages: <String, String>{
+            'findings': context.l10n.radiologyFieldRequiredLabel(
+              context.l10n.radiologyFindingsLabel,
+            ),
+          },
+        );
+      });
       return;
     }
 
@@ -3288,19 +2112,28 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       _failure = null;
     });
 
-    final String findings = _findingsController.text.trim();
     final String impression = _impressionController.text.trim();
-    final String reportText = _composeRadiologyReportText(
-      findings: findings,
-      impression: impression,
-      narrative: _reportController.text.trim(),
-    );
+    final String resolvedFindings =
+        findings.isNotEmpty ? findings : reportText;
+    final String resolvedReportText =
+        reportText.isNotEmpty ? reportText : resolvedFindings;
 
-    final AppFailure? failure = await widget.onSubmit(<String, Object?>{
-      'findings': findings,
+    AppFailure? failure = await widget.onSubmit(<String, Object?>{
+      'findings': resolvedFindings,
       'impression': impression,
-      'report_text': reportText,
+      'technique': _techniqueController.text.trim(),
+      'recommendation': _recommendationController.text.trim(),
+      'report_text': resolvedReportText,
     });
+
+    if (failure == null &&
+        finalize &&
+        widget.onFinalize != null &&
+        widget.order.latestDraftResult != null) {
+      failure = await widget.onFinalize!(<String, Object?>{
+        'report_text': resolvedReportText,
+      });
+    }
 
     if (!mounted) {
       return;
@@ -3317,57 +2150,217 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     });
   }
 
+  Future<void> _attachLocalImages() async {
+    if (widget.onUploadLocal == null) {
+      _showSnack(context.l10n.radiologyPerformStudyFirstMessage);
+      return;
+    }
+    try {
+      final List<XFile> files = await openFiles(
+        acceptedTypeGroups: <XTypeGroup>[
+          XTypeGroup(
+            label: context.l10n.radiologyAttachImagesTitle,
+            extensions: const <String>['jpg', 'jpeg', 'png', 'webp'],
+            mimeTypes: const <String>['image/jpeg', 'image/png', 'image/webp'],
+          ),
+        ],
+      );
+      if (!mounted || files.isEmpty) {
+        return;
+      }
+      setState(() => _isUploading = true);
+      final List<StudyAssetUploadRequest> uploads = <StudyAssetUploadRequest>[];
+      for (final XFile file in files.take(8)) {
+        final int sizeBytes = await file.length();
+        uploads.add(
+          StudyAssetUploadRequest(
+            fileName: file.name,
+            contentType: file.mimeType,
+            sizeBytes: sizeBytes,
+          ),
+        );
+      }
+      final AppFailure? failure = await widget.onUploadLocal!(uploads);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isUploading = false);
+      if (failure != null) {
+        setState(() => _failure = failure);
+        return;
+      }
+      _insertReference(
+        '${context.l10n.radiologyImageSourceLocalLabel}: ${uploads.map((StudyAssetUploadRequest u) => u.fileName).join(', ')}',
+      );
+      _showSnack(context.l10n.radiologySavedMessage);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  Future<void> _attachRemoteImage() async {
+    final Map<String, String>? result = await showAppDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => const _RemoteImageForm(),
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+    final String url = result['url'] ?? '';
+    final String caption = result['caption'] ?? '';
+    final String label = caption.isEmpty
+        ? '${context.l10n.radiologyImageSourceRemoteLabel}: $url'
+        : '${context.l10n.radiologyImageSourceRemoteLabel}: $caption ($url)';
+    _insertReference(label);
+  }
+
+  Future<void> _attachFromPacs() async {
+    if (widget.onSyncPacs == null) {
+      _showSnack(context.l10n.radiologyPerformStudyFirstMessage);
+      return;
+    }
+    final Map<String, Object?>? payload =
+        await showAppDialog<Map<String, Object?>>(
+          context: context,
+          builder: (_) => const _PacsSyncForm(),
+        );
+    if (payload == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await widget.onSyncPacs!(payload);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isSubmitting = false);
+    if (failure != null) {
+      setState(() => _failure = failure);
+      return;
+    }
+    _insertReference(
+      '${context.l10n.radiologyImageSourcePacsLabel}: ${payload['accession_number'] ?? payload['study_instance_uid'] ?? 'synced'}',
+    );
+    _showSnack(context.l10n.radiologySavedMessage);
+  }
+
+  void _insertExistingStudyImages() {
+    final List<_RadiologyReportReference> references =
+        _radiologyReportReferences(context.l10n, widget.order);
+    if (references.isEmpty) {
+      _showSnack(context.l10n.radiologyNoExistingStudyImagesMessage);
+      return;
+    }
+    for (final _RadiologyReportReference reference in references) {
+      _insertReference(reference.text);
+    }
+  }
+
+  void _showSnack(String message) {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<_RadiologyReportReference> references =
-        _radiologyReportReferences(l10n, widget.order);
+    final ThemeData theme = Theme.of(context);
+    final bool busy = _isSubmitting || _isUploading;
 
     return AppDialog(
       title: Text(l10n.radiologyReportDialogTitle),
       icon: const Icon(Icons.edit_note_outlined),
       scrollable: true,
-      maxWidth: 680,
-      closeEnabled: !_isSubmitting,
+      maxWidth: 760,
+      closeEnabled: !busy,
       content: AppFormShell(
         formKey: _formKey,
-        enabled: !_isSubmitting,
+        enabled: !busy,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          AppTextField(
+          AppRichTextEditor(
+            controller: _techniqueController,
+            labelText: l10n.radiologyTechniqueLabel,
+            minLines: 3,
+            maxLines: 8,
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppRichTextEditor(
             controller: _findingsController,
             labelText: l10n.radiologyFindingsLabel,
-            isRequired: true,
             minLines: 5,
             maxLines: 12,
-            validator: AppValidators.requiredText(
-              l10n.radiologyFieldRequiredLabel(l10n.radiologyFindingsLabel),
-            ),
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppTextField(
+          SizedBox(height: theme.spacing.md),
+          AppRichTextEditor(
             controller: _impressionController,
             labelText: l10n.radiologyImpressionLabel,
             minLines: 4,
             maxLines: 10,
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppTextField(
+          SizedBox(height: theme.spacing.md),
+          AppRichTextEditor(
+            controller: _recommendationController,
+            labelText: l10n.radiologyRecommendationLabel,
+            minLines: 3,
+            maxLines: 8,
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppRichTextEditor(
             controller: _reportController,
             labelText: l10n.radiologyReportTextLabel,
-            helperText: l10n.radiologyReportTextHelper,
-            minLines: 7,
-            maxLines: 16,
+            minLines: 6,
+            maxLines: 14,
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: theme.spacing.md),
+          AppSectionPanel(
+            title: l10n.radiologyImageSourcesTitle,
+            description: l10n.radiologyImageSourcesBody,
+            leadingIcon: Icons.collections_outlined,
+            children: <Widget>[
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  AppButton.tertiary(
+                    dense: true,
+                    label: l10n.radiologyImageSourceLocalAction,
+                    leadingIcon: Icons.folder_open_outlined,
+                    isLoading: _isUploading,
+                    onPressed: busy ? null : _attachLocalImages,
+                  ),
+                  AppButton.tertiary(
+                    dense: true,
+                    label: l10n.radiologyImageSourceRemoteAction,
+                    leadingIcon: Icons.link_outlined,
+                    onPressed: busy ? null : _attachRemoteImage,
+                  ),
+                  AppButton.tertiary(
+                    dense: true,
+                    label: l10n.radiologyImageSourcePacsAction,
+                    leadingIcon: Icons.cloud_sync_outlined,
+                    onPressed: busy ? null : _attachFromPacs,
+                  ),
+                  AppButton.tertiary(
+                    dense: true,
+                    label: l10n.radiologyImageSourceExistingAction,
+                    leadingIcon: Icons.photo_library_outlined,
+                    onPressed: busy ? null : _insertExistingStudyImages,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
           AppClinicalResultsPreview(
             title: l10n.radiologyReportLivePreviewTitle,
             status: AppClinicalResultStatus.preliminary,
-            isEmpty: _composeRadiologyReportText(
-              findings: _findingsController.text.trim(),
-              impression: _impressionController.text.trim(),
-              narrative: _reportController.text.trim(),
-            ).trim().isEmpty,
+            isEmpty: _composedReportText.trim().isEmpty,
             emptyBody: l10n.radiologyEmptyReportBody,
             child: AppClinicalResultEntryView(
               entry: AppClinicalResultPreviewEntry(
@@ -3383,49 +2376,39 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
               ),
             ),
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppSectionPanel(
-            title: l10n.radiologyReportReferencesTitle,
-            description: references.isEmpty
-                ? l10n.radiologyNoReportReferencesLabel
-                : l10n.radiologyReportReferencesBody,
-            leadingIcon: Icons.link_outlined,
-            children: <Widget>[
-              if (references.isEmpty)
-                Text(l10n.radiologyNoReportReferencesLabel)
-              else
-                Wrap(
-                  spacing: Theme.of(context).spacing.xs,
-                  runSpacing: Theme.of(context).spacing.xs,
-                  children: <Widget>[
-                    for (final _RadiologyReportReference reference
-                        in references)
-                      AppButton.tertiary(
-                        label: reference.label,
-                        leadingIcon: reference.icon,
-                        onPressed: _isSubmitting
-                            ? null
-                            : () => _insertReference(reference.text),
-                      ),
-                  ],
-                ),
-            ],
-          ),
         ],
       ),
       actions: <Widget>[
+        AppAccessActionGate(
+          requirement: radiologyPrintReportRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.tertiary(
+              label: l10n.radiologyPrintReportAction,
+              leadingIcon: Icons.print_outlined,
+              enabled: isAllowed && !busy && widget.onPrint != null,
+              onPressed: !isAllowed || busy || widget.onPrint == null
+                  ? null
+                  : () => widget.onPrint!(),
+            );
+          },
+        ),
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
+          enabled: !busy,
+          onPressed: busy ? null : () => Navigator.of(context).pop(false),
         ),
+        if (widget.onFinalize != null && widget.order.latestDraftResult != null)
+          AppButton.secondary(
+            label: l10n.radiologyReleaseReportAction,
+            leadingIcon: Icons.verified_outlined,
+            isLoading: _isSubmitting,
+            onPressed: busy ? null : () => _submit(finalize: true),
+          ),
         AppButton.primary(
           label: l10n.radiologyDraftReportAction,
           leadingIcon: Icons.save_outlined,
           isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
+          onPressed: busy ? null : () => _submit(),
         ),
       ],
     );
@@ -3437,6 +2420,69 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     _reportController.value = TextEditingValue(
       text: next,
       selection: TextSelection.collapsed(offset: next.length),
+    );
+  }
+}
+
+class _RemoteImageForm extends StatefulWidget {
+  const _RemoteImageForm();
+
+  @override
+  State<_RemoteImageForm> createState() => _RemoteImageFormState();
+}
+
+class _RemoteImageFormState extends State<_RemoteImageForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _captionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _captionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.radiologyRemoteImageDialogTitle),
+      icon: const Icon(Icons.link_outlined),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _urlController,
+            labelText: l10n.radiologyRemoteImageUrlLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.radiologyFieldRequiredLabel(l10n.radiologyRemoteImageUrlLabel),
+            ),
+          ),
+          AppTextField(
+            controller: _captionController,
+            labelText: l10n.radiologyRemoteImageCaptionLabel,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyImageSourceRemoteAction,
+        submitIcon: Icons.link_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(<String, String>{
+            'url': _urlController.text.trim(),
+            'caption': _captionController.text.trim(),
+          });
+        },
+      ),
     );
   }
 }
@@ -3553,197 +2599,6 @@ class _FinalizeReportDialogState extends State<_FinalizeReportDialog> {
   }
 }
 
-Future<void> _showFinalizationNoteDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RadiologyResult result,
-  String title,
-  String submitLabel,
-  _RadiologyResultMutation submit,
-) async {
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        builder: (_) =>
-            _FinalizationNoteForm(dialogTitle: title, submitLabel: submitLabel),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await submit(result, payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
-  }
-}
-
-class _FinalizationNoteForm extends StatefulWidget {
-  const _FinalizationNoteForm({
-    required this.dialogTitle,
-    required this.submitLabel,
-  });
-
-  final String dialogTitle;
-  final String submitLabel;
-  static const IconData dialogIcon = Icons.how_to_reg_outlined;
-
-  @override
-  State<_FinalizationNoteForm> createState() => _FinalizationNoteFormState();
-}
-
-class _FinalizationNoteFormState extends State<_FinalizationNoteForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _statementController = TextEditingController();
-  final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _statementController.dispose();
-    _reasonController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(widget.dialogTitle),
-      icon: const Icon(_FinalizationNoteForm.dialogIcon),
-      scrollable: true,
-      maxWidth: 560,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _statementController,
-            labelText: l10n.radiologyFinalizationStatementLabel,
-            maxLines: 3,
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.radiologyFinalizationReasonLabel,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: widget.submitLabel,
-        submitIcon: Icons.save_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  void _submit() {
-    Navigator.of(context).pop(<String, Object?>{
-      'statement': _statementController.text.trim(),
-      'reason': _reasonController.text.trim(),
-      'notes': _notesController.text.trim(),
-    });
-  }
-}
-
-Future<void> _showAddendumDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RadiologyResult result,
-) async {
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        builder: (_) => const _AddendumForm(),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(radiologyWorkspaceControllerProvider.notifier)
-      .addendumResult(result, payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
-  }
-}
-
-class _AddendumForm extends StatefulWidget {
-  const _AddendumForm();
-
-  static String dialogTitle(AppLocalizations l10n) =>
-      l10n.radiologyAddendumDialogTitle;
-  static const IconData dialogIcon = Icons.post_add_outlined;
-
-  @override
-  State<_AddendumForm> createState() => _AddendumFormState();
-}
-
-class _AddendumFormState extends State<_AddendumForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _addendumController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _addendumController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(_AddendumForm.dialogTitle(l10n)),
-      icon: const Icon(_AddendumForm.dialogIcon),
-      scrollable: true,
-      maxWidth: 560,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _addendumController,
-            labelText: l10n.radiologyAddendumTextLabel,
-            isRequired: true,
-            maxLines: 5,
-            validator: AppValidators.requiredText(
-              l10n.radiologyFieldRequiredLabel(l10n.radiologyAddendumTextLabel),
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.radiologyAddendumAction,
-        submitIcon: Icons.save_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(<String, Object?>{
-      'addendum_text': _addendumController.text.trim(),
-      'notes': _notesController.text.trim(),
-    });
-  }
-}
-
 Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, Object?>? payload =
       await showAppDialog<Map<String, Object?>>(
@@ -3834,27 +2689,6 @@ class _CancelFormState extends State<_CancelForm> {
   }
 }
 
-Future<void> _showPacsSyncDialog(
-  BuildContext context,
-  WidgetRef ref,
-  ImagingStudy study,
-) async {
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        builder: (_) => const _PacsSyncForm(),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(radiologyWorkspaceControllerProvider.notifier)
-      .syncStudyToPacs(study, payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
-  }
-}
-
 class _PacsSyncForm extends StatefulWidget {
   const _PacsSyncForm();
 
@@ -3927,24 +2761,6 @@ Future<void> _startImaging(BuildContext context, WidgetRef ref) async {
   }
 }
 
-List<AppSelectOption<String>> _radiologyPriorityOptions(AppLocalizations l10n) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
-      value: 'ROUTINE',
-      label: l10n.radiologyPriorityRoutineLabel,
-    ),
-    AppSelectOption<String>(
-      value: 'URGENT',
-      label: l10n.radiologyPriorityUrgentLabel,
-    ),
-    AppSelectOption<String>(
-      value: 'STAT',
-      label: l10n.radiologyPriorityStatLabel,
-      searchText: l10n.radiologyPriorityStatHint,
-    ),
-  ];
-}
-
 String? _radiologyPriorityDisplayLabel(
   AppLocalizations l10n,
   String? priority,
@@ -3956,46 +2772,6 @@ String? _radiologyPriorityDisplayLabel(
     'STAT' => l10n.radiologyPriorityStatLabel,
     _ => priority,
   };
-}
-
-AppClinicalResultStatus _clinicalResultStatusForRadiology(
-  RadiologyResult result,
-) {
-  final String status = result.normalizedStatus;
-  if (status == 'AMENDED') {
-    return AppClinicalResultStatus.corrected;
-  }
-  if (result.isReleased) {
-    return AppClinicalResultStatus.verified;
-  }
-  if (result.isDraft) {
-    return AppClinicalResultStatus.preliminary;
-  }
-  return AppClinicalResultStatus.unavailable;
-}
-
-AppClinicalResultPreviewEntry _radiologyPreviewEntry({
-  required RadiologyResult result,
-  required String title,
-}) {
-  return AppClinicalResultPreviewEntry(
-    id: result.id,
-    module: AppClinicalResultModule.radiology,
-    title: title,
-    status: _clinicalResultStatusForRadiology(result),
-    occurredAt: result.reportedAt ?? result.updatedAt ?? result.createdAt,
-    subtitle: result.testDisplayName,
-    radiology: AppClinicalRadiologyReportContent(
-      reportText: result.reportText,
-      modality: result.modality,
-    ),
-  );
-}
-
-List<AppSelectOption<String>> _radiologyLateralityOptions(
-  AppLocalizations l10n,
-) {
-  return clinicalRadiologyLateralityOptions(l10n);
 }
 
 List<AppSelectOption<String>> _referenceOptions(
