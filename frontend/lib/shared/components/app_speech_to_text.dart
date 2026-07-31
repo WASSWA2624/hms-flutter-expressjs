@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -1113,17 +1114,23 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
               ? l10n.speechToTextStartTooltip
               : appSpeechToTextBlockMessage(l10n, blockReason));
 
-    return AppButton(
-      iconOnly: true,
-      dense: widget.dense,
-      leadingIcon: listening ? Icons.stop : Icons.mic_none_outlined,
-      label: listening
-          ? l10n.speechToTextStopTooltip
-          : l10n.speechToTextStartTooltip,
-      semanticLabel: tooltip,
-      tooltip: tooltip,
-      enabled: canPress || listening,
-      onPressed: (canPress || listening) ? _toggle : null,
+    return AppActionLabelScope(
+      showLabels: false,
+      forceIconOnly: true,
+      plainChrome: true,
+      child: AppButton(
+        iconOnly: true,
+        dense: widget.dense,
+        variant: AppButtonVariant.tertiary,
+        leadingIcon: listening ? Icons.stop : Icons.mic_none_outlined,
+        label: listening
+            ? l10n.speechToTextStopTooltip
+            : l10n.speechToTextStartTooltip,
+        semanticLabel: tooltip,
+        tooltip: tooltip,
+        enabled: canPress || listening,
+        onPressed: (canPress || listening) ? _toggle : null,
+      ),
     );
   }
 }
