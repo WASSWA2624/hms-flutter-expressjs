@@ -10906,6 +10906,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyCancelOrderAction => 'Cancel order';
 
   @override
+  String get radiologyCancelSelectedAction => 'Cancel selected';
+
+  @override
+  String get radiologyProcedureDetailsDialogTitle => 'Procedure details';
+
+  @override
+  String get radiologyViewReportAction => 'View report';
+
+  @override
   String get radiologyRequestDetailsTitle => 'Request details';
 
   @override

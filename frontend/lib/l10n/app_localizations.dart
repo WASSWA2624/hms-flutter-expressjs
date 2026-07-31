@@ -20116,6 +20116,24 @@ abstract class AppLocalizations {
   /// **'Cancel order'**
   String get radiologyCancelOrderAction;
 
+  /// Cancel selected radiology procedures action in Procedures section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected'**
+  String get radiologyCancelSelectedAction;
+
+  /// Title for the radiology procedure details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure details'**
+  String get radiologyProcedureDetailsDialogTitle;
+
+  /// Open an already-reported radiology report from procedure details.
+  ///
+  /// In en, this message translates to:
+  /// **'View report'**
+  String get radiologyViewReportAction;
+
   /// Localized text for radiologyRequestDetailsTitle.
   ///
   /// In en, this message translates to:

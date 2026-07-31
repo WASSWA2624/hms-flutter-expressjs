@@ -67,6 +67,6 @@ void main() {
 
     expect(find.text('Ward A'), findsOneWidget);
     expect(find.text('ADM-100'), findsOneWidget);
-    expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
+    expect(find.byType(AppCopyGlyph), findsOneWidget);
   });
 }

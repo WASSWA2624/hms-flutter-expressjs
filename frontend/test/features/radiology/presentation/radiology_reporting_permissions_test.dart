@@ -651,6 +651,7 @@ void main() {
       await _openReportingDetail(tester);
 
       expect(find.text('Cancel order'), findsOneWidget);
+      expect(find.text('Cancel selected'), findsOneWidget);
       expect(find.text('Mark report done'), findsOneWidget);
       expect(find.text('Procedures'), findsOneWidget);
       expect(find.text('CT Head'), findsWidgets);

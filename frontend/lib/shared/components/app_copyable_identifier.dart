@@ -188,15 +188,21 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
                     ),
                   ),
                   if (widget.showCopyIcon) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
+                    SizedBox(width: theme.spacing.xs / 2),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 160),
-                      child: Icon(
-                        _copied ? Icons.check : Icons.copy_outlined,
-                        key: ValueKey<bool>(_copied),
-                        size: theme.appTokens.listIconSize,
-                        color: iconColor,
-                      ),
+                      child: _copied
+                          ? Icon(
+                              Icons.check,
+                              key: const ValueKey<bool>(true),
+                              size: _copyGlyphSize,
+                              color: iconColor,
+                            )
+                          : AppCopyGlyph(
+                              key: const ValueKey<bool>(false),
+                              size: _copyGlyphSize,
+                              color: iconColor,
+                            ),
                     ),
                   ],
                 ],
@@ -206,6 +212,84 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
         ),
       ),
     );
+  }
+}
+
+/// Compact thin-stroke copy glyph for inline identifier affordances.
+/// Material [Icons.copy_outlined] reads too heavy next to body text.
+const double _copyGlyphSize = 13;
+
+class AppCopyGlyph extends StatelessWidget {
+  const AppCopyGlyph({required this.size, required this.color, super.key});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(painter: _AppCopyGlyphPainter(color: color)),
+    );
+  }
+}
+
+class _AppCopyGlyphPainter extends CustomPainter {
+  const _AppCopyGlyphPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double s = size.shortestSide;
+    final double stroke = (s * 0.09).clamp(1.0, 1.35);
+    final Paint paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    final double inset = stroke / 2;
+    final double corner = s * 0.12;
+    final double backOffset = s * 0.18;
+    final double frontLeft = backOffset;
+    final double frontTop = backOffset;
+    final double frontRight = s - inset;
+    final double frontBottom = s - inset;
+
+    // Back sheet (top-left).
+    final RRect back = RRect.fromRectAndRadius(
+      Rect.fromLTRB(inset, inset, s - backOffset, s - backOffset),
+      Radius.circular(corner),
+    );
+    // Only draw the visible L of the back sheet so stroke does not double-up.
+    final Path backPath = Path()
+      ..moveTo(back.left, back.bottom - corner)
+      ..lineTo(back.left, back.top + corner)
+      ..arcToPoint(
+        Offset(back.left + corner, back.top),
+        radius: Radius.circular(corner),
+      )
+      ..lineTo(back.right - corner, back.top)
+      ..arcToPoint(
+        Offset(back.right, back.top + corner),
+        radius: Radius.circular(corner),
+      )
+      ..lineTo(back.right, frontTop);
+    canvas.drawPath(backPath, paint);
+
+    // Front sheet.
+    final RRect front = RRect.fromRectAndRadius(
+      Rect.fromLTRB(frontLeft, frontTop, frontRight, frontBottom),
+      Radius.circular(corner),
+    );
+    canvas.drawRRect(front, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AppCopyGlyphPainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }
 

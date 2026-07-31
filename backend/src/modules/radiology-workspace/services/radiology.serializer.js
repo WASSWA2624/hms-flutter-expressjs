@@ -407,6 +407,8 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
   const hasAssignment = Boolean(
     order.assigned_user_id || order.scheduled_at || order.room || order.equipment_registry_id
   );
+  // Billing remains informational (`billing_gate_blocked`) but must not gate
+  // clinical workflow steps (start / study / draft / finalize).
 
   if (order.scheduled_at || hasAssignment) {
     timeline.push({
@@ -431,13 +433,13 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
     timeline,
     next_actions: {
       can_assign: isAssignable,
-      can_start: order.status === 'ORDERED' && paymentSatisfied,
+      can_start: order.status === 'ORDERED',
       can_complete: order.status === 'IN_PROCESS' && hasFinalResult,
       can_cancel: ['ORDERED', 'IN_PROCESS'].includes(order.status),
-      can_create_study: isActive && paymentSatisfied,
-      can_create_draft_result: isActive && paymentSatisfied,
-      can_finalize_result: hasDraftResult && paymentSatisfied,
-      can_request_finalization: hasDraftResult && paymentSatisfied,
+      can_create_study: isActive,
+      can_create_draft_result: isActive,
+      can_finalize_result: hasDraftResult,
+      can_request_finalization: hasDraftResult,
       can_attest_finalization: hasPendingResultAttestation,
       can_add_addendum: hasFinalResult,
       can_pacs_sync: order.imaging_studies.some((study) => study.asset_count > 0),

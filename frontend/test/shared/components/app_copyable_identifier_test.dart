@@ -39,10 +39,12 @@ void main() {
 
       await tester.tap(find.text('PAT-2026-0001'));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(copiedValues, <String>['PAT-2026-0001']);
       expect(find.text('Patient ID copied.'), findsOneWidget);
       expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byType(AppCopyGlyph), findsNothing);
     },
   );
 
@@ -69,7 +71,7 @@ void main() {
     await pumpComponent(tester, const AppCopyableIdentifier(value: 'N/A'));
 
     expect(find.text('N/A'), findsOneWidget);
-    expect(find.byIcon(Icons.copy_outlined), findsNothing);
+    expect(find.byType(AppCopyGlyph), findsNothing);
     await tester.tap(find.text('N/A'), warnIfMissed: false);
     await tester.pump();
 

@@ -25,7 +25,6 @@ const {
   applyDateRangeFilter} = require('@services/radiology-workspace/radiology.shared');
 const {
   toPublicIdentifier,
-  isRadiologyOrderPaymentSatisfied,
   mapRadiologyOrderRecord,
   mapRadiologyOrderWorkflowRecord,
   mapRadiologyResultRecord,
@@ -45,11 +44,6 @@ const RADIOLOGY_RECIPIENT_ROLES = [
   ROLES.RADIOLOGY_TECH,
   ROLES.RADIOLOGIST,
   ROLES.MEDICAL_RECORDS_CLERK];
-
-const assertRadiologyPaymentSatisfied = (order) => {
-  if (isRadiologyOrderPaymentSatisfied(order)) return;
-  throw new HttpError('errors.radiology_order.payment_required', 402);
-};
 
 const resolveEquipmentRegistryId = async (identifier) => {
   if (!identifier) return null;
@@ -1129,7 +1123,6 @@ const startRadiologyOrder = async (identifier, payload = {}, userId, ipAddress) 
       assertTransition(order.status === 'ORDERED', {
         from: order.status,
         to: 'IN_PROCESS'});
-      assertRadiologyPaymentSatisfied(order);
 
       await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
         status: 'IN_PROCESS'});
@@ -1363,7 +1356,6 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
       assertTransition(order.status !== 'CANCELLED', {
         from: order.status,
         to: 'CREATE_STUDY'});
-      assertRadiologyPaymentSatisfied(order);
 
       const modality =
         String(payload.modality || '').trim().toUpperCase() ||
@@ -1842,7 +1834,6 @@ const draftRadiologyResult = async (identifier, payload = {}, userId, ipAddress)
       assertTransition(order.status !== 'CANCELLED', {
         from: order.status,
         to: 'DRAFT_RESULT'});
-      assertRadiologyPaymentSatisfied(order);
 
       const existingDraft = await radiologyWorkspaceRepository.txFindFirstResult(tx, {
         radiology_order_id: order.id,

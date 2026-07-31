@@ -13934,6 +13934,18 @@
   "@radiologyCancelOrderAction": {
     "description": "Localized text for radiologyCancelOrderAction."
   },
+  "radiologyCancelSelectedAction": "Cancel selected",
+  "@radiologyCancelSelectedAction": {
+    "description": "Cancel selected radiology procedures action in Procedures section header."
+  },
+  "radiologyProcedureDetailsDialogTitle": "Procedure details",
+  "@radiologyProcedureDetailsDialogTitle": {
+    "description": "Title for the radiology procedure details dialog."
+  },
+  "radiologyViewReportAction": "View report",
+  "@radiologyViewReportAction": {
+    "description": "Open an already-reported radiology report from procedure details."
+  },
   "radiologyRequestDetailsTitle": "Request details",
   "@radiologyRequestDetailsTitle": {
     "description": "Localized text for radiologyRequestDetailsTitle."
