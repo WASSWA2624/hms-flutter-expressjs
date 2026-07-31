@@ -557,6 +557,7 @@ class AppListTableColumn<T> {
     this.preferredWidth,
     this.fixedWidth,
     this.exportValue,
+    this.exportable,
   });
 
   final String? id;
@@ -575,11 +576,30 @@ class AppListTableColumn<T> {
   final double? fixedWidth;
 
   /// Plain cell value used by Excel export (not the widget [cellBuilder]).
+  ///
+  /// When null, export falls back to plain text extracted from [cellBuilder].
   final AppListTableExportValue<T>? exportValue;
+
+  /// Whether this column appears in Excel export.
+  ///
+  /// When null, action chrome columns (`actions` / `next_action`) are omitted
+  /// unless [exportValue] is provided; all other columns are included.
+  final bool? exportable;
 
   String get key => id ?? label;
 
   bool get isSortable => sortComparator != null;
+
+  bool get includesInExport {
+    if (exportable != null) {
+      return exportable!;
+    }
+    if (exportValue != null) {
+      return true;
+    }
+    final String normalized = key.trim().toLowerCase();
+    return normalized != 'actions' && normalized != 'next_action';
+  }
 }
 
 /// One meta fragment on the secondary line of [AppListTableMobileItem].

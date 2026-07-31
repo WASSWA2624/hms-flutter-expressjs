@@ -1,4 +1,4 @@
-import 'package:excel/excel.dart' hide Border;
+import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -7,12 +7,17 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 import 'package:hosspi_hms/shared/components/app_list_table.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_export_save.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_status_badge.dart';
+import 'package:hosspi_hms/shared/components/app_status_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart'
+    show AppWorkspaceStatusBadge;
 
 /// Extracts a plain Excel cell value for [item] (string, number, bool, or date).
 typedef AppListTableExportValue<T> = Object? Function(T item);
@@ -78,10 +83,15 @@ final class AppListTableExportConfig<T> {
 }
 
 /// Builds `.xlsx` bytes for the selected columns and rows.
+///
+/// Prefers each column's [AppListTableColumn.exportValue]. When that is null and
+/// [context] is provided, falls back to plain text extracted from [cellBuilder]
+/// so tables without explicit export adapters still produce populated sheets.
 Uint8List buildAppListTableExcelBytes<T>({
   required List<T> rows,
   required List<AppListTableColumn<T>> columns,
   required String sheetName,
+  BuildContext? context,
 }) {
   final Excel excel = Excel.createExcel();
   final String defaultSheet = excel.getDefaultSheet() ?? 'Sheet1';
@@ -105,7 +115,11 @@ Uint8List buildAppListTableExcelBytes<T>({
   for (int rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
     final T item = rows[rowIndex];
     for (int columnIndex = 0; columnIndex < columns.length; columnIndex += 1) {
-      final Object? raw = columns[columnIndex].exportValue?.call(item);
+      final Object? raw = resolveAppListTableExportValue<T>(
+        context: context,
+        column: columns[columnIndex],
+        item: item,
+      );
       sheet
               .cell(
                 CellIndex.indexByColumnRow(
@@ -123,6 +137,216 @@ Uint8List buildAppListTableExcelBytes<T>({
     throw StateError('Failed to encode Excel workbook.');
   }
   return Uint8List.fromList(encoded);
+}
+
+/// Resolves a plain Excel value for [item] in [column].
+Object? resolveAppListTableExportValue<T>({
+  required AppListTableColumn<T> column,
+  required T item,
+  BuildContext? context,
+}) {
+  if (column.exportValue != null) {
+    return column.exportValue!(item);
+  }
+  if (context == null) {
+    return null;
+  }
+  try {
+    return appListTablePlainTextFromWidget(column.cellBuilder(context, item));
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Walks common list-table cell widgets and joins visible text labels.
+///
+/// Interactive controls ([AppButton], Material buttons, icons) are skipped so
+/// action columns do not export button chrome as data.
+String? appListTablePlainTextFromWidget(Widget? widget) {
+  if (widget == null) {
+    return null;
+  }
+
+  if (widget is Text) {
+    return _nonEmptyText(widget.data) ??
+        _plainTextFromInlineSpan(widget.textSpan);
+  }
+  if (widget is SelectableText) {
+    return _nonEmptyText(widget.data) ??
+        _plainTextFromInlineSpan(widget.textSpan);
+  }
+  if (widget is RichText) {
+    return _plainTextFromInlineSpan(widget.text);
+  }
+  if (widget is AppListItemText) {
+    final String title = widget.title.trim();
+    final String? subtitle = _nonEmptyText(widget.subtitle);
+    if (subtitle == null) {
+      return _nonEmptyText(title);
+    }
+    if (title.isEmpty) {
+      return subtitle;
+    }
+    return '$title $subtitle';
+  }
+  if (widget is AppMutedText) {
+    return _nonEmptyText(widget.text);
+  }
+  if (widget is AppInlineMetaText) {
+    return _nonEmptyText(widget.label);
+  }
+  if (widget is AppStatusBadge) {
+    return _nonEmptyText(widget.label);
+  }
+  if (widget is AppStatusText) {
+    return _nonEmptyText(widget.label);
+  }
+  if (widget is AppWorkspaceStatusBadge) {
+    return _nonEmptyText(widget.status.label);
+  }
+  if (_isExportInteractiveChrome(widget)) {
+    return null;
+  }
+
+  final List<Widget> children = _exportWidgetChildren(widget);
+  if (children.isEmpty) {
+    return null;
+  }
+  final List<String> parts = <String>[
+    for (final Widget child in children)
+      ?appListTablePlainTextFromWidget(child),
+  ];
+  if (parts.isEmpty) {
+    return null;
+  }
+  return parts.join(' ');
+}
+
+bool _isExportInteractiveChrome(Widget widget) {
+  return widget is AppButton ||
+      widget is IconButton ||
+      widget is TextButton ||
+      widget is ElevatedButton ||
+      widget is OutlinedButton ||
+      widget is FilledButton ||
+      widget is FloatingActionButton ||
+      widget is PopupMenuButton ||
+      widget is Icon ||
+      widget is Image ||
+      widget is CircularProgressIndicator ||
+      widget is LinearProgressIndicator;
+}
+
+List<Widget> _exportWidgetChildren(Widget widget) {
+  if (widget is Padding) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Align) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Center) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is SizedBox) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is ConstrainedBox) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Expanded) {
+    return <Widget>[widget.child];
+  }
+  if (widget is Flexible) {
+    return <Widget>[widget.child];
+  }
+  if (widget is SingleChildRenderObjectWidget) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is ProxyWidget) {
+    return <Widget>[widget.child];
+  }
+  if (widget is Container) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Card) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Material) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is DecoratedBox) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Tooltip) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is ExcludeSemantics) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is MergeSemantics) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is Semantics) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is InkWell) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is GestureDetector) {
+    return widget.child == null ? const <Widget>[] : <Widget>[widget.child!];
+  }
+  if (widget is DefaultTextStyle) {
+    return <Widget>[widget.child];
+  }
+  if (widget is IconTheme) {
+    return <Widget>[widget.child];
+  }
+  if (widget is Flex) {
+    return widget.children;
+  }
+  if (widget is Wrap) {
+    return widget.children;
+  }
+  if (widget is Stack) {
+    return widget.children;
+  }
+  if (widget is ListBody) {
+    return widget.children;
+  }
+  if (widget is MultiChildRenderObjectWidget) {
+    return widget.children;
+  }
+  if (widget is Chip) {
+    return <Widget>[widget.label];
+  }
+  if (widget is InputChip) {
+    return <Widget>[widget.label];
+  }
+  if (widget is ChoiceChip) {
+    return <Widget>[widget.label];
+  }
+  if (widget is FilterChip) {
+    return <Widget>[widget.label];
+  }
+  if (widget is ActionChip) {
+    return <Widget>[widget.label];
+  }
+  return const <Widget>[];
+}
+
+String? _plainTextFromInlineSpan(InlineSpan? span) {
+  if (span == null) {
+    return null;
+  }
+  return _nonEmptyText(span.toPlainText());
+}
+
+String? _nonEmptyText(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final String trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 CellValue _excelCellValue(Object? raw) {
@@ -224,10 +448,13 @@ Future<void> showAppListTableExportDialog<T>({
   String? failureMessage,
   String? invalidDateMessage,
 }) {
+  final List<AppListTableColumn<T>> exportColumns = columns
+      .where((AppListTableColumn<T> column) => column.includesInExport)
+      .toList(growable: false);
   return showAppDialog<void>(
     context: context,
     builder: (_) => AppListTableExportDialog<T>(
-      columns: columns,
+      columns: exportColumns,
       visibleColumnKeys: visibleColumnKeys,
       rows: rows,
       config: config,
@@ -750,6 +977,7 @@ class _AppListTableExportDialogState<T>
         rows: filteredRows,
         columns: selectedColumns,
         sheetName: widget.config.sheetName,
+        context: context,
       );
       final String fileName = appListTableExportFileName(
         widget.config.fileNameStem,

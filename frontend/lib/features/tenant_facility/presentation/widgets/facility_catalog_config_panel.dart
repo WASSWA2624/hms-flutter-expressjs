@@ -671,6 +671,16 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
       columnChoices: _radiologyColumnChoices(l10n),
+      exportConfig: AppListTableExportConfig<RadiologyCatalogProcedure>(
+        fileNameStem: 'radiology_procedures',
+        enableDateFilter: false,
+        rowFilter: (RadiologyCatalogProcedure item, AppSearchBarFilterValue filters) {
+          final String? modality = filters.option(_modalityFilterKey);
+          return modality == null ||
+              modality.isEmpty ||
+              (item.modality ?? '').trim() == modality;
+        },
+      ),
       onRowSelected: canMutateRadiology
           ? (RadiologyCatalogProcedure item) {
               if (item.isDeleted || item.isStandard) {
@@ -839,6 +849,43 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
       columnChoices: _labColumnChoices(l10n),
+      exportConfig: AppListTableExportConfig<LabCatalogItem>(
+        fileNameStem: 'lab_catalog',
+        enableDateFilter: false,
+        rowFilter: (LabCatalogItem item, AppSearchBarFilterValue filters) {
+          final String? type = filters.option(_labTypeFilterKey);
+          final String? category = filters.option(_labCategoryFilterKey);
+          final String? resultKind = filters.option(_labResultKindFilterKey);
+          final String? specimen = filters.option(_labSpecimenFilterKey);
+          final String? source = filters.option(_labSourceFilterKey);
+          if (type != null && type.isNotEmpty && item.type.name != type) {
+            return false;
+          }
+          if (category != null &&
+              category.isNotEmpty &&
+              (item.category ?? '').trim() != category) {
+            return false;
+          }
+          if (resultKind != null &&
+              resultKind.isNotEmpty &&
+              item.type == LabCatalogItemType.test &&
+              (item.resultKind ?? '').trim().toUpperCase() !=
+                  resultKind.toUpperCase()) {
+            return false;
+          }
+          if (specimen != null &&
+              specimen.isNotEmpty &&
+              (item.specimenType ?? '').trim() != specimen) {
+            return false;
+          }
+          if (source != null &&
+              source.isNotEmpty &&
+              (item.source ?? '').trim() != source) {
+            return false;
+          }
+          return true;
+        },
+      ),
       onRowSelected: (LabCatalogItem item) {
         unawaited(_openLabDetailsDialog(item));
       },
@@ -1052,6 +1099,16 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_diagnoses',
       columnChoices: _diagnosisColumnChoices(l10n),
+      exportConfig: AppListTableExportConfig<ClinicalCatalogOption>(
+        fileNameStem: 'diagnoses',
+        enableDateFilter: false,
+        rowFilter: (ClinicalCatalogOption item, AppSearchBarFilterValue filters) {
+          final String? category = filters.option(_diagnosisCategoryFilterKey);
+          return category == null ||
+              category.isEmpty ||
+              (item.category ?? '').trim() == category;
+        },
+      ),
       onRowSelected: widget.enabled
           ? (ClinicalCatalogOption item) =>
                 unawaited(_openDiagnosisEditDialog(item))

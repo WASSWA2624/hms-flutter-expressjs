@@ -84,6 +84,94 @@ void main() {
     expect(sheet.cell(CellIndex.indexByString('C1')).value, isNull);
   });
 
+  test('appListTablePlainTextFromWidget reads nested Text cells', () {
+    expect(
+      appListTablePlainTextFromWidget(const Text('Procedure A')),
+      'Procedure A',
+    );
+    expect(
+      appListTablePlainTextFromWidget(
+        const Padding(padding: EdgeInsets.all(4), child: Text('CT')),
+      ),
+      'CT',
+    );
+    expect(
+      appListTablePlainTextFromWidget(
+        AppButton.tertiary(label: 'Edit', onPressed: () {}),
+      ),
+      isNull,
+    );
+    expect(
+      appListTablePlainTextFromWidget(
+        const AppListItemText(title: 'Jane Doe', subtitle: 'P-001'),
+      ),
+      'Jane Doe P-001',
+    );
+  });
+
+  testWidgets(
+    'buildAppListTableExcelBytes falls back to cellBuilder text',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+      );
+      final BuildContext context = tester.element(find.byType(SizedBox));
+
+      final List<AppListTableColumn<_ExportRow>> fallbackColumns =
+          <AppListTableColumn<_ExportRow>>[
+            AppListTableColumn<_ExportRow>(
+              id: 'title',
+              label: 'Title',
+              cellBuilder: (_, _ExportRow item) => Text(item.title),
+            ),
+            AppListTableColumn<_ExportRow>(
+              id: 'code',
+              label: 'Code',
+              cellBuilder: (_, _ExportRow item) =>
+                  Padding(padding: EdgeInsets.zero, child: Text(item.code)),
+            ),
+            AppListTableColumn<_ExportRow>(
+              id: 'actions',
+              label: 'Actions',
+              alwaysVisible: true,
+              cellBuilder: (_, __) =>
+                  AppButton.tertiary(label: 'Edit', onPressed: () {}),
+            ),
+          ];
+
+      expect(fallbackColumns[2].includesInExport, isFalse);
+
+      final Uint8List bytes = buildAppListTableExcelBytes<_ExportRow>(
+        rows: items,
+        columns: fallbackColumns
+            .where((AppListTableColumn<_ExportRow> column) => column.includesInExport)
+            .toList(growable: false),
+        sheetName: 'Radiology',
+        context: context,
+      );
+
+      final Excel workbook = Excel.decodeBytes(bytes);
+      final Sheet sheet = workbook['Radiology']!;
+      expect(
+        sheet.cell(CellIndex.indexByString('A1')).value?.toString(),
+        'Title',
+      );
+      expect(
+        sheet.cell(CellIndex.indexByString('B1')).value?.toString(),
+        'Code',
+      );
+      expect(
+        sheet.cell(CellIndex.indexByString('A2')).value?.toString(),
+        'Alpha',
+      );
+      expect(
+        sheet.cell(CellIndex.indexByString('B2')).value?.toString(),
+        'A1',
+      );
+      expect(sheet.cell(CellIndex.indexByString('C1')).value, isNull);
+    },
+  );
+
   test('applyAppListTableExportFilters narrows by date and row filter', () {
     final List<_ExportRow> filtered = applyAppListTableExportFilters<_ExportRow>(
       rows: items,
