@@ -25083,6 +25083,46 @@
   "@commonFormatNumberedListLabel": {
     "description": "Toolbar tooltip for numbered list note formatting."
   },
+  "speechToTextStartTooltip": "Dictate with microphone",
+  "@speechToTextStartTooltip": {
+    "description": "Tooltip and semantic label for starting speech-to-text dictation."
+  },
+  "speechToTextStopTooltip": "Stop dictation",
+  "@speechToTextStopTooltip": {
+    "description": "Tooltip and semantic label for stopping active speech-to-text dictation."
+  },
+  "speechToTextListeningMessage": "Listening…",
+  "@speechToTextListeningMessage": {
+    "description": "Status message shown while speech recognition is active."
+  },
+  "speechToTextOfflineMessage": "Speech dictation needs an internet connection.",
+  "@speechToTextOfflineMessage": {
+    "description": "Shown when speech-to-text is blocked because the device is offline."
+  },
+  "speechToTextUnavailableMessage": "Speech dictation is not available on this device.",
+  "@speechToTextUnavailableMessage": {
+    "description": "Shown when platform speech recognition is unsupported or unavailable."
+  },
+  "speechToTextPermissionDeniedMessage": "Microphone permission is required for dictation.",
+  "@speechToTextPermissionDeniedMessage": {
+    "description": "Shown when microphone or speech permission is denied."
+  },
+  "speechToTextNoMicrophoneMessage": "No microphone was found for dictation.",
+  "@speechToTextNoMicrophoneMessage": {
+    "description": "Shown when no microphone hardware is available."
+  },
+  "speechToTextFieldDisabledMessage": "Dictation is unavailable while this field is disabled.",
+  "@speechToTextFieldDisabledMessage": {
+    "description": "Shown when speech control is inactive because the field is read-only or disabled."
+  },
+  "speechToTextErrorMessage": "Speech dictation could not continue. Try again.",
+  "@speechToTextErrorMessage": {
+    "description": "Generic speech recognition failure message."
+  },
+  "speechToTextSwitchedFieldMessage": "Dictation moved to this field. The previous field stopped listening.",
+  "@speechToTextSwitchedFieldMessage": {
+    "description": "Warning when starting speech on a second field stops the first session."
+  },
   "commonEditActionLabel": "Edit",
   "@commonEditActionLabel": {
     "description": "Shared short edit action label for section headers and toolbars."

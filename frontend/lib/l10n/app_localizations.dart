@@ -36457,6 +36457,66 @@ abstract class AppLocalizations {
   /// **'Numbered list'**
   String get commonFormatNumberedListLabel;
 
+  /// Tooltip and semantic label for starting speech-to-text dictation.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate with microphone'**
+  String get speechToTextStartTooltip;
+
+  /// Tooltip and semantic label for stopping active speech-to-text dictation.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop dictation'**
+  String get speechToTextStopTooltip;
+
+  /// Status message shown while speech recognition is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get speechToTextListeningMessage;
+
+  /// Shown when speech-to-text is blocked because the device is offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech dictation needs an internet connection.'**
+  String get speechToTextOfflineMessage;
+
+  /// Shown when platform speech recognition is unsupported or unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech dictation is not available on this device.'**
+  String get speechToTextUnavailableMessage;
+
+  /// Shown when microphone or speech permission is denied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required for dictation.'**
+  String get speechToTextPermissionDeniedMessage;
+
+  /// Shown when no microphone hardware is available.
+  ///
+  /// In en, this message translates to:
+  /// **'No microphone was found for dictation.'**
+  String get speechToTextNoMicrophoneMessage;
+
+  /// Shown when speech control is inactive because the field is read-only or disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictation is unavailable while this field is disabled.'**
+  String get speechToTextFieldDisabledMessage;
+
+  /// Generic speech recognition failure message.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech dictation could not continue. Try again.'**
+  String get speechToTextErrorMessage;
+
+  /// Warning when starting speech on a second field stops the first session.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictation moved to this field. The previous field stopped listening.'**
+  String get speechToTextSwitchedFieldMessage;
+
   /// Shared short edit action label for section headers and toolbars.
   ///
   /// In en, this message translates to:

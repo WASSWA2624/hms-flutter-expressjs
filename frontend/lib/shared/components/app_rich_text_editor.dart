@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 /// Formatting tools exposed by [AppRichTextEditor].
@@ -212,6 +213,7 @@ class AppRichTextEditor extends StatefulWidget {
     this.isRequired = false,
     this.autofocus = false,
     this.showToolbar = true,
+    this.enableSpeechToText = true,
     this.tools = AppRichTextMarkup.defaultTools,
     this.validator,
     this.onChanged,
@@ -230,6 +232,9 @@ class AppRichTextEditor extends StatefulWidget {
   final bool isRequired;
   final bool autofocus;
   final bool showToolbar;
+
+  /// When true (default), shows the shared speech-to-text control.
+  final bool enableSpeechToText;
   final Set<AppRichTextTool> tools;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
@@ -375,6 +380,8 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
           onPressed: () => _applyLinePrefix('1. ', numbered: true),
         ),
     ];
+    final bool showSpeech = widget.enableSpeechToText;
+    final bool showToolbarRow = showToolbar || showSpeech;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -383,14 +390,27 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
           label,
           SizedBox(height: theme.spacing.xs),
         ],
-        if (showToolbar) ...<Widget>[
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.xs,
-              vertical: theme.spacing.xs / 2,
-            ),
-            child: Row(children: toolbarItems),
+        if (showToolbarRow) ...<Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.xs,
+                    vertical: theme.spacing.xs / 2,
+                  ),
+                  child: Row(children: toolbarItems),
+                ),
+              ),
+              if (showSpeech)
+                AppSpeechToTextButton(
+                  controller: widget.controller,
+                  enabled: widget.enabled,
+                  dense: true,
+                  onChanged: widget.onChanged,
+                ),
+            ],
           ),
           Divider(height: 1, color: colors.outlineVariant),
           SizedBox(height: theme.spacing.xs),

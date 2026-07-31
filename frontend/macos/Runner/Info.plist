@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HOSSPI uses the microphone so you can dictate notes and other text fields.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>HOSSPI uses speech recognition so you can dictate notes and other text fields.</string>
 </dict>
 </plist>

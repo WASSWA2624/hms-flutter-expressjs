@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -44,6 +45,7 @@ class AppTextField extends StatefulWidget {
     this.useFloatingLabel = true,
     this.isDense = false,
     this.allowClear = false,
+    this.enableSpeechToText,
     this.style,
     this.tooltip,
     super.key,
@@ -105,6 +107,11 @@ class AppTextField extends StatefulWidget {
   /// When true and a [controller] has text, shows a clear (X) suffix action.
   final bool allowClear;
 
+  /// When null, speech is shown for editable free-text fields and hidden for
+  /// passwords plus numeric/phone/datetime keyboards. Set false to force hide,
+  /// true to force show (still never on [obscureText]).
+  final bool? enableSpeechToText;
+
   /// Optional input text style. Merged over the default field style so callers
   /// can tint the value (for example lab result interpretation colors).
   final TextStyle? style;
@@ -118,13 +125,24 @@ class _AppTextFieldState extends State<AppTextField> {
   late FocusNode _focusNode;
   late bool _ownsFocusNode;
   late bool _obscureText;
+  TextEditingController? _ownedController;
+
+  bool get _speechEnabled => appSpeechToTextEnabledForField(
+    enableSpeechToText: widget.enableSpeechToText,
+    obscureText: widget.obscureText,
+    keyboardType: widget.keyboardType,
+  );
+
+  TextEditingController? get _effectiveController =>
+      widget.controller ?? _ownedController;
 
   @override
   void initState() {
     super.initState();
     _obscureText = widget.obscureText;
     _attachFocusNode();
-    widget.controller?.addListener(_handleTextChanged);
+    _ensureSpeechController();
+    _effectiveController?.addListener(_handleTextChanged);
   }
 
   @override
@@ -137,17 +155,34 @@ class _AppTextFieldState extends State<AppTextField> {
       _detachFocusNode();
       _attachFocusNode();
     }
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?.removeListener(_handleTextChanged);
-      widget.controller?.addListener(_handleTextChanged);
-    }
+    final TextEditingController? previous =
+        oldWidget.controller ?? _ownedController;
+    previous?.removeListener(_handleTextChanged);
+    _ensureSpeechController();
+    _effectiveController?.addListener(_handleTextChanged);
   }
 
   @override
   void dispose() {
-    widget.controller?.removeListener(_handleTextChanged);
+    _effectiveController?.removeListener(_handleTextChanged);
+    _ownedController?.dispose();
     _detachFocusNode();
     super.dispose();
+  }
+
+  void _ensureSpeechController() {
+    if (widget.controller != null) {
+      _ownedController?.dispose();
+      _ownedController = null;
+      return;
+    }
+    if (_speechEnabled && _ownedController == null) {
+      _ownedController = TextEditingController(text: widget.initialValue);
+    }
+    if (!_speechEnabled && _ownedController != null) {
+      _ownedController!.dispose();
+      _ownedController = null;
+    }
   }
 
   void _attachFocusNode() {
@@ -174,7 +209,7 @@ class _AppTextFieldState extends State<AppTextField> {
   }
 
   void _clearText() {
-    final TextEditingController? controller = widget.controller;
+    final TextEditingController? controller = _effectiveController;
     if (controller == null) {
       return;
     }
@@ -186,7 +221,8 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final InputDecorationThemeData inputTheme = theme.inputDecorationTheme;
-    final bool canEdit = widget.enabled && !widget.isLoading;
+    final bool canEdit =
+        widget.enabled && !widget.isLoading && !widget.readOnly;
     final bool useRichLabel =
         !widget.useFloatingLabel &&
         AppFieldRequirementScope.shouldShowOptionalIndicator(context) &&
@@ -218,13 +254,12 @@ class _AppTextFieldState extends State<AppTextField> {
             style: placeholderLabelStyle,
           )
         : null;
+    final TextEditingController? controller = _effectiveController;
     final Widget field = TextFormField(
-      key: widget.controller == null
-          ? ValueKey<String?>(widget.initialValue)
-          : null,
-      controller: widget.controller,
-      initialValue: widget.initialValue,
-      enabled: canEdit,
+      key: controller == null ? ValueKey<String?>(widget.initialValue) : null,
+      controller: controller,
+      initialValue: controller == null ? widget.initialValue : null,
+      enabled: widget.enabled && !widget.isLoading,
       readOnly: widget.readOnly,
       obscureText: _obscureText,
       keyboardType: widget.keyboardType,
@@ -276,7 +311,7 @@ class _AppTextFieldState extends State<AppTextField> {
         hintText: widget.hintText,
         helperText: widget.helperText,
         prefixIcon: widget.prefixIcon,
-        suffixIcon: _buildSuffixIcon(context, canEdit),
+        suffixIcon: _buildSuffixIcon(context, canEdit, controller),
       ),
     );
 
@@ -329,7 +364,11 @@ class _AppTextFieldState extends State<AppTextField> {
     return Tooltip(message: resolvedTooltip, child: content);
   }
 
-  Widget? _buildSuffixIcon(BuildContext context, bool canEdit) {
+  Widget? _buildSuffixIcon(
+    BuildContext context,
+    bool canEdit,
+    TextEditingController? controller,
+  ) {
     final ThemeData theme = Theme.of(context);
 
     if (widget.isLoading) {
@@ -345,11 +384,12 @@ class _AppTextFieldState extends State<AppTextField> {
     final bool showClear =
         widget.allowClear &&
         canEdit &&
-        widget.controller != null &&
-        widget.controller!.text.isNotEmpty;
+        controller != null &&
+        controller.text.isNotEmpty;
     final Widget? clearButton = showClear
         ? AppButton(
             iconOnly: true,
+            dense: widget.isDense,
             leadingIcon: Icons.close,
             label: MaterialLocalizations.of(context).clearButtonTooltip,
             semanticLabel: MaterialLocalizations.of(
@@ -360,12 +400,27 @@ class _AppTextFieldState extends State<AppTextField> {
           )
         : null;
 
+    final Widget? speechButton = _speechEnabled && controller != null
+        ? AppSpeechToTextButton(
+            controller: controller,
+            enabled: canEdit,
+            dense: widget.isDense,
+            onChanged: widget.onChanged,
+          )
+        : null;
+
+    final List<Widget> trailing = <Widget>[
+      ?clearButton,
+      ?speechButton,
+    ];
+
     if (widget.enableObscureTextToggle) {
       final String label = _obscureText
           ? widget.showObscuredTextLabel!
           : widget.hideObscuredTextLabel!;
       final Widget toggle = AppButton(
         iconOnly: true,
+        dense: widget.isDense,
         label: label,
         semanticLabel: label,
         tooltip: label,
@@ -380,21 +435,17 @@ class _AppTextFieldState extends State<AppTextField> {
             ? Icons.visibility_outlined
             : Icons.visibility_off_outlined,
       );
-      if (clearButton == null) {
-        return toggle;
-      }
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[clearButton, toggle],
-      );
+      trailing.add(toggle);
+    } else if (widget.suffixIcon != null) {
+      trailing.add(widget.suffixIcon!);
     }
 
-    if (clearButton != null && widget.suffixIcon != null) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[clearButton, widget.suffixIcon!],
-      );
+    if (trailing.isEmpty) {
+      return null;
     }
-    return clearButton ?? widget.suffixIcon;
+    if (trailing.length == 1) {
+      return trailing.first;
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: trailing);
   }
 }

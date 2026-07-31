@@ -19577,6 +19577,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonFormatNumberedListLabel => 'Numbered list';
 
   @override
+  String get speechToTextStartTooltip => 'Dictate with microphone';
+
+  @override
+  String get speechToTextStopTooltip => 'Stop dictation';
+
+  @override
+  String get speechToTextListeningMessage => 'Listening…';
+
+  @override
+  String get speechToTextOfflineMessage =>
+      'Speech dictation needs an internet connection.';
+
+  @override
+  String get speechToTextUnavailableMessage =>
+      'Speech dictation is not available on this device.';
+
+  @override
+  String get speechToTextPermissionDeniedMessage =>
+      'Microphone permission is required for dictation.';
+
+  @override
+  String get speechToTextNoMicrophoneMessage =>
+      'No microphone was found for dictation.';
+
+  @override
+  String get speechToTextFieldDisabledMessage =>
+      'Dictation is unavailable while this field is disabled.';
+
+  @override
+  String get speechToTextErrorMessage =>
+      'Speech dictation could not continue. Try again.';
+
+  @override
+  String get speechToTextSwitchedFieldMessage =>
+      'Dictation moved to this field. The previous field stopped listening.';
+
+  @override
   String get commonEditActionLabel => 'Edit';
 
   @override

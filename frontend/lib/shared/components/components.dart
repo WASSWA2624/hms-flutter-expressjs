@@ -54,6 +54,7 @@ export 'app_search_bar.dart';
 export 'app_select_field.dart';
 export 'app_skeleton.dart';
 export 'app_sort_menu_button.dart';
+export 'app_speech_to_text.dart';
 export 'app_state_view.dart';
 export 'app_status_badge.dart';
 export 'app_status_text.dart';
