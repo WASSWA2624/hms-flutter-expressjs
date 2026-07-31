@@ -1298,7 +1298,8 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
             order.imagingStudies.isNotEmpty ||
             order.studyCount > 0 ||
             workflow.studies.isNotEmpty);
-    final bool canCancel = widget.onCancel != null && next.canCancel;
+    final bool canCancel =
+        widget.onCancel != null && next.canCancel && pendingLike;
     final bool allSelected =
         rows.isNotEmpty && _selectedKeys.length == rows.length;
     final bool someSelected = _selectedKeys.isNotEmpty && !allSelected;
@@ -1351,12 +1352,12 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                 columnWidths: const <int, TableColumnWidth>{
                   0: FixedColumnWidth(40),
                   1: FixedColumnWidth(40),
-                  2: FlexColumnWidth(1.2),
-                  3: FlexColumnWidth(2.2),
-                  4: FlexColumnWidth(1.1),
-                  5: FlexColumnWidth(1.2),
-                  6: FlexColumnWidth(1.6),
-                  7: FlexColumnWidth(2.6),
+                  2: FlexColumnWidth(1.1),
+                  3: FlexColumnWidth(2.0),
+                  4: FlexColumnWidth(1.0),
+                  5: FlexColumnWidth(1.0),
+                  6: FlexColumnWidth(2.2),
+                  7: FlexColumnWidth(2.8),
                 },
                 children: <TableRow>[
                   TableRow(
@@ -1497,25 +1498,20 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                           onTap: () {
                             _openProcedureDetails(this.context, rows[index]);
                           },
-                          child: AppWorkspaceStatusBadge(
-                            status: AppWorkspaceStatus(
-                              label: _procedureWorkbenchStatusLabel(
-                                l10n,
-                                status,
-                              ),
-                              tone: switch (status) {
-                                _ProcedureWorkbenchStatus.pending =>
-                                  AppWorkspaceStatusTone.warning,
-                                _ProcedureWorkbenchStatus.inProcess =>
-                                  AppWorkspaceStatusTone.info,
-                                _ProcedureWorkbenchStatus.waitingForReport =>
-                                  AppWorkspaceStatusTone.info,
-                                _ProcedureWorkbenchStatus.reported =>
-                                  AppWorkspaceStatusTone.success,
-                                _ProcedureWorkbenchStatus.cancelled =>
-                                  AppWorkspaceStatusTone.error,
-                              },
-                            ),
+                          child: _ProcedureStatusLabel(
+                            label: _procedureWorkbenchStatusLabel(l10n, status),
+                            tone: switch (status) {
+                              _ProcedureWorkbenchStatus.pending =>
+                                AppWorkspaceStatusTone.warning,
+                              _ProcedureWorkbenchStatus.inProcess =>
+                                AppWorkspaceStatusTone.info,
+                              _ProcedureWorkbenchStatus.waitingForReport =>
+                                AppWorkspaceStatusTone.info,
+                              _ProcedureWorkbenchStatus.reported =>
+                                AppWorkspaceStatusTone.success,
+                              _ProcedureWorkbenchStatus.cancelled =>
+                                AppWorkspaceStatusTone.error,
+                            },
                           ),
                         ),
                         _ProcedureTableCell(
@@ -1526,56 +1522,60 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                             showLabels: true,
                             forceIconOnly: false,
                             plainChrome: true,
-                            child: Wrap(
-                              spacing: theme.spacing.xs,
-                              runSpacing: theme.spacing.xs,
-                              alignment: WrapAlignment.end,
-                              children: <Widget>[
-                                if (canRunProcedureDone)
-                                  AppButton.secondary(
-                                    dense: true,
-                                    label: l10n.radiologyMarkProcedureDoneAction,
-                                    leadingIcon: Icons.check_circle_outline,
-                                    isLoading: state.isMutating,
-                                    onPressed: state.isMutating
-                                        ? null
-                                        : widget.onMarkDone,
-                                  ),
-                                if (canMarkReportDone)
-                                  AppButton.primary(
-                                    dense: true,
-                                    label: l10n.radiologyCreateReportAction,
-                                    leadingIcon: Icons.edit_note_outlined,
-                                    onPressed: widget.onMarkReportDone,
-                                  ),
-                                if (canViewReport)
-                                  AppButton.primary(
-                                    dense: true,
-                                    label: l10n.radiologyViewReportAction,
-                                    leadingIcon: Icons.description_outlined,
-                                    onPressed: widget.onMarkReportDone,
-                                  ),
-                                if (canUndo)
-                                  AppButton.tertiary(
-                                    dense: true,
-                                    label: l10n.radiologyUndoProcedureAction,
-                                    leadingIcon: Icons.undo_outlined,
-                                    onPressed: state.isMutating
-                                        ? null
-                                        : widget.onUndo,
-                                  ),
-                                if (canCancel)
-                                  AppButton.tertiary(
-                                    dense: true,
-                                    label: l10n.radiologyCancelOrderAction,
-                                    leadingIcon: Icons.cancel_outlined,
-                                    color: colors.error,
-                                    isLoading: state.isMutating,
-                                    onPressed: state.isMutating
-                                        ? null
-                                        : widget.onCancel,
-                                  ),
-                              ],
+                            child: Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: OverflowBar(
+                                spacing: theme.spacing.xs,
+                                overflowSpacing: theme.spacing.xs,
+                                overflowAlignment: OverflowBarAlignment.end,
+                                children: <Widget>[
+                                  if (canRunProcedureDone)
+                                    AppButton.secondary(
+                                      dense: true,
+                                      label:
+                                          l10n.radiologyMarkProcedureDoneAction,
+                                      leadingIcon: Icons.check_circle_outline,
+                                      isLoading: state.isMutating,
+                                      onPressed: state.isMutating
+                                          ? null
+                                          : widget.onMarkDone,
+                                    ),
+                                  if (canMarkReportDone)
+                                    AppButton.primary(
+                                      dense: true,
+                                      label: l10n.radiologyCreateReportAction,
+                                      leadingIcon: Icons.edit_note_outlined,
+                                      onPressed: widget.onMarkReportDone,
+                                    ),
+                                  if (canViewReport)
+                                    AppButton.primary(
+                                      dense: true,
+                                      label: l10n.radiologyViewReportAction,
+                                      leadingIcon: Icons.description_outlined,
+                                      onPressed: widget.onMarkReportDone,
+                                    ),
+                                  if (canUndo)
+                                    AppButton.tertiary(
+                                      dense: true,
+                                      label: l10n.radiologyUndoProcedureAction,
+                                      leadingIcon: Icons.undo_outlined,
+                                      onPressed: state.isMutating
+                                          ? null
+                                          : widget.onUndo,
+                                    ),
+                                  if (canCancel)
+                                    AppButton.tertiary(
+                                      dense: true,
+                                      label: l10n.radiologyCancelOrderAction,
+                                      leadingIcon: Icons.cancel_outlined,
+                                      color: colors.error,
+                                      isLoading: state.isMutating,
+                                      onPressed: state.isMutating
+                                          ? null
+                                          : widget.onCancel,
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -1638,7 +1638,8 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             order.imagingStudies.isNotEmpty ||
             order.studyCount > 0 ||
             workflow.studies.isNotEmpty);
-    final bool canCancel = onCancel != null && next.canCancel;
+    final bool canCancel =
+        onCancel != null && next.canCancel && pendingLike;
     final AppWorkspaceStatusTone statusTone = switch (status) {
       _ProcedureWorkbenchStatus.pending => AppWorkspaceStatusTone.warning,
       _ProcedureWorkbenchStatus.inProcess => AppWorkspaceStatusTone.info,
@@ -1686,11 +1687,9 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             title: row.name,
             titleIcon: Icons.biotech_outlined,
             headerActions: <Widget>[
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: _procedureWorkbenchStatusLabel(l10n, status),
-                  tone: statusTone,
-                ),
+              _ProcedureStatusLabel(
+                label: _procedureWorkbenchStatusLabel(l10n, status),
+                tone: statusTone,
               ),
             ],
             child: Column(
@@ -1819,6 +1818,56 @@ class _ProcedureDetailParameterRow extends StatelessWidget {
         SizedBox(width: theme.spacing.sm),
         Expanded(child: value),
       ],
+    );
+  }
+}
+
+class _ProcedureStatusLabel extends StatelessWidget {
+  const _ProcedureStatusLabel({required this.label, required this.tone});
+
+  final String label;
+  final AppWorkspaceStatusTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color color = switch (tone) {
+      AppWorkspaceStatusTone.neutral => theme.colorScheme.onSurfaceVariant,
+      AppWorkspaceStatusTone.success => theme.statusColors.success,
+      AppWorkspaceStatusTone.warning => theme.statusColors.warning,
+      AppWorkspaceStatusTone.error => theme.statusColors.error,
+      AppWorkspaceStatusTone.info => theme.statusColors.info,
+    };
+    final IconData icon = switch (tone) {
+      AppWorkspaceStatusTone.neutral => Icons.radio_button_unchecked,
+      AppWorkspaceStatusTone.success => Icons.check_circle_outline,
+      AppWorkspaceStatusTone.warning => Icons.warning_amber_outlined,
+      AppWorkspaceStatusTone.error => Icons.error_outline,
+      AppWorkspaceStatusTone.info => Icons.info_outline,
+    };
+
+    return Semantics(
+      label: label,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: theme.appTokens.listIconSize, color: color),
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Expanded(
+            child: Text(
+              label,
+              softWrap: true,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
