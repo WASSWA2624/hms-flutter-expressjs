@@ -950,10 +950,12 @@ _ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) 
   if (order.isCancelled) {
     return _ProcedureWorkbenchStatus.cancelled;
   }
-  if (order.hasFinalResult) {
+  // COMPLETED now means the report has been released.
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
     return _ProcedureWorkbenchStatus.reported;
   }
-  if (order.hasDraftResult ||
+  if (order.normalizedStatus == 'AWAITING_REPORT' ||
+      order.hasDraftResult ||
       order.hasPerformedStudy ||
       workflow.studies.isNotEmpty) {
     return _ProcedureWorkbenchStatus.waitingForReport;

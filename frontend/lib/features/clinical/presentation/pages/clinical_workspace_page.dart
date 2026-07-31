@@ -3561,6 +3561,7 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'ORDERED' ||
     'COLLECTED' ||
     'IN_PROCESS' ||
+    'AWAITING_REPORT' ||
     'RESULTS_READY' ||
     'OPEN' => AppWorkspaceStatusTone.info,
     'PENDING' => AppWorkspaceStatusTone.warning,

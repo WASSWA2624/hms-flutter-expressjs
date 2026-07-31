@@ -1213,7 +1213,9 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     if (packId === ROLE_PACKS.RADIOLOGY_TECH) {
       const [ordersToday, inProcess, pending, final, completed] = await Promise.all([
         prisma.radiology_order.count({ where: { ...radiologyOrderWhere, ordered_at: { gte: todayStart } } }),
-        prisma.radiology_order.count({ where: { ...radiologyOrderWhere, status: 'IN_PROCESS' } }),
+        prisma.radiology_order.count({
+          where: { ...radiologyOrderWhere, status: { in: ['IN_PROCESS', 'AWAITING_REPORT'] } }
+        }),
         prisma.radiology_result.count({ where: { ...radiologyResultWhere, status: 'DRAFT' } }),
         prisma.radiology_result.count({ where: { ...radiologyResultWhere, status: 'FINAL' } }),
         prisma.radiology_order.count({ where: { ...radiologyOrderWhere, status: 'COMPLETED' } })

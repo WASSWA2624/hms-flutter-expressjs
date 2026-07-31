@@ -15,6 +15,7 @@ const List<String> radiologyStageFilters = <String>[
 const List<String> radiologyOrderStatuses = <String>[
   'ORDERED',
   'IN_PROCESS',
+  'AWAITING_REPORT',
   'COMPLETED',
   'CANCELLED',
 ];

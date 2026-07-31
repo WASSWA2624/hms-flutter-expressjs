@@ -434,9 +434,10 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
     next_actions: {
       can_assign: isAssignable,
       can_start: order.status === 'ORDERED',
-      can_complete: order.status === 'IN_PROCESS' && hasFinalResult,
-      can_cancel: ['ORDERED', 'IN_PROCESS'].includes(order.status),
-      can_create_study: isActive,
+      can_complete:
+        ['IN_PROCESS', 'AWAITING_REPORT'].includes(order.status) && hasFinalResult,
+      can_cancel: ['ORDERED', 'IN_PROCESS', 'AWAITING_REPORT'].includes(order.status),
+      can_create_study: isActive && order.status !== 'COMPLETED',
       can_create_draft_result: isActive,
       can_finalize_result: hasDraftResult,
       can_request_finalization: hasDraftResult,

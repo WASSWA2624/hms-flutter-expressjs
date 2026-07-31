@@ -33,7 +33,7 @@ class _MockRadiologyRepository extends Mock implements RadiologyRepository {}
 const RadiologyOrder _reportingOrder = RadiologyOrder(
   id: 'RO-REPORT',
   displayId: 'RAD-REPORT',
-  status: 'COMPLETED',
+  status: 'AWAITING_REPORT',
   patientDisplayName: 'Rita Reporting',
   patientId: 'PAT-RITA',
   modality: 'CT',
@@ -494,7 +494,7 @@ void main() {
         ),
       );
 
-      expect(_tab('Reporting'), findsOneWidget);
+      expect(_tab('For reporting'), findsOneWidget);
       expect(find.text('Rita Reporting'), findsOneWidget);
       expect(find.byTooltip('Request imaging'), findsNothing);
       expect(find.byTooltip('Configurations'), findsNothing);
@@ -517,7 +517,7 @@ void main() {
         ),
       );
 
-      expect(_tab('Reporting'), findsNothing);
+      expect(_tab('For reporting'), findsNothing);
       expect(find.byTooltip('Request imaging'), findsNothing);
       expect(find.byTooltip('Configurations'), findsNothing);
       expect(find.text('Rita Reporting'), findsNothing);
@@ -536,7 +536,7 @@ void main() {
         ),
       );
 
-      expect(_tab('Reporting'), findsOneWidget);
+      expect(_tab('For reporting'), findsOneWidget);
       expect(find.text('Rita Reporting'), findsOneWidget);
       expect(find.byTooltip('Request imaging'), findsNothing);
       expect(find.byTooltip('Configurations'), findsNothing);
@@ -569,7 +569,7 @@ void main() {
         ),
       );
 
-      expect(_tab('Reporting'), findsOneWidget);
+      expect(_tab('For reporting'), findsOneWidget);
       expect(find.text('Rita Reporting'), findsOneWidget);
       expect(find.byTooltip('Request imaging'), findsNothing);
       expect(find.byTooltip('Configurations'), findsNothing);
@@ -1055,7 +1055,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(_tab('Reporting'), findsOneWidget);
+    expect(_tab('For reporting'), findsOneWidget);
     expect(find.text('Rita Reporting'), findsOneWidget);
   });
 
@@ -1074,7 +1074,7 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(_tab('Reporting'), findsOneWidget);
+    expect(_tab('For reporting'), findsOneWidget);
     expect(find.textContaining('Rita'), findsWidgets);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
   });
@@ -1095,7 +1095,7 @@ void main() {
     );
 
     expect(find.text('Rita Reporting'), findsOneWidget);
-    expect(_tab('Reporting'), findsOneWidget);
+    expect(_tab('For reporting'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsNothing);
   });
 
@@ -1115,7 +1115,7 @@ void main() {
     );
 
     expect(find.text('Rita Reporting'), findsOneWidget);
-    expect(_tab('Reporting'), findsOneWidget);
+    expect(_tab('For reporting'), findsOneWidget);
   });
 
   testWidgets('dark theme: authorized Reporting chrome remains', (
@@ -1134,7 +1134,7 @@ void main() {
     );
 
     expect(find.text('Rita Reporting'), findsOneWidget);
-    expect(_tab('Reporting'), findsOneWidget);
+    expect(_tab('For reporting'), findsOneWidget);
   });
 
   testWidgets(
@@ -1149,7 +1149,7 @@ void main() {
         initialLocation: '/radiology?section=reporting',
       );
 
-      expect(_tab('Reporting'), findsOneWidget);
+      expect(_tab('For reporting'), findsOneWidget);
       expect(find.text('Rita Reporting'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -1167,7 +1167,7 @@ void main() {
         initialLocation: '/radiology?section=draft',
       );
 
-      expect(_tab('Reporting'), findsOneWidget);
+      expect(_tab('For reporting'), findsOneWidget);
       expect(find.text('Rita Reporting'), findsOneWidget);
     },
   );
@@ -1264,21 +1264,20 @@ void _stubRadiology(_MockRadiologyRepository repository) {
         invocation.positionalArguments.single as RadiologyWorkspaceQuery;
     List<RadiologyOrder> items = const <RadiologyOrder>[_reportingOrder];
     final String stage = query.stage.trim().toUpperCase();
+    // Mirrors the backend's status-driven stage filters.
     if (stage == 'REPORTING') {
       items = items
-          .where((RadiologyOrder order) {
-            if (order.isCancelled || order.hasFinalResult) {
-              return false;
-            }
-            final String status = (order.status ?? '').toUpperCase();
-            return status == 'COMPLETED' ||
-                order.hasPerformedStudy ||
-                order.hasDraftResult;
-          })
+          .where(
+            (RadiologyOrder order) =>
+                (order.status ?? '').toUpperCase() == 'AWAITING_REPORT',
+          )
           .toList(growable: false);
     } else if (stage == 'HISTORY') {
       items = items
-          .where((RadiologyOrder order) => order.hasFinalResult)
+          .where(
+            (RadiologyOrder order) =>
+                (order.status ?? '').toUpperCase() == 'COMPLETED',
+          )
           .toList(growable: false);
     } else if (stage == 'COMPLETED') {
       items = items

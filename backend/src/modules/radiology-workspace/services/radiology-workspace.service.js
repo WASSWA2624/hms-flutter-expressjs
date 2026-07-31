@@ -160,16 +160,16 @@ const mapRadiologyPatientWorkItem = (records = []) => {
   const results = uniqueRadiologyByKey(mapped.flatMap((order) => order.results || []), (item) => item.id);
   const studies = uniqueRadiologyByKey(mapped.flatMap((order) => order.imaging_studies || []), (item) => item.id);
   const statuses = mapped.map((order) => normalizeRadiologyStatus(order.status)).filter(Boolean);
-  const hasDraft = results.some((result) => normalizeRadiologyStatus(result?.status) === 'DRAFT');
-  const hasReleased = results.some((result) => ['FINAL', 'AMENDED'].includes(normalizeRadiologyStatus(result?.status)));
   const activeOrders = mapped.filter((order) => !radiologyOrderIsTerminal(order));
-  const status = hasDraft
-    ? 'REPORTING'
-    : statuses.includes('IN_PROCESS')
-      ? 'IN_PROCESS'
-      : statuses.includes('ORDERED')
-        ? 'ORDERED'
-        : (statuses.length && statuses.every((entry) => entry === 'COMPLETED')) || hasReleased
+  // Aggregate patient status: open acquisition work dominates, then reporting,
+  // then fully completed / cancelled.
+  const status = statuses.includes('IN_PROCESS')
+    ? 'IN_PROCESS'
+    : statuses.includes('ORDERED')
+      ? 'ORDERED'
+      : statuses.includes('AWAITING_REPORT')
+        ? 'AWAITING_REPORT'
+        : statuses.includes('COMPLETED')
           ? 'COMPLETED'
           : statuses.length && statuses.every((entry) => entry === 'CANCELLED')
             ? 'CANCELLED'
@@ -205,73 +205,41 @@ const mapRadiologyPatientWorkItem = (records = []) => {
     imaging_studies: studies};
 };
 
-const radiologyPatientHasReleasedReport = (item) =>
-  Number(item?.final_result_count || 0) + Number(item?.amended_result_count || 0) > 0;
+// Radiology order lifecycle:
+//   ORDERED / IN_PROCESS  -> procedure not done yet
+//   AWAITING_REPORT       -> procedure/study done, report not ready
+//   COMPLETED             -> report released (FINAL/AMENDED)
+const RADIOLOGY_WORKLIST_STATUSES = ['ORDERED', 'IN_PROCESS', 'AWAITING_REPORT'];
 
-/** Study/procedure done, but final/amended report not ready yet. */
-const radiologyPatientNeedsReporting = (item) => {
-  if (radiologyPatientHasReleasedReport(item)) return false;
-  const status = normalizeRadiologyStatus(item?.status);
-  if (status === 'CANCELLED') return false;
-  if (status === 'COMPLETED' || status === 'REPORTING') return true;
-  if (Number(item?.draft_result_count || 0) > 0) return true;
-  // Procedure done can leave status IN_PROCESS when a study exists.
-  if (Number(item?.study_count || 0) > 0) return true;
-  return false;
-};
+/** Report ready: order fully completed. */
+const radiologyReportReadyClause = () => ({ status: 'COMPLETED' });
 
-const radiologyPatientOnWorklist = (item) => {
-  const status = normalizeRadiologyStatus(item?.status);
-  if (status === 'CANCELLED') return false;
-  // Anything not yet report-ready belongs on the worklist.
-  return !radiologyPatientHasReleasedReport(item);
-};
-
-/** Report ready (FINAL or AMENDED result exists). */
-const radiologyReportReadyClause = () => ({
-  results: {
-    some: {
-      deleted_at: null,
-      status: { in: ['FINAL', 'AMENDED'] }}}});
-
-/** Study done / procedure completed, but report not ready. */
-const radiologyAwaitingReportClause = () => ({
-  AND: [
-    { status: { not: 'CANCELLED' } },
-    {
-      results: {
-        none: {
-          deleted_at: null,
-          status: { in: ['FINAL', 'AMENDED'] }}}},
-    {
-      OR: [
-        { status: 'COMPLETED' },
-        { imaging_studies: { some: { deleted_at: null } } },
-        { results: { some: { deleted_at: null, status: 'DRAFT' } } }]}]});
+/** Study/procedure done, but report not ready. */
+const radiologyAwaitingReportClause = () => ({ status: 'AWAITING_REPORT' });
 
 /** Open acquisition work, or done and still awaiting a report. */
 const radiologyWorklistOrdersClause = () => ({
-  AND: [
-    { status: { not: 'CANCELLED' } },
-    {
-      results: {
-        none: {
-          deleted_at: null,
-          status: { in: ['FINAL', 'AMENDED'] }}}}]});
+  status: { in: RADIOLOGY_WORKLIST_STATUSES }});
 
 const summarizeRadiologyPatientGroups = (groups = []) => {
-  const patientItems = groups.map(mapRadiologyPatientWorkItem).filter(Boolean);
-  const hasStatus = (item, values) => values.has(normalizeRadiologyStatus(item.status));
+  const groupStatuses = groups.map((records) =>
+    (records || []).map((record) => normalizeRadiologyStatus(record?.status))
+  );
+  const anyOf = (statuses, values) => statuses.some((status) => values.includes(status));
   return {
-    total_patients: patientItems.length,
-    // Worklist = not cancelled and report not ready (matches stage WORKLIST).
-    actionable_patients: patientItems.filter((item) => radiologyPatientOnWorklist(item)).length,
-    ordered_patients: patientItems.filter((item) => hasStatus(item, new Set(['ORDERED']))).length,
-    processing_patients: patientItems.filter((item) => hasStatus(item, new Set(['IN_PROCESS']))).length,
-    reporting_patients: patientItems.filter((item) => radiologyPatientNeedsReporting(item)).length,
-    released_patients: patientItems.filter((item) => radiologyPatientHasReleasedReport(item)).length,
-    completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
-    cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length};
+    total_patients: groupStatuses.length,
+    // Worklist = at least one order not report-ready (matches stage WORKLIST).
+    actionable_patients: groupStatuses.filter((statuses) =>
+      anyOf(statuses, RADIOLOGY_WORKLIST_STATUSES)).length,
+    ordered_patients: groupStatuses.filter((statuses) => anyOf(statuses, ['ORDERED'])).length,
+    processing_patients: groupStatuses.filter((statuses) => anyOf(statuses, ['IN_PROCESS'])).length,
+    reporting_patients: groupStatuses.filter((statuses) =>
+      anyOf(statuses, ['AWAITING_REPORT'])).length,
+    released_patients: groupStatuses.filter((statuses) => anyOf(statuses, ['COMPLETED'])).length,
+    completed_patients: groupStatuses.filter((statuses) =>
+      statuses.length > 0 && statuses.every((status) => status === 'COMPLETED')).length,
+    cancelled_patients: groupStatuses.filter((statuses) =>
+      statuses.length > 0 && statuses.every((status) => status === 'CANCELLED')).length};
 };
 
 const LEGACY_ROUTE_CONFIG = Object.freeze({
@@ -806,17 +774,6 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
     const patientSummary = summarizeRadiologyPatientGroups(
       groupRadiologyOrdersByPatient(summaryOrderRecords)
     );
-    // Order-history patient count matches report-ready (HISTORY) stage grouping.
-    const historyPatientCount = groupRadiologyOrdersByPatient(
-      summaryOrderRecords.filter((record) => {
-        const results = Array.isArray(record.results) ? record.results : [];
-        return results.some((result) => {
-          if (result?.deleted_at) return false;
-          const status = normalizeRadiologyStatus(result.status);
-          return status === 'FINAL' || status === 'AMENDED';
-        });
-      })
-    ).length;
     const patientWorklist = patientGroups.map(mapRadiologyPatientWorkItem).filter(Boolean);
     const pagedPatientWorklist = patientWorklist.slice(skip, skip + limit);
     const worklist = view === 'PATIENTS'
@@ -840,8 +797,7 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
         actionable_orders: actionableOrders,
         reporting_orders: reportingOrders,
         history_orders: historyOrders,
-        ...patientSummary,
-        released_patients: historyPatientCount},
+        ...patientSummary},
       worklist,
       pagination: buildPagination(page, limit, worklistTotal)};
   } catch (error) {
@@ -1293,7 +1249,7 @@ const completeRadiologyOrder = async (identifier, payload = {}, userId, ipAddres
           order};
       }
 
-      assertTransition(order.status === 'IN_PROCESS', {
+      assertTransition(['IN_PROCESS', 'AWAITING_REPORT'].includes(order.status), {
         from: order.status,
         to: 'COMPLETED'});
 
@@ -1479,11 +1435,11 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
         performed_at: toDateOrNull(payload.performed_at, null),
         started_at: toDateOrNull(payload.started_at, toDateOrNull(payload.performed_at, new Date()))});
 
-      // Fold Start imaging into Procedure done: ORDERED → IN_PROCESS when a
-      // study is recorded so clients do not need a separate start step.
-      if (order.status === 'ORDERED') {
+      // Recording a study means the procedure is done: the order moves to
+      // AWAITING_REPORT until a FINAL/AMENDED report is released.
+      if (order.status === 'ORDERED' || order.status === 'IN_PROCESS') {
         await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-          status: 'IN_PROCESS'});
+          status: 'AWAITING_REPORT'});
       }
 
       const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
@@ -1567,11 +1523,26 @@ const undoRadiologyStudy = async (identifier, userId, ipAddress) => {
       await radiologyWorkspaceRepository.txSoftDeleteStudyPacsLinks(tx, study.id, deletedAt);
       await radiologyWorkspaceRepository.txSoftDeleteStudy(tx, study.id, deletedAt);
 
-      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+      let refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
         tx,
         order.id,
         RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
       );
+
+      // Without any remaining study or draft, the procedure is no longer done.
+      if (
+        refreshedOrder?.status === 'AWAITING_REPORT' &&
+        !(refreshedOrder.imaging_studies || []).length &&
+        !(refreshedOrder.results || []).some((entry) => entry.status === 'DRAFT')
+      ) {
+        await radiologyWorkspaceRepository.txUpdateOrder(tx, refreshedOrder.id, {
+          status: 'IN_PROCESS'});
+        refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+          tx,
+          order.id,
+          RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+      }
 
       return { order: refreshedOrder, study };
     });
@@ -1636,11 +1607,26 @@ const undoRadiologyDraftResult = async (identifier, userId, ipAddress) => {
 
       await radiologyWorkspaceRepository.txSoftDeleteResult(tx, result.id);
 
-      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+      let refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
         tx,
         order.id,
         RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
       );
+
+      // Without any remaining study or draft, the procedure is no longer done.
+      if (
+        refreshedOrder?.status === 'AWAITING_REPORT' &&
+        !(refreshedOrder.imaging_studies || []).length &&
+        !(refreshedOrder.results || []).some((entry) => entry.status === 'DRAFT')
+      ) {
+        await radiologyWorkspaceRepository.txUpdateOrder(tx, refreshedOrder.id, {
+          status: 'IN_PROCESS'});
+        refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+          tx,
+          order.id,
+          RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+      }
 
       return { order: refreshedOrder, result };
     });
@@ -1969,9 +1955,10 @@ const draftRadiologyResult = async (identifier, payload = {}, userId, ipAddress)
                 : 0) + 1,
             reported_at: toDateOrNull(payload.reported_at, null)});
 
-      if (order.status === 'ORDERED') {
+      // Drafting a report implies the procedure is done.
+      if (order.status === 'ORDERED' || order.status === 'IN_PROCESS') {
         await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-          status: 'IN_PROCESS'});
+          status: 'AWAITING_REPORT'});
       }
 
       const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
@@ -2069,11 +2056,22 @@ const finalizeRadiologyResult = async (identifier, payload = {}, userId, ipAddre
         report_text: payload.report_text || result.report_text || null,
         reported_at: toDateOrNull(payload.reported_at, new Date())});
 
-      const order = await radiologyWorkspaceRepository.txFindOrderById(
+      // Releasing the report completes the order.
+      const orderRecord = await radiologyWorkspaceRepository.txFindOrderById(
         tx,
         result.radiology_order_id,
         RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
       );
+      let order = orderRecord;
+      if (orderRecord && !['CANCELLED', 'COMPLETED'].includes(orderRecord.status)) {
+        await radiologyWorkspaceRepository.txUpdateOrder(tx, orderRecord.id, {
+          status: 'COMPLETED'});
+        order = await radiologyWorkspaceRepository.txFindOrderById(
+          tx,
+          orderRecord.id,
+          RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+      }
 
       return {
         result: updatedResult,
@@ -2289,11 +2287,25 @@ const attestRadiologyResultFinalization = async (
         RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE
       );
 
-      const order = await radiologyWorkspaceRepository.txFindOrderById(
+      // Attested finalization releases the report, which completes the order.
+      let order = await radiologyWorkspaceRepository.txFindOrderById(
         tx,
         updatedResult.radiology_order_id,
         RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
       );
+      if (
+        order &&
+        ['FINAL', 'AMENDED'].includes(normalizeRadiologyStatus(refreshedResult?.status)) &&
+        !['CANCELLED', 'COMPLETED'].includes(order.status)
+      ) {
+        await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
+          status: 'COMPLETED'});
+        order = await radiologyWorkspaceRepository.txFindOrderById(
+          tx,
+          order.id,
+          RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+        );
+      }
 
       return {
         result: refreshedResult,

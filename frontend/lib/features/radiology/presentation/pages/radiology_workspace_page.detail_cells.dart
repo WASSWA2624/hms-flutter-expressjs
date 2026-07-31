@@ -144,6 +144,7 @@ String _orderStatusLabel(AppLocalizations l10n, String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
     'ORDERED' => l10n.radiologyStatusOrdered,
     'IN_PROCESS' => l10n.radiologyStatusInProcess,
+    'AWAITING_REPORT' => l10n.radiologyProcedureStatusWaitingReport,
     'COMPLETED' => l10n.radiologyStatusCompleted,
     'CANCELLED' => l10n.radiologyStatusCancelled,
     _ => l10n.profileUnknownValue,
@@ -438,10 +439,11 @@ String _worklistStatusLabel(AppLocalizations l10n, RadiologyOrder order) {
   if (order.isCancelled) {
     return l10n.radiologyStatusCancelled;
   }
-  if (order.hasFinalResult) {
+  // COMPLETED now means the report has been released.
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
     return l10n.radiologyProcedureStatusReported;
   }
-  if (order.normalizedStatus == 'COMPLETED' ||
+  if (order.normalizedStatus == 'AWAITING_REPORT' ||
       order.hasDraftResult ||
       order.hasPerformedStudy) {
     return l10n.radiologyProcedureStatusWaitingReport;
@@ -460,10 +462,10 @@ String _nextActionLabel(BuildContext context, RadiologyOrder order) {
   if (order.billingGateBlocked) {
     return l10n.radiologyNextActionConfirmBilling;
   }
-  if (order.hasFinalResult) {
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
     return l10n.radiologyViewReportAction;
   }
-  if (order.normalizedStatus == 'COMPLETED' ||
+  if (order.normalizedStatus == 'AWAITING_REPORT' ||
       order.hasDraftResult ||
       order.hasPerformedStudy) {
     return l10n.radiologyCreateReportAction;
@@ -487,10 +489,10 @@ AppWorkspaceStatusTone _worklistStatusTone(RadiologyOrder order) {
   if (order.isCancelled) {
     return AppWorkspaceStatusTone.error;
   }
-  if (order.hasFinalResult) {
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
     return AppWorkspaceStatusTone.success;
   }
-  if (order.normalizedStatus == 'COMPLETED' ||
+  if (order.normalizedStatus == 'AWAITING_REPORT' ||
       order.hasDraftResult ||
       order.hasPerformedStudy) {
     return AppWorkspaceStatusTone.info;
@@ -520,7 +522,7 @@ AppWorkspaceStatusTone _orderStatusTone(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
     'COMPLETED' => AppWorkspaceStatusTone.success,
     'CANCELLED' => AppWorkspaceStatusTone.error,
-    'IN_PROCESS' => AppWorkspaceStatusTone.info,
+    'IN_PROCESS' || 'AWAITING_REPORT' => AppWorkspaceStatusTone.info,
     'ORDERED' => AppWorkspaceStatusTone.warning,
     _ => AppWorkspaceStatusTone.neutral,
   };
@@ -541,7 +543,9 @@ IconData _worklistStatusIcon(RadiologyOrder order) {
   if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
     return Icons.verified_outlined;
   }
-  if (order.hasDraftResult || order.hasPerformedStudy) {
+  if (order.normalizedStatus == 'AWAITING_REPORT' ||
+      order.hasDraftResult ||
+      order.hasPerformedStudy) {
     return Icons.edit_note_outlined;
   }
   if (order.normalizedStatus == 'IN_PROCESS') {
@@ -555,6 +559,7 @@ IconData _orderStatusIcon(String? status) {
     'COMPLETED' => Icons.check_circle_outline,
     'CANCELLED' => Icons.cancel_outlined,
     'IN_PROCESS' => Icons.play_circle_outline,
+    'AWAITING_REPORT' => Icons.edit_note_outlined,
     'ORDERED' => Icons.pending_actions_outlined,
     _ => Icons.radio_button_unchecked,
   };

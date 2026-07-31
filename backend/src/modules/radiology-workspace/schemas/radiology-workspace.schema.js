@@ -39,7 +39,9 @@ const resultWorkflowParamsSchema = z.object({
 
 const getRadiologyWorkbenchQuerySchema = listQuerySchema.extend({
   stage: stageFilterSchema.optional(),
-  status: z.enum(['ORDERED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z
+    .enum(['ORDERED', 'IN_PROCESS', 'AWAITING_REPORT', 'COMPLETED', 'CANCELLED'])
+    .optional(),
   view: workbenchViewSchema.optional(),
   modality: imagingModalitySchema.optional(),
   priority: z.enum(['ROUTINE', 'URGENT', 'STAT']).optional(),

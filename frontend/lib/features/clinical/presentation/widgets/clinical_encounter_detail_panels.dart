@@ -1777,7 +1777,7 @@ bool _canDeleteLabOrder(String? status) {
 
 bool _canCancelRadiologyOrder(String? status) {
   return switch ((status ?? '').toUpperCase()) {
-    'ORDERED' || 'PENDING' || 'IN_PROCESS' => true,
+    'ORDERED' || 'PENDING' || 'IN_PROCESS' || 'AWAITING_REPORT' => true,
     _ => false,
   };
 }
@@ -1873,6 +1873,7 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'ORDERED' ||
     'COLLECTED' ||
     'IN_PROCESS' ||
+    'AWAITING_REPORT' ||
     'RESULTS_READY' ||
     'OPEN' => AppWorkspaceStatusTone.info,
     'PENDING' => AppWorkspaceStatusTone.warning,

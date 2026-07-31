@@ -111,6 +111,7 @@ AppWorkspaceStatusTone opdClinicalServiceStatusTone(String? status) {
     'ORDERED' ||
     'IN_PROGRESS' ||
     'IN_PROCESS' ||
+    'AWAITING_REPORT' ||
     'PROCESSING' ||
     'PENDING' ||
     'REQUESTED' => AppWorkspaceStatusTone.info,

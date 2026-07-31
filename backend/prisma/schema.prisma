@@ -371,6 +371,7 @@ enum LabResultStatus {
 enum RadiologyOrderStatus {
   ORDERED
   IN_PROCESS
+  AWAITING_REPORT
   COMPLETED
   CANCELLED
 }

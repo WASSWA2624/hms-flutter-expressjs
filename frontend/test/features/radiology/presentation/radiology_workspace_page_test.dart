@@ -35,7 +35,7 @@ const RadiologyOrder _orderedOrder = RadiologyOrder(
 const RadiologyOrder _reportingOrder = RadiologyOrder(
   id: 'RO-REPORT',
   displayId: 'RAD-REPORT',
-  status: 'COMPLETED',
+  status: 'AWAITING_REPORT',
   patientDisplayName: 'Rita Reporting',
   modality: 'CT',
   testDisplayName: 'CT Head',
@@ -113,28 +113,29 @@ List<RadiologyOrder> _ordersForQuery(RadiologyWorkspaceQuery query) {
   ];
   final String stage = query.stage.trim().toUpperCase();
   List<RadiologyOrder> items = all;
+  // Mirrors the backend's status-driven stage filters.
   if (stage == 'WORKLIST') {
     items = all
-        .where(
-          (RadiologyOrder order) =>
-              !order.isCancelled && !order.hasFinalResult,
-        )
+        .where((RadiologyOrder order) {
+          final String status = (order.status ?? '').toUpperCase();
+          return status == 'ORDERED' ||
+              status == 'IN_PROCESS' ||
+              status == 'AWAITING_REPORT';
+        })
         .toList(growable: false);
   } else if (stage == 'REPORTING') {
     items = all
-        .where((RadiologyOrder order) {
-          if (order.isCancelled || order.hasFinalResult) {
-            return false;
-          }
-          final String status = (order.status ?? '').toUpperCase();
-          return status == 'COMPLETED' ||
-              order.hasPerformedStudy ||
-              order.hasDraftResult;
-        })
+        .where(
+          (RadiologyOrder order) =>
+              (order.status ?? '').toUpperCase() == 'AWAITING_REPORT',
+        )
         .toList(growable: false);
   } else if (stage == 'HISTORY') {
     items = all
-        .where((RadiologyOrder order) => order.hasFinalResult)
+        .where(
+          (RadiologyOrder order) =>
+              (order.status ?? '').toUpperCase() == 'COMPLETED',
+        )
         .toList(growable: false);
   } else if (stage == 'COMPLETED') {
     items = all

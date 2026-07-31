@@ -19,7 +19,12 @@ const {
  * Create radiology order body validation
  * Used for POST /radiology-orders endpoint
  */
-const radiologyOrderStatusSchema = z.enum(['ORDERED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']);
+const radiologyOrderStatusSchema = z.enum([
+  'ORDERED',
+  'IN_PROCESS',
+  'AWAITING_REPORT',
+  'COMPLETED',
+  'CANCELLED']);
 const imagingModalitySchema = z.enum([
   'XRAY',
   'CT',
