@@ -142,7 +142,7 @@ final printFormTemplateContextProvider = Provider<PrintFormTemplateContext>((
 
   return PrintFormTemplateContext(
     appBranding: _appBranding(config),
-    facilityBranding: _facilityBranding(
+    facilityBranding: buildFacilityPrintBranding(
       setup: setup,
       session: session,
       apiBaseUrl: config.apiBaseUrl,
@@ -172,7 +172,7 @@ final printFormTemplateContextReadyProvider =
 
       return PrintFormTemplateContext(
         appBranding: _appBranding(config),
-        facilityBranding: _facilityBranding(
+        facilityBranding: buildFacilityPrintBranding(
           setup: setup,
           session: session,
           apiBaseUrl: config.apiBaseUrl,
@@ -201,7 +201,8 @@ PrintFormBranding _appBranding(AppConfig config) {
   );
 }
 
-PrintFormBranding? _facilityBranding({
+@visibleForTesting
+PrintFormBranding? buildFacilityPrintBranding({
   required FacilitySetupSnapshot? setup,
   required AuthSession? session,
   required Uri apiBaseUrl,
@@ -218,10 +219,18 @@ PrintFormBranding? _facilityBranding({
 
   final FacilityContactAddress contactAddress =
       setup?.contactAddress ?? const FacilityContactAddress();
+  final String? phone = _firstText(<String?>[
+    contactAddress.phone,
+    facility?.phone,
+  ]);
+  final String? email = _firstText(<String?>[
+    contactAddress.email,
+    facility?.email,
+  ]);
   final String fullAddress = _join(<String?>[
-    contactAddress.addressLine1,
-    contactAddress.city,
-    contactAddress.country,
+    _firstText(<String?>[contactAddress.addressLine1, facility?.addressLine1]),
+    _firstText(<String?>[contactAddress.city, facility?.city]),
+    _firstText(<String?>[contactAddress.country, facility?.country]),
   ]);
   final List<String> addressLines = fullAddress.isEmpty
       ? const <String>[]
@@ -232,10 +241,15 @@ PrintFormBranding? _facilityBranding({
     kind: PrintFormBrandingKind.facility,
     logoUrl: resolveAppMediaUrl(facility?.logoUrl, apiBaseUrl),
     contacts: <String>[
-      if (_hasText(contactAddress.phone)) 'Phone: ${contactAddress.phone}',
-      if (_hasText(contactAddress.email)) 'Email: ${contactAddress.email}',
+      if (phone != null) 'Phone: $phone',
+      if (email != null) 'Email: $email',
     ],
     addressLines: addressLines,
+    details: <String>[
+      if (facility != null) 'Type: ${_facilityTypeLabel(facility.type)}',
+      if (_hasText(facility?.displayId))
+        'Facility ID: ${facility!.displayId!.trim()}',
+    ],
     isSubscribed: _hasFacilitySubscription(session),
   );
 }
@@ -284,4 +298,14 @@ String _join(Iterable<String?> values) {
       .map((String? value) => value?.trim() ?? '')
       .where((String value) => value.isNotEmpty)
       .join(', ');
+}
+
+String _facilityTypeLabel(FacilitySetupType type) {
+  return switch (type) {
+    FacilitySetupType.hospital => 'Hospital',
+    FacilitySetupType.clinic => 'Clinic',
+    FacilitySetupType.lab => 'Laboratory',
+    FacilitySetupType.pharmacy => 'Pharmacy',
+    FacilitySetupType.other => 'Other',
+  };
 }

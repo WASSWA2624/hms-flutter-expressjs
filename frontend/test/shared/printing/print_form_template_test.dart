@@ -1,8 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 void main() {
+  test('builds facility header details with profile fallbacks', () {
+    final PrintFormBranding? branding = buildFacilityPrintBranding(
+      setup: const FacilitySetupSnapshot(
+        facility: FacilityProfile(
+          id: 'facility-1',
+          tenantId: 'tenant-1',
+          name: 'DemoCare General Hospital',
+          type: FacilitySetupType.hospital,
+          phone: '+2567001000',
+          email: 'info@democare.ug',
+          addressLine1: '1 Demo Hospital Avenue',
+          city: 'Kampala',
+          country: 'Uganda',
+          displayId: 'FAC0001',
+        ),
+      ),
+      session: null,
+      apiBaseUrl: Uri.parse('https://api.example.com'),
+    );
+
+    expect(branding, isNotNull);
+    expect(branding!.contacts, <String>[
+      'Phone: +2567001000',
+      'Email: info@democare.ug',
+    ]);
+    expect(branding.addressLines, <String>[
+      '1 Demo Hospital Avenue, Kampala, Uganda',
+    ]);
+    expect(branding.details, <String>[
+      'Type: Hospital',
+      'Facility ID: FAC0001',
+    ]);
+  });
+
+  test('prefers configured contact address over profile values', () {
+    final PrintFormBranding? branding = buildFacilityPrintBranding(
+      setup: const FacilitySetupSnapshot(
+        facility: FacilityProfile(
+          id: 'facility-1',
+          tenantId: 'tenant-1',
+          name: 'DemoCare General Hospital',
+          type: FacilitySetupType.hospital,
+          phone: 'profile-phone',
+          city: 'Profile City',
+        ),
+        contactAddress: FacilityContactAddress(
+          phone: 'configured-phone',
+          city: 'Configured City',
+        ),
+      ),
+      session: null,
+      apiBaseUrl: Uri.parse('https://api.example.com'),
+    );
+
+    expect(branding!.contacts, <String>['Phone: configured-phone']);
+    expect(branding.addressLines, <String>['Configured City']);
+  });
+
   testWidgets('falls back to app branding when facility is unavailable', (
     tester,
   ) async {
