@@ -31,6 +31,28 @@ describe('tenant-facility-workspace service', () => {
         extension_json: { logo_url: 'https://example.com/logo.png' },
       },
     ]);
+    repository.findFacilityContactRecords.mockResolvedValue({
+      contacts: [
+        {
+          id: 'contact-phone',
+          contact_type: 'PHONE',
+          value: '+256700000000',
+        },
+        {
+          id: 'contact-email',
+          contact_type: 'EMAIL',
+          value: 'info@acme.test',
+        },
+      ],
+      addresses: [
+        {
+          id: 'address-1',
+          line1: 'Plot 1 Hospital Road',
+          city: 'Kampala',
+          country: 'UG',
+        },
+      ],
+    });
     repository.findFacilityRecords.mockResolvedValue({
       departments: [
         {
@@ -118,7 +140,7 @@ describe('tenant-facility-workspace service', () => {
     });
   });
 
-  it('returns tenant and facility setup payload with checklist and subscription summary', async () => {
+  it('returns context-only setup with contact address for print branding', async () => {
     const result = await service.getSetup({}, {
       role: 'TENANT_ADMIN',
       permissions: ['subscriptions:read'],
@@ -129,12 +151,23 @@ describe('tenant-facility-workspace service', () => {
       expect.objectContaining({ id: 'TEN0001', name: 'Acme Hospital' })
     );
     expect(result.facility).toEqual(
-      expect.objectContaining({ id: 'FAC0001', name: 'Main Campus' })
+      expect.objectContaining({
+        id: 'FAC0001',
+        name: 'Main Campus',
+        phone: '+256700000000',
+        email: 'info@acme.test',
+        address_line1: 'Plot 1 Hospital Road',
+      })
     );
-    expect(result.departments).toHaveLength(1);
-    expect(result.units).toHaveLength(1);
-    expect(result.wards).toHaveLength(1);
-    expect(result.beds).toHaveLength(1);
+    expect(result.departments).toHaveLength(0);
+    expect(result.units).toHaveLength(0);
+    expect(result.wards).toHaveLength(0);
+    expect(result.beds).toHaveLength(0);
+    expect(repository.findFacilityContactRecords).toHaveBeenCalledWith({
+      tenant_id: 'tenant-uuid',
+      facility_id: 'facility-uuid',
+    });
+    expect(repository.findFacilityRecords).not.toHaveBeenCalled();
     expect(result.contact_address).toEqual(
       expect.objectContaining({
         phone: '+256700000000',
@@ -145,6 +178,27 @@ describe('tenant-facility-workspace service', () => {
     expect(result.checklist.completed_count).toBeGreaterThan(0);
     expect(result.subscription_summary).toBeNull();
     expect(result.permissions.can_manage_tenant).toBe(true);
+  });
+
+  it('loads structure lists when include_structure is requested', async () => {
+    const result = await service.getSetup(
+      { include_structure: true },
+      { role: 'TENANT_ADMIN' }
+    );
+
+    expect(repository.findFacilityRecords).toHaveBeenCalledWith(
+      {
+        tenant_id: 'tenant-uuid',
+        facility_id: 'facility-uuid',
+      },
+      expect.objectContaining({ includeDeleted: false })
+    );
+    expect(repository.findFacilityContactRecords).not.toHaveBeenCalled();
+    expect(result.departments).toHaveLength(1);
+    expect(result.units).toHaveLength(1);
+    expect(result.wards).toHaveLength(1);
+    expect(result.beds).toHaveLength(1);
+    expect(result.contact_address.phone).toBe('+256700000000');
   });
 
   it('includes subscription summary for super admins', async () => {
@@ -163,7 +217,10 @@ describe('tenant-facility-workspace service', () => {
   });
 
   it('resolves scoped foreign-key public ids from uuid storage', async () => {
-    const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
+    const result = await service.getSetup(
+      { include_structure: true },
+      { role: 'TENANT_ADMIN' }
+    );
 
     expect(result.facility.tenant_id).toBe('TEN0001');
     expect(result.departments[0].tenant_id).toBe('TEN0001');
@@ -185,13 +242,10 @@ describe('tenant-facility-workspace service', () => {
 
     const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
 
-    expect(repository.findFacilityRecords).toHaveBeenCalledWith(
-      {
-        tenant_id: 'tenant-uuid',
-        facility_id: 'facility-uuid',
-      },
-      expect.objectContaining({ includeDeleted: false })
-    );
+    expect(repository.findFacilityContactRecords).toHaveBeenCalledWith({
+      tenant_id: 'tenant-uuid',
+      facility_id: 'facility-uuid',
+    });
     expect(result.contact_address.phone).toBe('+256700000000');
     expect(result.facility).toEqual(
       expect.objectContaining({ id: 'FAC0001', name: 'Main Campus' })
@@ -218,6 +272,7 @@ describe('tenant-facility-workspace service', () => {
     expect(result.facility).toBeNull();
     expect(result.lookups.tenants).toHaveLength(1);
     expect(repository.findFacilityRecords).not.toHaveBeenCalled();
+    expect(repository.findFacilityContactRecords).not.toHaveBeenCalled();
   });
 
   describe('buildFacilityLogoBasename', () => {

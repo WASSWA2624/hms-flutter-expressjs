@@ -174,7 +174,7 @@ const serializeTenant = (record) => {
   };
 };
 
-const serializeFacility = (record, context = null) => {
+const serializeFacility = (record, context = null, contactAddress = null) => {
   if (!record) return null;
 
   const extensionJson =
@@ -196,6 +196,11 @@ const serializeFacility = (record, context = null) => {
     name: record.name,
     facility_type: record.facility_type,
     is_active: Boolean(record.is_active),
+    phone: contactAddress?.phone || null,
+    email: contactAddress?.email || null,
+    address_line1: contactAddress?.address_line1 || null,
+    city: contactAddress?.city || null,
+    country: contactAddress?.country || null,
     extension_json: {
       logo_url: extensionJson.logo_url || null,
       currency,
@@ -468,31 +473,27 @@ const getSetup = async (filters = {}, user = {}) => {
   // Desk tabs load structure lists themselves. Default bootstrap is context-only
   // (tenant/facility/facilities) so users/roles/catalog are not blocked on
   // departments/units/wards/rooms/beds. Pass include_structure=true for checklist.
+  // Contact/address always load so printed headers and identity checks stay accurate.
   const includeStructure =
     filters.include_structure === true ||
     filters.include_structure === 'true' ||
     filters.includeStructure === true ||
     filters.includeStructure === 'true';
+  const facilityScope = {
+    tenant_id: scope.tenant_id,
+    facility_id: selectedFacility?.id || scope.facility_id || null,
+  };
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
   const facilityRecords = includeStructure
-    ? await repository.findFacilityRecords(
-        {
-          tenant_id: scope.tenant_id,
-          facility_id: selectedFacility?.id || scope.facility_id || null,
-        },
-        {
-          includeDeleted:
-            filters.include_deleted === true ||
-            filters.include_deleted === 'true',
-        }
-      )
+    ? await repository.findFacilityRecords(facilityScope, { includeDeleted })
     : {
         departments: [],
         units: [],
         wards: [],
         rooms: [],
         beds: [],
-        contacts: [],
-        addresses: [],
+        ...(await repository.findFacilityContactRecords(facilityScope)),
       };
   const contactAddress = buildContactAddress(
     facilityRecords.contacts,
@@ -508,8 +509,14 @@ const getSetup = async (filters = {}, user = {}) => {
     state: 'ready',
     generated_at: new Date().toISOString(),
     tenant: serializeTenant(tenant),
-    facility: serializeFacility(selectedFacility, serializeContext),
-    facilities: facilities.map((entry) => serializeFacility(entry, serializeContext)),
+    facility: serializeFacility(selectedFacility, serializeContext, contactAddress),
+    facilities: facilities.map((entry) =>
+      serializeFacility(
+        entry,
+        serializeContext,
+        entry?.id === selectedFacility?.id ? contactAddress : null
+      )
+    ),
     contact_address: contactAddress,
     departments: facilityRecords.departments.map((entry) =>
       serializeDepartment(entry, serializeContext)

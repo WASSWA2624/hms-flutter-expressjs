@@ -85,6 +85,24 @@ const seedOrgPack = async (ctx) => {
           seedMeta: false,
         }
       );
+
+      await ctx.upsert(
+        'contact',
+        `${scenario.key}:facility-email:${facilityDefinition.key}`,
+        {
+          tenant_id: tenant.id,
+          facility_id: facility.id,
+          contact_type: 'EMAIL',
+          value: `${facilityDefinition.key}@${scenario.slug}.demo`,
+          is_primary: true,
+        },
+        {
+          tenantCode: scenario.tenant_code,
+          scenarioKey: scenario.scenario_key,
+          publicIdPrefix: 'CNT',
+          seedMeta: false,
+        }
+      );
     }
 
 

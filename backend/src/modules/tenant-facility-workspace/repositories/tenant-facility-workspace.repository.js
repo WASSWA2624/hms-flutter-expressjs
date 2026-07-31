@@ -224,6 +224,45 @@ const findFacilities = async (tenantId) => {
   }
 };
 
+const findFacilityContactRecords = async (scope = {}) => {
+  try {
+    if (!scope.tenant_id || !scope.facility_id) {
+      return {
+        contacts: [],
+        addresses: [],
+      };
+    }
+
+    const [contacts, addresses] = await Promise.all([
+      prisma.contact.findMany({
+        where: {
+          tenant_id: scope.tenant_id,
+          facility_id: scope.facility_id,
+          deleted_at: null,
+        },
+        orderBy: { created_at: 'asc' },
+        take: 10,
+      }),
+      prisma.address.findMany({
+        where: {
+          tenant_id: scope.tenant_id,
+          facility_id: scope.facility_id,
+          deleted_at: null,
+        },
+        orderBy: { created_at: 'asc' },
+        take: 1,
+      }),
+    ]);
+
+    return {
+      contacts,
+      addresses,
+    };
+  } catch (error) {
+    mapError(error);
+  }
+};
+
 const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) => {
   try {
     if (!scope.tenant_id || !scope.facility_id) {
@@ -243,7 +282,7 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
       includeDeleted,
     });
 
-    const [departments, units, wards, rooms, beds, contacts, addresses] =
+    const [departments, units, wards, rooms, beds, contactRecords] =
       await Promise.all([
         prisma.department.findMany({
           where: baseWhere,
@@ -270,24 +309,7 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
           orderBy: { label: 'asc' },
           take: SETUP_LIST_LIMIT,
         }),
-        prisma.contact.findMany({
-          where: {
-            tenant_id: scope.tenant_id,
-            facility_id: scope.facility_id,
-            deleted_at: null,
-          },
-          orderBy: { created_at: 'asc' },
-          take: 10,
-        }),
-        prisma.address.findMany({
-          where: {
-            tenant_id: scope.tenant_id,
-            facility_id: scope.facility_id,
-            deleted_at: null,
-          },
-          orderBy: { created_at: 'asc' },
-          take: 1,
-        }),
+        findFacilityContactRecords(scope),
       ]);
 
     return {
@@ -296,8 +318,8 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
       wards,
       rooms,
       beds,
-      contacts,
-      addresses,
+      contacts: contactRecords.contacts,
+      addresses: contactRecords.addresses,
     };
   } catch (error) {
     mapError(error);
@@ -343,6 +365,7 @@ const findSubscriptionSummary = async (tenantId) => {
 };
 
 module.exports = {
+  findFacilityContactRecords,
   findFacilityRecords,
   findFacilities,
   findSubscriptionSummary,

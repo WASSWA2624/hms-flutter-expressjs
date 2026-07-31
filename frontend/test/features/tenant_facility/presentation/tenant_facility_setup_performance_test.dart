@@ -38,6 +38,11 @@ void main() {
       expect(repositorySource.contains('_loadSetupContextOnly'), isTrue);
       expect(workspaceServiceSource.contains('include_structure'), isTrue);
       expect(
+        workspaceServiceSource.contains('findFacilityContactRecords'),
+        isTrue,
+        reason: 'context-only setup must still load contact/address for prints',
+      );
+      expect(
         setupControllerSource.contains('includeStructure: true'),
         isFalse,
         reason: 'controller bootstrap must not request structure lists',
