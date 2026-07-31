@@ -1275,22 +1275,7 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
     );
 
     return AppDialog(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(l10n.clinicalEncounterDetailsTitle),
-          Text(
-            l10n.clinicalEncounterDetailsSubtitle(
-              initialEntry.encounterPublicId ?? initialEntry.encounterId,
-              _apiLabel(initialEntry.sourceQueue),
-            ),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+      title: Text(l10n.clinicalEncounterDetailsTitle),
       icon: const Icon(Icons.medical_services_outlined),
       scrollable: true,
       maxWidth: 1120,
@@ -1382,7 +1367,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         entry: entry,
         status: primaryStatus,
         showPrimaryStatus: !_clinicalTriageShowsWorkflowStage(triageHandoff),
-        omitSubtitleFields: true,
         alerts: <AppWorkspaceStatus>[
           if (showUrgentAlert)
             AppWorkspaceStatus(
@@ -1708,14 +1692,12 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
     required this.entry,
     required this.status,
     this.showPrimaryStatus = true,
-    this.omitSubtitleFields = false,
     this.alerts = const <AppWorkspaceStatus>[],
   });
 
   final ClinicalWorklistEntry entry;
   final AppWorkspaceStatus status;
   final bool showPrimaryStatus;
-  final bool omitSubtitleFields;
   final List<AppWorkspaceStatus> alerts;
 
   @override
@@ -1740,13 +1722,14 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
           : null,
       showAvatar: false,
       semanticLabel: l10n.patientsDetailTitle,
+      persistExpandPreference: false,
+      initiallyExpanded: false,
       status: showPrimaryStatus && status.label.isNotEmpty ? status : null,
       alerts: alerts,
       expandedFields: _clinicalPatientContextFields(
         context,
         l10n,
         entry,
-        omitSubtitleFields: omitSubtitleFields,
       ),
     );
   }
@@ -3152,9 +3135,8 @@ List<AppSearchBarFilterChoice> _filterChoices(
 List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
   BuildContext context,
   AppLocalizations l10n,
-  ClinicalWorklistEntry entry, {
-  bool omitSubtitleFields = false,
-}) {
+  ClinicalWorklistEntry entry,
+) {
   final String dob = entry.patientDateOfBirth == null
       ? ''
       : AppFormatters.mediumDate(
@@ -3165,22 +3147,20 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
 
   // AppPatientDetails header shows name and public ID; age/gender are body fields.
   return <AppWorkspacePatientContextField>[
-    if (!omitSubtitleFields)
-      AppWorkspacePatientContextField(
-        label: l10n.clinicalEncounterNumberLabel,
-        value: entry.encounterPublicId ?? '',
-        icon: Icons.tag_outlined,
-        copyable: true,
-        copyTooltip: l10n.opdCopyEncounterIdAction,
-        copiedMessage: l10n.opdEncounterIdCopiedMessage,
-      ),
-    if (!omitSubtitleFields)
-      AppWorkspacePatientContextField(
-        label: l10n.clinicalEncounterQueueLabel,
-        value: _apiLabel(entry.sourceQueue),
-        icon: Icons.queue_outlined,
-        tone: _sourceQueueTone(entry.sourceQueue),
-      ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterNumberLabel,
+      value: entry.encounterPublicId ?? entry.encounterId,
+      icon: Icons.tag_outlined,
+      copyable: true,
+      copyTooltip: l10n.opdCopyEncounterIdAction,
+      copiedMessage: l10n.opdEncounterIdCopiedMessage,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterQueueLabel,
+      value: _apiLabel(entry.sourceQueue),
+      icon: Icons.queue_outlined,
+      tone: _sourceQueueTone(entry.sourceQueue),
+    ),
     AppWorkspacePatientContextField(
       label: l10n.clinicalEncounterTypeLabel,
       value: _apiLabel(entry.encounterType ?? ''),
