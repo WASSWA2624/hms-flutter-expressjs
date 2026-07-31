@@ -484,7 +484,7 @@ void main() {
   });
 
   testWidgets(
-    '∩ denial: without radiology:write, Request imaging / Configurations absent',
+    '∩ denial: without radiology:write, Request imaging absent',
     (WidgetTester tester) async {
       await _pumpReportingTab(
         tester,
@@ -631,7 +631,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Request imaging / Configurations / Draft report mount',
+    'full write ∩: Request imaging / Draft report mount',
     (WidgetTester tester) async {
       await _pumpReportingTab(
         tester,
@@ -645,7 +645,7 @@ void main() {
       );
 
       expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Configurations'), findsOneWidget);
+      expect(find.byTooltip('Configurations'), findsNothing);
       expect(find.text('Rita Reporting'), findsOneWidget);
 
       await _openReportingDetail(tester);
@@ -1090,7 +1090,7 @@ void main() {
 
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(_tab('Reporting'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
   });
 
   testWidgets('light theme: authorized Reporting chrome remains', (

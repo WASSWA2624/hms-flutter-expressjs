@@ -472,7 +472,7 @@ void main() {
 
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
 
         final AppLocalizations l10n = AppLocalizations.of(
@@ -512,13 +512,13 @@ void main() {
     );
 
     testWidgets(
-      'full intersection set mounts create, config, print, and detail mutate',
+      'full intersection set mounts create, print, and detail mutate',
       (WidgetTester tester) async {
         await _pumpReleasedTab(tester, repository: repository);
 
         expect(find.byTooltip('Request imaging'), findsOneWidget);
-        expect(find.byTooltip('Configurations'), findsOneWidget);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Configurations'), findsNothing);
+        expect(find.byTooltip('Orders view'), findsNothing);
 
         final bool hasBillingChoice =
             (_table(tester).columnChoices ??
@@ -571,7 +571,7 @@ void main() {
 
         expect(find.byType(AppTabStrip), findsOneWidget);
         expect(find.textContaining('Released'), findsWidgets);
-        expect(find.byTooltip('Orders view'), findsOneWidget);
+        expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
         expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
@@ -662,7 +662,7 @@ void main() {
 
       expect(find.byType(AppWorkspaceStatePanel), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Orders view'), findsOneWidget);
+      expect(find.byTooltip('Orders view'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     });
 
@@ -886,7 +886,7 @@ void main() {
 
       expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Configurations'), findsOneWidget);
+      expect(find.byTooltip('Configurations'), findsNothing);
     });
 
     testWidgets('dark theme: Released write chrome remains', (
@@ -899,7 +899,7 @@ void main() {
       );
 
       expect(find.byTooltip('Request imaging'), findsOneWidget);
-      expect(find.byTooltip('Configurations'), findsOneWidget);
+      expect(find.byTooltip('Configurations'), findsNothing);
       expect(find.textContaining('Released'), findsWidgets);
     });
 

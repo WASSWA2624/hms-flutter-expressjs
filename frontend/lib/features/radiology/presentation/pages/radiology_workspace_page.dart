@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -346,87 +347,30 @@ class _RadiologyWorkspaceContentState
     };
   }
 
-  Widget? _buildPrimaryAction(
+  AppSearchBarAction? _buildRequestImagingSearchAction(
     AppLocalizations l10n,
-    RadiologyWorkspaceState state,
-    AppAccessPolicy accessPolicy, {
+    RadiologyWorkspaceState state, {
     required RadiologyDeskSection section,
   }) {
     if (section.isFollowUps) {
       return null;
     }
-
-    return AppAccessActionGate(
-      requirement: radiologyStripCreateRequirement(section),
-      builder: (BuildContext context, bool isAllowed) {
-        return AppTabToolbarPrimary(
-          label: l10n.radiologyRequestImagingAction,
-          icon: Icons.add,
-          semanticLabel: l10n.radiologyRequestImagingAction,
-          tooltip: l10n.radiologyRequestImagingAction,
-          enabled: isAllowed && !state.isMutating,
-          onPressed: isAllowed && !state.isMutating
-              ? () => _showCreateOrderDialog(context, ref)
-              : null,
-        );
-      },
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final AccessRequirement requirement = radiologyStripCreateRequirement(
+      section,
     );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    RadiologyWorkspaceState state,
-    AppAccessPolicy accessPolicy, {
-    required RadiologyDeskSection section,
-  }) {
-    if (section.isFollowUps) {
-      return const <Widget>[];
+    if (!requirement.isAllowed(policy)) {
+      return null;
     }
-    final bool isPatientsView =
-        state.query.view == RadiologyWorkbenchView.patients;
-    final String viewLabel = isPatientsView
-        ? l10n.radiologyOrdersViewAction
-        : l10n.radiologyPatientsViewAction;
-    return <Widget>[
-      AppTabToolbarAction(
-        label: viewLabel,
-        icon: Icons.swap_horiz_outlined,
-        semanticLabel: viewLabel,
-        tooltip: viewLabel,
-        onPressed: state.isMutating
-            ? null
-            : () {
-                unawaited(
-                  ref
-                      .read(radiologyWorkspaceControllerProvider.notifier)
-                      .applyView(
-                        isPatientsView
-                            ? RadiologyWorkbenchView.orders
-                            : RadiologyWorkbenchView.patients,
-                      ),
-                );
-              },
-      ),
-      AppAccessActionGate(
-        requirement: radiologyStripConfigureRequirement(section),
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarAction(
-            label: l10n.radiologyConfigurationsAction,
-            icon: Icons.tune_outlined,
-            semanticLabel: l10n.radiologyConfigurationsAction,
-            tooltip: l10n.radiologyConfigurationsAction,
-            enabled: isAllowed && !state.isMutating,
-            onPressed: isAllowed && !state.isMutating
-                ? () => _showRadiologyConfigurationsDialog(
-                    context,
-                    ref,
-                    tenantId: accessPolicy.tenantId,
-                  )
-                : null,
-          );
-        },
-      ),
-    ];
+    return AppSearchBarAction(
+      icon: Icons.add_circle_outline,
+      label: l10n.radiologyRequestImagingAction,
+      tooltip: l10n.radiologyRequestImagingAction,
+      enabled: !state.isMutating,
+      onPressed: state.isMutating
+          ? null
+          : () => _showCreateOrderDialog(context, ref),
+    );
   }
 
   @override
@@ -520,18 +464,6 @@ class _RadiologyWorkspaceContentState
                     }
                   }
                 },
-                primaryAction: _buildPrimaryAction(
-                  l10n,
-                  state,
-                  accessPolicy,
-                  section: effectiveSection,
-                ),
-                secondaryActions: _buildSecondaryActions(
-                  l10n,
-                  state,
-                  accessPolicy,
-                  section: effectiveSection,
-                ),
               ),
             SizedBox(height: theme.spacing.sm),
             if (allowedSections.isEmpty)
@@ -565,6 +497,11 @@ class _RadiologyWorkspaceContentState
                 columnVisibilityController: _tableColumnController,
                 onSearchChanged: _scheduleSearch,
                 onSearchSubmitted: _applySearchNow,
+                createAction: _buildRequestImagingSearchAction(
+                  l10n,
+                  state,
+                  section: effectiveSection,
+                ),
               ),
           ],
         ),
@@ -584,6 +521,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     required this.columnVisibilityController,
     required this.onSearchChanged,
     required this.onSearchSubmitted,
+    this.createAction,
   });
 
   final RadiologyDeskSection section;
@@ -596,6 +534,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
   columnVisibilityController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onSearchSubmitted;
+  final AppSearchBarAction? createAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -673,6 +612,9 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         ],
         filterValue: _radiologyFilterValue(state.query),
         hasActiveFilters: _hasRadiologyFilters(state.query),
+        trailingActions: <AppSearchBarAction>[
+          ?createAction,
+        ],
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final String nextStage =
               value.option(_radiologyStageFilterKey) ?? 'ALL';
@@ -2311,11 +2253,13 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
   }
 }
 
+// Catalog admin dialog entry. Desk strip chrome no longer mounts Configurations;
+// keep the opener for nested catalog flows / future re-entry points.
+// ignore: unused_element
 Future<void> _showRadiologyConfigurationsDialog(
   BuildContext context,
-  WidgetRef ref, {
-  String? tenantId,
-}) async {
+  WidgetRef ref,
+) async {
   final RadiologyWorkspaceState? state = ref
       .read(radiologyWorkspaceControllerProvider)
       .asData

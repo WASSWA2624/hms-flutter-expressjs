@@ -323,8 +323,8 @@ void main() {
     expect(find.textContaining('All orders'), findsWidgets);
     expect(find.text('Olivia Ordered'), findsOneWidget);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsOneWidget);
-    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.byTooltip('Orders view'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
@@ -396,7 +396,7 @@ void main() {
     expect(find.text('Finn Finalized'), findsOneWidget);
   });
 
-  testWidgets('toolbar keeps stable create and configurations on every tab', (
+  testWidgets('request imaging stays on every workbench tab', (
     WidgetTester tester,
   ) async {
     final GoRouter router = await _pumpRadiologyWorkspace(
@@ -405,30 +405,31 @@ void main() {
     );
 
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
-    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsNothing);
 
     await tester.tap(find.textContaining('Reporting').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'reporting');
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
 
     await tester.tap(find.textContaining('Released').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'released');
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
 
     await tester.tap(find.textContaining('All orders').first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'all');
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
   });
@@ -455,37 +456,8 @@ void main() {
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
-    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
-  });
-
-  testWidgets('view toggle switches between patients and orders labels', (
-    WidgetTester tester,
-  ) async {
-    await _pumpRadiologyWorkspace(tester, repository: repository);
-
-    expect(find.byTooltip('Orders view'), findsOneWidget);
-    clearInteractions(repository);
-    _stubRadiologyRepository(repository);
-
-    await tester.tap(find.byTooltip('Orders view'));
-    await tester.pumpAndSettle();
-
-    final List<RadiologyWorkspaceQuery> queries = verify(
-      () => repository.getWorkbench(captureAny()),
-    ).captured.cast<RadiologyWorkspaceQuery>();
-    expect(
-      queries.any(
-        (RadiologyWorkspaceQuery q) => q.view == RadiologyWorkbenchView.orders,
-      ),
-      isTrue,
-    );
-    expect(find.byTooltip('Patients view'), findsOneWidget);
-    expect(
-      _table(tester).columnVisibilityStorageKey,
-      'radiology_worklist_orders',
-    );
-    expect(_table(tester).columns.length, 5);
   });
 
   testWidgets('search filters table rows via controller', (
@@ -519,7 +491,7 @@ void main() {
     expect(find.text('Olivia Ordered'), findsNothing);
   });
 
-  testWidgets('read-only users keep view toggle; write actions absent', (
+  testWidgets('read-only users hide write actions and toolbar chrome', (
     WidgetTester tester,
   ) async {
     await _pumpRadiologyWorkspace(
@@ -530,7 +502,7 @@ void main() {
 
     expect(find.byTooltip('Request imaging'), findsNothing);
     expect(find.byTooltip('Configurations'), findsNothing);
-    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
   });
 

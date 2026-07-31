@@ -532,7 +532,7 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
-      // Filters (in AppSearchBar) → Settings (table) → caller actions (e.g. Create).
+      // Filters (in AppSearchBar) → Settings → Export → caller actions (e.g. Create).
       trailingActions: <AppSearchBarAction>[
         ...trailingActions,
         ...this.trailingActions,
@@ -2038,17 +2038,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   List<AppSearchBarAction> _searchActions() {
+    // Filters (in AppSearchBar) → Settings → Export → caller trailing actions.
     final List<AppSearchBarAction> actions = <AppSearchBarAction>[];
-    if (widget.enableExport && widget.canExport) {
-      actions.add(
-        AppSearchBarAction(
-          icon: AppActionIcons.download,
-          label: _exportLabel,
-          tooltip: _exportLabel,
-          onPressed: _openExportDialog,
-        ),
-      );
-    }
     if (_availableColumns.length > 1) {
       actions.add(
         AppSearchBarAction(
@@ -2057,6 +2048,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           tooltip: _columnVisibilityLabel,
           active: _hasCustomColumnVisibility,
           onPressed: _openColumnVisibilityDialog,
+        ),
+      );
+    }
+    if (widget.enableExport && widget.canExport) {
+      actions.add(
+        AppSearchBarAction(
+          icon: AppActionIcons.download,
+          label: _exportLabel,
+          tooltip: _exportLabel,
+          onPressed: _openExportDialog,
         ),
       );
     }
