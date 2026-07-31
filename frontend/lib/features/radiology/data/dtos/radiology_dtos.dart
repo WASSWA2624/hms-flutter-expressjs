@@ -219,6 +219,8 @@ final class RadiologySummaryDto {
       cancelledOrders: _int(json['cancelled_orders']) ?? 0,
       studiesTotal: _int(json['studies_total']) ?? 0,
       unsyncedStudies: _int(json['unsynced_studies']) ?? 0,
+      actionableOrders: _int(json['actionable_orders']) ?? 0,
+      reportingOrders: _int(json['reporting_orders']) ?? 0,
       totalPatients: _int(json['total_patients']) ?? 0,
       actionablePatients: _int(json['actionable_patients']) ?? 0,
       orderedPatients: _int(json['ordered_patients']) ?? 0,

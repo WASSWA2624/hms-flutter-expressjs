@@ -278,7 +278,7 @@ class _RadiologyWorkspaceContentState
     );
     switch (section) {
       case RadiologyDeskSection.worklist:
-        unawaited(controller.applyStage('ALL'));
+        unawaited(controller.applyStage('WORKLIST'));
       case RadiologyDeskSection.reporting:
         unawaited(controller.applyStage('REPORTING'));
       case RadiologyDeskSection.allOrders:
@@ -312,6 +312,10 @@ class _RadiologyWorkspaceContentState
   ) {
     if (section.isFollowUps) {
       return null;
+    }
+    // Active tab always mirrors the table footer / current workbench total.
+    if (section == _section) {
+      return state.orders.totalItemCount;
     }
     return switch (section) {
       RadiologyDeskSection.worklist => state.workloadCount,

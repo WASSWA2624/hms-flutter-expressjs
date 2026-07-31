@@ -123,7 +123,6 @@ final class RadiologyWorkspaceController
       current.copyWith(
         query: current.query.copyWith(
           view: view,
-          stage: 'ALL',
           clearStatus: true,
           pageRequest: current.query.pageRequest.first(),
         ),

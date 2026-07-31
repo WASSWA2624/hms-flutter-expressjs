@@ -74,6 +74,8 @@ void main() {
         draftReports: 4,
         finalizedReports: 5,
         amendedReports: 1,
+        actionableOrders: 5,
+        reportingOrders: 4,
         totalPatients: 8,
         actionablePatients: 6,
         reportingPatients: 2,
@@ -101,7 +103,7 @@ void main() {
         references: RadiologyReferenceData(),
         query: RadiologyWorkspaceQuery(view: RadiologyWorkbenchView.orders),
       );
-      expect(ordersState.workloadCount, 9);
+      expect(ordersState.workloadCount, 5);
       expect(ordersState.reportingCount, 4);
       expect(summary.totalForView(RadiologyWorkbenchView.orders), 12);
     });

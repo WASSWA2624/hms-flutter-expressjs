@@ -19,6 +19,7 @@ const imagingModalitySchema = z.enum([
 
 const stageFilterSchema = z.enum([
   'ALL',
+  'WORKLIST',
   'ORDERED',
   'PROCESSING',
   'REPORTING',

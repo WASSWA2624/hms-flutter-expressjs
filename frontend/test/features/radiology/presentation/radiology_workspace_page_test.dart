@@ -58,6 +58,8 @@ const RadiologySummary _summary = RadiologySummary(
   processingQueue: 1,
   draftReports: 1,
   finalizedReports: 1,
+  actionableOrders: 2,
+  reportingOrders: 1,
   actionablePatients: 2,
   reportingPatients: 1,
   releasedPatients: 1,
@@ -108,7 +110,14 @@ List<RadiologyOrder> _ordersForQuery(RadiologyWorkspaceQuery query) {
   ];
   final String stage = query.stage.trim().toUpperCase();
   List<RadiologyOrder> items = all;
-  if (stage == 'REPORTING') {
+  if (stage == 'WORKLIST') {
+    items = all
+        .where((RadiologyOrder order) {
+          final String status = (order.status ?? '').toUpperCase();
+          return status == 'ORDERED' || status == 'IN_PROCESS';
+        })
+        .toList(growable: false);
+  } else if (stage == 'REPORTING') {
     items = all
         .where((RadiologyOrder order) => order.draftResultCount > 0)
         .toList(growable: false);
@@ -349,7 +358,12 @@ void main() {
     clearInteractions(repository);
     _stubRadiologyRepository(repository);
 
-    await tester.tap(find.textContaining('Reporting').first);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('reporting'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'reporting');
@@ -366,7 +380,12 @@ void main() {
     clearInteractions(repository);
     _stubRadiologyRepository(repository);
 
-    await tester.tap(find.textContaining('All orders').first);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('All orders'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'all');
@@ -395,7 +414,12 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Orders view'), findsNothing);
 
-    await tester.tap(find.textContaining('Reporting').first);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('reporting'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'reporting');
@@ -403,7 +427,12 @@ void main() {
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
 
-    await tester.tap(find.textContaining('All orders').first);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('All orders'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'all');

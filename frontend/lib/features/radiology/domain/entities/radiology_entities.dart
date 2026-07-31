@@ -213,15 +213,13 @@ final class RadiologyWorkspaceState {
     if (query.view == RadiologyWorkbenchView.patients) {
       return summary.actionablePatients;
     }
-    return summary.orderedQueue +
-        summary.processingQueue +
-        summary.draftReports;
+    return summary.actionableOrders;
   }
 
   int get reportingCount {
     return query.view == RadiologyWorkbenchView.patients
         ? summary.reportingPatients
-        : summary.draftReports;
+        : summary.reportingOrders;
   }
 
   RadiologyWorkspaceState copyWith({
@@ -487,6 +485,8 @@ final class RadiologySummary {
     this.cancelledOrders = 0,
     this.studiesTotal = 0,
     this.unsyncedStudies = 0,
+    this.actionableOrders = 0,
+    this.reportingOrders = 0,
     this.totalPatients = 0,
     this.actionablePatients = 0,
     this.orderedPatients = 0,
@@ -507,6 +507,8 @@ final class RadiologySummary {
   final int cancelledOrders;
   final int studiesTotal;
   final int unsyncedStudies;
+  final int actionableOrders;
+  final int reportingOrders;
   final int totalPatients;
   final int actionablePatients;
   final int orderedPatients;
