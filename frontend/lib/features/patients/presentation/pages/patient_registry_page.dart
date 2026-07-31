@@ -1016,7 +1016,6 @@ class _PatientList extends ConsumerWidget {
       exportConfig: AppListTableExportConfig<Patient>(
         fileNameStem: 'patients_${section.name}',
         enableDateFilter: false,
-        dateFilterLabel: l10n.commonTableExportDateRangeLabel,
         dateFromLabel: l10n.commonTableExportDateFromLabel,
         dateToLabel: l10n.commonTableExportDateToLabel,
       ),

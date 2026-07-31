@@ -527,7 +527,7 @@ void main() {
 
     final Finder settingsInSearchBar = find.descendant(
       of: find.byType(AppSearchBar),
-      matching: find.byTooltip('Table column settings'),
+      matching: find.byTooltip('Settings'),
     );
 
     expect(settingsInSearchBar, findsOneWidget);
@@ -614,7 +614,7 @@ void main() {
       size: const Size(900, 600),
     );
 
-    await tester.tap(find.byTooltip('Table column settings'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     final CheckboxListTile pinnedStatus = tester.widget<CheckboxListTile>(
@@ -659,7 +659,7 @@ void main() {
       size: const Size(400, 498),
     );
 
-    await tester.tap(find.byTooltip('Table column settings'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     final Finder resetAction = find.text('Reset columns');

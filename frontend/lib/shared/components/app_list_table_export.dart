@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:excel/excel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -76,17 +74,6 @@ final class AppListTableExportConfig<T> {
   final String? datePickerButtonLabel;
   final String? invalidDateMessage;
   final String? allFieldsLabel;
-}
-
-@immutable
-final class AppListTableExportRequest<T> {
-  const AppListTableExportRequest({
-    required this.columnKeys,
-    required this.filters,
-  });
-
-  final Set<String> columnKeys;
-  final AppSearchBarFilterValue filters;
 }
 
 /// Builds `.xlsx` bytes for the selected columns and rows.
@@ -748,10 +735,13 @@ class _ExportFilterGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double spacing = theme.spacing.md;
-        final bool twoColumns = constraints.maxWidth >= 620;
+        final double availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 680;
+        final bool twoColumns = availableWidth >= 620;
         final double itemWidth = twoColumns
-            ? (constraints.maxWidth - spacing) / 2
-            : constraints.maxWidth;
+            ? (availableWidth - spacing) / 2
+            : availableWidth;
         return Wrap(
           spacing: spacing,
           runSpacing: theme.spacing.md,

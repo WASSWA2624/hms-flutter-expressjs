@@ -1,0 +1,317 @@
+import 'dart:typed_data';
+
+import 'package:excel/excel.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
+
+import 'component_test_app.dart';
+
+void main() {
+  setUp(() {
+    AppListTableColumnVisibilityMemory.instance.clear();
+  });
+
+  final List<AppListTableColumn<_ExportRow>> columns =
+      <AppListTableColumn<_ExportRow>>[
+        AppListTableColumn<_ExportRow>(
+          id: 'title',
+          label: 'Title',
+          alwaysVisible: true,
+          exportValue: (_ExportRow item) => item.title,
+          cellBuilder: (_, _ExportRow item) => Text(item.title),
+        ),
+        AppListTableColumn<_ExportRow>(
+          id: 'status',
+          label: 'Status',
+          exportValue: (_ExportRow item) => item.status,
+          cellBuilder: (_, _ExportRow item) => Text(item.status),
+        ),
+        AppListTableColumn<_ExportRow>(
+          id: 'code',
+          label: 'Code',
+          exportValue: (_ExportRow item) => item.code,
+          cellBuilder: (_, _ExportRow item) => Text(item.code),
+        ),
+      ];
+
+  final List<_ExportRow> items = <_ExportRow>[
+    _ExportRow(
+      id: '1',
+      title: 'Alpha',
+      status: 'Active',
+      code: 'A1',
+      occurredAt: DateTime(2026, 1, 10),
+    ),
+    _ExportRow(
+      id: '2',
+      title: 'Beta',
+      status: 'Draft',
+      code: 'B2',
+      occurredAt: DateTime(2026, 2, 15),
+    ),
+    _ExportRow(
+      id: '3',
+      title: 'Gamma',
+      status: 'Active',
+      code: 'C3',
+      occurredAt: DateTime(2026, 3, 20),
+    ),
+  ];
+
+  test('buildAppListTableExcelBytes writes selected columns only', () {
+    final Uint8List bytes = buildAppListTableExcelBytes<_ExportRow>(
+      rows: items,
+      columns: columns
+          .where(
+            (AppListTableColumn<_ExportRow> column) =>
+                column.key == 'title' || column.key == 'code',
+          )
+          .toList(growable: false),
+      sheetName: 'Patients',
+    );
+
+    final Excel workbook = Excel.decodeBytes(bytes);
+    final Sheet sheet = workbook['Patients']!;
+    expect(sheet.cell(CellIndex.indexByString('A1')).value?.toString(), 'Title');
+    expect(sheet.cell(CellIndex.indexByString('B1')).value?.toString(), 'Code');
+    expect(
+      sheet.cell(CellIndex.indexByString('A2')).value?.toString(),
+      'Alpha',
+    );
+    expect(sheet.cell(CellIndex.indexByString('B2')).value?.toString(), 'A1');
+    expect(sheet.cell(CellIndex.indexByString('C1')).value, isNull);
+  });
+
+  test('applyAppListTableExportFilters narrows by date and row filter', () {
+    final List<_ExportRow> filtered = applyAppListTableExportFilters<_ExportRow>(
+      rows: items,
+      filters: AppSearchBarFilterValue(
+        dateFrom: DateTime(2026, 2, 1),
+        dateTo: DateTime(2026, 3, 31),
+        options: const <String, String>{'status': 'Active'},
+      ),
+      dateOf: (_ExportRow item) => item.occurredAt,
+      rowFilter: (_ExportRow item, AppSearchBarFilterValue filters) {
+        final String? status = filters.option('status');
+        return status == null || item.status == status;
+      },
+    );
+
+    expect(filtered.map((_ExportRow row) => row.id), <String>['3']);
+  });
+
+  testWidgets('Export action appears only when enabled and allowed', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    Future<void> pumpTable({
+      required bool enableExport,
+      required bool canExport,
+    }) {
+      return pumpComponent(
+        tester,
+        SizedBox(
+          height: 420,
+          child: AppListTable<_ExportRow>(
+            items: items,
+            columns: columns,
+            enableExport: enableExport,
+            canExport: canExport,
+            search: AppListTableSearch<_ExportRow>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+            ),
+            mobileItemBuilder: (BuildContext context, _ExportRow item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(900, 600),
+      );
+    }
+
+    await pumpTable(enableExport: false, canExport: true);
+    expect(find.byIcon(AppActionIcons.download), findsNothing);
+
+    await pumpTable(enableExport: true, canExport: false);
+    expect(find.byIcon(AppActionIcons.download), findsNothing);
+
+    await pumpTable(enableExport: true, canExport: true);
+    expect(find.byIcon(AppActionIcons.download), findsOneWidget);
+  });
+
+  testWidgets(
+    'Export dialog prefills Settings visibility and does not mutate it',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+
+      final AppListTableColumnVisibilityController<_ExportRow> visibility =
+          AppListTableColumnVisibilityController<_ExportRow>();
+      addTearDown(visibility.dispose);
+
+      Uint8List? savedBytes;
+      Set<String>? exportedKeys;
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 520,
+          child: AppListTable<_ExportRow>(
+            items: items,
+            columns: columns,
+            columnChoices: columns,
+            enableExport: true,
+            columnVisibilityController: visibility,
+            columnVisibilityStorageKey: 'export-test-visibility',
+            exportConfig: AppListTableExportConfig<_ExportRow>(
+              fileNameStem: 'export_test',
+              enableDateFilter: false,
+              saver:
+                  ({required Uint8List bytes, required String fileName}) async {
+                    savedBytes = bytes;
+                    return true;
+                  },
+            ),
+            search: AppListTableSearch<_ExportRow>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+            ),
+            mobileItemBuilder: (BuildContext context, _ExportRow item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(1000, 700),
+      );
+
+      await tester.pumpAndSettle();
+      visibility.syncColumns(columns: columns, columnChoices: columns);
+      visibility.applyVisibleColumnKeys(<String>{'title', 'status'});
+      await tester.pumpAndSettle();
+
+      expect(visibility.isColumnVisible('title'), isTrue);
+      expect(visibility.isColumnVisible('status'), isTrue);
+      expect(visibility.isColumnVisible('code'), isFalse);
+
+      await tester.tap(find.byIcon(AppActionIcons.download));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppListTableExportDialog<_ExportRow>), findsOneWidget);
+      expect(find.text('EXPORT'), findsOneWidget);
+
+      final CheckboxListTile codeTile = tester.widget<CheckboxListTile>(
+        find.widgetWithText(CheckboxListTile, 'Code'),
+      );
+      expect(codeTile.value, isFalse);
+
+      final CheckboxListTile statusTile = tester.widget<CheckboxListTile>(
+        find.widgetWithText(CheckboxListTile, 'Status'),
+      );
+      expect(statusTile.value, isTrue);
+
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Code'));
+      await tester.pumpAndSettle();
+
+      expect(visibility.isColumnVisible('code'), isFalse);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Export').last);
+      await tester.pumpAndSettle();
+
+      expect(savedBytes, isNotNull);
+      final Excel workbook = Excel.decodeBytes(savedBytes!);
+      final Sheet sheet = workbook.tables.values.first;
+      exportedKeys = <String>{
+        for (int index = 0; index < 3; index += 1)
+          if (sheet
+                  .cell(
+                    CellIndex.indexByColumnRow(
+                      columnIndex: index,
+                      rowIndex: 0,
+                    ),
+                  )
+                  .value !=
+              null)
+            sheet
+                .cell(
+                  CellIndex.indexByColumnRow(columnIndex: index, rowIndex: 0),
+                )
+                .value
+                .toString(),
+      };
+      expect(exportedKeys, containsAll(<String>['Title', 'Status', 'Code']));
+      expect(find.byType(AppListTableExportDialog<_ExportRow>), findsNothing);
+    },
+  );
+
+  testWidgets('Export blocks empty filtered rows with feedback', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 520,
+        child: AppListTable<_ExportRow>(
+          items: items,
+          columns: columns,
+          enableExport: true,
+          exportConfig: AppListTableExportConfig<_ExportRow>(
+            enableDateFilter: false,
+            initialFilterValue: const AppSearchBarFilterValue(
+              options: <String, String>{'status': 'Missing'},
+            ),
+            rowFilter: (_ExportRow item, AppSearchBarFilterValue filters) {
+              final String? status = filters.option('status');
+              return status == null || item.status == status;
+            },
+            saver: ({required Uint8List bytes, required String fileName}) async {
+              fail('Saver should not run for empty exports');
+            },
+          ),
+          search: AppListTableSearch<_ExportRow>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _ExportRow item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Export').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No rows match the export filters.'), findsOneWidget);
+    expect(find.byType(AppListTableExportDialog<_ExportRow>), findsOneWidget);
+  });
+}
+
+final class _ExportRow {
+  const _ExportRow({
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.code,
+    required this.occurredAt,
+  });
+
+  final String id;
+  final String title;
+  final String status;
+  final String code;
+  final DateTime occurredAt;
+}
