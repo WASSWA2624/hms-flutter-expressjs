@@ -15,6 +15,7 @@ final class AuthSession {
     this.subscriptionSummary,
     this.platformAdminContact,
     this.isAuthorizationHydrated = false,
+    this.isModuleCatalogHydrated = false,
     Iterable<OrgAdminContact> tenantAdminContacts = const <OrgAdminContact>[],
     Iterable<OrgAdminContact> facilityAdminContacts = const <OrgAdminContact>[],
   }) : subject =
@@ -36,6 +37,8 @@ final class AuthSession {
   factory AuthSession.fromTokens(SessionTokens tokens) {
     final Map<String, Object?>? payload = _tokenPayload(tokens.accessToken);
     final profile = payload == null ? null : AuthUserProfile.fromToken(payload);
+    final List<AppModuleEntitlement> entitlements =
+        _moduleEntitlementsFromPayload(payload);
 
     return AuthSession(
       tokens: tokens,
@@ -44,8 +47,10 @@ final class AuthSession {
           _firstString(payload, const <String>['email', 'sub', 'userId']),
       user: profile,
       permissions: _permissionsFromPayload(payload),
-      moduleEntitlements: _moduleEntitlementsFromPayload(payload),
+      moduleEntitlements: entitlements,
       isAuthorizationHydrated: payload?.containsKey('permissions') == true,
+      // JWTs rarely embed plan modules; /auth/me owns the catalog.
+      isModuleCatalogHydrated: entitlements.isNotEmpty,
     );
   }
 
@@ -57,8 +62,24 @@ final class AuthSession {
   final TenantSubscriptionSummary? subscriptionSummary;
   final PlatformAdminContact? platformAdminContact;
   final bool isAuthorizationHydrated;
+
+  /// True after `/auth/me` (or an equivalent profile enrich) has applied plan
+  /// modules — even when the resulting catalog is empty.
+  final bool isModuleCatalogHydrated;
   final List<OrgAdminContact> tenantAdminContacts;
   final List<OrgAdminContact> facilityAdminContacts;
+
+  /// Tenant JWT restore before `/auth/me`: hold routing instead of forbidden.
+  bool get needsMeEnrichment {
+    final String? tenantId = user?.tenantId?.trim();
+    if (tenantId == null || tenantId.isEmpty) {
+      return false;
+    }
+    if (isModuleCatalogHydrated || moduleEntitlements.isNotEmpty) {
+      return false;
+    }
+    return true;
+  }
 
   bool hasPermission(AppPermission permission) {
     return permissions.grants(permission);
@@ -77,6 +98,7 @@ final class AuthSession {
     TenantSubscriptionSummary? subscriptionSummary,
     PlatformAdminContact? platformAdminContact,
     bool? isAuthorizationHydrated,
+    bool? isModuleCatalogHydrated,
     Iterable<OrgAdminContact>? tenantAdminContacts,
     Iterable<OrgAdminContact>? facilityAdminContacts,
   }) {
@@ -90,6 +112,8 @@ final class AuthSession {
       platformAdminContact: platformAdminContact ?? this.platformAdminContact,
       isAuthorizationHydrated:
           isAuthorizationHydrated ?? this.isAuthorizationHydrated,
+      isModuleCatalogHydrated:
+          isModuleCatalogHydrated ?? this.isModuleCatalogHydrated,
       tenantAdminContacts: tenantAdminContacts ?? this.tenantAdminContacts,
       facilityAdminContacts:
           facilityAdminContacts ?? this.facilityAdminContacts,

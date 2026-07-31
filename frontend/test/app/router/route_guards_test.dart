@@ -17,10 +17,10 @@ void main() {
     path: '/protected',
     access: AppRouteAccess.authenticated,
   );
-  const AppPermission reportsReadPermission = AppPermission('reports.read');
+  const AppPermission reportsReadPermission = AppPermission('reports:read');
   final AppRouteData permissionRoute = AppRouteData(
-    name: 'reports',
-    path: '/reports',
+    name: 'reportsGuardTest',
+    path: '/reports-guard-test',
     requiredPermissions: <AppPermission>{reportsReadPermission},
   );
   const AppRouteData moduleRoute = AppRouteData(
@@ -83,6 +83,7 @@ void main() {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
         user: const AuthUserProfile(tenantId: 'tenant-1'),
+        isModuleCatalogHydrated: true,
       );
       final AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(session: session),
@@ -105,6 +106,7 @@ void main() {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
         user: const AuthUserProfile(tenantId: 'tenant-1'),
+        isModuleCatalogHydrated: true,
       );
       final AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(session: session),
@@ -160,6 +162,7 @@ void main() {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
         user: const AuthUserProfile(tenantId: 'tenant-1'),
+        isModuleCatalogHydrated: true,
       );
       final AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(session: session),
@@ -260,6 +263,10 @@ void main() {
           tenantId: 'tenant-1',
           roles: <String>['nurse'],
         ),
+        isModuleCatalogHydrated: true,
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'reporting-analytics'),
+        ],
       );
       final AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(session: session),
@@ -273,6 +280,64 @@ void main() {
             grantedPermissions: AppPermissionGrant(<AppPermission>{
               reportsReadPermission,
             }),
+          ),
+        ),
+        isNull,
+      );
+    });
+
+    test('holds module routes while tenant Me enrichment is pending', () {
+      final Uri targetLocation = Uri(path: moduleRoute.path);
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      expect(session.needsMeEnrichment, isTrue);
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: <AppRouteData>[moduleRoute],
+      );
+
+      expect(
+        guards.redirect(AppRouteGuardRequest(location: targetLocation)),
+        AppRoutes.sessionRestoring.locationWithFrom(targetLocation),
+      );
+    });
+
+    test('holds permission-gated routes while Me enrichment is pending', () {
+      final Uri targetLocation = Uri(path: permissionRoute.path);
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: <AppRouteData>[permissionRoute],
+      );
+
+      expect(
+        guards.redirect(AppRouteGuardRequest(location: targetLocation)),
+        AppRoutes.sessionRestoring.locationWithFrom(targetLocation),
+      );
+    });
+
+    test('stays on session-restoring while Me enrichment is pending', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: Uri.parse(
+              AppRoutes.sessionRestoring.locationWithFrom(
+                Uri(path: moduleRoute.path),
+              ),
+            ),
           ),
         ),
         isNull,
@@ -315,11 +380,11 @@ void main() {
           AppRouteGuardRequest(
             location: targetLocation,
             grantedPermissions: AppPermissionGrant(<AppPermission>{
-              const AppPermission('subscriptions:read'),
+              AppPermissions.subscriptionsRead,
             }),
           ),
         ),
-        AppRoutes.forbidden.locationWithFrom(targetLocation),
+        isNull,
       );
 
       final AppRouteGuards superAdminGuards = AppRouteGuards(
@@ -327,6 +392,9 @@ void main() {
           session: AuthSession(
             tokens: SessionTokens(accessToken: 'access-token'),
             user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(code: 'subscription-controls'),
+            ],
           ),
         ),
         routes: <AppRouteData>[AppRoutes.subscriptions],
@@ -405,7 +473,10 @@ void main() {
       final Uri targetLocation = Uri(path: AppRoutes.hr.path);
       final AuthSession session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(tenantId: 'tenant-1'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
         moduleEntitlements: const <AppModuleEntitlement>[
           AppModuleEntitlement(code: 'hr-rosters'),
         ],
@@ -425,7 +496,7 @@ void main() {
           AppRouteGuardRequest(
             location: targetLocation,
             grantedPermissions: AppPermissionGrant(<AppPermission>{
-              const AppPermission('hr:read'),
+              AppPermissions.hrRead,
             }),
           ),
         ),

@@ -96,6 +96,7 @@ final class AuthSessionDto {
       subscriptionSummary: subscriptionSummary,
       platformAdminContact: platformAdminContact,
       isAuthorizationHydrated: true,
+      isModuleCatalogHydrated: true,
       tenantAdminContacts: tenantAdminContacts,
       facilityAdminContacts: facilityAdminContacts,
     );

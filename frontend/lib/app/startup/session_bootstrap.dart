@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_token_provider.dart';
 
 /// Refreshes expired access tokens on startup so users stay signed in.
+///
+/// Also re-runs `/auth/me` enrichment when a tenant JWT restore is missing the
+/// module catalog (common after hot reload resets [SessionController]).
 class SessionBootstrap extends ConsumerStatefulWidget {
   const SessionBootstrap({required this.child, super.key});
 
@@ -16,6 +20,8 @@ class SessionBootstrap extends ConsumerStatefulWidget {
 }
 
 class _SessionBootstrapState extends ConsumerState<SessionBootstrap> {
+  bool _enrichInFlight = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,27 +31,67 @@ class _SessionBootstrapState extends ConsumerState<SessionBootstrap> {
   }
 
   Future<void> _restoreSessionIfNeeded() async {
+    if (_enrichInFlight || !mounted) {
+      return;
+    }
+
     final sessionState = ref.read(sessionStateProvider);
     if (!sessionState.isAuthenticated) {
       return;
     }
 
-    final tokens = sessionState.session?.tokens;
-    if (tokens == null) {
+    final AuthSession? session = sessionState.session;
+    final tokens = session?.tokens;
+    if (session == null || tokens == null) {
       return;
     }
 
-    final tokenProvider = ref.read(sessionTokenProvider);
-    if (tokens.isAccessTokenExpired(DateTime.now().toUtc()) &&
-        tokens.hasRefreshToken) {
-      await tokenProvider.refreshStoredSession();
+    final bool needsEnrichment = session.needsMeEnrichment;
+    final bool accessExpired = tokens.isAccessTokenExpired(
+      DateTime.now().toUtc(),
+    );
+    if (!needsEnrichment && !(accessExpired && tokens.hasRefreshToken)) {
+      return;
     }
 
-    await tokenProvider.enrichAuthenticatedSession();
+    _enrichInFlight = true;
+    try {
+      final tokenProvider = ref.read(sessionTokenProvider);
+      if (accessExpired && tokens.hasRefreshToken) {
+        await tokenProvider.refreshStoredSession();
+      }
+
+      final AuthSession? current = ref.read(sessionStateProvider).session;
+      if (current != null && current.needsMeEnrichment) {
+        await tokenProvider.enrichAuthenticatedSession();
+      }
+    } finally {
+      _enrichInFlight = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(sessionStateProvider, (previous, next) {
+      final AuthSession? session = next.session;
+      if (next.isAuthenticated &&
+          session != null &&
+          session.needsMeEnrichment) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          unawaited(_restoreSessionIfNeeded());
+        });
+      }
+    });
+
+    final AuthSession? session = ref.watch(
+      sessionStateProvider.select((state) => state.session),
+    );
+    if (session != null && session.needsMeEnrichment) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_restoreSessionIfNeeded());
+      });
+    }
+
     return widget.child;
   }
 }

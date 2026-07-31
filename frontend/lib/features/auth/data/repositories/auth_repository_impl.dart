@@ -326,6 +326,7 @@ final class AuthRepositoryImpl implements AuthRepository {
           enriched = enriched.copyWith(
             permissions: permissions,
             isAuthorizationHydrated: true,
+            isModuleCatalogHydrated: true,
           );
           // Always apply /me entitlements (including empty) so plan changes
           // and backfills are reflected immediately.

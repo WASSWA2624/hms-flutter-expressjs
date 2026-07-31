@@ -195,6 +195,7 @@ final class SessionTokenProvider {
                   enriched = enriched.copyWith(
                     permissions: permissions,
                     isAuthorizationHydrated: true,
+                    isModuleCatalogHydrated: true,
                     moduleEntitlements: moduleEntitlements,
                   );
                   if (subscriptionSummary != null) {
@@ -208,7 +209,9 @@ final class SessionTokenProvider {
         );
     return result.when(
       success: (AuthSession enriched) => enriched,
-      failure: (_) => session,
+      // Mark catalog hydrated so route guards do not loop on /session-restoring
+      // when /auth/me is unreachable; empty entitlements then deny modules.
+      failure: (_) => session.copyWith(isModuleCatalogHydrated: true),
     );
   }
 }

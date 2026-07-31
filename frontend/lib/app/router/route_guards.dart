@@ -29,10 +29,10 @@ final class AppRouteGuards {
       return null;
     }
 
-    // Waiting shell: stay while unknown; once ready, resume `from` (or home)
-    // so users do not need a duplicate "Go to dashboard" exit.
+    // Waiting shell: stay while unknown or Me enrichment pending; once ready,
+    // resume `from` (or home) so users do not need a duplicate exit action.
     if (targetRoute.path == AppRoutes.sessionRestoring.path) {
-      if (!sessionState.isReady) {
+      if (!sessionState.isReady || _needsMeEnrichment) {
         return null;
       }
       return _resumeAfterSessionRestore(request.location);
@@ -64,6 +64,12 @@ final class AppRouteGuards {
       };
     }
 
+    // JWT-only restore (e.g. hot reload) has no plan modules yet — hold gated
+    // routes instead of treating empty entitlements as a hard deny.
+    if (_needsMeEnrichment && !targetRoute.accessRequirement.isEmpty) {
+      return AppRoutes.sessionRestoring.locationWithFrom(request.location);
+    }
+
     if (!_hasRequiredAccess(targetRoute, request.grantedPermissions)) {
       return AppRoutes.forbidden.locationWithFrom(request.location);
     }
@@ -71,12 +77,18 @@ final class AppRouteGuards {
     return null;
   }
 
+  bool get _needsMeEnrichment =>
+      sessionState.session?.needsMeEnrichment ?? false;
+
   String? _resumeAfterSessionRestore(Uri sessionRestoringLocation) {
     final Uri resumeTarget = _resumeUri(
       sessionRestoringLocation.queryParameters['from'],
     );
 
     if (sessionState.isAuthenticated) {
+      if (_needsMeEnrichment) {
+        return null;
+      }
       return resumeTarget.toString();
     }
 

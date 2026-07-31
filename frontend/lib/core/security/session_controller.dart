@@ -16,7 +16,9 @@ final sessionStateProvider = NotifierProvider<SessionController, SessionState>(
 final class SessionController extends Notifier<SessionState> {
   @override
   SessionState build() {
-    return ref.watch(initialSessionStateProvider);
+    // Seed from startup restore only. Watching the override re-applies the
+    // JWT-only session on rebuild/hot reload and wipes /auth/me enrichment.
+    return ref.read(initialSessionStateProvider);
   }
 
   Future<SessionState> restoreSession() async {
