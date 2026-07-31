@@ -590,7 +590,7 @@ void main() {
 
       expect(find.text('Completed Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Completed'), findsWidgets);
+      expect(find.text('Completed today'), findsWidgets);
       expect(find.text('Review encounter'), findsWidgets);
 
       await tester.tap(find.text('Completed Tab Patient'));
@@ -629,7 +629,7 @@ void main() {
       );
 
       expect(find.text('Completed Tab Patient'), findsOneWidget);
-      expect(find.text('Completed'), findsWidgets);
+      expect(find.text('Completed today'), findsWidgets);
 
       await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();

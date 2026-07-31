@@ -334,7 +334,7 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
       // Worklist tabs also require clinical:read — write-only omits strip chrome.
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_tab('All'), findsNothing);
+      expect(_tab('Pending'), findsNothing);
     },
   );
 
@@ -774,7 +774,7 @@ void main() {
       expect(_tab('Follow-ups'), findsNothing);
       expect(find.byType(FollowUpWorklistPanel), findsNothing);
       expect(find.byType(AppTabStrip), findsNothing);
-      expect(_tab('All'), findsNothing);
+      expect(_tab('Pending'), findsNothing);
     },
   );
 }

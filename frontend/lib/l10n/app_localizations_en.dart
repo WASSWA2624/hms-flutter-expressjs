@@ -8000,7 +8000,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationClinicalShortLabel => 'Clinical';
 
   @override
-  String get clinicalSectionAllLabel => 'All';
+  String get clinicalSectionAllLabel => 'Pending';
+
+  @override
+  String get clinicalSectionPendingLabel => 'Pending';
+
+  @override
+  String get clinicalSectionAssignedToMeLabel => 'Assigned to me';
 
   @override
   String get clinicalSectionWaitingReviewLabel => 'Waiting review';
@@ -8015,7 +8021,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalSectionInConsultationLabel => 'In consultation';
 
   @override
-  String get clinicalSectionCompletedLabel => 'Completed';
+  String get clinicalSectionCompletedLabel => 'Completed today';
+
+  @override
+  String get clinicalSectionCompletedTodayLabel => 'Completed today';
+
+  @override
+  String get clinicalFilterNotUrgentLabel => 'Not urgent';
+
+  @override
+  String get clinicalFilterResultsNotReadyLabel => 'Results not ready';
 
   @override
   String get clinicalTitle => 'Clinical workspace';
@@ -8150,6 +8165,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalAddNoteTitle => 'Add patient clinical note';
+
+  @override
+  String get clinicalEditNotesTitle => 'Edit clinical notes';
 
   @override
   String get clinicalAddDiagnosisAction => 'Add diagnosis';
@@ -19542,6 +19560,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonSaveActionLabel => 'Save';
+
+  @override
+  String get commonFormatBoldLabel => 'Bold';
+
+  @override
+  String get commonFormatItalicLabel => 'Italic';
+
+  @override
+  String get commonFormatUnderlineLabel => 'Underline';
+
+  @override
+  String get commonFormatBulletListLabel => 'Bullet list';
+
+  @override
+  String get commonFormatNumberedListLabel => 'Numbered list';
 
   @override
   String get commonEditActionLabel => 'Edit';

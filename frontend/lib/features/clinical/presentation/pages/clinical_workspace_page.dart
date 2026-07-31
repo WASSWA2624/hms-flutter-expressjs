@@ -327,11 +327,9 @@ ClinicalQueueScope _clinicalSectionScope(ClinicalWorkspaceSection section) {
   return switch (section) {
     ClinicalWorkspaceSection.followUps => ClinicalQueueScope.all,
     ClinicalWorkspaceSection.all => ClinicalQueueScope.all,
-    ClinicalWorkspaceSection.waitingReview => ClinicalQueueScope.waitingReview,
+    ClinicalWorkspaceSection.assignedToMe => ClinicalQueueScope.assignedToMe,
     ClinicalWorkspaceSection.urgent => ClinicalQueueScope.urgent,
     ClinicalWorkspaceSection.resultsReady => ClinicalQueueScope.resultsReady,
-    ClinicalWorkspaceSection.inConsultation =>
-      ClinicalQueueScope.inConsultation,
     ClinicalWorkspaceSection.completed => ClinicalQueueScope.completed,
   };
 }
@@ -346,11 +344,9 @@ IconData _clinicalSectionIcon(ClinicalWorkspaceSection section) {
   return switch (section) {
     ClinicalWorkspaceSection.followUps => Icons.phone_callback_outlined,
     ClinicalWorkspaceSection.all => Icons.inventory_2_outlined,
-    ClinicalWorkspaceSection.waitingReview => Icons.rate_review_outlined,
+    ClinicalWorkspaceSection.assignedToMe => Icons.person_outline,
     ClinicalWorkspaceSection.urgent => Icons.priority_high_outlined,
     ClinicalWorkspaceSection.resultsReady => Icons.science_outlined,
-    ClinicalWorkspaceSection.inConsultation =>
-      Icons.medical_information_outlined,
     ClinicalWorkspaceSection.completed => Icons.task_alt_outlined,
   };
 }
@@ -361,15 +357,14 @@ String _clinicalSectionLabel(
 ) {
   return switch (section) {
     ClinicalWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
-    ClinicalWorkspaceSection.all => l10n.clinicalSectionAllLabel,
-    ClinicalWorkspaceSection.waitingReview =>
-      l10n.clinicalSectionWaitingReviewLabel,
+    ClinicalWorkspaceSection.all => l10n.clinicalSectionPendingLabel,
+    ClinicalWorkspaceSection.assignedToMe =>
+      l10n.clinicalSectionAssignedToMeLabel,
     ClinicalWorkspaceSection.urgent => l10n.clinicalSectionUrgentLabel,
     ClinicalWorkspaceSection.resultsReady =>
       l10n.clinicalSectionResultsReadyLabel,
-    ClinicalWorkspaceSection.inConsultation =>
-      l10n.clinicalSectionInConsultationLabel,
-    ClinicalWorkspaceSection.completed => l10n.clinicalSectionCompletedLabel,
+    ClinicalWorkspaceSection.completed =>
+      l10n.clinicalSectionCompletedTodayLabel,
   };
 }
 
@@ -381,11 +376,10 @@ int? _clinicalSectionCount(
     return null;
   }
   return switch (section) {
-    ClinicalWorkspaceSection.all => _pageTotal(state.worklist),
-    ClinicalWorkspaceSection.waitingReview => state.waitingReviewCount,
+    ClinicalWorkspaceSection.all => state.pendingCount,
+    ClinicalWorkspaceSection.assignedToMe => state.assignedToMeCount,
     ClinicalWorkspaceSection.urgent => state.urgentCount,
     ClinicalWorkspaceSection.resultsReady => state.resultsReadyCount,
-    ClinicalWorkspaceSection.inConsultation => state.inConsultationCount,
     ClinicalWorkspaceSection.completed => state.completedCount,
     ClinicalWorkspaceSection.followUps => null,
   };
@@ -394,8 +388,7 @@ int? _clinicalSectionCount(
 AppTabCountTone _clinicalSectionCountTone(ClinicalWorkspaceSection section) {
   return switch (section) {
     ClinicalWorkspaceSection.urgent => AppTabCountTone.danger,
-    ClinicalWorkspaceSection.waitingReview ||
-    ClinicalWorkspaceSection.inConsultation => AppTabCountTone.warning,
+    ClinicalWorkspaceSection.assignedToMe => AppTabCountTone.warning,
     ClinicalWorkspaceSection.all ||
     ClinicalWorkspaceSection.resultsReady ||
     ClinicalWorkspaceSection.completed ||
@@ -407,10 +400,9 @@ String _clinicalSectionQueryValue(ClinicalWorkspaceSection section) {
   return switch (section) {
     ClinicalWorkspaceSection.followUps => 'follow-ups',
     ClinicalWorkspaceSection.all => '',
-    ClinicalWorkspaceSection.waitingReview => 'waiting-review',
+    ClinicalWorkspaceSection.assignedToMe => 'assigned-to-me',
     ClinicalWorkspaceSection.urgent => 'urgent',
     ClinicalWorkspaceSection.resultsReady => 'results-ready',
-    ClinicalWorkspaceSection.inConsultation => 'in-consultation',
     ClinicalWorkspaceSection.completed => 'completed',
   };
 }
@@ -428,19 +420,12 @@ List<_ClinicalTableColumnId> _clinicalDefaultColumnsForSection(
       ];
   return switch (section) {
     ClinicalWorkspaceSection.all => standardDefaults,
-    ClinicalWorkspaceSection.waitingReview => standardDefaults,
+    ClinicalWorkspaceSection.assignedToMe => standardDefaults,
     ClinicalWorkspaceSection.urgent => standardDefaults,
     ClinicalWorkspaceSection.resultsReady => const <_ClinicalTableColumnId>[
       _ClinicalTableColumnId.patient,
       _ClinicalTableColumnId.encounterType,
       _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.status,
-      _ClinicalTableColumnId.nextAction,
-    ],
-    ClinicalWorkspaceSection.inConsultation => const <_ClinicalTableColumnId>[
-      _ClinicalTableColumnId.patient,
-      _ClinicalTableColumnId.location,
-      _ClinicalTableColumnId.provider,
       _ClinicalTableColumnId.status,
       _ClinicalTableColumnId.nextAction,
     ],
@@ -936,7 +921,7 @@ class _ClinicalWorklistNextActionCell extends ConsumerWidget {
           stage: item.stage ?? item.status,
           nextStep: item.nextStep,
           sourceModule: _clinicalWorkflowSourceModule(item.sourceQueue),
-          compact: true,
+          compact: false,
         );
       }
     }
@@ -1013,22 +998,24 @@ class _ClinicalCompactFallbackAction extends StatelessWidget {
           cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.xs,
-              vertical: 2,
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Icon(icon, size: 14, color: primaryColor),
+                Icon(icon, size: 18, color: primaryColor),
                 SizedBox(width: theme.spacing.xs),
                 Flexible(
                   child: Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: primaryColor,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                      decorationColor: primaryColor,
                     ),
                   ),
                 ),
@@ -1036,7 +1023,7 @@ class _ClinicalCompactFallbackAction extends StatelessWidget {
                   SizedBox(width: theme.spacing.xs),
                   Icon(
                     Icons.lock_outlined,
-                    size: 10,
+                    size: 14,
                     color: primaryColor.withValues(alpha: 0.5),
                   ),
                 ],
@@ -1145,15 +1132,6 @@ _clinicalWorklistMobileItemBuilderFor(ClinicalWorkspaceSection section) {
             ),
             AppListTableMobileMeta(label: _apiLabel(item.sourceQueue)),
           ],
-          ClinicalWorkspaceSection.inConsultation =>
-            <AppListTableMobileMeta>[
-              AppListTableMobileMeta(
-                label: item.currentLocation ?? l10n.profileUnknownValue,
-              ),
-              AppListTableMobileMeta(
-                label: _clinicalProviderLabel(l10n, item),
-              ),
-            ],
           ClinicalWorkspaceSection.completed => <AppListTableMobileMeta>[
             AppListTableMobileMeta(label: _apiLabel(item.sourceQueue)),
             AppListTableMobileMeta(
@@ -1217,18 +1195,6 @@ Color? _clinicalRowColor(BuildContext context, ClinicalWorklistEntry item) {
   }
   if (item.resultsReady) {
     return colorScheme.tertiaryContainer.withValues(alpha: 0.16);
-  }
-  if (clinicalWorklistEntryMatchesScope(
-    item,
-    ClinicalQueueScope.waitingReview,
-  )) {
-    return colorScheme.secondaryContainer.withValues(alpha: 0.14);
-  }
-  if (clinicalWorklistEntryMatchesScope(
-    item,
-    ClinicalQueueScope.inConsultation,
-  )) {
-    return colorScheme.primaryContainer.withValues(alpha: 0.12);
   }
   return null;
 }
@@ -1324,54 +1290,13 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
   }
 }
 
-class _ClinicalDetailPanel extends ConsumerStatefulWidget {
+class _ClinicalDetailPanel extends ConsumerWidget {
   const _ClinicalDetailPanel({required this.state});
 
   final ClinicalWorkspaceState state;
 
   @override
-  ConsumerState<_ClinicalDetailPanel> createState() =>
-      _ClinicalDetailPanelState();
-}
-
-class _ClinicalDetailPanelState extends ConsumerState<_ClinicalDetailPanel> {
-  final GlobalKey _vitalsSectionKey = GlobalKey();
-  final GlobalKey _notesSectionKey = GlobalKey();
-  bool _notesEditing = false;
-  bool _notesExpanded = true;
-
-  ClinicalWorkspaceState get state => widget.state;
-
-  void _scrollToSection(GlobalKey key) {
-    final BuildContext? target = key.currentContext;
-    if (target == null) {
-      return;
-    }
-    unawaited(
-      Scrollable.ensureVisible(
-        target,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOut,
-        alignment: 0.08,
-      ),
-    );
-  }
-
-  void _beginNotesEditing() {
-    setState(() {
-      _notesEditing = true;
-      _notesExpanded = true;
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _scrollToSection(_notesSectionKey);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ClinicalEncounterBundle? bundle = state.selectedBundle;
     if (bundle == null) {
@@ -1400,6 +1325,11 @@ class _ClinicalDetailPanelState extends ConsumerState<_ClinicalDetailPanel> {
         entry.isUrgent &&
         ClinicalUrgentAtomPermissions.urgentChip.isAllowed(accessPolicy);
     final bool canWrite = canWriteClinical(accessPolicy);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    final List<ClinicalRelatedRecord> clinicalNotes =
+        sortClinicalRecordsNewestFirst(bundle.clinicalNotes);
     final List<Widget> sections = <Widget>[
       _ClinicalEncounterContextPanel(
         entry: entry,
@@ -1416,65 +1346,27 @@ class _ClinicalDetailPanelState extends ConsumerState<_ClinicalDetailPanel> {
       _ClinicalActionBar(
         bundle: bundle,
         referenceData: state.referenceData,
-        onEditClinicalNotes:
-            bundle.clinicalNotes.isEmpty ? null : _beginNotesEditing,
       ),
       if (triageHandoff?.hasTriageDetails ?? false)
-        KeyedSubtree(
-          key: _vitalsSectionKey,
-          child: _ClinicalTriageHandoffPanel(
-            handoff: triageHandoff!,
-            onEditVitals: canWrite &&
-                    !entry.isTerminal &&
-                    clinicalOpdFlowApiId(entry) != null
-                ? () => _openVitalsDialog(
-                      context,
-                      ref.read(clinicalWorkspaceControllerProvider.notifier),
-                      hasExistingVitals:
-                          triageHandoff.vitalSigns.isNotEmpty,
-                    )
-                : null,
-          ),
+        _ClinicalTriageHandoffPanel(
+          handoff: triageHandoff!,
+          onEditVitals: canWrite &&
+                  !entry.isTerminal &&
+                  clinicalOpdFlowApiId(entry) != null
+              ? () => _openVitalsDialog(
+                    context,
+                    controller,
+                    hasExistingVitals: triageHandoff.vitalSigns.isNotEmpty,
+                  )
+              : null,
         ),
-      if (bundle.clinicalNotes.isNotEmpty)
-        KeyedSubtree(
-          key: _notesSectionKey,
-          child: _ClinicalNotesSection(
-            records: sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
-            canEdit: canWrite,
-            editing: _notesEditing,
-            expanded: _notesExpanded,
-            onExpandedChanged: (bool value) {
-              setState(() => _notesExpanded = value);
-            },
-            onStartEditing: canWrite ? _beginNotesEditing : null,
-            onCancelEditing: () {
-              setState(() => _notesEditing = false);
-            },
-            onSaveEditing: (Map<String, String> drafts) async {
-              final ClinicalWorkspaceController controller = ref.read(
-                clinicalWorkspaceControllerProvider.notifier,
-              );
-              AppFailure? failure;
-              for (final MapEntry<String, String> draft in drafts.entries) {
-                failure = await controller.updateClinicalNote(
-                  noteId: draft.key,
-                  note: draft.value,
-                );
-                if (failure != null) {
-                  break;
-                }
-              }
-              if (!context.mounted) {
-                return;
-              }
-              if (failure != null) {
-                _showFailureIfNeeded(context, failure);
-                return;
-              }
-              setState(() => _notesEditing = false);
-            },
-          ),
+      if (clinicalNotes.isNotEmpty)
+        _ClinicalNotesSection(
+          records: clinicalNotes,
+          canEdit: canWrite,
+          onEditClinicalNotes: canWrite
+              ? () => _openEditNotesDialog(context, controller, clinicalNotes)
+              : null,
         ),
       if (bundle.diagnoses.isNotEmpty)
         ClinicalDiagnosesTablePanel(
@@ -2004,10 +1896,10 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           : <Widget>[
               AppButton.secondary(
                 label: handoff.vitalSigns.isNotEmpty
-                    ? l10n.commonEditActionLabel
-                    : l10n.commonRecordActionLabel,
+                    ? l10n.opdEditVitalsAction
+                    : l10n.opdRecordVitalsAction,
                 leadingIcon: handoff.vitalSigns.isNotEmpty
-                    ? Icons.edit_outlined
+                    ? AppActionIcons.edit
                     : Icons.monitor_heart_outlined,
                 dense: true,
                 onPressed: onEditVitals,
@@ -2112,12 +2004,10 @@ class _ClinicalActionBar extends ConsumerWidget {
   const _ClinicalActionBar({
     required this.bundle,
     required this.referenceData,
-    this.onEditClinicalNotes,
   });
 
   final ClinicalEncounterBundle bundle;
   final ClinicalReferenceData referenceData;
-  final VoidCallback? onEditClinicalNotes;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2172,13 +2062,19 @@ class _ClinicalActionBar extends ConsumerWidget {
           label: bundle.clinicalNotes.isEmpty
               ? l10n.clinicalAddNoteAction
               : l10n.clinicalEditNotesAction,
-          leadingIcon: Icons.note_add_outlined,
+          leadingIcon: bundle.clinicalNotes.isEmpty
+              ? Icons.note_add_outlined
+              : AppActionIcons.edit,
           onPressed: () {
             if (bundle.clinicalNotes.isEmpty) {
               _openNoteDialog(context, controller);
               return;
             }
-            onEditClinicalNotes?.call();
+            _openEditNotesDialog(
+              context,
+              controller,
+              sortClinicalRecordsNewestFirst(bundle.clinicalNotes),
+            );
           },
         ),
       if (canWrite)
@@ -2277,170 +2173,95 @@ class _ClinicalActionBar extends ConsumerWidget {
   }
 }
 
-class _ClinicalNotesSection extends StatefulWidget {
+class _ClinicalNotesSection extends StatelessWidget {
   const _ClinicalNotesSection({
     required this.records,
     required this.canEdit,
-    required this.editing,
-    required this.expanded,
-    required this.onExpandedChanged,
-    required this.onCancelEditing,
-    required this.onSaveEditing,
-    this.onStartEditing,
+    this.onEditClinicalNotes,
   });
 
   final List<ClinicalRelatedRecord> records;
   final bool canEdit;
-  final bool editing;
-  final bool expanded;
-  final ValueChanged<bool> onExpandedChanged;
-  final VoidCallback? onStartEditing;
-  final VoidCallback onCancelEditing;
-  final Future<void> Function(Map<String, String> drafts) onSaveEditing;
-
-  @override
-  State<_ClinicalNotesSection> createState() => _ClinicalNotesSectionState();
-}
-
-class _ClinicalNotesSectionState extends State<_ClinicalNotesSection> {
-  final Map<String, TextEditingController> _controllers =
-      <String, TextEditingController>{};
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncControllers();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ClinicalNotesSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!widget.editing && oldWidget.editing) {
-      _syncControllers(force: true);
-    } else if (widget.editing && !oldWidget.editing) {
-      _syncControllers(force: true);
-    } else if (widget.records.map((ClinicalRelatedRecord r) => r.id).join() !=
-        oldWidget.records.map((ClinicalRelatedRecord r) => r.id).join()) {
-      _syncControllers(force: true);
-    }
-  }
-
-  void _syncControllers({bool force = false}) {
-    final Set<String> ids = widget.records
-        .map((ClinicalRelatedRecord record) => record.id)
-        .toSet();
-    for (final String id in _controllers.keys.toList(growable: false)) {
-      if (!ids.contains(id)) {
-        _controllers.remove(id)?.dispose();
-      }
-    }
-    for (final ClinicalRelatedRecord record in widget.records) {
-      final String text = (record.title ?? '').trim();
-      final TextEditingController? existing = _controllers[record.id];
-      if (existing == null) {
-        _controllers[record.id] = TextEditingController(text: text);
-      } else if (force) {
-        existing.text = text;
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final TextEditingController controller in _controllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (_saving) {
-      return;
-    }
-    setState(() => _saving = true);
-    final Map<String, String> drafts = <String, String>{
-      for (final MapEntry<String, TextEditingController> entry
-          in _controllers.entries)
-        if (entry.value.text.trim().isNotEmpty) entry.key: entry.value.text.trim(),
-    };
-    try {
-      await widget.onSaveEditing(drafts);
-    } finally {
-      if (mounted) {
-        setState(() => _saving = false);
-      }
-    }
-  }
+  final VoidCallback? onEditClinicalNotes;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<Widget> headerActions = <Widget>[];
-    if (widget.canEdit) {
-      if (widget.editing) {
-        headerActions.addAll(<Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            dense: true,
-            enabled: !_saving,
-            onPressed: widget.onCancelEditing,
-          ),
-          AppButton.secondary(
-            label: l10n.commonSaveActionLabel,
-            leadingIcon: Icons.save_outlined,
-            dense: true,
-            isLoading: _saving,
-            onPressed: _save,
-          ),
-        ]);
-      } else if (widget.onStartEditing != null) {
-        headerActions.add(
-          AppButton.secondary(
-            label: l10n.commonEditActionLabel,
-            leadingIcon: Icons.edit_outlined,
-            dense: true,
-            onPressed: widget.onStartEditing,
-          ),
+    final DateTime? lastUpdated = records
+        .map((ClinicalRelatedRecord note) => note.occurredAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(
+          null,
+          (DateTime? latest, DateTime value) =>
+              latest == null || value.isAfter(latest) ? value : latest,
         );
-      }
-    }
 
     return AppCollapsibleSection(
-      title: l10n.clinicalPatientNotesTitle,
-      expanded: widget.expanded,
-      onExpandedChanged: widget.onExpandedChanged,
-      headerActions: headerActions,
-      child: widget.editing
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (var index = 0; index < widget.records.length; index += 1) ...<
-                  Widget
-                >[
-                  if (index > 0) SizedBox(height: theme.spacing.md),
-                  Text(
-                    _dateTimeLabel(context, widget.records[index].occurredAt),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  TextField(
-                    controller: _controllers[widget.records[index].id],
-                    minLines: 3,
-                    maxLines: 8,
-                    decoration: InputDecoration(
-                      labelText: l10n.opdClinicalNoteLabel,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ],
-            )
-          : _ClinicalRecordList(records: widget.records),
+      titleWidget: Row(
+        children: <Widget>[
+          Text(
+            l10n.clinicalPatientNotesTitle,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (lastUpdated != null) ...<Widget>[
+            SizedBox(width: theme.spacing.md),
+            Flexible(
+              child: Text(
+                '${l10n.clinicalLastUpdatedLabel}: '
+                '${_dateTimeLabel(context, lastUpdated)}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
+      headerActions: canEdit && onEditClinicalNotes != null
+          ? <Widget>[
+              AppButton.secondary(
+                label: l10n.commonEditActionLabel,
+                leadingIcon: AppActionIcons.edit,
+                dense: true,
+                onPressed: onEditClinicalNotes,
+              ),
+            ]
+          : const <Widget>[],
+      child: _ClinicalNotesBody(records: records),
+    );
+  }
+}
+
+class _ClinicalNotesBody extends StatelessWidget {
+  const _ClinicalNotesBody({required this.records});
+
+  final List<ClinicalRelatedRecord> records;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    if (records.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (var index = 0; index < records.length; index += 1) ...<Widget>[
+          if (index > 0) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            const Divider(height: 1),
+            SizedBox(height: theme.spacing.sm),
+          ],
+          AppRichTextView(text: (records[index].title ?? '').trim()),
+        ],
+      ],
     );
   }
 }
@@ -2816,15 +2637,49 @@ Future<void> _openNoteDialog(
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ClinicalFreeTextActionDialog(
-        title: context.l10n.clinicalAddNoteTitle,
-        sectionTitle: context.l10n.clinicalPatientNotesTitle,
-        label: context.l10n.opdClinicalNoteLabel,
-        submitLabel: context.l10n.clinicalAddNoteAction,
-        prefixIcon: const Icon(Icons.notes_outlined),
-        minLines: 5,
-        maxLines: 6,
+      builder: (_) => ClinicalAddNotesActionDialog(
         onSubmit: controller.addClinicalNote,
+      ),
+    ),
+  );
+}
+
+Future<void> _openEditNotesDialog(
+  BuildContext context,
+  ClinicalWorkspaceController controller,
+  List<ClinicalRelatedRecord> notes,
+) async {
+  if (notes.isEmpty) {
+    return;
+  }
+
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalEditNotesActionDialog(
+        notes: <ClinicalNoteEditEntry>[
+          for (final ClinicalRelatedRecord note in notes)
+            ClinicalNoteEditEntry(
+              id: note.id,
+              text: (note.title ?? '').trim(),
+              occurredAt: note.occurredAt,
+            ),
+        ],
+        onSubmit: (Map<String, String> drafts) async {
+          AppFailure? failure;
+          for (final MapEntry<String, String> draft in drafts.entries) {
+            failure = await controller.updateClinicalNote(
+              noteId: draft.key,
+              note: draft.value,
+            );
+            if (failure != null) {
+              return failure;
+            }
+          }
+          return null;
+        },
       ),
     ),
   );
@@ -3238,6 +3093,9 @@ AppSearchBarFilterValue _filterValueFromQuery(
         _clinicalFilterEncounterType: filters.encounterType!,
       if (_hasText(filters.locationOption))
         _clinicalFilterLocation: filters.locationOption!,
+      if (_hasText(filters.urgency)) _clinicalFilterUrgency: filters.urgency!,
+      if (_hasText(filters.resultsReady))
+        _clinicalFilterResultsReady: filters.resultsReady!,
     },
   );
 }
@@ -3260,6 +3118,8 @@ ClinicalWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
     provider: value.option(_clinicalFilterProvider),
     encounterType: value.option(_clinicalFilterEncounterType),
     locationOption: value.option(_clinicalFilterLocation),
+    urgency: value.option(_clinicalFilterUrgency),
+    resultsReady: value.option(_clinicalFilterResultsReady),
   );
 }
 
@@ -3399,6 +3259,40 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
         icon: Icons.location_on_outlined,
         formatApiLabel: false,
       ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterUrgency,
+      label: l10n.clinicalSectionUrgentLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: clinicalUrgentFilterValue,
+          label: l10n.clinicalSectionUrgentLabel,
+          icon: Icons.priority_high_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: clinicalNotUrgentFilterValue,
+          label: l10n.clinicalFilterNotUrgentLabel,
+          icon: Icons.remove_outlined,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterResultsReady,
+      label: l10n.clinicalSectionResultsReadyLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: clinicalResultsReadyFilterValue,
+          label: l10n.clinicalSectionResultsReadyLabel,
+          icon: Icons.science_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: clinicalResultsNotReadyFilterValue,
+          label: l10n.clinicalFilterResultsNotReadyLabel,
+          icon: Icons.hourglass_empty_outlined,
+        ),
+      ],
     ),
   ];
 }
@@ -3932,6 +3826,8 @@ const String _clinicalFilterStatus = 'status';
 const String _clinicalFilterProvider = 'provider';
 const String _clinicalFilterEncounterType = 'encounter_type';
 const String _clinicalFilterLocation = 'location_option';
+const String _clinicalFilterUrgency = 'urgency';
+const String _clinicalFilterResultsReady = 'results_ready';
 
 ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
   BuildContext context,

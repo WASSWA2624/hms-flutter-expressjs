@@ -120,13 +120,11 @@ AccessRequirement clinicalSectionTabRequirement(
   return switch (section) {
     ClinicalWorkspaceSection.followUps => ClinicalFollowUpsAtomPermissions.tab,
     ClinicalWorkspaceSection.all => ClinicalAllAtomPermissions.tab,
-    ClinicalWorkspaceSection.waitingReview =>
-      ClinicalWaitingReviewAtomPermissions.tab,
+    ClinicalWorkspaceSection.assignedToMe =>
+      ClinicalAssignedToMeAtomPermissions.tab,
     ClinicalWorkspaceSection.urgent => ClinicalUrgentAtomPermissions.tab,
     ClinicalWorkspaceSection.resultsReady =>
       ClinicalResultsReadyAtomPermissions.tab,
-    ClinicalWorkspaceSection.inConsultation =>
-      ClinicalInConsultationAtomPermissions.tab,
     ClinicalWorkspaceSection.completed => ClinicalCompletedAtomPermissions.tab,
   };
 }
@@ -304,6 +302,67 @@ abstract final class ClinicalAllAtomPermissions {
 
 bool canViewClinicalAll(AppAccessPolicy policy) {
   return ClinicalAllAtomPermissions.tab.isAllowed(policy);
+}
+
+/// Assigned to me tab — same outpatient encounter chrome as Pending/All, scoped
+/// to the logged-in clinician’s assigned encounters.
+abstract final class ClinicalAssignedToMeAtomPermissions {
+  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement validation = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nextActionReview =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordVitals =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement addDiagnosis =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement recordProcedure =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement disposition =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
+  static const AccessRequirement requestRadiology =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement prescribe =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement requestAdmission =
+      clinicalAdmissionWriteRequirement;
+  static const AccessRequirement printSummary =
+      clinicalWorkspaceReadRequirement;
+  static const AccessRequirement nestedLabWrite =
+      clinicalLabOrderWriteRequirement;
+  static const AccessRequirement nestedRadiologyWrite =
+      clinicalRadiologyOrderWriteRequirement;
+  static const AccessRequirement nestedPharmacyWrite =
+      clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement nestedWrite =
+      clinicalWorkspaceWriteRequirement;
+  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
+  static const AccessRequirement dischargeFinancialRead =
+      clinicalDischargeFinancialReadRequirement;
+  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
+  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
+}
+
+bool canViewClinicalAssignedToMe(AppAccessPolicy policy) {
+  return ClinicalAssignedToMeAtomPermissions.tab.isAllowed(policy);
 }
 
 /// Atom → requirement map for Clinical Follow-ups (`/clinical?section=follow-ups`).

@@ -18,11 +18,13 @@ class ClinicalFreeTextActionDialog extends StatefulWidget {
     this.leadingContent = const <Widget>[],
     this.icon = const Icon(Icons.edit_note_outlined),
     this.prefixIcon,
+    this.submitLeadingIcon,
     this.minLines,
     this.maxLines = 5,
     this.maxWidth = 720,
     this.autofocus = true,
     this.isRequired = true,
+    this.cancelAfterPrimary = false,
     super.key,
   });
 
@@ -33,6 +35,7 @@ class ClinicalFreeTextActionDialog extends StatefulWidget {
   final String submitLabel;
   final Widget icon;
   final Widget? prefixIcon;
+  final IconData? submitLeadingIcon;
   final String? initialValue;
   final List<Widget> leadingContent;
   final int? minLines;
@@ -40,6 +43,9 @@ class ClinicalFreeTextActionDialog extends StatefulWidget {
   final double maxWidth;
   final bool autofocus;
   final bool isRequired;
+
+  /// When true, Cancel is rendered to the right of the primary submit button.
+  final bool cancelAfterPrimary;
   final Future<AppFailure?> Function(String value) onSubmit;
 
   @override
@@ -110,6 +116,8 @@ class _ClinicalFreeTextActionDialogState
         widget.submitLabel,
         _isSaving,
         _submit,
+        submitLeadingIcon: widget.submitLeadingIcon,
+        cancelAfterPrimary: widget.cancelAfterPrimary,
       ),
     );
   }

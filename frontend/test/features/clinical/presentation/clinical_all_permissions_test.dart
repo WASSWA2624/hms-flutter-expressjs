@@ -565,7 +565,7 @@ void main() {
 
       expect(find.text('All Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('All'), findsWidgets);
+      expect(find.text('Pending'), findsWidgets);
 
       await tester.tap(find.text('All Tab Patient'));
       await tester.pumpAndSettle();

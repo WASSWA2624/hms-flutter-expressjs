@@ -26,7 +26,7 @@ Uniform, reusable UI built on Flutter Material primitives.
 
 ## Standard catalog
 
-Reuse the standard set instead of new abstractions: `AppWorkspace`, `AppListTable`, `AppWorkspaceDetailPanel`, `AppActionPanel`, `AppPermissionActionPanel`, `AppWorkspaceMutationDialog`, `AppButton`, `AppTextField`, `AppSelectField`, `AppRadioGroup`, `AppCheckboxField`, `AppSwitchField`, `AppDateField`, `AppDialog`, `AsyncStateScaffold`, `AppStatusBadge`, `ResponsivePage`, `ResponsiveAppShell`, `SideNavigation`.
+Reuse the standard set instead of new abstractions: `AppWorkspace`, `AppListTable`, `AppWorkspaceDetailPanel`, `AppActionPanel`, `AppPermissionActionPanel`, `AppWorkspaceMutationDialog`, `AppButton`, `AppTextField`, `AppRichTextEditor`, `AppRichTextView`, `AppSelectField`, `AppRadioGroup`, `AppCheckboxField`, `AppSwitchField`, `AppDateField`, `AppDialog`, `AsyncStateScaffold`, `AppStatusBadge`, `ResponsivePage`, `ResponsiveAppShell`, `SideNavigation`.
 
 Detail modal and workspace titled sections use `AppWorkspaceDetailPanel` (collapsible by default; see [`ui-workspace.mdc`](./ui-workspace.mdc)). Adapters: titled `AppSectionPanel`, framed `AppFormSection`, `AppScreenSection`, `AppExpandableRecordSection`, titled `AppReportPreviewPanel`, and titled triage/vitals summary panels. Do not invent feature-local section chrome.
 

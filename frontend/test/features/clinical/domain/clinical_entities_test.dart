@@ -204,35 +204,57 @@ void main() {
       }
     });
 
-    test('inConsultation scope matches consultation-like stages', () {
-      final ClinicalWorklistEntry inProgress = _entry(
-        status: 'IN_PROGRESS',
-        stage: 'IN_PROGRESS',
-      );
-      final ClinicalWorklistEntry consulting = _entry(
+    test('assignedToMe scope matches providerUserId to current user', () {
+      final ClinicalWorklistEntry mine = _entry(
+        providerUserId: 'user-1',
         status: 'OPEN',
-        stage: 'CONSULTING',
       );
-      final ClinicalWorklistEntry closed = _entry(status: 'CLOSED');
+      final ClinicalWorklistEntry other = _entry(
+        providerUserId: 'user-2',
+        status: 'OPEN',
+      );
+      final ClinicalWorklistEntry unassigned = _entry(status: 'OPEN');
+      final ClinicalWorklistEntry closed = _entry(
+        providerUserId: 'user-1',
+        status: 'CLOSED',
+      );
 
       expect(
         clinicalWorklistEntryMatchesScope(
-          inProgress,
-          ClinicalQueueScope.inConsultation,
+          mine,
+          ClinicalQueueScope.assignedToMe,
+          currentUserId: 'user-1',
         ),
         isTrue,
       );
       expect(
         clinicalWorklistEntryMatchesScope(
-          consulting,
-          ClinicalQueueScope.inConsultation,
+          other,
+          ClinicalQueueScope.assignedToMe,
+          currentUserId: 'user-1',
         ),
-        isTrue,
+        isFalse,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          unassigned,
+          ClinicalQueueScope.assignedToMe,
+          currentUserId: 'user-1',
+        ),
+        isFalse,
       );
       expect(
         clinicalWorklistEntryMatchesScope(
           closed,
-          ClinicalQueueScope.inConsultation,
+          ClinicalQueueScope.assignedToMe,
+          currentUserId: 'user-1',
+        ),
+        isFalse,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          mine,
+          ClinicalQueueScope.assignedToMe,
         ),
         isFalse,
       );
@@ -281,11 +303,11 @@ void main() {
       );
     });
 
-    test('waiting review and urgent scopes exclude terminal entries', () {
+    test('pending, urgent, and resultsReady scopes exclude terminal entries', () {
       expect(
         clinicalWorklistEntryMatchesScope(
-          _entry(stage: 'WAITING_DOCTOR_REVIEW', status: 'COMPLETED'),
-          ClinicalQueueScope.waitingReview,
+          _entry(status: 'COMPLETED'),
+          ClinicalQueueScope.all,
         ),
         isFalse,
       );
@@ -305,47 +327,43 @@ void main() {
       );
     });
 
-    test('inConsultationCount counts non-terminal consultation entries', () {
-      final ClinicalWorkspaceState state = ClinicalWorkspaceState(
-        query: const ClinicalWorklistQuery(),
-        worklist: AppPage<ClinicalWorklistEntry>(
-          request: const AppPageRequest(),
-          items: <ClinicalWorklistEntry>[
-            _entry(encounterId: 'enc-1', stage: 'IN_PROGRESS', status: 'OPEN'),
-            _entry(encounterId: 'enc-2', stage: 'CONSULTING', status: 'OPEN'),
-            _entry(encounterId: 'enc-3', status: 'COMPLETED'),
-          ],
-        ),
+    test('facet counts stay independent of the active worklist page', () {
+      final ClinicalWorklistFacetCounts facets = clinicalWorklistFacetCounts(
+        <ClinicalWorklistEntry>[
+          _entry(encounterId: 'enc-1', status: 'OPEN'),
+          _entry(
+            encounterId: 'enc-2',
+            providerUserId: 'user-1',
+            status: 'OPEN',
+          ),
+          _entry(encounterId: 'enc-3', isUrgent: true, status: 'OPEN'),
+          _entry(encounterId: 'enc-4', resultsReady: true, status: 'OPEN'),
+        ],
+        <ClinicalWorklistEntry>[
+          _entry(
+            encounterId: 'enc-5',
+            status: 'COMPLETED',
+            updatedAt: DateTime.now(),
+          ),
+        ],
+        currentUserId: 'user-1',
       );
 
-      expect(state.inConsultationCount, 2);
+      expect(facets.pending, 4);
+      expect(facets.assignedToMe, 1);
+      expect(facets.urgent, 1);
+      expect(facets.resultsReady, 1);
+      expect(facets.completedToday, 1);
     });
 
-    test('completedCount counts same-day terminal outpatient entries', () {
-      final DateTime now = DateTime.now();
+    test('completedCount uses independent facet counts', () {
       final ClinicalWorkspaceState state = ClinicalWorkspaceState(
         query: const ClinicalWorklistQuery(),
         worklist: AppPage<ClinicalWorklistEntry>(
           request: const AppPageRequest(),
-          items: <ClinicalWorklistEntry>[
-            _entry(encounterId: 'enc-1', status: 'OPEN', updatedAt: now),
-            _entry(encounterId: 'enc-2', status: 'COMPLETED', updatedAt: now),
-            _entry(encounterId: 'enc-3', status: 'DISCHARGED', updatedAt: now),
-            _entry(encounterId: 'enc-4', status: 'CANCELLED', updatedAt: now),
-            _entry(
-              encounterId: 'enc-5',
-              status: 'COMPLETED',
-              updatedAt: now.subtract(const Duration(days: 1)),
-            ),
-            _entry(
-              encounterId: 'enc-6',
-              sourceQueue: 'IPD',
-              encounterType: 'IPD',
-              status: 'DISCHARGED',
-              updatedAt: now,
-            ),
-          ],
+          items: const <ClinicalWorklistEntry>[],
         ),
+        facetCounts: const ClinicalWorklistFacetCounts(completedToday: 3),
       );
 
       expect(state.completedCount, 3);
@@ -378,9 +396,14 @@ void main() {
             ),
           ],
         ),
+        facetCounts: const ClinicalWorklistFacetCounts(
+          pending: 2,
+          urgent: 1,
+          resultsReady: 2,
+        ),
       );
 
-      expect(state.waitingReviewCount, 1);
+      expect(state.pendingCount, 2);
       expect(state.urgentCount, 1);
       expect(state.resultsReadyCount, 2);
       expect(state.workloadCount, 2);
@@ -398,11 +421,18 @@ void main() {
       },
     );
 
-    test('fromUri parses ?section=waiting-review as waitingReview', () {
+    test('fromUri remaps ?section=waiting-review to pending (all)', () {
       final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
         Uri.parse('/clinical?section=waiting-review'),
       );
-      expect(query.section, ClinicalWorkspaceSection.waitingReview);
+      expect(query.section, ClinicalWorkspaceSection.all);
+    });
+
+    test('fromUri parses ?section=assigned-to-me', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=assigned-to-me'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.assignedToMe);
     });
 
     test('fromUri parses ?section=results-ready as resultsReady', () {
@@ -412,11 +442,11 @@ void main() {
       expect(query.section, ClinicalWorkspaceSection.resultsReady);
     });
 
-    test('fromUri parses ?section=in-consultation as inConsultation', () {
+    test('fromUri remaps ?section=in-consultation to pending (all)', () {
       final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
         Uri.parse('/clinical?section=in-consultation'),
       );
-      expect(query.section, ClinicalWorkspaceSection.inConsultation);
+      expect(query.section, ClinicalWorkspaceSection.all);
     });
 
     test('fromUri parses ?section=completed as completed', () {
@@ -445,7 +475,13 @@ void main() {
         ClinicalWorkspaceQuery.fromUri(
           Uri.parse('/clinical?section=review'),
         ).section,
-        ClinicalWorkspaceSection.waitingReview,
+        ClinicalWorkspaceSection.all,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=pending'),
+        ).section,
+        ClinicalWorkspaceSection.all,
       );
       expect(
         ClinicalWorkspaceQuery.fromUri(
@@ -463,7 +499,7 @@ void main() {
         ClinicalWorkspaceQuery.fromUri(
           Uri.parse('/clinical?section=consultation'),
         ).section,
-        ClinicalWorkspaceSection.inConsultation,
+        ClinicalWorkspaceSection.all,
       );
       expect(
         ClinicalWorkspaceQuery.fromUri(
@@ -563,6 +599,7 @@ ClinicalWorklistEntry _entry({
   String? patientDisplayName,
   String? patientGender,
   String? patientAgeSex,
+  String? providerUserId,
   String? providerDisplayName,
   String? status,
   String? stage,
@@ -581,6 +618,7 @@ ClinicalWorklistEntry _entry({
     patientDisplayName: patientDisplayName,
     patientGender: patientGender,
     patientAgeSex: patientAgeSex,
+    providerUserId: providerUserId,
     providerDisplayName: providerDisplayName,
     status: status,
     stage: stage,

@@ -21,27 +21,36 @@ List<Widget> clinicalActionDialogActions(
   /// Value popped when Cancel is pressed. Defaults to `false` for bool
   /// confirmation dialogs; pass `null` when the route returns an entity.
   Object? cancelResult = false,
+
+  /// When true, Cancel is placed after the primary submit action.
+  bool cancelAfterPrimary = false,
 }) {
   final bool canInteract = enabled && !isSaving;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
-  return <Widget>[
-    if (showCancel)
-      AppButton.secondary(
-        label: cancelLabel ?? context.l10n.commonCancelActionLabel,
-        leadingIcon: AppActionIcons.cancel,
-        enabled: canInteract,
-        onPressed: canInteract
-            ? onCancel ?? () => Navigator.of(context).pop(cancelResult)
-            : null,
-      ),
-    AppButton.primary(
-      label: submitLabel,
-      leadingIcon:
-          submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
-      color: destructive ? colorScheme.error : null,
-      isLoading: isSaving,
-      enabled: canInteract && onSubmit != null,
-      onPressed: canInteract ? onSubmit : null,
-    ),
-  ];
+  final Widget? cancelButton = showCancel
+      ? AppButton.secondary(
+          label: cancelLabel ?? context.l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: canInteract,
+          onPressed: canInteract
+              ? onCancel ?? () => Navigator.of(context).pop(cancelResult)
+              : null,
+        )
+      : null;
+  final Widget primaryButton = AppButton.primary(
+    label: submitLabel,
+    leadingIcon:
+        submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
+    color: destructive ? colorScheme.error : null,
+    isLoading: isSaving,
+    enabled: canInteract && onSubmit != null,
+    onPressed: canInteract ? onSubmit : null,
+  );
+  if (cancelButton == null) {
+    return <Widget>[primaryButton];
+  }
+  if (cancelAfterPrimary) {
+    return <Widget>[primaryButton, cancelButton];
+  }
+  return <Widget>[cancelButton, primaryButton];
 }

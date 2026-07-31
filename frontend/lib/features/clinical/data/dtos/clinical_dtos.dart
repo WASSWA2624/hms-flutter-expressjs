@@ -200,15 +200,18 @@ final class ClinicalRelatedRecordDto {
         _string(json['external_facility_name']),
         _string(json['referral_reason_code']),
       ]),
-      occurredAt:
-          _date(json['recorded_at']) ??
-          _date(json['performed_at']) ??
-          _date(json['ordered_at']) ??
-          _date(json['scheduled_at']) ??
-          _date(json['admitted_at']) ??
-          _date(json['start_date']) ??
-          _date(json['created_at']) ??
-          _date(json['updated_at']),
+      occurredAt: kind == 'clinical_note'
+          ? (_date(json['updated_at']) ??
+                _date(json['created_at']) ??
+                _date(json['recorded_at']))
+          : (_date(json['recorded_at']) ??
+                _date(json['performed_at']) ??
+                _date(json['ordered_at']) ??
+                _date(json['scheduled_at']) ??
+                _date(json['admitted_at']) ??
+                _date(json['start_date']) ??
+                _date(json['created_at']) ??
+                _date(json['updated_at'])),
     );
   }
 

@@ -10166,13 +10166,21 @@
   "@navigationClinicalShortLabel": {
     "description": "Compact navigation label for the clinical workspace."
   },
-  "clinicalSectionAllLabel": "All",
+  "clinicalSectionAllLabel": "Pending",
   "@clinicalSectionAllLabel": {
-    "description": "Tab label for showing all clinical worklist items"
+    "description": "Legacy key; Pending outpatient clinical worklist tab label"
+  },
+  "clinicalSectionPendingLabel": "Pending",
+  "@clinicalSectionPendingLabel": {
+    "description": "Tab label for pending outpatient doctor worklist items"
+  },
+  "clinicalSectionAssignedToMeLabel": "Assigned to me",
+  "@clinicalSectionAssignedToMeLabel": {
+    "description": "Tab label for encounters assigned to the logged-in doctor"
   },
   "clinicalSectionWaitingReviewLabel": "Waiting review",
   "@clinicalSectionWaitingReviewLabel": {
-    "description": "Tab label for encounters waiting doctor review"
+    "description": "Deprecated legacy tab label retained for locale stability"
   },
   "clinicalSectionUrgentLabel": "Urgent",
   "@clinicalSectionUrgentLabel": {
@@ -10184,11 +10192,23 @@
   },
   "clinicalSectionInConsultationLabel": "In consultation",
   "@clinicalSectionInConsultationLabel": {
-    "description": "Tab label for encounters currently in consultation"
+    "description": "Deprecated legacy tab label retained for locale stability"
   },
-  "clinicalSectionCompletedLabel": "Completed",
+  "clinicalSectionCompletedLabel": "Completed today",
   "@clinicalSectionCompletedLabel": {
-    "description": "Tab label for completed/closed encounters"
+    "description": "Legacy key; completed-today clinical worklist tab label"
+  },
+  "clinicalSectionCompletedTodayLabel": "Completed today",
+  "@clinicalSectionCompletedTodayLabel": {
+    "description": "Tab label for encounters completed today"
+  },
+  "clinicalFilterNotUrgentLabel": "Not urgent",
+  "@clinicalFilterNotUrgentLabel": {
+    "description": "Clinical worklist filter choice for non-urgent encounters"
+  },
+  "clinicalFilterResultsNotReadyLabel": "Results not ready",
+  "@clinicalFilterResultsNotReadyLabel": {
+    "description": "Clinical worklist filter choice when results are not ready"
   },
   "clinicalTitle": "Clinical workspace",
   "@clinicalTitle": {
@@ -10352,7 +10372,7 @@
   },
   "clinicalSaveChangesAction": "Save changes",
   "@clinicalSaveChangesAction": {
-    "description": "Save changes action label for inline clinical notes editing."
+    "description": "Save changes action label for the edit clinical notes dialog."
   },
   "clinicalVitalsSectionTitle": "Vitals",
   "@clinicalVitalsSectionTitle": {
@@ -10361,6 +10381,10 @@
   "clinicalAddNoteTitle": "Add patient clinical note",
   "@clinicalAddNoteTitle": {
     "description": "Clinical add note dialog title."
+  },
+  "clinicalEditNotesTitle": "Edit clinical notes",
+  "@clinicalEditNotesTitle": {
+    "description": "Clinical edit notes dialog title."
   },
   "clinicalAddDiagnosisAction": "Add diagnosis",
   "@clinicalAddDiagnosisAction": {
@@ -25038,6 +25062,26 @@
   "commonSaveActionLabel": "Save",
   "@commonSaveActionLabel": {
     "description": "Shared short save action label for section headers and toolbars."
+  },
+  "commonFormatBoldLabel": "Bold",
+  "@commonFormatBoldLabel": {
+    "description": "Toolbar tooltip for bold note formatting."
+  },
+  "commonFormatItalicLabel": "Italic",
+  "@commonFormatItalicLabel": {
+    "description": "Toolbar tooltip for italic note formatting."
+  },
+  "commonFormatUnderlineLabel": "Underline",
+  "@commonFormatUnderlineLabel": {
+    "description": "Toolbar tooltip for underline note formatting."
+  },
+  "commonFormatBulletListLabel": "Bullet list",
+  "@commonFormatBulletListLabel": {
+    "description": "Toolbar tooltip for bullet list note formatting."
+  },
+  "commonFormatNumberedListLabel": "Numbered list",
+  "@commonFormatNumberedListLabel": {
+    "description": "Toolbar tooltip for numbered list note formatting."
   },
   "commonEditActionLabel": "Edit",
   "@commonEditActionLabel": {

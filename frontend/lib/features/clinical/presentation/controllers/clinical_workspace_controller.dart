@@ -985,12 +985,11 @@ final class ClinicalWorkspaceController
 
   Future<Result<ClinicalWorkspaceState>> _loadInitialState() async {
     const ClinicalWorklistQuery query = ClinicalWorklistQuery();
-    final Result<AppPage<ClinicalWorklistEntry>> worklistResult =
-        await _loadWorklist(query);
-    final AppPage<ClinicalWorklistEntry>? worklist = _successOrNull(
-      worklistResult,
+    final Result<_ClinicalWorklistLoad> worklistResult = await _loadWorklist(
+      query,
     );
-    if (worklist == null) {
+    final _ClinicalWorklistLoad? loaded = _successOrNull(worklistResult);
+    if (loaded == null) {
       return Result<ClinicalWorkspaceState>.failure(
         _failureOrNull(worklistResult)!,
       );
@@ -1001,7 +1000,8 @@ final class ClinicalWorkspaceController
     return Result<ClinicalWorkspaceState>.success(
       ClinicalWorkspaceState(
         query: query,
-        worklist: worklist,
+        worklist: loaded.page,
+        facetCounts: loaded.facets,
         referenceData: referenceData,
       ),
     );
@@ -1238,16 +1238,17 @@ final class ClinicalWorkspaceController
       return null;
     }
 
-    final Result<AppPage<ClinicalWorklistEntry>> result = await _loadWorklist(
+    final Result<_ClinicalWorklistLoad> result = await _loadWorklist(
       current.query,
     );
     return result.when(
-      success: (AppPage<ClinicalWorklistEntry> page) {
+      success: (_ClinicalWorklistLoad loaded) {
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
             latest.copyWith(
-              worklist: page,
+              worklist: loaded.page,
+              facetCounts: loaded.facets,
               isRefreshing: showLoading ? false : latest.isRefreshing,
               clearLastFailure: true,
             ),
@@ -1265,39 +1266,92 @@ final class ClinicalWorkspaceController
     );
   }
 
-  Future<Result<AppPage<ClinicalWorklistEntry>>> _loadWorklist(
+  String? get _currentUserId {
+    return ref.read(sessionStateProvider).session?.user?.id?.trim();
+  }
+
+  Future<Result<_ClinicalWorklistLoad>> _loadWorklist(
     ClinicalWorklistQuery query,
   ) async {
-    final List<Result<AppPage<ClinicalWorklistEntry>>> results =
-        await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
-          _repository.listEncounters(query),
-          _opdFlows(query),
-          _triageFlows(query),
-        ]);
+    final String? currentUserId = _currentUserId;
+    // Non-completed scopes still fetch OPEN rows; keep the active scope on the
+    // open query so callers/tests can observe tab selection. Always load CLOSED
+    // rows in parallel for Completed today facets.
+    final ClinicalWorklistQuery openQuery =
+        query.scope == ClinicalQueueScope.completed
+        ? query.copyWith(scope: ClinicalQueueScope.all)
+        : query;
+    final ClinicalWorklistQuery completedQuery = query.copyWith(
+      scope: ClinicalQueueScope.completed,
+    );
 
-    final bool hasAnySuccess = results.any(
+    final List<Result<AppPage<ClinicalWorklistEntry>>> openResults =
+        await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
+          _repository.listEncounters(openQuery),
+          _opdFlows(openQuery),
+          _triageFlows(openQuery),
+        ]);
+    final Result<AppPage<ClinicalWorklistEntry>> completedEncounters =
+        await _repository.listEncounters(completedQuery);
+
+    final bool hasOpenSuccess = openResults.any(
       (Result<AppPage<ClinicalWorklistEntry>> result) => result.isSuccess,
     );
-    final AppFailure? firstFailure = _firstFailure(results);
-    if (!hasAnySuccess) {
-      return Result<AppPage<ClinicalWorklistEntry>>.failure(
-        firstFailure ?? const AppFailure.network(),
+    final bool hasCompletedSuccess = completedEncounters.isSuccess;
+    if (!hasOpenSuccess && !hasCompletedSuccess) {
+      return Result<_ClinicalWorklistLoad>.failure(
+        _firstFailure(openResults) ??
+            _failureOrNull(completedEncounters) ??
+            const AppFailure.network(),
       );
     }
 
-    final List<ClinicalWorklistEntry> items =
+    final List<ClinicalWorklistEntry> openCandidates =
         deduplicateClinicalWorklistEntries(
           <ClinicalWorklistEntry>[
-            for (final Result<AppPage<ClinicalWorklistEntry>> result in results)
+            for (final Result<AppPage<ClinicalWorklistEntry>> result
+                in openResults)
               ..._worklistPageOrEmpty(result, query.pageRequest).items,
           ].where((ClinicalWorklistEntry item) {
             return item.matchesSearch(query.search, filters: query.filters) &&
-                item.matchesFilters(query.filters) &&
-                clinicalWorklistEntryMatchesScope(item, query.scope);
+                item.matchesFilters(query.filters);
           }),
         );
 
-    final List<ClinicalWorklistEntry> sorted = items.toList(growable: true)
+    final List<ClinicalWorklistEntry> completedCandidates =
+        deduplicateClinicalWorklistEntries(
+          _worklistPageOrEmpty(
+            completedEncounters,
+            query.pageRequest,
+          ).items.where((ClinicalWorklistEntry item) {
+            return item.matchesSearch(query.search, filters: query.filters) &&
+                item.matchesFilters(query.filters);
+          }),
+        );
+
+    final ClinicalWorklistFacetCounts facets = clinicalWorklistFacetCounts(
+      openCandidates,
+      completedCandidates,
+      currentUserId: currentUserId,
+    );
+
+    final Iterable<ClinicalWorklistEntry> scopedSource =
+        query.scope == ClinicalQueueScope.completed
+        ? completedCandidates
+        : openCandidates;
+
+    final List<ClinicalWorklistEntry> scoped =
+        deduplicateClinicalWorklistEntries(
+          scopedSource.where(
+            (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
+              item,
+              query.scope,
+              currentUserId: currentUserId,
+            ),
+          ),
+        );
+
+    final List<ClinicalWorklistEntry> sorted = scoped.toList(growable: true)
       ..sort(_compareEntries);
     final int start = query.pageRequest.pageIndex * query.pageRequest.pageSize;
     final List<ClinicalWorklistEntry> paged = start >= sorted.length
@@ -1307,11 +1361,14 @@ final class ClinicalWorkspaceController
               .take(query.pageRequest.pageSize)
               .toList(growable: false);
 
-    return Result<AppPage<ClinicalWorklistEntry>>.success(
-      AppPage<ClinicalWorklistEntry>(
-        items: paged,
-        request: query.pageRequest,
-        totalItemCount: sorted.length,
+    return Result<_ClinicalWorklistLoad>.success(
+      _ClinicalWorklistLoad(
+        page: AppPage<ClinicalWorklistEntry>(
+          items: paged,
+          request: query.pageRequest,
+          totalItemCount: sorted.length,
+        ),
+        facets: facets,
       ),
     );
   }
@@ -1880,4 +1937,14 @@ final class ClinicalWorkspaceController
       Result<ClinicalWorkspaceState>.success(nextState),
     );
   }
+}
+
+final class _ClinicalWorklistLoad {
+  const _ClinicalWorklistLoad({
+    required this.page,
+    required this.facets,
+  });
+
+  final AppPage<ClinicalWorklistEntry> page;
+  final ClinicalWorklistFacetCounts facets;
 }

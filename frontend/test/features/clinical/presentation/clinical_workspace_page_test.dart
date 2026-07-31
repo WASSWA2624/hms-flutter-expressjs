@@ -90,12 +90,13 @@ void main() {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(_tab('All'), findsOneWidget);
-    expect(_tab('Waiting review'), findsOneWidget);
+    expect(_tab('Pending'), findsOneWidget);
+    expect(_tab('Assigned to me'), findsOneWidget);
     expect(_tab('Urgent'), findsOneWidget);
     expect(_tab('Results ready'), findsOneWidget);
-    expect(_tab('In consultation'), findsOneWidget);
-    expect(_tab('Completed'), findsOneWidget);
+    expect(_tab('Completed today'), findsOneWidget);
+    expect(_tab('Waiting review'), findsNothing);
+    expect(_tab('In consultation'), findsNothing);
     expect(find.text('Status'), findsWidgets);
     expect(find.text('Next action'), findsWidgets);
     expect(find.text('Current step'), findsNothing);
@@ -117,9 +118,13 @@ void main() {
     final List<Object?> capturedQueries = verify(
       () => harness.clinicalRepository.listEncounters(captureAny()),
     ).captured;
+    expect(capturedQueries, isNotEmpty);
     expect(
-      (capturedQueries.single as ClinicalWorklistQuery).databaseSearch,
-      'Other',
+      capturedQueries.every(
+        (Object? query) =>
+            (query as ClinicalWorklistQuery).databaseSearch == 'Other',
+      ),
+      isTrue,
     );
     expect(tester.takeException(), isNull);
 
@@ -155,34 +160,36 @@ void main() {
       () => harness.clinicalRepository.listEncounters(captureAny()),
     ).captured;
     expect(captured, isNotEmpty);
-    final ClinicalWorklistQuery query = captured.last as ClinicalWorklistQuery;
-    expect(query.scope, ClinicalQueueScope.urgent);
+    expect(
+      captured.map((Object? query) => (query as ClinicalWorklistQuery).scope),
+      contains(ClinicalQueueScope.urgent),
+    );
     expect(
       harness.router.routeInformationProvider.value.uri.queryParameters,
       containsPair('section', 'urgent'),
     );
   });
 
-  testWidgets('switching to waiting-review updates URL section query', (
+  testWidgets('switching to Assigned to me updates URL section query', (
     tester,
   ) async {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(_tab('Waiting review'));
+    await tester.tap(_tab('Assigned to me'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       harness.router.routeInformationProvider.value.uri.queryParameters,
-      containsPair('section', 'waiting-review'),
+      containsPair('section', 'assigned-to-me'),
     );
 
     final List<Object?> captured = verify(
       () => harness.clinicalRepository.listEncounters(captureAny()),
     ).captured;
     expect(
-      (captured.last as ClinicalWorklistQuery).scope,
-      ClinicalQueueScope.waitingReview,
+      captured.map((Object? query) => (query as ClinicalWorklistQuery).scope),
+      contains(ClinicalQueueScope.assignedToMe),
     );
   });
 
@@ -248,22 +255,22 @@ void main() {
     );
   });
 
-  testWidgets('in-consultation tab shows location column by default', (
+  testWidgets('Assigned to me tab keeps standard worklist columns', (
     tester,
   ) async {
-    await _pumpClinicalWorkspace(tester);
+    final _Harness harness = await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(_tab('In consultation'));
+    await tester.tap(_tab('Assigned to me'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(
-      find.descendant(
-        of: find.byType(DataTable),
-        matching: find.text('Location'),
-      ),
-      findsOneWidget,
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'assigned-to-me'),
     );
+    expect(_tab('Assigned to me'), findsOneWidget);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('row tap opens encounter detail dialog with action bar', (
@@ -341,14 +348,14 @@ void main() {
   });
 
   testWidgets(
-    'Waiting review, Urgent, and In consultation omit OPD toolbar action',
+    'Assigned to me, Urgent, and Results ready omit OPD toolbar action',
     (tester) async {
       await _pumpClinicalWorkspace(tester);
 
       for (final String tabLabel in <String>[
-        'Waiting review',
+        'Assigned to me',
         'Urgent',
-        'In consultation',
+        'Results ready',
       ]) {
         await tester.tap(_tab(tabLabel));
         await tester.pump();
@@ -402,10 +409,10 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
   });
 
-  testWidgets('Completed tab omits Discharge toolbar action', (tester) async {
+  testWidgets('Completed today tab omits Discharge toolbar action', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(_tab('Completed'));
+    await tester.tap(_tab('Completed today'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -547,7 +554,7 @@ Future<_Harness> _pumpClinicalWorkspace(
       ),
     ),
   );
-  await _pumpUntilFound(tester, _tab('All'));
+  await _pumpUntilFound(tester, _tab('Pending'));
   await tester.pumpAndSettle();
 
   return _Harness(clinicalRepository: clinicalRepository, router: router);

@@ -497,7 +497,7 @@ void main() {
         ),
       );
 
-      expect(_tab('All'), findsOneWidget);
+      expect(_tab('Pending'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);
       expect(find.textContaining('Balance due'), findsNothing);
@@ -592,7 +592,7 @@ void main() {
         items: const <ClinicalWorklistEntry>[],
       );
 
-      expect(_tab('All'), findsOneWidget);
+      expect(_tab('Pending'), findsOneWidget);
       expect(find.textContaining('Receive payment'), findsNothing);
       expectFlatSections(tester);
     });

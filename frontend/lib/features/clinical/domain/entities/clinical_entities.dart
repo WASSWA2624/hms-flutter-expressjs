@@ -50,41 +50,53 @@ final class ClinicalWorkspaceQuery {
 }
 
 enum ClinicalQueueScope {
+  /// Open outpatient doctor queue (Pending tab).
   all,
   today,
+  assignedToMe,
   urgent,
-  waitingReview,
-  inConsultation,
   resultsReady,
   completed,
 }
 
 enum ClinicalWorkspaceSection {
+  /// Pending outpatient doctor work (formerly labeled "All").
   all,
-  waitingReview,
+  assignedToMe,
   urgent,
   resultsReady,
-  inConsultation,
   completed,
   followUps,
 }
 
 ClinicalWorkspaceSection _parseClinicalSection(String raw) {
   return switch (raw.trim().toLowerCase()) {
+    // Legacy tabs remap to Pending.
     'waiting-review' ||
     'waiting_review' ||
     'waitingreview' ||
-    'review' => ClinicalWorkspaceSection.waitingReview,
+    'review' ||
+    'in-consultation' ||
+    'in_consultation' ||
+    'inconsultation' ||
+    'consultation' ||
+    'pending' ||
+    'all' => ClinicalWorkspaceSection.all,
+    'assigned-to-me' ||
+    'assigned_to_me' ||
+    'assignedtome' ||
+    'mine' ||
+    'assigned' => ClinicalWorkspaceSection.assignedToMe,
     'urgent' => ClinicalWorkspaceSection.urgent,
     'results-ready' ||
     'results_ready' ||
     'resultsready' ||
     'results' => ClinicalWorkspaceSection.resultsReady,
-    'in-consultation' ||
-    'in_consultation' ||
-    'inconsultation' ||
-    'consultation' => ClinicalWorkspaceSection.inConsultation,
-    'completed' || 'closed' || 'done' => ClinicalWorkspaceSection.completed,
+    'completed' ||
+    'completed-today' ||
+    'completed_today' ||
+    'closed' ||
+    'done' => ClinicalWorkspaceSection.completed,
     'follow-ups' ||
     'follow_ups' ||
     'followups' => ClinicalWorkspaceSection.followUps,
@@ -142,6 +154,18 @@ final class ClinicalWorklistQuery {
 /// Sentinel value for clinical worklist provider filter — unassigned encounters.
 const String clinicalUnassignedProviderFilterValue = '__UNASSIGNED__';
 
+/// Sentinel for clinical urgency filter — urgent encounters only.
+const String clinicalUrgentFilterValue = '__URGENT__';
+
+/// Sentinel for clinical urgency filter — non-urgent encounters only.
+const String clinicalNotUrgentFilterValue = '__NOT_URGENT__';
+
+/// Sentinel for results-ready filter — results ready only.
+const String clinicalResultsReadyFilterValue = '__RESULTS_READY__';
+
+/// Sentinel for results-ready filter — results not ready.
+const String clinicalResultsNotReadyFilterValue = '__RESULTS_NOT_READY__';
+
 @immutable
 final class ClinicalWorklistFilters {
   const ClinicalWorklistFilters({
@@ -161,6 +185,8 @@ final class ClinicalWorklistFilters {
     this.provider,
     this.encounterType,
     this.locationOption,
+    this.urgency,
+    this.resultsReady,
   });
 
   final String? searchField;
@@ -180,6 +206,13 @@ final class ClinicalWorklistFilters {
   final String? encounterType;
   final String? locationOption;
 
+  /// One of [clinicalUrgentFilterValue] / [clinicalNotUrgentFilterValue].
+  final String? urgency;
+
+  /// One of [clinicalResultsReadyFilterValue] /
+  /// [clinicalResultsNotReadyFilterValue].
+  final String? resultsReady;
+
   bool get isActive {
     return _hasText(searchField) ||
         dateFrom != null ||
@@ -196,7 +229,9 @@ final class ClinicalWorklistFilters {
         _hasText(status) ||
         _hasText(provider) ||
         _hasText(encounterType) ||
-        _hasText(locationOption);
+        _hasText(locationOption) ||
+        _hasText(urgency) ||
+        _hasText(resultsReady);
   }
 }
 
@@ -375,10 +410,12 @@ final class ClinicalWorklistEntry {
     }
     if (_hasText(filters.provider)) {
       if (filters.provider == clinicalUnassignedProviderFilterValue) {
-        if (_nonEmpty(providerDisplayName) != null) {
+        if (_nonEmpty(providerUserId) != null ||
+            _nonEmpty(providerDisplayName) != null) {
           return false;
         }
-      } else if (!_matchesExact(providerDisplayName, filters.provider)) {
+      } else if (!_matchesExact(providerUserId, filters.provider) &&
+          !_matchesExact(providerDisplayName, filters.provider)) {
         return false;
       }
     }
@@ -387,6 +424,28 @@ final class ClinicalWorklistEntry {
     }
     if (!_matchesExact(currentLocation, filters.locationOption)) {
       return false;
+    }
+    if (_hasText(filters.urgency)) {
+      if (filters.urgency == clinicalUrgentFilterValue) {
+        if (!isUrgent) {
+          return false;
+        }
+      } else if (filters.urgency == clinicalNotUrgentFilterValue) {
+        if (isUrgent) {
+          return false;
+        }
+      }
+    }
+    if (_hasText(filters.resultsReady)) {
+      if (filters.resultsReady == clinicalResultsReadyFilterValue) {
+        if (!resultsReady) {
+          return false;
+        }
+      } else if (filters.resultsReady == clinicalResultsNotReadyFilterValue) {
+        if (resultsReady) {
+          return false;
+        }
+      }
     }
     return _matchesDateRange(
       updatedAt ?? startedAt,
@@ -847,10 +906,30 @@ final class ClinicalEncounterBundle {
 typedef ClinicalReferenceData = ClinicalActionReferenceData;
 
 @immutable
+final class ClinicalWorklistFacetCounts {
+  const ClinicalWorklistFacetCounts({
+    this.pending = 0,
+    this.assignedToMe = 0,
+    this.urgent = 0,
+    this.resultsReady = 0,
+    this.completedToday = 0,
+  });
+
+  final int pending;
+  final int assignedToMe;
+  final int urgent;
+  final int resultsReady;
+  final int completedToday;
+
+  static const ClinicalWorklistFacetCounts empty = ClinicalWorklistFacetCounts();
+}
+
+@immutable
 final class ClinicalWorkspaceState {
   const ClinicalWorkspaceState({
     required this.query,
     required this.worklist,
+    this.facetCounts = ClinicalWorklistFacetCounts.empty,
     this.referenceData = const ClinicalReferenceData(),
     this.selectedBundle,
     this.lastFailure,
@@ -862,6 +941,7 @@ final class ClinicalWorkspaceState {
 
   final ClinicalWorklistQuery query;
   final AppPage<ClinicalWorklistEntry> worklist;
+  final ClinicalWorklistFacetCounts facetCounts;
   final ClinicalReferenceData referenceData;
   final ClinicalEncounterBundle? selectedBundle;
   final Object? lastFailure;
@@ -870,36 +950,15 @@ final class ClinicalWorkspaceState {
   final bool isRefreshingDetail;
   final bool isSaving;
 
-  int get waitingReviewCount {
-    return worklist.items
-        .where(
-          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
-            item,
-            ClinicalQueueScope.waitingReview,
-          ),
-        )
-        .length;
-  }
+  int get pendingCount => facetCounts.pending;
 
-  int get urgentCount {
-    return worklist.items
-        .where(
-          (ClinicalWorklistEntry item) =>
-              clinicalWorklistEntryMatchesScope(item, ClinicalQueueScope.urgent),
-        )
-        .length;
-  }
+  int get assignedToMeCount => facetCounts.assignedToMe;
 
-  int get resultsReadyCount {
-    return worklist.items
-        .where(
-          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
-            item,
-            ClinicalQueueScope.resultsReady,
-          ),
-        )
-        .length;
-  }
+  int get urgentCount => facetCounts.urgent;
+
+  int get resultsReadyCount => facetCounts.resultsReady;
+
+  int get completedCount => facetCounts.completedToday;
 
   int get workloadCount {
     final Set<String> activeWorkItems = <String>{};
@@ -910,7 +969,7 @@ final class ClinicalWorkspaceState {
       }
 
       final bool needsClinicalAction =
-          _matchesReviewState(item) || item.isUrgent || item.resultsReady;
+          item.isUrgent || item.resultsReady;
       if (!needsClinicalAction) {
         continue;
       }
@@ -921,31 +980,10 @@ final class ClinicalWorkspaceState {
     return activeWorkItems.length;
   }
 
-  int get inConsultationCount {
-    return worklist.items
-        .where(
-          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
-            item,
-            ClinicalQueueScope.inConsultation,
-          ),
-        )
-        .length;
-  }
-
-  int get completedCount {
-    return worklist.items
-        .where(
-          (ClinicalWorklistEntry item) => clinicalWorklistEntryMatchesScope(
-            item,
-            ClinicalQueueScope.completed,
-          ),
-        )
-        .length;
-  }
-
   ClinicalWorkspaceState copyWith({
     ClinicalWorklistQuery? query,
     AppPage<ClinicalWorklistEntry>? worklist,
+    ClinicalWorklistFacetCounts? facetCounts,
     ClinicalReferenceData? referenceData,
     ClinicalEncounterBundle? selectedBundle,
     Object? lastFailure,
@@ -960,6 +998,7 @@ final class ClinicalWorkspaceState {
     return ClinicalWorkspaceState(
       query: query ?? this.query,
       worklist: worklist ?? this.worklist,
+      facetCounts: facetCounts ?? this.facetCounts,
       referenceData: referenceData ?? this.referenceData,
       selectedBundle: clearSelectedBundle
           ? null
@@ -1011,23 +1050,101 @@ String? clinicalOpdFlowApiId(ClinicalWorklistEntry entry) {
 
 bool clinicalWorklistEntryMatchesScope(
   ClinicalWorklistEntry item,
-  ClinicalQueueScope scope,
-) {
+  ClinicalQueueScope scope, {
+  String? currentUserId,
+}) {
   if (!clinicalWorklistEntryIsOutpatient(item)) {
     return false;
   }
   return switch (scope) {
-    ClinicalQueueScope.all => true,
-    ClinicalQueueScope.today => _isToday(item.updatedAt ?? item.startedAt),
+    ClinicalQueueScope.all => !item.isTerminal,
+    ClinicalQueueScope.today =>
+      !item.isTerminal && _isToday(item.updatedAt ?? item.startedAt),
+    ClinicalQueueScope.assignedToMe =>
+      !item.isTerminal &&
+          clinicalWorklistEntryAssignedToUser(item, currentUserId),
     ClinicalQueueScope.urgent => item.isUrgent && !item.isTerminal,
-    ClinicalQueueScope.waitingReview =>
-      _matchesReviewState(item) && !item.isTerminal,
-    ClinicalQueueScope.inConsultation =>
-      _matchesConsultationState(item) && !item.isTerminal,
     ClinicalQueueScope.resultsReady => item.resultsReady && !item.isTerminal,
     ClinicalQueueScope.completed =>
       item.isTerminal && _isToday(item.updatedAt ?? item.startedAt),
   };
+}
+
+/// True when [item] is assigned to [currentUserId] via stable provider user id.
+bool clinicalWorklistEntryAssignedToUser(
+  ClinicalWorklistEntry item,
+  String? currentUserId,
+) {
+  final String? userId = currentUserId?.trim();
+  if (userId == null || userId.isEmpty) {
+    return false;
+  }
+  final String? providerId = item.providerUserId?.trim();
+  if (providerId == null || providerId.isEmpty) {
+    return false;
+  }
+  return providerId == userId;
+}
+
+ClinicalWorklistFacetCounts clinicalWorklistFacetCounts(
+  Iterable<ClinicalWorklistEntry> openCandidates,
+  Iterable<ClinicalWorklistEntry> completedCandidates, {
+  String? currentUserId,
+}) {
+  int pending = 0;
+  int assignedToMe = 0;
+  int urgent = 0;
+  int resultsReady = 0;
+  int completedToday = 0;
+
+  for (final ClinicalWorklistEntry item in openCandidates) {
+    if (clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.all,
+      currentUserId: currentUserId,
+    )) {
+      pending += 1;
+    }
+    if (clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.assignedToMe,
+      currentUserId: currentUserId,
+    )) {
+      assignedToMe += 1;
+    }
+    if (clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.urgent,
+      currentUserId: currentUserId,
+    )) {
+      urgent += 1;
+    }
+    if (clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.resultsReady,
+      currentUserId: currentUserId,
+    )) {
+      resultsReady += 1;
+    }
+  }
+
+  for (final ClinicalWorklistEntry item in completedCandidates) {
+    if (clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.completed,
+      currentUserId: currentUserId,
+    )) {
+      completedToday += 1;
+    }
+  }
+
+  return ClinicalWorklistFacetCounts(
+    pending: pending,
+    assignedToMe: assignedToMe,
+    urgent: urgent,
+    resultsReady: resultsReady,
+    completedToday: completedToday,
+  );
 }
 
 List<ClinicalWorklistEntry> deduplicateClinicalWorklistEntries(
@@ -1260,19 +1377,6 @@ bool _matchesAnyContains(String? expected, Iterable<String?> values) {
   return values.whereType<String>().any(
     (String value) => value.toLowerCase().contains(normalizedExpected),
   );
-}
-
-bool _matchesReviewState(ClinicalWorklistEntry item) {
-  final String value = '${item.stage ?? ''} ${item.nextStep ?? ''}'
-      .toUpperCase();
-  return value.contains('REVIEW') || value.contains('DOCTOR');
-}
-
-bool _matchesConsultationState(ClinicalWorklistEntry item) {
-  final String value = '${item.stage ?? ''} ${item.status ?? ''}'.toUpperCase();
-  return value.contains('CONSULT') ||
-      value.contains('IN_PROGRESS') ||
-      value == 'OPEN';
 }
 
 bool _isTerminal(String? status) {

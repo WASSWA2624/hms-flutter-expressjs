@@ -14740,13 +14740,25 @@ abstract class AppLocalizations {
   /// **'Clinical'**
   String get navigationClinicalShortLabel;
 
-  /// Tab label for showing all clinical worklist items
+  /// Legacy key; Pending outpatient clinical worklist tab label
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'Pending'**
   String get clinicalSectionAllLabel;
 
-  /// Tab label for encounters waiting doctor review
+  /// Tab label for pending outpatient doctor worklist items
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get clinicalSectionPendingLabel;
+
+  /// Tab label for encounters assigned to the logged-in doctor
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned to me'**
+  String get clinicalSectionAssignedToMeLabel;
+
+  /// Deprecated legacy tab label retained for locale stability
   ///
   /// In en, this message translates to:
   /// **'Waiting review'**
@@ -14764,17 +14776,35 @@ abstract class AppLocalizations {
   /// **'Results ready'**
   String get clinicalSectionResultsReadyLabel;
 
-  /// Tab label for encounters currently in consultation
+  /// Deprecated legacy tab label retained for locale stability
   ///
   /// In en, this message translates to:
   /// **'In consultation'**
   String get clinicalSectionInConsultationLabel;
 
-  /// Tab label for completed/closed encounters
+  /// Legacy key; completed-today clinical worklist tab label
   ///
   /// In en, this message translates to:
-  /// **'Completed'**
+  /// **'Completed today'**
   String get clinicalSectionCompletedLabel;
+
+  /// Tab label for encounters completed today
+  ///
+  /// In en, this message translates to:
+  /// **'Completed today'**
+  String get clinicalSectionCompletedTodayLabel;
+
+  /// Clinical worklist filter choice for non-urgent encounters
+  ///
+  /// In en, this message translates to:
+  /// **'Not urgent'**
+  String get clinicalFilterNotUrgentLabel;
+
+  /// Clinical worklist filter choice when results are not ready
+  ///
+  /// In en, this message translates to:
+  /// **'Results not ready'**
+  String get clinicalFilterResultsNotReadyLabel;
 
   /// Clinical workspace page title.
   ///
@@ -15016,7 +15046,7 @@ abstract class AppLocalizations {
   /// **'Edit clinical notes'**
   String get clinicalEditNotesAction;
 
-  /// Save changes action label for inline clinical notes editing.
+  /// Save changes action label for the edit clinical notes dialog.
   ///
   /// In en, this message translates to:
   /// **'Save changes'**
@@ -15033,6 +15063,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add patient clinical note'**
   String get clinicalAddNoteTitle;
+
+  /// Clinical edit notes dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit clinical notes'**
+  String get clinicalEditNotesTitle;
 
   /// Clinical add diagnosis action label.
   ///
@@ -36390,6 +36426,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get commonSaveActionLabel;
+
+  /// Toolbar tooltip for bold note formatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get commonFormatBoldLabel;
+
+  /// Toolbar tooltip for italic note formatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get commonFormatItalicLabel;
+
+  /// Toolbar tooltip for underline note formatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get commonFormatUnderlineLabel;
+
+  /// Toolbar tooltip for bullet list note formatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet list'**
+  String get commonFormatBulletListLabel;
+
+  /// Toolbar tooltip for numbered list note formatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get commonFormatNumberedListLabel;
 
   /// Shared short edit action label for section headers and toolbars.
   ///
