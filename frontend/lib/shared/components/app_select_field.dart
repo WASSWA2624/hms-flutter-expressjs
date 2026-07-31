@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 
 class AppSelectOption<T> {
   const AppSelectOption({
@@ -52,6 +53,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.focusNode,
     this.restorationId,
     this.menuHeight,
+    this.enableSpeechToText,
     super.key,
   });
 
@@ -80,6 +82,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.focusNode,
     this.restorationId,
     this.menuHeight,
+    this.enableSpeechToText,
     super.key,
   }) : searchable = true;
 
@@ -112,6 +115,9 @@ class AppSelectField<T> extends StatefulWidget {
   final FocusNode? focusNode;
   final String? restorationId;
   final double? menuHeight;
+
+  /// When null, speech is shown for editable selects. Set false to hide.
+  final bool? enableSpeechToText;
 
   @override
   State<AppSelectField<T>> createState() => _AppSelectFieldState<T>();
@@ -193,9 +199,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   void _attachFocusNode() {
     _ownsFocusNode = widget.focusNode == null;
     _focusNode = widget.focusNode ?? FocusNode();
-    // Searchable selects must remain focusable so the inner TextField accepts
-    // typing. DropdownMenu ignores [requestFocusOnTap] when a focusNode is set.
-    if (widget.searchable) {
+    // Searchable (and speech-enabled) selects must remain focusable so the
+    // inner TextField accepts typing / dictation.
+    if (widget.searchable || widget.enableSpeechToText != false) {
       _focusNode.canRequestFocus = true;
     }
     _focusNode.addListener(_handleFocusChanged);
@@ -225,23 +231,47 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.allowClear &&
             widget.onChanged != null &&
             (widget.value != null || _hasControllerText);
+        final bool showSpeech = _speechEnabled;
         final Widget trailingIcon = _SelectTrailingIcon(
           showClear: canClear,
           isExpanded: false,
           isLoading: widget.isLoading,
           onClear: _clearSelection,
+          speechButton: showSpeech
+              ? AppSpeechToTextButton(
+                  controller: _controller,
+                  enabled: canSelect && !widget.isLoading,
+                  dense: widget.isDense,
+                  onChanged: (String value) {
+                    widget.onSearchTextChanged?.call(value);
+                  },
+                )
+              : null,
         );
         final Widget selectedTrailingIcon = _SelectTrailingIcon(
           showClear: canClear,
           isExpanded: true,
           isLoading: widget.isLoading,
           onClear: _clearSelection,
+          speechButton: showSpeech
+              ? AppSpeechToTextButton(
+                  controller: _controller,
+                  enabled: canSelect && !widget.isLoading,
+                  dense: widget.isDense,
+                  onChanged: (String value) {
+                    widget.onSearchTextChanged?.call(value);
+                  },
+                )
+              : null,
         );
         // Searchable fields must use DropdownMenu's native filter path so
         // typing updates the open overlay immediately (not only after a
-        // parent rebuild of dropdownMenuEntries).
+        // parent rebuild of dropdownMenuEntries). Speech uses the same path
+        // so dictation can filter options on any select.
         final bool useNativeFilter =
-            widget.searchable || widget.filterCallback != null;
+            widget.searchable ||
+            widget.filterCallback != null ||
+            showSpeech;
         final bool useNativeSearch = widget.searchCallback != null;
         final bool menuIsOpen = _focusNode.hasFocus;
         final _SelectMenuChrome menuChrome = _selectMenuChrome(
@@ -296,7 +326,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               .merge(widget.textStyle),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
-          keyboardType: widget.searchable ? TextInputType.text : null,
+          keyboardType: (widget.searchable || showSpeech)
+              ? TextInputType.text
+              : null,
           expandedInsets: EdgeInsets.zero,
           filterCallback: useNativeFilter
               ? (List<DropdownMenuEntry<T>> entries, String filter) =>
@@ -305,8 +337,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           searchCallback: useNativeSearch
               ? widget.searchCallback ?? _searchEntries
               : null,
-          requestFocusOnTap: widget.searchable,
-          selectOnly: !widget.searchable,
+          requestFocusOnTap: widget.searchable || showSpeech,
+          selectOnly: !(widget.searchable || showSpeech),
           closeBehavior: DropdownMenuCloseBehavior.self,
           focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
@@ -345,6 +377,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
 
     return field;
+  }
+
+  bool get _speechEnabled {
+    if (widget.enableSpeechToText == false) {
+      return false;
+    }
+    return true;
   }
 
   void _commitSelection(T? value) {
@@ -912,20 +951,26 @@ class _SelectTrailingIcon extends StatelessWidget {
     required this.isExpanded,
     required this.isLoading,
     required this.onClear,
+    this.speechButton,
   });
 
   final bool showClear;
   final bool isExpanded;
   final bool isLoading;
   final VoidCallback? onClear;
+  final Widget? speechButton;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final double extraWidth =
+        (showClear ? 32.0 : 0.0) +
+        (speechButton != null ? 32.0 : 0.0) +
+        (isLoading ? 28.0 : 0.0);
 
     return SizedBox(
-      width: (showClear ? 76.0 : 44.0) + (isLoading ? 28.0 : 0.0),
+      width: 44.0 + extraWidth,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -941,6 +986,7 @@ class _SelectTrailingIcon extends StatelessWidget {
               tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
               onPressed: onClear,
             ),
+          ?speechButton,
           if (isLoading)
             Padding(
               padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),

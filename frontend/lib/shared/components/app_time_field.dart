@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_time_value.dart';
 
 enum _AppTimePeriod { am, pm }
@@ -35,6 +36,7 @@ class AppTimeField extends StatefulWidget {
     this.allowFormatToggle = true,
     this.focusNode,
     this.restorationId,
+    this.enableSpeechToText = true,
     super.key,
   });
 
@@ -64,6 +66,7 @@ class AppTimeField extends StatefulWidget {
   final bool allowFormatToggle;
   final FocusNode? focusNode;
   final String? restorationId;
+  final bool enableSpeechToText;
 
   @override
   State<AppTimeField> createState() => _AppTimeFieldState();
@@ -212,6 +215,18 @@ class _AppTimeFieldState extends State<AppTimeField> {
               label24: widget.hour24LabelText,
               pickerLabel: widget.pickerButtonLabel,
               enabled: canChange,
+              speechButton: widget.enableSpeechToText
+                  ? AppSpeechToTextButton(
+                      key: ValueKey<int>(
+                        identityHashCode(_speechTargetController),
+                      ),
+                      controller: _speechTargetController,
+                      enabled: canChange,
+                      dense: true,
+                      transcriptTransform: appSpeechDigitsOnlyTranscript,
+                      onChanged: (_) => _handlePartsChanged(field),
+                    )
+                  : null,
               onFormatChanged: (bool use24Hour) {
                 final AppTimeValue? current = _parseParts() ?? widget.value;
                 setState(() => _userFormat24Hour = use24Hour);
@@ -346,6 +361,19 @@ class _AppTimeFieldState extends State<AppTimeField> {
       _hourFocusNode.hasFocus ||
       _minuteFocusNode.hasFocus ||
       _secondFocusNode.hasFocus;
+
+  TextEditingController get _speechTargetController {
+    if (_hourFocusNode.hasFocus) {
+      return _hourController;
+    }
+    if (_minuteFocusNode.hasFocus) {
+      return _minuteController;
+    }
+    if (widget.showSeconds && _secondFocusNode.hasFocus) {
+      return _secondController;
+    }
+    return _hourController;
+  }
 
   void _handlePartsChanged(FormFieldState<AppTimeValue> field) {
     if (_isSyncing) {
@@ -590,6 +618,7 @@ class _TimeFieldSuffix extends StatelessWidget {
     required this.enabled,
     required this.onFormatChanged,
     required this.onPickTime,
+    this.speechButton,
   });
 
   final bool allowFormatToggle;
@@ -600,12 +629,14 @@ class _TimeFieldSuffix extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onFormatChanged;
   final VoidCallback? onPickTime;
+  final Widget? speechButton;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        ?speechButton,
         if (allowFormatToggle)
           _TimeFormatToggle(
             uses24Hour: uses24Hour,

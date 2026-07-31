@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/shared/components/app_currency.dart';
 import 'package:hosspi_hms/shared/components/app_currency_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 
 export 'package:hosspi_hms/shared/components/app_currency.dart';
 export 'package:hosspi_hms/shared/components/app_currency_select_field.dart';
@@ -52,6 +53,7 @@ class AppCurrencyAmountField extends ConsumerStatefulWidget {
     this.restorationId,
     this.textInputAction,
     this.currencyOptions = appCurrencyOptions,
+    this.enableSpeechToText = true,
     super.key,
   }) : assert(decimalDigits == null || decimalDigits >= 0);
 
@@ -92,6 +94,7 @@ class AppCurrencyAmountField extends ConsumerStatefulWidget {
   final String? restorationId;
   final TextInputAction? textInputAction;
   final List<AppCurrencyOption> currencyOptions;
+  final bool enableSpeechToText;
 
   @override
   ConsumerState<AppCurrencyAmountField> createState() =>
@@ -186,6 +189,7 @@ class _AppCurrencyAmountFieldState
             canEditAmount: canEditAmount,
             canEditCurrency: canEditCurrency,
             isLoading: widget.isLoading || _isConverting,
+            enableSpeechToText: widget.enableSpeechToText,
             decimalDigits: _effectiveDecimalDigits,
             restorationId: widget.restorationId,
             textInputAction: widget.textInputAction,
@@ -399,6 +403,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
     this.restorationId,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.enableSpeechToText = true,
   });
 
   final TextEditingController amountController;
@@ -419,6 +424,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
   final String? restorationId;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onFieldSubmitted;
+  final bool enableSpeechToText;
 
   @override
   Widget build(BuildContext context) {
@@ -493,6 +499,20 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                   ),
                 ),
               ),
+              if (enableSpeechToText)
+                Align(
+                  child: AppSpeechToTextButton(
+                    controller: amountController,
+                    enabled: canEditAmount && !isLoading,
+                    dense: true,
+                    transcriptTransform: (String transcript) =>
+                        appSpeechDigitsOnlyTranscript(
+                          transcript,
+                          allowDecimal: true,
+                        ),
+                    onChanged: onAmountChanged,
+                  ),
+                ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
                 child: VerticalDivider(

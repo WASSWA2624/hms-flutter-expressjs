@@ -12,6 +12,7 @@ import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
 @immutable
@@ -280,6 +281,7 @@ class AppSearchBar extends StatefulWidget {
     this.trailingActions = const <AppSearchBarAction>[],
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
+    this.enableSpeechToText = true,
     super.key,
   });
 
@@ -323,6 +325,7 @@ class AppSearchBar extends StatefulWidget {
   final List<AppSearchBarAction> trailingActions;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
+  final bool enableSpeechToText;
 
   @override
   State<AppSearchBar> createState() => _AppSearchBarState();
@@ -503,13 +506,19 @@ class _AppSearchBarState extends State<AppSearchBar> {
   }
 
   Widget? _suffixIcon(String clearLabel, bool canClear) {
-    if (!widget.isLoading && !canClear) {
+    final bool showSpeech = widget.enableSpeechToText;
+    if (!widget.isLoading && !canClear && !showSpeech) {
       return null;
     }
 
     final ThemeData theme = Theme.of(context);
+    final double width =
+        48.0 +
+        (canClear ? 28.0 : 0.0) +
+        (showSpeech ? 28.0 : 0.0) +
+        (widget.isLoading ? 28.0 : 0.0);
     return SizedBox(
-      width: canClear && widget.isLoading ? 76.0 : 48.0,
+      width: width,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -526,6 +535,13 @@ class _AppSearchBarState extends State<AppSearchBar> {
                 tooltip: clearLabel,
                 onPressed: _clear,
               ),
+            ),
+          if (showSpeech)
+            AppSpeechToTextButton(
+              controller: widget.controller,
+              enabled: widget.enabled && !widget.isLoading,
+              dense: true,
+              onChanged: widget.onChanged,
             ),
           if (widget.isLoading)
             Padding(

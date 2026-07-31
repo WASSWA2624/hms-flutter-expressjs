@@ -153,8 +153,9 @@ void insertSpeechTranscript(
 /// Default speech visibility for shared text fields.
 ///
 /// Opt out always for obscured/password fields. When [enableSpeechToText] is
-/// null, also hide for numeric/phone/datetime/visible-password keyboards so
-/// staff keep typing-only entry for codes and contact numbers.
+/// null, speech is shown for every other editable field (including number,
+/// phone, email, and datetime keyboards). Set false to force hide, true to
+/// force show (still never on [obscureText]).
 bool appSpeechToTextEnabledForField({
   required bool? enableSpeechToText,
   required bool obscureText,
@@ -166,27 +167,63 @@ bool appSpeechToTextEnabledForField({
   if (enableSpeechToText == false) {
     return false;
   }
-  if (enableSpeechToText == true) {
-    return true;
-  }
-  return !_isDictationHostileKeyboard(keyboardType);
+  return true;
 }
 
-bool _isDictationHostileKeyboard(TextInputType? keyboardType) {
-  if (keyboardType == null) {
-    return false;
+/// Keeps digits (and optional decimal separators) from a spoken transcript so
+/// fields with digit-only formatters still receive usable values when STT
+/// returns spaced digits or English number words.
+String appSpeechDigitsOnlyTranscript(
+  String transcript, {
+  bool allowDecimal = false,
+}) {
+  const Map<String, String> wordDigits = <String, String>{
+    'zero': '0',
+    'oh': '0',
+    'o': '0',
+    'one': '1',
+    'two': '2',
+    'three': '3',
+    'four': '4',
+    'five': '5',
+    'six': '6',
+    'seven': '7',
+    'eight': '8',
+    'nine': '9',
+    'ten': '10',
+  };
+
+  final StringBuffer buffer = StringBuffer();
+  for (final String rawToken in transcript.toLowerCase().split(
+    RegExp(r'[\s,/-]+'),
+  )) {
+    final String token = rawToken.trim();
+    if (token.isEmpty) {
+      continue;
+    }
+    final String? mapped = wordDigits[token];
+    if (mapped != null) {
+      buffer.write(mapped);
+      continue;
+    }
+    if (allowDecimal && (token == 'point' || token == 'dot')) {
+      if (!buffer.toString().contains('.')) {
+        buffer.write('.');
+      }
+      continue;
+    }
+    for (final int codeUnit in token.codeUnits) {
+      final String char = String.fromCharCode(codeUnit);
+      if (RegExp(r'[0-9]').hasMatch(char)) {
+        buffer.write(char);
+      } else if (allowDecimal && (char == '.' || char == ',')) {
+        if (!buffer.toString().contains('.')) {
+          buffer.write('.');
+        }
+      }
+    }
   }
-  if (keyboardType == TextInputType.number ||
-      keyboardType == TextInputType.phone ||
-      keyboardType == TextInputType.datetime ||
-      keyboardType == TextInputType.visiblePassword) {
-    return true;
-  }
-  return keyboardType == const TextInputType.numberWithOptions() ||
-      keyboardType == const TextInputType.numberWithOptions(decimal: true) ||
-      keyboardType == const TextInputType.numberWithOptions(signed: true) ||
-      keyboardType ==
-          const TextInputType.numberWithOptions(signed: true, decimal: true);
+  return buffer.toString();
 }
 
 /// Ensures only one field listens at a time.
@@ -236,6 +273,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     required Object owner,
     required TextEditingController controller,
     required ValueChanged<String>? onChanged,
+    String Function(String transcript)? transcriptTransform,
   }) async {
     var stoppedOther = false;
     if (_activeOwner != null && _activeOwner != owner) {
@@ -262,9 +300,10 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
           if (_activeOwner != owner) {
             return;
           }
+          final String transcript = transcriptTransform?.call(words) ?? words;
           insertSpeechTranscript(
             controller,
-            words,
+            transcript,
             sessionPrefix: _sessionPrefix,
             sessionSuffix: _sessionSuffix,
           );
@@ -357,6 +396,7 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
     required this.controller,
     this.enabled = true,
     this.onChanged,
+    this.transcriptTransform,
     this.coordinator,
     this.dense = false,
     super.key,
@@ -365,6 +405,8 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
   final TextEditingController controller;
   final bool enabled;
   final ValueChanged<String>? onChanged;
+  /// Optional sanitizer (e.g. [appSpeechDigitsOnlyTranscript] for phone/date).
+  final String Function(String transcript)? transcriptTransform;
   final AppSpeechToTextCoordinator? coordinator;
   final bool dense;
 
@@ -470,6 +512,7 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       owner: widget.controller,
       controller: widget.controller,
       onChanged: widget.onChanged,
+      transcriptTransform: widget.transcriptTransform,
     );
     if (!mounted) {
       return;

@@ -107,9 +107,9 @@ class AppTextField extends StatefulWidget {
   /// When true and a [controller] has text, shows a clear (X) suffix action.
   final bool allowClear;
 
-  /// When null, speech is shown for editable free-text fields and hidden for
-  /// passwords plus numeric/phone/datetime keyboards. Set false to force hide,
-  /// true to force show (still never on [obscureText]).
+  /// When null, speech is shown for editable fields and hidden only for
+  /// passwords/[obscureText]. Set false to force hide, true to force show
+  /// (still never on [obscureText]).
   final bool? enableSpeechToText;
 
   /// Optional input text style. Merged over the default field style so callers
@@ -132,6 +132,27 @@ class _AppTextFieldState extends State<AppTextField> {
     obscureText: widget.obscureText,
     keyboardType: widget.keyboardType,
   );
+
+  String Function(String transcript)? get _speechTranscriptTransform {
+    final TextInputType? keyboardType = widget.keyboardType;
+    if (keyboardType == TextInputType.phone ||
+        keyboardType == TextInputType.number ||
+        keyboardType == TextInputType.datetime) {
+      return appSpeechDigitsOnlyTranscript;
+    }
+    if (keyboardType == const TextInputType.numberWithOptions() ||
+        keyboardType == const TextInputType.numberWithOptions(decimal: true) ||
+        keyboardType == const TextInputType.numberWithOptions(signed: true) ||
+        keyboardType ==
+            const TextInputType.numberWithOptions(
+              signed: true,
+              decimal: true,
+            )) {
+      return (String transcript) =>
+          appSpeechDigitsOnlyTranscript(transcript, allowDecimal: true);
+    }
+    return null;
+  }
 
   TextEditingController? get _effectiveController =>
       widget.controller ?? _ownedController;
@@ -406,6 +427,7 @@ class _AppTextFieldState extends State<AppTextField> {
             enabled: canEdit,
             dense: widget.isDense,
             onChanged: widget.onChanged,
+            transcriptTransform: _speechTranscriptTransform,
           )
         : null;
 

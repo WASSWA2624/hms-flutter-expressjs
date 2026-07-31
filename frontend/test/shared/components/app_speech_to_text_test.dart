@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_rich_text_editor.dart';
+import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
@@ -103,7 +104,7 @@ void main() {
     expect(controller.selection.baseOffset, '**bold** spoken'.length);
   });
 
-  test('appSpeechToTextEnabledForField hides passwords and numeric keyboards', () {
+  test('appSpeechToTextEnabledForField hides passwords only by default', () {
     expect(
       appSpeechToTextEnabledForField(
         enableSpeechToText: null,
@@ -126,7 +127,15 @@ void main() {
         obscureText: false,
         keyboardType: TextInputType.number,
       ),
-      isFalse,
+      isTrue,
+    );
+    expect(
+      appSpeechToTextEnabledForField(
+        enableSpeechToText: null,
+        obscureText: false,
+        keyboardType: TextInputType.phone,
+      ),
+      isTrue,
     );
     expect(
       appSpeechToTextEnabledForField(
@@ -135,6 +144,18 @@ void main() {
         keyboardType: TextInputType.multiline,
       ),
       isTrue,
+    );
+  });
+
+  test('appSpeechDigitsOnlyTranscript extracts spoken digits', () {
+    expect(appSpeechDigitsOnlyTranscript('seven eight three'), '783');
+    expect(
+      appSpeechDigitsOnlyTranscript('one two point five', allowDecimal: true),
+      '12.5',
+    );
+    expect(
+      appSpeechDigitsOnlyTranscript('1,250.50', allowDecimal: true),
+      '1250.50',
     );
   });
 
@@ -194,6 +215,33 @@ void main() {
       tester.element(find.byType(AppTextField)),
     );
     expect(find.byTooltip(l10n.speechToTextOfflineMessage), findsOneWidget);
+  });
+
+  testWidgets('searchable select and number fields expose speech controls', (
+    WidgetTester tester,
+  ) async {
+    await pumpSpeechApp(
+      tester,
+      Column(
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            labelText: 'Facility',
+            options: const <AppSelectOption<String>>[
+              AppSelectOption<String>(value: 'a', label: 'Alpha'),
+              AppSelectOption<String>(value: 'b', label: 'Beta'),
+            ],
+            onChanged: (_) {},
+          ),
+          AppTextField(
+            controller: TextEditingController(),
+            labelText: 'Quantity',
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byIcon(Icons.mic_none_outlined), findsNWidgets(2));
   });
 
   testWidgets('opt-out and password fields hide speech controls', (

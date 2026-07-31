@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:phone_numbers_parser/metadata.dart' as phone_metadata;
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
@@ -37,6 +38,7 @@ class AppPhoneField extends StatefulWidget {
     this.isRequired = false,
     this.initialCountryCode = '+256',
     this.useFloatingLabel = true,
+    this.enableSpeechToText = true,
     super.key,
   }) : assert(
          !isRequired || requiredMessage != null,
@@ -69,6 +71,7 @@ class AppPhoneField extends StatefulWidget {
   final bool isRequired;
   final String initialCountryCode;
   final bool useFloatingLabel;
+  final bool enableSpeechToText;
 
   @override
   State<AppPhoneField> createState() => _AppPhoneFieldState();
@@ -185,6 +188,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
               canEdit: canEdit,
               isLoading: widget.isLoading,
               maxNationalDigits: _maxNationalDigits,
+              enableSpeechToText: widget.enableSpeechToText,
               textInputAction: widget.textInputAction,
               restorationId: widget.restorationId,
               onSelectCountry: () => _selectCountry(formField),
@@ -464,6 +468,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
     required this.onSelectCountry,
     required this.onNumberChanged,
     required this.onFieldSubmitted,
+    this.enableSpeechToText = true,
     this.textInputAction,
     this.restorationId,
   });
@@ -476,6 +481,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
   final bool canEdit;
   final bool isLoading;
   final int maxNationalDigits;
+  final bool enableSpeechToText;
   final VoidCallback onSelectCountry;
   final ValueChanged<String> onNumberChanged;
   final ValueChanged<String> onFieldSubmitted;
@@ -562,6 +568,16 @@ class _UnifiedPhoneInput extends StatelessWidget {
                   ),
                 ),
               ),
+              if (enableSpeechToText)
+                Align(
+                  child: AppSpeechToTextButton(
+                    controller: numberController,
+                    enabled: canEdit && !isLoading,
+                    dense: true,
+                    transcriptTransform: appSpeechDigitsOnlyTranscript,
+                    onChanged: onNumberChanged,
+                  ),
+                ),
             ],
           ),
         );

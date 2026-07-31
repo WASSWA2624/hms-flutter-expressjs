@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 
 class AppDateField extends StatefulWidget {
   const AppDateField({
@@ -31,6 +32,7 @@ class AppDateField extends StatefulWidget {
     this.restorationId,
     this.initialEntryMode = DatePickerEntryMode.calendar,
     this.selectableDayPredicate,
+    this.enableSpeechToText = true,
     super.key,
   });
 
@@ -59,6 +61,7 @@ class AppDateField extends StatefulWidget {
   final String? restorationId;
   final DatePickerEntryMode initialEntryMode;
   final SelectableDayPredicate? selectableDayPredicate;
+  final bool enableSpeechToText;
 
   @override
   State<AppDateField> createState() => _AppDateFieldState();
@@ -171,13 +174,35 @@ class _AppDateFieldState extends State<AppDateField> {
               theme.spacing.xs,
               theme.spacing.sm,
             ),
-            suffixIcon: _DatePickerButton(
-              label: widget.pickerButtonLabel,
-              onPressed: canChange ? () => _selectDate(context, field) : null,
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (widget.enableSpeechToText)
+                  AppSpeechToTextButton(
+                    key: ValueKey<int>(
+                      identityHashCode(_speechTargetController),
+                    ),
+                    controller: _speechTargetController,
+                    enabled: canChange,
+                    dense: true,
+                    transcriptTransform: appSpeechDigitsOnlyTranscript,
+                    onChanged: (_) => _handlePartsChanged(field),
+                  ),
+                _DatePickerButton(
+                  label: widget.pickerButtonLabel,
+                  onPressed: canChange
+                      ? () => _selectDate(context, field)
+                      : null,
+                ),
+              ],
             ),
             suffixIconConstraints: BoxConstraints(
               minWidth:
-                  theme.appTokens.minInteractiveDimension + theme.spacing.md,
+                  theme.appTokens.minInteractiveDimension +
+                  theme.spacing.md +
+                  (widget.enableSpeechToText
+                      ? theme.appTokens.minInteractiveDimension
+                      : 0),
               minHeight:
                   theme.inputDecorationTheme.constraints?.minHeight ?? 48,
             ),
@@ -264,6 +289,19 @@ class _AppDateFieldState extends State<AppDateField> {
       _yearFocusNode.hasFocus ||
       _monthFocusNode.hasFocus ||
       _dayFocusNode.hasFocus;
+
+  TextEditingController get _speechTargetController {
+    if (_dayFocusNode.hasFocus) {
+      return _dayController;
+    }
+    if (_monthFocusNode.hasFocus) {
+      return _monthController;
+    }
+    if (_yearFocusNode.hasFocus) {
+      return _yearController;
+    }
+    return _dayController;
+  }
 
   void _handlePartsChanged(FormFieldState<DateTime> field) {
     if (_isSyncing) {
