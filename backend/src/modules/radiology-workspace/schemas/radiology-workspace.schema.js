@@ -113,17 +113,17 @@ const completeRadiologyOrderSchema = z.object({
   completed_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable()});
 
-const cancelRadiologyOrderSchema = z.object({
-  reason: z.string().trim().min(2).max(255),
-  cancelled_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable()});
-
 const createRadiologyStudySchema = z.object({
   modality: imagingModalitySchema.optional(),
   room: z.string().trim().max(120).optional().nullable(),
   equipment_registry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   performed_at: z.string().datetime().optional(),
   started_at: z.string().datetime().optional(),
+  notes: z.string().trim().max(65535).optional().nullable()});
+
+const cancelRadiologyOrderSchema = z.object({
+  reason: z.string().trim().min(2).max(65535),
+  cancelled_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable()});
 
 const initUploadAssetSchema = z.object({

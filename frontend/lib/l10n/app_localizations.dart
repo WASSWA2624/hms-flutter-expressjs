@@ -20143,7 +20143,7 @@ abstract class AppLocalizations {
   /// Guidance shown when a study is waiting for a report.
   ///
   /// In en, this message translates to:
-  /// **'Write and release the radiology report for this completed study.'**
+  /// **'Imaging is complete. Create the radiology report for this study.'**
   String get radiologyProcedureDetailsWaitingReportHint;
 
   /// Guidance shown for reported radiology procedures.
@@ -20860,6 +20860,30 @@ abstract class AppLocalizations {
   /// **'Procedure done'**
   String get radiologyMarkProcedureDoneAction;
 
+  /// Header action to mark selected radiology procedures done.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure done'**
+  String get radiologyMarkProcedureDoneSelectedAction;
+
+  /// Confirm title before marking a radiology procedure done.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark procedure done?'**
+  String get radiologyMarkProcedureDoneConfirmTitle;
+
+  /// Confirm body before marking a radiology procedure done.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that imaging has been completed for this procedure. The next step will be to create the report.'**
+  String get radiologyMarkProcedureDoneConfirmBody;
+
+  /// Open the radiology report editor after procedure done.
+  ///
+  /// In en, this message translates to:
+  /// **'Create report'**
+  String get radiologyCreateReportAction;
+
   /// Open radiology report dialog to complete the report.
   ///
   /// In en, this message translates to:
@@ -21081,6 +21105,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancellation reason'**
   String get radiologyCancellationReasonLabel;
+
+  /// Hint for the rich-text radiology cancellation reason field.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain why this radiology order is being cancelled.'**
+  String get radiologyCancellationReasonHint;
 
   /// Localized text for radiologyPacsSyncDialogTitle.
   ///

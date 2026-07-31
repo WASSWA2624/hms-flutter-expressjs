@@ -13950,7 +13950,7 @@
   "@radiologyProcedureDetailsPendingHint": {
     "description": "Guidance shown for pending radiology procedures."
   },
-  "radiologyProcedureDetailsWaitingReportHint": "Write and release the radiology report for this completed study.",
+  "radiologyProcedureDetailsWaitingReportHint": "Imaging is complete. Create the radiology report for this study.",
   "@radiologyProcedureDetailsWaitingReportHint": {
     "description": "Guidance shown when a study is waiting for a report."
   },
@@ -14439,6 +14439,22 @@
   "@radiologyMarkProcedureDoneAction": {
     "description": "Mark radiology procedure as performed action."
   },
+  "radiologyMarkProcedureDoneSelectedAction": "Procedure done",
+  "@radiologyMarkProcedureDoneSelectedAction": {
+    "description": "Header action to mark selected radiology procedures done."
+  },
+  "radiologyMarkProcedureDoneConfirmTitle": "Mark procedure done?",
+  "@radiologyMarkProcedureDoneConfirmTitle": {
+    "description": "Confirm title before marking a radiology procedure done."
+  },
+  "radiologyMarkProcedureDoneConfirmBody": "Confirm that imaging has been completed for this procedure. The next step will be to create the report.",
+  "@radiologyMarkProcedureDoneConfirmBody": {
+    "description": "Confirm body before marking a radiology procedure done."
+  },
+  "radiologyCreateReportAction": "Create report",
+  "@radiologyCreateReportAction": {
+    "description": "Open the radiology report editor after procedure done."
+  },
   "radiologyMarkReportDoneAction": "Mark report done",
   "@radiologyMarkReportDoneAction": {
     "description": "Open radiology report dialog to complete the report."
@@ -14586,6 +14602,10 @@
   "radiologyCancellationReasonLabel": "Cancellation reason",
   "@radiologyCancellationReasonLabel": {
     "description": "Localized text for radiologyCancellationReasonLabel."
+  },
+  "radiologyCancellationReasonHint": "Explain why this radiology order is being cancelled.",
+  "@radiologyCancellationReasonHint": {
+    "description": "Hint for the rich-text radiology cancellation reason field."
   },
   "radiologyPacsSyncDialogTitle": "Sync study to PACS",
   "@radiologyPacsSyncDialogTitle": {

@@ -10920,7 +10920,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyProcedureDetailsWaitingReportHint =>
-      'Write and release the radiology report for this completed study.';
+      'Imaging is complete. Create the radiology report for this study.';
 
   @override
   String get radiologyProcedureDetailsReportedHint =>
@@ -11313,6 +11313,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyMarkProcedureDoneAction => 'Procedure done';
 
   @override
+  String get radiologyMarkProcedureDoneSelectedAction => 'Procedure done';
+
+  @override
+  String get radiologyMarkProcedureDoneConfirmTitle => 'Mark procedure done?';
+
+  @override
+  String get radiologyMarkProcedureDoneConfirmBody =>
+      'Confirm that imaging has been completed for this procedure. The next step will be to create the report.';
+
+  @override
+  String get radiologyCreateReportAction => 'Create report';
+
+  @override
   String get radiologyMarkReportDoneAction => 'Mark report done';
 
   @override
@@ -11429,6 +11442,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyCancellationReasonLabel => 'Cancellation reason';
+
+  @override
+  String get radiologyCancellationReasonHint =>
+      'Explain why this radiology order is being cancelled.';
 
   @override
   String get radiologyPacsSyncDialogTitle => 'Sync study to PACS';

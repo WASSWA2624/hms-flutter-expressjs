@@ -545,7 +545,7 @@ void main() {
       await tester.tap(find.text('Rita Reporting'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Mark report done'), findsNothing);
+      expect(find.text('Create report'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Procedure done'), findsNothing);
       expect(find.text('Draft report'), findsNothing);
       expect(find.text('Release report'), findsNothing);
@@ -652,21 +652,25 @@ void main() {
 
       expect(find.text('Cancel order'), findsOneWidget);
       expect(find.text('Cancel selected'), findsOneWidget);
-      expect(find.text('Mark report done'), findsOneWidget);
+      expect(find.text('Create report'), findsOneWidget);
       expect(find.text('Procedures'), findsOneWidget);
       expect(find.text('CT Head'), findsWidgets);
       expect(find.text('Procedure ID'), findsOneWidget);
       expect(find.text('Body organ'), findsOneWidget);
       expect(find.text('Done — waiting for report'), findsOneWidget);
       expect(find.text('Undo'), findsOneWidget);
+      expect(find.text('Assign'), findsNothing);
+      expect(find.text('Start imaging'), findsNothing);
+      expect(find.text('Assign typist'), findsNothing);
+      expect(find.text('Perform study'), findsNothing);
       expect(find.text('Request details'), findsNothing);
       expect(find.text('Workflow timeline'), findsNothing);
       expect(find.text('Imaging floor'), findsNothing);
       expect(find.text('Print report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.ensureVisible(find.text('Mark report done'));
-      await tester.tap(find.text('Mark report done'));
+      await tester.ensureVisible(find.text('Create report'));
+      await tester.tap(find.text('Create report'));
       await tester.pumpAndSettle();
 
       expect(find.text('Local device'), findsOneWidget);
@@ -693,8 +697,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Mark report done'));
-      await tester.tap(find.text('Mark report done'));
+      await tester.ensureVisible(find.text('Create report'));
+      await tester.tap(find.text('Create report'));
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(
@@ -749,8 +753,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Mark report done'));
-      await tester.tap(find.text('Mark report done'));
+      await tester.ensureVisible(find.text('Create report'));
+      await tester.tap(find.text('Create report'));
       await tester.pumpAndSettle();
 
       final Finder findingsField = find.descendant(
@@ -850,8 +854,8 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Mark report done'));
-      await tester.tap(find.text('Mark report done'));
+      await tester.ensureVisible(find.text('Create report'));
+      await tester.tap(find.text('Create report'));
       await tester.pumpAndSettle();
 
       final Finder releaseSubmit = find.descendant(

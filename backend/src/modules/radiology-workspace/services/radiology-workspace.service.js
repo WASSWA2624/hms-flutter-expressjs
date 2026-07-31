@@ -1377,6 +1377,13 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
         performed_at: toDateOrNull(payload.performed_at, null),
         started_at: toDateOrNull(payload.started_at, toDateOrNull(payload.performed_at, new Date()))});
 
+      // Fold Start imaging into Procedure done: ORDERED → IN_PROCESS when a
+      // study is recorded so clients do not need a separate start step.
+      if (order.status === 'ORDERED') {
+        await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
+          status: 'IN_PROCESS'});
+      }
+
       const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
         tx,
         order.id,

@@ -984,13 +984,10 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           state: widget.state,
           canWork: widget.canWork,
           onMarkDone: widget.canWork && !widget.state.isMutating
-              ? () => _showStudyDialog(context, ref, order)
+              ? () => _markProcedureDone(context, ref, order)
               : null,
           onMarkReportDone: widget.canWork && !widget.state.isMutating
               ? () => _showReportDialog(context, ref, widget.workflow)
-              : null,
-          onAssignTypist: widget.canWork && !widget.state.isMutating
-              ? () => _showAssignDialog(context, ref)
               : null,
           onUndo: widget.canWork && !widget.state.isMutating
               ? () => _undoProcedureWorkbenchStatus(context, ref, widget.workflow)
@@ -1006,35 +1003,9 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
   }
 
   List<Widget> _buildHeaderActions(BuildContext context) {
-    if (!widget.canWork) {
-      return const <Widget>[];
-    }
-    final AppLocalizations l10n = context.l10n;
-    final RadiologyNextActions next = widget.workflow.nextActions;
-    final bool isSaving = widget.state.isMutating;
-    final List<Widget> actions = <Widget>[];
-
-    if (next.canAssign) {
-      actions.add(
-        AppButton.tertiary(
-          label: l10n.radiologyAssignAction,
-          leadingIcon: Icons.event_available_outlined,
-          isLoading: isSaving,
-          onPressed: isSaving ? null : () => _showAssignDialog(context, ref),
-        ),
-      );
-    }
-    if (next.canStart) {
-      actions.add(
-        AppButton.tertiary(
-          label: l10n.radiologyStartImagingAction,
-          leadingIcon: Icons.play_arrow_outlined,
-          isLoading: isSaving,
-          onPressed: isSaving ? null : () => _startImaging(context, ref),
-        ),
-      );
-    }
-    return actions;
+    // Assign and Start imaging are intentionally omitted from this workbench;
+    // Procedure done is the single acquisition confirmation.
+    return const <Widget>[];
   }
 }
 
@@ -1196,7 +1167,6 @@ class _ProcedureWorkbenchSection extends StatefulWidget {
     required this.canWork,
     this.onMarkDone,
     this.onMarkReportDone,
-    this.onAssignTypist,
     this.onUndo,
     this.onCancel,
   });
@@ -1206,7 +1176,6 @@ class _ProcedureWorkbenchSection extends StatefulWidget {
   final bool canWork;
   final VoidCallback? onMarkDone;
   final VoidCallback? onMarkReportDone;
-  final VoidCallback? onAssignTypist;
   final VoidCallback? onUndo;
   final VoidCallback? onCancel;
 
@@ -1291,7 +1260,6 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
         canWork: widget.canWork,
         onMarkDone: widget.onMarkDone,
         onMarkReportDone: widget.onMarkReportDone,
-        onAssignTypist: widget.onAssignTypist,
         onUndo: widget.onUndo,
         onCancel: widget.onCancel,
       ),
@@ -1322,11 +1290,6 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
         widget.onMarkReportDone != null && waitingForReport;
     final bool canViewReport =
         widget.onMarkReportDone != null && reported;
-    final bool canAssignTypist =
-        widget.canWork &&
-        widget.onAssignTypist != null &&
-        next.canAssign &&
-        waitingForReport;
     final bool canUndo =
         widget.canWork &&
         widget.onUndo != null &&
@@ -1354,6 +1317,16 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
       titleIcon: Icons.biotech_outlined,
       contentPadding: EdgeInsets.zero,
       headerActions: <Widget>[
+        if (canRunProcedureDone)
+          AppButton.tertiary(
+            dense: true,
+            label: l10n.radiologyMarkProcedureDoneSelectedAction,
+            leadingIcon: Icons.check_circle_outline,
+            isLoading: state.isMutating,
+            onPressed: _selectedKeys.isEmpty || state.isMutating
+                ? null
+                : widget.onMarkDone,
+          ),
         if (canCancel)
           AppButton.tertiary(
             dense: true,
@@ -1571,7 +1544,7 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                                 if (canMarkReportDone)
                                   AppButton.primary(
                                     dense: true,
-                                    label: l10n.radiologyMarkReportDoneAction,
+                                    label: l10n.radiologyCreateReportAction,
                                     leadingIcon: Icons.edit_note_outlined,
                                     onPressed: widget.onMarkReportDone,
                                   ),
@@ -1581,13 +1554,6 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                                     label: l10n.radiologyViewReportAction,
                                     leadingIcon: Icons.description_outlined,
                                     onPressed: widget.onMarkReportDone,
-                                  ),
-                                if (canAssignTypist)
-                                  AppButton.tertiary(
-                                    dense: true,
-                                    label: l10n.radiologyAssignTypistAction,
-                                    leadingIcon: Icons.person_outline,
-                                    onPressed: widget.onAssignTypist,
                                   ),
                                 if (canUndo)
                                   AppButton.tertiary(
@@ -1633,7 +1599,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     required this.canWork,
     this.onMarkDone,
     this.onMarkReportDone,
-    this.onAssignTypist,
     this.onUndo,
     this.onCancel,
   });
@@ -1644,7 +1609,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
   final bool canWork;
   final VoidCallback? onMarkDone;
   final VoidCallback? onMarkReportDone;
-  final VoidCallback? onAssignTypist;
   final VoidCallback? onUndo;
   final VoidCallback? onCancel;
 
@@ -1666,11 +1630,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
         canWork && onMarkDone != null && next.canCreateStudy && pendingLike;
     final bool canMarkReportDone = onMarkReportDone != null && waitingForReport;
     final bool canOpenReport = onMarkReportDone != null && reported;
-    final bool canAssignTypist =
-        canWork &&
-        onAssignTypist != null &&
-        next.canAssign &&
-        waitingForReport;
     final bool canUndo =
         canWork &&
         onUndo != null &&
@@ -1841,12 +1800,6 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             isLoading: state.isMutating,
             onPressed: state.isMutating ? null : () => runAndClose(onUndo),
           ),
-        if (canAssignTypist)
-          AppButton.secondary(
-            label: l10n.radiologyAssignTypistAction,
-            leadingIcon: Icons.person_outline,
-            onPressed: () => runAndClose(onAssignTypist),
-          ),
         if (canRunProcedureDone)
           AppButton.primary(
             label: l10n.radiologyMarkProcedureDoneAction,
@@ -1857,7 +1810,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
         if (canMarkReportDone || canOpenReport)
           AppButton.primary(
             label: canMarkReportDone
-                ? l10n.radiologyMarkReportDoneAction
+                ? l10n.radiologyCreateReportAction
                 : l10n.radiologyViewReportAction,
             leadingIcon: canMarkReportDone
                 ? Icons.edit_note_outlined
@@ -2463,131 +2416,58 @@ class _AssignFormState extends ConsumerState<_AssignForm> {
   }
 }
 
-Future<void> _showStudyDialog(
+Future<void> _markProcedureDone(
   BuildContext context,
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        builder: (_) => _StudyForm(order: order),
-      );
-  if (payload == null || !context.mounted) {
+  final AppLocalizations l10n = context.l10n;
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (_) => AppConfirmActionDialog(
+      title: l10n.radiologyMarkProcedureDoneConfirmTitle,
+      body: l10n.radiologyMarkProcedureDoneConfirmBody,
+      submitLabel: l10n.radiologyMarkProcedureDoneAction,
+      icon: const Icon(Icons.check_circle_outline),
+      submitLeadingIcon: Icons.check_circle_outline,
+      onConfirm: () async => null,
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
     return;
   }
+
+  final String modality = _studyModalityForOrder(order);
   final AppFailure? failure = await ref
       .read(radiologyWorkspaceControllerProvider.notifier)
-      .createStudy(payload);
+      .createStudy(<String, Object?>{
+        'modality': modality,
+        if ((order.room ?? '').trim().isNotEmpty) 'room': order.room!.trim(),
+        if ((order.equipmentRegistryId ?? '').trim().isNotEmpty)
+          'equipment_registry_id': order.equipmentRegistryId!.trim(),
+        'performed_at': DateTime.now().toUtc().toIso8601String(),
+      });
   if (context.mounted) {
     _showMutationResult(context, failure);
   }
 }
 
-class _StudyForm extends StatefulWidget {
-  const _StudyForm({required this.order});
-
-  final RadiologyOrder order;
-
-  static String dialogTitle(AppLocalizations l10n) =>
-      l10n.radiologyPerformStudyDialogTitle;
-  static const IconData dialogIcon = Icons.add_a_photo_outlined;
-
-  @override
-  State<_StudyForm> createState() => _StudyFormState();
-}
-
-class _StudyFormState extends State<_StudyForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _performedAtController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  late String _modality;
-  late bool _modalityMatchesOrder;
-
-  @override
-  void initState() {
-    super.initState();
-    final String normalized = widget.order.normalizedModality;
-    _modality = radiologyModalities.contains(normalized) ? normalized : 'OTHER';
-    _modalityMatchesOrder = _modality == normalized;
-    _performedAtController.text = AppFormatters.dateTime(
-      DateTime.now(),
-      WidgetsBinding.instance.platformDispatcher.locale,
-    );
+String _studyModalityForOrder(RadiologyOrder order) {
+  final String normalized = order.normalizedModality
+      .replaceAll('-', '')
+      .replaceAll('_', '');
+  if (radiologyModalities.contains(order.normalizedModality)) {
+    return order.normalizedModality;
   }
-
-  @override
-  void dispose() {
-    _performedAtController.dispose();
-    _notesController.dispose();
-    super.dispose();
+  if (normalized == 'XRAY') {
+    return 'XRAY';
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(_StudyForm.dialogTitle(l10n)),
-      icon: const Icon(_StudyForm.dialogIcon),
-      scrollable: true,
-      maxWidth: 520,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          Text(
-            l10n.radiologyStudyFormHelper,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (!_modalityMatchesOrder)
-            AppSelectField<String>(
-              value: _modality,
-              labelText: l10n.radiologyModalityLabel,
-              options: <AppSelectOption<String>>[
-                for (final String modality in radiologyModalities)
-                  AppSelectOption<String>(
-                    value: modality,
-                    label: _modalityLabel(l10n, modality),
-                    leadingIcon: Icon(_radiologyModalityIcon(modality)),
-                  ),
-              ],
-              onChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _modality = value);
-                }
-              },
-            ),
-          AppTextField(
-            controller: _performedAtController,
-            labelText: l10n.radiologyPerformedAtLabel,
-            hintText: l10n.radiologyDateTimeHint,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.radiologyPerformStudyAction,
-        submitIcon: Icons.add_a_photo_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
+  for (final String modality in radiologyModalities) {
+    if (modality == normalized || modality.replaceAll('_', '') == normalized) {
+      return modality;
+    }
   }
-
-  void _submit() {
-    Navigator.of(context).pop(<String, Object?>{
-      'modality': _modality,
-      'performed_at': _performedAtController.text.trim(),
-      'notes': _notesController.text.trim(),
-    });
-  }
+  return 'OTHER';
 }
 
 Future<void> _showReportDialog(
@@ -3266,12 +3146,10 @@ class _CancelForm extends StatefulWidget {
 class _CancelFormState extends State<_CancelForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
 
   @override
   void dispose() {
     _reasonController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -3283,24 +3161,23 @@ class _CancelFormState extends State<_CancelForm> {
       title: Text(_CancelForm.dialogTitle(l10n)),
       icon: const Icon(_CancelForm.dialogIcon),
       scrollable: true,
-      maxWidth: 520,
+      maxWidth: 560,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[
-          AppTextField(
+          AppRichTextEditor(
             controller: _reasonController,
             labelText: l10n.radiologyCancellationReasonLabel,
+            hintText: l10n.radiologyCancellationReasonHint,
             isRequired: true,
+            minLines: 4,
+            maxLines: 10,
             validator: AppValidators.requiredText(
               l10n.radiologyFieldRequiredLabel(
                 l10n.radiologyCancellationReasonLabel,
               ),
             ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyNotesLabel,
-            maxLines: 3,
           ),
         ],
       ),
@@ -3318,9 +3195,12 @@ class _CancelFormState extends State<_CancelForm> {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
+    final String reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      return;
+    }
     Navigator.of(context).pop(<String, Object?>{
-      'reason': _reasonController.text.trim(),
-      'notes': _notesController.text.trim(),
+      'reason': reason,
     });
   }
 }
@@ -3385,15 +3265,6 @@ class _PacsSyncFormState extends State<_PacsSyncForm> {
       'study_uid': _studyUidController.text.trim(),
       'notes': _notesController.text.trim(),
     });
-  }
-}
-
-Future<void> _startImaging(BuildContext context, WidgetRef ref) async {
-  final AppFailure? failure = await ref
-      .read(radiologyWorkspaceControllerProvider.notifier)
-      .startOrder(const <String, Object?>{});
-  if (context.mounted) {
-    _showMutationResult(context, failure);
   }
 }
 
