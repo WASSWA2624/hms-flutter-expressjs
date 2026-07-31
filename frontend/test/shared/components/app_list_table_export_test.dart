@@ -145,6 +145,35 @@ void main() {
     expect(find.byIcon(AppActionIcons.download), findsOneWidget);
   });
 
+  testWidgets('Export is enabled by default on AppListTable', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_ExportRow>(
+          items: items,
+          columns: columns,
+          search: AppListTableSearch<_ExportRow>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _ExportRow item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byIcon(AppActionIcons.download), findsOneWidget);
+  });
+
   testWidgets(
     'Export dialog prefills Settings visibility and does not mutate it',
     (WidgetTester tester) async {
@@ -166,7 +195,6 @@ void main() {
             items: items,
             columns: columns,
             columnChoices: columns,
-            enableExport: true,
             columnVisibilityController: visibility,
             columnVisibilityStorageKey: 'export-test-visibility',
             exportConfig: AppListTableExportConfig<_ExportRow>(
@@ -263,7 +291,6 @@ void main() {
         child: AppListTable<_ExportRow>(
           items: items,
           columns: columns,
-          enableExport: true,
           exportConfig: AppListTableExportConfig<_ExportRow>(
             enableDateFilter: false,
             initialFilterValue: const AppSearchBarFilterValue(

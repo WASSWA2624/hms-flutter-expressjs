@@ -1003,7 +1003,6 @@ class _PatientList extends ConsumerWidget {
       columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
-      enableExport: true,
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
       exportCancelLabel: l10n.commonCancelActionLabel,

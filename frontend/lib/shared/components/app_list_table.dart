@@ -873,7 +873,7 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityStorageKey,
     this.columnWidthStorageKey,
     this.onSettingsPressed,
-    this.enableExport = false,
+    this.enableExport = true,
     this.canExport = true,
     this.exportConfig,
     this.exportLabel,
@@ -948,10 +948,12 @@ class AppListTable<T> extends StatefulWidget {
   /// When set, Settings opens this callback instead of the column-visibility dialog.
   final Future<void> Function()? onSettingsPressed;
 
-  /// When true, shows an Export action in the search-bar trailing cluster.
+  /// When true (default), shows an Export action in the search-bar trailing cluster.
+  /// Set false to opt out for tables that must not export.
   final bool enableExport;
 
   /// When false, hides Export even if [enableExport] is true (permission gate).
+  /// Defaults to true; callers should pass false when the user lacks export access.
   final bool canExport;
   final AppListTableExportConfig<T>? exportConfig;
   final String? exportLabel;
