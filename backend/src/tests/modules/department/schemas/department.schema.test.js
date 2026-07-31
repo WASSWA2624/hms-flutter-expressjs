@@ -47,7 +47,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null branch_id', () => {
+    it('should validate without optional facility_id', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Emergency Department',
@@ -226,12 +226,15 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with only branch_id', () => {
+    it('should strip unsupported branch_id on update', () => {
       const validData = {
         branch_id: '123e4567-e89b-12d3-a456-426614174002'
       };
       const result = updateDepartmentSchema.safeParse(validData);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).not.toHaveProperty('branch_id');
+      }
     });
 
     it('should validate with only is_active', () => {
@@ -262,12 +265,15 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null branch_id', () => {
+    it('should ignore unsupported null branch_id on update', () => {
       const validData = {
         branch_id: null
       };
       const result = updateDepartmentSchema.safeParse(validData);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).not.toHaveProperty('branch_id');
+      }
     });
 
     it('should trim name whitespace', () => {
@@ -398,12 +404,15 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with branch_id filter', () => {
+    it('should strip unsupported branch_id filter', () => {
       const validData = {
         branch_id: '123e4567-e89b-12d3-a456-426614174002'
       };
       const result = listDepartmentsQuerySchema.safeParse(validData);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).not.toHaveProperty('branch_id');
+      }
     });
 
     it('should validate with department_type filter', () => {

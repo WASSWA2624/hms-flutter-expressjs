@@ -71,6 +71,7 @@ class _ClinicalEditNotesActionDialogState
       maxWidth: widget.maxWidth,
       scrollable: true,
       closeEnabled: !_isSaving,
+      cornerRadius: 0,
       content: Form(
         key: _formKey,
         child: Column(
@@ -105,6 +106,7 @@ class _ClinicalEditNotesActionDialogState
         _submit,
         submitLeadingIcon: AppActionIcons.save,
         cancelAfterPrimary: true,
+        borderRadius: 0,
       ),
     );
   }

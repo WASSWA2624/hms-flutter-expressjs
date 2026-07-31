@@ -39,25 +39,9 @@ const buildLookups = (lookups = {}) => {
     id: safePublicId(entry.human_friendly_id, entry.id),
     label: entry.name,
   }));
-  const facilityPublicIdByInternalId = facilities.reduce((acc, entry, index) => {
-    const source = lookups.facilities?.[index];
-    if (source?.id) {
-      acc[source.id] = entry.id;
-    }
-    return acc;
-  }, {});
 
   return {
     facilities,
-    branches: (lookups.branches || []).map((entry) => ({
-    id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-    meta: {
-      facility_id:
-        facilityPublicIdByInternalId[entry.facility_id] ||
-        safePublicId(undefined, entry.facility_id),
-    },
-  })),
     owners: (lookups.users || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
     label:
@@ -295,11 +279,6 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
     explicitValue: filters.facility_id || filters.facilityId,
     internalId: scoped.facility_id,
     entries: lookups.facilities,
-  });
-  const branchPublicId = resolveScopedPublicId({
-    explicitValue: filters.branch_id || filters.branchId,
-    internalId: scoped.branch_id,
-    entries: lookups.branches,
   });
   const ownerPublicId = resolveScopedPublicId({
     explicitValue: filters.owner_id || filters.ownerId,

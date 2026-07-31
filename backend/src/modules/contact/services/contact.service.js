@@ -27,6 +27,7 @@ const resolveOptionalEntityId = async (model, identifier) => {
 
 const resolveContactScopeIds = async (data = {}) => {
   const payload = { ...data };
+  delete payload.branch_id;
   if (data.tenant_id) {
     payload.tenant_id = await resolveTenantId(data.tenant_id);
   }
@@ -79,7 +80,6 @@ const listContacts = async (filters, page, limit, sortBy, order, userId, ipAddre
     if (resolvedFilters.tenant_id) whereClause.tenant_id = resolvedFilters.tenant_id;
     if (resolvedFilters.contact_type) whereClause.contact_type = resolvedFilters.contact_type;
     if (resolvedFilters.facility_id) whereClause.facility_id = resolvedFilters.facility_id;
-    if (resolvedFilters.branch_id) whereClause.branch_id = resolvedFilters.branch_id;
     if (resolvedFilters.patient_id) whereClause.patient_id = resolvedFilters.patient_id;
     if (resolvedFilters.user_profile_id) {
       whereClause.user_profile_id = resolvedFilters.user_profile_id;

@@ -77,7 +77,6 @@ describe('Reports Workspace Service', () => {
     });
     reportsWorkspaceRepository.findLookups.mockResolvedValue({
       facilities: [{ id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' }],
-      branches: [{ id: 'branch-123', human_friendly_id: 'BR-001', name: 'North Wing', facility_id: 'facility-123' }],
       users: [{
         id: 'user-123',
         human_friendly_id: 'USR-001',
@@ -137,7 +136,6 @@ describe('Reports Workspace Service', () => {
   it('maps lookup payloads for the workbench filter UI', async () => {
     reportsWorkspaceRepository.findLookups.mockResolvedValue({
       facilities: [{ id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' }],
-      branches: [{ id: 'branch-123', human_friendly_id: 'BR-001', name: 'North Wing', facility_id: 'facility-123' }],
       users: [{
         id: 'user-123',
         human_friendly_id: 'USR-001',
@@ -161,12 +159,8 @@ describe('Reports Workspace Service', () => {
     });
     expect(result).toMatchObject({
       facilities: [{ id: 'FAC-001', label: 'Main Facility' }],
-      branches: [{
-        id: 'BR-001',
-        label: 'North Wing',
-        meta: { facility_id: 'FAC-001' },
-      }],
       owners: [{ id: 'USR-001', label: 'Owner One' }],
     });
+    expect(result.branches).toBeUndefined();
   });
 });

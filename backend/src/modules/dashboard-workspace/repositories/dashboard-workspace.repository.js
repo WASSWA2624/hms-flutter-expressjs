@@ -8,10 +8,8 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
   try {
     const requestedTenantId = filters.tenant_id || filters.tenantId;
     const requestedFacilityId = filters.facility_id || filters.facilityId;
-    const requestedBranchId = filters.branch_id || filters.branchId;
     const userTenantId = user.tenant_id || user.tenantId || null;
     const userFacilityId = user.facility_id || user.facilityId || null;
-    const userBranchId = user.branch_id || user.branchId || null;
 
     if (effectiveRole === 'SUPER_ADMIN') {
       const tenantId = await resolveIdentifierForFilter({
@@ -29,35 +27,11 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
         where: { tenant_id: tenantId }
       });
 
-      const branchId = await resolveIdentifierForFilter({
-        value: requestedBranchId || userBranchId,
-        model: 'branch',
-        where: { tenant_id: tenantId }
-      });
-
-      let resolvedFacilityId = facilityId || null;
-      if (branchId) {
-        const branch = await prisma.branch.findFirst({
-          where: {
-            id: branchId,
-            tenant_id: tenantId,
-            deleted_at: null
-          },
-          select: { facility_id: true }
-        });
-        if (!branch) {
-          throw new HttpError('errors.validation.invalid', 400, [{ field: 'branch_id' }]);
-        }
-        if (!resolvedFacilityId) {
-          resolvedFacilityId = branch.facility_id || null;
-        }
-      }
-
       return {
         state: 'ready',
         scope: {
           tenant_id: tenantId,
-          facility_id: resolvedFacilityId
+          facility_id: facilityId || null
         }
       };
     }
@@ -69,12 +43,6 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
     const facilityId = await resolveIdentifierForFilter({
       value: requestedFacilityId || userFacilityId,
       model: 'facility',
-      where: { tenant_id: userTenantId }
-    });
-
-    const branchId = await resolveIdentifierForFilter({
-      value: requestedBranchId || userBranchId,
-      model: 'branch',
       where: { tenant_id: userTenantId }
     });
 
@@ -93,7 +61,7 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
 
 const findLookups = async ({ scope = null, includeTenants = false }) => {
   try {
-    const [tenants, facilities, branches] = await Promise.all([
+    const [tenants, facilities] = await Promise.all([
       includeTenants
         ? prisma.tenant.findMany({
             where: { deleted_at: null },
@@ -109,20 +77,9 @@ const findLookups = async ({ scope = null, includeTenants = false }) => {
             orderBy: { name: 'asc' }
           })
         : Promise.resolve([]),
-      scope?.tenant_id
-        ? prisma.branch.findMany({
-            where: {
-              tenant_id: scope.tenant_id,
-              ...(scope?.facility_id ? { facility_id: scope.facility_id } : {}),
-              deleted_at: null
-            },
-            select: { id: true, human_friendly_id: true, name: true, facility_id: true },
-            orderBy: { name: 'asc' }
-          })
-        : Promise.resolve([]),
     ]);
 
-    return { tenants, facilities, branches };
+    return { tenants, facilities };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);

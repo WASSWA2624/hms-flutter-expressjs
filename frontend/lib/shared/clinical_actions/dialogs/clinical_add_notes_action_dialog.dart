@@ -52,6 +52,7 @@ class _ClinicalAddNotesActionDialogState
       maxWidth: widget.maxWidth,
       scrollable: true,
       closeEnabled: !_isSaving,
+      cornerRadius: 0,
       content: Form(
         key: _formKey,
         child: Column(
@@ -81,6 +82,7 @@ class _ClinicalAddNotesActionDialogState
         _isSaving,
         _submit,
         submitLeadingIcon: Icons.note_add_outlined,
+        borderRadius: 0,
       ),
     );
   }

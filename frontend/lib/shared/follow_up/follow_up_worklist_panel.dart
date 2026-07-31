@@ -196,11 +196,13 @@ class _FollowUpWorklistBody extends ConsumerWidget {
             );
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 SizedBox(height: theme.spacing.sm),
-                Expanded(
-                  child: AppListTable<ReceptionFollowUpEntry>(
+                AppListTable<ReceptionFollowUpEntry>(
                     items: entries,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     columnVisibilityStorageKey: '${storageKeyPrefix}_cols',
                     columnWidthStorageKey: '${storageKeyPrefix}_cw',
                     columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -368,7 +370,6 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                       ),
                     ],
                   ),
-                ),
               ],
             );
           },

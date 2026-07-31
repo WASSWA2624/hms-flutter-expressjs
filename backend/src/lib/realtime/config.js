@@ -83,7 +83,6 @@ const ENTITY_RECIPIENT_ROLES = Object.freeze({
   department: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN, ROLES.UNIT_MANAGER]),
   facility: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),
   tenant: Object.freeze([ROLES.TENANT_ADMIN]),
-  branch: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),
   role: Object.freeze([ROLES.TENANT_ADMIN]),
   permission: Object.freeze([ROLES.TENANT_ADMIN]),
   user: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),

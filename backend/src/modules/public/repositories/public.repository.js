@@ -40,8 +40,7 @@ const listPublicServices = async (search, skip, take, orderBy) => {
           name: true,
           short_name: true,
           department_type: true,
-          facility_id: true,
-          branch_id: true
+          facility_id: true
         }
       }),
       prisma.department.count({ where })

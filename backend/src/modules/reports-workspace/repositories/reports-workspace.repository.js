@@ -7,13 +7,6 @@ const facilitySelect = {
   name: true
 };
 
-const branchSelect = {
-  id: true,
-  human_friendly_id: true,
-  name: true,
-  facility_id: true
-};
-
 const userSelect = {
   id: true,
   human_friendly_id: true,
@@ -30,11 +23,10 @@ const mapError = (error) => {
   throw new HttpError('errors.database.unexpected', 500, [{ originalError: error?.message }]);
 };
 
-const baseScope = (scope = {}, { includeFacility = true, includeBranch = true } = {}) => ({
+const baseScope = (scope = {}, { includeFacility = true } = {}) => ({
   deleted_at: null,
   ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-  ...(includeFacility && scope.facility_id ? { facility_id: scope.facility_id } : {}),
-  ...(includeBranch && scope.branch_id ? { branch_id: scope.branch_id } : {})
+  ...(includeFacility && scope.facility_id ? { facility_id: scope.facility_id } : {})
 });
 
 const findSummary = async (scope = {}) => {
@@ -43,11 +35,8 @@ const findSummary = async (scope = {}) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const staleThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const reportingScope = baseScope(scope, { includeBranch: false });
-    const widgetScope = baseScope(scope, {
-      includeFacility: false,
-      includeBranch: false
-    });
+    const reportingScope = baseScope(scope);
+    const widgetScope = baseScope(scope, { includeFacility: false });
     const granularScope = baseScope(scope);
 
     const [
@@ -104,7 +93,7 @@ const findSummary = async (scope = {}) => {
 
 const findLookups = async (scope = {}) => {
   try {
-    const [facilities, branches, users] = await Promise.all([
+    const [facilities, users] = await Promise.all([
       prisma.facility.findMany({
         where: {
           tenant_id: scope.tenant_id,
@@ -112,15 +101,6 @@ const findLookups = async (scope = {}) => {
         },
         orderBy: { name: 'asc' },
         select: facilitySelect
-      }),
-      prisma.branch.findMany({
-        where: {
-          tenant_id: scope.tenant_id,
-          deleted_at: null,
-          ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
-        },
-        orderBy: { name: 'asc' },
-        select: branchSelect
       }),
       prisma.user.findMany({
         where: {
@@ -133,7 +113,7 @@ const findLookups = async (scope = {}) => {
       }),
     ]);
 
-    return { facilities, branches, users };
+    return { facilities, users };
   } catch (error) {
     mapError(error);
   }
@@ -217,8 +197,7 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
           orderBy,
           include: {
             tenant: { select: { id: true, human_friendly_id: true, name: true } },
-            facility: { select: facilitySelect },
-            branch: { select: branchSelect }
+            facility: { select: facilitySelect }
           }
         }),
         prisma.kpi_snapshot.count({ where: { deleted_at: null, ...where } }),
@@ -235,8 +214,7 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
         include: {
           tenant: { select: { id: true, human_friendly_id: true, name: true } },
           user: { select: userSelect },
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect }
+          facility: { select: facilitySelect }
         }
       }),
       prisma.analytics_event.count({ where: { deleted_at: null, ...where } }),
@@ -249,7 +227,7 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
 
 const findTimeline = async (scope = {}, take = 20) => {
   try {
-    const common = baseScope(scope, { includeBranch: false });
+    const common = baseScope(scope);
     const [runs, schedules, kpis, events] = await Promise.all([
       prisma.report_run.findMany({
         where: common,
@@ -280,8 +258,7 @@ const findTimeline = async (scope = {}, take = 20) => {
         take,
         orderBy: [{ recorded_at: 'desc' }],
         include: {
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect }
+          facility: { select: facilitySelect }
         }
       }),
       prisma.analytics_event.findMany({
@@ -290,8 +267,7 @@ const findTimeline = async (scope = {}, take = 20) => {
         orderBy: [{ occurred_at: 'desc' }],
         include: {
           user: { select: userSelect },
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect }
+          facility: { select: facilitySelect }
         }
       }),
     ]);

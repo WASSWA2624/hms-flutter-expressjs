@@ -131,7 +131,6 @@ describe('reports workspace billing sections scan', () => {
     });
     reportsWorkspaceRepository.findLookups.mockResolvedValue({
       facilities: [{ id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' }],
-      branches: [],
       users: [],
     });
     reportsWorkspaceRepository.findItems.mockResolvedValue({

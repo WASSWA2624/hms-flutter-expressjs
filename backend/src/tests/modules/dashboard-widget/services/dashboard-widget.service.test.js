@@ -396,7 +396,6 @@ describe('Dashboard Widget Service', () => {
   describe('getDashboardSummary', () => {
     beforeEach(() => {
       dashboardWidgetRepository.getDashboardSummaryByPack = jest.fn();
-      dashboardWidgetRepository.resolveBranchFacilityScope = jest.fn();
       dashboardWidgetRepository.countUnreadOpdNotifications = jest.fn().mockResolvedValue(0);
     });
 

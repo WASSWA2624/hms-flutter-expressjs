@@ -54,7 +54,6 @@ const buildDateWindowFilter = ({ from, to, field }) => {
 const resolveScopedContext = async (input = {}, user = {}) => {
   const userTenantId = user?.tenant_id || user?.tenantId || null;
   const userFacilityId = user?.facility_id || user?.facilityId || null;
-  const userBranchId = user?.branch_id || user?.branchId || null;
 
   const tenantId = normalizeString(input.tenant_id) || userTenantId || null;
   if (!tenantId) {
@@ -64,12 +63,6 @@ const resolveScopedContext = async (input = {}, user = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: input.facility_id ?? userFacilityId,
     model: 'facility',
-    where: { tenant_id: tenantId },
-  });
-
-  const branchId = await resolveIdentifierForFilter({
-    value: input.branch_id ?? userBranchId,
-    model: 'branch',
     where: { tenant_id: tenantId },
   });
 

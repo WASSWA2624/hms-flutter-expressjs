@@ -22,11 +22,6 @@ const listAbacPolicies = async (filters = {}, page = 1, limit = 20, context = {}
     model: 'facility',
     where: { tenant_id: tenantId },
   });
-  const branchId = await resolveIdentifierForFilter({
-    value: filters.branch_id ?? context.branch_id,
-    model: 'branch',
-    where: { tenant_id: tenantId },
-  });
   const departmentId = await resolveIdentifierForFilter({
     value: filters.department_id,
     model: 'department',
@@ -34,7 +29,6 @@ const listAbacPolicies = async (filters = {}, page = 1, limit = 20, context = {}
   });
 
   if (facilityId) where.facility_id = facilityId;
-  if (branchId) where.branch_id = branchId;
   if (departmentId) where.department_id = departmentId;
   if (filters.resource_type) where.resource_type = String(filters.resource_type).trim();
   if (filters.action) where.action = String(filters.action).trim();
@@ -73,13 +67,6 @@ const createAbacPolicy = async (payload = {}, context = {}) => {
       value: payload.facility_id ?? context.facility_id,
       field: 'facility_id',
       model: 'facility',
-      nullable: true,
-      where: { tenant_id: tenantId },
-    }),
-    branch_id: await resolveIdentifierForPayload({
-      value: payload.branch_id ?? context.branch_id,
-      field: 'branch_id',
-      model: 'branch',
       nullable: true,
       where: { tenant_id: tenantId },
     }),
@@ -132,15 +119,6 @@ const updateAbacPolicy = async (id, payload = {}, context = {}) => {
           value: payload.facility_id,
           field: 'facility_id',
           model: 'facility',
-          nullable: true,
-          where: { tenant_id: tenantId },
-        })
-      : undefined,
-    branch_id: Object.prototype.hasOwnProperty.call(payload, 'branch_id')
-      ? await resolveIdentifierForPayload({
-          value: payload.branch_id,
-          field: 'branch_id',
-          model: 'branch',
           nullable: true,
           where: { tenant_id: tenantId },
         })

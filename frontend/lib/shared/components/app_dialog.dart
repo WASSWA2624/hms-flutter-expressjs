@@ -26,6 +26,7 @@ class AppDialog extends StatefulWidget {
     this.closeEnabled = true,
     this.initialMaximized = true,
     this.maxWidth = _defaultMaxWidth,
+    this.cornerRadius,
     super.key,
   });
 
@@ -50,6 +51,10 @@ class AppDialog extends StatefulWidget {
   final bool closeEnabled;
   final bool initialMaximized;
   final double maxWidth;
+
+  /// Overrides dialog shell corner radius. Use `0` for square forms.
+  /// When null, maximized shells stay square and restored shells use theme lg.
+  final double? cornerRadius;
 
   @override
   State<AppDialog> createState() => _AppDialogState();
@@ -142,6 +147,7 @@ class _AppDialogState extends State<AppDialog> {
         showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
         isMaximized: _isMaximized,
         closeEnabled: widget.closeEnabled,
+        chromeBorderRadius: widget.cornerRadius,
         onMaximizeToggle: desktopInteractive ? _toggleMaximize : null,
         onHeaderDragUpdate: desktopInteractive && !_isMaximized
             ? (DragUpdateDetails details) {
@@ -240,19 +246,28 @@ class _AppDialogState extends State<AppDialog> {
       );
     }
 
+    final double? overrideCornerRadius = widget.cornerRadius;
+    final ShapeBorder dialogShape = overrideCornerRadius != null
+        ? RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              context.responsiveRadius(overrideCornerRadius),
+            ),
+          )
+        : (_isMaximized
+              ? const RoundedRectangleBorder()
+              : RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    context.responsiveRadius(theme.radius.lg),
+                  ),
+                ));
+
     Widget dialog = Dialog(
       insetPadding: insetPadding,
       alignment: _isMaximized && desktopInteractive
           ? Alignment.topCenter
           : Alignment.center,
       elevation: theme.dialogTheme.elevation ?? 24,
-      shape: _isMaximized
-          ? const RoundedRectangleBorder()
-          : RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                context.responsiveRadius(theme.radius.lg),
-              ),
-            ),
+      shape: dialogShape,
       clipBehavior: Clip.antiAlias,
       backgroundColor: colorScheme.surface,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.28),
@@ -463,6 +478,7 @@ class _DialogBody extends StatelessWidget {
     this.title,
     this.content,
     this.icon,
+    this.chromeBorderRadius,
   });
 
   final Widget? title;
@@ -479,6 +495,7 @@ class _DialogBody extends StatelessWidget {
   final bool closeEnabled;
   final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onHeaderDragUpdate;
+  final double? chromeBorderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -524,6 +541,7 @@ class _DialogBody extends StatelessWidget {
           isMaximized: isMaximized,
           closeEnabled: closeEnabled,
           compact: compact,
+          chromeBorderRadius: chromeBorderRadius,
           onMaximizeToggle: onMaximizeToggle,
           onDragUpdate: onHeaderDragUpdate,
         ),
@@ -569,6 +587,7 @@ class _DialogHeader extends StatelessWidget {
     required this.isMaximized,
     required this.closeEnabled,
     required this.compact,
+    this.chromeBorderRadius,
     this.onMaximizeToggle,
     this.onDragUpdate,
   });
@@ -581,6 +600,7 @@ class _DialogHeader extends StatelessWidget {
   final bool isMaximized;
   final bool closeEnabled;
   final bool compact;
+  final double? chromeBorderRadius;
   final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onDragUpdate;
 
@@ -648,6 +668,7 @@ class _DialogHeader extends StatelessWidget {
                         tooltip: isMaximized
                             ? 'Restore dialog'
                             : 'Maximize dialog',
+                        borderRadius: chromeBorderRadius,
                         onPressed: onMaximizeToggle,
                       ),
                     if (showMaximizeButton && showCloseButton)
@@ -667,6 +688,7 @@ class _DialogHeader extends StatelessWidget {
                         ).closeButtonTooltip,
                         color: colorScheme.error,
                         enabled: closeEnabled,
+                        borderRadius: chromeBorderRadius,
                         onPressed: closeEnabled
                             ? () {
                                 Navigator.of(context).maybePop();

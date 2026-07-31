@@ -20,8 +20,7 @@ jest.mock('@prisma/client', () => ({
 describe('KPI Snapshot Repository', () => {
   const includeMatcher = expect.objectContaining({
     tenant: expect.any(Object),
-    facility: expect.any(Object),
-    branch: expect.any(Object)});
+    facility: expect.any(Object)});
 
   const mockKpiSnapshot = {
     id: '550e8400-e29b-41d4-a716-446655440000',

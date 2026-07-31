@@ -27,7 +27,6 @@ class _HomeTenantContextPanelState
     extends ConsumerState<HomeTenantContextPanel> {
   String? _selectedTenantId;
   String? _selectedFacilityId;
-  String? _selectedBranchId;
 
   @override
   void initState() {
@@ -71,9 +70,6 @@ class _HomeTenantContextPanelState
             final List<HomeLookupOption> facilities = data.facilitiesForTenant(
               _selectedTenantId,
             );
-            final List<HomeLookupOption> branches = data.branchesForFacility(
-              _selectedFacilityId,
-            );
 
             return _ContextPanelShell(
               children: <Widget>[
@@ -98,19 +94,6 @@ class _HomeTenantContextPanelState
                     onChanged: (String? value) {
                       setState(() {
                         _selectedFacilityId = value;
-                      });
-                    },
-                  ),
-                ],
-                if (branches.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 12),
-                  _LookupDropdown(
-                    label: 'Branch',
-                    value: _selectedBranchId,
-                    options: branches,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _selectedBranchId = value;
                       });
                     },
                   ),

@@ -305,7 +305,6 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final double radius = context.responsiveRadius(theme.radius.sm);
     final Widget? label = appFieldLabelWidget(
       context,
       widget.labelText,
@@ -314,6 +313,13 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
     );
     final bool showToolbar =
         widget.showToolbar && widget.tools.isNotEmpty && widget.enabled;
+    final Color borderColor = widget.errorText != null
+        ? colors.error
+        : colors.outlineVariant;
+    final OutlineInputBorder fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(color: borderColor),
+    );
     final List<Widget> toolbarItems = <Widget>[
       if (widget.tools.contains(AppRichTextTool.bold))
         _RichTextToolButton(
@@ -377,72 +383,69 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
           label,
           SizedBox(height: theme.spacing.xs),
         ],
-        DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: widget.errorText != null
-                  ? colors.error
-                  : colors.outlineVariant,
+        if (showToolbar) ...<Widget>[
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.xs,
+              vertical: theme.spacing.xs / 2,
             ),
-            borderRadius: BorderRadius.circular(radius),
-            color: widget.enabled
-                ? colors.surface
-                : colors.surfaceContainerHighest.withValues(alpha: 0.35),
+            child: Row(children: toolbarItems),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (showToolbar)
-                Material(
-                  color: colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(radius),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.xs,
-                      vertical: theme.spacing.xs / 2,
-                    ),
-                    child: Row(children: toolbarItems),
-                  ),
-                ),
-              if (showToolbar) const Divider(height: 1),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
-                ),
-                child: TextFormField(
-                  controller: widget.controller,
-                  focusNode: _focusNode,
-                  enabled: widget.enabled,
-                  autofocus: widget.autofocus,
-                  minLines: widget.minLines,
-                  maxLines: widget.maxLines,
-                  textCapitalization: TextCapitalization.sentences,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  style: theme.textTheme.bodyMedium,
-                  onChanged: widget.onChanged,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    hintText: widget.hintText,
-                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                  validator:
-                      widget.validator ??
-                      (widget.isRequired
-                          ? AppValidators.requiredText(l10n.validationRequired)
-                          : null),
-                ),
+          Divider(height: 1, color: colors.outlineVariant),
+          SizedBox(height: theme.spacing.xs),
+        ],
+        TextFormField(
+          controller: widget.controller,
+          focusNode: _focusNode,
+          enabled: widget.enabled,
+          autofocus: widget.autofocus,
+          minLines: widget.minLines,
+          maxLines: widget.maxLines,
+          textCapitalization: TextCapitalization.sentences,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          style: theme.textTheme.bodyMedium,
+          onChanged: widget.onChanged,
+          decoration: InputDecoration(
+            isDense: true,
+            filled: false,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.sm,
+            ),
+            hintText: widget.hintText,
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+            border: fieldBorder,
+            enabledBorder: fieldBorder,
+            disabledBorder: fieldBorder.copyWith(
+              borderSide: BorderSide(
+                color: colors.outlineVariant.withValues(alpha: 0.6),
               ),
-            ],
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(
+                color: widget.errorText != null ? colors.error : colors.primary,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: colors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: colors.error, width: 1.5),
+            ),
           ),
+          validator:
+              widget.validator ??
+              (widget.isRequired
+                  ? AppValidators.requiredText(l10n.validationRequired)
+                  : null),
         ),
         if (widget.errorText != null && widget.errorText!.trim().isNotEmpty)
           Padding(

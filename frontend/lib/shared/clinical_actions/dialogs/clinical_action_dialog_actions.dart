@@ -24,6 +24,7 @@ List<Widget> clinicalActionDialogActions(
 
   /// When true, Cancel is placed after the primary submit action.
   bool cancelAfterPrimary = false,
+  double? borderRadius,
 }) {
   final bool canInteract = enabled && !isSaving;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -32,6 +33,7 @@ List<Widget> clinicalActionDialogActions(
           label: cancelLabel ?? context.l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: canInteract,
+          borderRadius: borderRadius,
           onPressed: canInteract
               ? onCancel ?? () => Navigator.of(context).pop(cancelResult)
               : null,
@@ -44,6 +46,7 @@ List<Widget> clinicalActionDialogActions(
     color: destructive ? colorScheme.error : null,
     isLoading: isSaving,
     enabled: canInteract && onSubmit != null,
+    borderRadius: borderRadius,
     onPressed: canInteract ? onSubmit : null,
   );
   if (cancelButton == null) {

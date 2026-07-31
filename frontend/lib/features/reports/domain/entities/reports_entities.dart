@@ -189,7 +189,6 @@ final class ReportsLookupOption {
 final class ReportsLookups {
   const ReportsLookups({
     this.facilities = const <ReportsLookupOption>[],
-    this.branches = const <ReportsLookupOption>[],
     this.owners = const <ReportsLookupOption>[],
     this.datasets = const <ReportsLookupOption>[],
     this.statuses = const <ReportsLookupOption>[],
@@ -199,7 +198,6 @@ final class ReportsLookups {
   });
 
   final List<ReportsLookupOption> facilities;
-  final List<ReportsLookupOption> branches;
   final List<ReportsLookupOption> owners;
   final List<ReportsLookupOption> datasets;
   final List<ReportsLookupOption> statuses;

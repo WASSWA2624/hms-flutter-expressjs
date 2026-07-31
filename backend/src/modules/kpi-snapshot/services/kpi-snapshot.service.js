@@ -39,8 +39,6 @@ const listKpiSnapshots = async (filters = {}, page = 1, limit = 20, sortBy, orde
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
-  if (scoped.branch_id) where.branch_id = scoped.branch_id;
-  if (normalizeString(filters.branch_id) && !scoped.branch_id) where.branch_id = '__none__';
   if (normalizeString(filters.metric_key)) where.metric_key = normalizeString(filters.metric_key);
   if (normalizeString(filters.metric_group)) where.metric_group = normalizeString(filters.metric_group);
   if (normalizeString(filters.threshold_state)) where.threshold_state = safeUpper(filters.threshold_state);
@@ -68,13 +66,6 @@ const createKpiSnapshot = async (data, context = {}) => {
       value: data.facility_id ?? scoped.facility_id,
       model: 'facility',
       field: 'facility_id',
-      tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
-    branch_id: await resolvePayloadIdentifier({
-      value: data.branch_id ?? scoped.branch_id,
-      model: 'branch',
-      field: 'branch_id',
       tenant_id: scoped.tenant_id,
       nullable: true,
     }),
@@ -139,7 +130,6 @@ const updateKpiSnapshot = async (id, data, context = {}) => {
     entity_id: current.id,
     diff: createAuditDiff(current, record, [
       'facility_id',
-      'branch_id',
       'name',
       'metric_key',
       'metric_group',

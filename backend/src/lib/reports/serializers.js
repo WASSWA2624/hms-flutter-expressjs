@@ -11,10 +11,6 @@ const mapFacility = (record) => ({
   facility_label: record?.facility?.name || null,
 });
 
-const mapBranch = (record) => ({
-  branch_label: record?.branch?.name || null,
-});
-
 const serializeReportRun = (record) => {
   if (!record) return null;
 
@@ -163,7 +159,6 @@ const serializeKpiSnapshot = (record) => {
     updated_at: record.updated_at,
     version: safeNumber(record.version, 1),
     ...mapFacility(record),
-    ...mapBranch(record),
   };
 };
 
@@ -188,7 +183,6 @@ const serializeAnalyticsEvent = (record) => {
     updated_at: record.updated_at,
     version: safeNumber(record.version, 1),
     ...mapFacility(record),
-    ...mapBranch(record),
   };
 };
 

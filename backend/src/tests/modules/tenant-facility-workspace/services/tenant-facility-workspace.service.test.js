@@ -32,16 +32,6 @@ describe('tenant-facility-workspace service', () => {
       },
     ]);
     repository.findFacilityRecords.mockResolvedValue({
-      branches: [
-        {
-          id: 'branch-uuid',
-          human_friendly_id: 'BRN0001',
-          tenant_id: 'tenant-uuid',
-          facility_id: 'facility-uuid',
-          name: 'North Wing',
-          is_active: true,
-        },
-      ],
       departments: [
         {
           id: 'dept-uuid',

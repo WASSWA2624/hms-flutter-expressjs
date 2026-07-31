@@ -41,14 +41,6 @@ void main() {
                 'city': 'Kampala',
                 'country': 'UG',
               },
-                <String, Object?>{
-                  'id': 'BRN0001',
-                  'tenant_id': 'TEN0001',
-                  'facility_id': 'FAC0001',
-                  'name': 'North Wing',
-                  'is_active': true,
-                },
-              ],
               'departments': <Object?>[
                 <String, Object?>{
                   'id': 'DEP0001',
@@ -106,7 +98,6 @@ void main() {
 
       expect(snapshot.tenant?.name, 'Acme Hospital');
       expect(snapshot.facility?.name, 'Main Campus');
-      expect(snapshot.branches, hasLength(1));
       expect(snapshot.departments, hasLength(1));
       expect(snapshot.units, hasLength(1));
       expect(snapshot.wards, hasLength(1));
@@ -115,7 +106,7 @@ void main() {
       expect(snapshot.subscriptionSummary?.planLabel, 'Premium');
       expect(snapshot.subscriptionSummary?.activeModulesCount, 4);
       expect(snapshot.permissions.canManageTenant, isTrue);
-      expect(snapshot.completedChecklistItems, 8);
+      expect(snapshot.completedChecklistItems, 7);
     });
   });
 }

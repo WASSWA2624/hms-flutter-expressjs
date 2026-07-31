@@ -67,7 +67,6 @@ const buildListWhere = async (filters = {}, context = {}) => {
   };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
-  if (scoped.branch_id) where.branch_id = scoped.branch_id;
 
   if (filters.shift_id !== undefined) {
     const shiftId = await resolveIdentifierForFilter({
@@ -149,7 +148,6 @@ const getCurrentOfficeContext = async (filters = {}, context = {}) => {
   const record = await officeContextRepository.findCurrent({
     tenant_id: scoped.tenant_id,
     ...(scoped.facility_id ? { facility_id: scoped.facility_id } : {}),
-    ...(scoped.branch_id ? { branch_id: scoped.branch_id } : {}),
     ...(shiftId ? { shift_id: shiftId } : {}),
   });
 
@@ -179,7 +177,6 @@ const createOfficeContext = async (data = {}, context = {}) => {
   const existing = await officeContextRepository.findCurrent({
     tenant_id: scoped.tenant_id,
     ...(scoped.facility_id ? { facility_id: scoped.facility_id } : {}),
-    ...(scoped.branch_id ? { branch_id: scoped.branch_id } : {}),
     shift_id: shiftId,
   });
 

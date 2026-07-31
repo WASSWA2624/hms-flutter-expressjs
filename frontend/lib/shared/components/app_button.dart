@@ -27,6 +27,7 @@ class AppButton extends StatelessWidget {
     this.color,
     this.iconWidget,
     this.labelWidget,
+    this.borderRadius,
     super.key,
   }) : assert(
          iconOnly || label.isNotEmpty,
@@ -49,6 +50,7 @@ class AppButton extends StatelessWidget {
     this.color,
     this.iconWidget,
     this.labelWidget,
+    this.borderRadius,
     super.key,
   }) : variant = AppButtonVariant.primary;
 
@@ -68,6 +70,7 @@ class AppButton extends StatelessWidget {
     this.color,
     this.iconWidget,
     this.labelWidget,
+    this.borderRadius,
     super.key,
   }) : variant = AppButtonVariant.secondary;
 
@@ -87,6 +90,7 @@ class AppButton extends StatelessWidget {
     this.color,
     this.iconWidget,
     this.labelWidget,
+    this.borderRadius,
     super.key,
   }) : variant = AppButtonVariant.tertiary;
 
@@ -111,6 +115,9 @@ class AppButton extends StatelessWidget {
   /// Optional rich label. When set, replaces the default [Text] while [label]
   /// remains the semantic/findable string.
   final Widget? labelWidget;
+
+  /// Overrides the default xs corner radius. Use `0` for square actions.
+  final double? borderRadius;
 
   IconData? get _resolvedIcon => leadingIcon ?? icon;
 
@@ -272,7 +279,9 @@ class AppButton extends StatelessWidget {
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
-            context.responsiveRadius(theme.radius.xs),
+            context.responsiveRadius(
+              borderRadius ?? theme.radius.xs,
+            ),
           ),
         ),
       ),

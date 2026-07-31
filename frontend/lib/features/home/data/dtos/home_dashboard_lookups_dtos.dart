@@ -15,7 +15,6 @@ final class HomeDashboardLookupsDto {
     return HomeDashboardLookups(
       tenants: _options(json['tenants']),
       facilities: _options(json['facilities'], includeFacilityMeta: true),
-      branches: _options(json['branches'], includeBranchMeta: true),
       queueTypes: _options(json['queue_types']),
       datePresets: _options(json['date_presets']),
     );
@@ -24,7 +23,6 @@ final class HomeDashboardLookupsDto {
   List<HomeLookupOption> _options(
     Object? value, {
     bool includeFacilityMeta = false,
-    bool includeBranchMeta = false,
   }) {
     if (value is! List<Object?>) {
       return const <HomeLookupOption>[];
@@ -44,9 +42,6 @@ final class HomeDashboardLookupsDto {
             label: _string(item['label']) ?? _string(item['name']) ?? id,
             metaTenantId: includeFacilityMeta
                 ? _string(meta['tenant_id'])
-                : null,
-            metaFacilityId: includeBranchMeta
-                ? _string(meta['facility_id'])
                 : null,
             metaFacilityType: includeFacilityMeta
                 ? _string(meta['facility_type'])
