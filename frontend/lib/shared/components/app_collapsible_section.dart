@@ -36,6 +36,7 @@ class AppCollapsibleSection extends StatefulWidget {
 
   /// Actions rendered in the header row immediately left of the expand chevron.
   ///
+  /// Use short generic labels (`Save`, `Edit`, `Delete`, `Add`, `Cancel`).
   /// On phones, header actions stay icon-only. On larger screens they inherit
   /// the ambient [AppActionLabelScope] so labels can show when space allows.
   /// Header [AppButton]s render without resting fill or borders.

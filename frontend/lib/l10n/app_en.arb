@@ -25037,7 +25037,23 @@
   },
   "commonSaveActionLabel": "Save",
   "@commonSaveActionLabel": {
-    "description": "Localized text for commonSaveActionLabel."
+    "description": "Shared short save action label for section headers and toolbars."
+  },
+  "commonEditActionLabel": "Edit",
+  "@commonEditActionLabel": {
+    "description": "Shared short edit action label for section headers and toolbars."
+  },
+  "commonAddActionLabel": "Add",
+  "@commonAddActionLabel": {
+    "description": "Shared short add action label for section headers and toolbars."
+  },
+  "commonDeleteActionLabel": "Delete",
+  "@commonDeleteActionLabel": {
+    "description": "Shared short delete action label for section headers and toolbars."
+  },
+  "commonRecordActionLabel": "Record",
+  "@commonRecordActionLabel": {
+    "description": "Shared short record action label for section headers and toolbars."
   },
   "commonNextActionLabel": "Next",
   "@commonNextActionLabel": {

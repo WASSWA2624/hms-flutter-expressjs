@@ -126,7 +126,7 @@ void main() {
           forceIconOnly: false,
           plainChrome: true,
           child: AppButton.secondary(
-            label: 'Edit vitals',
+            label: 'Edit',
             dense: true,
             onPressed: () {},
           ),

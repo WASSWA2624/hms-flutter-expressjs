@@ -36385,11 +36385,35 @@ abstract class AppLocalizations {
   /// **'Select'**
   String get commonSelectActionLabel;
 
-  /// Localized text for commonSaveActionLabel.
+  /// Shared short save action label for section headers and toolbars.
   ///
   /// In en, this message translates to:
   /// **'Save'**
   String get commonSaveActionLabel;
+
+  /// Shared short edit action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commonEditActionLabel;
+
+  /// Shared short add action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get commonAddActionLabel;
+
+  /// Shared short delete action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get commonDeleteActionLabel;
+
+  /// Shared short record action label for section headers and toolbars.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get commonRecordActionLabel;
 
   /// Shared next step action label.
   ///

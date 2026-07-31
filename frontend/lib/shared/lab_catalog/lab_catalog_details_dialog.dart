@@ -80,9 +80,9 @@ Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
                       AppButton(
                         iconOnly: true,
                         leadingIcon: Icons.delete_outline,
-                        label: l10n.tenantFacilityDeleteAction,
-                        semanticLabel: l10n.tenantFacilityDeleteAction,
-                        tooltip: l10n.tenantFacilityDeleteAction,
+                        label: l10n.commonDeleteActionLabel,
+                        semanticLabel: l10n.commonDeleteActionLabel,
+                        tooltip: l10n.commonDeleteActionLabel,
                         color: theme.colorScheme.error,
                         onPressed: () => Navigator.of(
                           dialogContext,

@@ -19544,6 +19544,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonSaveActionLabel => 'Save';
 
   @override
+  String get commonEditActionLabel => 'Edit';
+
+  @override
+  String get commonAddActionLabel => 'Add';
+
+  @override
+  String get commonDeleteActionLabel => 'Delete';
+
+  @override
+  String get commonRecordActionLabel => 'Record';
+
+  @override
   String get commonNextActionLabel => 'Next';
 
   @override

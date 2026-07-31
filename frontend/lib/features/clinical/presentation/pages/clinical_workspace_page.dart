@@ -2004,9 +2004,11 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           : <Widget>[
               AppButton.secondary(
                 label: handoff.vitalSigns.isNotEmpty
-                    ? l10n.opdEditVitalsAction
-                    : l10n.opdRecordVitalsAction,
-                leadingIcon: Icons.monitor_heart_outlined,
+                    ? l10n.commonEditActionLabel
+                    : l10n.commonRecordActionLabel,
+                leadingIcon: handoff.vitalSigns.isNotEmpty
+                    ? Icons.edit_outlined
+                    : Icons.monitor_heart_outlined,
                 dense: true,
                 onPressed: onEditVitals,
               ),
@@ -2387,7 +2389,7 @@ class _ClinicalNotesSectionState extends State<_ClinicalNotesSection> {
             onPressed: widget.onCancelEditing,
           ),
           AppButton.secondary(
-            label: l10n.clinicalSaveChangesAction,
+            label: l10n.commonSaveActionLabel,
             leadingIcon: Icons.save_outlined,
             dense: true,
             isLoading: _saving,
@@ -2397,7 +2399,7 @@ class _ClinicalNotesSectionState extends State<_ClinicalNotesSection> {
       } else if (widget.onStartEditing != null) {
         headerActions.add(
           AppButton.secondary(
-            label: l10n.clinicalEditNotesAction,
+            label: l10n.commonEditActionLabel,
             leadingIcon: Icons.edit_outlined,
             dense: true,
             onPressed: widget.onStartEditing,
