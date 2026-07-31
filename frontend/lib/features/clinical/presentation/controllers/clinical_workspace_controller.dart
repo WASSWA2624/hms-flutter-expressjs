@@ -1925,6 +1925,9 @@ final class ClinicalWorkspaceController
       _currentState?.selectedBundle?.entry;
 
   ClinicalWorkspaceState? get _currentState {
+    if (!ref.mounted) {
+      return null;
+    }
     final Result<ClinicalWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<ClinicalWorkspaceState>(value: final value) => value,
@@ -1933,6 +1936,9 @@ final class ClinicalWorkspaceController
   }
 
   void _emit(ClinicalWorkspaceState nextState) {
+    if (!ref.mounted) {
+      return;
+    }
     state = AsyncData<Result<ClinicalWorkspaceState>>(
       Result<ClinicalWorkspaceState>.success(nextState),
     );

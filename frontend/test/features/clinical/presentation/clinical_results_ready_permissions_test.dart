@@ -712,7 +712,7 @@ void main() {
       await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
@@ -757,7 +757,7 @@ void main() {
       await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add clinical note'), findsWidgets);
+      expect(find.text('Add clinical notes'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
@@ -852,7 +852,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Request lab'), findsWidgets);
-      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
       expect(find.text('Results timeline'), findsWidgets);
@@ -930,7 +930,7 @@ void main() {
 
       expect(find.text('Request radiology'), findsWidgets);
       expect(find.text('Request lab'), findsNothing);
-      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Results timeline'), findsWidgets);
     },
   );
@@ -969,7 +969,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Prescribe'), findsWidgets);
-      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
     },
   );
@@ -1008,7 +1008,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Request admission'), findsWidgets);
-      expect(find.text('Add clinical note'), findsNothing);
+      expect(find.text('Add clinical notes'), findsNothing);
     },
   );
 
@@ -1152,12 +1152,12 @@ void main() {
       await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Add clinical note').first);
+      await tester.tap(find.text('Add clinical notes').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
 
-      await tester.tap(find.text('Add clinical note').last);
+      await tester.tap(find.text('Add clinical notes').last);
       await tester.pumpAndSettle();
 
       expect(find.text('This field is required.'), findsWidgets);
@@ -1266,7 +1266,7 @@ void main() {
       await tester.tap(find.text('Results Ready Patient'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add clinical note'), findsWidgets);
+      expect(find.text('Add clinical notes'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
     },

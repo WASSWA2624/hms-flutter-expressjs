@@ -1,10 +1,10 @@
-# UI Permission Scan — Clinical workspace / All (`/clinical?…=all`)
+# UI Permission Scan — Clinical workspace / Pending (`/clinical?…=all` or default)
 
 Deep-scan every UI atom on this tab (page chrome, list, row actions, detail, nested dialogs) and enforce permission-based visibility so users only see and use what their effective permissions allow.
 
 ## Context
 
-- Target tab: **All** (`all`). Outpatient clinical worklist.
+- Target tab: **Pending** (`all` / default). Outpatient clinical doctor worklist (formerly labeled All).
 - Feature code: `frontend/lib/features/clinical/`
 - Module entitlement: `encounters-vitals`
 - Route entry any-of: `clinical:read`, `clinical:write`

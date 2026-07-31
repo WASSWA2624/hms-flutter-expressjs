@@ -26,7 +26,7 @@ Add a consistent microphone speech-to-text affordance to shared text inputs so c
 4. On start: request mic permission if needed; start listening; stream or final results into the field’s `TextEditingController` at the caret (append/replace selection). Manual typing must remain possible while not listening; stop listening cleanly on stop tap, dispose, field disable, or unmount.
 5. Surface clear, localized feedback for: listening, offline, mic permission required/denied, no microphone, recognition unavailable, and generic recognition errors (tooltip and/or short helper/snackbar—match existing field feedback patterns; no silent failure).
 6. Support **Android, iOS, and desktop** (Windows/macOS/Linux as applicable). Where platform STT is missing or unsupported, keep the control visible but disabled with an unavailable reason—do not crash or throw into the form.
-7. Only one field should listen at a time: starting speech on another field stops the previous session.
+7. Only one field should listen at a time: starting speech on another field stops the previous session after a warning.
 8. Add English l10n keys in `app_en.arb` for button labels, tooltips, and status/error messages; regenerate localizations as required by the frontend i18n flow.
 9. Cover with widget/unit tests: idle → listening → stop icon; offline disables; opt-out hides/disables; text is inserted into the controller; rich text caret insert preserves surrounding markup markers.
 
