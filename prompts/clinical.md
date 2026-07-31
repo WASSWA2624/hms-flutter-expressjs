@@ -1,71 +1,58 @@
-# Clinical workspace worklist simplification
+# Clinical patient diagnoses
 
-Simplify the Clinical (Doctors) worklist so tabs, counts, filters, table settings, and next-action cells match a doctor-facing outpatient queue—not a generic patient list.
+Improve the patient diagnoses section on clinical encounter details so clinicians can add, edit, and remove encounter diagnoses cleanly—with correct IDs, flat list rows, and primary/secondary/differential typing—without nested table chrome or leftover order-style columns.
 
 ## Context
 
-- Screen: Clinical workspace (`/clinical`), feature `frontend/lib/features/clinical/`.
-- Current tabs: All, Waiting review, Urgent, Results ready, In consultation, Completed, Follow-ups.
-- Counts today are derived from the **active scoped page**, so switching tabs changes other tab badges.
-- Worklist already excludes IPD/inpatient rows (`clinicalWorklistEntryIsOutpatient`); keep that invariant.
-- Reuse design-system list table, advanced filters, column visibility, clinical access gates, and existing clinical actions. Follow `.cursor/locale-development.mdc` for English strings.
-- Permission/billing inventories and `prompts/ui-permissions/clinical/*` for removed tabs must be retired or remapped with the strip change.
-
-### Tab definitions
-
-| Tab | Label | Membership |
-| --- | --- | --- |
-| Pending (rename of All) | Pending | Open outpatient encounters intended for doctors (sent / awaiting doctor work). Not a facility-wide patient census. Exclude IPD. |
-| Assigned to me | Assigned to me | Open (non-terminal) outpatient encounters whose **assigned provider/clinician matches the logged-in user**. Empty when the session has no resolvable clinician identity. Exclude IPD and unassigned rows. |
-| Urgent | Urgent | Pending set where `isUrgent` and not terminal. |
-| Results ready | Results ready | Non-terminal outpatient encounters with lab/radiology (or equivalent) results ready that doctors have **not yet dispositioned**. |
-| Completed today | Completed today | Terminal outpatient encounters completed **today** (calendar day in facility/local handling already used by completed scope). |
-| Follow-ups | Follow-ups | Existing follow-ups worklist (unchanged behavior). |
-
-**Remove:** Waiting review, In consultation (strip, scopes, deep links, dead inventories/tests). Map legacy URLs (`waiting-review`, `in-consultation`) to Pending (or nearest allowed tab) without breaking navigation.
+- Details panel: `frontend/lib/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart` (`ClinicalDiagnosesTablePanel`).
+- Add dialog (dual-pane catalog): `frontend/lib/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart`.
+- Workspace wiring / mutations: `clinical_workspace_page.dart`, `clinical_workspace_controller.dart`, `clinical_repository_impl.dart`.
+- DTO mapping: `frontend/lib/features/clinical/data/dtos/clinical_dtos.dart` (related records currently prefer `human_friendly_id` over UUID for non-note kinds).
+- Backend: `backend/src/modules/diagnosis/` — `POST/PUT/DELETE /api/v1/diagnoses`; params use UUID-only `uuidSchema`. Model enum: `PRIMARY` | `SECONDARY` | `DIFFERENTIAL`.
+- Current bugs/gaps: remove fails with “Enter a valid Id.” (friendly id sent to UUID route); no edit UI despite `PUT`; status/arrival columns are leftover and show `—` / timestamps; list is nested/padded like an extended table; type shown as raw enum.
+- Follow `.cursor/locale-development.mdc`, `.cursor/mandatories.mdc`, and existing clinical action dialog patterns.
 
 ## Requirements
 
-1. Replace the tab strip with exactly: **Pending**, **Assigned to me**, **Urgent**, **Results ready**, **Completed today**, **Follow-ups** (order as listed), using localized labels; update enums, section query values, icons, tones, default columns, and access helpers accordingly.
-2. Keep Pending membership outpatient-only open doctor work as defined above; do not show IPD admissions on this screen.
-3. Implement **Assigned to me** by matching the encounter’s assigned provider/staff id (or equivalent stable key already on the worklist entry) to the authenticated user’s clinician identity from the existing session/access model—not by display-name string alone when an id is available.
-4. Keep Urgent and Results ready semantics as defined; Results ready must mean results available and not yet dispositioned—not merely “any diagnostic ordered.”
-5. Rename Completed → Completed today in UI; preserve today-bounded terminal membership already used by completed scope (adjust only if current behavior diverges).
-6. Load and display **independent facet counts** for Pending, Assigned to me, Urgent, Results ready, and Completed today so changing the active tab (or its page) does **not** change other tab badges. Follow-ups may keep its existing count source if already independent.
-7. Expand advanced Filters so every practical worklist field is filterable: at minimum patient name/id/phone, encounter id, queue/source queue, status, provider (including unassigned), encounter type, location, last-updated date range, urgency, and results-ready—plus any other fields already present on the row/entry. Filters must compose with the active tab scope (tab ∩ filters), clear/reset, and show active-filter state. On Assigned to me, do not require the user to re-select themselves as provider; the tab already scopes to self.
-8. Make Table settings comprehensive: all available columns listed with clear labels, sensible defaults per tab, stable visibility/width persistence, and a tidy ordered layout in the settings dialog (easy scan/toggle/reorder if the shared component already supports order).
-9. Enlarge and restyle **Next action** cells so labels and icons are readable and comfortably tappable on desktop and mobile—not compact/tiny chrome—while reusing existing clinical/workflow action wiring and permission gates.
-10. Preserve authorized UI states: permission-filtered tabs, loading, empty, error/retry, success, validation, and visible feedback; synchronize lists/detail/counts after mutations (including after assign/reassign).
-11. Update English l10n (`app_en.arb`), tests, and remove or remap obsolete waiting-review / in-consultation permission, billing-inventory, and section code so dead tabs do not remain reachable. Add section/query support for Assigned to me (e.g. `assigned-to-me`).
+1. **Flat diagnoses list:** Render each diagnosis as an independent full-width row (edge to edge within the section). No nested/extended-table padding, inner cards, or indented child blocks between rows.
+2. **Columns:** Show only the diagnosis content (name, humanized type, and code when present). Do **not** show Status or Arrival time.
+3. **Display format:** Prefer `Name - Primary | CODE` (title-case type: Primary / Secondary / Differential). Omit the code segment when empty. Keep the row scannable on dense clinical layouts.
+4. **Section header actions:** In the Patient diagnoses title bar, place an **Edit** action immediately left of the collapse chevron (same short generic label pattern as other clinical sections). Edit must open an edit-diagnosis flow that can change type (and description/code if already supported by API) for the selected diagnosis or open a clear multi-select edit path—do not leave Edit as a no-op.
+5. **Remove (not Delete):** Row and confirm actions must use **Remove** wording (localized). Removing detaches/soft-removes the diagnosis from the active encounter record via the existing API; copy must not imply hard DB wipe. Confirm dialog title/body/buttons must say Remove.
+6. **Fix remove id:** Ensure remove calls `DELETE /api/v1/diagnoses/:id` with the diagnosis **UUID** (`id`), not `human_friendly_id`. Fix DTO/list mapping for diagnoses (and any OPD reuse) so mutable clinical records expose UUID for write/delete while friendly ids remain for display if needed. Confirm the “Enter a valid Id.” path is gone.
+7. **Add diagnosis types:** Keep (or refine) the dual-pane catalog picker. Clinicians must set **Primary**, **Secondary**, or **Differential** for the selection—applied to one diagnosis or to the whole selected group before commit. Persist `diagnosis_type` on create (and on edit).
+8. **Uniqueness per encounter:** Do not allow the same catalog diagnosis (same code+description identity, or same clinical-term identity used today) more than once on the **same encounter**. Block duplicates in the picker and/or on submit with clear localized feedback. Different encounters may still share the same diagnosis.
+9. **Edit dialog:** Implement an edit path that loads the existing diagnosis UUID and can update `diagnosis_type` (and fields already allowed by `PUT`). Reuse shared clinical dialog chrome/actions.
+10. **l10n + tests:** English strings for Edit/Remove, confirm copy, duplicate-diagnosis errors, and type labels; widget/controller tests for flat list columns, remove-with-UUID, duplicate prevention, and edit opening with correct id/type.
 
 Optional enhancements: none.
 
 ## Constraints
 
-- Reuse existing clinical controllers, repositories, design-system table/filter/settings components, routes, and `AppAccessPolicy` gates; no second permission vocabulary.
-- Backend RBAC/ABAC remains authoritative; unauthorized tabs/actions/columns must not render.
-- Theme tokens; responsive mobile/tablet/desktop; light and dark.
-- No unrelated refactors outside Clinical worklist chrome, scopes, counts, filters, settings, and next-action presentation.
-- Do not recreate removed `screens/` inventories.
+- Reuse shared clinical action dialogs, `AppDialog`, list/section patterns, and permissions (`CLINICAL_READ` / `CLINICAL_WRITE` / clinical delete privilege). Do not invent a parallel diagnoses module.
+- Prefer fixing frontend id mapping for delete/edit; only widen backend params to friendly ids if product explicitly requires it—and then resolve to UUID in the repository.
+- Do not reintroduce Status or Arrival time columns on this panel.
+- No unrelated clinical refactors (vitals, notes, orders) beyond diagnoses list/add/edit/remove.
+- Preserve OPD reuse of the shared diagnosis dialog if it already depends on the same contract.
 
 ## Acceptance Criteria
 
-- AC1 (Req 1, 11): Tab strip shows only Pending, Assigned to me, Urgent, Results ready, Completed today, Follow-ups; Waiting review and In consultation are gone from UI and dead code paths are cleaned or remapped.
-- AC2 (Req 2–5): Each tab’s list matches its definition (outpatient-only Pending; self-assigned open encounters; Urgent; results-ready-not-dispositioned; completed today; follow-ups unchanged).
-- AC3 (Req 3): Assigned to me shows only encounters assigned to the logged-in doctor; unassigned and other clinicians’ patients are absent; empty state when none or identity cannot be resolved.
-- AC4 (Req 6): Switching tabs leaves other tab counts unchanged for the same underlying data set; counts update only when data/mutations/refreshes change facets.
-- AC5 (Req 7): Filters cover the listed fields, compose with tab scope, and clear/reset correctly.
-- AC6 (Req 8): Table settings expose available columns in a clear ordered dialog with persistence.
-- AC7 (Req 9): Next action controls are visually larger/clearer and remain permission-gated and actionable.
-- AC8 (Req 10–11): Loading/empty/error/success states work; post-mutation sync includes list and independent counts; English strings and tests updated; unauthorized UI stays absent.
+- AC1 (Req 1–3): Diagnoses section shows flat full-width rows with diagnosis-only content; no Status/Arrival columns; type is humanized.
+- AC2 (Req 4, 9): Title-bar Edit opens a working edit flow bound to the diagnosis UUID.
+- AC3 (Req 5–6): Remove confirm uses Remove copy; remove succeeds without “Enter a valid Id.”
+- AC4 (Req 7–8): Add supports Primary/Secondary/Differential per selection/group; duplicate diagnosis on the same encounter is blocked with feedback.
+- AC5 (Req 10): English l10n and tests cover list, remove UUID, duplicates, and edit.
 
 ## Relevant Files
 
-- `frontend/lib/features/clinical/` (page, controller, entities, access, billing inventories)
-- `frontend/lib/shared/clinical_actions/`
+- `frontend/lib/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart`
+- `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+- `frontend/lib/features/clinical/presentation/controllers/clinical_workspace_controller.dart`
+- `frontend/lib/features/clinical/data/dtos/clinical_dtos.dart`
+- `frontend/lib/features/clinical/data/repositories/clinical_repository_impl.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart`
+- `backend/src/modules/diagnosis/`
 - `frontend/lib/l10n/app_en.arb`
-- `frontend/test/features/clinical/`
-- `prompts/ui-permissions/clinical/`
 - `.cursor/locale-development.mdc`
-- `.cursor/access/permissions.mdc`
-- `frontend/.cursor/permissions.mdc`
+- `.cursor/mandatories.mdc`
