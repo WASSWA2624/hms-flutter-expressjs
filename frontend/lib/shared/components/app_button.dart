@@ -232,6 +232,8 @@ class AppButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppSpacingTokens spacing = theme.spacing;
+    final bool plainChrome =
+        AppActionLabelScope.maybeOf(context)?.plainChrome ?? false;
     final double viewportWidth = MediaQuery.sizeOf(context).width;
     final bool compact = viewportWidth < 360;
     final EdgeInsetsGeometry padding = iconOnly
@@ -296,7 +298,8 @@ class AppButton extends StatelessWidget {
       backgroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
       ) {
-        if (states.contains(WidgetState.disabled)) {
+        // Section headers and disabled: no fill.
+        if (plainChrome || states.contains(WidgetState.disabled)) {
           return Colors.transparent;
         }
         if (variant == AppButtonVariant.primary) {
@@ -323,8 +326,8 @@ class AppButton extends StatelessWidget {
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
-        // Icon-only controls read as plain icon buttons: no chrome border.
-        if (iconOnly) {
+        // Icon-only and section-header actions: no chrome border.
+        if (iconOnly || plainChrome) {
           return BorderSide.none;
         }
         const double thinWidth = 0.5;

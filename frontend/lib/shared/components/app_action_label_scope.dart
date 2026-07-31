@@ -4,12 +4,17 @@ class AppActionLabelScope extends InheritedWidget {
   const AppActionLabelScope({
     required this.showLabels,
     required this.forceIconOnly,
+    this.plainChrome = false,
     required super.child,
     super.key,
   });
 
   final bool showLabels;
   final bool forceIconOnly;
+
+  /// When true, [AppButton] descendants omit resting fill and borders
+  /// (section header actions).
+  final bool plainChrome;
 
   static AppActionLabelScope? maybeOf(BuildContext context) {
     // Use get (not dependOn) so descendants do not keep InheritedElement
@@ -20,6 +25,7 @@ class AppActionLabelScope extends InheritedWidget {
   @override
   bool updateShouldNotify(AppActionLabelScope oldWidget) {
     return showLabels != oldWidget.showLabels ||
-        forceIconOnly != oldWidget.forceIconOnly;
+        forceIconOnly != oldWidget.forceIconOnly ||
+        plainChrome != oldWidget.plainChrome;
   }
 }

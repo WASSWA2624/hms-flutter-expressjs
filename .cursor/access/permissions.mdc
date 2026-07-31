@@ -1,35 +1,43 @@
 ---
-description: Permission vocabulary, ABAC scope, and enforcement model for access control. Always enforce permission-based access.
+description: Permission key format, ABAC scope, and enforcement model for access control.
 alwaysApply: true
 ---
 
 # Permissions
 
-This file owns the access vocabulary and enforcement model for HOSSPI HMS.
+Owns the access vocabulary and enforcement model. Always enforce permission-based access; deny by default.
+
+## Key Format
+
+- Keys must be lowercase `resource:action` (snake_case), e.g. `clinical:write`, `rooms_beds:read`.
+- Canonical catalog: `backend/src/config/permissions.js`; frontend must mirror it in `AppPermissions`.
+- Shell entry uses one `*:read` key per menu destination (e.g. `opd:read`).
+- New keys must land in both catalogs before seeds, gates, or APIs use them.
 
 ## Vocabulary
 
-- Core verbs are `view`, `create`, `edit`/`update`, `delete`, `manage`, `export`, `assign`, and `approve`.
-- Module-specific verbs may be added when needed, such as `request`, `report`, `dispense`, or `prescribe`.
-- `lab` and `radiology` use `request` and `report`; `pharmacy` uses `prescribe` and `dispense`.
+- Core actions: `read`, `write`, `update`, `delete`, `manage`, `export`, `approve`, `publish`, `admin`, `audit`.
+- Module-specific actions may be added (`request`, `review`, `release`, `manage_storage`).
+- Prefer `own` / `assigned` ABAC scope over manage-all grants.
 
 ## Access Model
 
-- Permissions may attach to users, roles, modules, and subscription packages.
-- Effective access = `union(role/module/user grants) ∩ subscription ∩ ABAC`.
-- Users may hold multiple roles, but access must not exceed the active subscription or ABAC scope.
+- Authority order: subscription → assigned modules → roles/permissions → ABAC.
+- Effective access = `union(role/module/user grants) ∩ subscription ∩ assigned modules ∩ ABAC`.
+- Grants must not exceed the active package or actor ceiling.
+- Users may hold multiple scoped roles via `user_role`.
 
 ## ABAC
 
-- Scope checks must consider tenant, facility, department, unit, ward, room, bed, ownership, assignment, and status.
-- `own` and `assigned` should be preferred over broad `view all` or `manage all`.
+- Scope covers tenant, facility, department, unit, ward, room, bed, ownership, assignment, shift, and status.
+- Break-glass must be explicit, time-limited, and audited (`break_glass:*`).
 - Every permission decision must be recordable and auditable.
 
 ## Enforcement
 
-- UI, API, menu, component, and workflow access must all pass effective-access checks.
-- Backend enforcement must remain authoritative over UI visibility.
-- Permission changes and resets must be atomic, versioned, and auditable.
+- UI, API, menu, route, component, and workflow access must pass effective-access checks.
+- Backend is authoritative; UI hide/disable alone is never enough.
+- Permission/role/module/subscription changes must be atomic, versioned, and auditable.
 - Failed changes must roll back completely.
 
 ## Related Rules

@@ -90,7 +90,7 @@ void main() {
       expect(background, isNotNull);
       expect(background!.a, closeTo(0.12, 0.001));
       expect(style.overlayColor?.resolve(<WidgetState>{}), isNull);
-      expect(side?.width, 1);
+      expect(side?.width, 0.5);
     });
 
     testWidgets('applies a thin border on all variants', (
@@ -111,9 +111,37 @@ void main() {
         );
         final BorderSide? side = button.style!.side?.resolve(<WidgetState>{});
         expect(side, isNotNull);
-        expect(side!.width, 1);
+        expect(side!.width, 0.5);
         expect(side.style, BorderStyle.solid);
       }
+    });
+
+    testWidgets('section header scope drops fill and border', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        AppActionLabelScope(
+          showLabels: true,
+          forceIconOnly: false,
+          plainChrome: true,
+          child: AppButton.secondary(
+            label: 'Edit vitals',
+            dense: true,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      final TextButton button = tester.widget<TextButton>(
+        find.byType(TextButton),
+      );
+      final ButtonStyle style = button.style!;
+      expect(
+        style.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.transparent,
+      );
+      expect(style.side?.resolve(<WidgetState>{}), BorderSide.none);
     });
   });
 }

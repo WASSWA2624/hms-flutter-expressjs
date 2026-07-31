@@ -38,6 +38,7 @@ class AppCollapsibleSection extends StatefulWidget {
   ///
   /// On phones, header actions stay icon-only. On larger screens they inherit
   /// the ambient [AppActionLabelScope] so labels can show when space allows.
+  /// Header [AppButton]s render without resting fill or borders.
   final List<Widget> headerActions;
   final Widget child;
   final IconData? titleIcon;
@@ -157,6 +158,7 @@ class _AppCollapsibleSectionState extends State<AppCollapsibleSection> {
                                     ? false
                                     : (ambient?.showLabels ?? true),
                                 forceIconOnly: compact,
+                                plainChrome: true,
                                 child: Wrap(
                                   alignment: WrapAlignment.end,
                                   spacing: theme.spacing.xs,
