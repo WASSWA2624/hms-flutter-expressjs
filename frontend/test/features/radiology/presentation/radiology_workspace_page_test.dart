@@ -50,6 +50,14 @@ const RadiologyOrder _releasedOrder = RadiologyOrder(
   modality: 'MRI',
   testDisplayName: 'MRI Brain',
   finalResultCount: 1,
+  results: <RadiologyResult>[
+    RadiologyResult(
+      id: 'RESULT-RELEASED',
+      displayId: 'RESULT-RELEASED',
+      status: 'FINAL',
+      reportText: 'No acute intracranial abnormality.',
+    ),
+  ],
 );
 
 const RadiologySummary _summary = RadiologySummary(
@@ -455,6 +463,30 @@ void main() {
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
+  });
+
+  testWidgets('released row opens final report directly with actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRadiologyWorkspace(tester, repository: repository);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.textContaining('Order history'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finn Finalized'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No acute intracranial abnormality.'), findsOneWidget);
+    expect(find.text('Procedures'), findsNothing);
+    expect(find.text('Procedure details'), findsNothing);
+
+    await tester.tap(find.widgetWithText(AppButton, 'Actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Print report'), findsOneWidget);
   });
 
   testWidgets('deep link section=reporting selects Reporting tab', (

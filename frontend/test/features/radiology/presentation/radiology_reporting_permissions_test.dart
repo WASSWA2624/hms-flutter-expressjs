@@ -645,15 +645,13 @@ void main() {
 
     await _openReportingDetail(tester);
 
+    // Reporting rows open the composer directly; no workflow/procedure hop.
     expect(find.text('Cancel order'), findsNothing);
     expect(find.text('Cancel selected'), findsNothing);
-    expect(find.widgetWithText(AppButton, 'Continue report'), findsOneWidget);
-    expect(find.text('Procedures'), findsOneWidget);
-    expect(find.text('CT Head'), findsWidgets);
-    expect(find.text('Procedure ID'), findsOneWidget);
-    expect(find.text('Body organ'), findsOneWidget);
-    expect(find.text('Done — waiting for report'), findsWidgets);
-    expect(find.text('Undo'), findsOneWidget);
+    expect(find.text('Procedures'), findsNothing);
+    expect(find.text('Procedure ID'), findsNothing);
+    expect(find.text('Body organ'), findsNothing);
+    expect(find.text('Undo'), findsNothing);
     expect(find.text('Assign'), findsNothing);
     expect(find.text('Start imaging'), findsNothing);
     expect(find.text('Assign typist'), findsNothing);
@@ -661,14 +659,7 @@ void main() {
     expect(find.text('Request details'), findsNothing);
     expect(find.text('Workflow timeline'), findsNothing);
     expect(find.text('Imaging floor'), findsNothing);
-    expect(find.text('Print report'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
-
-    await tester.ensureVisible(
-      find.widgetWithText(AppButton, 'Continue report'),
-    );
-    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-    await tester.pumpAndSettle();
 
     expect(find.textContaining('Findings'), findsWidgets);
     expect(find.textContaining('Impression/Conclusion'), findsWidgets);
@@ -700,11 +691,6 @@ void main() {
     );
 
     await _openReportingDetail(tester);
-    await tester.ensureVisible(
-      find.widgetWithText(AppButton, 'Continue report'),
-    );
-    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-    await tester.pumpAndSettle();
 
     final Finder submit = find.descendant(
       of: find.byType(AppDialog).last,
@@ -757,11 +743,6 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Continue report'),
-      );
-      await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-      await tester.pumpAndSettle();
 
       final Finder findingsField = find.descendant(
         of: find.byType(AppDialog).last,
@@ -876,11 +857,6 @@ void main() {
     );
 
     await _openReportingDetail(tester);
-    await tester.ensureVisible(
-      find.widgetWithText(AppButton, 'Continue report'),
-    );
-    await tester.tap(find.widgetWithText(AppButton, 'Continue report'));
-    await tester.pumpAndSettle();
 
     final Finder releaseSubmit = find.descendant(
       of: find.byType(AppDialog).last,

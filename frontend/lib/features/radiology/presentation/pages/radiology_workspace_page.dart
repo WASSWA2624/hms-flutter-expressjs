@@ -185,8 +185,9 @@ class _RadiologyWorkspaceContentState
     }
     final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
     final RadiologyDeskSection gateSection = section ?? _section;
-    final bool canRequest =
-        radiologyStripCreateRequirement(gateSection).isAllowed(accessPolicy);
+    final bool canRequest = radiologyStripCreateRequirement(
+      gateSection,
+    ).isAllowed(accessPolicy);
     final bool canWork = switch (gateSection) {
       RadiologyDeskSection.worklist =>
         RadiologyWorklistAtomPermissions.write.isAllowed(accessPolicy),
@@ -369,8 +370,9 @@ class _RadiologyWorkspaceContentState
     final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final List<RadiologyDeskSection> allowedSections =
-        radiologyAllowedSections(accessPolicy);
+    final List<RadiologyDeskSection> allowedSections = radiologyAllowedSections(
+      accessPolicy,
+    );
     final RadiologyDeskSection effectiveSection =
         allowedSections.contains(_section)
         ? _section
@@ -378,8 +380,9 @@ class _RadiologyWorkspaceContentState
     // Section atom maps (Worklist / Reporting / All) share the same
     // ∩ write / billing helpers; resolve via strip create + billing hold so
     // inventory keys stay the single vocabulary for this board.
-    final bool canRequest =
-        radiologyStripCreateRequirement(effectiveSection).isAllowed(accessPolicy);
+    final bool canRequest = radiologyStripCreateRequirement(
+      effectiveSection,
+    ).isAllowed(accessPolicy);
     final bool canWork = switch (effectiveSection) {
       RadiologyDeskSection.worklist =>
         RadiologyWorklistAtomPermissions.write.isAllowed(accessPolicy),
@@ -457,7 +460,8 @@ class _RadiologyWorkspaceContentState
                 body: l10n.radiologyNoOrdersBody,
                 icon: Icons.inbox_outlined,
               )
-            else if (lastFailure != null && !effectiveSection.isFollowUps) ...<Widget>[
+            else if (lastFailure != null &&
+                !effectiveSection.isFollowUps) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
                 onRetry: controller.refresh,
@@ -597,9 +601,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         ],
         filterValue: _radiologyFilterValue(state.query),
         hasActiveFilters: _hasRadiologyFilters(state.query),
-        trailingActions: <AppSearchBarAction>[
-          ?createAction,
-        ],
+        trailingActions: <AppSearchBarAction>[?createAction],
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final String nextStage =
               value.option(_radiologyStageFilterKey) ?? 'ALL';
@@ -736,7 +738,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
   }
 }
 
-
 class _RadiologyOrderDetail extends ConsumerWidget {
   const _RadiologyOrderDetail({
     required this.state,
@@ -816,7 +817,18 @@ Future<void> _openRadiologyDetailDialog(
 
   final RadiologyWorkspaceState state =
       _readRadiologyState(ref) ?? fallbackState;
-  if (state.selectedWorkflow == null) {
+  final RadiologyWorkflow? workflow = state.selectedWorkflow;
+  if (workflow == null) {
+    return;
+  }
+
+  final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
+  if (status == _ProcedureWorkbenchStatus.reported) {
+    await _showReleasedRadiologyReport(context, workflow);
+    return;
+  }
+  if (canWork && status == _ProcedureWorkbenchStatus.waitingForReport) {
+    await _showReportDialog(context, ref, workflow);
     return;
   }
 
@@ -950,7 +962,9 @@ enum _ProcedureWorkbenchStatus {
   cancelled,
 }
 
-_ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) {
+_ProcedureWorkbenchStatus _procedureWorkbenchStatus(
+  RadiologyWorkflow workflow,
+) {
   final RadiologyOrder order = workflow.order;
   if (order.isCancelled) {
     return _ProcedureWorkbenchStatus.cancelled;
@@ -1029,8 +1043,7 @@ List<_ProcedureWorkbenchRow> _procedureWorkbenchRows(RadiologyOrder order) {
                       order.testDisplayName ??
                       order.effectiveDisplayId)
                   .trim(),
-          modality:
-              order.requestedTests[index].modality ?? order.modality,
+          modality: order.requestedTests[index].modality ?? order.modality,
           bodyRegion:
               order.requestedTests[index].bodyRegion ?? order.bodyRegion,
           laterality:
@@ -1058,7 +1071,8 @@ Future<void> _undoProcedureWorkbenchStatus(
   final AppLocalizations l10n = context.l10n;
   final RadiologyOrder order = workflow.order;
   final RadiologyResult? draft = order.latestDraftResult;
-  final ImagingStudy? study = order.latestStudy ??
+  final ImagingStudy? study =
+      order.latestStudy ??
       (workflow.studies.isEmpty ? null : workflow.studies.last);
 
   final bool undoDraft = draft != null;
@@ -1119,7 +1133,8 @@ class _ProcedureWorkbenchSection extends StatefulWidget {
       _ProcedureWorkbenchSectionState();
 }
 
-class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> {
+class _ProcedureWorkbenchSectionState
+    extends State<_ProcedureWorkbenchSection> {
   final Set<String> _selectedKeys = <String>{};
   int? _hoveredRowIndex;
   int _hoverGeneration = 0;
@@ -1130,9 +1145,9 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
   @override
   void didUpdateWidget(covariant _ProcedureWorkbenchSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final Set<String> validKeys = _procedureWorkbenchRows(workflow.order)
-        .map((_ProcedureWorkbenchRow row) => row.selectionKey)
-        .toSet();
+    final Set<String> validKeys = _procedureWorkbenchRows(
+      workflow.order,
+    ).map((_ProcedureWorkbenchRow row) => row.selectionKey).toSet();
     _selectedKeys.removeWhere((String key) => !validKeys.contains(key));
   }
 
@@ -1195,6 +1210,8 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
         canWork: widget.canWork,
         onMarkDone: widget.onMarkDone,
         onMarkReportDone: widget.onMarkReportDone,
+        onViewReport: () => _showReleasedRadiologyReport(context, workflow),
+        onPrintReport: () => _showRadiologyPrintDialog(context, workflow),
         onUndo: widget.onUndo,
         onCancel: widget.onCancel,
       ),
@@ -1208,7 +1225,9 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
     final ColorScheme colors = theme.colorScheme;
     final RadiologyOrder order = workflow.order;
     final List<_ProcedureWorkbenchRow> rows = _procedureWorkbenchRows(order);
-    final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
+    final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(
+      workflow,
+    );
     final RadiologyNextActions next = workflow.nextActions;
     final bool waitingForReport =
         status == _ProcedureWorkbenchStatus.waitingForReport;
@@ -1223,8 +1242,7 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
         pendingLike;
     final bool canMarkReportDone =
         widget.onMarkReportDone != null && waitingForReport;
-    final bool canViewReport =
-        widget.onMarkReportDone != null && reported;
+    final bool canViewReport = widget.onMarkReportDone != null && reported;
     final bool canUndo =
         widget.canWork &&
         widget.onUndo != null &&
@@ -1313,7 +1331,8 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                               : (someSelected ? null : false),
                           onChanged: rows.isEmpty
                               ? null
-                              : (bool? value) => _toggleAll(rows, value == true),
+                              : (bool? value) =>
+                                    _toggleAll(rows, value == true),
                         ),
                       ),
                       _ProcedureTableCell.header(
@@ -1354,10 +1373,8 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                             value: _selectedKeys.contains(
                               rows[index].selectionKey,
                             ),
-                            onChanged: (bool? value) => _toggleRow(
-                              rows[index].selectionKey,
-                              value,
-                            ),
+                            onChanged: (bool? value) =>
+                                _toggleRow(rows[index].selectionKey, value),
                           ),
                         ),
                         _ProcedureTableCell(
@@ -1408,10 +1425,7 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                             _openProcedureDetails(this.context, rows[index]);
                           },
                           child: Text(
-                            _modalityLabelOrNull(
-                                  l10n,
-                                  rows[index].modality,
-                                ) ??
+                            _modalityLabelOrNull(l10n, rows[index].modality) ??
                                 (rows[index].modality ?? '—'),
                           ),
                         ),
@@ -1542,6 +1556,8 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     required this.canWork,
     this.onMarkDone,
     this.onMarkReportDone,
+    this.onViewReport,
+    this.onPrintReport,
     this.onUndo,
     this.onCancel,
   });
@@ -1552,6 +1568,8 @@ class _ProcedureDetailsDialog extends StatelessWidget {
   final bool canWork;
   final VoidCallback? onMarkDone;
   final VoidCallback? onMarkReportDone;
+  final VoidCallback? onViewReport;
+  final VoidCallback? onPrintReport;
   final VoidCallback? onUndo;
   final VoidCallback? onCancel;
 
@@ -1561,7 +1579,9 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final RadiologyOrder order = workflow.order;
-    final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
+    final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(
+      workflow,
+    );
     final RadiologyNextActions next = workflow.nextActions;
     final bool waitingForReport =
         status == _ProcedureWorkbenchStatus.waitingForReport;
@@ -1572,7 +1592,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     final bool canRunProcedureDone =
         canWork && onMarkDone != null && next.canCreateStudy && pendingLike;
     final bool canMarkReportDone = onMarkReportDone != null && waitingForReport;
-    final bool canOpenReport = onMarkReportDone != null && reported;
+    final bool canOpenReport = onViewReport != null && reported;
     final bool canUndo =
         canWork &&
         onUndo != null &&
@@ -1581,8 +1601,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             order.imagingStudies.isNotEmpty ||
             order.studyCount > 0 ||
             workflow.studies.isNotEmpty);
-    final bool canCancel =
-        onCancel != null && next.canCancel && pendingLike;
+    final bool canCancel = onCancel != null && next.canCancel && pendingLike;
     final AppWorkspaceStatusTone statusTone = switch (status) {
       _ProcedureWorkbenchStatus.pending => AppWorkspaceStatusTone.warning,
       _ProcedureWorkbenchStatus.inProcess => AppWorkspaceStatusTone.info,
@@ -1713,19 +1732,75 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             onPressed: state.isMutating ? null : () => runAndClose(onMarkDone),
           ),
         if (canMarkReportDone || canOpenReport)
-          AppButton.primary(
-            label: canMarkReportDone
+          _ProcedureReportActionsMenu(
+            enabled: !state.isMutating,
+            primaryLabel: canMarkReportDone
                 ? (order.hasDraftResult
                       ? l10n.radiologyContinueReportAction
                       : l10n.radiologyCreateReportAction)
                 : l10n.radiologyViewReportAction,
-            leadingIcon: canMarkReportDone
-                ? Icons.edit_note_outlined
-                : Icons.description_outlined,
-            isLoading: state.isMutating,
-            onPressed: state.isMutating
-                ? null
-                : () => runAndClose(onMarkReportDone),
+            onOpenReport: () => runAndClose(
+              canMarkReportDone ? onMarkReportDone : onViewReport,
+            ),
+            onPrintReport: canOpenReport && onPrintReport != null
+                ? () => runAndClose(onPrintReport)
+                : null,
+          ),
+      ],
+    );
+  }
+}
+
+class _ProcedureReportActionsMenu extends StatelessWidget {
+  const _ProcedureReportActionsMenu({
+    required this.enabled,
+    required this.primaryLabel,
+    required this.onOpenReport,
+    this.onPrintReport,
+  });
+
+  final bool enabled;
+  final String primaryLabel;
+  final VoidCallback onOpenReport;
+  final VoidCallback? onPrintReport;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return MenuAnchor(
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return AppButton.primary(
+              label: l10n.radiologyProcedureActionsColumnLabel,
+              leadingIcon: Icons.more_horiz,
+              enabled: enabled,
+              onPressed: !enabled
+                  ? null
+                  : () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        controller.open();
+                      }
+                    },
+            );
+          },
+      menuChildren: <Widget>[
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.description_outlined),
+          onPressed: enabled ? onOpenReport : null,
+          child: Text(primaryLabel),
+        ),
+        if (onPrintReport != null)
+          AppAccessActionGate(
+            requirement: radiologyPrintReportRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return MenuItemButton(
+                leadingIcon: const Icon(Icons.print_outlined),
+                onPressed: enabled && isAllowed ? onPrintReport : null,
+                child: Text(l10n.radiologyPrintReportAction),
+              );
+            },
           ),
       ],
     );
@@ -2472,6 +2547,121 @@ String _studyModalityForOrder(RadiologyOrder order) {
   return 'OTHER';
 }
 
+Future<void> _showReleasedRadiologyReport(
+  BuildContext context,
+  RadiologyWorkflow workflow,
+) async {
+  final RadiologyOrder order = workflow.order;
+  RadiologyResult? released = order.latestReleasedResult;
+  if (released == null) {
+    for (final RadiologyResult result in workflow.results) {
+      if (result.isReleased) {
+        released = result;
+        break;
+      }
+    }
+  }
+  final String reportText = (released?.reportText ?? '').trim();
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      final AppLocalizations l10n = dialogContext.l10n;
+      final ThemeData theme = Theme.of(dialogContext);
+      return AppDialog(
+        title: Text(l10n.radiologyViewReportAction),
+        icon: const Icon(Icons.description_outlined),
+        scrollable: true,
+        pinActionsToBottom: true,
+        maxWidth: 760,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppPatientDetails(
+              patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
+              patientNumber: order.patientId ?? '',
+              patientNumberLabel: l10n.radiologyPatientIdLabel,
+              copyPatientNumberTooltip: l10n.copyIdentifierAction,
+              copyPatientNumberMessage: l10n.identifierCopiedMessage,
+              semanticLabel: l10n.radiologyPatientContextLabel,
+              showAvatar: false,
+              showActionLabels: false,
+              status: released == null
+                  ? null
+                  : _resultStatus(dialogContext, released),
+              expandedFields: <AppWorkspacePatientContextField>[
+                AppWorkspacePatientContextField(
+                  label: l10n.radiologyStudyLabel,
+                  value: order.testDisplayName ?? l10n.profileUnknownValue,
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.lg),
+            AppReportPreviewPanel(
+              title: l10n.radiologyViewReportAction,
+              selectable: true,
+              child: Text(
+                reportText.isEmpty ? l10n.radiologyEmptyReportBody : reportText,
+              ),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          _ReleasedReportActionsMenu(
+            onPrint: () {
+              Navigator.of(dialogContext).pop();
+              _showRadiologyPrintDialog(context, workflow);
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _ReleasedReportActionsMenu extends StatelessWidget {
+  const _ReleasedReportActionsMenu({required this.onPrint});
+
+  final VoidCallback onPrint;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return MenuAnchor(
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return AppButton.primary(
+              label: l10n.radiologyProcedureActionsColumnLabel,
+              leadingIcon: Icons.more_horiz,
+              onPressed: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              },
+            );
+          },
+      menuChildren: <Widget>[
+        AppAccessActionGate(
+          requirement: radiologyPrintReportRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return MenuItemButton(
+              leadingIcon: const Icon(Icons.print_outlined),
+              onPressed: isAllowed ? onPrint : null,
+              child: Text(l10n.radiologyPrintReportAction),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 Future<void> _showReportDialog(
   BuildContext context,
   WidgetRef ref,
@@ -2617,10 +2807,10 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     });
 
     final String impression = _impressionController.text.trim();
-    final String resolvedFindings =
-        findings.isNotEmpty ? findings : reportText;
-    final String resolvedReportText =
-        reportText.isNotEmpty ? reportText : resolvedFindings;
+    final String resolvedFindings = findings.isNotEmpty ? findings : reportText;
+    final String resolvedReportText = reportText.isNotEmpty
+        ? reportText
+        : resolvedFindings;
 
     AppFailure? failure = await widget.onSubmit(<String, Object?>{
       'findings': resolvedFindings,
@@ -3056,9 +3246,7 @@ class _CancelFormState extends State<_CancelForm> {
     if (reason.isEmpty) {
       return;
     }
-    Navigator.of(context).pop(<String, Object?>{
-      'reason': reason,
-    });
+    Navigator.of(context).pop(<String, Object?>{'reason': reason});
   }
 }
 

@@ -259,7 +259,8 @@ List<ClinicalActionCatalogOption> _radiologyCatalogOptions(
   }
 
   final List<RadiologyReferenceOption> references =
-      state?.references.radiologyProcedures ?? const <RadiologyReferenceOption>[];
+      state?.references.radiologyProcedures ??
+      const <RadiologyReferenceOption>[];
   return <ClinicalActionCatalogOption>[
     for (final RadiologyReferenceOption option in references)
       ClinicalActionCatalogOption(
@@ -605,14 +606,12 @@ String _composeRadiologyReportText({
   String recommendation = '',
   required String narrative,
 }) {
-  if (narrative.isNotEmpty) {
-    return narrative;
-  }
   final List<String> parts = <String>[
     if (inferredTechnique.isNotEmpty) 'Technique:\n$inferredTechnique',
     if (findings.isNotEmpty) 'Findings:\n$findings',
     if (impression.isNotEmpty) 'Impression:\n$impression',
     if (recommendation.isNotEmpty) 'Recommendation:\n$recommendation',
+    if (narrative.isNotEmpty) 'Reporting narrative:\n$narrative',
   ];
   return parts.join('\n\n').trim();
 }

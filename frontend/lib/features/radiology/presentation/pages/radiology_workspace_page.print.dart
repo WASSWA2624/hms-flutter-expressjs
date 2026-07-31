@@ -86,9 +86,24 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedSections = resolveDefaultReportSectionSelection(
-      _radiologyPrintAvailabilities(widget.workflow),
-    ).cast<_RadiologyPrintSection>().toSet();
+    final Set<_RadiologyPrintSection> available =
+        _radiologyPrintAvailabilities(widget.workflow)
+            .where((ReportSectionAvailability section) => section.enabled)
+            .map(
+              (ReportSectionAvailability section) =>
+                  section.id as _RadiologyPrintSection,
+            )
+            .toSet();
+    // A standard clinical report contains patient context, order details,
+    // findings/conclusion, and signatures. Studies, images, and references are
+    // optional attachments and must not repeat the same procedure by default.
+    _selectedSections = <_RadiologyPrintSection>{
+      _RadiologyPrintSection.header,
+      _RadiologyPrintSection.patient,
+      _RadiologyPrintSection.order,
+      _RadiologyPrintSection.report,
+      _RadiologyPrintSection.signer,
+    }.intersection(available);
   }
 
   @override
@@ -435,14 +450,7 @@ String _radiologyPrintBodyHtml(
     );
   }
   if (settings.includeReport) {
-    sections.add(
-      PrintFormTemplate.section(
-        title: l10n.radiologyPrintReportSectionTitle,
-        bodyHtml: _printParagraph(
-          result?.reportText ?? l10n.radiologyEmptyReportBody,
-        ),
-      ),
-    );
+    sections.add(_radiologyStructuredReportHtml(context, result));
   }
   if (settings.includeReferences) {
     sections.add(
@@ -456,17 +464,95 @@ String _radiologyPrintBodyHtml(
       ),
     );
   }
-  if (settings.includeSigner) {
+  if (sections.isEmpty) {
+    return _printParagraph(l10n.radiologyPrintNoSectionsSelected);
+  }
+  return sections.join('\n');
+}
+
+String _radiologyStructuredReportHtml(
+  BuildContext context,
+  RadiologyResult? result,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String reportText = (result?.reportText ?? '').trim();
+  if (reportText.isEmpty) {
+    return PrintFormTemplate.section(
+      title: l10n.radiologyFindingsLabel,
+      bodyHtml: _printParagraph(l10n.radiologyEmptyReportBody),
+    );
+  }
+
+  final Map<String, StringBuffer> values = <String, StringBuffer>{};
+  String? currentKey;
+  final RegExp heading = RegExp(
+    r'^(Technique|Findings|Impression(?:/Conclusion)?|Conclusion|Recommendation|Reporting narrative|Report narrative|Narrative|Addendum)\s*:\s*(.*)$',
+    caseSensitive: false,
+  );
+
+  String canonicalKey(String value) {
+    final String normalized = value.trim().toLowerCase();
+    if (normalized == 'findings') return 'findings';
+    if (normalized.startsWith('impression') || normalized == 'conclusion') {
+      return 'impression';
+    }
+    if (normalized == 'recommendation') return 'recommendation';
+    if (normalized == 'addendum') return 'addendum';
+    if (normalized.contains('narrative')) return 'narrative';
+    return 'technique';
+  }
+
+  void append(String key, String value) {
+    final String clean = value.trim();
+    if (clean.isEmpty) {
+      return;
+    }
+    final StringBuffer buffer = values.putIfAbsent(key, StringBuffer.new);
+    if (buffer.isNotEmpty) {
+      buffer.writeln();
+    }
+    buffer.write(clean);
+  }
+
+  for (final String rawLine in reportText.split(RegExp(r'\r?\n'))) {
+    final String line = rawLine.trim();
+    final RegExpMatch? match = heading.firstMatch(line);
+    if (match != null) {
+      currentKey = canonicalKey(match.group(1)!);
+      append(currentKey, match.group(2) ?? '');
+      continue;
+    }
+    if (line.isNotEmpty) {
+      append(currentKey ?? 'findings', line);
+    }
+  }
+
+  final List<String> sections = <String>[];
+  for (final (String key, String title) in <(String, String)>[
+    ('findings', l10n.radiologyFindingsLabel),
+    ('impression', l10n.radiologyImpressionLabel),
+    ('recommendation', l10n.radiologyRecommendationLabel),
+    ('narrative', l10n.radiologyReportTextLabel),
+    ('addendum', l10n.radiologyWorkflowStepAddendum),
+  ]) {
+    final String value = values[key]?.toString().trim() ?? '';
+    if (value.isEmpty) {
+      continue;
+    }
     sections.add(
       PrintFormTemplate.section(
-        title: l10n.radiologyPrintSignerSectionTitle,
-        bodyHtml: _radiologySignerHtml(context, result),
-        avoidPageBreak: true,
+        title: title,
+        bodyHtml: _printParagraph(value),
+        avoidPageBreak: key == 'impression' || key == 'recommendation',
       ),
     );
   }
+
   if (sections.isEmpty) {
-    return _printParagraph(l10n.radiologyPrintNoSectionsSelected);
+    return PrintFormTemplate.section(
+      title: l10n.radiologyFindingsLabel,
+      bodyHtml: _printParagraph(reportText),
+    );
   }
   return sections.join('\n');
 }
@@ -532,37 +618,6 @@ String _radiologyPrintStudiesHtml(
     emptyText: l10n.radiologyNoStudiesBody,
   );
   return '$testsTable\n$studiesTable';
-}
-
-String _radiologySignerHtml(BuildContext context, RadiologyResult? result) {
-  final AppLocalizations l10n = context.l10n;
-  if (result == null) {
-    return _printParagraph(l10n.radiologyNoReportBody);
-  }
-  return PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.radiologyReportedAtLabel,
-      value:
-          _formatDateTimeOrNull(context, result.reportedAt) ??
-          l10n.profileUnknownValue,
-    ),
-    PrintFormMetadataItem(
-      label: l10n.radiologyStatusColumnLabel,
-      value: _resultStatusLabel(l10n, result.status),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.radiologyFinalizationRequestedLabel,
-      value: result.finalization.requested
-          ? l10n.commonYesLabel
-          : l10n.commonNoLabel,
-    ),
-    PrintFormMetadataItem(
-      label: l10n.radiologyFinalizationAttestedLabel,
-      value: result.finalization.attested
-          ? l10n.commonYesLabel
-          : l10n.commonNoLabel,
-    ),
-  ]);
 }
 
 Iterable<String> _radiologyReferenceStrings(RadiologyWorkflow workflow) sync* {
@@ -654,15 +709,6 @@ String _radiologyPrintPreviewText(
         _radiologyReferenceStrings(
           workflow,
         ).join('\n').ifEmpty(l10n.radiologyNoReportReferencesLabel),
-      );
-  }
-  if (settings.includeSigner) {
-    buffer
-      ..writeln('\n${l10n.radiologyPrintSignerSectionTitle}')
-      ..writeln(
-        workflow.order.latestResult == null
-            ? l10n.radiologyNoReportBody
-            : _resultStatusLabel(l10n, workflow.order.latestResult!.status),
       );
   }
   return buffer.toString().trim();
