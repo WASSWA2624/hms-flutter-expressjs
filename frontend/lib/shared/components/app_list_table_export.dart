@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table.dart';
@@ -366,213 +367,207 @@ class _AppListTableExportDialogState<T>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _ExportSectionHeader(
-              label: widget.columnsSectionLabel,
-              trailing: TextButton(
-                onPressed: canInteract
-                    ? () {
-                        setState(() {
-                          _selectedColumnKeys = _withAlwaysVisible(
-                            widget.visibleColumnKeys,
-                          );
-                          _inlineError = null;
-                        });
-                      }
-                    : null,
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  context.l10n.commonTableExportSelectVisibleColumnsAction,
-                ),
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            _ExportColumnGrid(
-              header: _ExportSelectAllColumnsTile(
-                label: context.l10n.commonTableExportSelectAllColumnsAction,
-                value: _selectAllColumnsValue,
-                enabled: canInteract && _hasToggleableColumns,
-                onChanged: _setAllColumnsSelected,
-              ),
-              children: <Widget>[
-                for (final AppListTableColumn<T> column in widget.columns)
-                  _ExportColumnTile(
-                    label: column.label,
-                    tooltip: _usefulTooltip(column),
-                    isChecked:
-                        column.alwaysVisible ||
-                        _selectedColumnKeys.contains(column.key),
-                    canChange: !column.alwaysVisible &&
-                        (!(column.alwaysVisible ||
-                                _selectedColumnKeys.contains(column.key)) ||
-                            _selectedColumnKeys.length > 1),
-                    onChanged: (bool? value) {
-                      setState(() {
-                        final Set<String> next = Set<String>.of(
-                          _selectedColumnKeys,
-                        );
-                        if (value ?? false) {
-                          next.add(column.key);
-                        } else {
-                          next.remove(column.key);
-                        }
-                        _selectedColumnKeys = _withAlwaysVisible(next);
-                        _inlineError = null;
-                      });
-                    },
-                  ),
-              ],
-            ),
-            if (_showsFilters) ...<Widget>[
-              SizedBox(height: theme.spacing.lg),
-              _ExportSectionHeader(
-                label: widget.filtersSectionLabel,
-                trailing: TextButton(
-                  onPressed: canInteract && _filters.isActive
-                      ? _clearExportFilters
-                      : null,
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.sm,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    context.l10n.commonTableExportClearFiltersAction,
-                  ),
-                ),
-              ),
-              SizedBox(height: theme.spacing.sm),
-              _ExportFilterGrid(
-                children: <Widget>[
-                  if (widget.config.enableDateFilter) ...<Widget>[
-                    AppDateField(
-                      value: _dateFrom,
-                      firstDate: firstDate,
-                      lastDate: lastDate,
-                      currentDate: widget.config.currentDate,
-                      pickerButtonLabel:
-                          widget.config.datePickerButtonLabel ?? 'Pick date',
-                      invalidDateMessage: widget.invalidDateMessage,
-                      labelText: widget.config.dateFromLabel ?? 'From',
-                      enableSpeechToText: false,
-                      onChanged: (DateTime? value) {
-                        setState(() {
-                          _dateFrom = value;
-                          _inlineError = null;
-                        });
-                      },
-                    ),
-                    AppDateField(
-                      value: _dateTo,
-                      firstDate: firstDate,
-                      lastDate: lastDate,
-                      currentDate: widget.config.currentDate,
-                      pickerButtonLabel:
-                          widget.config.datePickerButtonLabel ?? 'Pick date',
-                      invalidDateMessage: widget.invalidDateMessage,
-                      labelText: widget.config.dateToLabel ?? 'To',
-                      enableSpeechToText: false,
-                      onChanged: (DateTime? value) {
-                        setState(() {
-                          _dateTo = value;
-                          _inlineError = null;
-                        });
-                      },
-                    ),
-                  ],
-                  for (final AppSearchBarTextFilter filter
-                      in widget.config.textFilters)
-                    AppTextField(
-                      controller: _textControllers[filter.key],
-                      labelText: filter.label,
-                      hintText: filter.hintText,
-                      prefixIcon: filter.icon == null
-                          ? null
-                          : Icon(filter.icon),
-                      keyboardType: filter.keyboardType,
-                      textInputAction:
-                          filter.textInputAction ?? TextInputAction.next,
-                      enableSpeechToText: false,
-                      onChanged: (_) {
-                        if (_inlineError != null) {
-                          setState(() => _inlineError = null);
-                        }
-                      },
-                    ),
-                  for (final AppSearchBarFilterGroup group
-                      in widget.config.filterGroups)
-                    if (group.choices.isNotEmpty && !group.allowMultiple)
-                      AppSelectField<String>.searchable(
-                        value: _options[group.key],
-                        labelText: group.label,
-                        hintText:
-                            group.allLabel ??
-                            widget.config.allFieldsLabel ??
-                            'All',
-                        enableSpeechToText: false,
-                        options: <AppSelectOption<String>>[
-                          AppSelectOption<String>(
-                            value: _allValue,
-                            label:
-                                group.allLabel ??
-                                widget.config.allFieldsLabel ??
-                                'All',
-                            leadingIcon: const Icon(Icons.filter_list_off),
-                          ),
-                          for (final AppSearchBarFilterChoice choice
-                              in group.choices)
-                            AppSelectOption<String>(
-                              value: choice.value,
-                              label: choice.label,
-                              leadingIcon: choice.icon == null
-                                  ? null
-                                  : Icon(choice.icon),
-                            ),
-                        ],
-                        onChanged: (String? value) {
+            AppCollapsibleSection(
+              title: widget.columnsSectionLabel,
+              titleIcon: Icons.view_column_outlined,
+              initiallyExpanded: true,
+              contentPadding: EdgeInsets.all(theme.spacing.md),
+              headerActions: <Widget>[
+                AppButton.tertiary(
+                  label:
+                      context.l10n.commonTableExportSelectVisibleColumnsAction,
+                  enabled: canInteract,
+                  onPressed: canInteract
+                      ? () {
                           setState(() {
-                            final Map<String, String> next =
-                                Map<String, String>.of(_options);
-                            if (value == null || value == _allValue) {
-                              next.remove(group.key);
-                            } else {
-                              next[group.key] = value;
-                            }
-                            _options = next;
+                            _selectedColumnKeys = _withAlwaysVisible(
+                              widget.visibleColumnKeys,
+                            );
                             _inlineError = null;
                           });
-                        },
-                      )
-                    else if (group.choices.isNotEmpty && group.allowMultiple)
-                      _ExportMultiSelectGroup(
-                        group: group,
-                        selected: _selections[group.key] ?? const <String>{},
-                        onChanged: (Set<String> values) {
+                        }
+                      : null,
+                ),
+              ],
+              child: _ExportColumnGrid(
+                header: _ExportSelectAllColumnsTile(
+                  label: context.l10n.commonTableExportSelectAllColumnsAction,
+                  value: _selectAllColumnsValue,
+                  enabled: canInteract && _hasToggleableColumns,
+                  onChanged: _setAllColumnsSelected,
+                ),
+                children: <Widget>[
+                  for (final AppListTableColumn<T> column in widget.columns)
+                    _ExportColumnTile(
+                      label: column.label,
+                      tooltip: _usefulTooltip(column),
+                      isChecked:
+                          column.alwaysVisible ||
+                          _selectedColumnKeys.contains(column.key),
+                      canChange: !column.alwaysVisible &&
+                          (!(column.alwaysVisible ||
+                                  _selectedColumnKeys.contains(column.key)) ||
+                              _selectedColumnKeys.length > 1),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          final Set<String> next = Set<String>.of(
+                            _selectedColumnKeys,
+                          );
+                          if (value ?? false) {
+                            next.add(column.key);
+                          } else {
+                            next.remove(column.key);
+                          }
+                          _selectedColumnKeys = _withAlwaysVisible(next);
+                          _inlineError = null;
+                        });
+                      },
+                    ),
+                ],
+              ),
+            ),
+            if (_showsFilters) ...<Widget>[
+              SizedBox(height: theme.spacing.md),
+              AppCollapsibleSection(
+                title: widget.filtersSectionLabel,
+                titleIcon: Icons.filter_alt_outlined,
+                initiallyExpanded: true,
+                contentPadding: EdgeInsets.all(theme.spacing.md),
+                headerActions: <Widget>[
+                  AppButton.tertiary(
+                    label: context.l10n.commonTableExportClearFiltersAction,
+                    enabled: canInteract && _filters.isActive,
+                    onPressed: canInteract && _filters.isActive
+                        ? _clearExportFilters
+                        : null,
+                  ),
+                ],
+                child: _ExportFilterGrid(
+                  children: <Widget>[
+                    if (widget.config.enableDateFilter) ...<Widget>[
+                      AppDateField(
+                        value: _dateFrom,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
+                        currentDate: widget.config.currentDate,
+                        pickerButtonLabel:
+                            widget.config.datePickerButtonLabel ?? 'Pick date',
+                        invalidDateMessage: widget.invalidDateMessage,
+                        labelText: widget.config.dateFromLabel ?? 'From',
+                        enableSpeechToText: false,
+                        onChanged: (DateTime? value) {
                           setState(() {
-                            final Map<String, Set<String>> next =
-                                <String, Set<String>>{
-                                  for (final MapEntry<String, Set<String>> entry
-                                      in _selections.entries)
-                                    entry.key: Set<String>.of(entry.value),
-                                };
-                            if (values.isEmpty) {
-                              next.remove(group.key);
-                            } else {
-                              next[group.key] = values;
-                            }
-                            _selections = next;
+                            _dateFrom = value;
                             _inlineError = null;
                           });
                         },
                       ),
-                ],
+                      AppDateField(
+                        value: _dateTo,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
+                        currentDate: widget.config.currentDate,
+                        pickerButtonLabel:
+                            widget.config.datePickerButtonLabel ?? 'Pick date',
+                        invalidDateMessage: widget.invalidDateMessage,
+                        labelText: widget.config.dateToLabel ?? 'To',
+                        enableSpeechToText: false,
+                        onChanged: (DateTime? value) {
+                          setState(() {
+                            _dateTo = value;
+                            _inlineError = null;
+                          });
+                        },
+                      ),
+                    ],
+                    for (final AppSearchBarTextFilter filter
+                        in widget.config.textFilters)
+                      AppTextField(
+                        controller: _textControllers[filter.key],
+                        labelText: filter.label,
+                        hintText: filter.hintText,
+                        prefixIcon: filter.icon == null
+                            ? null
+                            : Icon(filter.icon),
+                        keyboardType: filter.keyboardType,
+                        textInputAction:
+                            filter.textInputAction ?? TextInputAction.next,
+                        enableSpeechToText: false,
+                        onChanged: (_) {
+                          if (_inlineError != null) {
+                            setState(() => _inlineError = null);
+                          }
+                        },
+                      ),
+                    for (final AppSearchBarFilterGroup group
+                        in widget.config.filterGroups)
+                      if (group.choices.isNotEmpty && !group.allowMultiple)
+                        AppSelectField<String>.searchable(
+                          value: _options[group.key],
+                          labelText: group.label,
+                          hintText:
+                              group.allLabel ??
+                              widget.config.allFieldsLabel ??
+                              'All',
+                          enableSpeechToText: false,
+                          options: <AppSelectOption<String>>[
+                            AppSelectOption<String>(
+                              value: _allValue,
+                              label:
+                                  group.allLabel ??
+                                  widget.config.allFieldsLabel ??
+                                  'All',
+                              leadingIcon: const Icon(Icons.filter_list_off),
+                            ),
+                            for (final AppSearchBarFilterChoice choice
+                                in group.choices)
+                              AppSelectOption<String>(
+                                value: choice.value,
+                                label: choice.label,
+                                leadingIcon: choice.icon == null
+                                    ? null
+                                    : Icon(choice.icon),
+                              ),
+                          ],
+                          onChanged: (String? value) {
+                            setState(() {
+                              final Map<String, String> next =
+                                  Map<String, String>.of(_options);
+                              if (value == null || value == _allValue) {
+                                next.remove(group.key);
+                              } else {
+                                next[group.key] = value;
+                              }
+                              _options = next;
+                              _inlineError = null;
+                            });
+                          },
+                        )
+                      else if (group.choices.isNotEmpty && group.allowMultiple)
+                        _ExportMultiSelectGroup(
+                          group: group,
+                          selected: _selections[group.key] ?? const <String>{},
+                          onChanged: (Set<String> values) {
+                            setState(() {
+                              final Map<String, Set<String>> next =
+                                  <String, Set<String>>{
+                                    for (final MapEntry<String, Set<String>>
+                                        entry
+                                        in _selections.entries)
+                                      entry.key: Set<String>.of(entry.value),
+                                  };
+                              if (values.isEmpty) {
+                                next.remove(group.key);
+                              } else {
+                                next[group.key] = values;
+                              }
+                              _selections = next;
+                              _inlineError = null;
+                            });
+                          },
+                        ),
+                  ],
+                ),
               ),
             ],
             if (_inlineError != null) ...<Widget>[
@@ -781,32 +776,6 @@ class _AppListTableExportDialogState<T>
   }
 }
 
-class _ExportSectionHeader extends StatelessWidget {
-  const _ExportSectionHeader({required this.label, this.trailing});
-
-  final String label;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            label,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        ?trailing,
-      ],
-    );
-  }
-}
-
 class _ExportSelectAllColumnsTile extends StatelessWidget {
   const _ExportSelectAllColumnsTile({
     required this.label,
@@ -892,55 +861,40 @@ class _ExportColumnGrid extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (header != null) ...<Widget>[
+          header!,
+          Divider(
+            height: theme.spacing.md,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+          ),
+        ],
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double spacing = theme.spacing.md;
+            final double availableWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : 680;
+            final int columns = availableWidth >= 720
+                ? 3
+                : availableWidth >= 420
+                ? 2
+                : 1;
+            final double itemWidth =
+                (availableWidth - (spacing * (columns - 1))) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (final Widget child in children)
+                  SizedBox(width: itemWidth, child: child),
+              ],
+            );
+          },
         ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.md,
-          vertical: theme.spacing.sm,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (header != null) ...<Widget>[
-              header!,
-              Divider(
-                height: theme.spacing.md,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-              ),
-            ],
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double spacing = theme.spacing.md;
-                final double availableWidth = constraints.maxWidth.isFinite
-                    ? constraints.maxWidth
-                    : 680;
-                final int columns = availableWidth >= 720
-                    ? 3
-                    : availableWidth >= 420
-                    ? 2
-                    : 1;
-                final double itemWidth =
-                    (availableWidth - (spacing * (columns - 1))) / columns;
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    for (final Widget child in children)
-                      SizedBox(width: itemWidth, child: child),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
