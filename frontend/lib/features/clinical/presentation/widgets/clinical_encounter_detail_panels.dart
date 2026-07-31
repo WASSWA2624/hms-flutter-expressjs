@@ -700,7 +700,7 @@ class _ClinicalRadiologyOrdersTablePanelState
 
     return AppCollapsibleSection(
       title: l10n.clinicalRadiologyOrdersTitle,
-      actions: canMutate
+      headerActions: canMutate
           ? _clinicalBatchHeaderActions(
               context: context,
               selectedCount: selectedOrders.length,
