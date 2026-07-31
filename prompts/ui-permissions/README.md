@@ -98,7 +98,6 @@ target tab’s file as the agent instruction.
 | Lab workspace | Follow-ups | `lab/follow-ups.md` |
 | Radiology workspace | Worklist | `radiology/worklist.md` |
 | Radiology workspace | Reporting | `radiology/reporting.md` |
-| Radiology workspace | Released | `radiology/released.md` |
 | Radiology workspace | All orders | `radiology/all-orders.md` |
 | Radiology workspace | Follow-ups | `radiology/follow-ups.md` |
 | Pharmacy workspace | Ready | `pharmacy/ready.md` |

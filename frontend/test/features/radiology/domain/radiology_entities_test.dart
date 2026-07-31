@@ -24,9 +24,9 @@ void main() {
       );
       expect(
         RadiologyWorkspaceQuery.fromUri(
-          Uri.parse('/radiology?tab=released'),
+          Uri.parse('/radiology?tab=reporting'),
         ).section,
-        'released',
+        'reporting',
       );
       expect(
         RadiologyWorkspaceQuery.fromUri(
@@ -59,7 +59,6 @@ void main() {
       expect(RadiologyDeskSection.values, <RadiologyDeskSection>[
         RadiologyDeskSection.worklist,
         RadiologyDeskSection.reporting,
-        RadiologyDeskSection.released,
         RadiologyDeskSection.allOrders,
         RadiologyDeskSection.followUps,
       ]);
@@ -94,7 +93,6 @@ void main() {
       );
       expect(patientsState.workloadCount, 6);
       expect(patientsState.reportingCount, 2);
-      expect(patientsState.releasedCount, 3);
       expect(summary.totalForView(RadiologyWorkbenchView.patients), 8);
 
       const RadiologyWorkspaceState ordersState = RadiologyWorkspaceState(
@@ -105,8 +103,30 @@ void main() {
       );
       expect(ordersState.workloadCount, 9);
       expect(ordersState.reportingCount, 4);
-      expect(ordersState.releasedCount, 6);
       expect(summary.totalForView(RadiologyWorkbenchView.orders), 12);
+    });
+  });
+
+  group('RadiologyOrder result and study signals', () {
+    test('treats count fields as result presence for worklist rows', () {
+      const RadiologyOrder draftOnly = RadiologyOrder(
+        id: 'RO-DRAFT',
+        draftResultCount: 1,
+      );
+      const RadiologyOrder finalOnly = RadiologyOrder(
+        id: 'RO-FINAL',
+        finalResultCount: 1,
+      );
+      const RadiologyOrder studyOnly = RadiologyOrder(
+        id: 'RO-STUDY',
+        studyCount: 1,
+      );
+
+      expect(draftOnly.hasDraftResult, isTrue);
+      expect(draftOnly.hasFinalResult, isFalse);
+      expect(finalOnly.hasFinalResult, isTrue);
+      expect(studyOnly.hasPerformedStudy, isTrue);
+      expect(studyOnly.hasDraftResult, isFalse);
     });
   });
 }

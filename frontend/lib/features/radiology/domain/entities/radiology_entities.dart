@@ -51,7 +51,7 @@ const List<String> radiologyBillingGateFilters = <String>[
 
 enum RadiologyWorkbenchView { patients, orders }
 
-enum RadiologyDeskSection { worklist, reporting, released, allOrders, followUps }
+enum RadiologyDeskSection { worklist, reporting, allOrders, followUps }
 
 extension RadiologyDeskSectionX on RadiologyDeskSection {
   bool get isFollowUps => this == RadiologyDeskSection.followUps;
@@ -222,12 +222,6 @@ final class RadiologyWorkspaceState {
     return query.view == RadiologyWorkbenchView.patients
         ? summary.reportingPatients
         : summary.draftReports;
-  }
-
-  int get releasedCount {
-    return query.view == RadiologyWorkbenchView.patients
-        ? summary.releasedPatients
-        : summary.finalizedReports + summary.amendedReports;
   }
 
   RadiologyWorkspaceState copyWith({
@@ -633,11 +627,18 @@ final class RadiologyOrder {
   bool get isCancelled => normalizedStatus == 'CANCELLED';
 
   bool get hasFinalResult {
-    return results.any((RadiologyResult result) => result.isReleased);
+    return finalResultCount > 0 ||
+        amendedResultCount > 0 ||
+        results.any((RadiologyResult result) => result.isReleased);
   }
 
   bool get hasDraftResult {
-    return results.any((RadiologyResult result) => result.isDraft);
+    return draftResultCount > 0 ||
+        results.any((RadiologyResult result) => result.isDraft);
+  }
+
+  bool get hasPerformedStudy {
+    return studyCount > 0 || imagingStudies.isNotEmpty;
   }
 
   RadiologyResult? get latestResult {

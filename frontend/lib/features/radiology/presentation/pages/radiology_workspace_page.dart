@@ -193,8 +193,6 @@ class _RadiologyWorkspaceContentState
         RadiologyWorklistAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.reporting =>
         RadiologyReportingAtomPermissions.write.isAllowed(accessPolicy),
-      RadiologyDeskSection.released =>
-        RadiologyReleasedAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.allOrders =>
         RadiologyAllOrdersAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.followUps =>
@@ -205,8 +203,6 @@ class _RadiologyWorkspaceContentState
         RadiologyWorklistAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.reporting =>
         RadiologyReportingAtomPermissions.billingHold.isAllowed(accessPolicy),
-      RadiologyDeskSection.released =>
-        RadiologyReleasedAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.allOrders =>
         RadiologyAllOrdersAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.followUps =>
@@ -249,7 +245,6 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist => 'worklist',
       RadiologyDeskSection.reporting => 'reporting',
-      RadiologyDeskSection.released => 'released',
       RadiologyDeskSection.allOrders => 'all',
       RadiologyDeskSection.followUps => 'follow-ups',
     };
@@ -264,10 +259,6 @@ class _RadiologyWorkspaceContentState
       case 'reports':
       case 'draft':
         return RadiologyDeskSection.reporting;
-      case 'released':
-      case 'completed':
-      case 'finalized':
-        return RadiologyDeskSection.released;
       case 'all':
       case 'all_orders':
       case 'all-orders':
@@ -290,8 +281,6 @@ class _RadiologyWorkspaceContentState
         unawaited(controller.applyStage('ALL'));
       case RadiologyDeskSection.reporting:
         unawaited(controller.applyStage('REPORTING'));
-      case RadiologyDeskSection.released:
-        unawaited(controller.applyStage('COMPLETED'));
       case RadiologyDeskSection.allOrders:
         unawaited(controller.applyStage('ALL'));
       case RadiologyDeskSection.followUps:
@@ -303,7 +292,6 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist => l10n.radiologyWorklistSummaryLabel,
       RadiologyDeskSection.reporting => l10n.radiologyReportingSummaryLabel,
-      RadiologyDeskSection.released => l10n.radiologyReleasedSummaryLabel,
       RadiologyDeskSection.allOrders => l10n.radiologyAllOrdersSummaryLabel,
       RadiologyDeskSection.followUps => l10n.opdFollowUpsTitle,
     };
@@ -313,7 +301,6 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist => Icons.pending_actions_outlined,
       RadiologyDeskSection.reporting => Icons.edit_note_outlined,
-      RadiologyDeskSection.released => Icons.verified_outlined,
       RadiologyDeskSection.allOrders => Icons.assignment_outlined,
       RadiologyDeskSection.followUps => Icons.phone_callback_outlined,
     };
@@ -329,7 +316,6 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist => state.workloadCount,
       RadiologyDeskSection.reporting => state.reportingCount,
-      RadiologyDeskSection.released => state.releasedCount,
       RadiologyDeskSection.allOrders => state.summary.totalForView(
         state.query.view,
       ),
@@ -341,7 +327,6 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist ||
       RadiologyDeskSection.reporting => AppTabCountTone.warning,
-      RadiologyDeskSection.released ||
       RadiologyDeskSection.allOrders ||
       RadiologyDeskSection.followUps => AppTabCountTone.info,
     };
@@ -386,7 +371,7 @@ class _RadiologyWorkspaceContentState
         allowedSections.contains(_section)
         ? _section
         : (radiologyFallbackSection(accessPolicy) ?? _section);
-    // Section atom maps (Worklist / Reporting / Released / All) share the same
+    // Section atom maps (Worklist / Reporting / All) share the same
     // ∩ write / billing helpers; resolve via strip create + billing hold so
     // inventory keys stay the single vocabulary for this board.
     final bool canRequest =
@@ -396,8 +381,6 @@ class _RadiologyWorkspaceContentState
         RadiologyWorklistAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.reporting =>
         RadiologyReportingAtomPermissions.write.isAllowed(accessPolicy),
-      RadiologyDeskSection.released =>
-        RadiologyReleasedAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.allOrders =>
         RadiologyAllOrdersAtomPermissions.write.isAllowed(accessPolicy),
       RadiologyDeskSection.followUps =>
@@ -408,8 +391,6 @@ class _RadiologyWorkspaceContentState
         RadiologyWorklistAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.reporting =>
         RadiologyReportingAtomPermissions.billingHold.isAllowed(accessPolicy),
-      RadiologyDeskSection.released =>
-        RadiologyReleasedAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.allOrders =>
         RadiologyAllOrdersAtomPermissions.billingHold.isAllowed(accessPolicy),
       RadiologyDeskSection.followUps =>
@@ -967,9 +948,9 @@ _ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) 
   if (order.hasFinalResult) {
     return _ProcedureWorkbenchStatus.reported;
   }
-  final bool hasStudy =
-      order.imagingStudies.isNotEmpty || (order.studyCount > 0);
-  if (hasStudy) {
+  if (order.hasDraftResult ||
+      order.hasPerformedStudy ||
+      workflow.studies.isNotEmpty) {
     return _ProcedureWorkbenchStatus.waitingForReport;
   }
   if (order.normalizedStatus == 'IN_PROCESS') {
@@ -3466,7 +3447,10 @@ AppListTableColumn<RadiologyOrder> _radiologyStatusColumn(
     id: 'status',
     label: context.l10n.radiologyStatusColumnLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-        appListTableCompareText(left.status, right.status),
+        appListTableCompareText(
+          _worklistStatusLabel(context.l10n, left),
+          _worklistStatusLabel(context.l10n, right),
+        ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
     },

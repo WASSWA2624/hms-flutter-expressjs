@@ -319,13 +319,15 @@ void main() {
     expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
     expect(find.textContaining('Worklist'), findsWidgets);
     expect(find.textContaining('Reporting'), findsWidgets);
-    expect(find.textContaining('Released'), findsWidgets);
     expect(find.textContaining('All orders'), findsWidgets);
+    expect(find.textContaining('Released'), findsNothing);
     expect(find.text('Olivia Ordered'), findsOneWidget);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Orders view'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.text('Pending'), findsWidgets);
+    expect(find.text('Procedure done'), findsWidgets);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(
@@ -360,22 +362,6 @@ void main() {
     );
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
-
-    clearInteractions(repository);
-    _stubRadiologyRepository(repository);
-
-    await tester.tap(find.textContaining('Released').first);
-    await tester.pumpAndSettle();
-
-    expect(router.state.uri.queryParameters['section'], 'released');
-    queries = verify(
-      () => repository.getWorkbench(captureAny()),
-    ).captured.cast<RadiologyWorkspaceQuery>();
-    expect(
-      queries.any((RadiologyWorkspaceQuery q) => q.stage == 'COMPLETED'),
-      isTrue,
-    );
-    expect(find.text('Finn Finalized'), findsOneWidget);
 
     clearInteractions(repository);
     _stubRadiologyRepository(repository);
@@ -417,14 +403,6 @@ void main() {
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
 
-    await tester.tap(find.textContaining('Released').first);
-    await tester.pumpAndSettle();
-
-    expect(router.state.uri.queryParameters['section'], 'released');
-    expect(find.byTooltip('Configurations'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsNothing);
-    expect(find.byTooltip('Request imaging'), findsOneWidget);
-
     await tester.tap(find.textContaining('All orders').first);
     await tester.pumpAndSettle();
 
@@ -458,6 +436,9 @@ void main() {
     expect(find.byTooltip('Request imaging'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsNothing);
     expect(find.byTooltip('Refresh'), findsNothing);
+    // Reporting fixture has draftResultCount only (no embedded results list).
+    expect(find.text('Done — waiting for report'), findsWidgets);
+    expect(find.text('Create report'), findsWidgets);
   });
 
   testWidgets('search filters table rows via controller', (
@@ -514,12 +495,12 @@ void main() {
     final AppLocalizations l10n = AppLocalizations.of(
       tester.element(find.byType(AppTabStrip)),
     );
-    expect(find.text(l10n.radiologyNextActionConfirmBilling), findsWidgets);
+    expect(find.text(l10n.radiologyMarkProcedureDoneAction), findsWidgets);
 
     await tester.ensureVisible(
-      find.text(l10n.radiologyNextActionConfirmBilling).first,
+      find.text(l10n.radiologyMarkProcedureDoneAction).first,
     );
-    await tester.tap(find.text(l10n.radiologyNextActionConfirmBilling).first);
+    await tester.tap(find.text(l10n.radiologyMarkProcedureDoneAction).first);
     await tester.pumpAndSettle();
 
     expect(find.byKey(AppDialog.shellKey), findsOneWidget);

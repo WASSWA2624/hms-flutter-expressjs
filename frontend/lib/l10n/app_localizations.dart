@@ -19822,17 +19822,11 @@ abstract class AppLocalizations {
   /// **'Waiting imaging'**
   String get radiologyWaitingImagingSummaryLabel;
 
-  /// Localized text for radiologyReportingSummaryLabel.
+  /// Radiology desk tab label for the reporting worklist.
   ///
   /// In en, this message translates to:
-  /// **'Reporting'**
+  /// **'For reporting'**
   String get radiologyReportingSummaryLabel;
-
-  /// Localized text for radiologyReleasedSummaryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Released'**
-  String get radiologyReleasedSummaryLabel;
 
   /// Localized text for radiologyUnsyncedSummaryLabel.
   ///

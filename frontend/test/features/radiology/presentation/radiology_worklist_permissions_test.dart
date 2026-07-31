@@ -843,33 +843,28 @@ void main() {
     );
 
     testWidgets(
-      'post-mutation sync: start imaging updates selected workflow in place',
+      'worklist status and next action follow simplified procedure flow',
       (WidgetTester tester) async {
-        when(() => repository.startOrder(any(), any())).thenAnswer((_) async {
-          return Result<RadiologyWorkflow>.success(
-            RadiologyWorkflow(
-              order: const RadiologyOrder(
-                id: 'RO-WL-1',
-                displayId: 'RAD-WL-1',
-                status: 'IN_PROCESS',
-                patientDisplayName: 'Wendy Worklist',
-                modality: 'XRAY',
-                testDisplayName: 'Chest X-ray',
-              ),
-              nextActions: const RadiologyNextActions(canCreateStudy: true),
-            ),
-          );
-        });
+        const RadiologyOrder actionableOrder = RadiologyOrder(
+          id: 'RO-WL-1',
+          displayId: 'RAD-WL-1',
+          status: 'ORDERED',
+          patientDisplayName: 'Wendy Worklist',
+          patientId: 'PAT-WL-1',
+          modality: 'XRAY',
+          testDisplayName: 'Chest X-ray',
+          billingGateBlocked: false,
+        );
 
         await _pumpWorklistTab(
           tester,
           repository: repository,
-          workflowOverride: RadiologyWorkflow(
-            order: _worklistOrder,
-            nextActions: const RadiologyNextActions(
-              canStart: true,
+          items: const <RadiologyOrder>[actionableOrder],
+          workflowOverride: const RadiologyWorkflow(
+            order: actionableOrder,
+            nextActions: RadiologyNextActions(
+              canCreateStudy: true,
               canCancel: true,
-              billingGateBlocked: false,
             ),
           ),
         );
@@ -877,19 +872,19 @@ void main() {
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppTabStrip)),
         );
-        await tester.tap(
-          find.text(l10n.radiologyNextActionConfirmBilling).first,
+        expect(find.text(l10n.radiologyProcedureStatusPending), findsWidgets);
+        expect(find.text(l10n.radiologyMarkProcedureDoneAction), findsWidgets);
+        expect(find.text(l10n.radiologyNextActionStartImaging), findsNothing);
+        expect(find.text(l10n.radiologyNextActionPerformStudy), findsNothing);
+
+        await tester.tap(find.text(l10n.radiologyMarkProcedureDoneAction).first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.widgetWithText(AppButton, l10n.radiologyMarkProcedureDoneAction),
+          findsWidgets,
         );
-        await tester.pumpAndSettle();
-
-        expect(find.text(l10n.radiologyStartImagingAction), findsWidgets);
-        await tester.tap(find.text(l10n.radiologyStartImagingAction).first);
-        await tester.pumpAndSettle();
-
-        verify(() => repository.startOrder(any(), any())).called(1);
-        expect(find.byKey(AppDialog.shellKey), findsOneWidget);
         expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
-        expect(find.text(l10n.radiologySavedMessage), findsOneWidget);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

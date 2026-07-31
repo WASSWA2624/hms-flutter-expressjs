@@ -13728,13 +13728,9 @@
   "@radiologyWaitingImagingSummaryLabel": {
     "description": "Localized text for radiologyWaitingImagingSummaryLabel."
   },
-  "radiologyReportingSummaryLabel": "Reporting",
+  "radiologyReportingSummaryLabel": "For reporting",
   "@radiologyReportingSummaryLabel": {
-    "description": "Localized text for radiologyReportingSummaryLabel."
-  },
-  "radiologyReleasedSummaryLabel": "Released",
-  "@radiologyReleasedSummaryLabel": {
-    "description": "Localized text for radiologyReleasedSummaryLabel."
+    "description": "Radiology desk tab label for the reporting worklist."
   },
   "radiologyUnsyncedSummaryLabel": "PACS sync due",
   "@radiologyUnsyncedSummaryLabel": {

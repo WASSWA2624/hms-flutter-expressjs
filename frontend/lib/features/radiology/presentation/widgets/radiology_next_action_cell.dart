@@ -26,7 +26,7 @@ class RadiologyNextActionCell extends ConsumerWidget {
     required this.canViewBilling,
     required this.resolveLabel,
     required this.openDetailDialog,
-    this.compact = true,
+    this.compact = false,
     super.key,
   });
 
@@ -74,8 +74,9 @@ class _RadiologyNextActionText extends StatelessWidget {
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodySmall?.copyWith(
+      style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -108,36 +109,35 @@ class _RadiologyCompactNextActionButton extends StatelessWidget {
           onTap: onPressed,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.xs,
-                vertical: compact ? 2 : 4,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.arrow_forward_outlined,
-                    size: compact ? 14 : 16,
-                    color: primaryColor,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          (compact
-                                  ? theme.textTheme.labelSmall
-                                  : theme.textTheme.bodySmall)
-                              ?.copyWith(
-                                color: primaryColor,
-                                fontWeight: FontWeight.w500,
-                              ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: compact ? 40 : 48),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.xs,
+                  vertical: compact ? 2 : theme.spacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      Icons.arrow_forward_outlined,
+                      size: compact ? 16 : 18,
+                      color: primaryColor,
                     ),
-                  ),
-                ],
+                    SizedBox(width: theme.spacing.xs),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

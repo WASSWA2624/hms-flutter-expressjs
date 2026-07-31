@@ -10753,10 +10753,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyWaitingImagingSummaryLabel => 'Waiting imaging';
 
   @override
-  String get radiologyReportingSummaryLabel => 'Reporting';
-
-  @override
-  String get radiologyReleasedSummaryLabel => 'Released';
+  String get radiologyReportingSummaryLabel => 'For reporting';
 
   @override
   String get radiologyUnsyncedSummaryLabel => 'PACS sync due';

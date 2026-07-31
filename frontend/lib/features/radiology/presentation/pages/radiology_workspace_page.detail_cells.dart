@@ -111,9 +111,9 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 AppWorkspaceStatus _orderStatus(BuildContext context, RadiologyOrder order) {
   final AppLocalizations l10n = context.l10n;
   return AppWorkspaceStatus(
-    label: _orderStatusLabel(l10n, order.status),
-    tone: _orderStatusTone(order.status),
-    icon: _orderStatusIcon(order.status),
+    label: _worklistStatusLabel(l10n, order),
+    tone: _worklistStatusTone(order),
+    icon: _worklistStatusIcon(order),
   );
 }
 
@@ -418,6 +418,7 @@ bool _radiologyWorklistSearchMatcher(
     item.modality,
     _modalityLabelOrNull(l10n, item.modality),
     _orderStatusLabel(l10n, item.status),
+    _worklistStatusLabel(l10n, item),
     _radiologyPriorityDisplayLabel(l10n, item.priority),
     _billingGateLabel(context, item),
     _nextActionLabel(context, item),
@@ -433,30 +434,37 @@ bool _radiologyWorklistSearchMatcher(
   );
 }
 
-String _nextActionLabel(BuildContext context, RadiologyOrder order) {
-  final AppLocalizations l10n = context.l10n;
-  if (order.normalizedStatus == 'CANCELLED') {
+String _worklistStatusLabel(AppLocalizations l10n, RadiologyOrder order) {
+  if (order.isCancelled) {
     return l10n.radiologyStatusCancelled;
   }
-  if (!order.hasBillingGate) {
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+    return l10n.radiologyProcedureStatusReported;
+  }
+  if (order.hasDraftResult || order.hasPerformedStudy) {
+    return l10n.radiologyProcedureStatusWaitingReport;
+  }
+  if (order.normalizedStatus == 'IN_PROCESS') {
+    return l10n.radiologyStatusInProcess;
+  }
+  return l10n.radiologyProcedureStatusPending;
+}
+
+String _nextActionLabel(BuildContext context, RadiologyOrder order) {
+  final AppLocalizations l10n = context.l10n;
+  if (order.isCancelled) {
+    return l10n.radiologyStatusCancelled;
+  }
+  if (order.billingGateBlocked) {
     return l10n.radiologyNextActionConfirmBilling;
   }
-  if (order.normalizedStatus == 'ORDERED') {
-    return l10n.radiologyNextActionStartImaging;
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+    return l10n.radiologyViewReportAction;
   }
-  if (order.normalizedStatus == 'IN_PROCESS' && order.studyCount == 0) {
-    return l10n.radiologyNextActionPerformStudy;
+  if (order.hasDraftResult || order.hasPerformedStudy) {
+    return l10n.radiologyCreateReportAction;
   }
-  if (order.hasDraftResult) {
-    return l10n.radiologyNextActionReleaseReport;
-  }
-  if (order.hasFinalResult) {
-    return l10n.radiologyNextActionDoctorReview;
-  }
-  if (order.normalizedStatus == 'COMPLETED') {
-    return l10n.radiologyNextActionDoctorReview;
-  }
-  return l10n.radiologyNextActionReportPending;
+  return l10n.radiologyMarkProcedureDoneAction;
 }
 
 String _billingGateLabel(BuildContext context, RadiologyOrder order) {
@@ -469,6 +477,22 @@ String _billingGateLabel(BuildContext context, RadiologyOrder order) {
     order.effectivePaymentStatus,
     order.authorizationStatus,
   ]).ifEmpty(l10n.profileUnknownValue);
+}
+
+AppWorkspaceStatusTone _worklistStatusTone(RadiologyOrder order) {
+  if (order.isCancelled) {
+    return AppWorkspaceStatusTone.error;
+  }
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+    return AppWorkspaceStatusTone.success;
+  }
+  if (order.hasDraftResult || order.hasPerformedStudy) {
+    return AppWorkspaceStatusTone.info;
+  }
+  if (order.normalizedStatus == 'IN_PROCESS') {
+    return AppWorkspaceStatusTone.info;
+  }
+  return AppWorkspaceStatusTone.warning;
 }
 
 AppWorkspaceStatusTone _billingGateTone(RadiologyOrder order) {
@@ -502,6 +526,22 @@ AppWorkspaceStatusTone _resultStatusTone(String? status) {
     'DRAFT' => AppWorkspaceStatusTone.warning,
     _ => AppWorkspaceStatusTone.neutral,
   };
+}
+
+IconData _worklistStatusIcon(RadiologyOrder order) {
+  if (order.isCancelled) {
+    return Icons.cancel_outlined;
+  }
+  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+    return Icons.verified_outlined;
+  }
+  if (order.hasDraftResult || order.hasPerformedStudy) {
+    return Icons.edit_note_outlined;
+  }
+  if (order.normalizedStatus == 'IN_PROCESS') {
+    return Icons.play_circle_outline;
+  }
+  return Icons.pending_actions_outlined;
 }
 
 IconData _orderStatusIcon(String? status) {

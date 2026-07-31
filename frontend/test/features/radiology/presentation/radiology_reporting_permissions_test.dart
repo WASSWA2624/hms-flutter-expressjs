@@ -545,10 +545,10 @@ void main() {
       await tester.tap(find.text('Rita Reporting'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create report'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Create report'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Procedure done'), findsNothing);
       expect(find.text('Draft report'), findsNothing);
-      expect(find.text('Release report'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Release report'), findsNothing);
       expect(find.text('Cancel order'), findsNothing);
       expect(find.text('Assign'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
@@ -652,12 +652,12 @@ void main() {
 
       expect(find.text('Cancel order'), findsNothing);
       expect(find.text('Cancel selected'), findsNothing);
-      expect(find.text('Create report'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Create report'), findsOneWidget);
       expect(find.text('Procedures'), findsOneWidget);
       expect(find.text('CT Head'), findsWidgets);
       expect(find.text('Procedure ID'), findsOneWidget);
       expect(find.text('Body organ'), findsOneWidget);
-      expect(find.text('Done — waiting for report'), findsOneWidget);
+      expect(find.text('Done — waiting for report'), findsWidgets);
       expect(find.text('Undo'), findsOneWidget);
       expect(find.text('Assign'), findsNothing);
       expect(find.text('Start imaging'), findsNothing);
@@ -669,8 +669,8 @@ void main() {
       expect(find.text('Print report'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
-      await tester.ensureVisible(find.text('Create report'));
-      await tester.tap(find.text('Create report'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Create report'));
+      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
       await tester.pumpAndSettle();
 
       expect(find.text('Local device'), findsOneWidget);
@@ -697,8 +697,10 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Create report'));
-      await tester.tap(find.text('Create report'));
+      await tester.ensureVisible(
+        find.widgetWithText(AppButton, 'Create report'),
+      );
+      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(
@@ -753,8 +755,10 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Create report'));
-      await tester.tap(find.text('Create report'));
+      await tester.ensureVisible(
+        find.widgetWithText(AppButton, 'Create report'),
+      );
+      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
       await tester.pumpAndSettle();
 
       final Finder findingsField = find.descendant(
@@ -854,8 +858,10 @@ void main() {
       );
 
       await _openReportingDetail(tester);
-      await tester.ensureVisible(find.text('Create report'));
-      await tester.tap(find.text('Create report'));
+      await tester.ensureVisible(
+        find.widgetWithText(AppButton, 'Create report'),
+      );
+      await tester.tap(find.widgetWithText(AppButton, 'Create report'));
       await tester.pumpAndSettle();
 
       final Finder releaseSubmit = find.descendant(
