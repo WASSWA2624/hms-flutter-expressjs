@@ -249,6 +249,50 @@
   "@commonTableSettingsTitle": {
     "description": "Title for the worklist table column settings dialog."
   },
+  "commonTableExportActionLabel": "Export",
+  "@commonTableExportActionLabel": {
+    "description": "Label for opening a worklist table Excel export dialog."
+  },
+  "commonTableExportDialogTitle": "Export",
+  "@commonTableExportDialogTitle": {
+    "description": "Title for the worklist table Excel export dialog."
+  },
+  "commonTableExportColumnsSectionLabel": "Columns",
+  "@commonTableExportColumnsSectionLabel": {
+    "description": "Section heading for columns selected in the table export dialog."
+  },
+  "commonTableExportFiltersSectionLabel": "Filters",
+  "@commonTableExportFiltersSectionLabel": {
+    "description": "Section heading for export-scoped filters in the table export dialog."
+  },
+  "commonTableExportEmptyColumnsMessage": "Select at least one column to export.",
+  "@commonTableExportEmptyColumnsMessage": {
+    "description": "Validation message when export is attempted with no columns selected."
+  },
+  "commonTableExportEmptyRowsMessage": "No rows match the export filters.",
+  "@commonTableExportEmptyRowsMessage": {
+    "description": "Validation message when export filters match no table rows."
+  },
+  "commonTableExportSuccessMessage": "Export downloaded.",
+  "@commonTableExportSuccessMessage": {
+    "description": "SnackBar confirmation after a successful table Excel export."
+  },
+  "commonTableExportFailureMessage": "Export failed. Try again.",
+  "@commonTableExportFailureMessage": {
+    "description": "SnackBar or inline error when table Excel export fails."
+  },
+  "commonTableExportDateRangeLabel": "Date range",
+  "@commonTableExportDateRangeLabel": {
+    "description": "Section label for the From/To date range in the table export dialog."
+  },
+  "commonTableExportDateFromLabel": "From",
+  "@commonTableExportDateFromLabel": {
+    "description": "From-date field label in the table export dialog."
+  },
+  "commonTableExportDateToLabel": "To",
+  "@commonTableExportDateToLabel": {
+    "description": "To-date field label in the table export dialog."
+  },
   "commonGoToTopActionLabel": "Go to top",
   "@commonGoToTopActionLabel": {
     "description": "Tooltip and semantic label for scrolling a table back to the header."

@@ -430,6 +430,72 @@ abstract class AppLocalizations {
   /// **'Table Settings'**
   String get commonTableSettingsTitle;
 
+  /// Label for opening a worklist table Excel export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get commonTableExportActionLabel;
+
+  /// Title for the worklist table Excel export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get commonTableExportDialogTitle;
+
+  /// Section heading for columns selected in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get commonTableExportColumnsSectionLabel;
+
+  /// Section heading for export-scoped filters in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get commonTableExportFiltersSectionLabel;
+
+  /// Validation message when export is attempted with no columns selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one column to export.'**
+  String get commonTableExportEmptyColumnsMessage;
+
+  /// Validation message when export filters match no table rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No rows match the export filters.'**
+  String get commonTableExportEmptyRowsMessage;
+
+  /// SnackBar confirmation after a successful table Excel export.
+  ///
+  /// In en, this message translates to:
+  /// **'Export downloaded.'**
+  String get commonTableExportSuccessMessage;
+
+  /// SnackBar or inline error when table Excel export fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed. Try again.'**
+  String get commonTableExportFailureMessage;
+
+  /// Section label for the From/To date range in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get commonTableExportDateRangeLabel;
+
+  /// From-date field label in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get commonTableExportDateFromLabel;
+
+  /// To-date field label in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get commonTableExportDateToLabel;
+
   /// Tooltip and semantic label for scrolling a table back to the header.
   ///
   /// In en, this message translates to:

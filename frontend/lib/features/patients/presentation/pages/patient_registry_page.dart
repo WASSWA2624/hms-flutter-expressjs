@@ -1003,6 +1003,23 @@ class _PatientList extends ConsumerWidget {
       columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      enableExport: true,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportConfig: AppListTableExportConfig<Patient>(
+        fileNameStem: 'patients_${section.name}',
+        enableDateFilter: false,
+        dateFilterLabel: l10n.commonTableExportDateRangeLabel,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       displayMode: AppListTableDisplayMode.adaptive,
       search: AppListTableSearch<Patient>(
         controller: searchController,
@@ -1199,6 +1216,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         left.effectiveDisplayName,
         right.effectiveDisplayName,
       ),
+      exportValue: (Patient patient) => patient.effectiveDisplayName,
       cellBuilder: (_, Patient patient) => AppListItemText(
         title: patient.effectiveDisplayName,
         subtitle:
@@ -1214,6 +1232,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         left.primaryPhone ?? left.primaryEmail,
         right.primaryPhone ?? right.primaryEmail,
       ),
+      exportValue: (Patient patient) =>
+          patient.primaryPhone ?? patient.primaryEmail ?? '',
       cellBuilder: (_, Patient patient) =>
           _PatientContactIdentifierCell(patient: patient),
     ),
@@ -1224,6 +1244,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         _patientAlertSortValue(left),
         _patientAlertSortValue(right),
       ),
+      exportValue: (Patient patient) => _patientAlertSortValue(patient),
       cellBuilder: (_, Patient patient) => _PatientAlertCell(patient: patient),
     ),
     'visit': AppListTableColumn<Patient>(
@@ -1234,6 +1255,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
             left.currentVisit?.occurredAt,
             right.currentVisit?.occurredAt,
           ),
+      exportValue: (Patient patient) =>
+          patient.currentVisit?.occurredAt?.toIso8601String() ?? '',
       cellBuilder: (_, Patient patient) => _VisitContextCell(patient: patient),
     ),
     'status': AppListTableColumn<Patient>(
@@ -1244,6 +1267,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         _patientRegistryStatusLabel(context, left, section),
         _patientRegistryStatusLabel(context, right, section),
       ),
+      exportValue: (Patient patient) =>
+          _patientRegistryStatusLabel(context, patient, section),
       cellBuilder: (BuildContext context, Patient patient) {
         return _PatientRegistryStatusBadge(patient: patient, section: section);
       },
@@ -1252,6 +1277,7 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       id: 'next_action',
       label: l10n.patientsNextActionColumnLabel,
       alwaysVisible: true,
+      exportValue: (_) => '',
       cellBuilder: (BuildContext context, Patient patient) => _NextActionCell(
         patient: patient,
         section: section,
@@ -1267,6 +1293,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         left.effectiveIdentifier ?? left.publicId,
         right.effectiveIdentifier ?? right.publicId,
       ),
+      exportValue: (Patient patient) =>
+          patient.effectiveIdentifier ?? patient.publicId ?? '',
       cellBuilder: (_, Patient patient) => Text(
         patient.effectiveIdentifier ??
             patient.publicId ??
@@ -1280,6 +1308,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       label: l10n.patientsAgeColumnLabel,
       sortComparator: (Patient left, Patient right) =>
           appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
+      exportValue: (Patient patient) =>
+          _patientAgeLabel(context, patient.dateOfBirth),
       cellBuilder: (BuildContext context, Patient patient) => Text(
         _patientAgeLabel(context, patient.dateOfBirth),
         maxLines: 1,
@@ -1291,6 +1321,9 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       label: l10n.patientsGenderColumnLabel,
       sortComparator: (Patient left, Patient right) =>
           appListTableCompareText(left.gender, right.gender),
+      exportValue: (Patient patient) => patient.gender == null
+          ? l10n.profileUnknownValue
+          : _genderLabel(l10n, patient.gender!),
       cellBuilder: (BuildContext context, Patient patient) => Text(
         patient.gender == null
             ? l10n.profileUnknownValue

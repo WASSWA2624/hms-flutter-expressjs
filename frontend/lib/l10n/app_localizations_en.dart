@@ -193,6 +193,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableSettingsTitle => 'Table Settings';
 
   @override
+  String get commonTableExportActionLabel => 'Export';
+
+  @override
+  String get commonTableExportDialogTitle => 'Export';
+
+  @override
+  String get commonTableExportColumnsSectionLabel => 'Columns';
+
+  @override
+  String get commonTableExportFiltersSectionLabel => 'Filters';
+
+  @override
+  String get commonTableExportEmptyColumnsMessage =>
+      'Select at least one column to export.';
+
+  @override
+  String get commonTableExportEmptyRowsMessage =>
+      'No rows match the export filters.';
+
+  @override
+  String get commonTableExportSuccessMessage => 'Export downloaded.';
+
+  @override
+  String get commonTableExportFailureMessage => 'Export failed. Try again.';
+
+  @override
+  String get commonTableExportDateRangeLabel => 'Date range';
+
+  @override
+  String get commonTableExportDateFromLabel => 'From';
+
+  @override
+  String get commonTableExportDateToLabel => 'To';
+
+  @override
   String get commonGoToTopActionLabel => 'Go to top';
 
   @override

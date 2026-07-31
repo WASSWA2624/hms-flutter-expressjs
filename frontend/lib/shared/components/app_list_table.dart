@@ -10,10 +10,12 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_visibility_memory.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_export.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 typedef AppListTableCellBuilder<T> =
     Widget Function(BuildContext context, T item);
@@ -554,6 +556,7 @@ class AppListTableColumn<T> {
     this.headerBuilder,
     this.preferredWidth,
     this.fixedWidth,
+    this.exportValue,
   });
 
   final String? id;
@@ -570,6 +573,9 @@ class AppListTableColumn<T> {
 
   /// Exact non-resizable width; bypasses the resize minimum clamp.
   final double? fixedWidth;
+
+  /// Plain cell value used by Excel export (not the widget [cellBuilder]).
+  final AppListTableExportValue<T>? exportValue;
 
   String get key => id ?? label;
 
@@ -867,6 +873,19 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityStorageKey,
     this.columnWidthStorageKey,
     this.onSettingsPressed,
+    this.enableExport = false,
+    this.canExport = true,
+    this.exportConfig,
+    this.exportLabel,
+    this.exportDialogTitle,
+    this.exportCancelLabel,
+    this.exportColumnsSectionLabel,
+    this.exportFiltersSectionLabel,
+    this.exportEmptyColumnsMessage,
+    this.exportEmptyRowsMessage,
+    this.exportSuccessMessage,
+    this.exportFailureMessage,
+    this.exportInvalidDateMessage,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.showRowNumbers = true,
@@ -928,6 +947,23 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnWidthStorageKey;
   /// When set, Settings opens this callback instead of the column-visibility dialog.
   final Future<void> Function()? onSettingsPressed;
+
+  /// When true, shows an Export action in the search-bar trailing cluster.
+  final bool enableExport;
+
+  /// When false, hides Export even if [enableExport] is true (permission gate).
+  final bool canExport;
+  final AppListTableExportConfig<T>? exportConfig;
+  final String? exportLabel;
+  final String? exportDialogTitle;
+  final String? exportCancelLabel;
+  final String? exportColumnsSectionLabel;
+  final String? exportFiltersSectionLabel;
+  final String? exportEmptyColumnsMessage;
+  final String? exportEmptyRowsMessage;
+  final String? exportSuccessMessage;
+  final String? exportFailureMessage;
+  final String? exportInvalidDateMessage;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
 
@@ -1980,20 +2016,121 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   List<AppSearchBarAction> _searchActions() {
-    if (_availableColumns.length <= 1) {
-      return const <AppSearchBarAction>[];
+    final List<AppSearchBarAction> actions = <AppSearchBarAction>[];
+    if (widget.enableExport && widget.canExport) {
+      actions.add(
+        AppSearchBarAction(
+          icon: AppActionIcons.download,
+          label: _exportLabel,
+          tooltip: _exportLabel,
+          onPressed: _openExportDialog,
+        ),
+      );
+    }
+    if (_availableColumns.length > 1) {
+      actions.add(
+        AppSearchBarAction(
+          icon: Icons.settings_outlined,
+          label: _columnVisibilityLabel,
+          tooltip: _columnVisibilityLabel,
+          active: _hasCustomColumnVisibility,
+          onPressed: _openColumnVisibilityDialog,
+        ),
+      );
+    }
+    return actions;
+  }
+
+  Future<void> _openExportDialog() async {
+    if (!widget.enableExport || !widget.canExport) {
+      return;
     }
 
-    return <AppSearchBarAction>[
-      AppSearchBarAction(
-        icon: Icons.settings_outlined,
-        label: _columnVisibilityLabel,
-        tooltip: _columnVisibilityLabel,
-        active: _hasCustomColumnVisibility,
-        onPressed: _openColumnVisibilityDialog,
-      ),
-    ];
+    final List<T> rows = _exportRows();
+    await showAppListTableExportDialog<T>(
+      context: context,
+      columns: _availableColumns,
+      visibleColumnKeys: _visibleColumns
+          .map((AppListTableColumn<T> column) => column.key)
+          .toSet(),
+      rows: rows,
+      config: _resolvedExportConfig(),
+      title: widget.exportDialogTitle,
+      exportLabel: widget.exportLabel,
+      cancelLabel: widget.exportCancelLabel,
+      columnsSectionLabel: widget.exportColumnsSectionLabel,
+      filtersSectionLabel: widget.exportFiltersSectionLabel,
+      emptyColumnsMessage: widget.exportEmptyColumnsMessage,
+      emptyRowsMessage: widget.exportEmptyRowsMessage,
+      successMessage: widget.exportSuccessMessage,
+      failureMessage: widget.exportFailureMessage,
+      invalidDateMessage: widget.exportInvalidDateMessage,
+    );
   }
+
+  List<T> _exportRows() {
+    final AppListTableExportConfig<T>? config = widget.exportConfig;
+    final List<T>? overrideItems = config?.items;
+    if (overrideItems != null) {
+      return overrideItems;
+    }
+
+    final String query = _currentQuery();
+    final AppPage<T>? sourcePage = widget.page;
+    final List<T> sourceItems = _usesInfinitePagination
+        ? _accumulatedItems
+        : sourcePage?.items ?? widget.items ?? <T>[];
+    List<T> visibleItems = sourceItems;
+    final String normalizedQuery = query.trim();
+    if (normalizedQuery.isNotEmpty) {
+      final AppListTableSearchMatcher<T>? matcher =
+          widget.search?.matcher ?? widget.searchMatcher;
+      if (matcher != null) {
+        visibleItems = _filteredItems(sourceItems, normalizedQuery, matcher);
+      }
+    }
+    return _sortedItems(visibleItems);
+  }
+
+  AppListTableExportConfig<T> _resolvedExportConfig() {
+    final AppListTableExportConfig<T> config =
+        widget.exportConfig ?? AppListTableExportConfig<T>();
+    final AppListTableSearch<T>? search = widget.search;
+    if (search == null) {
+      return config;
+    }
+    return AppListTableExportConfig<T>(
+      fileNameStem: config.fileNameStem,
+      sheetName: config.sheetName,
+      enableDateFilter: config.enableDateFilter && search.enableDateFilter,
+      filterGroups: config.filterGroups.isNotEmpty
+          ? config.filterGroups
+          : search.filterGroups,
+      textFilters: config.textFilters.isNotEmpty
+          ? config.textFilters
+          : search.textFilters,
+      initialFilterValue: config.initialFilterValue.isActive
+          ? config.initialFilterValue
+          : search.filterValue,
+      rowFilter: config.rowFilter,
+      dateOf: config.dateOf,
+      items: config.items,
+      saver: config.saver,
+      firstDate: config.firstDate ?? search.firstDate,
+      lastDate: config.lastDate ?? search.lastDate,
+      currentDate: config.currentDate ?? search.currentDate,
+      dateFilterLabel: config.dateFilterLabel ?? search.dateFilterLabel,
+      dateFromLabel: config.dateFromLabel ?? search.dateFromLabel,
+      dateToLabel: config.dateToLabel ?? search.dateToLabel,
+      datePickerButtonLabel:
+          config.datePickerButtonLabel ?? search.datePickerButtonLabel,
+      invalidDateMessage:
+          config.invalidDateMessage ?? search.invalidDateMessage,
+      allFieldsLabel: config.allFieldsLabel ?? search.allFieldsLabel,
+    );
+  }
+
+  String get _exportLabel => widget.exportLabel ?? 'Export';
 
   List<AppListTableColumn<T>> get _availableColumns {
     return _availableColumnsFor(widget.columns, widget.columnChoices);

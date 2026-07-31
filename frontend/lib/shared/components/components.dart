@@ -29,6 +29,7 @@ export 'app_list_item_text.dart';
 export 'app_list_table.dart';
 export 'app_list_table_column_layout_memory.dart';
 export 'app_list_table_column_visibility_memory.dart';
+export 'app_list_table_export.dart';
 export 'app_list_table_text_policy.dart';
 export 'app_loading_indicator.dart';
 export 'app_logo.dart';
