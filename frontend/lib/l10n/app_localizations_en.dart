@@ -8667,6 +8667,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'This imaging study was already requested for this encounter today.';
 
   @override
+  String get clinicalRadiologyAlreadyOrderedTodayTitle =>
+      'Study already requested today';
+
+  @override
+  String clinicalRadiologyAlreadyOrderedTodayBodyNamed(String studyName) {
+    return '$studyName was already requested for this encounter today. Request it again anyway?';
+  }
+
+  @override
+  String clinicalRadiologyAlreadyOrderedTodayBodyCount(int count) {
+    return '$count selected imaging studies were already requested for this encounter today. Request them again anyway?';
+  }
+
+  @override
+  String get clinicalRadiologyRequestAnywayAction => 'Request anyway';
+
+  @override
   String get clinicalRadiologyPriorityLabel => 'Priority';
 
   @override

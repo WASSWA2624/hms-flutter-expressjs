@@ -15892,11 +15892,35 @@ abstract class AppLocalizations {
   /// **'This imaging request is already selected.'**
   String get clinicalRadiologyDuplicateSelectionMessage;
 
-  /// Clinical radiology catalog message when a study was already ordered on the encounter today.
+  /// Clinical radiology warning body when a study was already ordered on the encounter today.
   ///
   /// In en, this message translates to:
   /// **'This imaging study was already requested for this encounter today.'**
   String get clinicalRadiologyAlreadyOrderedTodayMessage;
+
+  /// Clinical radiology duplicate same-day request warning dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Study already requested today'**
+  String get clinicalRadiologyAlreadyOrderedTodayTitle;
+
+  /// Clinical radiology duplicate same-day warning body with study name.
+  ///
+  /// In en, this message translates to:
+  /// **'{studyName} was already requested for this encounter today. Request it again anyway?'**
+  String clinicalRadiologyAlreadyOrderedTodayBodyNamed(String studyName);
+
+  /// Clinical radiology duplicate same-day warning body for multiple studies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected imaging studies were already requested for this encounter today. Request them again anyway?'**
+  String clinicalRadiologyAlreadyOrderedTodayBodyCount(int count);
+
+  /// Confirm action to create a duplicate radiology request for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Request anyway'**
+  String get clinicalRadiologyRequestAnywayAction;
 
   /// Clinical radiology request priority field label.
   ///

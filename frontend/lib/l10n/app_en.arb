@@ -11045,7 +11045,33 @@
   },
   "clinicalRadiologyAlreadyOrderedTodayMessage": "This imaging study was already requested for this encounter today.",
   "@clinicalRadiologyAlreadyOrderedTodayMessage": {
-    "description": "Clinical radiology catalog message when a study was already ordered on the encounter today."
+    "description": "Clinical radiology warning body when a study was already ordered on the encounter today."
+  },
+  "clinicalRadiologyAlreadyOrderedTodayTitle": "Study already requested today",
+  "@clinicalRadiologyAlreadyOrderedTodayTitle": {
+    "description": "Clinical radiology duplicate same-day request warning dialog title."
+  },
+  "clinicalRadiologyAlreadyOrderedTodayBodyNamed": "{studyName} was already requested for this encounter today. Request it again anyway?",
+  "@clinicalRadiologyAlreadyOrderedTodayBodyNamed": {
+    "description": "Clinical radiology duplicate same-day warning body with study name.",
+    "placeholders": {
+      "studyName": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalRadiologyAlreadyOrderedTodayBodyCount": "{count} selected imaging studies were already requested for this encounter today. Request them again anyway?",
+  "@clinicalRadiologyAlreadyOrderedTodayBodyCount": {
+    "description": "Clinical radiology duplicate same-day warning body for multiple studies.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalRadiologyRequestAnywayAction": "Request anyway",
+  "@clinicalRadiologyRequestAnywayAction": {
+    "description": "Confirm action to create a duplicate radiology request for today."
   },
   "clinicalRadiologyPriorityLabel": "Priority",
   "@clinicalRadiologyPriorityLabel": {

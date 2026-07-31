@@ -4811,10 +4811,6 @@ const doctorReview = async (id, data, context = {}) => {
     const radiologyOrderIds = [];
     if (Array.isArray(data.radiology_requests) && data.radiology_requests.length) {
       const orderedAt = new Date();
-      const dayStart = new Date(orderedAt);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
       const seenRadiologyProcedureIds = new Set();
 
       for (const [index, request] of data.radiology_requests.entries()) {
@@ -4835,21 +4831,6 @@ const doctorReview = async (id, data, context = {}) => {
         if (radiologyTestId) {
           if (seenRadiologyProcedureIds.has(radiologyTestId)) {
             throw new HttpError('errors.radiology_order.duplicate_request', 400, [
-              { field: `radiology_requests.${index}.radiology_test_id` }
-            ]);
-          }
-          const existingToday = await tx.radiology_order.findFirst({
-            where: {
-              encounter_id: encounter.id,
-              radiology_procedure_id: radiologyTestId,
-              deleted_at: null,
-              status: { not: 'CANCELLED' },
-              ordered_at: { gte: dayStart, lt: dayEnd }
-            },
-            select: { id: true }
-          });
-          if (existingToday) {
-            throw new HttpError('errors.radiology_order.already_ordered_today', 409, [
               { field: `radiology_requests.${index}.radiology_test_id` }
             ]);
           }

@@ -2976,7 +2976,7 @@ Future<void> _openRadiologyDialog(
   List<ClinicalRelatedRecord> existingRadiologyOrders =
       const <ClinicalRelatedRecord>[],
 }) async {
-  final Set<String> blockedProcedureIds =
+  final Set<String> alreadyOrderedProcedureIds =
       _clinicalRadiologyProceduresOrderedToday(existingRadiologyOrders);
   await _showActionResult(
     context,
@@ -2986,7 +2986,7 @@ Future<void> _openRadiologyDialog(
       builder: (_) => ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
         patientContext: _clinicalLabOrderPatientContext(context),
-        blockedProcedureIds: blockedProcedureIds,
+        alreadyOrderedProcedureIds: alreadyOrderedProcedureIds,
         onSearchRadiologyTests:
             ({
               required String termType,

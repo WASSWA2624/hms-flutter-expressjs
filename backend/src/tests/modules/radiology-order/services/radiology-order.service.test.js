@@ -374,44 +374,18 @@ describe('Radiology Order Service', () => {
       );
     });
 
-    it('rejects the same procedure already ordered for the encounter today', async () => {
-      radiologyOrderRepository.findMany.mockResolvedValueOnce([
-        {
-          id: 'existing-order-1',
-          radiology_procedure_id: createData.radiology_test_id,
-          status: 'ORDERED'}]);
-
-      await expect(
-        radiologyOrderService.createRadiologyOrder(createData, 'user-id', '127.0.0.1')
-      ).rejects.toMatchObject({
-        message: 'errors.radiology_order.already_ordered_today',
-        statusCode: 409});
-      expect(radiologyOrderRepository.create).not.toHaveBeenCalled();
-    });
-
-    it('checks encounter-day uniqueness before creating a radiology order', async () => {
-      radiologyOrderRepository.findMany.mockResolvedValueOnce([]);
+    it('allows requesting the same procedure again for the encounter today', async () => {
       radiologyOrderRepository.create.mockResolvedValue(mockCreatedRadiologyOrder);
       radiologyOrderRepository.findById.mockResolvedValue(mockCreatedRadiologyOrder);
 
-      await radiologyOrderService.createRadiologyOrder(
+      const result = await radiologyOrderService.createRadiologyOrder(
         createData,
         'user-id',
         '127.0.0.1'
       );
 
-      expect(radiologyOrderRepository.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          encounter_id: createData.encounter_id,
-          radiology_procedure_id: createData.radiology_test_id,
-          status: { not: 'CANCELLED' },
-          ordered_at: expect.objectContaining({
-            gte: expect.any(Date),
-            lt: expect.any(Date)})}),
-        0,
-        1,
-        { ordered_at: 'desc' }
-      );
+      expect(radiologyOrderRepository.create).toHaveBeenCalled();
+      expect(result).toBeTruthy();
     });
   });
 

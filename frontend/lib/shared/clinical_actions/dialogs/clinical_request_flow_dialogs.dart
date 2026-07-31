@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
@@ -118,6 +119,38 @@ Future<bool> showClinicalRequestRemoveItemsConfirmationDialog({
     context: context,
     builder: (BuildContext context) =>
         _ClinicalRequestRemoveItemsConfirmationDialog(items: items),
+  );
+  return confirmed == true;
+}
+
+/// Warns before re-requesting an imaging study already ordered today.
+Future<bool> showClinicalRadiologyAlreadyOrderedTodayConfirmDialog({
+  required BuildContext context,
+  String? studyName,
+  int duplicateCount = 1,
+}) async {
+  final AppLocalizations l10n = context.l10n;
+  final String trimmedName = studyName?.trim() ?? '';
+  final String body;
+  if (trimmedName.isNotEmpty && duplicateCount <= 1) {
+    body = l10n.clinicalRadiologyAlreadyOrderedTodayBodyNamed(trimmedName);
+  } else if (duplicateCount > 1) {
+    body = l10n.clinicalRadiologyAlreadyOrderedTodayBodyCount(duplicateCount);
+  } else {
+    body = l10n.clinicalRadiologyAlreadyOrderedTodayMessage;
+  }
+
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) => AppConfirmActionDialog(
+      title: l10n.clinicalRadiologyAlreadyOrderedTodayTitle,
+      body: body,
+      highlightedText: trimmedName.isEmpty ? null : trimmedName,
+      submitLabel: l10n.clinicalRadiologyRequestAnywayAction,
+      icon: const Icon(Icons.warning_amber_outlined),
+      submitLeadingIcon: Icons.playlist_add_check_outlined,
+    ),
   );
   return confirmed == true;
 }

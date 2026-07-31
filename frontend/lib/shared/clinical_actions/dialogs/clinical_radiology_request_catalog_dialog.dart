@@ -11,6 +11,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart'
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 @immutable
@@ -46,7 +47,7 @@ showClinicalRadiologyRequestCatalogDialog({
   onSearchRadiologyTests,
   required List<ClinicalRadiologyCatalogSelection> initialSelections,
   ClinicalRadiologyCatalogSelection? editingSelection,
-  Set<String> blockedProcedureIds = const <String>{},
+  Set<String> alreadyOrderedProcedureIds = const <String>{},
 }) {
   return showAppDialog<List<ClinicalRadiologyCatalogSelection>>(
     context: context,
@@ -54,7 +55,7 @@ showClinicalRadiologyRequestCatalogDialog({
       onSearchRadiologyTests: onSearchRadiologyTests,
       initialSelections: initialSelections,
       editingSelection: editingSelection,
-      blockedProcedureIds: blockedProcedureIds,
+      alreadyOrderedProcedureIds: alreadyOrderedProcedureIds,
     ),
   );
 }
@@ -64,7 +65,7 @@ class ClinicalRadiologyRequestCatalogDialog extends StatefulWidget {
     required this.onSearchRadiologyTests,
     required this.initialSelections,
     this.editingSelection,
-    this.blockedProcedureIds = const <String>{},
+    this.alreadyOrderedProcedureIds = const <String>{},
     super.key,
   });
 
@@ -77,7 +78,7 @@ class ClinicalRadiologyRequestCatalogDialog extends StatefulWidget {
   onSearchRadiologyTests;
   final List<ClinicalRadiologyCatalogSelection> initialSelections;
   final ClinicalRadiologyCatalogSelection? editingSelection;
-  final Set<String> blockedProcedureIds;
+  final Set<String> alreadyOrderedProcedureIds;
 
   @override
   State<ClinicalRadiologyRequestCatalogDialog> createState() =>
@@ -222,23 +223,17 @@ class _ClinicalRadiologyRequestCatalogDialogState
             physics: const NeverScrollableScrollPhysics(),
             isLoading: _isSearching,
             onRowSelected: (ClinicalActionCatalogOption item) {
-              if (_isProcedureBlocked(item)) {
-                _showBlockedProcedureMessage();
-                return;
-              }
               _toggleSelection(item, selected: !_isStagedSelected(item));
             },
             rowColorBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
-                  if (_isProcedureBlocked(item)) {
-                    return colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.55,
-                    );
+                  if (_isStagedSelected(item)) {
+                    return colorScheme.primaryContainer.withValues(alpha: 0.35);
                   }
-                  if (!_isStagedSelected(item)) {
-                    return null;
+                  if (_isAlreadyOrderedToday(item)) {
+                    return colorScheme.tertiaryContainer.withValues(alpha: 0.35);
                   }
-                  return colorScheme.primaryContainer.withValues(alpha: 0.35);
+                  return null;
                 },
             search: AppListTableSearch<ClinicalActionCatalogOption>(
               controller: _searchController,
@@ -269,23 +264,15 @@ class _ClinicalRadiologyRequestCatalogDialogState
             ),
             mobileItemBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
-                  final bool blocked = _isProcedureBlocked(item);
-                  final bool selected = !blocked && _isStagedSelected(item);
+                  final bool selected = _isStagedSelected(item);
+                  final bool alreadyOrdered = _isAlreadyOrderedToday(item);
                   return InkWell(
-                    onTap: () {
-                      if (blocked) {
-                        _showBlockedProcedureMessage();
-                        return;
-                      }
-                      _toggleSelection(item, selected: !selected);
-                    },
-                    child: Opacity(
-                      opacity: blocked ? 0.55 : 1,
-                      child: AppListTableMobileItem(
+                    onTap: () => _toggleSelection(item, selected: !selected),
+                    child: AppListTableMobileItem(
                       leading: IgnorePointer(
                         child: Checkbox(
                           value: selected,
-                          onChanged: blocked ? null : (_) {},
+                          onChanged: (_) {},
                           visualDensity: VisualDensity.compact,
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
@@ -293,6 +280,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
                       ),
                       title: item.name ?? item.displayTitle,
                       meta: <AppListTableMobileMeta>[
+                        if (alreadyOrdered)
+                          AppListTableMobileMeta(
+                            label: l10n.clinicalRadiologyAlreadyOrderedTodayTitle,
+                            icon: Icons.warning_amber_outlined,
+                          ),
                         if ((clinicalRadiologyOptionModality(item) ?? '')
                             .isNotEmpty)
                           AppListTableMobileMeta(
@@ -306,7 +298,6 @@ class _ClinicalRadiologyRequestCatalogDialogState
                           ),
                       ],
                       showAvatar: false,
-                    ),
                     ),
                   );
                 },
@@ -472,24 +463,23 @@ class _ClinicalRadiologyRequestCatalogDialogState
     return <ClinicalRadiologyCatalogSelection>[
       for (final ClinicalRadiologyCatalogSelection selection
           in _stagedSelections)
-        if (!_isProcedureBlocked(selection.option))
-          ClinicalRadiologyCatalogSelection(
-            option: selection.option,
-            clinicalNote: clinicalNote ?? selection.clinicalNote,
-            bodyRegion:
-                clinicalActionTrimmedOrNull(_bodyRegion) ??
-                selection.bodyRegion ??
-                clinicalRadiologyOptionBodyRegion(selection.option),
-            laterality:
-                _laterality ??
-                selection.laterality ??
-                clinicalRadiologyOptionLaterality(selection.option),
-            priority: _priority ?? selection.priority,
-            modality:
-                clinicalActionTrimmedOrNull(_modality) ??
-                selection.modality ??
-                clinicalRadiologyOptionModality(selection.option),
-          ),
+        ClinicalRadiologyCatalogSelection(
+          option: selection.option,
+          clinicalNote: clinicalNote ?? selection.clinicalNote,
+          bodyRegion:
+              clinicalActionTrimmedOrNull(_bodyRegion) ??
+              selection.bodyRegion ??
+              clinicalRadiologyOptionBodyRegion(selection.option),
+          laterality:
+              _laterality ??
+              selection.laterality ??
+              clinicalRadiologyOptionLaterality(selection.option),
+          priority: _priority ?? selection.priority,
+          modality:
+              clinicalActionTrimmedOrNull(_modality) ??
+              selection.modality ??
+              clinicalRadiologyOptionModality(selection.option),
+        ),
     ];
   }
 
@@ -606,17 +596,10 @@ class _ClinicalRadiologyRequestCatalogDialogState
                           _matchesModalityFilter(item);
                     })
                     .toList(growable: false);
-            final List<ClinicalActionCatalogOption> selectableItems =
-                visibleItems
-                    .where(
-                      (ClinicalActionCatalogOption item) =>
-                          !_isProcedureBlocked(item),
-                    )
-                    .toList(growable: false);
             final bool allSelected =
-                selectableItems.isNotEmpty &&
-                selectableItems.every(_isStagedSelected);
-            final bool someSelected = selectableItems.any(_isStagedSelected);
+                visibleItems.isNotEmpty &&
+                visibleItems.every(_isStagedSelected);
+            final bool someSelected = visibleItems.any(_isStagedSelected);
             return Center(
               child: Checkbox(
                 tristate: true,
@@ -625,11 +608,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
                     : someSelected
                     ? null
                     : false,
-                onChanged: selectableItems.isEmpty
+                onChanged: visibleItems.isEmpty
                     ? null
                     : (bool? checked) {
                         _toggleFilteredItems(
-                          selectableItems,
+                          visibleItems,
                           selected: checked ?? false,
                         );
                       },
@@ -641,17 +624,13 @@ class _ClinicalRadiologyRequestCatalogDialogState
         );
       },
       cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-        final bool blocked = _isProcedureBlocked(item);
         return Center(
           child: IgnorePointer(
-            child: Opacity(
-              opacity: blocked ? 0.45 : 1,
-              child: Checkbox(
-                value: blocked ? false : _isStagedSelected(item),
-                onChanged: blocked ? null : (_) {},
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+            child: Checkbox(
+              value: _isStagedSelected(item),
+              onChanged: (_) {},
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         );
@@ -683,21 +662,22 @@ class _ClinicalRadiologyRequestCatalogDialogState
     );
   }
 
-  bool _isProcedureBlocked(ClinicalActionCatalogOption option) {
+  bool _isAlreadyOrderedToday(ClinicalActionCatalogOption option) {
     final String apiId = option.apiId.trim().toLowerCase();
     if (apiId.isEmpty) {
       return false;
     }
-    return widget.blockedProcedureIds.contains(apiId);
+    return widget.alreadyOrderedProcedureIds.contains(apiId);
   }
 
-  void _showBlockedProcedureMessage() {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.clinicalRadiologyAlreadyOrderedTodayMessage),
-      ),
+  Future<bool> _confirmAlreadyOrderedToday({
+    String? studyName,
+    int duplicateCount = 1,
+  }) {
+    return showClinicalRadiologyAlreadyOrderedTodayConfirmDialog(
+      context: context,
+      studyName: studyName,
+      duplicateCount: duplicateCount,
     );
   }
 
@@ -820,17 +800,21 @@ class _ClinicalRadiologyRequestCatalogDialogState
     _selectionOrder.remove(apiId);
   }
 
-  void _toggleSelection(
+  Future<void> _toggleSelection(
     ClinicalActionCatalogOption option, {
     required bool selected,
-  }) {
-    if (selected && _isProcedureBlocked(option)) {
-      _showBlockedProcedureMessage();
-      return;
-    }
+  }) async {
     final bool currentlySelected = _isStagedSelected(option);
     if (currentlySelected == selected) {
       return;
+    }
+    if (selected && _isAlreadyOrderedToday(option)) {
+      final bool agreed = await _confirmAlreadyOrderedToday(
+        studyName: option.name ?? option.displayTitle,
+      );
+      if (!agreed || !mounted) {
+        return;
+      }
     }
     setState(() {
       if (selected) {
@@ -854,15 +838,40 @@ class _ClinicalRadiologyRequestCatalogDialogState
     });
   }
 
-  void _toggleFilteredItems(
+  Future<void> _toggleFilteredItems(
     List<ClinicalActionCatalogOption> items, {
     required bool selected,
-  }) {
+  }) async {
+    if (selected) {
+      final List<ClinicalActionCatalogOption> duplicatesToAdd = items
+          .where(
+            (ClinicalActionCatalogOption item) =>
+                !_isStagedSelected(item) && _isAlreadyOrderedToday(item),
+          )
+          .toList(growable: false);
+      if (duplicatesToAdd.isNotEmpty) {
+        final bool agreed = await _confirmAlreadyOrderedToday(
+          duplicateCount: duplicatesToAdd.length,
+          studyName: duplicatesToAdd.length == 1
+              ? (duplicatesToAdd.single.name ??
+                    duplicatesToAdd.single.displayTitle)
+              : null,
+        );
+        if (!agreed || !mounted) {
+          items = items
+              .where(
+                (ClinicalActionCatalogOption item) =>
+                    _isStagedSelected(item) || !_isAlreadyOrderedToday(item),
+              )
+              .toList(growable: false);
+        }
+      }
+    }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       for (final ClinicalActionCatalogOption item in items) {
-        if (selected && _isProcedureBlocked(item)) {
-          continue;
-        }
         final bool currentlySelected = _isStagedSelected(item);
         if (currentlySelected == selected) {
           continue;

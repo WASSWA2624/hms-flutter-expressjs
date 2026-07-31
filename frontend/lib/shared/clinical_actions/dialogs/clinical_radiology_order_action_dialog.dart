@@ -22,7 +22,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
     this.initialRequests = const <ClinicalActionRadiologyRequest>[],
     this.patientContext = const ClinicalRequestPatientContext(),
     this.payerContext,
-    this.blockedProcedureIds = const <String>{},
+    this.alreadyOrderedProcedureIds = const <String>{},
     super.key,
   });
 
@@ -37,7 +37,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   final List<ClinicalActionRadiologyRequest> initialRequests;
   final ClinicalRequestPatientContext patientContext;
   final ClinicalRequestPayerContext? payerContext;
-  final Set<String> blockedProcedureIds;
+  final Set<String> alreadyOrderedProcedureIds;
   final Future<AppFailure?> Function({
     required List<ClinicalActionRadiologyRequest> requests,
     ClinicalRequestBillingSubmit? billing,
@@ -83,6 +83,7 @@ class _RadiologyOrderDialogState
     extends State<ClinicalRadiologyOrderActionDialog> {
   List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
   final Set<String> _selectedRequestKeys = <String>{};
+  final Set<String> _acknowledgedDuplicateIds = <String>{};
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
@@ -242,7 +243,7 @@ class _RadiologyOrderDialogState
           initialSelections: _requests
               .map((_PendingRadiologyRequest request) => request.selection)
               .toList(growable: false),
-          blockedProcedureIds: widget.blockedProcedureIds,
+          alreadyOrderedProcedureIds: widget.alreadyOrderedProcedureIds,
         );
     if (!mounted || confirmed == null) {
       return;
@@ -250,10 +251,6 @@ class _RadiologyOrderDialogState
     setState(() {
       _failure = null;
       _requests = confirmed
-          .where(
-            (ClinicalRadiologyCatalogSelection selection) =>
-                !_isProcedureBlocked(selection.option.apiId),
-          )
           .map(
             (ClinicalRadiologyCatalogSelection selection) =>
                 _PendingRadiologyRequest(
@@ -266,16 +263,21 @@ class _RadiologyOrderDialogState
                 ),
           )
           .toList(growable: true);
+      for (final _PendingRadiologyRequest request in _requests) {
+        if (_isAlreadyOrderedToday(request.id)) {
+          _acknowledgedDuplicateIds.add(request.id.trim().toLowerCase());
+        }
+      }
       _pruneSelection();
     });
   }
 
-  bool _isProcedureBlocked(String procedureId) {
+  bool _isAlreadyOrderedToday(String procedureId) {
     final String normalized = procedureId.trim().toLowerCase();
     if (normalized.isEmpty) {
       return false;
     }
-    return widget.blockedProcedureIds.contains(normalized);
+    return widget.alreadyOrderedProcedureIds.contains(normalized);
   }
 
   Future<void> _openBillingDialog() async {
@@ -407,22 +409,31 @@ class _RadiologyOrderDialogState
       setState(() => _failure = AppFailure.validation());
       return;
     }
-    final bool hasBlocked = _requests.any(
-      (_PendingRadiologyRequest request) => _isProcedureBlocked(request.id),
-    );
-    if (hasBlocked) {
-      setState(() {
-        _failure = AppFailure.validation(
-          detailMessage:
-              context.l10n.clinicalRadiologyAlreadyOrderedTodayMessage,
-          validationFields: const <String>{'requested_tests'},
-          fieldMessages: <String, String>{
-            'requested_tests':
-                context.l10n.clinicalRadiologyAlreadyOrderedTodayMessage,
-          },
-        );
-      });
-      return;
+    final List<_PendingRadiologyRequest> duplicateRequests = _requests
+        .where(
+          (_PendingRadiologyRequest request) =>
+              _isAlreadyOrderedToday(request.id) &&
+              !_acknowledgedDuplicateIds.contains(
+                request.id.trim().toLowerCase(),
+              ),
+        )
+        .toList(growable: false);
+    if (duplicateRequests.isNotEmpty) {
+      final bool agreed =
+          await showClinicalRadiologyAlreadyOrderedTodayConfirmDialog(
+            context: context,
+            duplicateCount: duplicateRequests.length,
+            studyName: duplicateRequests.length == 1
+                ? (duplicateRequests.single.option.name ??
+                      duplicateRequests.single.option.displayTitle)
+                : null,
+          );
+      if (!agreed || !mounted) {
+        return;
+      }
+      for (final _PendingRadiologyRequest request in duplicateRequests) {
+        _acknowledgedDuplicateIds.add(request.id.trim().toLowerCase());
+      }
     }
     setState(() {
       _isSaving = true;
