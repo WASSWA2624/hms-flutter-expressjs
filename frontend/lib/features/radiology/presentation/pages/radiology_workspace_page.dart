@@ -1682,97 +1682,60 @@ class _ProcedureDetailsDialog extends StatelessWidget {
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppContentPanel(
-            tone: statusTone,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  row.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+          AppCollapsibleSection(
+            title: row.name,
+            titleIcon: Icons.biotech_outlined,
+            headerActions: <Widget>[
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: _procedureWorkbenchStatusLabel(l10n, status),
+                  tone: statusTone,
                 ),
-                SizedBox(height: theme.spacing.sm),
-                Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.xs,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: _procedureWorkbenchStatusLabel(l10n, status),
-                        tone: statusTone,
-                      ),
-                    ),
-                    Text(
-                      row.id,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: theme.spacing.lg),
-          AppInfoTileGrid(
-            maxColumns: 3,
-            emptyValue: '—',
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.radiologyProcedureIdColumnLabel,
-                value: row.id,
-                icon: Icons.tag_outlined,
-                copyable: true,
-                copyTooltip: l10n.copyIdentifierAction,
-                copiedMessage: l10n.identifierCopiedMessage,
-              ),
-              AppInfoTileData(
-                label: l10n.radiologyModalityLabel,
-                value: modalityValue,
-                icon: Icons.camera_alt_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.radiologyProcedureBodyColumnLabel,
-                value: bodyOrgan,
-                icon: Icons.accessibility_new_outlined,
               ),
             ],
-          ),
-          SizedBox(height: theme.spacing.lg),
-          AppContentPanel(
-            density: AppContentPanelDensity.compact,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Icon(
-                  Icons.tips_and_updates_outlined,
-                  size: 20,
-                  color: colors.primary,
+                _ProcedureDetailParameterRow(
+                  icon: Icons.tag_outlined,
+                  parameter: l10n.radiologyProcedureIdColumnLabel,
+                  value: AppCopyableIdentifier(
+                    value: row.id,
+                    tooltip: l10n.copyIdentifierAction,
+                    copiedMessage: l10n.identifierCopiedMessage,
+                  ),
                 ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        l10n.radiologyProcedureDetailsNextStepLabel,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colors.primary,
-                        ),
-                      ),
-                      SizedBox(height: theme.spacing.xs),
-                      Text(
-                        nextStepHint,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                SizedBox(height: theme.spacing.md),
+                _ProcedureDetailParameterRow(
+                  icon: Icons.camera_alt_outlined,
+                  parameter: l10n.radiologyModalityLabel,
+                  value: Text(
+                    modalityValue,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(height: theme.spacing.md),
+                _ProcedureDetailParameterRow(
+                  icon: Icons.accessibility_new_outlined,
+                  parameter: l10n.radiologyProcedureBodyColumnLabel,
+                  value: Text(
+                    bodyOrgan,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(height: theme.spacing.md),
+                _ProcedureDetailParameterRow(
+                  icon: Icons.tips_and_updates_outlined,
+                  parameter: l10n.radiologyProcedureDetailsNextStepLabel,
+                  value: Text(
+                    nextStepHint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -1817,6 +1780,44 @@ class _ProcedureDetailsDialog extends StatelessWidget {
                 : Icons.description_outlined,
             onPressed: () => runAndClose(onMarkReportDone),
           ),
+      ],
+    );
+  }
+}
+
+class _ProcedureDetailParameterRow extends StatelessWidget {
+  const _ProcedureDetailParameterRow({
+    required this.icon,
+    required this.parameter,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String parameter;
+  final Widget value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final String label = parameter.trim().endsWith(':')
+        ? parameter.trim()
+        : '${parameter.trim()}:';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(icon, size: 20, color: colors.primary),
+        SizedBox(width: theme.spacing.sm),
+        Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(child: value),
       ],
     );
   }
