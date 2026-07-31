@@ -21046,6 +21046,18 @@ abstract class AppLocalizations {
   /// **'Report narrative'**
   String get radiologyReportTextLabel;
 
+  /// Opens a structured preview of the draft radiology report.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get radiologyReportPreviewAction;
+
+  /// Title for the radiology report preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get radiologyReportPreviewDialogTitle;
+
   /// Localized text for radiologyReportTextHelper.
   ///
   /// In en, this message translates to:

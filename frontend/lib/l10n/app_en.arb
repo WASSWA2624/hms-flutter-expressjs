@@ -14563,6 +14563,14 @@
   "@radiologyReportTextLabel": {
     "description": "Localized text for radiologyReportTextLabel."
   },
+  "radiologyReportPreviewAction": "Report preview",
+  "@radiologyReportPreviewAction": {
+    "description": "Opens a structured preview of the draft radiology report."
+  },
+  "radiologyReportPreviewDialogTitle": "Report preview",
+  "@radiologyReportPreviewDialogTitle": {
+    "description": "Title for the radiology report preview dialog."
+  },
   "radiologyReportTextHelper": "Leave blank to combine findings and impression.",
   "@radiologyReportTextHelper": {
     "description": "Localized text for radiologyReportTextHelper."

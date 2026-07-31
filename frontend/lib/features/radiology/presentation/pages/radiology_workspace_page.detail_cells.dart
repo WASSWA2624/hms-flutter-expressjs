@@ -587,8 +587,17 @@ String _joinDisplay(Iterable<String?> values) {
       .join(' | ');
 }
 
+String _inferredRadiologyTechnique(RadiologyOrder order) {
+  return _joinDisplay(<String?>[
+    order.testDisplayName,
+    order.modality,
+    order.bodyRegion,
+    order.laterality,
+  ]);
+}
+
 String _composeRadiologyReportText({
-  String technique = '',
+  String inferredTechnique = '',
   required String findings,
   required String impression,
   String recommendation = '',
@@ -597,12 +606,13 @@ String _composeRadiologyReportText({
   if (narrative.isNotEmpty) {
     return narrative;
   }
-  return _joinDisplay(<String?>[
-    technique,
-    findings,
-    impression,
-    recommendation,
-  ]);
+  final List<String> parts = <String>[
+    if (inferredTechnique.isNotEmpty) 'Technique:\n$inferredTechnique',
+    if (findings.isNotEmpty) 'Findings:\n$findings',
+    if (impression.isNotEmpty) 'Impression:\n$impression',
+    if (recommendation.isNotEmpty) 'Recommendation:\n$recommendation',
+  ];
+  return parts.join('\n\n').trim();
 }
 
 extension on String {

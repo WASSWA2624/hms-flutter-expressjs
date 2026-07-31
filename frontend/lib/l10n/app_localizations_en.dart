@@ -11413,6 +11413,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyReportTextLabel => 'Report narrative';
 
   @override
+  String get radiologyReportPreviewAction => 'Report preview';
+
+  @override
+  String get radiologyReportPreviewDialogTitle => 'Report preview';
+
+  @override
   String get radiologyReportTextHelper =>
       'Leave blank to combine findings and impression.';
 

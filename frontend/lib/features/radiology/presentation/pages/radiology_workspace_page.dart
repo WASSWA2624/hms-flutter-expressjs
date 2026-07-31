@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -2464,30 +2463,19 @@ Future<void> _showReportDialog(
       onSubmit: (Map<String, Object?> payload) => ref
           .read(radiologyWorkspaceControllerProvider.notifier)
           .draftResult(payload),
-      onFinalize: workflow.order.latestDraftResult == null
-          ? null
-          : (Map<String, Object?> payload) {
-              final RadiologyResult draft = workflow.order.latestDraftResult!;
-              return ref
-                  .read(radiologyWorkspaceControllerProvider.notifier)
-                  .finalizeResult(draft, payload);
-            },
-      onSyncPacs: workflow.order.latestStudy == null
-          ? null
-          : (Map<String, Object?> payload) {
-              final ImagingStudy study = workflow.order.latestStudy!;
-              return ref
-                  .read(radiologyWorkspaceControllerProvider.notifier)
-                  .syncStudyToPacs(study, payload);
-            },
-      onUploadLocal: workflow.order.latestStudy == null
-          ? null
-          : (List<StudyAssetUploadRequest> uploads) {
-              final ImagingStudy study = workflow.order.latestStudy!;
-              return ref
-                  .read(radiologyWorkspaceControllerProvider.notifier)
-                  .uploadStudyAssets(study: study, uploads: uploads);
-            },
+      // Always allow Release: draft first, then finalize the latest draft from
+      // controller state so a first-time report can be released in one action.
+      onFinalize: (Map<String, Object?> payload) {
+        final RadiologyResult? draft = _readState(
+          ref,
+        )?.selectedWorkflow?.order.latestDraftResult;
+        if (draft == null) {
+          return Future<AppFailure?>.value(AppFailure.validation());
+        }
+        return ref
+            .read(radiologyWorkspaceControllerProvider.notifier)
+            .finalizeResult(draft, payload);
+      },
       onPrint: () => _showRadiologyPrintDialog(context, workflow),
     ),
   );
@@ -2501,17 +2489,12 @@ class _ReportEditDialog extends StatefulWidget {
     required this.workflow,
     required this.onSubmit,
     this.onFinalize,
-    this.onSyncPacs,
-    this.onUploadLocal,
     this.onPrint,
   });
 
   final RadiologyWorkflow workflow;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
   final Future<AppFailure?> Function(Map<String, Object?> payload)? onFinalize;
-  final Future<AppFailure?> Function(Map<String, Object?> payload)? onSyncPacs;
-  final Future<AppFailure?> Function(List<StudyAssetUploadRequest> uploads)?
-  onUploadLocal;
   final Future<void> Function()? onPrint;
 
   RadiologyOrder get order => workflow.order;
@@ -2522,7 +2505,6 @@ class _ReportEditDialog extends StatefulWidget {
 
 class _ReportEditDialogState extends State<_ReportEditDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _techniqueController = TextEditingController();
   final TextEditingController _findingsController = TextEditingController();
   final TextEditingController _impressionController = TextEditingController();
   final TextEditingController _recommendationController =
@@ -2530,7 +2512,6 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
   final TextEditingController _reportController = TextEditingController();
   VoidCallback? _handleReportTextChanged;
   bool _isSubmitting = false;
-  bool _isUploading = false;
   AppFailure? _failure;
 
   @override
@@ -2544,7 +2525,6 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       }
     };
     for (final TextEditingController controller in <TextEditingController>[
-      _techniqueController,
       _findingsController,
       _impressionController,
       _recommendationController,
@@ -2558,13 +2538,11 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
   void dispose() {
     final VoidCallback? listener = _handleReportTextChanged;
     if (listener != null) {
-      _techniqueController.removeListener(listener);
       _findingsController.removeListener(listener);
       _impressionController.removeListener(listener);
       _recommendationController.removeListener(listener);
       _reportController.removeListener(listener);
     }
-    _techniqueController.dispose();
     _findingsController.dispose();
     _impressionController.dispose();
     _recommendationController.dispose();
@@ -2572,8 +2550,10 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     super.dispose();
   }
 
+  String get _inferredTechnique => _inferredRadiologyTechnique(widget.order);
+
   String get _composedReportText => _composeRadiologyReportText(
-    technique: _techniqueController.text.trim(),
+    inferredTechnique: _inferredTechnique,
     findings: _findingsController.text.trim(),
     impression: _impressionController.text.trim(),
     recommendation: _recommendationController.text.trim(),
@@ -2585,9 +2565,11 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       return;
     }
     final String findings = _findingsController.text.trim();
+    final String narrative = _reportController.text.trim();
     final String reportText = _composedReportText.trim();
-    // Accept structured findings or a legacy draft that only stored report_text.
-    if (findings.isEmpty && reportText.isEmpty) {
+    // Require clinician-authored findings or narrative. Inferred technique alone
+    // must not satisfy the draft (procedure metadata is not a report).
+    if (findings.isEmpty && narrative.isEmpty) {
       setState(() {
         _failure = AppFailure.validation(
           detailMessage: context.l10n.radiologyFieldRequiredLabel(
@@ -2618,15 +2600,12 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     AppFailure? failure = await widget.onSubmit(<String, Object?>{
       'findings': resolvedFindings,
       'impression': impression,
-      'technique': _techniqueController.text.trim(),
+      'technique': _inferredTechnique,
       'recommendation': _recommendationController.text.trim(),
       'report_text': resolvedReportText,
     });
 
-    if (failure == null &&
-        finalize &&
-        widget.onFinalize != null &&
-        widget.order.latestDraftResult != null) {
+    if (failure == null && finalize && widget.onFinalize != null) {
       failure = await widget.onFinalize!(<String, Object?>{
         'report_text': resolvedReportText,
       });
@@ -2647,127 +2626,98 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     });
   }
 
-  Future<void> _attachLocalImages() async {
-    if (widget.onUploadLocal == null) {
-      _showSnack(context.l10n.radiologyPerformStudyFirstMessage);
-      return;
-    }
-    try {
-      final List<XFile> files = await openFiles(
-        acceptedTypeGroups: <XTypeGroup>[
-          XTypeGroup(
-            label: context.l10n.radiologyAttachImagesTitle,
-            extensions: const <String>['jpg', 'jpeg', 'png', 'webp'],
-            mimeTypes: const <String>['image/jpeg', 'image/png', 'image/webp'],
-          ),
-        ],
-      );
-      if (!mounted || files.isEmpty) {
-        return;
-      }
-      setState(() => _isUploading = true);
-      final List<StudyAssetUploadRequest> uploads = <StudyAssetUploadRequest>[];
-      for (final XFile file in files.take(8)) {
-        final int sizeBytes = await file.length();
-        uploads.add(
-          StudyAssetUploadRequest(
-            fileName: file.name,
-            contentType: file.mimeType,
-            sizeBytes: sizeBytes,
-          ),
-        );
-      }
-      final AppFailure? failure = await widget.onUploadLocal!(uploads);
-      if (!mounted) {
-        return;
-      }
-      setState(() => _isUploading = false);
-      if (failure != null) {
-        setState(() => _failure = failure);
-        return;
-      }
-      _insertReference(
-        '${context.l10n.radiologyImageSourceLocalLabel}: ${uploads.map((StudyAssetUploadRequest u) => u.fileName).join(', ')}',
-      );
-      _showSnack(context.l10n.radiologySavedMessage);
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
-  }
+  Future<void> _showReportPreview() async {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String findings = _findingsController.text.trim();
+    final String impression = _impressionController.text.trim();
+    final String recommendation = _recommendationController.text.trim();
+    final String narrative = _reportController.text.trim();
+    final String composed = _composedReportText.trim();
 
-  Future<void> _attachRemoteImage() async {
-    final Map<String, String>? result = await showAppDialog<Map<String, String>>(
+    await showAppDialog<void>(
       context: context,
-      builder: (_) => const _RemoteImageForm(),
-    );
-    if (result == null || !mounted) {
-      return;
-    }
-    final String url = result['url'] ?? '';
-    final String caption = result['caption'] ?? '';
-    final String label = caption.isEmpty
-        ? '${context.l10n.radiologyImageSourceRemoteLabel}: $url'
-        : '${context.l10n.radiologyImageSourceRemoteLabel}: $caption ($url)';
-    _insertReference(label);
-  }
-
-  Future<void> _attachFromPacs() async {
-    if (widget.onSyncPacs == null) {
-      _showSnack(context.l10n.radiologyPerformStudyFirstMessage);
-      return;
-    }
-    final Map<String, Object?>? payload =
-        await showAppDialog<Map<String, Object?>>(
-          context: context,
-          builder: (_) => const _PacsSyncForm(),
+      builder: (BuildContext dialogContext) {
+        return AppDialog(
+          title: Text(l10n.radiologyReportPreviewDialogTitle),
+          icon: const Icon(Icons.preview_outlined),
+          scrollable: true,
+          maxWidth: 720,
+          content: AppReportPreviewPanel(
+            title: l10n.radiologyReportPreviewDialogTitle,
+            selectable: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (_inferredTechnique.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.radiologyTechniqueLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(_inferredTechnique),
+                  SizedBox(height: theme.spacing.md),
+                ],
+                if (findings.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.radiologyFindingsLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(findings),
+                  SizedBox(height: theme.spacing.md),
+                ],
+                if (impression.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.radiologyImpressionLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(impression),
+                  SizedBox(height: theme.spacing.md),
+                ],
+                if (recommendation.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.radiologyRecommendationLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(recommendation),
+                  SizedBox(height: theme.spacing.md),
+                ],
+                if (narrative.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.radiologyReportTextLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(narrative),
+                ] else if (composed.isEmpty)
+                  Text(
+                    l10n.radiologyEmptyReportBody,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            AppButton.primary(
+              label: l10n.commonCloseActionLabel,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+          ],
         );
-    if (payload == null || !mounted) {
-      return;
-    }
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSyncPacs!(payload);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _isSubmitting = false);
-    if (failure != null) {
-      setState(() => _failure = failure);
-      return;
-    }
-    _insertReference(
-      '${context.l10n.radiologyImageSourcePacsLabel}: ${payload['accession_number'] ?? payload['study_instance_uid'] ?? 'synced'}',
+      },
     );
-    _showSnack(context.l10n.radiologySavedMessage);
-  }
-
-  void _insertExistingStudyImages() {
-    final List<_RadiologyReportReference> references =
-        _radiologyReportReferences(context.l10n, widget.order);
-    if (references.isEmpty) {
-      _showSnack(context.l10n.radiologyNoExistingStudyImagesMessage);
-      return;
-    }
-    for (final _RadiologyReportReference reference in references) {
-      _insertReference(reference.text);
-    }
-  }
-
-  void _showSnack(String message) {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool busy = _isSubmitting || _isUploading;
+    final bool busy = _isSubmitting;
 
     return AppDialog(
       title: Text(l10n.radiologyReportDialogTitle),
@@ -2781,13 +2731,6 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
         enabled: !busy,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          AppRichTextEditor(
-            controller: _techniqueController,
-            labelText: l10n.radiologyTechniqueLabel,
-            minLines: 3,
-            maxLines: 8,
-          ),
-          SizedBox(height: theme.spacing.md),
           AppRichTextEditor(
             controller: _findingsController,
             labelText: l10n.radiologyFindingsLabel,
@@ -2815,68 +2758,15 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
             minLines: 6,
             maxLines: 14,
           ),
-          SizedBox(height: theme.spacing.md),
-          AppSectionPanel(
-            title: l10n.radiologyImageSourcesTitle,
-            description: l10n.radiologyImageSourcesBody,
-            leadingIcon: Icons.collections_outlined,
-            children: <Widget>[
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  AppButton.tertiary(
-                    dense: true,
-                    label: l10n.radiologyImageSourceLocalAction,
-                    leadingIcon: Icons.folder_open_outlined,
-                    isLoading: _isUploading,
-                    onPressed: busy ? null : _attachLocalImages,
-                  ),
-                  AppButton.tertiary(
-                    dense: true,
-                    label: l10n.radiologyImageSourceRemoteAction,
-                    leadingIcon: Icons.link_outlined,
-                    onPressed: busy ? null : _attachRemoteImage,
-                  ),
-                  AppButton.tertiary(
-                    dense: true,
-                    label: l10n.radiologyImageSourcePacsAction,
-                    leadingIcon: Icons.cloud_sync_outlined,
-                    onPressed: busy ? null : _attachFromPacs,
-                  ),
-                  AppButton.tertiary(
-                    dense: true,
-                    label: l10n.radiologyImageSourceExistingAction,
-                    leadingIcon: Icons.photo_library_outlined,
-                    onPressed: busy ? null : _insertExistingStudyImages,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppClinicalResultsPreview(
-            title: l10n.radiologyReportLivePreviewTitle,
-            status: AppClinicalResultStatus.preliminary,
-            isEmpty: _composedReportText.trim().isEmpty,
-            emptyBody: l10n.radiologyEmptyReportBody,
-            child: AppClinicalResultEntryView(
-              entry: AppClinicalResultPreviewEntry(
-                id: 'draft-composer',
-                module: AppClinicalResultModule.radiology,
-                title: l10n.radiologyReportLivePreviewTitle,
-                status: AppClinicalResultStatus.preliminary,
-                radiology: AppClinicalRadiologyReportContent(
-                  findings: _findingsController.text.trim(),
-                  impression: _impressionController.text.trim(),
-                  reportText: _reportController.text.trim(),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.radiologyReportPreviewAction,
+          leadingIcon: Icons.preview_outlined,
+          enabled: !busy,
+          onPressed: busy ? null : _showReportPreview,
+        ),
         AppAccessActionGate(
           requirement: radiologyPrintReportRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -2895,7 +2785,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
           enabled: !busy,
           onPressed: busy ? null : () => Navigator.of(context).pop(false),
         ),
-        if (widget.onFinalize != null && widget.order.latestDraftResult != null)
+        if (widget.onFinalize != null)
           AppButton.secondary(
             label: l10n.radiologyReleaseReportAction,
             leadingIcon: Icons.verified_outlined,
@@ -2909,78 +2799,6 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
           onPressed: busy ? null : () => _submit(),
         ),
       ],
-    );
-  }
-
-  void _insertReference(String text) {
-    final String current = _reportController.text.trimRight();
-    final String next = current.isEmpty ? text : '$current\n$text';
-    _reportController.value = TextEditingValue(
-      text: next,
-      selection: TextSelection.collapsed(offset: next.length),
-    );
-  }
-}
-
-class _RemoteImageForm extends StatefulWidget {
-  const _RemoteImageForm();
-
-  @override
-  State<_RemoteImageForm> createState() => _RemoteImageFormState();
-}
-
-class _RemoteImageFormState extends State<_RemoteImageForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _urlController = TextEditingController();
-  final TextEditingController _captionController = TextEditingController();
-
-  @override
-  void dispose() {
-    _urlController.dispose();
-    _captionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.radiologyRemoteImageDialogTitle),
-      icon: const Icon(Icons.link_outlined),
-      scrollable: true,
-      maxWidth: 520,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _urlController,
-            labelText: l10n.radiologyRemoteImageUrlLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.radiologyFieldRequiredLabel(l10n.radiologyRemoteImageUrlLabel),
-            ),
-          ),
-          AppTextField(
-            controller: _captionController,
-            labelText: l10n.radiologyRemoteImageCaptionLabel,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.radiologyImageSourceRemoteAction,
-        submitIcon: Icons.link_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: () {
-          if (!validateAndSaveAppForm(_formKey)) {
-            return;
-          }
-          Navigator.of(context).pop(<String, String>{
-            'url': _urlController.text.trim(),
-            'caption': _captionController.text.trim(),
-          });
-        },
-      ),
     );
   }
 }
@@ -3187,69 +3005,6 @@ class _CancelFormState extends State<_CancelForm> {
   }
 }
 
-class _PacsSyncForm extends StatefulWidget {
-  const _PacsSyncForm();
-
-  static String dialogTitle(AppLocalizations l10n) =>
-      l10n.radiologyPacsSyncDialogTitle;
-  static const IconData dialogIcon = Icons.cloud_sync_outlined;
-
-  @override
-  State<_PacsSyncForm> createState() => _PacsSyncFormState();
-}
-
-class _PacsSyncFormState extends State<_PacsSyncForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _studyUidController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _studyUidController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(_PacsSyncForm.dialogTitle(l10n)),
-      icon: const Icon(_PacsSyncForm.dialogIcon),
-      scrollable: true,
-      maxWidth: 520,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _studyUidController,
-            labelText: l10n.radiologyStudyUidLabel,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.radiologyNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.radiologySyncPacsAction,
-        submitIcon: Icons.cloud_sync_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  void _submit() {
-    Navigator.of(context).pop(<String, Object?>{
-      'study_uid': _studyUidController.text.trim(),
-      'notes': _notesController.text.trim(),
-    });
-  }
-}
-
 String? _radiologyPriorityDisplayLabel(
   AppLocalizations l10n,
   String? priority,
@@ -3274,6 +3029,16 @@ List<AppSelectOption<String>> _referenceOptions(
 
 RadiologyWorkspaceState? _watchState(WidgetRef ref) {
   final AsyncValue<Result<RadiologyWorkspaceState>> value = ref.watch(
+    radiologyWorkspaceControllerProvider,
+  );
+  return switch (value.asData?.value) {
+    ResultSuccess<RadiologyWorkspaceState>(value: final state) => state,
+    _ => null,
+  };
+}
+
+RadiologyWorkspaceState? _readState(WidgetRef ref) {
+  final AsyncValue<Result<RadiologyWorkspaceState>> value = ref.read(
     radiologyWorkspaceControllerProvider,
   );
   return switch (value.asData?.value) {

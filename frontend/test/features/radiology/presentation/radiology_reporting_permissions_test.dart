@@ -673,11 +673,18 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Create report'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Local device'), findsOneWidget);
-      expect(find.text('Remote URL'), findsOneWidget);
-      expect(find.text('PACS'), findsOneWidget);
-      expect(find.text('Study images'), findsOneWidget);
+      expect(find.textContaining('Findings'), findsWidgets);
+      expect(find.textContaining('Impression/Conclusion'), findsWidgets);
+      expect(find.textContaining('Recommendation'), findsWidgets);
+      expect(find.textContaining('Report narrative'), findsWidgets);
+      expect(find.text('Report preview'), findsOneWidget);
+      expect(find.text('Local device'), findsNothing);
+      expect(find.text('Remote URL'), findsNothing);
+      expect(find.text('PACS'), findsNothing);
+      expect(find.text('Study images'), findsNothing);
+      expect(find.text('Live preview'), findsNothing);
       expect(find.text('Print report'), findsOneWidget);
+      expect(find.text('Release report'), findsOneWidget);
       expect(find.text('Draft report'), findsOneWidget);
     },
   );
@@ -766,8 +773,8 @@ void main() {
         matching: find.byType(TextField),
       );
       expect(findingsField, findsWidgets);
-      // Technique is first rich-text field; findings is second.
-      await tester.enterText(findingsField.at(1), 'No acute bleed');
+      // Findings is the first rich-text field in the simplified report form.
+      await tester.enterText(findingsField.at(0), 'No acute bleed');
       await tester.pumpAndSettle();
 
       final Finder submit = find.descendant(

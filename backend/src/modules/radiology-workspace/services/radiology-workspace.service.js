@@ -297,15 +297,26 @@ const buildUploadStorageKey = (studyId, fileName) => {
   return `radiology/${sanitizeForPath(studyId)}/${timestamp}-${safeName}`;
 };
 
-const composeReportText = ({ reportText, findings, impression }) => {
+const composeReportText = ({
+  reportText,
+  findings,
+  impression,
+  recommendation,
+  technique}) => {
   const normalizedReport = String(reportText || '').trim();
   if (normalizedReport) return normalizedReport;
 
   const parts = [];
+  const normalizedTechnique = String(technique || '').trim();
   const normalizedFindings = String(findings || '').trim();
   const normalizedImpression = String(impression || '').trim();
+  const normalizedRecommendation = String(recommendation || '').trim();
+  if (normalizedTechnique) parts.push(`Technique:\n${normalizedTechnique}`);
   if (normalizedFindings) parts.push(`Findings:\n${normalizedFindings}`);
   if (normalizedImpression) parts.push(`Impression:\n${normalizedImpression}`);
+  if (normalizedRecommendation) {
+    parts.push(`Recommendation:\n${normalizedRecommendation}`);
+  }
   return parts.join('\n\n').trim() || null;
 };
 
@@ -1936,7 +1947,9 @@ const draftRadiologyResult = async (identifier, payload = {}, userId, ipAddress)
       const reportText = composeReportText({
         reportText: payload.report_text,
         findings: payload.findings,
-        impression: payload.impression});
+        impression: payload.impression,
+        recommendation: payload.recommendation,
+        technique: payload.technique});
 
       const result = existingDraft
         ? await radiologyWorkspaceRepository.txUpdateResult(tx, existingDraft.id, {

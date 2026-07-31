@@ -151,6 +151,8 @@ const draftRadiologyResultSchema = z.object({
   report_text: z.string().trim().max(65535).optional().nullable(),
   findings: z.string().trim().max(65535).optional().nullable(),
   impression: z.string().trim().max(65535).optional().nullable(),
+  recommendation: z.string().trim().max(65535).optional().nullable(),
+  technique: z.string().trim().max(65535).optional().nullable(),
   reported_at: z.string().datetime().optional()});
 
 const finalizeRadiologyResultSchema = z.object({
