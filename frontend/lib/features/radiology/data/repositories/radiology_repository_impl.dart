@@ -336,6 +336,22 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
+  Future<Result<RadiologyWorkflow>> undoStudy(String studyId) {
+    return _apiClient.delete<RadiologyWorkflow>(
+      _radiologyEndpoint(<String>['studies', studyId]),
+      decoder: _decodeWorkflow,
+    );
+  }
+
+  @override
+  Future<Result<RadiologyWorkflow>> undoDraftResult(String resultId) {
+    return _apiClient.delete<RadiologyWorkflow>(
+      _radiologyEndpoint(<String>['results', resultId]),
+      decoder: _decodeWorkflow,
+    );
+  }
+
+  @override
   Future<Result<RadiologyWorkflow>> draftResult(
     String orderId,
     Map<String, Object?> payload,

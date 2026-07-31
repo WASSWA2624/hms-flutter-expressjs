@@ -20743,7 +20743,7 @@ abstract class AppLocalizations {
   /// Radiology workflow procedure table order/procedure id column.
   ///
   /// In en, this message translates to:
-  /// **'Order ID'**
+  /// **'Procedure ID'**
   String get radiologyProcedureIdColumnLabel;
 
   /// Radiology workflow procedure table procedure name column.
@@ -20752,11 +20752,41 @@ abstract class AppLocalizations {
   /// **'Procedure'**
   String get radiologyProcedureNameColumnLabel;
 
+  /// Radiology procedure workbench row number column.
+  ///
+  /// In en, this message translates to:
+  /// **'#'**
+  String get radiologyProcedureNumberColumnLabel;
+
+  /// Radiology procedure workbench body organ/region column.
+  ///
+  /// In en, this message translates to:
+  /// **'Body organ'**
+  String get radiologyProcedureBodyColumnLabel;
+
+  /// Radiology procedure workbench status column.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get radiologyProcedureStatusColumnLabel;
+
+  /// Radiology procedure workbench actions column.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get radiologyProcedureActionsColumnLabel;
+
   /// Radiology procedure workbench pending status.
   ///
   /// In en, this message translates to:
   /// **'Pending'**
   String get radiologyProcedureStatusPending;
+
+  /// Radiology procedure performed and awaiting report status.
+  ///
+  /// In en, this message translates to:
+  /// **'Done — waiting for report'**
+  String get radiologyProcedureStatusWaitingReport;
 
   /// Radiology procedure workbench done/performed status.
   ///
@@ -20773,14 +20803,56 @@ abstract class AppLocalizations {
   /// Mark radiology procedure as performed action.
   ///
   /// In en, this message translates to:
-  /// **'Done'**
+  /// **'Procedure done'**
   String get radiologyMarkProcedureDoneAction;
+
+  /// Open radiology report dialog to complete the report.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark report done'**
+  String get radiologyMarkReportDoneAction;
 
   /// Open radiology procedure report dialog action.
   ///
   /// In en, this message translates to:
   /// **'Write report'**
   String get radiologyWriteReportAction;
+
+  /// Undo last unreleased radiology procedure or draft status change.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get radiologyUndoProcedureAction;
+
+  /// Confirm title when undoing a performed radiology study.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo procedure done?'**
+  String get radiologyUndoProcedureDoneTitle;
+
+  /// Confirm body when undoing a performed radiology study.
+  ///
+  /// In en, this message translates to:
+  /// **'This returns the procedure to Pending. Attached images on this study will be removed from the active workflow.'**
+  String get radiologyUndoProcedureDoneBody;
+
+  /// Confirm title when undoing an unreleased radiology draft report.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo draft report?'**
+  String get radiologyUndoDraftReportTitle;
+
+  /// Confirm body when undoing an unreleased radiology draft report.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the unreleased draft. The procedure stays Done — waiting for report.'**
+  String get radiologyUndoDraftReportBody;
+
+  /// Helper when Procedure done cannot run due to billing or next-action gates.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure done is unavailable until billing and order gates allow imaging.'**
+  String get radiologyProcedureDoneBlockedBody;
 
   /// Assign a typist/reporter for a radiology procedure report.
   ///

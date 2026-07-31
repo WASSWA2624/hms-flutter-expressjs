@@ -127,6 +127,24 @@ const createRadiologyStudy = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.radiology_workspace.study.create_success', data);
 });
 
+const undoRadiologyStudy = asyncHandler(async (req, res) => {
+  const data = await radiologyWorkspaceService.undoRadiologyStudy(
+    req.params.id,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.radiology_workspace.study.undo_success', data);
+});
+
+const undoRadiologyDraftResult = asyncHandler(async (req, res) => {
+  const data = await radiologyWorkspaceService.undoRadiologyDraftResult(
+    req.params.id,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.radiology_workspace.result.undo_draft_success', data);
+});
+
 const initStudyAssetUpload = asyncHandler(async (req, res) => {
   const data = await radiologyWorkspaceService.initStudyAssetUpload(
     req.params.id,
@@ -228,6 +246,8 @@ module.exports = {
   completeRadiologyOrder,
   cancelRadiologyOrder,
   createRadiologyStudy,
+  undoRadiologyStudy,
+  undoRadiologyDraftResult,
   initStudyAssetUpload,
   commitStudyAssetUpload,
   syncStudyToPacs,

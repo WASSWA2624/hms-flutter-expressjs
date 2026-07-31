@@ -871,7 +871,13 @@ class _AppListTableExportDialogState<T>
 
   void _setAllColumnsSelected(bool? value) {
     setState(() {
-      if (value ?? false) {
+      // Flutter's tristate Checkbox cycles false → true → null → false.
+      // A tap from mixed (null) therefore reports `false` (not `true`), so
+      // `value ?? false` would deselect instead of selecting the rest.
+      // Treat null as deselect (leaving "all selected") and any non-null
+      // value as select-all (`true` from empty, `false` from mixed).
+      final bool shouldSelectAll = value != null;
+      if (shouldSelectAll) {
         _selectedColumnKeys = widget.columns
             .map((AppListTableColumn<T> column) => column.key)
             .toSet();

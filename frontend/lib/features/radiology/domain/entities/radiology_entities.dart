@@ -877,7 +877,10 @@ final class ImagingStudy {
   final List<ImagingAsset> assets;
   final List<PacsLink> pacsLinks;
 
-  String get effectiveDisplayId => displayId ?? '';
+  String get effectiveDisplayId {
+    final String friendly = displayId?.trim() ?? '';
+    return friendly.isEmpty ? id : friendly;
+  }
 
   bool get hasAssets => assets.isNotEmpty || assetCount > 0;
 

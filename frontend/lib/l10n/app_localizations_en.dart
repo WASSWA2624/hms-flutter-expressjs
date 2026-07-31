@@ -11247,13 +11247,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyProceduresSectionTitle => 'Procedures';
 
   @override
-  String get radiologyProcedureIdColumnLabel => 'Order ID';
+  String get radiologyProcedureIdColumnLabel => 'Procedure ID';
 
   @override
   String get radiologyProcedureNameColumnLabel => 'Procedure';
 
   @override
+  String get radiologyProcedureNumberColumnLabel => '#';
+
+  @override
+  String get radiologyProcedureBodyColumnLabel => 'Body organ';
+
+  @override
+  String get radiologyProcedureStatusColumnLabel => 'Status';
+
+  @override
+  String get radiologyProcedureActionsColumnLabel => 'Actions';
+
+  @override
   String get radiologyProcedureStatusPending => 'Pending';
+
+  @override
+  String get radiologyProcedureStatusWaitingReport =>
+      'Done — waiting for report';
 
   @override
   String get radiologyProcedureStatusDone => 'Done';
@@ -11262,10 +11278,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyProcedureStatusReported => 'Reported';
 
   @override
-  String get radiologyMarkProcedureDoneAction => 'Done';
+  String get radiologyMarkProcedureDoneAction => 'Procedure done';
+
+  @override
+  String get radiologyMarkReportDoneAction => 'Mark report done';
 
   @override
   String get radiologyWriteReportAction => 'Write report';
+
+  @override
+  String get radiologyUndoProcedureAction => 'Undo';
+
+  @override
+  String get radiologyUndoProcedureDoneTitle => 'Undo procedure done?';
+
+  @override
+  String get radiologyUndoProcedureDoneBody =>
+      'This returns the procedure to Pending. Attached images on this study will be removed from the active workflow.';
+
+  @override
+  String get radiologyUndoDraftReportTitle => 'Undo draft report?';
+
+  @override
+  String get radiologyUndoDraftReportBody =>
+      'This removes the unreleased draft. The procedure stays Done — waiting for report.';
+
+  @override
+  String get radiologyProcedureDoneBlockedBody =>
+      'Procedure done is unavailable until billing and order gates allow imaging.';
 
   @override
   String get radiologyAssignTypistAction => 'Assign typist';

@@ -1427,6 +1427,149 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
   }
 };
 
+const undoRadiologyStudy = async (identifier, userId, ipAddress) => {
+  try {
+    const studyId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'imaging_study',
+      where: { deleted_at: null },
+      errorKey: 'errors.imaging_study.not_found'});
+
+    const mutation = await radiologyWorkspaceRepository.withTransaction(async (tx) => {
+      const study = await radiologyWorkspaceRepository.txFindStudyById(tx, studyId);
+      if (!study) {
+        throw new HttpError('errors.imaging_study.not_found', 404);
+      }
+
+      const order = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        study.radiology_order_id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.radiology_order.not_found', 404);
+      }
+
+      assertTransition(order.status !== 'CANCELLED' && order.status !== 'COMPLETED', {
+        from: order.status,
+        to: 'UNDO_STUDY'});
+
+      const hasFinalResult = (order.radiology_results || []).some((result) =>
+        ['FINAL', 'AMENDED'].includes(String(result.status || '').toUpperCase())
+      );
+      assertTransition(!hasFinalResult, {
+        from: 'FINAL',
+        to: 'UNDO_STUDY'});
+
+      const deletedAt = new Date();
+      await radiologyWorkspaceRepository.txSoftDeleteStudyAssets(tx, study.id, deletedAt);
+      await radiologyWorkspaceRepository.txSoftDeleteStudyPacsLinks(tx, study.id, deletedAt);
+      await radiologyWorkspaceRepository.txSoftDeleteStudy(tx, study.id, deletedAt);
+
+      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return { order: refreshedOrder, study };
+    });
+
+    createAuditLog({
+      user_id: userId,
+      action: 'UNDO_STUDY',
+      entity: 'imaging_study',
+      entity_id: mutation.study?.id,
+      diff: {
+        metadata: {
+          order_id: mutation.order?.id}},
+      ip_address: ipAddress}).catch(() => {});
+
+    const workflow = mapRadiologyOrderWorkflowRecord(mutation.order);
+    publishRadiologyRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'UNDO_STUDY',
+      resourceType: 'study',
+      resourceId: mutation.study?.id || null}).catch(() => {});
+
+    return { workflow };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const undoRadiologyDraftResult = async (identifier, userId, ipAddress) => {
+  try {
+    const resultId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'radiology_result',
+      where: { deleted_at: null },
+      errorKey: 'errors.radiology_result.not_found'});
+
+    const mutation = await radiologyWorkspaceRepository.withTransaction(async (tx) => {
+      const result = await radiologyWorkspaceRepository.txFindResultById(tx, resultId);
+      if (!result) {
+        throw new HttpError('errors.radiology_result.not_found', 404);
+      }
+
+      const status = String(result.status || '').trim().toUpperCase();
+      assertTransition(status === 'DRAFT', {
+        from: status || 'UNKNOWN',
+        to: 'UNDO_DRAFT'});
+
+      const order = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        result.radiology_order_id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.radiology_order.not_found', 404);
+      }
+
+      assertTransition(order.status !== 'CANCELLED' && order.status !== 'COMPLETED', {
+        from: order.status,
+        to: 'UNDO_DRAFT'});
+
+      await radiologyWorkspaceRepository.txSoftDeleteResult(tx, result.id);
+
+      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return { order: refreshedOrder, result };
+    });
+
+    createAuditLog({
+      user_id: userId,
+      action: 'UNDO_DRAFT',
+      entity: 'radiology_result',
+      entity_id: mutation.result?.id,
+      diff: {
+        metadata: {
+          order_id: mutation.order?.id}},
+      ip_address: ipAddress}).catch(() => {});
+
+    const workflow = mapRadiologyOrderWorkflowRecord(mutation.order);
+    publishRadiologyRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'UNDO_DRAFT',
+      resourceType: 'result',
+      resourceId: mutation.result?.id || null}).catch(() => {});
+
+    return { workflow };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const initStudyAssetUpload = async (identifier, payload = {}, userId, ipAddress) => {
   try {
     const studyId = await resolveModelIdOrThrow({
@@ -2249,6 +2392,8 @@ module.exports = {
   completeRadiologyOrder,
   cancelRadiologyOrder,
   createRadiologyStudy,
+  undoRadiologyStudy,
+  undoRadiologyDraftResult,
   initStudyAssetUpload,
   commitStudyAssetUpload,
   syncStudyToPacs,

@@ -746,6 +746,18 @@ final class RadiologyWorkspaceController
     );
   }
 
+  Future<AppFailure?> undoStudy(ImagingStudy study) {
+    return _mutate(
+      () => _repository.undoStudy(study.effectiveDisplayId),
+    );
+  }
+
+  Future<AppFailure?> undoDraftResult(RadiologyResult result) {
+    return _mutate(
+      () => _repository.undoDraftResult(result.effectiveDisplayId),
+    );
+  }
+
   Future<AppFailure?> draftResult(Map<String, Object?> payload) {
     return _mutateSelected(
       (String orderId) => _repository.draftResult(orderId, payload),

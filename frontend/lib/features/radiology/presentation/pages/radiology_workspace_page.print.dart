@@ -113,6 +113,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       title: Text(l10n.radiologyPrintReportDialogTitle),
       icon: const Icon(Icons.print_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: 860,
       closeEnabled: !_isPrinting,
       content: Column(

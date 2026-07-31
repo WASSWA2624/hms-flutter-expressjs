@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_next_action_cell.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart';
@@ -992,11 +993,14 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           onMarkDone: widget.canWork && !widget.state.isMutating
               ? () => _showStudyDialog(context, ref, order)
               : null,
-          onWriteReport: widget.canWork && !widget.state.isMutating
+          onMarkReportDone: widget.canWork && !widget.state.isMutating
               ? () => _showReportDialog(context, ref, widget.workflow)
               : null,
           onAssignTypist: widget.canWork && !widget.state.isMutating
               ? () => _showAssignDialog(context, ref)
+              : null,
+          onUndo: widget.canWork && !widget.state.isMutating
+              ? () => _undoProcedureWorkbenchStatus(context, ref, widget.workflow)
               : null,
         ),
       ],
@@ -1046,7 +1050,13 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
   }
 }
 
-enum _ProcedureWorkbenchStatus { pending, inProcess, done, reported, cancelled }
+enum _ProcedureWorkbenchStatus {
+  pending,
+  inProcess,
+  waitingForReport,
+  reported,
+  cancelled,
+}
 
 _ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) {
   final RadiologyOrder order = workflow.order;
@@ -1059,7 +1069,7 @@ _ProcedureWorkbenchStatus _procedureWorkbenchStatus(RadiologyWorkflow workflow) 
   final bool hasStudy =
       order.imagingStudies.isNotEmpty || (order.studyCount > 0);
   if (hasStudy) {
-    return _ProcedureWorkbenchStatus.done;
+    return _ProcedureWorkbenchStatus.waitingForReport;
   }
   if (order.normalizedStatus == 'IN_PROCESS') {
     return _ProcedureWorkbenchStatus.inProcess;
@@ -1076,13 +1086,21 @@ String _procedureWorkbenchStatusLabel(
       return l10n.radiologyProcedureStatusPending;
     case _ProcedureWorkbenchStatus.inProcess:
       return l10n.radiologyStatusInProcess;
-    case _ProcedureWorkbenchStatus.done:
-      return l10n.radiologyProcedureStatusDone;
+    case _ProcedureWorkbenchStatus.waitingForReport:
+      return l10n.radiologyProcedureStatusWaitingReport;
     case _ProcedureWorkbenchStatus.reported:
       return l10n.radiologyProcedureStatusReported;
     case _ProcedureWorkbenchStatus.cancelled:
       return l10n.radiologyStatusCancelled;
   }
+}
+
+String _procedureBodyOrganLabel(_ProcedureWorkbenchRow row) {
+  final List<String> parts = <String>[
+    if ((row.bodyRegion ?? '').trim().isNotEmpty) row.bodyRegion!.trim(),
+    if ((row.laterality ?? '').trim().isNotEmpty) row.laterality!.trim(),
+  ];
+  return parts.join(' · ');
 }
 
 @immutable
@@ -1109,7 +1127,9 @@ List<_ProcedureWorkbenchRow> _procedureWorkbenchRows(RadiologyOrder order) {
         _ProcedureWorkbenchRow(
           id: order.effectiveDisplayId,
           name:
-              (test.testDisplayName ?? order.testDisplayName ?? order.effectiveDisplayId)
+              (test.testDisplayName ??
+                      order.testDisplayName ??
+                      order.effectiveDisplayId)
                   .trim(),
           modality: test.modality ?? order.modality,
           bodyRegion: test.bodyRegion ?? order.bodyRegion,
@@ -1128,171 +1148,339 @@ List<_ProcedureWorkbenchRow> _procedureWorkbenchRows(RadiologyOrder order) {
   ];
 }
 
+Future<void> _undoProcedureWorkbenchStatus(
+  BuildContext context,
+  WidgetRef ref,
+  RadiologyWorkflow workflow,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final RadiologyOrder order = workflow.order;
+  final RadiologyResult? draft = order.latestDraftResult;
+  final ImagingStudy? study = order.latestStudy ??
+      (workflow.studies.isEmpty ? null : workflow.studies.last);
+
+  final bool undoDraft = draft != null;
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (_) => AppConfirmActionDialog(
+      title: undoDraft
+          ? l10n.radiologyUndoDraftReportTitle
+          : l10n.radiologyUndoProcedureDoneTitle,
+      body: undoDraft
+          ? l10n.radiologyUndoDraftReportBody
+          : l10n.radiologyUndoProcedureDoneBody,
+      submitLabel: l10n.radiologyUndoProcedureAction,
+      destructive: true,
+      icon: const Icon(Icons.undo_outlined),
+      onConfirm: () async => null,
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
+    return;
+  }
+
+  final RadiologyWorkspaceController controller = ref.read(
+    radiologyWorkspaceControllerProvider.notifier,
+  );
+  AppFailure? failure;
+  if (undoDraft) {
+    failure = await controller.undoDraftResult(draft);
+  } else if (study != null) {
+    failure = await controller.undoStudy(study);
+  }
+  if (context.mounted) {
+    _showMutationResult(context, failure);
+  }
+}
+
 class _ProcedureWorkbenchSection extends StatelessWidget {
   const _ProcedureWorkbenchSection({
     required this.workflow,
     required this.state,
     required this.canWork,
     this.onMarkDone,
-    this.onWriteReport,
+    this.onMarkReportDone,
     this.onAssignTypist,
+    this.onUndo,
   });
 
   final RadiologyWorkflow workflow;
   final RadiologyWorkspaceState state;
   final bool canWork;
   final VoidCallback? onMarkDone;
-  final VoidCallback? onWriteReport;
+  final VoidCallback? onMarkReportDone;
   final VoidCallback? onAssignTypist;
+  final VoidCallback? onUndo;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
     final RadiologyOrder order = workflow.order;
     final List<_ProcedureWorkbenchRow> rows = _procedureWorkbenchRows(order);
     final _ProcedureWorkbenchStatus status = _procedureWorkbenchStatus(workflow);
     final RadiologyNextActions next = workflow.nextActions;
-    final bool canMarkDone =
+    final bool waitingForReport =
+        status == _ProcedureWorkbenchStatus.waitingForReport;
+    final bool reported = status == _ProcedureWorkbenchStatus.reported;
+    final bool pendingLike =
+        status == _ProcedureWorkbenchStatus.pending ||
+        status == _ProcedureWorkbenchStatus.inProcess;
+    final bool canRunProcedureDone =
         canWork &&
         onMarkDone != null &&
         next.canCreateStudy &&
-        (status == _ProcedureWorkbenchStatus.pending ||
-            status == _ProcedureWorkbenchStatus.inProcess);
-    final bool canWriteReport =
-        onWriteReport != null &&
-        status != _ProcedureWorkbenchStatus.cancelled &&
-        status != _ProcedureWorkbenchStatus.pending &&
-        (status == _ProcedureWorkbenchStatus.done ||
-            status == _ProcedureWorkbenchStatus.reported ||
-            (status == _ProcedureWorkbenchStatus.inProcess &&
-                order.imagingStudies.isNotEmpty) ||
-            next.canCreateDraftResult ||
-            order.hasDraftResult ||
-            order.hasFinalResult);
+        !next.billingGateBlocked &&
+        pendingLike;
+    final bool showProcedureDoneBlocked =
+        canWork &&
+        pendingLike &&
+        (!next.canCreateStudy || next.billingGateBlocked);
+    final bool canMarkReportDone =
+        onMarkReportDone != null && waitingForReport;
+    final bool canOpenReportRow =
+        onMarkReportDone != null && (waitingForReport || reported);
     final bool canAssignTypist =
         canWork &&
         onAssignTypist != null &&
         next.canAssign &&
-        status == _ProcedureWorkbenchStatus.done;
+        waitingForReport;
+    final bool canUndo =
+        canWork &&
+        onUndo != null &&
+        !order.hasFinalResult &&
+        (order.hasDraftResult ||
+            order.imagingStudies.isNotEmpty ||
+            order.studyCount > 0 ||
+            workflow.studies.isNotEmpty);
+
+    final Color borderColor = colors.outlineVariant;
+    final TableBorder tableBorder = TableBorder(
+      horizontalInside: BorderSide(color: borderColor),
+      verticalInside: BorderSide(color: borderColor),
+      top: BorderSide(color: borderColor),
+      bottom: BorderSide(color: borderColor),
+      left: BorderSide(color: borderColor),
+      right: BorderSide(color: borderColor),
+    );
 
     return AppCollapsibleSection(
       title: l10n.radiologyProceduresSectionTitle,
       titleIcon: Icons.biotech_outlined,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final _ProcedureWorkbenchRow row in rows) ...<Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(theme.spacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Wrap(
-                      spacing: theme.spacing.md,
-                      runSpacing: theme.spacing.xs,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: <Widget>[
-                        Text(
-                          row.id,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          row.name,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if ((row.modality ?? '').trim().isNotEmpty)
-                          AppWorkspaceStatusBadge(
-                            status: AppWorkspaceStatus(
-                              label:
-                                  _modalityLabelOrNull(l10n, row.modality) ??
-                                  row.modality!,
-                              tone: AppWorkspaceStatusTone.neutral,
-                              icon: Icons.camera_alt_outlined,
-                            ),
-                          ),
-                        if ((row.bodyRegion ?? '').trim().isNotEmpty)
-                          Text(
-                            row.bodyRegion!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        if ((row.laterality ?? '').trim().isNotEmpty)
-                          Text(
-                            row.laterality!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        AppWorkspaceStatusBadge(
-                          status: AppWorkspaceStatus(
-                            label: _procedureWorkbenchStatusLabel(l10n, status),
-                            tone: switch (status) {
-                              _ProcedureWorkbenchStatus.pending =>
-                                AppWorkspaceStatusTone.warning,
-                              _ProcedureWorkbenchStatus.inProcess =>
-                                AppWorkspaceStatusTone.info,
-                              _ProcedureWorkbenchStatus.done =>
-                                AppWorkspaceStatusTone.success,
-                              _ProcedureWorkbenchStatus.reported =>
-                                AppWorkspaceStatusTone.success,
-                              _ProcedureWorkbenchStatus.cancelled =>
-                                AppWorkspaceStatusTone.error,
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    Wrap(
-                      spacing: theme.spacing.xs,
-                      runSpacing: theme.spacing.xs,
-                      children: <Widget>[
-                        if (canMarkDone)
-                          AppButton.secondary(
-                            dense: true,
-                            label: l10n.radiologyMarkProcedureDoneAction,
-                            leadingIcon: Icons.check_circle_outline,
-                            isLoading: state.isMutating,
-                            onPressed: state.isMutating ? null : onMarkDone,
-                          ),
-                        if (canWriteReport)
-                          AppButton.primary(
-                            dense: true,
-                            label: l10n.radiologyWriteReportAction,
-                            leadingIcon: Icons.edit_note_outlined,
-                            onPressed: onWriteReport,
-                          ),
-                        if (canAssignTypist)
-                          AppButton.tertiary(
-                            dense: true,
-                            label: l10n.radiologyAssignTypistAction,
-                            leadingIcon: Icons.person_outline,
-                            onPressed: onAssignTypist,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+          if (showProcedureDoneBlocked) ...<Widget>[
+            Text(
+              l10n.radiologyProcedureDoneBlockedBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
               ),
             ),
-            if (row != rows.last) SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.sm),
           ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.sizeOf(context).width < 720
+                    ? 720
+                    : MediaQuery.sizeOf(context).width - 96,
+              ),
+              child: Table(
+                border: tableBorder,
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                columnWidths: const <int, TableColumnWidth>{
+                  0: FixedColumnWidth(44),
+                  1: FlexColumnWidth(1.2),
+                  2: FlexColumnWidth(2.2),
+                  3: FlexColumnWidth(1.1),
+                  4: FlexColumnWidth(1.2),
+                  5: FlexColumnWidth(1.6),
+                  6: FlexColumnWidth(2.4),
+                },
+                children: <TableRow>[
+                  TableRow(
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHigh.withValues(
+                        alpha: 0.72,
+                      ),
+                    ),
+                    children: <Widget>[
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureNumberColumnLabel,
+                      ),
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureIdColumnLabel,
+                      ),
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureNameColumnLabel,
+                      ),
+                      _ProcedureTableCell.header(l10n.radiologyModalityLabel),
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureBodyColumnLabel,
+                      ),
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureStatusColumnLabel,
+                      ),
+                      _ProcedureTableCell.header(
+                        l10n.radiologyProcedureActionsColumnLabel,
+                      ),
+                    ],
+                  ),
+                  for (int index = 0; index < rows.length; index++)
+                    TableRow(
+                      children: <Widget>[
+                        _ProcedureTableCell(
+                          child: Text('${index + 1}'),
+                        ),
+                        _ProcedureTableCell(
+                          onTap: canOpenReportRow ? onMarkReportDone : null,
+                          child: Text(
+                            rows[index].id,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        _ProcedureTableCell(
+                          onTap: canOpenReportRow ? onMarkReportDone : null,
+                          child: Text(
+                            rows[index].name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        _ProcedureTableCell(
+                          onTap: canOpenReportRow ? onMarkReportDone : null,
+                          child: Text(
+                            _modalityLabelOrNull(
+                                  l10n,
+                                  rows[index].modality,
+                                ) ??
+                                (rows[index].modality ?? '—'),
+                          ),
+                        ),
+                        _ProcedureTableCell(
+                          onTap: canOpenReportRow ? onMarkReportDone : null,
+                          child: Text(
+                            _procedureBodyOrganLabel(rows[index]).ifEmpty('—'),
+                          ),
+                        ),
+                        _ProcedureTableCell(
+                          onTap: canOpenReportRow ? onMarkReportDone : null,
+                          child: AppWorkspaceStatusBadge(
+                            status: AppWorkspaceStatus(
+                              label: _procedureWorkbenchStatusLabel(
+                                l10n,
+                                status,
+                              ),
+                              tone: switch (status) {
+                                _ProcedureWorkbenchStatus.pending =>
+                                  AppWorkspaceStatusTone.warning,
+                                _ProcedureWorkbenchStatus.inProcess =>
+                                  AppWorkspaceStatusTone.info,
+                                _ProcedureWorkbenchStatus.waitingForReport =>
+                                  AppWorkspaceStatusTone.info,
+                                _ProcedureWorkbenchStatus.reported =>
+                                  AppWorkspaceStatusTone.success,
+                                _ProcedureWorkbenchStatus.cancelled =>
+                                  AppWorkspaceStatusTone.error,
+                              },
+                            ),
+                          ),
+                        ),
+                        _ProcedureTableCell(
+                          child: Wrap(
+                            spacing: theme.spacing.xs,
+                            runSpacing: theme.spacing.xs,
+                            alignment: WrapAlignment.end,
+                            children: <Widget>[
+                              if (canRunProcedureDone)
+                                AppButton.secondary(
+                                  dense: true,
+                                  label: l10n.radiologyMarkProcedureDoneAction,
+                                  leadingIcon: Icons.check_circle_outline,
+                                  isLoading: state.isMutating,
+                                  onPressed: state.isMutating
+                                      ? null
+                                      : onMarkDone,
+                                ),
+                              if (canMarkReportDone)
+                                AppButton.primary(
+                                  dense: true,
+                                  label: l10n.radiologyMarkReportDoneAction,
+                                  leadingIcon: Icons.edit_note_outlined,
+                                  onPressed: onMarkReportDone,
+                                ),
+                              if (canAssignTypist)
+                                AppButton.tertiary(
+                                  dense: true,
+                                  label: l10n.radiologyAssignTypistAction,
+                                  leadingIcon: Icons.person_outline,
+                                  onPressed: onAssignTypist,
+                                ),
+                              if (canUndo)
+                                AppButton.tertiary(
+                                  dense: true,
+                                  label: l10n.radiologyUndoProcedureAction,
+                                  leadingIcon: Icons.undo_outlined,
+                                  onPressed: state.isMutating ? null : onUndo,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
+class _ProcedureTableCell extends StatelessWidget {
+  const _ProcedureTableCell({required this.child, this.onTap})
+    : _headerLabel = null;
 
+  const _ProcedureTableCell.header(String label)
+    : child = null,
+      onTap = null,
+      _headerLabel = label;
+
+  final Widget? child;
+  final VoidCallback? onTap;
+  final String? _headerLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Widget content = _headerLabel != null
+        ? Text(
+            _headerLabel,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          )
+        : child!;
+    final Widget padded = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.sm,
+      ),
+      child: content,
+    );
+    if (onTap == null) {
+      return padded;
+    }
+    return InkWell(onTap: onTap, child: padded);
+  }
+}
 
 Future<void> _showCreateOrderDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, Object?>? payload =
@@ -2276,6 +2464,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       title: Text(l10n.radiologyReportDialogTitle),
       icon: const Icon(Icons.edit_note_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: 760,
       closeEnabled: !busy,
       content: AppFormShell(

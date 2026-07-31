@@ -172,6 +172,21 @@ const txCreateStudy = async (tx, data) =>
   tx.imaging_study.create({
     data});
 
+const txSoftDeleteStudy = async (tx, id, deletedAt = new Date()) =>
+  tx.imaging_study.update({
+    where: { id },
+    data: { deleted_at: deletedAt }});
+
+const txSoftDeleteStudyAssets = async (tx, studyId, deletedAt = new Date()) =>
+  tx.imaging_asset.updateMany({
+    where: { imaging_study_id: studyId, deleted_at: null },
+    data: { deleted_at: deletedAt }});
+
+const txSoftDeleteStudyPacsLinks = async (tx, studyId, deletedAt = new Date()) =>
+  tx.pacs_link.updateMany({
+    where: { imaging_study_id: studyId, deleted_at: null },
+    data: { deleted_at: deletedAt }});
+
 const txFindFirstStudy = async (tx, where, orderBy = { created_at: 'desc' }, include = undefined) =>
   tx.imaging_study.findFirst({
     where: { deleted_at: null, ...(where || {}) },
@@ -207,6 +222,11 @@ const txUpdateResult = async (tx, id, data) =>
   tx.radiology_result.update({
     where: { id },
     data});
+
+const txSoftDeleteResult = async (tx, id, deletedAt = new Date()) =>
+  tx.radiology_result.update({
+    where: { id },
+    data: { deleted_at: deletedAt }});
 
 const txCreateResultAttestation = async (tx, data) =>
   tx.radiology_result_attestation.create({
@@ -247,6 +267,9 @@ module.exports = {
   txUpdateOrder,
   txFindStudyById,
   txCreateStudy,
+  txSoftDeleteStudy,
+  txSoftDeleteStudyAssets,
+  txSoftDeleteStudyPacsLinks,
   txFindFirstStudy,
   txCreateAsset,
   txFindFirstAsset,
@@ -254,6 +277,7 @@ module.exports = {
   txFindFirstResult,
   txCreateResult,
   txUpdateResult,
+  txSoftDeleteResult,
   txCreateResultAttestation,
   txFindResultAttestation,
   txCreatePacsLink,

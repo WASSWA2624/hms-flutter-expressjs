@@ -1388,6 +1388,8 @@
   "messages.radiology_workspace.result.request_finalization_success": "Radiology finalization requested successfully",
   "messages.radiology_workspace.start.success": "Radiology order started successfully",
   "messages.radiology_workspace.study.create_success": "Radiology study created successfully",
+  "messages.radiology_workspace.study.undo_success": "Radiology procedure marked pending again",
+  "messages.radiology_workspace.result.undo_draft_success": "Radiology draft report removed",
   "messages.radiology_workspace.workbench.success": "Radiology workspace loaded successfully",
   "messages.radiology_workspace.workflow.success": "Radiology workflow loaded successfully",
   "messages.referral.create.success": "Referral created successfully",

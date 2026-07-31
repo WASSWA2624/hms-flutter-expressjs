@@ -133,6 +133,22 @@ router.post(
   radiologyWorkspaceController.createRadiologyStudy
 );
 
+router.delete(
+  '/studies/:id',
+  validateRequest({ params: studyWorkflowParamsSchema }),
+  authenticate(),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
+  radiologyWorkspaceController.undoRadiologyStudy
+);
+
+router.delete(
+  '/results/:id',
+  validateRequest({ params: resultWorkflowParamsSchema }),
+  authenticate(),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
+  radiologyWorkspaceController.undoRadiologyDraftResult
+);
+
 router.post(
   '/studies/:id/assets/init-upload',
   validateRequest({ params: studyWorkflowParamsSchema, body: initUploadAssetSchema }),

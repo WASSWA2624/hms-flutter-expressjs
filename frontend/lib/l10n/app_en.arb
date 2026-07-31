@@ -14359,7 +14359,7 @@
   "@radiologyProceduresSectionTitle": {
     "description": "Radiology workflow detail procedure workbench section title."
   },
-  "radiologyProcedureIdColumnLabel": "Order ID",
+  "radiologyProcedureIdColumnLabel": "Procedure ID",
   "@radiologyProcedureIdColumnLabel": {
     "description": "Radiology workflow procedure table order/procedure id column."
   },
@@ -14367,9 +14367,29 @@
   "@radiologyProcedureNameColumnLabel": {
     "description": "Radiology workflow procedure table procedure name column."
   },
+  "radiologyProcedureNumberColumnLabel": "#",
+  "@radiologyProcedureNumberColumnLabel": {
+    "description": "Radiology procedure workbench row number column."
+  },
+  "radiologyProcedureBodyColumnLabel": "Body organ",
+  "@radiologyProcedureBodyColumnLabel": {
+    "description": "Radiology procedure workbench body organ/region column."
+  },
+  "radiologyProcedureStatusColumnLabel": "Status",
+  "@radiologyProcedureStatusColumnLabel": {
+    "description": "Radiology procedure workbench status column."
+  },
+  "radiologyProcedureActionsColumnLabel": "Actions",
+  "@radiologyProcedureActionsColumnLabel": {
+    "description": "Radiology procedure workbench actions column."
+  },
   "radiologyProcedureStatusPending": "Pending",
   "@radiologyProcedureStatusPending": {
     "description": "Radiology procedure workbench pending status."
+  },
+  "radiologyProcedureStatusWaitingReport": "Done — waiting for report",
+  "@radiologyProcedureStatusWaitingReport": {
+    "description": "Radiology procedure performed and awaiting report status."
   },
   "radiologyProcedureStatusDone": "Done",
   "@radiologyProcedureStatusDone": {
@@ -14379,13 +14399,41 @@
   "@radiologyProcedureStatusReported": {
     "description": "Radiology procedure workbench reported status."
   },
-  "radiologyMarkProcedureDoneAction": "Done",
+  "radiologyMarkProcedureDoneAction": "Procedure done",
   "@radiologyMarkProcedureDoneAction": {
     "description": "Mark radiology procedure as performed action."
+  },
+  "radiologyMarkReportDoneAction": "Mark report done",
+  "@radiologyMarkReportDoneAction": {
+    "description": "Open radiology report dialog to complete the report."
   },
   "radiologyWriteReportAction": "Write report",
   "@radiologyWriteReportAction": {
     "description": "Open radiology procedure report dialog action."
+  },
+  "radiologyUndoProcedureAction": "Undo",
+  "@radiologyUndoProcedureAction": {
+    "description": "Undo last unreleased radiology procedure or draft status change."
+  },
+  "radiologyUndoProcedureDoneTitle": "Undo procedure done?",
+  "@radiologyUndoProcedureDoneTitle": {
+    "description": "Confirm title when undoing a performed radiology study."
+  },
+  "radiologyUndoProcedureDoneBody": "This returns the procedure to Pending. Attached images on this study will be removed from the active workflow.",
+  "@radiologyUndoProcedureDoneBody": {
+    "description": "Confirm body when undoing a performed radiology study."
+  },
+  "radiologyUndoDraftReportTitle": "Undo draft report?",
+  "@radiologyUndoDraftReportTitle": {
+    "description": "Confirm title when undoing an unreleased radiology draft report."
+  },
+  "radiologyUndoDraftReportBody": "This removes the unreleased draft. The procedure stays Done — waiting for report.",
+  "@radiologyUndoDraftReportBody": {
+    "description": "Confirm body when undoing an unreleased radiology draft report."
+  },
+  "radiologyProcedureDoneBlockedBody": "Procedure done is unavailable until billing and order gates allow imaging.",
+  "@radiologyProcedureDoneBlockedBody": {
+    "description": "Helper when Procedure done cannot run due to billing or next-action gates."
   },
   "radiologyAssignTypistAction": "Assign typist",
   "@radiologyAssignTypistAction": {

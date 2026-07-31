@@ -111,6 +111,10 @@ abstract interface class RadiologyRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<RadiologyWorkflow>> undoStudy(String studyId);
+
+  Future<Result<RadiologyWorkflow>> undoDraftResult(String resultId);
+
   Future<Result<RadiologyWorkflow>> draftResult(
     String orderId,
     Map<String, Object?> payload,

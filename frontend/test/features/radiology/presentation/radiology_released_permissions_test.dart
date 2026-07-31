@@ -484,8 +484,9 @@ void main() {
         expect(find.text(l10n.radiologyCancelOrderAction), findsNothing);
         expect(find.text(l10n.radiologyAddendumAction), findsNothing);
         expect(find.text(l10n.radiologyAssignAction), findsNothing);
-        // Print / Write report are write-gated; print also lives in the report dialog.
+        // Print / report actions are write-gated; print lives in the report dialog.
         expect(find.text(l10n.radiologyPrintReportAction), findsNothing);
+        expect(find.text(l10n.radiologyMarkReportDoneAction), findsNothing);
         expect(find.text(l10n.radiologyWriteReportAction), findsNothing);
       },
     );
@@ -534,11 +535,12 @@ void main() {
         await _openReleasedDetail(tester);
 
         expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
-        expect(find.text(l10n.radiologyWriteReportAction), findsOneWidget);
+        expect(find.text(l10n.radiologyMarkReportDoneAction), findsNothing);
         expect(find.text(l10n.radiologyPrintReportAction), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
-        await tester.tap(find.text(l10n.radiologyWriteReportAction));
+        // Reported rows still open the report dialog (print lives there).
+        await tester.tap(find.text('MRI Brain').last);
         await tester.pumpAndSettle();
         expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
       },

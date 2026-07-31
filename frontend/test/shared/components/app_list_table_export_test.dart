@@ -475,6 +475,69 @@ void main() {
     );
   });
 
+  testWidgets(
+    'Select all from mixed selection selects remaining columns',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 520,
+          child: AppListTable<_ExportRow>(
+            items: items,
+            columns: columns,
+            exportConfig: AppListTableExportConfig<_ExportRow>(
+              enableDateFilter: false,
+              saver:
+                  ({required Uint8List bytes, required String fileName}) async {
+                    return true;
+                  },
+            ),
+            search: AppListTableSearch<_ExportRow>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+            ),
+            mobileItemBuilder: (BuildContext context, _ExportRow item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(1000, 700),
+      );
+
+      await tester.tap(find.byIcon(AppActionIcons.download));
+      await tester.pumpAndSettle();
+
+      // Title stays (alwaysVisible); leave Status on and Code off → mixed.
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Code'));
+      await tester.pumpAndSettle();
+
+      final Finder selectAll = find.widgetWithText(
+        CheckboxListTile,
+        'Select all',
+      );
+      expect(tester.widget<CheckboxListTile>(selectAll).value, isNull);
+
+      // Mixed-state tap reports false in Flutter's tristate cycle; must still
+      // select the remaining columns.
+      await tester.tap(selectAll);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<CheckboxListTile>(selectAll).value, isTrue);
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.widgetWithText(CheckboxListTile, 'Code'),
+            )
+            .value,
+        isTrue,
+      );
+    },
+  );
+
   testWidgets('Reset columns restores Settings defaults when selection changes', (
     WidgetTester tester,
   ) async {
