@@ -1308,56 +1308,82 @@ class _PatientContextAlerts extends StatelessWidget {
 
 /// Responsive patient context facts.
 ///
-/// Desktop/tablet/mobile: responsive wrapping chips of
-/// `Icon Label: Value` that flow to the next line when width is insufficient.
-/// On very narrow widths each chip stretches full-width so values stay readable.
+/// Responsive wrapping `Icon Label: Value` facts that flow to the next line
+/// when width is insufficient. On very narrow widths each fact stretches
+/// full-width so values stay readable.
 class AppPatientContextFactsRow extends StatelessWidget {
-  const AppPatientContextFactsRow({required this.fields, super.key});
+  const AppPatientContextFactsRow({
+    required this.fields,
+    this.leading = const <Widget>[],
+    super.key,
+  });
 
   final List<AppWorkspacePatientContextField> fields;
+  final List<Widget> leading;
 
   @override
   Widget build(BuildContext context) {
     final List<AppWorkspacePatientContextField> visibleFields = fields
         .where((AppWorkspacePatientContextField field) => field.hasValue)
         .toList(growable: false);
-    if (visibleFields.isEmpty) {
+    if (visibleFields.isEmpty && leading.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? separatorStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.outlineVariant,
+      fontWeight: FontWeight.w400,
+    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool narrow =
             !constraints.hasBoundedWidth ||
             constraints.maxWidth < AppBreakpoints.sm;
-        final bool stretchChips =
+        final bool stretchFacts =
             constraints.hasBoundedWidth &&
             constraints.maxWidth < AppBreakpoints.md;
 
+        final List<Widget> items = <Widget>[
+          ...leading,
+          for (final AppWorkspacePatientContextField field in visibleFields)
+            if (stretchFacts && constraints.hasBoundedWidth)
+              SizedBox(
+                width: narrow
+                    ? constraints.maxWidth
+                    : math.max(
+                        (constraints.maxWidth - theme.spacing.sm) / 2,
+                        160,
+                      ),
+                child: _PatientContextInlineFact(
+                  field: field,
+                  expand: true,
+                ),
+              )
+            else
+              _PatientContextInlineFact(field: field),
+        ];
+
+        if (stretchFacts) {
+          return Wrap(
+            spacing: theme.spacing.md,
+            runSpacing: theme.spacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: items,
+          );
+        }
+
         return Wrap(
-          spacing: theme.spacing.sm,
+          spacing: theme.spacing.md,
           runSpacing: theme.spacing.sm,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            for (final AppWorkspacePatientContextField field in visibleFields)
-              if (stretchChips && constraints.hasBoundedWidth)
-                SizedBox(
-                  width: narrow
-                      ? constraints.maxWidth
-                      : math.max(
-                          (constraints.maxWidth - theme.spacing.sm) / 2,
-                          160,
-                        ),
-                  child: _PatientContextInlineFact(
-                    field: field,
-                    expand: true,
-                    chip: true,
-                  ),
-                )
-              else
-                _PatientContextInlineFact(field: field, chip: true),
+            for (var index = 0; index < items.length; index += 1) ...<Widget>[
+              if (index > 0) Text('|', style: separatorStyle),
+              items[index],
+            ],
           ],
         );
       },
@@ -1380,12 +1406,10 @@ class _PatientContextInlineFact extends StatelessWidget {
   const _PatientContextInlineFact({
     required this.field,
     this.expand = false,
-    this.chip = false,
   });
 
   final AppWorkspacePatientContextField field;
   final bool expand;
-  final bool chip;
 
   @override
   Widget build(BuildContext context) {
@@ -1424,68 +1448,43 @@ class _PatientContextInlineFact extends StatelessWidget {
             style: valueStyle,
           );
 
-    final Widget content = Row(
-      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      children: <Widget>[
-        if (field.icon != null) ...<Widget>[
-          Icon(
-            field.icon,
-            size: theme.appTokens.listIconSize,
-            color: accentColor,
-          ),
-          SizedBox(width: theme.spacing.sm / 2),
-        ],
-        if (expand)
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: <InlineSpan>[
-                  TextSpan(text: '${field.label}: ', style: labelStyle),
-                  if (field.copyable)
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: value,
-                    )
-                  else
-                    TextSpan(text: field.value, style: valueStyle),
-                ],
-              ),
-              softWrap: true,
-            ),
-          )
-        else ...<Widget>[
-          Text('${field.label}: ', style: labelStyle),
-          value,
-        ],
-      ],
-    );
-
-    final Widget body = chip
-        ? DecoratedBox(
-            decoration: BoxDecoration(
-              color: field.tone == AppWorkspaceStatusTone.neutral
-                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.42)
-                  : colors.container.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: field.tone == AppWorkspaceStatusTone.neutral
-                    ? colorScheme.outlineVariant.withValues(alpha: 0.35)
-                    : colors.on.withValues(alpha: 0.22),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
-                vertical: theme.spacing.xs,
-              ),
-              child: content,
-            ),
-          )
-        : content;
-
     return Semantics(
       label: '${field.label}: ${field.value}',
-      child: body,
+      child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        children: <Widget>[
+          if (field.icon != null) ...<Widget>[
+            Icon(
+              field.icon,
+              size: theme.appTokens.listIconSize,
+              color: accentColor,
+            ),
+            SizedBox(width: theme.spacing.sm / 2),
+          ],
+          if (expand)
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(text: '${field.label}: ', style: labelStyle),
+                    if (field.copyable)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: value,
+                      )
+                    else
+                      TextSpan(text: field.value, style: valueStyle),
+                  ],
+                ),
+                softWrap: true,
+              ),
+            )
+          else ...<Widget>[
+            Text('${field.label}: ', style: labelStyle),
+            value,
+          ],
+        ],
+      ),
     );
   }
 }

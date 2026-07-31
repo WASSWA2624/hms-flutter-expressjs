@@ -1188,23 +1188,19 @@ class _ClinicalStatusText extends StatelessWidget {
 
     return Semantics(
       label: status.label,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 220),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, size: theme.appTokens.listIconSize, color: color),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Text(
-                status.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: effectiveStyle,
-              ),
-            ),
-          ],
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: theme.appTokens.listIconSize, color: color),
+          SizedBox(width: theme.spacing.xs),
+          Text(
+            status.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: effectiveStyle,
+          ),
+        ],
       ),
     );
   }
@@ -1863,47 +1859,34 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
 
     return AppCollapsibleSection(
       title: l10n.opdWorkflowTriageTitle,
+      headerActions: vitalFacts.isEmpty
+          ? const <Widget>[]
+          : <Widget>[_ClinicalVitalsLegend()],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppPatientContextFactsRow(fields: triageFacts),
-          if (vitalFacts.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.35,
-                ),
-                borderRadius: BorderRadius.circular(theme.radius.sm),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.35,
-                  ),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.sm,
-                ),
-                child: Wrap(
-                  spacing: theme.spacing.md,
-                  runSpacing: theme.spacing.sm,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      '${l10n.opdVitalsSummaryLabel}:',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
+          AppPatientContextFactsRow(
+            leading: vitalFacts.isEmpty
+                ? const <Widget>[]
+                : <Widget>[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          '${l10n.opdVitalsSummaryLabel}:',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: theme.spacing.xs),
+                        _ClinicalStatusText(status: vitalStatus),
+                      ],
                     ),
-                    _ClinicalStatusText(status: vitalStatus),
-                    _ClinicalVitalsLegend(),
                   ],
-                ),
-              ),
-            ),
+            fields: triageFacts,
+          ),
+          if (vitalFacts.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             AppPatientContextFactsRow(fields: vitalFacts),
           ],

@@ -270,7 +270,7 @@ class AppButton extends StatelessWidget {
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
-            context.responsiveRadius(theme.radius.sm),
+            context.responsiveRadius(theme.radius.xs),
           ),
         ),
       ),
