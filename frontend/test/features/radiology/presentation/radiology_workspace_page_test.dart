@@ -61,6 +61,7 @@ const RadiologySummary _summary = RadiologySummary(
   completedOrders: 2,
   actionableOrders: 2,
   reportingOrders: 1,
+  historyOrders: 1,
   actionablePatients: 2,
   reportingPatients: 1,
   releasedPatients: 1,
@@ -114,27 +115,28 @@ List<RadiologyOrder> _ordersForQuery(RadiologyWorkspaceQuery query) {
   List<RadiologyOrder> items = all;
   if (stage == 'WORKLIST') {
     items = all
-        .where((RadiologyOrder order) {
-          final String status = (order.status ?? '').toUpperCase();
-          if (status == 'ORDERED' || status == 'IN_PROCESS') {
-            return true;
-          }
-          // Done but report not ready.
-          return status == 'COMPLETED' &&
-              order.finalResultCount <= 0 &&
-              order.amendedResultCount <= 0;
-        })
+        .where(
+          (RadiologyOrder order) =>
+              !order.isCancelled && !order.hasFinalResult,
+        )
         .toList(growable: false);
   } else if (stage == 'REPORTING') {
     items = all
         .where((RadiologyOrder order) {
+          if (order.isCancelled || order.hasFinalResult) {
+            return false;
+          }
           final String status = (order.status ?? '').toUpperCase();
-          return status == 'COMPLETED' &&
-              order.finalResultCount <= 0 &&
-              order.amendedResultCount <= 0;
+          return status == 'COMPLETED' ||
+              order.hasPerformedStudy ||
+              order.hasDraftResult;
         })
         .toList(growable: false);
-  } else if (stage == 'COMPLETED' || stage == 'HISTORY') {
+  } else if (stage == 'HISTORY') {
+    items = all
+        .where((RadiologyOrder order) => order.hasFinalResult)
+        .toList(growable: false);
+  } else if (stage == 'COMPLETED') {
     items = all
         .where(
           (RadiologyOrder order) =>
@@ -406,11 +408,11 @@ void main() {
       () => repository.getWorkbench(captureAny()),
     ).captured.cast<RadiologyWorkspaceQuery>();
     expect(
-      queries.any((RadiologyWorkspaceQuery q) => q.stage == 'COMPLETED'),
+      queries.any((RadiologyWorkspaceQuery q) => q.stage == 'HISTORY'),
       isTrue,
     );
     expect(find.text('Olivia Ordered'), findsNothing);
-    expect(find.text('Rita Reporting'), findsOneWidget);
+    expect(find.text('Rita Reporting'), findsNothing);
     expect(find.text('Finn Finalized'), findsOneWidget);
   });
 

@@ -221,6 +221,7 @@ final class RadiologySummaryDto {
       unsyncedStudies: _int(json['unsynced_studies']) ?? 0,
       actionableOrders: _int(json['actionable_orders']) ?? 0,
       reportingOrders: _int(json['reporting_orders']) ?? 0,
+      historyOrders: _int(json['history_orders']) ?? 0,
       totalPatients: _int(json['total_patients']) ?? 0,
       actionablePatients: _int(json['actionable_patients']) ?? 0,
       orderedPatients: _int(json['ordered_patients']) ?? 0,

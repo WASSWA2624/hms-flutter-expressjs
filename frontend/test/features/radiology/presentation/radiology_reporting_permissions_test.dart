@@ -1267,13 +1267,20 @@ void _stubRadiology(_MockRadiologyRepository repository) {
     if (stage == 'REPORTING') {
       items = items
           .where((RadiologyOrder order) {
+            if (order.isCancelled || order.hasFinalResult) {
+              return false;
+            }
             final String status = (order.status ?? '').toUpperCase();
-            return status == 'COMPLETED' &&
-                order.finalResultCount <= 0 &&
-                order.amendedResultCount <= 0;
+            return status == 'COMPLETED' ||
+                order.hasPerformedStudy ||
+                order.hasDraftResult;
           })
           .toList(growable: false);
-    } else if (stage == 'COMPLETED' || stage == 'HISTORY') {
+    } else if (stage == 'HISTORY') {
+      items = items
+          .where((RadiologyOrder order) => order.hasFinalResult)
+          .toList(growable: false);
+    } else if (stage == 'COMPLETED') {
       items = items
           .where(
             (RadiologyOrder order) =>

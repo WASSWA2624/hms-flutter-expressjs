@@ -285,7 +285,7 @@ class _RadiologyWorkspaceContentState
       case RadiologyDeskSection.reporting:
         unawaited(controller.applyStage('REPORTING'));
       case RadiologyDeskSection.allOrders:
-        unawaited(controller.applyStage('COMPLETED'));
+        unawaited(controller.applyStage('HISTORY'));
       case RadiologyDeskSection.followUps:
         break;
     }

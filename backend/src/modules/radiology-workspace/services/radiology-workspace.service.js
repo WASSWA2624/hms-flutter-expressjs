@@ -205,52 +205,71 @@ const mapRadiologyPatientWorkItem = (records = []) => {
     imaging_studies: studies};
 };
 
+const radiologyPatientHasReleasedReport = (item) =>
+  Number(item?.final_result_count || 0) + Number(item?.amended_result_count || 0) > 0;
+
+/** Study/procedure done, but final/amended report not ready yet. */
 const radiologyPatientNeedsReporting = (item) => {
-  const released =
-    Number(item?.final_result_count || 0) + Number(item?.amended_result_count || 0);
-  if (released > 0) return false;
-  // Still in acquisition — not "done" yet.
-  if (Number(item?.active_order_count || 0) > 0) return false;
+  if (radiologyPatientHasReleasedReport(item)) return false;
   const status = normalizeRadiologyStatus(item?.status);
-  return (
-    status === 'COMPLETED' ||
-    status === 'REPORTING' ||
-    Number(item?.draft_result_count || 0) > 0
-  );
+  if (status === 'CANCELLED') return false;
+  if (status === 'COMPLETED' || status === 'REPORTING') return true;
+  if (Number(item?.draft_result_count || 0) > 0) return true;
+  // Procedure done can leave status IN_PROCESS when a study exists.
+  if (Number(item?.study_count || 0) > 0) return true;
+  return false;
 };
 
-/** Procedure done, final/amended report not yet released. */
+const radiologyPatientOnWorklist = (item) => {
+  const status = normalizeRadiologyStatus(item?.status);
+  if (status === 'CANCELLED') return false;
+  // Anything not yet report-ready belongs on the worklist.
+  return !radiologyPatientHasReleasedReport(item);
+};
+
+/** Report ready (FINAL or AMENDED result exists). */
+const radiologyReportReadyClause = () => ({
+  results: {
+    some: {
+      deleted_at: null,
+      status: { in: ['FINAL', 'AMENDED'] }}}});
+
+/** Study done / procedure completed, but report not ready. */
 const radiologyAwaitingReportClause = () => ({
   AND: [
-    { status: 'COMPLETED' },
+    { status: { not: 'CANCELLED' } },
+    {
+      results: {
+        none: {
+          deleted_at: null,
+          status: { in: ['FINAL', 'AMENDED'] }}}},
+    {
+      OR: [
+        { status: 'COMPLETED' },
+        { imaging_studies: { some: { deleted_at: null } } },
+        { results: { some: { deleted_at: null, status: 'DRAFT' } } }]}]});
+
+/** Open acquisition work, or done and still awaiting a report. */
+const radiologyWorklistOrdersClause = () => ({
+  AND: [
+    { status: { not: 'CANCELLED' } },
     {
       results: {
         none: {
           deleted_at: null,
           status: { in: ['FINAL', 'AMENDED'] }}}}]});
 
-/** Not done yet, or done and still awaiting a report. */
-const radiologyWorklistOrdersClause = () => ({
-  OR: [
-    { status: { in: ['ORDERED', 'IN_PROCESS'] } },
-    radiologyAwaitingReportClause()]});
-
 const summarizeRadiologyPatientGroups = (groups = []) => {
   const patientItems = groups.map(mapRadiologyPatientWorkItem).filter(Boolean);
   const hasStatus = (item, values) => values.has(normalizeRadiologyStatus(item.status));
   return {
     total_patients: patientItems.length,
-    // Worklist = acquisition + done-awaiting-report (matches stage WORKLIST).
-    actionable_patients: patientItems.filter(
-      (item) =>
-        Number(item.active_order_count || 0) > 0 ||
-        hasStatus(item, new Set(['ORDERED', 'IN_PROCESS'])) ||
-        radiologyPatientNeedsReporting(item)
-    ).length,
+    // Worklist = not cancelled and report not ready (matches stage WORKLIST).
+    actionable_patients: patientItems.filter((item) => radiologyPatientOnWorklist(item)).length,
     ordered_patients: patientItems.filter((item) => hasStatus(item, new Set(['ORDERED']))).length,
     processing_patients: patientItems.filter((item) => hasStatus(item, new Set(['IN_PROCESS']))).length,
     reporting_patients: patientItems.filter((item) => radiologyPatientNeedsReporting(item)).length,
-    released_patients: patientItems.filter((item) => Number(item.final_result_count || 0) + Number(item.amended_result_count || 0) > 0).length,
+    released_patients: patientItems.filter((item) => radiologyPatientHasReleasedReport(item)).length,
     completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
     cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length};
 };
@@ -491,17 +510,19 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   if (includeStage) {
     const stage = normalizeEnumFilter(filters.stage, 'ALL');
     if (stage === 'WORKLIST') {
-      // Not done yet, or done and still awaiting a report.
+      // Not report-ready yet: open procedures + done awaiting report.
       appendAnd(where, radiologyWorklistOrdersClause());
     } else if (stage === 'ORDERED') {
       appendAnd(where, { status: 'ORDERED' });
     } else if (stage === 'PROCESSING') {
       appendAnd(where, { status: 'IN_PROCESS' });
     } else if (stage === 'REPORTING') {
-      // Done, but the report is not ready yet.
+      // Study/procedure done, report not ready.
       appendAnd(where, radiologyAwaitingReportClause());
-    } else if (stage === 'COMPLETED' || stage === 'HISTORY') {
-      // Order history: every completed radiology order (full archive).
+    } else if (stage === 'HISTORY') {
+      // Order history: reports ready (FINAL/AMENDED).
+      appendAnd(where, radiologyReportReadyClause());
+    } else if (stage === 'COMPLETED') {
       appendAnd(where, { status: 'COMPLETED' });
     } else if (stage === 'CANCELLED') {
       appendAnd(where, { status: 'CANCELLED' });
@@ -673,20 +694,28 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
     // List filters include stage; summary counts stay independent of the active tab.
-    const [where, summaryWhere, worklistSummaryWhere, reportingSummaryWhere] =
-      await Promise.all([
-        buildWorkbenchOrderWhere(filters, { includeSearch: true }),
-        buildWorkbenchOrderWhere(filters, {
-          includeSearch: false,
-          includeStage: false}),
-        buildWorkbenchOrderWhere(
-          { ...filters, stage: 'WORKLIST' },
-          { includeSearch: false, includeStage: true }
-        ),
-        buildWorkbenchOrderWhere(
-          { ...filters, stage: 'REPORTING' },
-          { includeSearch: false, includeStage: true }
-        )]);
+    const [
+      where,
+      summaryWhere,
+      worklistSummaryWhere,
+      reportingSummaryWhere,
+      historySummaryWhere] = await Promise.all([
+      buildWorkbenchOrderWhere(filters, { includeSearch: true }),
+      buildWorkbenchOrderWhere(filters, {
+        includeSearch: false,
+        includeStage: false}),
+      buildWorkbenchOrderWhere(
+        { ...filters, stage: 'WORKLIST' },
+        { includeSearch: false, includeStage: true }
+      ),
+      buildWorkbenchOrderWhere(
+        { ...filters, stage: 'REPORTING' },
+        { includeSearch: false, includeStage: true }
+      ),
+      buildWorkbenchOrderWhere(
+        { ...filters, stage: 'HISTORY' },
+        { includeSearch: false, includeStage: true }
+      )]);
 
     const [
       orderWorklistRecords,
@@ -703,6 +732,7 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
       unsyncedStudies,
       actionableOrders,
       reportingOrders,
+      historyOrders,
       summaryOrderRecords] = await Promise.all([
       view === 'PATIENTS'
         ? radiologyWorkspaceRepository.findManyOrders(
@@ -763,6 +793,7 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
             deleted_at: null}}}),
       radiologyWorkspaceRepository.countOrders(worklistSummaryWhere),
       radiologyWorkspaceRepository.countOrders(reportingSummaryWhere),
+      radiologyWorkspaceRepository.countOrders(historySummaryWhere),
       radiologyWorkspaceRepository.findManyOrders(
         summaryWhere,
         0,
@@ -775,11 +806,16 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
     const patientSummary = summarizeRadiologyPatientGroups(
       groupRadiologyOrdersByPatient(summaryOrderRecords)
     );
-    // Order-history patient count must match COMPLETED stage grouping (not aggregate status).
-    const completedPatientCount = groupRadiologyOrdersByPatient(
-      summaryOrderRecords.filter(
-        (record) => normalizeRadiologyStatus(record.status) === 'COMPLETED'
-      )
+    // Order-history patient count matches report-ready (HISTORY) stage grouping.
+    const historyPatientCount = groupRadiologyOrdersByPatient(
+      summaryOrderRecords.filter((record) => {
+        const results = Array.isArray(record.results) ? record.results : [];
+        return results.some((result) => {
+          if (result?.deleted_at) return false;
+          const status = normalizeRadiologyStatus(result.status);
+          return status === 'FINAL' || status === 'AMENDED';
+        });
+      })
     ).length;
     const patientWorklist = patientGroups.map(mapRadiologyPatientWorkItem).filter(Boolean);
     const pagedPatientWorklist = patientWorklist.slice(skip, skip + limit);
@@ -803,8 +839,9 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
         unsynced_studies: unsyncedStudies,
         actionable_orders: actionableOrders,
         reporting_orders: reportingOrders,
+        history_orders: historyOrders,
         ...patientSummary,
-        completed_patients: completedPatientCount},
+        released_patients: historyPatientCount},
       worklist,
       pagination: buildPagination(page, limit, worklistTotal)};
   } catch (error) {
