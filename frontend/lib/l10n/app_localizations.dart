@@ -20128,6 +20128,42 @@ abstract class AppLocalizations {
   /// **'Procedure details'**
   String get radiologyProcedureDetailsDialogTitle;
 
+  /// Section label for the guided next action in procedure details.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get radiologyProcedureDetailsNextStepLabel;
+
+  /// Guidance shown for pending radiology procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the procedure done when imaging has been completed for this study.'**
+  String get radiologyProcedureDetailsPendingHint;
+
+  /// Guidance shown when a study is waiting for a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Write and release the radiology report for this completed study.'**
+  String get radiologyProcedureDetailsWaitingReportHint;
+
+  /// Guidance shown for reported radiology procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'This procedure is reported. Open the report to review or print.'**
+  String get radiologyProcedureDetailsReportedHint;
+
+  /// Guidance shown for cancelled radiology procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'This procedure order was cancelled and is no longer actionable.'**
+  String get radiologyProcedureDetailsCancelledHint;
+
+  /// Guidance shown for in-process radiology procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging is in process. Mark the procedure done when acquisition is complete.'**
+  String get radiologyProcedureDetailsInProcessHint;
+
   /// Open an already-reported radiology report from procedure details.
   ///
   /// In en, this message translates to:

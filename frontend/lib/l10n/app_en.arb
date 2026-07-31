@@ -13942,6 +13942,30 @@
   "@radiologyProcedureDetailsDialogTitle": {
     "description": "Title for the radiology procedure details dialog."
   },
+  "radiologyProcedureDetailsNextStepLabel": "Next step",
+  "@radiologyProcedureDetailsNextStepLabel": {
+    "description": "Section label for the guided next action in procedure details."
+  },
+  "radiologyProcedureDetailsPendingHint": "Mark the procedure done when imaging has been completed for this study.",
+  "@radiologyProcedureDetailsPendingHint": {
+    "description": "Guidance shown for pending radiology procedures."
+  },
+  "radiologyProcedureDetailsWaitingReportHint": "Write and release the radiology report for this completed study.",
+  "@radiologyProcedureDetailsWaitingReportHint": {
+    "description": "Guidance shown when a study is waiting for a report."
+  },
+  "radiologyProcedureDetailsReportedHint": "This procedure is reported. Open the report to review or print.",
+  "@radiologyProcedureDetailsReportedHint": {
+    "description": "Guidance shown for reported radiology procedures."
+  },
+  "radiologyProcedureDetailsCancelledHint": "This procedure order was cancelled and is no longer actionable.",
+  "@radiologyProcedureDetailsCancelledHint": {
+    "description": "Guidance shown for cancelled radiology procedures."
+  },
+  "radiologyProcedureDetailsInProcessHint": "Imaging is in process. Mark the procedure done when acquisition is complete.",
+  "@radiologyProcedureDetailsInProcessHint": {
+    "description": "Guidance shown for in-process radiology procedures."
+  },
   "radiologyViewReportAction": "View report",
   "@radiologyViewReportAction": {
     "description": "Open an already-reported radiology report from procedure details."

@@ -10912,6 +10912,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyProcedureDetailsDialogTitle => 'Procedure details';
 
   @override
+  String get radiologyProcedureDetailsNextStepLabel => 'Next step';
+
+  @override
+  String get radiologyProcedureDetailsPendingHint =>
+      'Mark the procedure done when imaging has been completed for this study.';
+
+  @override
+  String get radiologyProcedureDetailsWaitingReportHint =>
+      'Write and release the radiology report for this completed study.';
+
+  @override
+  String get radiologyProcedureDetailsReportedHint =>
+      'This procedure is reported. Open the report to review or print.';
+
+  @override
+  String get radiologyProcedureDetailsCancelledHint =>
+      'This procedure order was cancelled and is no longer actionable.';
+
+  @override
+  String get radiologyProcedureDetailsInProcessHint =>
+      'Imaging is in process. Mark the procedure done when acquisition is complete.';
+
+  @override
   String get radiologyViewReportAction => 'View report';
 
   @override
