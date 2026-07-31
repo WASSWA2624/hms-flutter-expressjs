@@ -222,6 +222,12 @@ final class RadiologyWorkspaceState {
         : summary.reportingOrders;
   }
 
+  int get historyCount {
+    return query.view == RadiologyWorkbenchView.patients
+        ? summary.completedPatients
+        : summary.completedOrders;
+  }
+
   RadiologyWorkspaceState copyWith({
     AppPage<RadiologyOrder>? orders,
     RadiologySummary? summary,

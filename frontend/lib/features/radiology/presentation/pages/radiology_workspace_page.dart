@@ -262,6 +262,9 @@ class _RadiologyWorkspaceContentState
       case 'all':
       case 'all_orders':
       case 'all-orders':
+      case 'history':
+      case 'order-history':
+      case 'order_history':
         return RadiologyDeskSection.allOrders;
       case 'follow-ups':
       case 'follow_ups':
@@ -282,7 +285,7 @@ class _RadiologyWorkspaceContentState
       case RadiologyDeskSection.reporting:
         unawaited(controller.applyStage('REPORTING'));
       case RadiologyDeskSection.allOrders:
-        unawaited(controller.applyStage('ALL'));
+        unawaited(controller.applyStage('COMPLETED'));
       case RadiologyDeskSection.followUps:
         break;
     }
@@ -320,9 +323,7 @@ class _RadiologyWorkspaceContentState
     return switch (section) {
       RadiologyDeskSection.worklist => state.workloadCount,
       RadiologyDeskSection.reporting => state.reportingCount,
-      RadiologyDeskSection.allOrders => state.summary.totalForView(
-        state.query.view,
-      ),
+      RadiologyDeskSection.allOrders => state.historyCount,
       RadiologyDeskSection.followUps => null,
     };
   }

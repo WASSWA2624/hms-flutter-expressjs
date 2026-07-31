@@ -10747,7 +10747,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyWorklistSummaryLabel => 'Worklist';
 
   @override
-  String get radiologyAllOrdersSummaryLabel => 'All orders';
+  String get radiologyAllOrdersSummaryLabel => 'Order history';
 
   @override
   String get radiologyWaitingImagingSummaryLabel => 'Waiting imaging';

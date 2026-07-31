@@ -438,10 +438,12 @@ String _worklistStatusLabel(AppLocalizations l10n, RadiologyOrder order) {
   if (order.isCancelled) {
     return l10n.radiologyStatusCancelled;
   }
-  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+  if (order.hasFinalResult) {
     return l10n.radiologyProcedureStatusReported;
   }
-  if (order.hasDraftResult || order.hasPerformedStudy) {
+  if (order.normalizedStatus == 'COMPLETED' ||
+      order.hasDraftResult ||
+      order.hasPerformedStudy) {
     return l10n.radiologyProcedureStatusWaitingReport;
   }
   if (order.normalizedStatus == 'IN_PROCESS') {
@@ -458,10 +460,12 @@ String _nextActionLabel(BuildContext context, RadiologyOrder order) {
   if (order.billingGateBlocked) {
     return l10n.radiologyNextActionConfirmBilling;
   }
-  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+  if (order.hasFinalResult) {
     return l10n.radiologyViewReportAction;
   }
-  if (order.hasDraftResult || order.hasPerformedStudy) {
+  if (order.normalizedStatus == 'COMPLETED' ||
+      order.hasDraftResult ||
+      order.hasPerformedStudy) {
     return l10n.radiologyCreateReportAction;
   }
   return l10n.radiologyMarkProcedureDoneAction;
@@ -483,10 +487,12 @@ AppWorkspaceStatusTone _worklistStatusTone(RadiologyOrder order) {
   if (order.isCancelled) {
     return AppWorkspaceStatusTone.error;
   }
-  if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
+  if (order.hasFinalResult) {
     return AppWorkspaceStatusTone.success;
   }
-  if (order.hasDraftResult || order.hasPerformedStudy) {
+  if (order.normalizedStatus == 'COMPLETED' ||
+      order.hasDraftResult ||
+      order.hasPerformedStudy) {
     return AppWorkspaceStatusTone.info;
   }
   if (order.normalizedStatus == 'IN_PROCESS') {

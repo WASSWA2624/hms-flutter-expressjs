@@ -35,7 +35,7 @@ const RadiologyOrder _orderedOrder = RadiologyOrder(
 const RadiologyOrder _reportingOrder = RadiologyOrder(
   id: 'RO-REPORT',
   displayId: 'RAD-REPORT',
-  status: 'IN_PROCESS',
+  status: 'COMPLETED',
   patientDisplayName: 'Rita Reporting',
   modality: 'CT',
   testDisplayName: 'CT Head',
@@ -55,14 +55,16 @@ const RadiologyOrder _releasedOrder = RadiologyOrder(
 const RadiologySummary _summary = RadiologySummary(
   totalOrders: 3,
   orderedQueue: 1,
-  processingQueue: 1,
+  processingQueue: 0,
   draftReports: 1,
   finalizedReports: 1,
+  completedOrders: 2,
   actionableOrders: 2,
   reportingOrders: 1,
   actionablePatients: 2,
   reportingPatients: 1,
   releasedPatients: 1,
+  completedPatients: 2,
   totalPatients: 3,
 );
 
@@ -114,14 +116,25 @@ List<RadiologyOrder> _ordersForQuery(RadiologyWorkspaceQuery query) {
     items = all
         .where((RadiologyOrder order) {
           final String status = (order.status ?? '').toUpperCase();
-          return status == 'ORDERED' || status == 'IN_PROCESS';
+          if (status == 'ORDERED' || status == 'IN_PROCESS') {
+            return true;
+          }
+          // Done but report not ready.
+          return status == 'COMPLETED' &&
+              order.finalResultCount <= 0 &&
+              order.amendedResultCount <= 0;
         })
         .toList(growable: false);
   } else if (stage == 'REPORTING') {
     items = all
-        .where((RadiologyOrder order) => order.draftResultCount > 0)
+        .where((RadiologyOrder order) {
+          final String status = (order.status ?? '').toUpperCase();
+          return status == 'COMPLETED' &&
+              order.finalResultCount <= 0 &&
+              order.amendedResultCount <= 0;
+        })
         .toList(growable: false);
-  } else if (stage == 'COMPLETED') {
+  } else if (stage == 'COMPLETED' || stage == 'HISTORY') {
     items = all
         .where(
           (RadiologyOrder order) =>
@@ -328,7 +341,7 @@ void main() {
     expect(find.byType(AppListTable<RadiologyOrder>), findsOneWidget);
     expect(find.textContaining('Worklist'), findsWidgets);
     expect(find.textContaining('Reporting'), findsWidgets);
-    expect(find.textContaining('All orders'), findsWidgets);
+    expect(find.textContaining('Order history'), findsWidgets);
     expect(find.textContaining('Released'), findsNothing);
     expect(find.text('Olivia Ordered'), findsOneWidget);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
@@ -383,7 +396,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(AppTabStrip),
-        matching: find.textContaining('All orders'),
+        matching: find.textContaining('Order history'),
       ),
     );
     await tester.pumpAndSettle();
@@ -393,10 +406,10 @@ void main() {
       () => repository.getWorkbench(captureAny()),
     ).captured.cast<RadiologyWorkspaceQuery>();
     expect(
-      queries.any((RadiologyWorkspaceQuery q) => q.stage == 'ALL'),
+      queries.any((RadiologyWorkspaceQuery q) => q.stage == 'COMPLETED'),
       isTrue,
     );
-    expect(find.text('Olivia Ordered'), findsOneWidget);
+    expect(find.text('Olivia Ordered'), findsNothing);
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Finn Finalized'), findsOneWidget);
   });
@@ -430,7 +443,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(AppTabStrip),
-        matching: find.textContaining('All orders'),
+        matching: find.textContaining('Order history'),
       ),
     );
     await tester.pumpAndSettle();

@@ -33,7 +33,7 @@ class _MockRadiologyRepository extends Mock implements RadiologyRepository {}
 const RadiologyOrder _reportingOrder = RadiologyOrder(
   id: 'RO-REPORT',
   displayId: 'RAD-REPORT',
-  status: 'IN_PROCESS',
+  status: 'COMPLETED',
   patientDisplayName: 'Rita Reporting',
   patientId: 'PAT-RITA',
   modality: 'CT',
@@ -1266,10 +1266,20 @@ void _stubRadiology(_MockRadiologyRepository repository) {
     final String stage = query.stage.trim().toUpperCase();
     if (stage == 'REPORTING') {
       items = items
-          .where((RadiologyOrder order) => order.draftResultCount > 0)
+          .where((RadiologyOrder order) {
+            final String status = (order.status ?? '').toUpperCase();
+            return status == 'COMPLETED' &&
+                order.finalResultCount <= 0 &&
+                order.amendedResultCount <= 0;
+          })
           .toList(growable: false);
-    } else if (stage == 'COMPLETED') {
-      items = const <RadiologyOrder>[];
+    } else if (stage == 'COMPLETED' || stage == 'HISTORY') {
+      items = items
+          .where(
+            (RadiologyOrder order) =>
+                (order.status ?? '').toUpperCase() == 'COMPLETED',
+          )
+          .toList(growable: false);
     }
     return Result<RadiologyWorkbench>.success(
       RadiologyWorkbench(

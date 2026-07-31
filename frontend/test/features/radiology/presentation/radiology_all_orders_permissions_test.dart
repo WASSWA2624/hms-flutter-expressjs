@@ -429,7 +429,7 @@ void main() {
       );
 
       expect(router.state.uri.queryParameters['section'], 'all');
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(find.textContaining('Order history'), findsWidgets);
       expect(
         _table(tester).columnVisibilityStorageKey,
         'radiology_allOrders_patients',
@@ -541,7 +541,7 @@ void main() {
         );
 
         expect(find.byType(AppTabStrip), findsOneWidget);
-        expect(find.textContaining('All orders'), findsWidgets);
+        expect(find.textContaining('Order history'), findsWidgets);
         expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.byTooltip('Request imaging'), findsNothing);
         expect(find.byTooltip('Configurations'), findsNothing);
@@ -799,7 +799,7 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(find.textContaining('Order history'), findsWidgets);
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byType(AppListTableMobileItem), findsWidgets);
     });
@@ -829,7 +829,7 @@ void main() {
 
       expect(find.byTooltip('Request imaging'), findsOneWidget);
       expect(find.byTooltip('Configurations'), findsNothing);
-      expect(find.textContaining('All orders'), findsWidgets);
+      expect(find.textContaining('Order history'), findsWidgets);
     });
 
     testWidgets('light theme: All orders write chrome remains', (

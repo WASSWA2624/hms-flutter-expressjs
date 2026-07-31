@@ -19810,10 +19810,10 @@ abstract class AppLocalizations {
   /// **'Worklist'**
   String get radiologyWorklistSummaryLabel;
 
-  /// Radiology desk tab label for all imaging orders.
+  /// Radiology desk tab label for the completed imaging order archive.
   ///
   /// In en, this message translates to:
-  /// **'All orders'**
+  /// **'Order history'**
   String get radiologyAllOrdersSummaryLabel;
 
   /// Localized text for radiologyWaitingImagingSummaryLabel.

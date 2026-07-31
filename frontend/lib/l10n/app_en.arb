@@ -13720,9 +13720,9 @@
   "@radiologyWorklistSummaryLabel": {
     "description": "Radiology desk tab label for the active imaging worklist."
   },
-  "radiologyAllOrdersSummaryLabel": "All orders",
+  "radiologyAllOrdersSummaryLabel": "Order history",
   "@radiologyAllOrdersSummaryLabel": {
-    "description": "Radiology desk tab label for all imaging orders."
+    "description": "Radiology desk tab label for the completed imaging order archive."
   },
   "radiologyWaitingImagingSummaryLabel": "Waiting imaging",
   "@radiologyWaitingImagingSummaryLabel": {

@@ -95,6 +95,7 @@ void main() {
       );
       expect(patientsState.workloadCount, 6);
       expect(patientsState.reportingCount, 2);
+      expect(patientsState.historyCount, 0);
       expect(summary.totalForView(RadiologyWorkbenchView.patients), 8);
 
       const RadiologyWorkspaceState ordersState = RadiologyWorkspaceState(
@@ -105,6 +106,7 @@ void main() {
       );
       expect(ordersState.workloadCount, 5);
       expect(ordersState.reportingCount, 4);
+      expect(ordersState.historyCount, 0);
       expect(summary.totalForView(RadiologyWorkbenchView.orders), 12);
     });
   });

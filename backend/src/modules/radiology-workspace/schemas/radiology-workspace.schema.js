@@ -24,6 +24,7 @@ const stageFilterSchema = z.enum([
   'PROCESSING',
   'REPORTING',
   'COMPLETED',
+  'HISTORY',
   'CANCELLED']);
 const workbenchViewSchema = z.enum(['PATIENTS', 'ORDERS', 'patients', 'orders']);
 
