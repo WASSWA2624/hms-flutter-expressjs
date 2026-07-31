@@ -1283,6 +1283,7 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
     final RadiologyNextActions next = workflow.nextActions;
     final bool waitingForReport =
         status == _ProcedureWorkbenchStatus.waitingForReport;
+    final bool reported = status == _ProcedureWorkbenchStatus.reported;
     final bool pendingLike =
         status == _ProcedureWorkbenchStatus.pending ||
         status == _ProcedureWorkbenchStatus.inProcess;
@@ -1293,6 +1294,8 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
         pendingLike;
     final bool canMarkReportDone =
         widget.onMarkReportDone != null && waitingForReport;
+    final bool canViewReport =
+        widget.onMarkReportDone != null && reported;
     final bool canAssignTypist =
         widget.canWork &&
         widget.onAssignTypist != null &&
@@ -1410,13 +1413,18 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                           ),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
                           child: Text('${index + 1}'),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
+                          debugKey: ValueKey<String>(
+                            'radiology-procedure-id-${rows[index].selectionKey}',
+                          ),
                           child: Text(
                             rows[index].id,
                             style: theme.textTheme.labelLarge?.copyWith(
@@ -1425,8 +1433,9 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                           ),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
                           child: Text(
                             rows[index].name,
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -1435,8 +1444,9 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                           ),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
                           child: Text(
                             _modalityLabelOrNull(
                                   l10n,
@@ -1446,15 +1456,17 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                           ),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
                           child: Text(
                             _procedureBodyOrganLabel(rows[index]).ifEmpty('—'),
                           ),
                         ),
                         _ProcedureTableCell(
-                          onTap: () =>
-                              _openProcedureDetails(context, rows[index]),
+                          onTap: () {
+                            _openProcedureDetails(this.context, rows[index]);
+                          },
                           child: AppWorkspaceStatusBadge(
                             status: AppWorkspaceStatus(
                               label: _procedureWorkbenchStatusLabel(
@@ -1497,6 +1509,13 @@ class _ProcedureWorkbenchSectionState extends State<_ProcedureWorkbenchSection> 
                                   dense: true,
                                   label: l10n.radiologyMarkReportDoneAction,
                                   leadingIcon: Icons.edit_note_outlined,
+                                  onPressed: widget.onMarkReportDone,
+                                ),
+                              if (canViewReport)
+                                AppButton.primary(
+                                  dense: true,
+                                  label: l10n.radiologyViewReportAction,
+                                  leadingIcon: Icons.description_outlined,
                                   onPressed: widget.onMarkReportDone,
                                 ),
                               if (canAssignTypist)
@@ -1603,7 +1622,10 @@ class _ProcedureDetailsDialog extends StatelessWidget {
     }
 
     return AppDialog(
-      title: Text(l10n.radiologyProcedureDetailsDialogTitle),
+      title: Text(
+        l10n.radiologyProcedureDetailsDialogTitle,
+        key: const ValueKey<String>('radiology-procedure-details-title'),
+      ),
       icon: const Icon(Icons.biotech_outlined),
       scrollable: true,
       maxWidth: 560,
@@ -1714,16 +1736,21 @@ class _ProcedureDetailField extends StatelessWidget {
 }
 
 class _ProcedureTableCell extends StatelessWidget {
-  const _ProcedureTableCell({required this.child, this.onTap})
-    : _headerLabel = null;
+  const _ProcedureTableCell({
+    required this.child,
+    this.onTap,
+    this.debugKey,
+  }) : _headerLabel = null;
 
   const _ProcedureTableCell.header(String label)
     : child = null,
       onTap = null,
+      debugKey = null,
       _headerLabel = label;
 
   final Widget? child;
   final VoidCallback? onTap;
+  final Key? debugKey;
   final String? _headerLabel;
 
   @override
@@ -1738,6 +1765,7 @@ class _ProcedureTableCell extends StatelessWidget {
           )
         : child!;
     final Widget padded = Padding(
+      key: debugKey,
       padding: EdgeInsets.symmetric(
         horizontal: theme.spacing.sm,
         vertical: theme.spacing.sm,
@@ -1747,9 +1775,17 @@ class _ProcedureTableCell extends StatelessWidget {
     if (onTap == null) {
       return padded;
     }
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(onTap: onTap, child: padded),
+    return GestureDetector(
+      key: debugKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.sm,
+        ),
+        child: content,
+      ),
     );
   }
 }
