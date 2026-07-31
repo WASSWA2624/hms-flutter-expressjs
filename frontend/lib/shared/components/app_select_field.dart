@@ -242,6 +242,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                   controller: _controller,
                   enabled: canSelect && !widget.isLoading,
                   dense: widget.isDense,
+                  transcriptTransform: appSpeechTextTranscript,
                   onChanged: (String value) {
                     widget.onSearchTextChanged?.call(value);
                   },
@@ -258,6 +259,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                   controller: _controller,
                   enabled: canSelect && !widget.isLoading,
                   dense: widget.isDense,
+                  transcriptTransform: appSpeechTextTranscript,
                   onChanged: (String value) {
                     widget.onSearchTextChanged?.call(value);
                   },

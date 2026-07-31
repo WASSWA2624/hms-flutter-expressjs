@@ -133,26 +133,8 @@ class _AppTextFieldState extends State<AppTextField> {
     keyboardType: widget.keyboardType,
   );
 
-  String Function(String transcript)? get _speechTranscriptTransform {
-    final TextInputType? keyboardType = widget.keyboardType;
-    if (keyboardType == TextInputType.phone ||
-        keyboardType == TextInputType.number ||
-        keyboardType == TextInputType.datetime) {
-      return appSpeechDigitsOnlyTranscript;
-    }
-    if (keyboardType == const TextInputType.numberWithOptions() ||
-        keyboardType == const TextInputType.numberWithOptions(decimal: true) ||
-        keyboardType == const TextInputType.numberWithOptions(signed: true) ||
-        keyboardType ==
-            const TextInputType.numberWithOptions(
-              signed: true,
-              decimal: true,
-            )) {
-      return (String transcript) =>
-          appSpeechDigitsOnlyTranscript(transcript, allowDecimal: true);
-    }
-    return null;
-  }
+  String Function(String transcript) get _speechTranscriptTransform =>
+      appSpeechTranscriptTransformForKeyboard(widget.keyboardType);
 
   TextEditingController? get _effectiveController =>
       widget.controller ?? _ownedController;

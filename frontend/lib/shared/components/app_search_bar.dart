@@ -541,6 +541,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
               controller: widget.controller,
               enabled: widget.enabled && !widget.isLoading,
               dense: true,
+              transcriptTransform: appSpeechTextTranscript,
               onChanged: widget.onChanged,
             ),
           if (widget.isLoading)

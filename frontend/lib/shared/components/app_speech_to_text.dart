@@ -170,60 +170,612 @@ bool appSpeechToTextEnabledForField({
   return true;
 }
 
-/// Keeps digits (and optional decimal separators) from a spoken transcript so
-/// fields with digit-only formatters still receive usable values when STT
-/// returns spaced digits or English number words.
+/// How spoken transcripts are normalized before insertion.
+enum AppSpeechTranscriptMode {
+  /// Running prose: punctuation words and cardinal number phrases.
+  text,
+
+  /// Email-oriented tokens (`at`, `dot`, `underscore`, …).
+  email,
+
+  /// Integer / phone / date-time digit fields.
+  digits,
+
+  /// Amounts and decimal number fields.
+  decimal,
+}
+
+/// Picks a transcript mode from a Flutter [TextInputType].
+AppSpeechTranscriptMode appSpeechTranscriptModeForKeyboard(
+  TextInputType? keyboardType,
+) {
+  if (keyboardType == TextInputType.emailAddress) {
+    return AppSpeechTranscriptMode.email;
+  }
+  if (keyboardType == TextInputType.phone ||
+      keyboardType == TextInputType.number ||
+      keyboardType == TextInputType.datetime) {
+    return AppSpeechTranscriptMode.digits;
+  }
+  if (keyboardType == const TextInputType.numberWithOptions() ||
+      keyboardType == const TextInputType.numberWithOptions(decimal: true) ||
+      keyboardType == const TextInputType.numberWithOptions(signed: true) ||
+      keyboardType ==
+          const TextInputType.numberWithOptions(signed: true, decimal: true)) {
+    return AppSpeechTranscriptMode.decimal;
+  }
+  return AppSpeechTranscriptMode.text;
+}
+
+/// Normalizes a spoken transcript for the given [mode].
+String appSpeechNormalizeTranscript(
+  String transcript, {
+  AppSpeechTranscriptMode mode = AppSpeechTranscriptMode.text,
+}) {
+  final String trimmed = transcript.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+
+  return switch (mode) {
+    AppSpeechTranscriptMode.digits => _normalizeSpokenNumberField(
+      trimmed,
+      allowDecimal: false,
+    ),
+    AppSpeechTranscriptMode.decimal => _normalizeSpokenNumberField(
+      trimmed,
+      allowDecimal: true,
+    ),
+    AppSpeechTranscriptMode.email => _normalizeSpokenEmail(trimmed),
+    AppSpeechTranscriptMode.text => _normalizeSpokenText(trimmed),
+  };
+}
+
+/// Convenience transform used by digit-only shared fields.
 String appSpeechDigitsOnlyTranscript(
   String transcript, {
   bool allowDecimal = false,
 }) {
-  const Map<String, String> wordDigits = <String, String>{
-    'zero': '0',
-    'oh': '0',
-    'o': '0',
-    'one': '1',
-    'two': '2',
-    'three': '3',
-    'four': '4',
-    'five': '5',
-    'six': '6',
-    'seven': '7',
-    'eight': '8',
-    'nine': '9',
-    'ten': '10',
-  };
+  return appSpeechNormalizeTranscript(
+    transcript,
+    mode: allowDecimal
+        ? AppSpeechTranscriptMode.decimal
+        : AppSpeechTranscriptMode.digits,
+  );
+}
 
-  final StringBuffer buffer = StringBuffer();
-  for (final String rawToken in transcript.toLowerCase().split(
-    RegExp(r'[\s,/-]+'),
-  )) {
-    final String token = rawToken.trim();
-    if (token.isEmpty) {
+/// Default transform for free-text / search / select / rich-text fields.
+String appSpeechTextTranscript(String transcript) {
+  return appSpeechNormalizeTranscript(
+    transcript,
+    mode: AppSpeechTranscriptMode.text,
+  );
+}
+
+/// Default transform for email fields.
+String appSpeechEmailTranscript(String transcript) {
+  return appSpeechNormalizeTranscript(
+    transcript,
+    mode: AppSpeechTranscriptMode.email,
+  );
+}
+
+String Function(String transcript) appSpeechTranscriptTransformForMode(
+  AppSpeechTranscriptMode mode,
+) {
+  return (String transcript) =>
+      appSpeechNormalizeTranscript(transcript, mode: mode);
+}
+
+String Function(String transcript) appSpeechTranscriptTransformForKeyboard(
+  TextInputType? keyboardType,
+) {
+  return appSpeechTranscriptTransformForMode(
+    appSpeechTranscriptModeForKeyboard(keyboardType),
+  );
+}
+
+// --- Token helpers -----------------------------------------------------------
+
+List<String> _speechTokens(String transcript) {
+  final String normalized = transcript
+      .toLowerCase()
+      .replaceAll(RegExp(r'[—–]'), '-')
+      .replaceAllMapped(
+        RegExp(r'(\d)[,\s]+(?=\d)'),
+        (Match match) => match.group(1)!,
+      );
+  // Keep hyphenated number words as separate tokens ("twenty-five").
+  final String spaced = normalized.replaceAll('-', ' ');
+  return spaced
+      .split(RegExp(r'\s+'))
+      .map((String token) => token.trim())
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
+}
+
+const Map<String, int> _speechOnes = <String, int>{
+  'zero': 0,
+  'oh': 0,
+  'o': 0,
+  'nought': 0,
+  'one': 1,
+  'two': 2,
+  'three': 3,
+  'four': 4,
+  'five': 5,
+  'six': 6,
+  'seven': 7,
+  'eight': 8,
+  'nine': 9,
+};
+
+const Map<String, int> _speechTeens = <String, int>{
+  'ten': 10,
+  'eleven': 11,
+  'twelve': 12,
+  'thirteen': 13,
+  'fourteen': 14,
+  'fifteen': 15,
+  'sixteen': 16,
+  'seventeen': 17,
+  'eighteen': 18,
+  'nineteen': 19,
+};
+
+const Map<String, int> _speechTens = <String, int>{
+  'twenty': 20,
+  'thirty': 30,
+  'forty': 40,
+  'fourty': 40,
+  'fifty': 50,
+  'sixty': 60,
+  'seventy': 70,
+  'eighty': 80,
+  'ninety': 90,
+};
+
+const Map<String, int> _speechScales = <String, int>{
+  'hundred': 100,
+  'thousand': 1000,
+  'million': 1000000,
+  'billion': 1000000000,
+};
+
+bool _isSpokenNumberAtom(String token, {bool allowAnd = false}) {
+  if (token == 'and') {
+    return allowAnd;
+  }
+  if (_speechOnes.containsKey(token) ||
+      _speechTeens.containsKey(token) ||
+      _speechTens.containsKey(token) ||
+      _speechScales.containsKey(token) ||
+      token == 'point' ||
+      token == 'dot') {
+    return true;
+  }
+  return RegExp(r'^\d+(\.\d+)?$').hasMatch(token);
+}
+
+bool _spokenNumberPhraseNeedsCardinal(List<String> tokens) {
+  for (final String token in tokens) {
+    if (_speechTeens.containsKey(token) ||
+        _speechTens.containsKey(token) ||
+        _speechScales.containsKey(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Parses a spoken English cardinal / decimal phrase into a numeric string.
+///
+/// Examples: `one thousand two hundred twenty-five` → `1225`,
+/// `twelve point five` → `12.5`.
+String? parseSpokenEnglishNumber(
+  String transcript, {
+  bool allowDecimal = true,
+}) {
+  final List<String> tokens = _speechTokens(transcript)
+      .where((String token) => token != 'and')
+      .toList(growable: false);
+  if (tokens.isEmpty) {
+    return null;
+  }
+
+  final int pointIndex = tokens.indexWhere(
+    (String token) => token == 'point' || token == 'dot',
+  );
+  final List<String> wholeTokens = pointIndex >= 0
+      ? tokens.sublist(0, pointIndex)
+      : tokens;
+  final List<String> fractionTokens = pointIndex >= 0
+      ? tokens.sublist(pointIndex + 1)
+      : const <String>[];
+
+  if (!allowDecimal && fractionTokens.isNotEmpty) {
+    return null;
+  }
+
+  final int? whole = wholeTokens.isEmpty
+      ? (pointIndex >= 0 ? 0 : null)
+      : _parseSpokenCardinalTokens(wholeTokens);
+  if (whole == null) {
+    return null;
+  }
+
+  if (fractionTokens.isEmpty) {
+    return whole.toString();
+  }
+
+  final String fractionDigits = _spokenFractionDigits(fractionTokens);
+  if (fractionDigits.isEmpty) {
+    return whole.toString();
+  }
+  return '$whole.$fractionDigits';
+}
+
+int? _parseSpokenCardinalTokens(List<String> tokens) {
+  if (tokens.isEmpty) {
+    return null;
+  }
+  if (!_spokenNumberPhraseNeedsCardinal(tokens) &&
+      tokens.every(
+        (String token) =>
+            _speechOnes.containsKey(token) || RegExp(r'^\d+$').hasMatch(token),
+      )) {
+    // Digit-by-digit: "one two two five" → 1225, not 1+2+2+5.
+    return null;
+  }
+
+  var total = 0;
+  var current = 0;
+  var sawNumber = false;
+
+  for (final String token in tokens) {
+    final int? arabic = int.tryParse(token);
+    if (arabic != null) {
+      current += arabic;
+      sawNumber = true;
       continue;
     }
-    final String? mapped = wordDigits[token];
-    if (mapped != null) {
-      buffer.write(mapped);
+    final int? one = _speechOnes[token];
+    if (one != null) {
+      current += one;
+      sawNumber = true;
       continue;
     }
-    if (allowDecimal && (token == 'point' || token == 'dot')) {
-      if (!buffer.toString().contains('.')) {
-        buffer.write('.');
+    final int? teen = _speechTeens[token];
+    if (teen != null) {
+      current += teen;
+      sawNumber = true;
+      continue;
+    }
+    final int? ten = _speechTens[token];
+    if (ten != null) {
+      current += ten;
+      sawNumber = true;
+      continue;
+    }
+    final int? scale = _speechScales[token];
+    if (scale != null) {
+      if (scale == 100) {
+        current = (current == 0 ? 1 : current) * 100;
+      } else {
+        total += (current == 0 ? 1 : current) * scale;
+        current = 0;
       }
+      sawNumber = true;
+      continue;
+    }
+    return null;
+  }
+
+  if (!sawNumber) {
+    return null;
+  }
+  return total + current;
+}
+
+String _spokenFractionDigits(List<String> tokens) {
+  final StringBuffer buffer = StringBuffer();
+  for (final String token in tokens) {
+    final int? arabic = int.tryParse(token);
+    if (arabic != null) {
+      buffer.write(token);
+      continue;
+    }
+    final int? one = _speechOnes[token];
+    if (one != null) {
+      buffer.write(one);
+      continue;
+    }
+    final int? teen = _speechTeens[token];
+    if (teen != null) {
+      buffer.write(teen);
+      continue;
+    }
+    final int? ten = _speechTens[token];
+    if (ten != null) {
+      buffer.write(ten);
+      continue;
+    }
+  }
+  return buffer.toString();
+}
+
+String _digitSequenceFromTokens(List<String> tokens, {required bool allowDecimal}) {
+  final StringBuffer buffer = StringBuffer();
+  var wroteDecimal = false;
+  for (final String token in tokens) {
+    if (allowDecimal && (token == 'point' || token == 'dot')) {
+      if (!wroteDecimal && !buffer.toString().contains('.')) {
+        buffer.write('.');
+        wroteDecimal = true;
+      }
+      continue;
+    }
+    final int? one = _speechOnes[token];
+    if (one != null) {
+      buffer.write(one);
+      continue;
+    }
+    final int? teen = _speechTeens[token];
+    if (teen != null) {
+      buffer.write(teen);
+      continue;
+    }
+    final int? ten = _speechTens[token];
+    if (ten != null) {
+      buffer.write(ten);
       continue;
     }
     for (final int codeUnit in token.codeUnits) {
       final String char = String.fromCharCode(codeUnit);
       if (RegExp(r'[0-9]').hasMatch(char)) {
         buffer.write(char);
-      } else if (allowDecimal && (char == '.' || char == ',')) {
-        if (!buffer.toString().contains('.')) {
-          buffer.write('.');
-        }
+      } else if (allowDecimal && (char == '.' || char == ',') && !wroteDecimal) {
+        buffer.write('.');
+        wroteDecimal = true;
       }
     }
   }
   return buffer.toString();
+}
+
+String _normalizeSpokenNumberField(
+  String transcript, {
+  required bool allowDecimal,
+}) {
+  final String? cardinal = parseSpokenEnglishNumber(
+    transcript,
+    allowDecimal: allowDecimal,
+  );
+  if (cardinal != null) {
+    return cardinal;
+  }
+  return _digitSequenceFromTokens(
+    _speechTokens(transcript),
+    allowDecimal: allowDecimal,
+  );
+}
+
+// --- Email / text ------------------------------------------------------------
+
+const Map<String, String> _speechEmailSymbols = <String, String>{
+  'at': '@',
+  'dot': '.',
+  'period': '.',
+  'underscore': '_',
+  'underline': '_',
+  'dash': '-',
+  'hyphen': '-',
+  'minus': '-',
+  'plus': '+',
+};
+
+const List<(List<String> phrase, String replacement)> _speechTextPhrases =
+    <(List<String>, String)>[
+      (<String>['question', 'mark'], '?'),
+      (<String>['exclamation', 'mark'], '!'),
+      (<String>['exclamation', 'point'], '!'),
+      (<String>['full', 'stop'], '.'),
+      (<String>['new', 'line'], '\n'),
+      (<String>['new', 'paragraph'], '\n\n'),
+      (<String>['open', 'paren'], '('),
+      (<String>['close', 'paren'], ')'),
+      (<String>['open', 'parenthesis'], '('),
+      (<String>['close', 'parenthesis'], ')'),
+      (<String>['open', 'quote'], '"'),
+      (<String>['close', 'quote'], '"'),
+      (<String>['under', 'score'], '_'),
+    ];
+
+const Map<String, String> _speechTextSymbols = <String, String>{
+  'period': '.',
+  'comma': ',',
+  'colon': ':',
+  'semicolon': ';',
+  'slash': '/',
+  'backslash': r'\',
+  'apostrophe': "'",
+  'quote': '"',
+  'ampersand': '&',
+  'percent': '%',
+  'hash': '#',
+  'pound': '#',
+  'at': '@',
+  'dot': '.',
+  'underscore': '_',
+  'dash': '-',
+  'hyphen': '-',
+  'plus': '+',
+};
+
+String _normalizeSpokenEmail(String transcript) {
+  final List<String> tokens = _speechTokens(transcript);
+  final StringBuffer buffer = StringBuffer();
+  for (var i = 0; i < tokens.length; i++) {
+    if (i + 1 < tokens.length &&
+        tokens[i] == 'under' &&
+        tokens[i + 1] == 'score') {
+      buffer.write('_');
+      i++;
+      continue;
+    }
+    final String? symbol = _speechEmailSymbols[tokens[i]];
+    if (symbol != null) {
+      buffer.write(symbol);
+      continue;
+    }
+    buffer.write(tokens[i]);
+  }
+  return buffer.toString().replaceAll(RegExp(r'\s+'), '');
+}
+
+String _normalizeSpokenText(String transcript) {
+  final List<String> tokens = _speechTokens(transcript);
+  final List<String> output = <String>[];
+  var index = 0;
+  while (index < tokens.length) {
+    final int? phraseEnd = _matchTextPhrase(tokens, index);
+    if (phraseEnd != null) {
+      final List<String> phrase = tokens.sublist(index, phraseEnd);
+      output.add(_replacementForTextPhrase(phrase));
+      index = phraseEnd;
+      continue;
+    }
+
+    if (_isSpokenNumberAtom(tokens[index])) {
+      final int numberEnd = _consumeNumberPhrase(tokens, index);
+      final List<String> numberTokens = tokens.sublist(index, numberEnd);
+      final String phrase = numberTokens.join(' ');
+      final String digits = _digitSequenceFromTokens(
+        numberTokens,
+        allowDecimal: true,
+      );
+      final String? parsed = parseSpokenEnglishNumber(phrase) ??
+          (digits.isEmpty ? null : digits);
+      if (parsed != null && parsed.isNotEmpty) {
+        output.add(parsed);
+        index = numberEnd;
+        continue;
+      }
+    }
+
+    final String? symbol = _speechTextSymbols[tokens[index]];
+    if (symbol != null) {
+      output.add(symbol);
+      index++;
+      continue;
+    }
+
+    output.add(tokens[index]);
+    index++;
+  }
+
+  return _joinSpokenTextTokens(output);
+}
+
+int? _matchTextPhrase(List<String> tokens, int index) {
+  for (final (List<String> phrase, String _) in _speechTextPhrases) {
+    if (index + phrase.length > tokens.length) {
+      continue;
+    }
+    var matches = true;
+    for (var i = 0; i < phrase.length; i++) {
+      if (tokens[index + i] != phrase[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) {
+      return index + phrase.length;
+    }
+  }
+  return null;
+}
+
+String _replacementForTextPhrase(List<String> phrase) {
+  for (final (List<String> candidate, String replacement) in _speechTextPhrases) {
+    if (candidate.length == phrase.length) {
+      var matches = true;
+      for (var i = 0; i < candidate.length; i++) {
+        if (candidate[i] != phrase[i]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        return replacement;
+      }
+    }
+  }
+  return phrase.join(' ');
+}
+
+int _consumeNumberPhrase(List<String> tokens, int start) {
+  var end = start;
+  while (end < tokens.length) {
+    final String token = tokens[end];
+    if (token == 'and') {
+      final bool nextIsNumber =
+          end + 1 < tokens.length && _isSpokenNumberAtom(tokens[end + 1]);
+      if (nextIsNumber) {
+        end++;
+        continue;
+      }
+      break;
+    }
+    if (!_isSpokenNumberAtom(token)) {
+      break;
+    }
+    end++;
+  }
+  return end;
+}
+
+String _joinSpokenTextTokens(List<String> tokens) {
+  final StringBuffer buffer = StringBuffer();
+  for (var i = 0; i < tokens.length; i++) {
+    final String token = tokens[i];
+    if (token.isEmpty) {
+      continue;
+    }
+    final bool isPunctuation = RegExp(r'''^[.,:;!?%@#&/\\_"'()]+$''').hasMatch(
+      token,
+    );
+    final bool isNewline = token.contains('\n');
+    if (buffer.isEmpty || isNewline) {
+      buffer.write(token);
+      continue;
+    }
+    if (isPunctuation) {
+      // Trim a trailing space before punctuation.
+      final String current = buffer.toString();
+      if (current.endsWith(' ')) {
+        buffer.clear();
+        buffer.write(current.trimRight());
+      }
+      buffer.write(token);
+      if (token == '.' ||
+          token == ',' ||
+          token == ';' ||
+          token == ':' ||
+          token == '!' ||
+          token == '?') {
+        buffer.write(' ');
+      }
+      continue;
+    }
+    if (!buffer.toString().endsWith(' ') &&
+        !buffer.toString().endsWith('\n') &&
+        !buffer.toString().endsWith('(')) {
+      buffer.write(' ');
+    }
+    buffer.write(token);
+  }
+  return buffer.toString().replaceAll(RegExp(r'[ \t]+\n'), '\n').trimRight();
 }
 
 /// Ensures only one field listens at a time.
@@ -300,7 +852,8 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
           if (_activeOwner != owner) {
             return;
           }
-          final String transcript = transcriptTransform?.call(words) ?? words;
+          final String transcript =
+              (transcriptTransform ?? appSpeechTextTranscript).call(words);
           insertSpeechTranscript(
             controller,
             transcript,
@@ -512,7 +1065,8 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       owner: widget.controller,
       controller: widget.controller,
       onChanged: widget.onChanged,
-      transcriptTransform: widget.transcriptTransform,
+      transcriptTransform:
+          widget.transcriptTransform ?? appSpeechTextTranscript,
     );
     if (!mounted) {
       return;

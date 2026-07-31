@@ -159,6 +159,54 @@ void main() {
     );
   });
 
+  test('parseSpokenEnglishNumber understands cardinal phrases', () {
+    expect(
+      parseSpokenEnglishNumber('one thousand two hundred twenty-five'),
+      '1225',
+    );
+    expect(parseSpokenEnglishNumber('one thousand two hundred twenty five'), '1225');
+    expect(parseSpokenEnglishNumber('fifteen'), '15');
+    expect(parseSpokenEnglishNumber('twelve point five'), '12.5');
+    expect(parseSpokenEnglishNumber('two million'), '2000000');
+  });
+
+  test('number fields use cardinal phrases and digit sequences', () {
+    expect(
+      appSpeechNormalizeTranscript(
+        'one thousand two hundred twenty-five',
+        mode: AppSpeechTranscriptMode.digits,
+      ),
+      '1225',
+    );
+    expect(
+      appSpeechNormalizeTranscript(
+        'one two two five',
+        mode: AppSpeechTranscriptMode.digits,
+      ),
+      '1225',
+    );
+    expect(
+      appSpeechNormalizeTranscript(
+        'one thousand point five',
+        mode: AppSpeechTranscriptMode.decimal,
+      ),
+      '1000.5',
+    );
+  });
+
+  test('email and text modes apply spoken punctuation', () {
+    expect(
+      appSpeechEmailTranscript('jane underscore doe at example dot com'),
+      'jane_doe@example.com',
+    );
+    expect(
+      appSpeechTextTranscript(
+        'hello period buy one thousand units question mark',
+      ),
+      'hello. buy 1000 units?',
+    );
+  });
+
   testWidgets('mic toggles to stop while listening and inserts text', (
     WidgetTester tester,
   ) async {
