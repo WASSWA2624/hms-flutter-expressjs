@@ -234,6 +234,56 @@ const assertNoDuplicateRequests = (requests = []) => {
   }
 };
 
+const startOfLocalDay = (value = new Date()) => {
+  const day = new Date(value);
+  day.setHours(0, 0, 0, 0);
+  return day;
+};
+
+const endOfLocalDay = (value = new Date()) => {
+  const day = startOfLocalDay(value);
+  day.setDate(day.getDate() + 1);
+  return day;
+};
+
+/**
+ * Block re-requesting the same radiology procedure for one encounter on the same local day.
+ * Cancelled orders do not block a new request.
+ *
+ * @param {Object} params
+ * @param {string|null} params.encounterId
+ * @param {string|null} params.radiologyProcedureId
+ * @param {Date} params.orderedAt
+ * @returns {Promise<void>}
+ */
+const assertNoDuplicateProcedureForEncounterDay = async ({
+  encounterId,
+  radiologyProcedureId,
+  orderedAt}) => {
+  const normalizedEncounterId = sanitizeString(encounterId);
+  const normalizedProcedureId = sanitizeString(radiologyProcedureId);
+  if (!normalizedEncounterId || !normalizedProcedureId) return;
+
+  const dayStart = startOfLocalDay(orderedAt || new Date());
+  const dayEnd = endOfLocalDay(orderedAt || new Date());
+  const matches = await radiologyOrderRepository.findMany(
+    {
+      encounter_id: normalizedEncounterId,
+      radiology_procedure_id: normalizedProcedureId,
+      status: { not: 'CANCELLED' },
+      ordered_at: { gte: dayStart, lt: dayEnd }},
+    0,
+    1,
+    { ordered_at: 'desc' }
+  );
+
+  if (matches.length > 0) {
+    throw new HttpError('errors.radiology_order.already_ordered_today', 409, [
+      { field: 'requested_tests' },
+      { field: 'radiology_procedure_id' }]);
+  }
+};
+
 /**
  * List radiology orders with pagination and filtering
  *
@@ -392,6 +442,10 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         tenantId: patient.tenant_id,
         userId,
         ipAddress});
+      await assertNoDuplicateProcedureForEncounterDay({
+        encounterId,
+        radiologyProcedureId: radiologyTestId,
+        orderedAt});
       const requestDetails = normalizeRequestDetails(request);
       const testLabel =
         sanitizeString(request?.new_test?.name) ||

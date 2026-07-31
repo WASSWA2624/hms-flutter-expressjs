@@ -8663,6 +8663,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This imaging request is already selected.';
 
   @override
+  String get clinicalRadiologyAlreadyOrderedTodayMessage =>
+      'This imaging study was already requested for this encounter today.';
+
+  @override
   String get clinicalRadiologyPriorityLabel => 'Priority';
 
   @override

@@ -149,6 +149,7 @@ void main() {
       expect(records, hasLength(1));
       expect(records.single.radiologyOrderItems, hasLength(1));
       final item = records.single.radiologyOrderItems.single;
+      expect(item.radiologyProcedureId, 'RDT-CTHEAD');
       expect(item.displayTitle, 'CT Head');
       expect(item.modality, 'CT');
       expect(item.bodyRegion, 'Head');

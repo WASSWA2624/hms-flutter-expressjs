@@ -11043,6 +11043,10 @@
   "@clinicalRadiologyDuplicateSelectionMessage": {
     "description": "Clinical radiology duplicate selected request message."
   },
+  "clinicalRadiologyAlreadyOrderedTodayMessage": "This imaging study was already requested for this encounter today.",
+  "@clinicalRadiologyAlreadyOrderedTodayMessage": {
+    "description": "Clinical radiology catalog message when a study was already ordered on the encounter today."
+  },
   "clinicalRadiologyPriorityLabel": "Priority",
   "@clinicalRadiologyPriorityLabel": {
     "description": "Clinical radiology request priority field label."

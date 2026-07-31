@@ -63,6 +63,7 @@ describe('Radiology Order Service', () => {
       id: 'created-radiology-test-id',
       ...args.data}));
     prisma.clinical_note.create.mockResolvedValue({});
+    radiologyOrderRepository.findMany.mockResolvedValue([]);
     radiologyOrderRepository.findById.mockImplementation(async (id) => ({
       id,
       encounter_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -370,6 +371,46 @@ describe('Radiology Order Service', () => {
       expect(radiologyOrderRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           encounter_id: 'encounter-internal-1'}),
+      );
+    });
+
+    it('rejects the same procedure already ordered for the encounter today', async () => {
+      radiologyOrderRepository.findMany.mockResolvedValueOnce([
+        {
+          id: 'existing-order-1',
+          radiology_procedure_id: createData.radiology_test_id,
+          status: 'ORDERED'}]);
+
+      await expect(
+        radiologyOrderService.createRadiologyOrder(createData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_order.already_ordered_today',
+        statusCode: 409});
+      expect(radiologyOrderRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('checks encounter-day uniqueness before creating a radiology order', async () => {
+      radiologyOrderRepository.findMany.mockResolvedValueOnce([]);
+      radiologyOrderRepository.create.mockResolvedValue(mockCreatedRadiologyOrder);
+      radiologyOrderRepository.findById.mockResolvedValue(mockCreatedRadiologyOrder);
+
+      await radiologyOrderService.createRadiologyOrder(
+        createData,
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(radiologyOrderRepository.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encounter_id: createData.encounter_id,
+          radiology_procedure_id: createData.radiology_test_id,
+          status: { not: 'CANCELLED' },
+          ordered_at: expect.objectContaining({
+            gte: expect.any(Date),
+            lt: expect.any(Date)})}),
+        0,
+        1,
+        { ordered_at: 'desc' }
       );
     });
   });

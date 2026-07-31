@@ -2083,7 +2083,12 @@ class _ClinicalActionBar extends ConsumerWidget {
           label: l10n.clinicalRequestRadiologyAction,
           leadingIcon: Icons.biotech_outlined,
           onPressed: () =>
-              _openRadiologyDialog(context, controller, referenceData),
+              _openRadiologyDialog(
+                context,
+                controller,
+                referenceData,
+                existingRadiologyOrders: bundle.radiologyOrders,
+              ),
         ),
       if (canPharmacy)
         AppActionItem(
@@ -2967,8 +2972,12 @@ Future<void> _confirmLabOrderMutation({
 Future<void> _openRadiologyDialog(
   BuildContext context,
   ClinicalWorkspaceController controller,
-  ClinicalReferenceData referenceData,
-) async {
+  ClinicalReferenceData referenceData, {
+  List<ClinicalRelatedRecord> existingRadiologyOrders =
+      const <ClinicalRelatedRecord>[],
+}) async {
+  final Set<String> blockedProcedureIds =
+      _clinicalRadiologyProceduresOrderedToday(existingRadiologyOrders);
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -2977,6 +2986,7 @@ Future<void> _openRadiologyDialog(
       builder: (_) => ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
         patientContext: _clinicalLabOrderPatientContext(context),
+        blockedProcedureIds: blockedProcedureIds,
         onSearchRadiologyTests:
             ({
               required String termType,
@@ -2995,6 +3005,35 @@ Future<void> _openRadiologyDialog(
       ),
     ),
   );
+}
+
+/// Procedure IDs already requested for this encounter on the local calendar day.
+Set<String> _clinicalRadiologyProceduresOrderedToday(
+  List<ClinicalRelatedRecord> orders, {
+  DateTime? now,
+}) {
+  final DateTime reference = now ?? DateTime.now();
+  final Set<String> ids = <String>{};
+  for (final ClinicalRelatedRecord order in orders) {
+    final String status = order.status?.trim().toUpperCase() ?? '';
+    if (status == 'CANCELLED') {
+      continue;
+    }
+    final DateTime? orderedAt = order.occurredAt;
+    if (orderedAt == null ||
+        orderedAt.year != reference.year ||
+        orderedAt.month != reference.month ||
+        orderedAt.day != reference.day) {
+      continue;
+    }
+    for (final ClinicalRadiologyOrderItem item in order.radiologyOrderItems) {
+      final String? procedureId = item.radiologyProcedureId?.trim();
+      if (procedureId != null && procedureId.isNotEmpty) {
+        ids.add(procedureId.toLowerCase());
+      }
+    }
+  }
+  return ids;
 }
 
 Future<void> _openPrescriptionDialog(

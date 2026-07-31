@@ -15892,6 +15892,12 @@ abstract class AppLocalizations {
   /// **'This imaging request is already selected.'**
   String get clinicalRadiologyDuplicateSelectionMessage;
 
+  /// Clinical radiology catalog message when a study was already ordered on the encounter today.
+  ///
+  /// In en, this message translates to:
+  /// **'This imaging study was already requested for this encounter today.'**
+  String get clinicalRadiologyAlreadyOrderedTodayMessage;
+
   /// Clinical radiology request priority field label.
   ///
   /// In en, this message translates to:

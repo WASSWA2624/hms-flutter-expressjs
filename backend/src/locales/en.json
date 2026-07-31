@@ -304,6 +304,7 @@
   "errors.purchase_order.not_found": "Purchase order not found",
   "errors.purchase_request.not_found": "Purchase request not found",
   "errors.radiology_order.duplicate_request": "A matching radiology request already exists",
+  "errors.radiology_order.already_ordered_today": "This imaging study was already requested for this encounter today",
   "errors.radiology_order.not_found": "Radiology order not found",
   "errors.radiology_order.payment_required": "Payment is required before the radiology study can proceed",
   "errors.radiology_result.immutable": "Finalized radiology reports cannot be overwritten; create an addendum instead",

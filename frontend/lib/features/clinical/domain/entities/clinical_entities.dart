@@ -666,6 +666,7 @@ final class ClinicalLabOrderItem {
 final class ClinicalRadiologyOrderItem {
   const ClinicalRadiologyOrderItem({
     required this.id,
+    this.radiologyProcedureId,
     this.testDisplayName,
     this.modality,
     this.bodyRegion,
@@ -675,6 +676,7 @@ final class ClinicalRadiologyOrderItem {
   });
 
   final String id;
+  final String? radiologyProcedureId;
   final String? testDisplayName;
   final String? modality;
   final String? bodyRegion;

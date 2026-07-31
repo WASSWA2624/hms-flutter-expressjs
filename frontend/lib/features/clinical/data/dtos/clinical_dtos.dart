@@ -380,9 +380,11 @@ final class ClinicalRelatedRecordDto {
     final ClinicalJsonMap itemRequestDetails = _map(item['request_details']);
     final ClinicalJsonMap radiologyTest = _map(item['radiology_test']);
     final String? radiologyTestId =
+        _string(item['radiology_procedure_id']) ??
         _string(item['radiology_test_id']) ??
         _string(radiologyTest['human_friendly_id']) ??
         _string(radiologyTest['id']) ??
+        _string(json['radiology_procedure_id']) ??
         _string(json['radiology_test_id']);
     final String? testDisplayName =
         _string(item['radiology_test_display_name']) ??
@@ -407,6 +409,7 @@ final class ClinicalRelatedRecordDto {
           _string(json['human_friendly_id']) ??
           _string(json['id']) ??
           '',
+      radiologyProcedureId: radiologyTestId,
       testDisplayName: testDisplayName,
       modality: modality,
       bodyRegion:

@@ -22,6 +22,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
     this.initialRequests = const <ClinicalActionRadiologyRequest>[],
     this.patientContext = const ClinicalRequestPatientContext(),
     this.payerContext,
+    this.blockedProcedureIds = const <String>{},
     super.key,
   });
 
@@ -36,6 +37,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   final List<ClinicalActionRadiologyRequest> initialRequests;
   final ClinicalRequestPatientContext patientContext;
   final ClinicalRequestPayerContext? payerContext;
+  final Set<String> blockedProcedureIds;
   final Future<AppFailure?> Function({
     required List<ClinicalActionRadiologyRequest> requests,
     ClinicalRequestBillingSubmit? billing,
@@ -240,6 +242,7 @@ class _RadiologyOrderDialogState
           initialSelections: _requests
               .map((_PendingRadiologyRequest request) => request.selection)
               .toList(growable: false),
+          blockedProcedureIds: widget.blockedProcedureIds,
         );
     if (!mounted || confirmed == null) {
       return;
@@ -247,6 +250,10 @@ class _RadiologyOrderDialogState
     setState(() {
       _failure = null;
       _requests = confirmed
+          .where(
+            (ClinicalRadiologyCatalogSelection selection) =>
+                !_isProcedureBlocked(selection.option.apiId),
+          )
           .map(
             (ClinicalRadiologyCatalogSelection selection) =>
                 _PendingRadiologyRequest(
@@ -261,6 +268,14 @@ class _RadiologyOrderDialogState
           .toList(growable: true);
       _pruneSelection();
     });
+  }
+
+  bool _isProcedureBlocked(String procedureId) {
+    final String normalized = procedureId.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return false;
+    }
+    return widget.blockedProcedureIds.contains(normalized);
   }
 
   Future<void> _openBillingDialog() async {
@@ -390,6 +405,23 @@ class _RadiologyOrderDialogState
   Future<void> _submit() async {
     if (_requests.isEmpty) {
       setState(() => _failure = AppFailure.validation());
+      return;
+    }
+    final bool hasBlocked = _requests.any(
+      (_PendingRadiologyRequest request) => _isProcedureBlocked(request.id),
+    );
+    if (hasBlocked) {
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage:
+              context.l10n.clinicalRadiologyAlreadyOrderedTodayMessage,
+          validationFields: const <String>{'requested_tests'},
+          fieldMessages: <String, String>{
+            'requested_tests':
+                context.l10n.clinicalRadiologyAlreadyOrderedTodayMessage,
+          },
+        );
+      });
       return;
     }
     setState(() {
