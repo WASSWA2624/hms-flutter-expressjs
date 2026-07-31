@@ -647,6 +647,7 @@ class ClinicalDiagnosesTablePanel extends ConsumerStatefulWidget {
     required this.onRemove,
     this.onRemoveSelected,
     this.onEditSelected,
+    this.onAdd,
     super.key,
   });
 
@@ -654,6 +655,7 @@ class ClinicalDiagnosesTablePanel extends ConsumerStatefulWidget {
   final ClinicalOrderAction onRemove;
   final ClinicalOrderBatchAction? onRemoveSelected;
   final ClinicalOrderBatchAction? onEditSelected;
+  final VoidCallback? onAdd;
 
   @override
   ConsumerState<ClinicalDiagnosesTablePanel> createState() =>
@@ -676,6 +678,7 @@ class _ClinicalDiagnosesTablePanelState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final bool canMutate = canWriteClinical(ref.watch(appAccessPolicyProvider));
     final List<ClinicalRelatedRecord> diagnoses =
         sortClinicalRecordsNewestFirst(widget.diagnoses);
@@ -691,10 +694,10 @@ class _ClinicalDiagnosesTablePanelState
               )
               .toList(growable: false)
         : const <ClinicalRelatedRecord>[];
+    final bool hasSelection = selectedDiagnoses.isNotEmpty;
 
     return AppCollapsibleSection(
       title: l10n.clinicalPatientDiagnosesTitle,
-      contentPadding: EdgeInsets.zero,
       headerActions: canMutate
           ? <Widget>[
               AppAccessActionGate(
@@ -703,36 +706,64 @@ class _ClinicalDiagnosesTablePanelState
                   if (!isAllowed) {
                     return const SizedBox.shrink();
                   }
-                  return AppButton.secondary(
-                    label: l10n.commonEditActionLabel,
-                    leadingIcon: Icons.edit_outlined,
-                    dense: true,
-                    enabled: selectedDiagnoses.isNotEmpty,
-                    onPressed: selectedDiagnoses.isEmpty
-                        ? null
-                        : () async {
-                            await widget.onEditSelected?.call(
+                  return Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      if (hasSelection)
+                        Text(
+                          l10n.clinicalLabRequestSelectedCount(
+                            selectedDiagnoses.length,
+                          ),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (hasSelection && widget.onRemoveSelected != null)
+                        AppButton.tertiary(
+                          dense: true,
+                          label: l10n.clinicalRemoveSelectedDiagnosesAction,
+                          leadingIcon: AppActionIcons.delete,
+                          color: theme.colorScheme.error,
+                          onPressed: () async {
+                            await widget.onRemoveSelected!(
                               context,
                               selectedDiagnoses,
                             );
+                            if (mounted) {
+                              setState(_selectedIds.clear);
+                            }
                           },
+                        ),
+                      if (widget.onAdd != null)
+                        AppButton.secondary(
+                          label: l10n.commonAddActionLabel,
+                          leadingIcon: AppActionIcons.add,
+                          dense: true,
+                          onPressed: widget.onAdd,
+                        ),
+                      if (widget.onEditSelected != null)
+                        AppButton.secondary(
+                          label: l10n.commonEditActionLabel,
+                          leadingIcon: AppActionIcons.edit,
+                          dense: true,
+                          enabled: hasSelection,
+                          onPressed: hasSelection
+                              ? () async {
+                                  await widget.onEditSelected!(
+                                    context,
+                                    selectedDiagnoses,
+                                  );
+                                }
+                              : null,
+                        ),
+                    ],
                   );
                 },
               ),
             ]
-          : const <Widget>[],
-      actions: canMutate
-          ? _clinicalBatchHeaderActions(
-              context: context,
-              selectedCount: selectedDiagnoses.length,
-              cancellableSelected: const <ClinicalRelatedRecord>[],
-              deletableSelected: selectedDiagnoses,
-              cancelLabel: l10n.clinicalCancelSelectedRadiologyOrdersAction,
-              deleteLabel: l10n.clinicalRemoveSelectedDiagnosesAction,
-              onCancelSelected: null,
-              onDeleteSelected: widget.onRemoveSelected,
-              onCleared: () => setState(_selectedIds.clear),
-            )
           : const <Widget>[],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -824,7 +855,7 @@ class _ClinicalDiagnosisRow extends StatelessWidget {
                     }
                     return AppButton.tertiary(
                       dense: true,
-                      leadingIcon: Icons.remove_circle_outline,
+                      leadingIcon: AppActionIcons.delete,
                       label: l10n.clinicalRemoveDiagnosisAction,
                       semanticLabel: l10n.clinicalRemoveDiagnosisAction,
                       tooltip: l10n.clinicalRemoveDiagnosisAction,

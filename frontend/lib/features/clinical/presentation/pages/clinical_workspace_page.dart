@@ -1371,6 +1371,21 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (bundle.diagnoses.isNotEmpty)
         ClinicalDiagnosesTablePanel(
           diagnoses: bundle.diagnoses,
+          onAdd: canWrite
+              ? () => _openDiagnosisDialog(
+                    context,
+                    controller,
+                    existingDiagnoses: bundle.diagnoses,
+                  )
+              : null,
+          onEditSelected: canWrite
+              ? (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
+                    _openEditDiagnosisDialog(
+                      context,
+                      ref.read(clinicalWorkspaceControllerProvider.notifier),
+                      diagnoses,
+                    )
+              : null,
           onRemove: (BuildContext context, ClinicalRelatedRecord diagnosis) =>
               _confirmLabOrderMutation(
                 context: context,
@@ -1403,13 +1418,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                       }
                       return null;
                     },
-                  ),
-          onEditSelected:
-              (BuildContext context, List<ClinicalRelatedRecord> diagnoses) =>
-                  _openEditDiagnosisDialog(
-                    context,
-                    ref.read(clinicalWorkspaceControllerProvider.notifier),
-                    diagnoses,
                   ),
         ),
       if (canViewLabResults && bundle.labOrders.isNotEmpty)
