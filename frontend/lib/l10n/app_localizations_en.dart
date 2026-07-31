@@ -139,9 +139,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get clinicalResultsChronologyTitle => 'Results timeline';
-
-  @override
   String get workspaceToolbarOverflowLabel => 'More actions';
 
   @override

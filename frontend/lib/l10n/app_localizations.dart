@@ -328,12 +328,6 @@ abstract class AppLocalizations {
   /// **'Encounter {encounterId}'**
   String clinicalResultsEncounterScopeLabel(String encounterId);
 
-  /// Title for chronological clinical results preview on encounter details.
-  ///
-  /// In en, this message translates to:
-  /// **'Results timeline'**
-  String get clinicalResultsChronologyTitle;
-
   /// Accessibility label for the workspace toolbar overflow menu.
   ///
   /// In en, this message translates to:

@@ -521,8 +521,8 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 /// Results ready tab atom → permission mapping (inventory + matrix).
 ///
 /// Worklist `?section=results-ready` (`screens/clinical.md`). Same outpatient
-/// encounter chrome as All; distinctive surfaces are results-ready chips,
-/// Results timeline, and lab / radiology order panels. Prompt context names
+/// encounter chrome as All; distinctive surfaces are results-ready chips
+/// and lab / radiology order panels. Prompt context names
 /// lab:read / radiology:read **domain** panels; matrix nested cross-module
 /// read is _(n/a)_, so panel **read** stays ∩ `clinical:read` (+
 /// `encounters-vitals`) — not a separate `lab:read` / `radiology:read` gate.
@@ -540,8 +540,6 @@ bool canViewClinicalInConsultation(AppAccessPolicy policy) {
 /// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read ∩ |
 /// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
 /// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
-/// | Detail Results timeline (lab rows) | read | [labResultsPanel] |
-/// | Detail Results timeline (imaging rows) | read | [radiologyResultsPanel] |
 /// | Detail Lab orders panel (data) | read | [labResultsPanel] |
 /// | Detail Radiology orders panel (data) | read | [radiologyResultsPanel] |
 /// | Detail Pharmacy orders / diagnoses panels | read | nestedRead ∩ |
@@ -581,8 +579,6 @@ abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement resultsTimeline =
       clinicalWorkspaceReadRequirement;
   /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a → clinical:read).
   static const AccessRequirement labResultsPanel =

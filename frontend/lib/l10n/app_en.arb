@@ -176,10 +176,6 @@
       }
     }
   },
-  "clinicalResultsChronologyTitle": "Results timeline",
-  "@clinicalResultsChronologyTitle": {
-    "description": "Title for chronological clinical results preview on encounter details."
-  },
   "workspaceToolbarOverflowLabel": "More actions",
   "@workspaceToolbarOverflowLabel": {
     "description": "Accessibility label for the workspace toolbar overflow menu."

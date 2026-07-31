@@ -83,6 +83,14 @@ const ClinicalEncounterBundle _resultsBundle = ClinicalEncounterBundle(
       status: 'COMPLETED',
       title: 'Chest X-Ray',
       subtitle: 'No acute findings',
+      radiologyOrderItems: <ClinicalRadiologyOrderItem>[
+        ClinicalRadiologyOrderItem(
+          id: 'rad-item-1',
+          testDisplayName: 'Chest X-Ray',
+          modality: 'XR',
+          bodyRegion: 'CHEST',
+        ),
+      ],
     ),
   ],
   diagnoses: <ClinicalRelatedRecord>[
@@ -335,10 +343,6 @@ void main() {
       );
       expect(
         ClinicalResultsReadyAtomPermissions.resultsReadyChip,
-        same(clinicalWorkspaceReadRequirement),
-      );
-      expect(
-        ClinicalResultsReadyAtomPermissions.resultsTimeline,
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
@@ -716,7 +720,7 @@ void main() {
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
-      expect(find.text('Results timeline'), findsWidgets);
+      expect(find.text('Results timeline'), findsNothing);
       expect(find.text('Lab orders'), findsWidgets);
       expect(find.text('Radiology orders'), findsWidgets);
       expect(find.text('Hemoglobin'), findsWidgets);
@@ -761,7 +765,7 @@ void main() {
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
       expect(find.text('Print summary'), findsWidgets);
-      expect(find.text('Results timeline'), findsWidgets);
+      expect(find.text('Results timeline'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -855,7 +859,7 @@ void main() {
       expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Print summary'), findsWidgets);
-      expect(find.text('Results timeline'), findsWidgets);
+      expect(find.text('Results timeline'), findsNothing);
     },
   );
 
@@ -931,7 +935,7 @@ void main() {
       expect(find.text('Request radiology'), findsWidgets);
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Add clinical notes'), findsNothing);
-      expect(find.text('Results timeline'), findsWidgets);
+      expect(find.text('Results timeline'), findsNothing);
     },
   );
 

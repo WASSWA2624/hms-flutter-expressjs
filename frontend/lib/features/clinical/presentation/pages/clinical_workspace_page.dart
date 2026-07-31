@@ -1315,12 +1315,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     final bool canViewLabResults = canViewClinicalLabResultsPanel(accessPolicy);
     final bool canViewRadiologyResults =
         canViewClinicalRadiologyResultsPanel(accessPolicy);
-    final List<AppClinicalResultPreviewEntry> previewEntries =
-        _clinicalResultsPreviewEntries(
-          bundle,
-          includeLaboratory: canViewLabResults,
-          includeRadiology: canViewRadiologyResults,
-        );
     final bool showUrgentAlert =
         entry.isUrgent &&
         ClinicalUrgentAtomPermissions.urgentChip.isAllowed(accessPolicy);
@@ -1680,48 +1674,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         _ClinicalRecordSection(
           title: l10n.clinicalCarePlansTitle,
           records: sortClinicalRecordsNewestFirst(bundle.carePlans),
-        ),
-      if (previewEntries.isNotEmpty)
-        AppCollapsibleSection(
-          title: l10n.clinicalResultsChronologyTitle,
-          actions: <Widget>[
-            Builder(
-              builder: (BuildContext context) {
-                final AppClinicalResultStatusDisplay statusDisplay =
-                    AppClinicalResultStatusDisplay.resolve(
-                      l10n,
-                      _clinicalResultsPreviewOverallStatus(previewEntries),
-                    );
-                return AppStatusBadge(
-                  label: statusDisplay.label,
-                  tone: statusDisplay.tone,
-                );
-              },
-            ),
-          ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if ((bundle.entry.encounterPublicId ?? '').trim().isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: Theme.of(context).spacing.sm,
-                  ),
-                  child: Text(
-                    l10n.clinicalResultsEncounterScopeLabel(
-                      bundle.entry.encounterPublicId!,
-                    ),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              AppClinicalResultsPreviewList(
-                entries: previewEntries,
-                dense: true,
-              ),
-            ],
-          ),
         ),
     ];
 
@@ -3673,146 +3625,6 @@ String _joinDisplay(Iterable<String?> values) {
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
-}
-
-/// Lab and radiology result rows only — hide the timeline when none are ready.
-///
-/// [includeLaboratory] / [includeRadiology] enforce Results ready panel read
-/// gates ([ClinicalResultsReadyAtomPermissions.labResultsPanel] /
-/// [ClinicalResultsReadyAtomPermissions.radiologyResultsPanel]).
-List<AppClinicalResultPreviewEntry> _clinicalResultsPreviewEntries(
-  ClinicalEncounterBundle bundle, {
-  bool includeLaboratory = true,
-  bool includeRadiology = true,
-}) {
-  final List<AppClinicalResultPreviewEntry> entries =
-      <AppClinicalResultPreviewEntry>[];
-
-  if (includeLaboratory) {
-    for (final ClinicalRelatedRecord order in bundle.labOrders) {
-      for (final ClinicalLabOrderItem item in order.labOrderItems) {
-        final String? value = _firstNonEmpty(<String?>[
-          item.resultValue,
-          item.resultText,
-        ]);
-        if (value == null) {
-          continue;
-        }
-        entries.add(
-          AppClinicalResultPreviewEntry(
-            id: item.id,
-            module: AppClinicalResultModule.laboratory,
-            title: item.displayTitle,
-            status: _clinicalResultStatusFromRecordStatus(
-              item.resultStatus ?? item.status ?? order.status,
-            ),
-            occurredAt: item.updatedAt ?? item.createdAt ?? order.occurredAt,
-            subtitle: item.displaySubtitle,
-            laboratory: AppClinicalLaboratoryResultContent(
-              value: value,
-              unit: item.unit,
-              flag: _clinicalResultFlagFromStatus(item.resultStatus),
-              flagLabel: item.resultStatus,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  if (includeRadiology) {
-    for (final ClinicalRelatedRecord order in bundle.radiologyOrders) {
-      final String status = (order.status ?? '').toUpperCase();
-      if (status != 'COMPLETED' && status != 'FINAL' && status != 'AMENDED') {
-        continue;
-      }
-      entries.add(
-        AppClinicalResultPreviewEntry(
-          id: order.id,
-          module: AppClinicalResultModule.radiology,
-          title: order.title ?? order.id,
-          status: _clinicalResultStatusFromRecordStatus(order.status),
-          occurredAt: order.occurredAt,
-          subtitle: order.subtitle,
-          radiology: AppClinicalRadiologyReportContent(
-            reportText: order.subtitle,
-            modality: order.radiologyOrderItems.isEmpty
-                ? null
-                : order.radiologyOrderItems.first.modality,
-            bodyRegion: order.radiologyOrderItems.isEmpty
-                ? null
-                : order.radiologyOrderItems.first.bodyRegion,
-          ),
-        ),
-      );
-    }
-  }
-
-  return entries;
-}
-
-AppClinicalResultStatus _clinicalResultsPreviewOverallStatus(
-  List<AppClinicalResultPreviewEntry> entries,
-) {
-  if (entries.any(
-    (AppClinicalResultPreviewEntry e) =>
-        e.status == AppClinicalResultStatus.corrected,
-  )) {
-    return AppClinicalResultStatus.corrected;
-  }
-  if (entries.any(
-    (AppClinicalResultPreviewEntry e) =>
-        e.status == AppClinicalResultStatus.preliminary,
-  )) {
-    return AppClinicalResultStatus.preliminary;
-  }
-  if (entries.any(
-    (AppClinicalResultPreviewEntry e) =>
-        e.status == AppClinicalResultStatus.verified,
-  )) {
-    return AppClinicalResultStatus.verified;
-  }
-  return AppClinicalResultStatus.unavailable;
-}
-
-AppClinicalResultStatus _clinicalResultStatusFromRecordStatus(String? status) {
-  return switch ((status ?? '').trim().toUpperCase()) {
-    'AMENDED' || 'CORRECTED' => AppClinicalResultStatus.corrected,
-    'COMPLETED' ||
-    'FINAL' ||
-    'VERIFIED' ||
-    'RELEASED' => AppClinicalResultStatus.verified,
-    'DRAFT' ||
-    'PRELIMINARY' ||
-    'PENDING' ||
-    'IN_PROCESS' => AppClinicalResultStatus.preliminary,
-    'CANCELLED' ||
-    'UNAVAILABLE' ||
-    'REJECTED' => AppClinicalResultStatus.unavailable,
-    _ => AppClinicalResultStatus.preliminary,
-  };
-}
-
-AppClinicalResultFlag _clinicalResultFlagFromStatus(String? status) {
-  return switch ((status ?? '').trim().toUpperCase()) {
-    'CRITICAL' => AppClinicalResultFlag.critical,
-    'ABNORMAL' || 'HIGH' || 'LOW' => AppClinicalResultFlag.abnormal,
-    'NORMAL' ||
-    'NEGATIVE' ||
-    'NON_REACTIVE' ||
-    'POSITIVE' => AppClinicalResultFlag.normal,
-    _ => AppClinicalResultFlag.unknown,
-  };
-}
-
-String? _firstNonEmpty(Iterable<String?> values) {
-  for (final String? value in values) {
-    final String trimmed = value?.trim() ?? '';
-    if (trimmed.isNotEmpty) {
-      return trimmed;
-    }
-  }
-  return null;
 }
 
 String _consultationSummaryHtml(

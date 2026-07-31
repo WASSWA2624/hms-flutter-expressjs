@@ -44,7 +44,7 @@ final class ClinicalResultsReadyFinancialAtom {
 /// Canonical inventory for `/clinical?section=results-ready`.
 ///
 /// Lab/imaging results-ready worklist reuses outpatient encounter chrome.
-/// Distinctive surfaces: results-ready chips, Results timeline, lab / radiology
+/// Distinctive surfaces: results-ready chips and lab / radiology
 /// order panels. Billable order/procedure atoms post through shared Billing
 /// (`clinical-request-billing`, receive-payment, adjustment)—never a parallel
 /// cash ledger. Settle/adjust/refund stay on Billing workspace; this tab only
@@ -101,15 +101,6 @@ abstract final class ClinicalResultsReadyBillingInventory {
         label: 'Next action Review / REVIEW_RESULTS',
         financialClass: ClinicalResultsReadyFinancialClass.notRequired,
         requirement: ClinicalResultsReadyAtomPermissions.nextActionReview,
-        auditCode: 'NOT_REQUIRED',
-      );
-
-  static const ClinicalResultsReadyFinancialAtom resultsTimeline =
-      ClinicalResultsReadyFinancialAtom(
-        id: 'results_timeline',
-        label: 'Results chronology (lab / imaging preview)',
-        financialClass: ClinicalResultsReadyFinancialClass.notRequired,
-        requirement: ClinicalResultsReadyAtomPermissions.resultsTimeline,
         auditCode: 'NOT_REQUIRED',
       );
 
@@ -318,7 +309,6 @@ abstract final class ClinicalResultsReadyBillingInventory {
         resultsReadyChip,
         rowSelect,
         nextActionReview,
-        resultsTimeline,
         labResultsPanel,
         radiologyResultsPanel,
         recordVitals,
@@ -378,5 +368,5 @@ const String clinicalResultsReadyBillingScopeNote =
     'clinical-request-billing (pending bill-later when Review billing is '
     'skipped). Cancel/delete reverse Billing snapshots. Discharge Open billing '
     'navigates the Billing module; settle/adjust/refund are not cashiered here. '
-    'Results timeline and lab/radiology panels are read-only NOT_REQUIRED. '
+    'Lab/radiology panels are read-only NOT_REQUIRED. '
     'Notes, vitals, diagnoses, refer, and schedule follow-up stay NOT_BILLED.';

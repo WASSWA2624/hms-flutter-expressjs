@@ -30,7 +30,7 @@ Align the clinical encounter **Lab orders** section with how the lab module show
 9. **Data enrichment:** If clinical order payloads lack range/result/flag fields that lab entry has, enrich DTO mapping or load the minimum fields needed for display (catalog range label + stored result/flag when present). Friendly ids may remain for display; mutations must use ids the API accepts (UUID or friendly per existing lab-order schema).
 10. **l10n + tests:** English strings for panel/test cancel, confirms, pending labels, column headers if new; widget tests that the section is non-nested, columns match lab entry (no Value/Arrival/unpaid), cancel disabled for completed, radiology strings not used on lab batch actions.
 
-Optional enhancements: none (do not add Preview report on clinical Lab orders unless already required—Preview stays on lab entry / existing clinical Results timeline).
+Optional enhancements: none (do not add Preview report on clinical Lab orders unless already required—Preview stays on lab entry).
 
 ## Constraints
 
