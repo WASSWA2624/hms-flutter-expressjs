@@ -539,8 +539,23 @@ void main() {
         expect(find.text(l10n.radiologyPrintReportAction), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
-        // Reported rows still open the report dialog (print lives there).
-        await tester.tap(find.text('MRI Brain').last);
+        // Reported rows open procedure details; View report opens the report
+        // dialog where print lives.
+        final Finder procedureId = find
+            .descendant(
+              of: find.byType(AppDialog).first,
+              matching: find.text('RAD-REL-1'),
+            )
+            .hitTestable();
+        expect(procedureId, findsWidgets);
+        await tester.ensureVisible(procedureId.first);
+        await tester.tap(procedureId.first);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(l10n.radiologyProcedureDetailsDialogTitle),
+          findsOneWidget,
+        );
+        await tester.tap(find.text(l10n.radiologyViewReportAction));
         await tester.pumpAndSettle();
         expect(find.text(l10n.radiologyPrintReportAction), findsOneWidget);
       },
