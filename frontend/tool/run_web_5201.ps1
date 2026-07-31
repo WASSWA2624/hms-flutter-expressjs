@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [string]$HostName = '127.0.0.1',
+  [string]$HostName = '0.0.0.0',
   [int]$Port = 5201,
   [string]$Device = 'chrome',
   [string]$DartDefineFile = 'env/development.json.example',
@@ -168,6 +168,37 @@ function Release-WebPort {
   }
 }
 
+function Get-LocalBrowserHost {
+  param(
+    [string]$ListenHost
+  )
+
+  if ($ListenHost -eq '0.0.0.0' -or $ListenHost -eq '::' -or $ListenHost -eq '[::]') {
+    return '127.0.0.1'
+  }
+
+  return $ListenHost
+}
+
+function Get-PreferredLanIPv4 {
+  $candidates = @(
+    Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+      Where-Object {
+        $_.IPAddress -notlike '127.*' -and
+        $_.PrefixOrigin -ne 'WellKnown' -and
+        ($_.PrefixOrigin -eq 'Dhcp' -or $_.PrefixOrigin -eq 'Manual')
+      } |
+      Sort-Object -Property InterfaceMetric |
+      Select-Object -ExpandProperty IPAddress -Unique
+  )
+
+  if ($candidates.Count -gt 0) {
+    return $candidates[0]
+  }
+
+  return $null
+}
+
 function Get-PortListeners {
   param(
     [string]$Address,
@@ -277,8 +308,18 @@ if ($useWebServer) {
   }
   $runDevice = 'web-server'
   $includeBrowserFlags = $false
-  $appUrl = "http://${HostName}:${Port}/"
+  $localBrowserHost = Get-LocalBrowserHost -ListenHost $HostName
+  $appUrl = "http://${localBrowserHost}:${Port}/"
   Write-Host "The app will be served at $appUrl"
+  if ($HostName -eq '0.0.0.0' -or $HostName -eq '::' -or $HostName -eq '[::]') {
+    $lanIp = Get-PreferredLanIPv4
+    if ($lanIp) {
+      Write-Host "Same Wi-Fi phone/tablet URL: http://${lanIp}:${Port}/"
+      Write-Host 'In development, API_BASE_URL localhost is rewritten to that LAN host automatically.'
+    } else {
+      Write-Host "Listening on all interfaces ($HostName). Open http://<pc-lan-ip>:${Port}/ on your phone."
+    }
+  }
   Write-Host 'The browser opens automatically when Flutter prints that the app is being served.'
 } else {
   $appUrl = ''
@@ -298,10 +339,10 @@ if ($exitCode -ne 0 -and -not $WebServerOnly -and -not $ResetChromeProfile) {
 }
 
 if ($exitCode -ne 0 -and -not $WebServerOnly -and -not $NoWebServerFallback) {
-  Write-Host "Chrome debug still failed. Falling back to web-server at http://${HostName}:${Port}/"
+  Write-Host "Chrome debug still failed. Falling back to web-server at http://$((Get-LocalBrowserHost -ListenHost $HostName)):${Port}/"
   Write-Host 'Hot reload/debugger attachment are unavailable in this mode.'
   Prepare-ForWebRunRetry
-  $appUrl = "http://${HostName}:${Port}/"
+  $appUrl = "http://$((Get-LocalBrowserHost -ListenHost $HostName)):${Port}/"
   $fallbackArgs = Get-FlutterWebRunArgs -RunDevice 'web-server'
   $exitCode = Invoke-FlutterWebRun -RunArgs $fallbackArgs -AppUrl $appUrl -OpenBrowserWhenReady
 }

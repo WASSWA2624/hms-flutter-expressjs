@@ -299,13 +299,20 @@ final class AppConfig {
     }
 
     if (!appBaseUrl.hasAuthority ||
-        !_isLocalDevelopmentHost(appBaseUrl.host) ||
         !_isLocalDevelopmentHost(apiBaseUrl.host) ||
         appBaseUrl.host == apiBaseUrl.host) {
       return apiBaseUrl;
     }
 
-    return apiBaseUrl.replace(host: appBaseUrl.host);
+    // Same machine: rewrite localhost ↔ 127.0.0.1 to match the browser host.
+    // Same LAN: when the web app is opened via a private IP (phone/tablet),
+    // point the API at that same host so localhost is not the phone itself.
+    if (_isLocalDevelopmentHost(appBaseUrl.host) ||
+        _isPrivateNetworkHost(appBaseUrl.host)) {
+      return apiBaseUrl.replace(host: appBaseUrl.host);
+    }
+
+    return apiBaseUrl;
   }
 
   static AppLogLevel? _parseLogLevel(String value, List<String> errors) {
@@ -357,6 +364,50 @@ final class AppConfig {
         normalizedHost == '0.0.0.0' ||
         normalizedHost == '::1' ||
         normalizedHost == '[::1]';
+  }
+
+  /// RFC1918 / link-local style hosts used for same-LAN development.
+  static bool _isPrivateNetworkHost(String host) {
+    final normalizedHost = host
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'^\[|\]$'), '');
+
+    if (normalizedHost.endsWith('.local')) {
+      return true;
+    }
+
+    final parts = normalizedHost.split('.');
+    if (parts.length != 4) {
+      return false;
+    }
+
+    final octets = <int>[];
+    for (final part in parts) {
+      final octet = int.tryParse(part);
+      if (octet == null || octet < 0 || octet > 255) {
+        return false;
+      }
+      octets.add(octet);
+    }
+
+    final first = octets[0];
+    final second = octets[1];
+    if (first == 10) {
+      return true;
+    }
+    if (first == 192 && second == 168) {
+      return true;
+    }
+    if (first == 172 && second >= 16 && second <= 31) {
+      return true;
+    }
+    // Link-local (APIPA)
+    if (first == 169 && second == 254) {
+      return true;
+    }
+
+    return false;
   }
 }
 

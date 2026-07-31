@@ -172,5 +172,38 @@ void main() {
 
       expect(config.apiBaseUrl, Uri.parse('http://127.0.0.1:3000'));
     });
+
+    test(
+      'rewrites loopback API host to the private LAN host used by the browser',
+      () {
+        final config = AppConfig.fromValues(
+          environmentName: 'development',
+          apiBaseUrl: 'http://localhost:3000',
+          appBaseUrl: Uri.parse('http://192.168.1.42:5201/'),
+        );
+
+        expect(config.apiBaseUrl, Uri.parse('http://192.168.1.42:3000'));
+      },
+    );
+
+    test('does not rewrite non-loopback API hosts during development', () {
+      final config = AppConfig.fromValues(
+        environmentName: 'development',
+        apiBaseUrl: 'https://api.example.com',
+        appBaseUrl: Uri.parse('http://192.168.1.42:5201/'),
+      );
+
+      expect(config.apiBaseUrl, Uri.parse('https://api.example.com'));
+    });
+
+    test('does not rewrite API hosts outside development', () {
+      final config = AppConfig.fromValues(
+        environmentName: 'staging',
+        apiBaseUrl: 'https://staging-api.example.com',
+        appBaseUrl: Uri.parse('http://192.168.1.42:5201/'),
+      );
+
+      expect(config.apiBaseUrl, Uri.parse('https://staging-api.example.com'));
+    });
   });
 }
