@@ -1864,6 +1864,8 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
     label: label,
     alwaysVisible: column == _OpdTableColumnId.nextAction,
     sortComparator: _opdSortComparator(column),
+    exportValue: (_OpdTableItem item) =>
+        _opdExportCellValue(context, column, item),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
         _OpdTableColumnId.patient => AppListItemText(
@@ -1911,6 +1913,35 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
     },
     tooltip: label,
   );
+}
+
+String _opdExportCellValue(
+  BuildContext context,
+  _OpdTableColumnId column,
+  _OpdTableItem item,
+) {
+  return switch (column) {
+    _OpdTableColumnId.patient => item.patientName ?? item.title,
+    _OpdTableColumnId.category => _categoryLabel(context, item.category),
+    _OpdTableColumnId.arrivalMode => _arrivalModeLabel(context, item),
+    _OpdTableColumnId.visitType =>
+      item.visitType ?? context.l10n.profileUnknownValue,
+    _OpdTableColumnId.status => _queueStatusLabel(context, item),
+    _OpdTableColumnId.provider =>
+      item.provider?.trim().isNotEmpty == true
+          ? item.provider!.trim()
+          : context.l10n.profileUnknownValue,
+    _OpdTableColumnId.waitingTime =>
+      _waitingTimeLabel(context, item, now: DateTime.now()),
+    _OpdTableColumnId.arrivalTime => _formatDateTime(context, item.time),
+    _OpdTableColumnId.nextAction => item.nextStep?.trim().isNotEmpty == true
+        ? item.nextStep!.trim()
+        : '',
+    _OpdTableColumnId.encounter =>
+      item.encounterId?.trim().isNotEmpty == true
+          ? item.encounterId!.trim()
+          : context.l10n.profileUnknownValue,
+  };
 }
 
 AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
@@ -2310,6 +2341,22 @@ class _OpdMainTable extends ConsumerWidget {
         columnWidthStorageKey: 'opd_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         columnVisibilityTitle: l10n.commonTableSettingsTitle,
+        exportLabel: l10n.commonTableExportActionLabel,
+        exportDialogTitle: l10n.commonTableExportDialogTitle,
+        exportCancelLabel: l10n.commonCancelActionLabel,
+        exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+        exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+        exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+        exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+        exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+        exportFailureMessage: l10n.commonTableExportFailureMessage,
+        exportConfig: AppListTableExportConfig<_OpdTableItem>(
+          fileNameStem: 'opd_${section.name}',
+          dateOf: (_OpdTableItem item) => item.time,
+          rowFilter: (_OpdTableItem item, AppSearchBarFilterValue filters) {
+            return _OpdTableFilter.fromSearchBarValue(filters).matches(item);
+          },
+        ),
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

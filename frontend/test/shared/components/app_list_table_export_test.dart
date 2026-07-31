@@ -102,6 +102,35 @@ void main() {
     expect(filtered.map((_ExportRow row) => row.id), <String>['3']);
   });
 
+  test(
+    'applyAppListTableExportFilters keeps rows when dates set but dateOf missing',
+    () {
+      final List<_ExportRow> filtered =
+          applyAppListTableExportFilters<_ExportRow>(
+            rows: items,
+            filters: AppSearchBarFilterValue(
+              dateFrom: DateTime(2026, 2, 1),
+              dateTo: DateTime(2026, 3, 31),
+            ),
+          );
+
+      expect(filtered, items);
+    },
+  );
+
+  test('applyAppListTableExportFilters returns all rows when filters cleared', () {
+    final List<_ExportRow> filtered = applyAppListTableExportFilters<_ExportRow>(
+      rows: items,
+      filters: AppSearchBarFilterValue.empty,
+      dateOf: (_ExportRow item) => item.occurredAt,
+      rowFilter: (_ExportRow item, AppSearchBarFilterValue filters) {
+        fail('rowFilter should not run when filters are inactive');
+      },
+    );
+
+    expect(filtered, items);
+  });
+
   testWidgets('Export action appears only when enabled and allowed', (
     WidgetTester tester,
   ) async {
@@ -278,7 +307,7 @@ void main() {
     },
   );
 
-  testWidgets('Export blocks empty filtered rows with feedback', (
+  testWidgets('Select all checkbox selects and deselects export columns', (
     WidgetTester tester,
   ) async {
     final TextEditingController searchController = TextEditingController();
@@ -293,15 +322,8 @@ void main() {
           columns: columns,
           exportConfig: AppListTableExportConfig<_ExportRow>(
             enableDateFilter: false,
-            initialFilterValue: const AppSearchBarFilterValue(
-              options: <String, String>{'status': 'Missing'},
-            ),
-            rowFilter: (_ExportRow item, AppSearchBarFilterValue filters) {
-              final String? status = filters.option('status');
-              return status == null || item.status == status;
-            },
             saver: ({required Uint8List bytes, required String fileName}) async {
-              fail('Saver should not run for empty exports');
+              return true;
             },
           ),
           search: AppListTableSearch<_ExportRow>(
@@ -319,11 +341,132 @@ void main() {
 
     await tester.tap(find.byIcon(AppActionIcons.download));
     await tester.pumpAndSettle();
+
+    final Finder selectAll = find.widgetWithText(CheckboxListTile, 'Select all');
+    expect(selectAll, findsOneWidget);
+
+    // Ensure a known starting point: not all selected.
+    if (tester.widget<CheckboxListTile>(selectAll).value == true) {
+      await tester.tap(selectAll);
+      await tester.pumpAndSettle();
+    }
+    expect(tester.widget<CheckboxListTile>(selectAll).value, isFalse);
+
+    await tester.tap(selectAll);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<CheckboxListTile>(selectAll).value, isTrue);
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.widgetWithText(CheckboxListTile, 'Code'),
+          )
+          .value,
+      isTrue,
+    );
+
+    await tester.tap(selectAll);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<CheckboxListTile>(selectAll).value, isFalse);
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.widgetWithText(CheckboxListTile, 'Title'),
+          )
+          .value,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.widgetWithText(CheckboxListTile, 'Code'),
+          )
+          .value,
+      isFalse,
+    );
+  });
+
+  testWidgets('Clear filters restores full row export', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    Uint8List? savedBytes;
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 520,
+        child: AppListTable<_ExportRow>(
+          items: items,
+          columns: columns,
+          exportConfig: AppListTableExportConfig<_ExportRow>(
+            enableDateFilter: false,
+            initialFilterValue: const AppSearchBarFilterValue(
+              options: <String, String>{'status': 'Missing'},
+            ),
+            filterGroups: const <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: 'status',
+                label: 'Status',
+                choices: <AppSearchBarFilterChoice>[
+                  AppSearchBarFilterChoice(value: 'Active', label: 'Active'),
+                  AppSearchBarFilterChoice(value: 'Draft', label: 'Draft'),
+                  AppSearchBarFilterChoice(
+                    value: 'Missing',
+                    label: 'Missing',
+                  ),
+                ],
+              ),
+            ],
+            rowFilter: (_ExportRow item, AppSearchBarFilterValue filters) {
+              final String? status = filters.option('status');
+              return status == null || item.status == status;
+            },
+            saver:
+                ({required Uint8List bytes, required String fileName}) async {
+                  savedBytes = bytes;
+                  return true;
+                },
+          ),
+          search: AppListTableSearch<_ExportRow>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _ExportRow item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    await tester.tap(find.byIcon(AppActionIcons.download));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Export').last);
+    await tester.pumpAndSettle();
+    expect(find.text('No rows match the export filters.'), findsOneWidget);
+
+    await tester.tap(find.text('Clear filters'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(AppButton, 'Export').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('No rows match the export filters.'), findsOneWidget);
-    expect(find.byType(AppListTableExportDialog<_ExportRow>), findsOneWidget);
+    expect(savedBytes, isNotNull);
+    final Excel workbook = Excel.decodeBytes(savedBytes!);
+    final Sheet sheet = workbook.tables.values.first;
+    expect(
+      sheet.cell(CellIndex.indexByString('A2')).value?.toString(),
+      'Alpha',
+    );
+    expect(
+      sheet.cell(CellIndex.indexByString('A4')).value?.toString(),
+      'Gamma',
+    );
   });
 }
 

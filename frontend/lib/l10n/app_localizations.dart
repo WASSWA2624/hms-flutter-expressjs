@@ -496,6 +496,24 @@ abstract class AppLocalizations {
   /// **'To'**
   String get commonTableExportDateToLabel;
 
+  /// Checkbox label to select or deselect every exportable column in the table export dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get commonTableExportSelectAllColumnsAction;
+
+  /// Quick action that restores export columns to the table's currently visible columns.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible'**
+  String get commonTableExportSelectVisibleColumnsAction;
+
+  /// Action that clears all export-scoped filters so the workbook includes every loaded row.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get commonTableExportClearFiltersAction;
+
   /// Tooltip and semantic label for scrolling a table back to the header.
   ///
   /// In en, this message translates to:

@@ -293,6 +293,18 @@
   "@commonTableExportDateToLabel": {
     "description": "To-date field label in the table export dialog."
   },
+  "commonTableExportSelectAllColumnsAction": "Select all",
+  "@commonTableExportSelectAllColumnsAction": {
+    "description": "Checkbox label to select or deselect every exportable column in the table export dialog."
+  },
+  "commonTableExportSelectVisibleColumnsAction": "Visible",
+  "@commonTableExportSelectVisibleColumnsAction": {
+    "description": "Quick action that restores export columns to the table's currently visible columns."
+  },
+  "commonTableExportClearFiltersAction": "Clear filters",
+  "@commonTableExportClearFiltersAction": {
+    "description": "Action that clears all export-scoped filters so the workbook includes every loaded row."
+  },
   "commonGoToTopActionLabel": "Go to top",
   "@commonGoToTopActionLabel": {
     "description": "Tooltip and semantic label for scrolling a table back to the header."

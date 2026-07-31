@@ -228,6 +228,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableExportDateToLabel => 'To';
 
   @override
+  String get commonTableExportSelectAllColumnsAction => 'Select all';
+
+  @override
+  String get commonTableExportSelectVisibleColumnsAction => 'Visible';
+
+  @override
+  String get commonTableExportClearFiltersAction => 'Clear filters';
+
+  @override
   String get commonGoToTopActionLabel => 'Go to top';
 
   @override
